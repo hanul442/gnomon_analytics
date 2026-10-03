@@ -17,6 +17,8 @@ const RULES: readonly { pattern: RegExp; category: string; importance: Importanc
     why: '자사주 매입·처분·소각 결정이에요. 주주환원과 유통 주식 수에 영향을 줘요.' },
   { pattern: /신규시설투자|유형자산|타법인주식/, category: '투자', importance: 'HIGH',
     why: '설비나 다른 회사에 대한 투자 결정이에요. 미래 생산능력과 현금흐름에 영향을 줘요.' },
+  { pattern: /조회공시|풍문또는보도|해명/, category: '조회공시 답변', importance: 'MEDIUM',
+    why: '언론 보도나 소문에 대해 거래소가 사실 여부를 물었고 회사가 답한 공시예요. "미확정"은 아직 정해진 것이 없다는 뜻이고, 정해지면 다시 공시해요.' },
   { pattern: /주요사항보고서/, category: '주요사항', importance: 'HIGH',
     why: '증자, 합병, 분할처럼 회사 구조를 바꾸는 결정을 알릴 때 내는 공시예요.' },
   { pattern: /사업보고서|반기보고서|분기보고서/, category: '정기보고서', importance: 'MEDIUM',
@@ -32,9 +34,11 @@ const RULES: readonly { pattern: RegExp; category: string; importance: Importanc
 export function readFilingTitle(title: string): FilingReading {
   const isCorrection = /^\s*\[(기재정정|첨부정정|첨부추가|변경등록)\]/.test(title);
   const rule = RULES.find((candidate) => candidate.pattern.test(title));
-  const base = rule
+  const base: { category: string; importance: Importance; why: string } = rule
     ? { category: rule.category, importance: rule.importance, why: rule.why }
-    : { category: '기타', importance: 'LOW' as const, why: '분류 규칙에 없는 공시예요. 원문을 확인해 주세요.' };
+    : { category: '기타', importance: 'LOW', why: '분류 규칙에 없는 공시예요. 원문을 확인해 주세요.' };
+  // A confirmed answer to a rumour inquiry ("(확정)") is real news.
+  if (base.category === '조회공시 답변' && /\(확정\)/.test(title)) base.importance = 'HIGH';
   return {
     ...base,
     // A correction re-states an earlier filing; it is rarely news on its own.

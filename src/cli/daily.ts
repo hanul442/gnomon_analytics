@@ -64,7 +64,8 @@ export async function runDaily(options: {
         bars: asOf(await readLog<PriceBar>(pricePath), priceKey, now),
         disclosures: asOf(await readLog<Disclosure>(filingPath), filingKey, now),
         sources: [NAVER_PRICE_SOURCE, OPENDART_SOURCE],
-        ...(earlier.length ? { previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))) } : {}),
+        // The first report (no earlier ones) lists the past month's filings as context.
+        previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))),
       });
       await mkdir(reportDir, { recursive: true });
       await writeFile(reportPath, `${JSON.stringify(built, null, 2)}\n`, { flag: 'wx' });
