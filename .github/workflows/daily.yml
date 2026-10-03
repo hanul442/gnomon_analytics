@@ -1,0 +1,45 @@
+name: Daily report
+on:
+  schedule:
+    # 18:30 KST on weekdays (09:30 UTC). GitHub may start scheduled runs late.
+    - cron: '30 9 * * 1-5'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: daily-report
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Collect and build today's report
+        env:
+          OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
+        run: npm run daily
+      - name: Commit collected data and reports
+        run: |
+          git config user.name "gnomon-bot"
+          git config user.email "gnomon-bot@users.noreply.github.com"
+          # data/ and reports/ are the only tracked outputs; site/ and dist/ are ignored.
+          git add -A
+          git diff --cached --quiet || git commit -m "data: daily run $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4

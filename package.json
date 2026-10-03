@@ -1,0 +1,20 @@
+{
+  "name": "gnomon-analytics",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Gnomon Analytics (GNM): evidence-first daily research reports",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test \"dist/**/*.test.js\"",
+    "daily": "node dist/cli/daily.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
