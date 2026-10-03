@@ -192,14 +192,16 @@ export function describeChanges(previous: DailyReport | null, current: DailyRepo
   const out: string[] = [];
   const before = previous.price;
   const now = current.price;
-  if (before && now) {
-    if (before.sessionDate === now.sessionDate) {
+  // Reports written before sessionDate existed only had prices on session days.
+  const beforeDate = before ? (before.sessionDate ?? previous.date) : null;
+  if (before && now && beforeDate) {
+    if (beforeDate === now.sessionDate) {
       out.push('새 거래일이 없어서 가격은 이전 리포트와 같아요.');
     } else {
-      out.push(`종가 ${won(before.close)} → ${won(now.close)} (${pct((now.close / before.close - 1) * 100)}, ${before.sessionDate} → ${now.sessionDate})`);
+      out.push(`종가 ${won(before.close)} → ${won(now.close)} (${pct((now.close / before.close - 1) * 100)}, ${beforeDate} → ${now.sessionDate})`);
     }
   } else if (now) {
-    out.push(`이번 리포트부터 가격이 표시돼요: ${now.sessionDate} 종가 ${won(now.close)}.`);
+    out.push(`이전 리포트(${previous.date})에는 가격이 없었어요. ${now.sessionDate} 종가는 ${won(now.close)}이에요.`);
   }
   if (current.filings.length) {
     const top = current.filings.filter((f) => f.importance === 'HIGH').slice(0, 2).map((f) => f.title);
@@ -207,7 +209,10 @@ export function describeChanges(previous: DailyReport | null, current: DailyRepo
   } else {
     out.push('이전 리포트 이후 새 공시는 없어요.');
   }
-  for (const note of current.notes) if (!previous.notes.includes(note)) out.push(`새 신호: ${note}`);
-  for (const note of previous.notes) if (!current.notes.includes(note)) out.push(`사라진 신호: ${note}`);
+  // Signals describe a session; only compare two session reports.
+  if (current.status === 'SESSION' && previous.status === 'SESSION') {
+    for (const note of current.notes) if (!previous.notes.includes(note)) out.push(`새 신호: ${note}`);
+    for (const note of previous.notes) if (!current.notes.includes(note)) out.push(`사라진 신호: ${note}`);
+  }
   return out;
 }

@@ -54,6 +54,17 @@ test('changes compare against the previous report', () => {
   assert.equal(second.changes?.[1], '새 공시 1건: 주요사항보고서(자기주식취득결정).');
   const holiday = buildDailyReport({ ...base, date: '2026-10-02', bars: bars([300000, 330000], 30), disclosures: [], previous: second, previouslyReported: new Set(['20261002000001']) });
   assert.equal(holiday.changes?.[0], '새 거래일이 없어서 가격은 이전 리포트와 같아요.');
+  assert.ok(!holiday.changes?.some((c) => c.startsWith('사라진 신호')));
+});
+
+test('changes against a report stored before sessionDate existed', () => {
+  const legacy = buildDailyReport({ ...base, date: '2026-09-30', bars: bars([300000], 30), disclosures: [] });
+  delete (legacy.price as { sessionDate?: string }).sessionDate;
+  const next = buildDailyReport({ ...base, date: '2026-10-01', bars: bars([300000, 330000], 30), disclosures: [], previous: legacy });
+  assert.equal(next.changes?.[0], '종가 300,000원 → 330,000원 (+10.00%, 2026-09-30 → 2026-10-01)');
+  const noPrice = { ...legacy, price: null };
+  const after = buildDailyReport({ ...base, date: '2026-10-01', bars: bars([300000, 330000], 30), disclosures: [], previous: noPrice });
+  assert.equal(after.changes?.[0], '이전 리포트(2026-09-30)에는 가격이 없었어요. 2026-10-01 종가는 330,000원이에요.');
 });
 
 test('future bars are never used', () => {

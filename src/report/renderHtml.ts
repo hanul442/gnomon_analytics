@@ -66,20 +66,21 @@ table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;colo
 td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}td a{text-decoration:none;font-weight:500}td a:hover{text-decoration:underline}
 .why{color:var(--muted);font-size:13px;margin-top:2px}.badge{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;white-space:nowrap}
 .b-HIGH{background:#fde8e6;color:#b4232a}.b-MEDIUM{background:#fff3dc;color:var(--warn)}.b-LOW{background:#eef1f0;color:var(--muted)}.b-new{background:var(--pill);color:var(--pill-fg);margin-left:6px}
-.table-wrap{overflow-x:auto}
+.table-wrap{overflow-x:auto}.nowrap{white-space:nowrap}.m-date{display:none;color:var(--muted);font-size:12px}
 footer{margin-top:28px;color:var(--muted);font-size:12px}
 @media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:820px){.app{grid-template-columns:minmax(0,1fr);padding:0;gap:0}
 .side{position:static;height:auto;border-radius:0;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;flex-wrap:wrap}
 .side .foot{display:none}.nav{flex-direction:row;gap:2px;overflow-x:auto}.nav a{padding:8px 12px;font-size:13px;white-space:nowrap}.nav a svg{display:none}
 main{border-radius:0;padding:16px 16px 32px}h1{font-size:22px}.kpis{gap:10px}.card{padding:14px}.kpi .value{font-size:18px}#chart{height:280px}
-.col-filer,.col-cat{display:none}}`;
+.col-filer,.col-cat,.col-date{display:none}.m-date{display:block}
+.kpi .ico{display:none}.kpi .value{font-size:17px;white-space:nowrap}.kpi .hint{margin-top:8px;font-size:12px}.stamp{text-align:left}}`;
 
-function shell(active: 'today' | 'archive', base: string, title: string, body: string, scripts = ''): string {
+function shell(active: 'today' | 'archive', base: string, title: string, body: string, scripts = '', filingsHref = '#filings'): string {
   const nav = [
     { key: 'today', href: `${base}index.html#latest`, icon: ICON.dashboard, label: '오늘 리포트' },
     { key: 'archive', href: `${base}index.html#archive`, icon: ICON.archive, label: '지난 리포트' },
-    { key: 'filings', href: '#filings', icon: ICON.filing, label: '공시' },
+    { key: 'filings', href: filingsHref, icon: ICON.filing, label: '공시' },
     { key: 'sources', href: '#sources', icon: ICON.source, label: '데이터 출처' },
   ];
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -213,8 +214,9 @@ function mixCard(filings: readonly ReportedFiling[]): string {
     offset += len;
     return arc;
   }).join('');
+  const ring = `<circle r="${r}" cx="90" cy="90" fill="none" stroke="${MIX_COLORS[0]}" stroke-width="34"/>`;
   return `<div class="card"><div class="head"><h2>공시 구성</h2><span class="sub" style="margin:0">최근 30일 · ${total}건</span></div>
-<div class="donut"><svg viewBox="0 0 180 180" role="img" aria-label="최근 30일 공시 ${total}건의 종류별 구성">${arcs}
+<div class="donut"><svg viewBox="0 0 180 180" role="img" aria-label="최근 30일 공시 ${total}건의 종류별 구성">${ring}${arcs}
 <text x="90" y="86" text-anchor="middle" font-size="26" font-weight="700" fill="#18201f">${total}</text><text x="90" y="108" text-anchor="middle" font-size="12" fill="#6a7673">건</text></svg>
 <div class="legend">${mix.map(([cat, n], i) => `<div><i style="background:${MIX_COLORS[i % MIX_COLORS.length]}"></i>${escape(cat)} ${Math.round((n / total) * 100)}%</div>`).join('')}</div></div></div>`;
 }
@@ -223,10 +225,10 @@ function filingsTable(report: DailyReport): string {
   const recent = report.recentFilings ?? report.filings;
   const fresh = new Set(report.filings.map((f) => f.receiptNo));
   if (!recent.length) return '<p class="empty">최근 30일 동안 나온 공시가 없어요.</p>';
-  return `<div class="table-wrap"><table><thead><tr><th>날짜</th><th>공시</th><th class="col-cat">종류</th><th>중요도</th><th class="col-filer">제출인</th></tr></thead><tbody>
-${recent.map((f) => `<tr><td style="white-space:nowrap">${escape(f.filedDate)}</td>
-<td><a href="${escape(f.url)}" rel="noopener" target="_blank">${escape(f.title)}</a>${fresh.has(f.receiptNo) ? '<span class="badge b-new">새 공시</span>' : ''}<div class="why">${escape(f.why)}</div></td>
-<td class="col-cat">${escape(f.category)}</td><td><span class="badge b-${f.importance}">${IMPORTANCE_LABEL[f.importance]}</span></td><td class="col-filer">${escape(f.filer)}</td></tr>`).join('')}
+  return `<div class="table-wrap"><table><thead><tr><th class="col-date">날짜</th><th>공시</th><th class="col-cat">종류</th><th>중요도</th><th class="col-filer">제출인</th></tr></thead><tbody>
+${recent.map((f) => `<tr><td class="col-date nowrap">${escape(f.filedDate)}</td>
+<td><span class="m-date">${escape(f.filedDate)} · ${escape(f.category)}</span><a href="${escape(f.url)}" rel="noopener" target="_blank">${escape(f.title)}</a>${fresh.has(f.receiptNo) ? '<span class="badge b-new">새 공시</span>' : ''}<div class="why">${escape(f.why)}</div></td>
+<td class="col-cat nowrap">${escape(f.category)}</td><td><span class="badge b-${f.importance}">${IMPORTANCE_LABEL[f.importance]}</span></td><td class="col-filer nowrap">${escape(f.filer)}</td></tr>`).join('')}
 </tbody></table></div>`;
 }
 
@@ -257,5 +259,6 @@ ${latest ? `<div class="card"><div class="head"><h2>최신 리포트 · ${escape
 ${sorted.map((r) => `<tr><td style="white-space:nowrap"><a href="reports/${escape(r.date)}.html">${escape(r.date)}</a></td><td>${escape(r.headline)}</td><td>${r.status === 'SESSION' ? '거래일' : '휴장'}</td></tr>`).join('')}
 </tbody></table></div></div>
 <footer id="sources">데이터: Naver 금융 일봉(가격), OpenDART(공시) · 투자 권유가 아니에요</footer>`;
-  return shell('archive', '', 'Gnomon Analytics — SK하이닉스 일일 리포트', body);
+  // The index has no filings section; link to the latest report's.
+  return shell('archive', '', 'Gnomon Analytics — SK하이닉스 일일 리포트', body, '', latest ? `reports/${escape(latest.date)}.html#filings` : '#archive');
 }
