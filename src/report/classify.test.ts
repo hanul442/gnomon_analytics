@@ -10,6 +10,10 @@ test('filing titles map to a category and importance', () => {
     ['분기보고서 (2026.09)', '정기보고서', 'MEDIUM'],
     ['임원ㆍ주요주주특정증권등소유상황보고서', '지분', 'LOW'],
     ['기업설명회(IR)개최(안내공시)', '기타', 'LOW'],
+    // Real titles from the first live collection (2026-10-03).
+    ['조회공시요구(풍문또는보도)에대한답변(미확정)', '조회공시 답변', 'MEDIUM'],
+    ['풍문또는보도에대한해명(미확정)', '조회공시 답변', 'MEDIUM'],
+    ['조회공시요구(풍문또는보도)에대한답변(확정)', '조회공시 답변', 'HIGH'],
   ];
   for (const [title, category, importance] of cases) {
     const reading = readFilingTitle(title);
