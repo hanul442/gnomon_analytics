@@ -4,6 +4,7 @@
 
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { TechnicalSummary } from '../analysis/technicals.js';
+import type { Claim, Commentary } from '../analysis/commentary.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 
@@ -68,6 +69,11 @@ td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}td a{
 .why{color:var(--muted);font-size:13px;margin-top:2px}.badge{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;white-space:nowrap}
 .b-HIGH{background:#fde8e6;color:#b4232a}.b-MEDIUM{background:#fff3dc;color:var(--warn)}.b-LOW{background:#eef1f0;color:var(--muted)}.b-new{background:var(--pill);color:var(--pill-fg);margin-left:6px}
 .table-wrap{overflow-x:auto}
+.why-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}.why-col{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.why-col h3,.why-h{font-size:14px;margin:0 0 6px}.why-h{margin-top:16px}.bull h3{color:var(--up)}.bear h3{color:var(--down)}.unc h3{color:var(--muted)}
+ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.chips{white-space:nowrap}
+.chip{display:inline-block;font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none}
+.evid li{font-size:13px}
 .story{padding:12px 0;border-top:1px solid var(--line)}.story:first-of-type{border-top:0}.story-title{font-weight:600;margin:4px 0 2px}.story-title a{text-decoration:none}.story-title a:hover{text-decoration:underline}
 .tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px}.more summary{cursor:pointer;color:var(--teal);font-size:13px;margin-top:4px}
 .warn{background:#fff3dc;color:#7a4a00;border-radius:10px;padding:8px 12px;font-size:13px}
@@ -82,7 +88,7 @@ td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}td a{
 .votes{margin-top:14px}.votes td{padding:8px}.votes summary{cursor:pointer;color:var(--teal);font-weight:600;font-size:14px}.votes table{margin-top:8px}
 .num{font-variant-numeric:tabular-nums;white-space:nowrap}.v-BULLISH{background:#fde8e6;color:#b4232a}.v-BEARISH{background:#e3ecfb;color:#1d4fa3}.v-NEUTRAL{background:#eef1f0;color:var(--muted)}.nowrap{white-space:nowrap}.m-date{display:none;color:var(--muted);font-size:12px}
 footer{margin-top:28px;color:var(--muted);font-size:12px}
-@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:820px){.app{grid-template-columns:minmax(0,1fr);padding:0;gap:0}
 .side{position:static;height:auto;border-radius:0;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;flex-wrap:wrap}
 .side .foot{display:none}.nav{flex-direction:row;gap:2px;overflow-x:auto}.nav a{padding:8px 12px;font-size:13px;white-space:nowrap}.nav a svg{display:none}
@@ -90,10 +96,11 @@ main{border-radius:0;padding:16px 16px 32px}h1{font-size:22px}.kpis{gap:10px}.ca
 .col-filer,.col-cat,.col-date{display:none}.m-date{display:block}
 .kpi .ico{display:none}.moms{gap:8px}.mom{padding:10px}.mom .v{font-size:15px}.votes .why{display:none}.kpi .value{font-size:17px;white-space:nowrap}.kpi .hint{margin-top:8px;font-size:12px}.stamp{text-align:left}}`;
 
-function shell(active: 'today' | 'archive', base: string, title: string, body: string, scripts = '', filingsHref = '#filings'): string {
+function shell(active: 'today' | 'archive', base: string, title: string, body: string, scripts = '', filingsHref = '#filings', hasWhy = true): string {
   const nav = [
     { key: 'today', href: `${base}index.html#latest`, icon: ICON.dashboard, label: '오늘 리포트' },
     { key: 'archive', href: `${base}index.html#archive`, icon: ICON.archive, label: '지난 리포트' },
+    ...(hasWhy ? [{ key: 'why', href: filingsHref.replace('#filings', '#why'), icon: ICON.dashboard, label: '왜?' }] : []),
     { key: 'news', href: filingsHref.replace('#filings', '#news'), icon: ICON.source, label: '뉴스' },
     { key: 'filings', href: filingsHref, icon: ICON.filing, label: '공시' },
     { key: 'sources', href: '#sources', icon: ICON.source, label: '데이터 출처' },
@@ -157,7 +164,7 @@ function signalSection(report: DailyReport): string {
 <div class="k">${m.returnPct === null ? '기록 부족' : pct(m.returnPct)} · ${m.days}일</div></div>`).join('');
   const rows = t.votes.map((v) => `<tr><td>${escape(v.label)}</td><td class="num">${v.value === null ? '—' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
 <td>${v.vote ? `<span class="badge v-${v.vote}">${VOTE_LABEL[v.vote]}</span>` : '<span class="badge b-LOW">계산 불가</span>'}</td><td class="why">${escape(v.rule)}</td></tr>`).join('');
-  return `<div class="grid-signal"><div class="card signal"><div class="head"><h2>기술적 신호</h2><span class="sub" style="margin:0">${escape(t.sessionDate)} 종가 기준</span></div>
+  return `<div class="grid-signal" id="signal"><div class="card signal"><div class="head"><h2>기술적 신호</h2><span class="sub" style="margin:0">${escape(t.sessionDate)} 종가 기준</span></div>
 ${gaugeSvg(t)}<div class="signal-label ${tone}">${escape(t.label)}</div>
 <p class="reason">${escape(report.technicalReason ?? '')}</p>
 <div class="tally">강세 ${t.counts.bullish} · 중립 ${t.counts.neutral} · 약세 ${t.counts.bearish}${t.counts.abstained ? ` · 계산 불가 ${t.counts.abstained}` : ''}</div>
@@ -180,7 +187,7 @@ function kpis(report: DailyReport): string {
   if (!p) return '<div class="card empty">아직 가격 기록이 없어요.</div>';
   const day = p.sessionDate ?? report.date;
   const vol = p.volumeRatio20;
-  return `<div class="kpis">
+  return `<div class="kpis" id="kpis">
 ${kpi(ICON.price, '#1f7a74', `종가 (${day})`, won(p.close), '', p.changePct === null ? '전일 기록 없음' : `전일 대비 ${pct(p.changePct)} (${p.change! > 0 ? '+' : ''}${Math.round(p.change!).toLocaleString('ko-KR')}원)`)}
 ${kpi(ICON.week, '#2b6fd6', '5거래일 수익률', pct(p.return5dPct), tone(p.return5dPct), '최근 일주일 흐름')}
 ${kpi(ICON.month, '#7a4fb3', '20거래일 수익률', pct(p.return20dPct), tone(p.return20dPct), `20일 범위 ${won(p.low20)} ~ ${won(p.high20)}`)}
@@ -327,6 +334,43 @@ const kstTime = (iso: string) => new Date(Date.parse(iso) + 9 * 3600_000).toISOS
 const SOURCE_LABEL: Record<string, string> = { 'naver:news-search': '네이버 뉴스', 'google:news-rss': 'Google 뉴스', 'rss:mk-economy': '매일경제 RSS' };
 const TIER_LABEL = { OFFICIAL: '공식', WIRE_BIZ: '통신·경제지', GENERAL: '일반' } as const;
 
+
+const COMMENTARY_FAIL: Record<string, string> = {
+  ANTHROPIC_API_KEY_MISSING: 'API 키가 설정되지 않았어요',
+  NO_EVIDENCE: '해설할 근거가 없었어요',
+  MAX_TOKENS: '해설이 너무 길어져 중간에 끊겼어요',
+  UNPARSEABLE_OUTPUT: '해설 형식을 읽지 못했어요',
+};
+
+function whySection(report: DailyReport): string {
+  const c = report.commentary;
+  if (!c) return '';
+  if (c.status !== 'OK') {
+    const reason = c.error ? (COMMENTARY_FAIL[c.error] ?? (c.error.startsWith('REFUSAL') ? 'AI가 해설 작성을 거절했어요' : 'AI 호출에 실패했어요')) : '';
+    return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2></div><p class="empty">AI 해설 없음${reason ? ` — ${escape(reason)}` : ''}. 위의 지표와 공시·뉴스를 직접 확인해 주세요.</p></div>`;
+  }
+  const byId = new Map(c.evidence.map((e) => [e.id, e]));
+  const chips = (ids: readonly string[]) => ids.map((id) => {
+    const e = byId.get(id);
+    if (!e) return '';
+    const external = e.url.startsWith('http');
+    return `<a class="chip" href="${escape(e.url)}"${external ? ' rel="noopener" target="_blank"' : ''} title="${escape(e.label)}">${escape(id)}</a>`;
+  }).join('');
+  const list = (claims: readonly Claim[], emptyText: string) => (claims.length
+    ? `<ul class="claims">${claims.map((cl) => `<li>${escape(cl.text)} <span class="chips">${chips(cl.evidenceIds)}</span></li>`).join('')}</ul>`
+    : `<p class="empty">${emptyText}</p>`);
+  const legend = c.evidence.map((e) => `<li><b>${escape(e.id)}</b> ${e.url.startsWith('http') ? `<a href="${escape(e.url)}" rel="noopener" target="_blank">${escape(e.label)}</a>` : escape(e.label)}</li>`).join('');
+  return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2><span class="sub" style="margin:0">AI 해설 · 오늘 리포트의 근거만 인용</span></div>
+${c.summary ? `<p class="headline">${escape(c.summary.text)} <span class="chips">${chips(c.summary.evidenceIds)}</span></p>` : ''}
+<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
+<div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish, '찾지 못했어요.')}</div>
+<div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain, '없어요.')}</div></div>
+<h3 class="why-h">판단이 바뀔 수 있는 것</h3>${list(c.watch, '없어요.')}
+${c.dataGaps.length ? `<h3 class="why-h">근거가 부족한 부분</h3><ul class="plain">${c.dataGaps.map((g) => `<li>${escape(g)}</li>`).join('')}</ul>` : ''}
+<details class="more"><summary>근거 목록 ${c.evidence.length}개</summary><ul class="plain evid">${legend}</ul></details>
+<p class="fine">AI(${escape(c.servedBy ?? c.model)})가 이 리포트의 근거만 보고 쓴 해설이에요. 틀릴 수 있고, 투자 권유가 아니에요.${c.dropped ? ` 근거를 대지 못한 주장 ${c.dropped}개는 뺐어요.` : ''} 프롬프트 ${escape(c.promptVersion)}.</p></div>`;
+}
+
 function newsSection(report: DailyReport): string {
   const news = report.news;
   if (!news) return '';
@@ -365,12 +409,14 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
 ${signalSection(report)}
 ${kpis(report)}
 <div class="grid2">${chart.html}${mixCard(report.recentFilings ?? report.filings)}</div>
+${whySection(report)}
 <div class="grid-eq"><div class="card"><div class="head"><h2>오늘의 요약</h2></div><p class="headline">${escape(report.headline)}</p>${notes}</div>
 <div class="card"><div class="head"><h2>어제 대비 바뀐 점</h2></div>${changes}</div></div>
 ${newsSection(report)}
 <div class="card" id="filings" style="margin-top:16px"><div class="head"><h2>공시</h2><span class="sub" style="margin:0">최근 30일 · DART 원문 링크</span></div>${filingsTable(report)}</div>
 <footer id="sources">데이터: Naver 금융 일봉(가격), OpenDART(공시) · 수집 기록은 고쳐 쓰지 않고 쌓아요 · 투자 권유가 아니에요 · <a href="${escape(links.index)}">지난 리포트</a></footer>`;
-  return shell('today', base, `${report.name} ${report.date} 일일 리포트 — GNM`, body, chart.script);
+  // Reports written before AI commentary existed have no "왜?" section to link to.
+  return shell('today', base, `${report.name} ${report.date} 일일 리포트 — GNM`, body, chart.script, '#filings', Boolean(report.commentary));
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[]): string {
@@ -384,5 +430,5 @@ ${sorted.map((r) => `<tr><td style="white-space:nowrap"><a href="reports/${escap
 </tbody></table></div></div>
 <footer id="sources">데이터: Naver 금융 일봉(가격), OpenDART(공시) · 투자 권유가 아니에요</footer>`;
   // The index has no filings section; link to the latest report's.
-  return shell('archive', '', 'Gnomon Analytics — SK하이닉스 일일 리포트', body, '', latest ? `reports/${escape(latest.date)}.html#filings` : '#archive');
+  return shell('archive', '', 'Gnomon Analytics — SK하이닉스 일일 리포트', body, '', latest ? `reports/${escape(latest.date)}.html#filings` : '#archive', Boolean(latest && (latest as Partial<DailyReport>).commentary));
 }

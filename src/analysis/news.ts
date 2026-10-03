@@ -2,6 +2,7 @@
 // (docs/DESIGN.md §4.3). Pure functions.
 
 import type { NewsItem } from '../types.js';
+import { outletName } from '../sources/news.js';
 
 export type NewsImportance = 'HIGH' | 'MEDIUM' | 'LOW';
 export type OutletTier = 'OFFICIAL' | 'WIRE_BIZ' | 'GENERAL';
@@ -33,11 +34,14 @@ export function classifyNews(title: string): { category: string; importance: New
 const WIRE_BIZ = new Set([
   '연합뉴스', '연합뉴스TV', '뉴스1', '뉴시스', '매일경제', '한국경제', '서울경제', '머니투데이', '이데일리', '파이낸셜뉴스',
   '아시아경제', '헤럴드경제', '조선비즈', '전자신문', '디지털타임스', '지디넷코리아', '더벨', '디일렉', '뉴스핌', '비즈니스워치',
+  '연합인포맥스', '이투데이', '디지털데일리', '서울경제TV', '한국경제TV', '머니투데이방송', '아주경제', '아이뉴스24',
   'Reuters', 'Bloomberg', 'WSJ', 'FT',
 ]);
 
+/** "매일경제 마켓" and other section names count as their outlet. */
 export function outletTier(publisher: string): OutletTier {
-  return WIRE_BIZ.has(publisher) ? 'WIRE_BIZ' : 'GENERAL';
+  const name = publisher.trim();
+  return [...WIRE_BIZ].some((outlet) => name === outlet || name.startsWith(`${outlet} `)) ? 'WIRE_BIZ' : 'GENERAL';
 }
 
 export interface NewsCluster {
@@ -82,7 +86,7 @@ const IMPORTANCE_RANK: Record<NewsImportance, number> = { HIGH: 0, MEDIUM: 1, LO
  */
 export function clusterNews(items: readonly NewsItem[]): NewsCluster[] {
   const unique = new Map<string, NewsItem>();
-  for (const item of items) if (isRelevant(item.title) && !unique.has(item.url)) unique.set(item.url, item);
+  for (const item of items) if (isRelevant(item.title) && !unique.has(item.url)) unique.set(item.url, { ...item, publisher: outletName(item.publisher) });
   const sorted = [...unique.values()].sort((a, b) => (a.publishedAt < b.publishedAt ? -1 : a.publishedAt > b.publishedAt ? 1 : a.url < b.url ? -1 : 1));
   const groups: { members: NewsItem[]; grams: Set<string>[] }[] = [];
   for (const item of sorted) {

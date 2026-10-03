@@ -48,7 +48,7 @@ test('Naver fetch sends the key headers and pages until a short page', async () 
   assert.deepEqual(seen, [{ start: '1', id: 'id' }]);
   await assert.rejects(fetchNaverNews({ clientId: '', clientSecret: 's', query: 'q' }), /NAVER_API_KEY_MISSING/);
   const denied = (async () => new Response('{}', { status: 401 })) as typeof fetch;
-  await assert.rejects(fetchNaverNews({ clientId: 'i', clientSecret: 's', query: 'q', fetch: denied }), (e: Error) => e.message === 'NAVER_NEWS_HTTP_401');
+  await assert.rejects(fetchNaverNews({ clientId: 'i', clientSecret: 's', query: 'q', fetch: denied }), /NAVER_NEWS_HTTP_401/);
 });
 
 // Shape of a Google News search RSS item.
@@ -86,4 +86,21 @@ test('Naver paging continues when a full page had a malformed row', async () => 
   const items = await fetchNaverNews({ clientId: 'i', clientSecret: 's', query: 'q', fetch: fakeFetch, now: () => AT });
   assert.equal(items.length, 99);
   assert.deepEqual(starts, ['1', '101']);
+});
+
+test('domain-like outlet names from Google are mapped to outlet names', () => {
+  const xml = '<rss><channel><item><title>SK하이닉스 소식 - yna.co.kr</title><link>https://news.google.com/a</link><pubDate>Mon, 05 Oct 2026 06:00:00 GMT</pubDate><source url="https://www.yna.co.kr">yna.co.kr</source></item></channel></rss>';
+  const [item] = parseRss(xml, 'google:news-rss', AT);
+  assert.equal(item?.publisher, '연합뉴스');
+  assert.equal(item?.title, 'SK하이닉스 소식');
+});
+
+test('a Naver auth failure reports its error code', async () => {
+  const denied = (async () => new Response(JSON.stringify({ errorMessage: 'Authentication failed', errorCode: '024' }), { status: 401 })) as typeof fetch;
+  await assert.rejects(fetchNaverNews({ clientId: 'i', clientSecret: 's', query: 'q', fetch: denied }), /NAVER_NEWS_HTTP_401:024 Authentication failed/);
+});
+
+test('a non-object Naver error body still reports the HTTP status', async () => {
+  const odd = (async () => new Response('null', { status: 500 })) as typeof fetch;
+  await assert.rejects(fetchNaverNews({ clientId: 'i', clientSecret: 's', query: 'q', fetch: odd }), (e: Error) => e.message === 'NAVER_NEWS_HTTP_500');
 });
