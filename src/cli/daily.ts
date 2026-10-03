@@ -9,6 +9,8 @@ import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
+import { writeCommentary } from '../analysis/commentary.js';
+import type Anthropic from '@anthropic-ai/sdk';
 import { CHART_ASSET, renderIndex, renderReport } from '../report/renderHtml.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE, SK_HYNIX_CORP_CODE } from '../sources/opendart.js';
@@ -65,6 +67,9 @@ export async function runDaily(options: {
   now: Date;
   apiKey: string;
   naver?: { clientId: string; clientSecret: string };
+  anthropicApiKey?: string;
+  /** Injected in tests instead of a real API client. */
+  anthropic?: Anthropic;
   fetch?: typeof fetch;
 }): Promise<{ addedBars: number; addedFilings: number; addedNews: number; newsStatus: NewsSourceStatus[]; report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' }> {
   const { root, now } = options;
@@ -107,6 +112,12 @@ export async function runDaily(options: {
         previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))),
         previous: [...earlier].sort((a, b) => (a.date < b.date ? -1 : 1)).filter((r) => r.date < today.date).at(-1) ?? null,
       });
+      // AI commentary never blocks the report: a failure is stored as status FAILED.
+      built.commentary = await writeCommentary(built, {
+        now: clock,
+        ...(options.anthropic ? { client: options.anthropic } : {}),
+        ...(options.anthropicApiKey ? { apiKey: options.anthropicApiKey } : {}),
+      });
       await mkdir(reportDir, { recursive: true });
       await writeFile(reportPath, `${JSON.stringify(built, null, 2)}\n`, { flag: 'wx' });
       report = 'WRITTEN';
@@ -145,6 +156,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   runDaily({
     root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '',
     naver: { clientId: process.env.NAVER_CLIENT_ID ?? '', clientSecret: process.env.NAVER_CLIENT_SECRET ?? '' },
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
   })
     .then((result) => console.log(JSON.stringify(result)))
     .catch((error: unknown) => {

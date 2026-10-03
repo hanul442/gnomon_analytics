@@ -27,6 +27,8 @@ test('classification and outlet tier', () => {
   assert.deepEqual(classifyNews('SK하이닉스 봉사활동'), { category: '기타', importance: 'LOW' });
   assert.equal(outletTier('연합뉴스'), 'WIRE_BIZ');
   assert.equal(outletTier('어느블로그'), 'GENERAL');
+  assert.equal(outletTier('매일경제 마켓'), 'WIRE_BIZ');
+  assert.equal(outletTier('매일경제신문사'), 'GENERAL');
 });
 
 test('similar headlines within 48 hours become one story; repeats count once', () => {
@@ -45,4 +47,10 @@ test('similar headlines within 48 hours become one story; repeats count once', (
   // The representative comes from a wire/business outlet, not the first unknown one.
   assert.equal(earnings.publisher, '연합뉴스');
   assert.equal(earnings.firstAt, '2026-10-05T01:00:00Z');
+});
+
+test('stored domain-like outlet names are shown as outlet names', () => {
+  const [story] = clusterNews([item('SK하이닉스 단독 소식', '2026-10-05T01:00:00Z', 'g-enews.com', 'https://g.kr/1')]);
+  assert.equal(story?.publisher, '글로벌이코노믹');
+  assert.equal(clusterNews([item('SK하이닉스 다른 소식', '2026-10-05T01:00:00Z', 'Chosunbiz', 'https://c.kr/1')])[0]?.publisher, '조선비즈');
 });

@@ -54,8 +54,23 @@ const OUTLETS: readonly [string, string][] = [
   ['chosun.com', '조선일보'], ['joongang.co.kr', '중앙일보'], ['donga.com', '동아일보'], ['hani.co.kr', '한겨레'],
   ['khan.co.kr', '경향신문'], ['kmib.co.kr', '국민일보'], ['seoul.co.kr', '서울신문'], ['munhwa.com', '문화일보'],
   ['sbs.co.kr', 'SBS'], ['kbs.co.kr', 'KBS'], ['imbc.com', 'MBC'], ['ytn.co.kr', 'YTN'], ['jtbc.co.kr', 'JTBC'],
+  ['yonhapinfomax.co.kr', '연합인포맥스'], ['etoday.co.kr', '이투데이'], ['ddaily.co.kr', '디지털데일리'], ['sentv.co.kr', '서울경제TV'],
+  ['g-enews.com', '글로벌이코노믹'], ['wowtv.co.kr', '한국경제TV'], ['mtn.co.kr', '머니투데이방송'], ['daum.net', '다음뉴스'],
   ['reuters.com', 'Reuters'], ['bloomberg.com', 'Bloomberg'], ['wsj.com', 'WSJ'], ['ft.com', 'FT'],
 ];
+
+const ALIASES: Record<string, string> = { chosunbiz: '조선비즈', 'chosun biz': '조선비즈', yonhap: '연합뉴스', 'the elec': '디일렉' };
+
+/**
+ * Display name for an outlet: domain-like names ("yna.co.kr", stored before
+ * this mapping existed) become outlet names; known English names are
+ * translated; anything else is kept as given.
+ */
+export function outletName(name: string): string {
+  const trimmed = name.trim();
+  if (/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(trimmed)) return outletFromUrl(`https://${trimmed}`) ?? trimmed;
+  return ALIASES[trimmed.toLowerCase()] ?? trimmed;
+}
 
 export function outletFromUrl(url: string): string | null {
   let host: string;
@@ -112,7 +127,15 @@ export async function fetchNaverNews(options: {
       headers: { 'X-Naver-Client-Id': options.clientId, 'X-Naver-Client-Secret': options.clientSecret },
       signal: AbortSignal.timeout(20_000),
     });
-    if (!response.ok) throw new Error(`NAVER_NEWS_HTTP_${response.status}`);
+    if (!response.ok) {
+      // Naver's error body carries a code (e.g. 024 = authentication failed); it holds no secrets.
+      const detail = await response.json().then((b: unknown) => {
+        if (b === null || typeof b !== 'object') return '';
+        const { errorCode, errorMessage } = b as { errorCode?: unknown; errorMessage?: unknown };
+        return `${String(errorCode ?? '')} ${String(errorMessage ?? '')}`.trim();
+      }, () => '');
+      throw new Error(`NAVER_NEWS_HTTP_${response.status}${detail ? `:${detail.slice(0, 120)}` : ''}`);
+    }
     const body = (await response.json()) as unknown;
     all.push(...parseNaverNews(body, (options.now ?? (() => new Date()))()));
     // Page on the raw row count: dropping a malformed row must not end paging early.
@@ -141,10 +164,12 @@ export function parseRss(xml: string, sourceId: string, retrievedAt: Date, defau
     const sourceName = plainText(tag(block, 'source') ?? '');
     const publishedAt = isoFromDate(plainText(tag(block, 'pubDate') ?? ''));
     if (sourceName && title.endsWith(` - ${sourceName}`)) title = title.slice(0, -(sourceName.length + 3)).trim();
+    // Google sometimes names the outlet by its domain; map it to the outlet name.
+    const named = sourceName ? outletName(sourceName) : '';
     if (!url || !title || !publishedAt) continue;
     items.push({
       url, title, publishedAt, source: sourceId, retrievedAt: retrievedAt.toISOString(),
-      publisher: sourceName || defaultPublisher || outletFromUrl(url) || '알 수 없음',
+      publisher: named || defaultPublisher || outletFromUrl(url) || '알 수 없음',
     });
   }
   return items;
