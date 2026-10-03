@@ -3,6 +3,7 @@
 // (assets/lightweight-charts.js); if it fails to load, a static SVG stays.
 
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
+import type { TechnicalSummary } from '../analysis/technicals.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 
@@ -66,15 +67,25 @@ table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;colo
 td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}td a{text-decoration:none;font-weight:500}td a:hover{text-decoration:underline}
 .why{color:var(--muted);font-size:13px;margin-top:2px}.badge{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;white-space:nowrap}
 .b-HIGH{background:#fde8e6;color:#b4232a}.b-MEDIUM{background:#fff3dc;color:var(--warn)}.b-LOW{background:#eef1f0;color:var(--muted)}.b-new{background:var(--pill);color:var(--pill-fg);margin-left:6px}
-.table-wrap{overflow-x:auto}.nowrap{white-space:nowrap}.m-date{display:none;color:var(--muted);font-size:12px}
+.table-wrap{overflow-x:auto}
+.grid-signal{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;margin-bottom:16px}
+.signal{text-align:center}.gauge{width:100%;max-width:260px;display:block;margin:0 auto}.signal-label{font-size:24px;font-weight:700;margin:4px 0}
+.reason{margin:6px 0;font-size:14px}.tally{color:var(--muted);font-size:13px}.fine{color:var(--muted);font-size:11px;margin:10px 0 0}
+.moms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.mom{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.mom .k{color:var(--muted);font-size:12px}.mom .v{font-size:18px;font-weight:700;margin:2px 0}
+.gbars{display:grid;gap:12px;margin-top:16px}.gtitle{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+.track{display:flex;height:12px;border-radius:999px;overflow:hidden;background:#eef1f0;gap:2px}.track i{display:block;height:100%}
+.track i.v-BULLISH{background:#e5484d}.track i.v-BEARISH{background:#3b7be0}.track i.v-NEUTRAL{background:#c4cbc9}.track i.b-LOW{background:#e6eceb}
+.votes{margin-top:14px}.votes td{padding:8px}.votes summary{cursor:pointer;color:var(--teal);font-weight:600;font-size:14px}.votes table{margin-top:8px}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}.v-BULLISH{background:#fde8e6;color:#b4232a}.v-BEARISH{background:#e3ecfb;color:#1d4fa3}.v-NEUTRAL{background:#eef1f0;color:var(--muted)}.nowrap{white-space:nowrap}.m-date{display:none;color:var(--muted);font-size:12px}
 footer{margin-top:28px;color:var(--muted);font-size:12px}
-@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:820px){.app{grid-template-columns:minmax(0,1fr);padding:0;gap:0}
 .side{position:static;height:auto;border-radius:0;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;flex-wrap:wrap}
 .side .foot{display:none}.nav{flex-direction:row;gap:2px;overflow-x:auto}.nav a{padding:8px 12px;font-size:13px;white-space:nowrap}.nav a svg{display:none}
 main{border-radius:0;padding:16px 16px 32px}h1{font-size:22px}.kpis{gap:10px}.card{padding:14px}.kpi .value{font-size:18px}#chart{height:280px}
 .col-filer,.col-cat,.col-date{display:none}.m-date{display:block}
-.kpi .ico{display:none}.kpi .value{font-size:17px;white-space:nowrap}.kpi .hint{margin-top:8px;font-size:12px}.stamp{text-align:left}}`;
+.kpi .ico{display:none}.moms{gap:8px}.mom{padding:10px}.mom .v{font-size:15px}.votes .why{display:none}.kpi .value{font-size:17px;white-space:nowrap}.kpi .hint{margin-top:8px;font-size:12px}.stamp{text-align:left}}`;
 
 function shell(active: 'today' | 'archive', base: string, title: string, body: string, scripts = '', filingsHref = '#filings'): string {
   const nav = [
@@ -89,6 +100,68 @@ function shell(active: 'today' | 'archive', base: string, title: string, body: s
 <nav class="nav">${nav.map((n) => `<a href="${n.href}"${n.key === active ? ' class="active" aria-current="page"' : ''}>${n.icon}<span>${n.label}</span></a>`).join('')}</nav>
 <div class="foot">공개 데이터로 만든 리서치 리포트예요. 투자 권유가 아니에요.</div></aside>
 <main>${body}</main></div>${scripts}</body></html>`;
+}
+
+
+// Bearish (blue, left) → bullish (red, right): Korean market colours.
+const GAUGE_COLORS = ['#1d4fa3', '#3b7be0', '#8fb3ec', '#c4cbc9', '#f0a0a3', '#e5484d', '#a8262b'];
+const VOTE_LABEL = { BULLISH: '강세', NEUTRAL: '중립', BEARISH: '약세' } as const;
+
+function gaugeSvg(t: TechnicalSummary | undefined): string {
+  const cx = 110, cy = 104, r = 84;
+  const point = (deg: number, radius = r) => [cx + radius * Math.cos((deg * Math.PI) / 180), cy - radius * Math.sin((deg * Math.PI) / 180)] as const;
+  // Segments follow the level boundaries of levelOf, so the needle always sits in the labelled segment.
+  const bounds = [-1, -0.6, -0.3, -0.1, 0.1, 0.3, 0.6, 1];
+  const angle = (score: number) => 180 - ((score + 1) / 2) * 180;
+  const gap = 1.5;
+  const arcs = GAUGE_COLORS.map((color, i) => {
+    const from = angle(bounds[i]!) - (i ? gap : 0), to = angle(bounds[i + 1]!) + (i < 6 ? gap : 0);
+    const [x1, y1] = point(from), [x2, y2] = point(to);
+    return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${color}" stroke-width="12" fill="none" stroke-linecap="butt"/>`;
+  }).join('');
+  const needle = t && t.score !== null
+    ? (() => {
+        const deg = angle(t.score);
+        const [x, y] = point(deg, r - 22), [bx1, by1] = point(deg + 90, 6), [bx2, by2] = point(deg - 90, 6);
+        return `<path d="M${bx1.toFixed(1)} ${by1.toFixed(1)} L${x.toFixed(1)} ${y.toFixed(1)} L${bx2.toFixed(1)} ${by2.toFixed(1)} Z" fill="#18201f"/><circle cx="${cx}" cy="${cy}" r="7" fill="#18201f"/>`;
+      })()
+    : `<circle cx="${cx}" cy="${cy}" r="7" fill="#c4cbc9"/>`;
+  return `<svg viewBox="0 0 220 118" class="gauge" role="img" aria-label="기술적 신호 ${escape(t?.label ?? '없음')}">${arcs}${needle}
+<text x="22" y="117" font-size="10" fill="#6a7673">약세</text><text x="198" y="117" font-size="10" fill="#6a7673" text-anchor="end">강세</text></svg>`;
+}
+
+function groupBars(t: TechnicalSummary): string {
+  const bar = (group: 'MA' | 'OSC', title: string) => {
+    const votes = t.votes.filter((v) => v.group === group);
+    const n = votes.length;
+    const count = (vote: string | null) => votes.filter((v) => v.vote === vote).length;
+    const parts: [string, number, string][] = [['v-BEARISH', count('BEARISH'), '약세'], ['v-NEUTRAL', count('NEUTRAL'), '중립'], ['v-BULLISH', count('BULLISH'), '강세'], ['b-LOW', count(null), '계산 불가']];
+    return `<div class="gbar"><div class="gtitle"><span>${title}</span><span>${parts.filter(([, c]) => c).map(([, c, l]) => `${l} ${c}`).join(' · ')}</span></div>
+<div class="track">${parts.filter(([, c]) => c).map(([cls, c, l]) => `<i class="${cls}" style="width:${((c / n) * 100).toFixed(1)}%" title="${l} ${c}"></i>`).join('')}</div></div>`;
+  };
+  return `<div class="gbars">${bar('MA', `이동평균 ${t.votes.filter((v) => v.group === 'MA').length}개`)}${bar('OSC', `오실레이터 ${t.votes.filter((v) => v.group === 'OSC').length}개`)}</div>`;
+}
+
+function signalSection(report: DailyReport): string {
+  const t = report.technicals;
+  if (!t) return '';
+  const tone = t.score === null ? '' : t.score >= 0.1 ? 'up' : t.score <= -0.1 ? 'down' : '';
+  const trendMark = { UP: '▲', FLAT: '■', DOWN: '▼' } as const;
+  const trendWord = { UP: '상승', FLAT: '보합', DOWN: '하락' } as const;
+  const momentum = (report.momentum ?? []).map((m) => `<div class="mom"><div class="k">${escape(m.label)}</div>
+<div class="v ${m.trend === 'UP' ? 'up' : m.trend === 'DOWN' ? 'down' : ''}">${m.trend ? `${trendMark[m.trend]} ${trendWord[m.trend]}` : '—'}</div>
+<div class="k">${m.returnPct === null ? '기록 부족' : pct(m.returnPct)} · ${m.days}일</div></div>`).join('');
+  const rows = t.votes.map((v) => `<tr><td>${escape(v.label)}</td><td class="num">${v.value === null ? '—' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
+<td>${v.vote ? `<span class="badge v-${v.vote}">${VOTE_LABEL[v.vote]}</span>` : '<span class="badge b-LOW">계산 불가</span>'}</td><td class="why">${escape(v.rule)}</td></tr>`).join('');
+  return `<div class="grid-signal"><div class="card signal"><div class="head"><h2>기술적 신호</h2><span class="sub" style="margin:0">${escape(t.sessionDate)} 종가 기준</span></div>
+${gaugeSvg(t)}<div class="signal-label ${tone}">${escape(t.label)}</div>
+<p class="reason">${escape(report.technicalReason ?? '')}</p>
+<div class="tally">강세 ${t.counts.bullish} · 중립 ${t.counts.neutral} · 약세 ${t.counts.bearish}${t.counts.abstained ? ` · 계산 불가 ${t.counts.abstained}` : ''}</div>
+<p class="fine">기술적 지표 ${t.votes.length}개의 요약이에요. 오를 확률이 아니고, 투자 권유가 아니에요.</p></div>
+<div class="card"><div class="head"><h2>모멘텀</h2></div><div class="moms">${momentum}</div>
+${groupBars(t)}
+<p class="fine" style="margin:8px 0 0">단기 5거래일 ±2%, 중기 20거래일 ±5%, 장기 120거래일 ±10% 안이면 보합이에요.</p>
+<details class="votes" id="votes"><summary>지표별 투표 보기</summary><div class="table-wrap"><table><thead><tr><th>지표</th><th>값</th><th>투표</th><th class="why">규칙</th></tr></thead><tbody>${rows}</tbody></table></div></details></div></div>`;
 }
 
 function kpi(icon: string, color: string, label: string, value: string, valueTone: string, hint: string): string {
@@ -240,6 +313,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const body = `<div class="top"><div class="ticker">${escape(report.name)} <span>${escape(report.symbol)} · KOSPI</span></div>
 <div class="stamp">${escape(report.date)} 리포트<br>생성 ${escape(report.generatedAt.replace('T', ' ').slice(0, 16))} UTC</div></div>
 <h1>${escape(report.name)} 일일 리포트</h1><p class="sub">${escape(report.headline)}</p>
+${signalSection(report)}
 ${kpis(report)}
 <div class="grid2">${chart.html}${mixCard(report.recentFilings ?? report.filings)}</div>
 <div class="grid-eq"><div class="card"><div class="head"><h2>오늘의 요약</h2></div><p class="headline">${escape(report.headline)}</p>${notes}</div>

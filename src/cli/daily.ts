@@ -44,7 +44,7 @@ export async function runDaily(options: {
   const monthAgo = kstParts(new Date(now.getTime() - 31 * 24 * 60 * 60_000));
   const fetchOptions = { now: clock, ...(options.fetch ? { fetch: options.fetch } : {}) };
 
-  const bars = await fetchNaverDailyBars(SYMBOL, 120, fetchOptions);
+  const bars = await fetchNaverDailyBars(SYMBOL, 250, fetchOptions);
   const filings = await fetchDartFilings({ apiKey: options.apiKey, corpCode: SK_HYNIX_CORP_CODE, from: monthAgo.compact, to: today.compact, ...fetchOptions });
   const addedBars = await appendNew(pricePath, bars, priceKey);
   const addedFilings = await appendNew(filingPath, filings, filingKey);

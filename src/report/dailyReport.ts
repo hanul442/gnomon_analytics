@@ -1,6 +1,7 @@
 // Builds one day's report from what was known at `generatedAt`. Pure: no I/O.
 
 import type { Disclosure, PriceBar } from '../types.js';
+import { horizonMomentum, summarizeTechnicals, technicalReason, type HorizonMomentum, type TechnicalSummary } from '../analysis/technicals.js';
 import { readFilingTitle, type Importance } from './classify.js';
 
 export const REPORT_SCHEMA = 'gnm.daily-report.v0';
@@ -49,6 +50,12 @@ export interface DailyReport {
   recentFilings?: ReportedFiling[];
   /** What changed since the previous report. */
   changes?: string[];
+  /** Technical signal summary of the last session (docs/DESIGN.md §4.2). */
+  technicals?: TechnicalSummary;
+  /** One sentence explaining `technicals`. */
+  technicalReason?: string;
+  /** Short / mid / long horizon returns of the last session. */
+  momentum?: HorizonMomentum[];
   /** Daily bars up to and including `date`, oldest first, for the interactive chart. */
   recentBars?: { date: string; open: number; high: number; low: number; close: number; volume: number }[];
   /** Closes up to and including `date`, oldest first, for the chart. */
@@ -182,6 +189,11 @@ export function buildDailyReport(input: {
     recentCloses: history.slice(-130).map((bar) => ({ date: bar.date, close: bar.close })),
     sources: [...input.sources],
   };
+  if (history.length) {
+    report.technicals = summarizeTechnicals(history);
+    report.technicalReason = technicalReason(report.technicals);
+    report.momentum = horizonMomentum(history);
+  }
   report.changes = describeChanges(input.previous ?? null, report);
   return report;
 }
@@ -203,6 +215,8 @@ export function describeChanges(previous: DailyReport | null, current: DailyRepo
   } else if (now) {
     out.push(`이전 리포트(${previous.date})에는 가격이 없었어요. ${now.sessionDate} 종가는 ${won(now.close)}이에요.`);
   }
+  const levelBefore = previous.technicals?.label, levelNow = current.technicals?.label;
+  if (levelBefore && levelNow && levelBefore !== levelNow) out.push(`기술적 신호: ${levelBefore} → ${levelNow}`);
   if (current.filings.length) {
     const top = current.filings.filter((f) => f.importance === 'HIGH').slice(0, 2).map((f) => f.title);
     out.push(`새 공시 ${current.filings.length}건${top.length ? `: ${top.join(', ')}` : ''}.`);
