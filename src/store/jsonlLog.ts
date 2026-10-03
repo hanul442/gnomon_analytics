@@ -68,3 +68,24 @@ export function asOf<T extends Versioned>(records: readonly T[], keyOf: (record:
   }
   return [...result.values()];
 }
+
+/**
+ * Appends records whose key has never been stored (first seen wins). For
+ * logs such as news where the same item arrives from several sources and a
+ * later sighting adds nothing.
+ */
+export async function appendUnseen<T>(path: string, incoming: readonly T[], keyOf: (record: T) => string): Promise<T[]> {
+  const seen = new Set((await readLog<T>(path)).map(keyOf));
+  const added: T[] = [];
+  for (const record of incoming) {
+    const key = keyOf(record);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    added.push(record);
+  }
+  if (added.length) {
+    await mkdir(dirname(path), { recursive: true });
+    await appendFile(path, added.map((record) => `${JSON.stringify(record)}\n`).join(''), 'utf8');
+  }
+  return added;
+}

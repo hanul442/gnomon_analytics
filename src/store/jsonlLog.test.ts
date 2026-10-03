@@ -3,7 +3,7 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { appendNew, asOf, readLog } from './jsonlLog.js';
+import { appendNew, appendUnseen, asOf, readLog } from './jsonlLog.js';
 
 type Rec = { key: string; value: number; retrievedAt: string };
 const keyOf = (r: Rec) => r.key;
@@ -26,4 +26,12 @@ test('missing log is empty; a corrupt line is an error', async () => {
   await writeFile(join(dir, 'bad.jsonl'), '{"ok":1}\n{oops\n');
   await assert.rejects(readLog(join(dir, 'bad.jsonl')), /CORRUPT_LOG_LINE:.*:2/);
   assert.equal(await readFile(join(dir, 'bad.jsonl'), 'utf8'), '{"ok":1}\n{oops\n');
+});
+
+test('appendUnseen keeps the first sighting of each key', async () => {
+  const path = join(await mkdtemp(join(tmpdir(), 'gnm-')), 'news.jsonl');
+  const a = { key: 'u1', value: 1, retrievedAt: '2026-10-01T00:00:00Z' };
+  assert.equal((await appendUnseen<Rec>(path, [a, { ...a, value: 2 }], keyOf)).length, 1);
+  assert.equal((await appendUnseen<Rec>(path, [{ ...a, value: 3 }, { key: 'u2', value: 1, retrievedAt: a.retrievedAt }], keyOf)).length, 1);
+  assert.deepEqual((await readLog<Rec>(path)).map((r) => [r.key, r.value]), [['u1', 1], ['u2', 1]]);
 });

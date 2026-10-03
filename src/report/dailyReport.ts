@@ -1,6 +1,7 @@
 // Builds one day's report from what was known at `generatedAt`. Pure: no I/O.
 
-import type { Disclosure, PriceBar } from '../types.js';
+import type { Disclosure, NewsItem, PriceBar } from '../types.js';
+import { clusterNews, type NewsCluster } from '../analysis/news.js';
 import { horizonMomentum, summarizeTechnicals, technicalReason, type HorizonMomentum, type TechnicalSummary } from '../analysis/technicals.js';
 import { readFilingTitle, type Importance } from './classify.js';
 
@@ -56,11 +57,27 @@ export interface DailyReport {
   technicalReason?: string;
   /** Short / mid / long horizon returns of the last session. */
   momentum?: HorizonMomentum[];
+  /** News stories of the last 7 days known at generation (docs/DESIGN.md §4.3). */
+  news?: NewsSection;
   /** Daily bars up to and including `date`, oldest first, for the interactive chart. */
   recentBars?: { date: string; open: number; high: number; low: number; close: number; volume: number }[];
   /** Closes up to and including `date`, oldest first, for the chart. */
   recentCloses: { date: string; close: number }[];
   sources: string[];
+}
+
+export interface NewsSourceStatus {
+  source: string;
+  ok: boolean;
+  count: number;
+  error?: string;
+}
+
+export interface NewsSection {
+  clusters: NewsCluster[];
+  /** Cluster ids with at least one article not shown in an earlier report. */
+  newIds: string[];
+  status: NewsSourceStatus[];
 }
 
 const IMPORTANCE_ORDER: Record<Importance, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
@@ -128,6 +145,9 @@ export function buildDailyReport(input: {
   previouslyReported?: ReadonlySet<string>;
   /** The latest earlier report, for "what changed since yesterday". */
   previous?: DailyReport | null;
+  /** News articles known at generatedAt, and how each source fared this run. */
+  news?: readonly NewsItem[];
+  newsStatus?: readonly NewsSourceStatus[];
 }): DailyReport {
   const history = [...input.bars]
     .filter((bar) => bar.symbol === input.symbol && bar.date <= input.date)
@@ -189,6 +209,12 @@ export function buildDailyReport(input: {
     recentCloses: history.slice(-130).map((bar) => ({ date: bar.date, close: bar.close })),
     sources: [...input.sources],
   };
+  if (input.news || input.newsStatus) report.news = buildNewsSection(input.news ?? [], input.newsStatus ?? [], input.generatedAt, input.previous ?? null);
+  if (report.news) {
+    const fresh = report.news.clusters.filter((c) => report.news!.newIds.includes(c.id));
+    const important = fresh.filter((c) => c.importance === 'HIGH').length;
+    if (fresh.length) report.headline = `${report.headline.slice(0, -1)}. 새 뉴스 ${fresh.length}건${important ? `(중요 ${important}건)` : ''}.`;
+  }
   if (history.length) {
     report.technicals = summarizeTechnicals(history);
     report.technicalReason = technicalReason(report.technicals);
@@ -215,6 +241,11 @@ export function describeChanges(previous: DailyReport | null, current: DailyRepo
   } else if (now) {
     out.push(`이전 리포트(${previous.date})에는 가격이 없었어요. ${now.sessionDate} 종가는 ${won(now.close)}이에요.`);
   }
+  if (current.news) {
+    const fresh = current.news.clusters.filter((c) => current.news!.newIds.includes(c.id));
+    const top = fresh.filter((c) => c.importance === 'HIGH').slice(0, 2).map((c) => c.title);
+    out.push(fresh.length ? `새 뉴스 ${fresh.length}건${top.length ? `: ${top.join(', ')}` : ''}.` : '이전 리포트 이후 새 뉴스는 없어요.');
+  }
   const levelBefore = previous.technicals?.label, levelNow = current.technicals?.label;
   if (levelBefore && levelNow && levelBefore !== levelNow) out.push(`기술적 신호: ${levelBefore} → ${levelNow}`);
   if (current.filings.length) {
@@ -229,4 +260,27 @@ export function describeChanges(previous: DailyReport | null, current: DailyRepo
     for (const note of previous.notes) if (!current.notes.includes(note)) out.push(`사라진 신호: ${note}`);
   }
   return out;
+}
+
+const NEWS_WINDOW_MS = 7 * 24 * 60 * 60_000;
+/** Stories kept in a report. Only kept stories count as shown for the next report. */
+export const MAX_NEWS_STORIES = 30;
+
+/** Stories of the last 7 days; "new" means an article earlier reports did not show. */
+export function buildNewsSection(items: readonly NewsItem[], status: readonly NewsSourceStatus[], generatedAt: Date, previous: DailyReport | null): NewsSection {
+  const cutoff = generatedAt.getTime();
+  const recent = items.filter((i) => {
+    const at = Date.parse(i.publishedAt);
+    return at <= cutoff && at > cutoff - NEWS_WINDOW_MS;
+  });
+  const all = clusterNews(recent);
+  const seen = new Set((previous?.news?.clusters ?? []).flatMap((c) => c.articles.map((a) => a.url)));
+  const isNew = (c: (typeof all)[number]) => (previous?.news
+    ? c.articles.some((a) => !seen.has(a.url))
+    // No earlier news to compare with: the last 24 hours count as new.
+    : Date.parse(c.lastAt) > cutoff - 24 * 60 * 60_000);
+  // New stories first, then the rest, each in importance/recency order; stories beyond the cap are not kept.
+  const clusters = [...all.filter(isNew), ...all.filter((c) => !isNew(c))].slice(0, MAX_NEWS_STORIES);
+  const newIds = clusters.filter(isNew).map((c) => c.id);
+  return { clusters, newIds, status: [...status] };
 }

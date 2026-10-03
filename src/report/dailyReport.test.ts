@@ -94,3 +94,18 @@ test('a filing that reached DART after the previous report still appears once', 
   const afterEmpty = buildDailyReport({ ...base, date: '2026-10-02', bars: bars([300000, 301000, 302000], 30), disclosures: [late], previouslyReported: new Set() });
   assert.equal(afterEmpty.filings.length, 1);
 });
+
+test('only stories kept in a report count as shown, and new ones are kept first', async () => {
+  const { MAX_NEWS_STORIES } = await import('./dailyReport.js');
+  const at = (h: number) => new Date(Date.parse('2026-10-02T00:00:00Z') + h * 3600_000).toISOString();
+  const topics = ['반도체', '자율주행', '바이오', '조선', '원전', '방산', '게임', '항공', '철강', '화학', '배터리', '통신', '은행', '보험', '건설', '유통', '식품', '의류', '화장품', '여행', '호텔', '영화', '음악', '출판', '교육', '의료', '농업', '수산', '임업', '광업', '해운', '물류', '부동산', '가구', '완구'];
+  const items = topics.map((t, i) => ({ url: `https://n.kr/${i}`, title: `SK하이닉스 ${t}`, publisher: '어느매체', publishedAt: at(i), source: 'x', retrievedAt: at(i) }));
+  const first = buildDailyReport({ ...base, date: '2026-10-03', generatedAt: new Date(at(40)), bars: [], disclosures: [], news: items, newsStatus: [] });
+  assert.equal(first.news?.clusters.length, MAX_NEWS_STORIES);
+  const shown = new Set(first.news!.clusters.map((c) => c.url));
+  const next = buildDailyReport({ ...base, date: '2026-10-04', generatedAt: new Date(at(41)), bars: [], disclosures: [], news: items, newsStatus: [], previous: first });
+  // Stories that did not fit yesterday are new today and come first.
+  const unseen = items.filter((i) => !shown.has(i.url)).map((i) => i.url);
+  assert.ok(unseen.length > 0);
+  assert.deepEqual(next.news?.newIds.slice(0, unseen.length).sort(), [...unseen].sort());
+});
