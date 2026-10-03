@@ -30,3 +30,15 @@ export interface Disclosure {
   source: string;
   retrievedAt: string;
 }
+
+/** One news article: headline, outlet and link only — never the body. */
+export interface NewsItem {
+  /** Canonical article URL (publisher link when known); the record key. */
+  url: string;
+  title: string;
+  publisher: string;
+  /** ISO UTC; when the outlet published it. */
+  publishedAt: string;
+  source: string;
+  retrievedAt: string;
+}

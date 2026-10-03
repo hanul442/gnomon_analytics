@@ -68,6 +68,9 @@ td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}td a{
 .why{color:var(--muted);font-size:13px;margin-top:2px}.badge{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;white-space:nowrap}
 .b-HIGH{background:#fde8e6;color:#b4232a}.b-MEDIUM{background:#fff3dc;color:var(--warn)}.b-LOW{background:#eef1f0;color:var(--muted)}.b-new{background:var(--pill);color:var(--pill-fg);margin-left:6px}
 .table-wrap{overflow-x:auto}
+.story{padding:12px 0;border-top:1px solid var(--line)}.story:first-of-type{border-top:0}.story-title{font-weight:600;margin:4px 0 2px}.story-title a{text-decoration:none}.story-title a:hover{text-decoration:underline}
+.tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px}.more summary{cursor:pointer;color:var(--teal);font-size:13px;margin-top:4px}
+.warn{background:#fff3dc;color:#7a4a00;border-radius:10px;padding:8px 12px;font-size:13px}
 .grid-signal{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;margin-bottom:16px}
 .signal{text-align:center}.gauge{width:100%;max-width:260px;display:block;margin:0 auto}.signal-label{font-size:24px;font-weight:700;margin:4px 0}
 .reason{margin:6px 0;font-size:14px}.tally{color:var(--muted);font-size:13px}.fine{color:var(--muted);font-size:11px;margin:10px 0 0}
@@ -91,6 +94,7 @@ function shell(active: 'today' | 'archive', base: string, title: string, body: s
   const nav = [
     { key: 'today', href: `${base}index.html#latest`, icon: ICON.dashboard, label: '오늘 리포트' },
     { key: 'archive', href: `${base}index.html#archive`, icon: ICON.archive, label: '지난 리포트' },
+    { key: 'news', href: filingsHref.replace('#filings', '#news'), icon: ICON.source, label: '뉴스' },
     { key: 'filings', href: filingsHref, icon: ICON.filing, label: '공시' },
     { key: 'sources', href: '#sources', icon: ICON.source, label: '데이터 출처' },
   ];
@@ -209,13 +213,15 @@ function chartCard(report: DailyReport, base: string): { html: string; script: s
   const bars = barsOf(report);
   const hasOhlc = Boolean(report.recentBars?.length);
   const data = JSON.stringify(bars).replace(/</g, '\\u003c');
+  const markers = JSON.stringify(chartMarkers(report)).replace(/</g, '\\u003c');
   const html = `<div class="card"><div class="head"><h2>주가 차트</h2>
 <div style="display:flex;gap:8px;flex-wrap:wrap"><div class="seg" role="group" aria-label="기간">
 <button type="button" data-range="21">1개월</button><button type="button" data-range="63" aria-pressed="true">3개월</button><button type="button" data-range="126">6개월</button></div>
 ${hasOhlc ? '<div class="seg" role="group" aria-label="차트 종류"><button type="button" data-kind="candle" aria-pressed="true">캔들</button><button type="button" data-kind="line">라인</button></div>' : ''}</div></div>
 <div class="legend-line" id="legend">${bars.length ? `${escape(bars.at(-1)!.date)} 종가 ${escape(won(bars.at(-1)!.close))}` : ''}</div>
-<div id="chart">${fallbackSvg(bars)}</div></div>`;
+<div id="chart">${fallbackSvg(bars)}</div><p class="fine">■ 공시 · ● 뉴스 (보통 이상 중요도)</p></div>`;
   const script = `<script type="application/json" id="bars">${data}</script>
+<script type="application/json" id="markers">${markers}</script>
 <script src="${base}${CHART_ASSET}" defer></script>
 <script>
 window.addEventListener('DOMContentLoaded', function () {
@@ -244,6 +250,17 @@ window.addEventListener('DOMContentLoaded', function () {
   var hasOhlc = ${hasOhlc ? 'true' : 'false'};
   if (!hasOhlc) { candle.applyOptions({ visible: false }); area.applyOptions({ visible: true }); }
   var byDate = {}; bars.forEach(function (b) { byDate[b.date] = b; });
+  // Filings and important news as markers, moved to the next trading day when filed on a holiday.
+  var marks = JSON.parse(document.getElementById('markers').textContent), seen = {};
+  var snapped = marks.map(function (m) {
+    var bar = bars.find(function (b) { return b.date >= m.date; });
+    return bar ? { time: bar.date, kind: m.kind } : null;
+  }).filter(function (m) { if (!m || seen[m.time + m.kind]) return false; seen[m.time + m.kind] = 1; return true; })
+    .sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; })
+    .map(function (m) { return m.kind === 'filing'
+      ? { time: m.time, position: 'aboveBar', color: '#7a4fb3', shape: 'square', text: '공시' }
+      : { time: m.time, position: 'belowBar', color: '#1f7a74', shape: 'circle', text: '뉴스' }; });
+  candle.setMarkers(snapped); area.setMarkers(snapped);
   var legend = document.getElementById('legend');
   var show = function (b) {
     if (!b) return;
@@ -305,6 +322,38 @@ ${recent.map((f) => `<tr><td class="col-date nowrap">${escape(f.filedDate)}</td>
 </tbody></table></div>`;
 }
 
+const kstDate = (iso: string) => new Date(Date.parse(iso) + 9 * 3600_000).toISOString().slice(0, 10);
+const kstTime = (iso: string) => new Date(Date.parse(iso) + 9 * 3600_000).toISOString().slice(5, 16).replace('T', ' ');
+const SOURCE_LABEL: Record<string, string> = { 'naver:news-search': '네이버 뉴스', 'google:news-rss': 'Google 뉴스', 'rss:mk-economy': '매일경제 RSS' };
+const TIER_LABEL = { OFFICIAL: '공식', WIRE_BIZ: '통신·경제지', GENERAL: '일반' } as const;
+
+function newsSection(report: DailyReport): string {
+  const news = report.news;
+  if (!news) return '';
+  const failed = news.status.filter((st) => !st.ok);
+  const statusLine = news.status.map((st) => `${SOURCE_LABEL[st.source] ?? st.source} ${st.ok ? `${st.count}건` : '실패'}`).join(' · ');
+  const warn = failed.length
+    ? `<p class="warn">일부 제한: ${failed.map((st) => escape(SOURCE_LABEL[st.source] ?? st.source)).join(', ')} 수집에 실패했어요. 이 소스의 기사는 빠져 있을 수 있어요.</p>` : '';
+  const fresh = new Set(news.newIds);
+  const rows = news.clusters.map((c) => {
+    const others = c.articles.filter((a) => a.url !== c.url);
+    return `<div class="story"><div><span class="badge b-${c.importance}">${IMPORTANCE_LABEL[c.importance]}</span> <span class="tag">${escape(c.category)}</span>${fresh.has(c.id) ? '<span class="badge b-new">새 뉴스</span>' : ''}</div>
+<div class="story-title"><a href="${escape(c.url)}" rel="noopener" target="_blank">${escape(c.title)}</a></div>
+<div class="why">${escape(c.publisher)} (${TIER_LABEL[c.tier]}) · ${escape(kstTime(c.firstAt))}${c.articles.length > 1 ? ` · 같은 내용 기사 ${c.articles.length}건` : ''}</div>
+${others.length ? `<details class="more"><summary>다른 기사 ${others.length}건</summary><ul class="plain">${others.map((a) => `<li><a href="${escape(a.url)}" rel="noopener" target="_blank">${escape(a.title)}</a> <span class="why">${escape(a.publisher)} · ${escape(kstTime(a.publishedAt))}</span></li>`).join('')}</ul></details>` : ''}</div>`;
+  }).join('');
+  return `<div class="card" id="news" style="margin-top:16px"><div class="head"><h2>뉴스</h2><span class="sub" style="margin:0">최근 7일 · ${news.clusters.length}개 이야기</span></div>
+${warn}${rows || '<p class="empty">최근 7일 동안 관련 뉴스가 없어요.</p>'}
+<p class="fine">제목·언론사·링크만 모아요(본문은 저장하지 않아요). 비슷한 제목의 기사는 하나의 이야기로 묶고, 기사 수가 많다고 더 중요하게 보지 않아요. 수집: ${escape(statusLine)}</p></div>`;
+}
+
+function chartMarkers(report: DailyReport): { date: string; kind: 'filing' | 'news'; text: string }[] {
+  const markers: { date: string; kind: 'filing' | 'news'; text: string }[] = [];
+  for (const f of report.recentFilings ?? report.filings) if (f.importance !== 'LOW') markers.push({ date: f.filedDate, kind: 'filing', text: f.title });
+  for (const c of report.news?.clusters ?? []) if (c.importance !== 'LOW') markers.push({ date: kstDate(c.firstAt), kind: 'news', text: c.title });
+  return markers;
+}
+
 export function renderReport(report: DailyReport, links: { index: string; base?: string }): string {
   const base = links.base ?? '../';
   const chart = chartCard(report, base);
@@ -318,6 +367,7 @@ ${kpis(report)}
 <div class="grid2">${chart.html}${mixCard(report.recentFilings ?? report.filings)}</div>
 <div class="grid-eq"><div class="card"><div class="head"><h2>오늘의 요약</h2></div><p class="headline">${escape(report.headline)}</p>${notes}</div>
 <div class="card"><div class="head"><h2>어제 대비 바뀐 점</h2></div>${changes}</div></div>
+${newsSection(report)}
 <div class="card" id="filings" style="margin-top:16px"><div class="head"><h2>공시</h2><span class="sub" style="margin:0">최근 30일 · DART 원문 링크</span></div>${filingsTable(report)}</div>
 <footer id="sources">데이터: Naver 금융 일봉(가격), OpenDART(공시) · 수집 기록은 고쳐 쓰지 않고 쌓아요 · 투자 권유가 아니에요 · <a href="${escape(links.index)}">지난 리포트</a></footer>`;
   return shell('today', base, `${report.name} ${report.date} 일일 리포트 — GNM`, body, chart.script);

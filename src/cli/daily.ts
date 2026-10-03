@@ -12,8 +12,11 @@ import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
 import { CHART_ASSET, renderIndex, renderReport } from '../report/renderHtml.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE, SK_HYNIX_CORP_CODE } from '../sources/opendart.js';
-import { appendNew, asOf, readLog } from '../store/jsonlLog.js';
-import type { Disclosure, PriceBar } from '../types.js';
+import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
+import type { Disclosure, NewsItem, PriceBar } from '../types.js';
+import { isRelevant } from '../analysis/news.js';
+import type { NewsSourceStatus } from '../report/dailyReport.js';
+import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
 
 const SYMBOL = '000660';
 const NAME = 'SK하이닉스';
@@ -28,13 +31,42 @@ export function kstParts(at: Date): { date: string; compact: string; hour: numbe
 
 const priceKey = (bar: PriceBar) => `${bar.symbol}:${bar.date}`;
 const filingKey = (filing: Disclosure) => filing.receiptNo;
+const newsKey = (item: NewsItem) => item.url;
+const NEWS_QUERY = 'SK하이닉스';
+const MK_ECONOMY_RSS = 'https://www.mk.co.kr/rss/40300001/';
+
+async function collectNews(
+  options: { naver?: { clientId: string; clientSecret: string } },
+  fetchOptions: { now: () => Date; fetch?: typeof fetch },
+): Promise<{ items: NewsItem[]; status: NewsSourceStatus[] }> {
+  const jobs: [string, () => Promise<NewsItem[]>][] = [
+    [NAVER_NEWS_SOURCE, () => (options.naver?.clientId && options.naver.clientSecret
+      ? fetchNaverNews({ clientId: options.naver.clientId, clientSecret: options.naver.clientSecret, query: NEWS_QUERY, ...fetchOptions })
+      : Promise.reject(new Error('NAVER_API_KEY_MISSING')))],
+    [GOOGLE_NEWS_SOURCE, () => fetchRss(googleNewsSearchUrl(NEWS_QUERY), GOOGLE_NEWS_SOURCE, fetchOptions)],
+    ['rss:mk-economy', () => fetchRss(MK_ECONOMY_RSS, 'rss:mk-economy', { ...fetchOptions, publisher: '매일경제' })],
+  ];
+  const items: NewsItem[] = [];
+  const status: NewsSourceStatus[] = [];
+  for (const [source, run] of jobs) {
+    try {
+      const got = await run();
+      items.push(...got);
+      status.push({ source, ok: true, count: got.filter((n) => isRelevant(n.title)).length });
+    } catch (error) {
+      status.push({ source, ok: false, count: 0, error: error instanceof Error ? error.message.slice(0, 160) : 'UNKNOWN' });
+    }
+  }
+  return { items, status };
+}
 
 export async function runDaily(options: {
   root: string;
   now: Date;
   apiKey: string;
+  naver?: { clientId: string; clientSecret: string };
   fetch?: typeof fetch;
-}): Promise<{ addedBars: number; addedFilings: number; report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' }> {
+}): Promise<{ addedBars: number; addedFilings: number; addedNews: number; newsStatus: NewsSourceStatus[]; report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' }> {
   const { root, now } = options;
   const clock = () => now;
   const pricePath = join(root, 'data', 'prices', `${SYMBOL}.jsonl`);
@@ -48,6 +80,10 @@ export async function runDaily(options: {
   const filings = await fetchDartFilings({ apiKey: options.apiKey, corpCode: SK_HYNIX_CORP_CODE, from: monthAgo.compact, to: today.compact, ...fetchOptions });
   const addedBars = await appendNew(pricePath, bars, priceKey);
   const addedFilings = await appendNew(filingPath, filings, filingKey);
+  // News is best effort: a failed source is recorded and shown, never fatal.
+  const newsPath = join(root, 'data', 'news', `${SYMBOL}.jsonl`);
+  const { items: news, status: newsStatus } = await collectNews(options, fetchOptions);
+  const addedNews = await appendUnseen(newsPath, news.filter((n) => isRelevant(n.title)), newsKey);
 
   let report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' = 'NOT_SETTLED';
   const reportPath = join(reportDir, `${today.date}.json`);
@@ -64,6 +100,8 @@ export async function runDaily(options: {
         generatedAt: now,
         bars: asOf(await readLog<PriceBar>(pricePath), priceKey, now),
         disclosures: asOf(await readLog<Disclosure>(filingPath), filingKey, now),
+        news: asOf(await readLog<NewsItem>(newsPath), newsKey, now),
+        newsStatus,
         sources: [NAVER_PRICE_SOURCE, OPENDART_SOURCE],
         // The first report (no earlier ones) lists the past month's filings as context.
         previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))),
@@ -75,7 +113,7 @@ export async function runDaily(options: {
     }
   }
   await renderSite(root);
-  return { addedBars: addedBars.length, addedFilings: addedFilings.length, report };
+  return { addedBars: addedBars.length, addedFilings: addedFilings.length, addedNews: addedNews.length, newsStatus, report };
 }
 
 async function loadReports(reportDir: string): Promise<DailyReport[]> {
@@ -104,7 +142,10 @@ export async function renderSite(root: string): Promise<void> {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const rootFlag = process.argv.indexOf('--root');
   const root = rootFlag >= 0 ? process.argv[rootFlag + 1] ?? '.' : '.';
-  runDaily({ root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '' })
+  runDaily({
+    root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '',
+    naver: { clientId: process.env.NAVER_CLIENT_ID ?? '', clientSecret: process.env.NAVER_CLIENT_SECRET ?? '' },
+  })
     .then((result) => console.log(JSON.stringify(result)))
     .catch((error: unknown) => {
       console.error(error instanceof Error ? error.message : String(error));
