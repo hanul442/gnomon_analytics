@@ -37,12 +37,23 @@ test('a session report has price context, filings since the last session, and a 
   assert.ok(report.notes.some((n) => n.includes('평소 변동')));
 });
 
-test('a holiday report has no price and picks up filings since the previous session', () => {
+test('a holiday report keeps the last session price and picks up filings since then', () => {
   const report = buildDailyReport({ ...base, date: '2026-10-03', bars: bars([300000, 301000], 30), disclosures: [filing('주요사항보고서(유상증자결정)', '2026-10-02')] });
   assert.equal(report.status, 'NO_SESSION');
-  assert.equal(report.price, null);
+  assert.equal(report.price?.sessionDate, '2026-10-01');
+  assert.equal(report.price?.close, 301000);
   assert.equal(report.filings.length, 1);
-  assert.equal(report.headline, '2026-10-03에는 거래가 없었어요. 새 공시 1건(중요 1건).');
+  assert.equal(report.headline, '2026-10-03에는 거래가 없었어요. 마지막 거래일(2026-10-01) 종가는 301,000원이에요. 새 공시 1건(중요 1건).');
+});
+
+test('changes compare against the previous report', () => {
+  const first = buildDailyReport({ ...base, date: '2026-09-30', bars: bars([300000], 30), disclosures: [] });
+  assert.deepEqual(first.changes, ['첫 리포트예요. 다음 리포트부터 이전 리포트와 비교해요.']);
+  const second = buildDailyReport({ ...base, date: '2026-10-01', bars: bars([300000, 330000], 30), disclosures: [filing('주요사항보고서(자기주식취득결정)', '2026-10-01')], previous: first });
+  assert.equal(second.changes?.[0], '종가 300,000원 → 330,000원 (+10.00%, 2026-09-30 → 2026-10-01)');
+  assert.equal(second.changes?.[1], '새 공시 1건: 주요사항보고서(자기주식취득결정).');
+  const holiday = buildDailyReport({ ...base, date: '2026-10-02', bars: bars([300000, 330000], 30), disclosures: [], previous: second, previouslyReported: new Set(['20261002000001']) });
+  assert.equal(holiday.changes?.[0], '새 거래일이 없어서 가격은 이전 리포트와 같아요.');
 });
 
 test('future bars are never used', () => {

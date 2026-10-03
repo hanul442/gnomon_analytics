@@ -36,4 +36,5 @@ test('a settled run writes the report once and renders the site', async () => {
   assert.ok(page.includes('318,500원'));
   assert.ok(page.includes('자사주'));
   assert.match(await readFile(join(root, 'site', 'index.html'), 'utf8'), /2026-10-02/);
+  assert.match(await readFile(join(root, 'site', 'assets', 'lightweight-charts.js'), 'utf8'), /LightweightCharts/);
 });

@@ -5,10 +5,11 @@
 // Today's report is written only after 18:00 KST (the session is settled) and
 // never rewritten: if reports/<date>.json exists it is left as it is.
 
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
-import { renderIndex, renderReport } from '../report/renderHtml.js';
+import { CHART_ASSET, renderIndex, renderReport } from '../report/renderHtml.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE, SK_HYNIX_CORP_CODE } from '../sources/opendart.js';
 import { appendNew, asOf, readLog } from '../store/jsonlLog.js';
@@ -66,6 +67,7 @@ export async function runDaily(options: {
         sources: [NAVER_PRICE_SOURCE, OPENDART_SOURCE],
         // The first report (no earlier ones) lists the past month's filings as context.
         previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))),
+        previous: [...earlier].sort((a, b) => (a.date < b.date ? -1 : 1)).filter((r) => r.date < today.date).at(-1) ?? null,
       });
       await mkdir(reportDir, { recursive: true });
       await writeFile(reportPath, `${JSON.stringify(built, null, 2)}\n`, { flag: 'wx' });
@@ -91,6 +93,12 @@ export async function renderSite(root: string): Promise<void> {
     await writeFile(join(siteDir, 'reports', `${report.date}.html`), renderReport(report, { index: '../index.html' }));
   }
   await writeFile(join(siteDir, 'index.html'), renderIndex(reports));
+  // The chart library is served from the site itself, not a CDN.
+  // "exports" hides the standalone build; package.json is exported, so locate it from there.
+  const packageJson = createRequire(import.meta.url).resolve('lightweight-charts/package.json');
+  const library = join(dirname(packageJson), 'dist', 'lightweight-charts.standalone.production.js');
+  await mkdir(dirname(join(siteDir, CHART_ASSET)), { recursive: true });
+  await copyFile(library, join(siteDir, CHART_ASSET));
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

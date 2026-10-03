@@ -16,5 +16,8 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "dependencies": {
+    "lightweight-charts": "4.2.0"
   }
 }
