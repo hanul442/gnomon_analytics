@@ -17,7 +17,10 @@ import { fetchDartFilings, OPENDART_SOURCE, SK_HYNIX_CORP_CODE } from '../source
 import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
 import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { isRelevant } from '../analysis/news.js';
-import { collectMarketData } from './marketData.js';
+import { BENCHMARKS, collectMarketData, financeKey, flowKey, intradayKey, marketPaths, researchKey, snapshotKey } from './marketData.js';
+import { buildMarketSection } from '../report/marketSection.js';
+import { forecastKey, type PriceForecast } from '../analysis/valuation.js';
+import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
 
@@ -114,6 +117,23 @@ export async function runDaily(options: {
         previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))),
         previous: [...earlier].sort((a, b) => (a.date < b.date ? -1 : 1)).filter((r) => r.date < today.date).at(-1) ?? null,
       });
+      const mp = marketPaths(root, SYMBOL);
+      const forecastPath = join(root, 'data', 'forecasts', `${SYMBOL}.jsonl`);
+      built.market = buildMarketSection({
+        symbol: SYMBOL, date: today.date, generatedAt: now,
+        daily: asOf(await readLog<PriceBar>(pricePath), priceKey, now),
+        weekly: asOf(await readLog<PriceBar>(mp.weekly), priceKey, now),
+        intraday: asOf(await readLog<IntradaySession>(mp.intraday), intradayKey, now),
+        flows: asOf(await readLog<InvestorFlow>(mp.flows), flowKey, now),
+        snapshots: asOf(await readLog<StockSnapshot>(mp.snapshots), snapshotKey, now),
+        finance: asOf(await readLog<FinancePeriod>(mp.finance), financeKey, now),
+        research: asOf(await readLog<ResearchNote>(mp.research), researchKey, now),
+        benchmarks: await Promise.all(BENCHMARKS.map(async (b) => ({ ...b, bars: asOf(await readLog<PriceBar>(mp.daily(b.symbol)), priceKey, now) }))),
+        loggedForecasts: (await readLog<PriceForecast>(forecastPath)).filter((f) => f.madeAt <= now.toISOString()),
+        status: marketStatus,
+      });
+      // Forecasts are logged as made and never revised; a repeat of the same base session is skipped.
+      await appendUnseen(forecastPath, built.market.forecasts, forecastKey);
       // AI commentary never blocks the report: a failure is stored as status FAILED.
       built.commentary = await writeCommentary(built, {
         now: clock,

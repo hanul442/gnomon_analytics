@@ -1,5 +1,6 @@
 // Builds one day's report from what was known at `generatedAt`. Pure: no I/O.
 
+import type { MarketSection } from './marketSection.js';
 import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { clusterNews, type NewsCluster } from '../analysis/news.js';
 import type { Commentary } from '../analysis/commentary.js';
@@ -60,6 +61,8 @@ export interface DailyReport {
   momentum?: HorizonMomentum[];
   /** News stories of the last 7 days known at generation (docs/DESIGN.md §4.3). */
   news?: NewsSection;
+  /** Horizon gauges, fair value, forecasts, flows, valuation, financials (docs/DESIGN.md §5). */
+  market?: MarketSection;
   /** AI commentary for "왜?" (docs/DESIGN.md §4.4); written once with the report. */
   commentary?: Commentary;
   /** Daily bars up to and including `date`, oldest first, for the interactive chart. */

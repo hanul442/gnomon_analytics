@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { kstParts, runDaily } from './daily.js';
+import type { DailyReport } from '../report/dailyReport.js';
 
 const FEED = `<chartdata symbol="000660">
 <item data="20261001|309000|314000|308000|311000|2900000" />
@@ -47,6 +48,12 @@ test('a settled run writes the report once and renders the site', async () => {
   const first = await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, naver });
   assert.equal(first.report, 'WRITTEN');
   const stored = await readFile(join(root, 'reports', '2026-10-02.json'), 'utf8');
+  const market = (JSON.parse(stored) as DailyReport).market!;
+  assert.deepEqual(market.horizons.map((h) => h.label), ['초단기', '단기', '중기', '중장기', '장기']);
+  assert.equal(market.flows?.days.at(-1)?.foreignNet, -115492);
+  assert.equal(market.snapshot?.consensus?.targetPriceMean, 3276957);
+  assert.equal(market.quarters.at(-1)?.isEstimate, true);
+  assert.deepEqual(market.benchmarks.map((b) => b.name), ['코스피', '삼성전자']);
   const second = await runDaily({ root, now: new Date('2026-10-02T11:00:00Z'), apiKey: 'k', fetch: fakeFetch });
   assert.equal(second.report, 'EXISTS');
   assert.deepEqual([second.addedBars, second.addedFilings, second.addedNews], [0, 0, 0]);
