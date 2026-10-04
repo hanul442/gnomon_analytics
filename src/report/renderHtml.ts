@@ -204,6 +204,17 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .lk-ghost{display:flex;flex-direction:column;gap:7px;filter:blur(2px);opacity:.6}.lk-ghost i{display:block;height:9px;border-radius:5px;background:#dfe5ee}.lk-ghost i:nth-child(2){width:80%}.lk-ghost i:nth-child(3){width:55%}
 .sr-lock{color:var(--fg2)}
 @media (max-width:820px){#chart[style*="420px"]{height:320px!important}.stock-hero{grid-template-columns:minmax(0,1fr)}.btn-primary{width:100%;justify-content:center}.locked-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.locked{min-height:0}.locked p{font-size:12px}}
+@media (max-width:820px){
+.arena-gauges,.hz-row,.analyst-grid,.desk-grid,.why-grid,.locked-grid.swipe{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin-left:-14px;margin-right:-14px;padding:2px 14px 8px;scrollbar-width:none}
+.arena-gauges::-webkit-scrollbar,.hz-row::-webkit-scrollbar,.analyst-grid::-webkit-scrollbar,.desk-grid::-webkit-scrollbar,.why-grid::-webkit-scrollbar{display:none}
+.arena-gauges>*,.hz-row>*{flex:0 0 46%;scroll-snap-align:start}.analyst-grid>*,.why-grid>*{flex:0 0 86%;scroll-snap-align:start}.desk-grid>*{flex:0 0 72%;scroll-snap-align:start}
+.card .arena-gauges,.card .hz-row,.card .desk-grid,.card .why-grid{margin-left:-14px;margin-right:-14px}
+.chip-toggle,.seg button,.chips a{min-height:36px}table.compact{font-size:13px}table.compact td,table.compact th{padding:6px 5px}
+.block-head{flex-wrap:wrap;row-gap:2px}
+.stock-grid{grid-template-columns:minmax(0,1fr);gap:8px}.stock-card{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:2px;padding:12px 14px}
+.stock-card .sc-top{grid-column:1;display:block}.stock-card .sc-top .spark{display:none}.sc-name{font-size:16px}.stock-card .sc-price{grid-column:2;grid-row:1;flex-direction:column;align-items:flex-end;gap:0}.sc-price b{font-size:17px}
+.stock-card>.muted.small{display:none}.sc-signal{grid-column:1/3;border-top:0;padding-top:0;margin:0}.sc-line{display:none}.sc-why{grid-column:1/3;margin:0;padding-left:16px}.sc-why li:nth-child(n+2){display:none}.sc-go{display:none}
+}
 /* kpis */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi .row{display:flex;align-items:center;gap:12px}
 .kpi .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--accent-strong);background:var(--accent-soft)!important;flex:none}.kpi .ico svg{width:20px;height:20px}
@@ -443,15 +454,16 @@ function newsSection(report: DailyReport): string {
   const warn = failed.length
     ? `<p class="warn">일부 제한: ${failed.map((st) => escape(SOURCE_LABEL[st.source] ?? st.source)).join(', ')} 수집에 실패했어요. 이 소스의 기사는 빠져 있을 수 있어요.</p>` : '';
   const fresh = new Set(news.newIds);
-  const rows = news.clusters.map((c) => {
+  const rowsArr = news.clusters.map((c) => {
     const others = c.articles.filter((a) => a.url !== c.url);
     return `<div class="story"><div><span class="badge b-${c.importance}">${IMPORTANCE_LABEL[c.importance]}</span> <span class="tag">${escape(c.category)}</span>${fresh.has(c.id) ? '<span class="badge b-new">새 뉴스</span>' : ''}</div>
 <div class="story-title"><a href="${escape(c.url)}" rel="noopener" target="_blank">${escape(c.title)}</a></div>
 <div class="why">${meta([`${escape(c.publisher)} (${TIER_LABEL[c.tier]})`, escape(kstTime(c.firstAt)), c.articles.length > 1 ? `같은 내용 기사 ${c.articles.length}건` : ''])}</div>
 ${others.length ? `<details class="more"><summary>다른 기사 ${others.length}건</summary><ul class="plain">${others.map((a) => `<li><a href="${escape(a.url)}" rel="noopener" target="_blank">${escape(a.title)}</a> <span class="why">${meta([escape(a.publisher), escape(kstTime(a.publishedAt))])}</span></li>`).join('')}</ul></details>` : ''}</div>`;
-  }).join('');
+  });
+  const rows = rowsArr.join('');
   return `<div class="card" id="news" style="margin-top:16px"><div class="head"><h2>뉴스</h2><span class="sub" style="margin:0">최근 7일, 이야기 ${news.clusters.length}개</span></div>
-${warn}${rows || '<p class="empty">최근 7일 동안 관련 뉴스가 없어요.</p>'}
+${warn}${rows ? (news.clusters.length > 8 ? `${rowsArr.slice(0, 8).join('')}<details class="more news-more"><summary>나머지 이야기 ${news.clusters.length - 8}개 더 보기</summary>${rowsArr.slice(8).join('')}</details>` : rows) : '<p class="empty">최근 7일 동안 관련 뉴스가 없어요.</p>'}
 <p class="fine">제목과 언론사, 링크만 모아요(본문은 저장하지 않아요). 비슷한 제목의 기사는 하나의 이야기로 묶고, 기사 수가 많다고 더 중요하게 보지 않아요. 수집: ${escape(statusLine)}</p></div>`;
 }
 
@@ -705,7 +717,7 @@ ${e.reasons?.length && e.group === 'weekly' ? `<ul class="sc-why">${e.reasons.sl
   const core = entries.filter((e) => e.group === 'core'), weekly = entries.filter((e) => e.group === 'weekly'), requests = entries.filter((e) => e.group === 'request');
   const body = `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div><div class="hero-main"><div class="eyebrow"><span>리포트 ${entries.length}종목</span></div><h1>Gnomon Analytics</h1>
 <p class="hero-line">공개 데이터로 계산한 기술 신호·적정가·예측 범위와 AI 위원회 해설을 종목마다 매일 만들어요. 예측은 기록해 두고 나중에 채점해요.</p></div></section>
-<section class="block search-block"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명, 코드, 초성으로 찾기 (예: 삼성, 005930, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
+<section class="block search-block"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명·코드·초성 (예: 삼성, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
 <p class="muted small search-note">코스피·코스닥 상장 종목을 모두 찾을 수 있어요. 리포트가 없는 종목도 차트를 볼 수 있고, 분석은 요청하면 열려요.</p></section>
 <section class="block"><div class="block-head"><h2>매일 리포트</h2><span class="muted">평일 장 마감 뒤 AI 위원회까지</span></div><div class="stock-grid">${core.map(card).join('')}</div></section>
