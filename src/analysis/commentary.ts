@@ -171,7 +171,7 @@ export const CommentarySchema = z.object({
   dataGaps: z.array(z.string()).describe('근거가 부족해서 판단할 수 없는 부분'),
 });
 
-const SYSTEM = `당신은 Gnomon Analytics의 리서치 위원회예요. SK하이닉스 일일 리포트의 "AI 해설"을 한 번에 씁니다.
+const system = (name: string) => `당신은 Gnomon Analytics의 리서치 위원회예요. ${name} 일일 리포트의 "AI 해설"을 한 번에 씁니다.
 
 위원회 구성:
 - 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
@@ -230,7 +230,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
       output_config: { effort: 'medium', format: betaZodOutputFormat(CommentarySchema) },
-      system: SYSTEM,
+      system: system(report.name),
       messages: [{ role: 'user', content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.\n\n${JSON.stringify(input, null, 2)}` }],
     });
     if (response.stop_reason === 'refusal') return empty('FAILED', now, evidence, `REFUSAL:${response.stop_details?.category ?? 'unknown'}`);

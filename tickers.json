@@ -1,0 +1,22 @@
+[
+  {
+    "symbol": "000660",
+    "name": "SK하이닉스",
+    "market": "KOSPI",
+    "dartCorpCode": "00164779",
+    "newsQuery": "SK하이닉스",
+    "newsAliases": ["SK\\s*하이닉스", "하이닉스", "SK\\s*hynix"],
+    "peer": { "symbol": "005930", "name": "삼성전자" },
+    "ai": true
+  },
+  {
+    "symbol": "005930",
+    "name": "삼성전자",
+    "market": "KOSPI",
+    "dartCorpCode": "00126380",
+    "newsQuery": "삼성전자",
+    "newsAliases": ["삼성전자", "삼성\\s*전자", "Samsung\\s*Electronics"],
+    "peer": { "symbol": "000660", "name": "SK하이닉스" },
+    "ai": true
+  }
+]

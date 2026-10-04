@@ -2,18 +2,25 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { NewsItem } from '../types.js';
 import { classifyNews, clusterNews, isRelevant, outletTier } from './news.js';
+import { aliasPattern } from '../config/tickers.js';
+
+const SK = aliasPattern({ newsAliases: ['SK\\s*하이닉스', '하이닉스', 'SK\\s*hynix'] });
+const SAMSUNG = aliasPattern({ newsAliases: ['삼성전자', '삼성\\s*전자', 'Samsung\\s*Electronics'] });
 
 function item(title: string, publishedAt: string, publisher = '연합뉴스', url = `https://x.kr/${encodeURIComponent(title)}`): NewsItem {
   return { url, title, publisher, publishedAt, source: 'naver:news-search', retrievedAt: '2026-10-05T09:30:00.000Z' };
 }
 
 test('relevance needs the company in the headline and skips sports or personnel items', () => {
-  assert.equal(isRelevant('SK하이닉스, HBM4 양산'), true);
-  assert.equal(isRelevant('하이닉스 주가 신고가'), true);
-  assert.equal(isRelevant('SK hynix expands Indiana plant'), true);
-  assert.equal(isRelevant('삼성전자 HBM 공급'), false);
-  assert.equal(isRelevant('[인사] SK하이닉스'), false);
-  assert.equal(isRelevant('SK하이닉스 배구단 우승'), false);
+  assert.equal(isRelevant('SK하이닉스, HBM4 양산', SK), true);
+  assert.equal(isRelevant('하이닉스 주가 신고가', SK), true);
+  assert.equal(isRelevant('SK hynix expands Indiana plant', SK), true);
+  assert.equal(isRelevant('삼성전자 HBM 공급', SK), false);
+  assert.equal(isRelevant('[인사] SK하이닉스', SK), false);
+  assert.equal(isRelevant('SK하이닉스 배구단 우승', SK), false);
+  // Each stock has its own name pattern.
+  assert.equal(isRelevant('삼성전자 HBM 공급', SAMSUNG), true);
+  assert.equal(isRelevant('SK하이닉스, HBM4 양산', SAMSUNG), false);
 });
 
 test('classification and outlet tier', () => {
@@ -39,7 +46,7 @@ test('similar headlines within 48 hours become one story; repeats count once', (
     item('SK하이닉스 3분기 영업이익 11조 사상최대 실적', '2026-10-05T02:00:00Z', '뉴스1', 'https://news1.kr/1'),
     item('SK하이닉스, 용인 클러스터 착공', '2026-10-05T03:00:00Z', '전자신문', 'https://etnews.com/1'),
     item('SK하이닉스 3분기 영업이익 11조 사상 최대', '2026-10-09T01:00:00Z', '연합뉴스', 'https://yna.co.kr/2'),
-  ]);
+  ], SK);
   assert.equal(stories.length, 3);
   const earnings = stories.find((st) => st.articles.length === 3)!;
   assert.equal(earnings.category, '실적');

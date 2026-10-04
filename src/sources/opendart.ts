@@ -3,8 +3,6 @@
 import type { Disclosure } from '../types.js';
 
 export const OPENDART_SOURCE = 'opendart:list';
-/** DART corp_code for SK하이닉스 (stock 000660). */
-export const SK_HYNIX_CORP_CODE = '00164779';
 
 interface DartListRow {
   corp_name?: unknown;
