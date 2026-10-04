@@ -7,7 +7,7 @@ import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim, Commentary } from '../analysis/commentary.js';
 import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow, horizonStrip, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { councilCard, DART_SCRIPT, hero, latestLists, marketStrip, priceChart, sparkline } from './appParts.js';
-import { analystBattle, arenaPanel, arenaTeaser, paperPanel } from './renderArena.js';
+import { analystScores, arenaPanel, arenaTeaser, paperPanel } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
@@ -180,7 +180,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .pl-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.pl-figure{position:relative;max-width:470px;margin:0 auto}
 .pl-svg{display:block;width:100%;height:auto;overflow:visible}
 .seat{cursor:pointer;stroke:#fff;stroke-width:.6;transition:opacity .2s ease,transform .2s ease;transform-box:fill-box;transform-origin:center;animation:seat-in .45s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--i) * 22ms)}
-.seat.s-bull{fill:#d1373d}.seat.s-neutral{fill:#a3acba}.seat.s-bear{fill:#2a62c9}.seat.s-abstain{fill:#fff;stroke:#a3acba;stroke-width:.9}
+.seat.s-abstain+.seat-tag{fill:#6b7686}.seat.is-dim+.seat-tag{opacity:.2}.seat.s-bull{fill:#d1373d}.seat.s-neutral{fill:#a3acba}.seat.s-bear{fill:#2a62c9}.seat.s-abstain{fill:#fff;stroke:#a3acba;stroke-width:.9}
 .seat.f-ai,.seat.f-desk{stroke:#0f2244;stroke-width:1.1}
 .seat:hover,.seat:focus-visible{transform:scale(1.25);outline:none}.seat.is-on{transform:scale(1.35);stroke:#0f2244;stroke-width:1.6}.seat.is-dim{opacity:.15}
 @keyframes seat-in{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
@@ -189,7 +189,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .pl-center b{font-size:22px;font-weight:800;letter-spacing:-.01em}.pl-center span{font-size:13px;color:var(--fg2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 3px 0 6px;vertical-align:0}.dot.s-bull{background:#d1373d}.dot.s-neutral{background:#a3acba}.dot.s-bear{background:#2a62c9}.dot.s-abstain{border:1.5px solid #a3acba}
 .pl-detail{border-left:1px solid var(--line);padding-left:20px;min-height:180px}.pl-detail p{margin:6px 0;font-size:14px;line-height:1.6}
-.pl-k{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}.pl-name{display:flex;align-items:center;gap:8px;margin:4px 0 2px;font-size:17px}
+.why-fold{margin-top:14px}.why-fold>summary{font-weight:600}.seat-tag{fill:#fff;font-weight:700;text-anchor:middle;dominant-baseline:central;pointer-events:none;animation:seat-in .45s cubic-bezier(.16,1,.3,1) backwards}.pl-k{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}.pl-name{display:flex;align-items:center;gap:8px;margin:4px 0 2px;font-size:17px}
 .badge.pl-bull{background:#fde8e6;color:#b4232a}.badge.pl-bear{background:#e3ecfb;color:#1f4fa8}.badge.pl-neutral,.badge.pl-abstain{background:#eef1f5;color:var(--fg2)}
 @media (max-width:820px){.pl-card{grid-template-columns:minmax(0,1fr)}.pl-detail{border-left:0;border-top:1px solid var(--line);padding:14px 0 0;min-height:0}.pl-center b{font-size:18px}}
 .hs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;padding:6px}.hs-cell{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border-left:1px solid var(--line);text-align:center;min-width:0}.hs-cell:first-child{border-left:0}
@@ -215,6 +215,23 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .stock-card .sc-top{grid-column:1;display:block}.stock-card .sc-top .spark{display:none}.sc-name{font-size:16px}.stock-card .sc-price{grid-column:2;grid-row:1;flex-direction:column;align-items:flex-end;gap:0}.sc-price b{font-size:17px}
 .stock-card>.muted.small{display:none}.sc-signal{grid-column:1/3;border-top:0;padding-top:0;margin:0}.sc-line{display:none}.sc-why{grid-column:1/3;margin:0;padding-left:16px}.sc-why li:nth-child(n+2){display:none}.sc-go{display:none}
 }
+.chart-tools{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;margin:10px 0 4px}
+.preset-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px}.preset-row .label,.strat-pick .label{font-size:12px;color:var(--muted);font-weight:600;margin-right:2px}
+.tool-btn{display:inline-flex;align-items:center;gap:5px;border:1px dashed var(--line-strong);background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer}.tool-btn:hover{background:var(--accent-soft)}.gear{width:15px;height:15px}
+.strat-pick{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);background:#fff;border-radius:12px;padding:7px 12px;font:inherit;cursor:pointer;min-height:38px}.strat-pick b{font-size:14px}.strat-pick .caret{color:var(--muted)}.strat-pick:hover{border-color:var(--accent)}
+.active-pills{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}.pill{border:0;background:var(--accent-soft);color:var(--accent-strong);border-radius:999px;padding:3px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}.pill span{opacity:.6;margin-left:2px}.pill:hover{background:#d9e3f2}
+.sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center}.sheet[hidden]{display:none}.sheet-back{position:absolute;inset:0;background:rgba(15,27,45,.42)}
+.sheet-body{position:relative;width:min(560px,94vw);max-height:84vh;overflow:auto;background:#fff;border-radius:18px;padding:16px 18px 18px;box-shadow:0 20px 50px rgba(15,27,45,.25)}
+.sheet-head{position:sticky;top:-16px;background:#fff;display:flex;justify-content:space-between;align-items:center;padding:4px 0 10px;margin-top:-4px;z-index:1}.sheet-head b{font-size:17px}
+.sheet-done{border:0;background:var(--navy,#0f2244);color:#fff;border-radius:10px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer}
+.opt-group{margin:6px 0 12px}.opt-k{font-size:12px;font-weight:700;color:var(--muted);margin:8px 2px 4px}
+.opt{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:10px 4px;font:inherit;cursor:pointer;color:var(--fg)}.opt:hover{background:var(--soft)}
+.opt-t{display:flex;flex-direction:column;gap:1px;min-width:0}.opt-t b{font-size:14px}.opt-t small{font-size:12px;color:var(--muted)}
+.tog{flex:none;width:38px;height:22px;border-radius:11px;background:#d5dce6;position:relative;transition:background .15s}.tog::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.opt[aria-pressed=true] .tog{background:var(--accent)}.opt[aria-pressed=true] .tog::after{transform:translateX(16px)}
+.radio{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid #c3ccd8}.opt[aria-pressed=true] .radio{border:6px solid var(--accent)}
+body.sheet-open{overflow:hidden}
+@media (max-width:820px){.sheet{align-items:flex-end}.sheet-body{width:100%;max-height:82vh;border-radius:18px 18px 0 0;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.chart-tools{flex-direction:column;align-items:stretch}.preset-row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px}.preset-row>*{flex:none}.strat-pick{justify-content:space-between}}
 /* kpis */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi .row{display:flex;align-items:center;gap:12px}
 .kpi .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--accent-strong);background:var(--accent-soft)!important;flex:none}.kpi .ico svg{width:20px;height:20px}
@@ -406,7 +423,7 @@ const COMMENTARY_FAIL: Record<string, string> = {
   UNPARSEABLE_OUTPUT: '해설 형식을 읽지 못했어요',
 };
 
-function whySection(report: DailyReport): string {
+function whySection(report: DailyReport, opts: { committee?: boolean } = {}): string {
   const c = report.commentary;
   if (!c) return '';
   if (c.status !== 'OK') {
@@ -434,15 +451,15 @@ function whySection(report: DailyReport): string {
 ${sc.catalysts.length ? `<p class="why"><b>촉매</b> ${sc.catalysts.map(escape).join(', ')}</p>` : ''}${sc.invalidation.length ? `<p class="why"><b>무효화 조건</b> ${sc.invalidation.map(escape).join(', ')}</p>` : ''}` : '<p class="empty">근거가 있는 시나리오를 쓰지 못했어요.</p>'}</div>`;
   }).join('')}</div>` : '';
   const legend = c.evidence.map((e) => `<li><b>${escape(e.id)}</b> ${e.url.startsWith('http') ? `<a href="${escape(e.url)}" rel="noopener" target="_blank">${escape(e.label)}</a>` : escape(e.label)}</li>`).join('');
-  return `<div class="card" id="why"><div class="head"><h2>AI 위원회 해설</h2><span class="sub" style="margin:0">데스크 5곳과 레드팀이 오늘 리포트의 근거만 인용해요</span></div>
+  return `<div class="card" id="why"><div class="head"><h2>${opts.committee ? '위원회 결론' : 'AI 위원회 해설'}</h2><span class="sub" style="margin:0">${opts.committee ? '요약, 레드팀 반론, 시나리오' : '데스크 5곳과 레드팀이 오늘 리포트의 근거만 인용해요'}</span></div>
 ${c.summary ? `<p class="headline">${escape(c.summary.text)} <span class="chips-inline">${chips(c.summary.evidenceIds)}</span></p>` : ''}
-${desks}${red}${scenarios}
-${desks || scenarios ? '<h3 class="why-h">근거 정리</h3>' : ''}<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
+${opts.committee ? '' : desks}${red}${scenarios}
+${opts.committee ? '<details class="more why-fold"><summary>근거 정리 · 판단이 바뀔 수 있는 것 · 부족한 근거</summary>' : ''}${desks || scenarios ? '<h3 class="why-h">근거 정리</h3>' : ''}<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
 <div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish, '찾지 못했어요.')}</div>
 <div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain, '없어요.')}</div></div>
 <h3 class="why-h">판단이 바뀔 수 있는 것</h3>${list(c.watch, '없어요.')}
 ${c.dataGaps.length ? `<h3 class="why-h">근거가 부족한 부분</h3><ul class="plain">${c.dataGaps.map((g) => `<li>${escape(g)}</li>`).join('')}</ul>` : ''}
-<details class="more"><summary>근거 목록 ${c.evidence.length}개</summary><ul class="plain evid">${legend}</ul></details>
+<details class="more"><summary>근거 목록 ${c.evidence.length}개</summary><ul class="plain evid">${legend}</ul></details>${opts.committee ? '</details>' : ''}
 <p class="fine">AI(${escape(c.servedBy ?? c.model)})가 이 리포트의 근거만 보고 쓴 해설이에요. 틀릴 수 있고, 투자 권유가 아니에요.${c.dropped ? ` 근거를 대지 못한 주장 ${c.dropped}개는 뺐어요.` : ''} 프롬프트 ${escape(c.promptVersion)}.</p></div>`;
 }
 
@@ -541,8 +558,11 @@ ${marketStrip(report)}
   const technical = `${m ? arenaPanel(m.arena) : ''}<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${signalSection(report)}${m ? `<div class="grid-eq">${valueCard(m)}${forecastCard(m.forecasts, m.forecastScores)}</div><div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`;
   const flowsTab = m ? flowsPanel(m.flows, m.footprint) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>';
   const fundTab = m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>';
-  const battle = m ? analystBattle(m.analystBoard, report.commentary, report.price?.close ?? null) : '';
-  const aiTab = battle + (report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 평일 18시 이후 하루 한 번 만들어져요.</p>` : ''}${whySection(report)}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 평일 18시 이후 리포트에서 만들어져요.</p></div>');
+  const committee = report.commentary?.status === 'OK' ? parliament(report, ctx.commentaryFrom ?? null, {
+    id: 'parliament-ai', title: 'AI 위원회 표결', factions: ['ai', 'desk'], link: null,
+    note: '네이비 테두리 좌석은 분석가 6명, 나머지는 데스크 5곳이에요. 좌석을 누르면 판단·확신도·20거래일 뒤 예상가·근거·지난 성적이 나와요.',
+  }) : '';
+  const aiTab = committee + (report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 평일 18시 이후 하루 한 번 만들어져요.</p>` : ''}${whySection(report, { committee: !!committee })}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 평일 18시 이후 리포트에서 만들어져요.</p></div>') + (m ? analystScores(m.analystBoard) : '');
   const newsTab = `${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const body = `${panel('home', home)}
