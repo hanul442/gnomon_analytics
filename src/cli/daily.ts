@@ -174,6 +174,16 @@ export async function renderSite(root: string): Promise<void> {
   const fontRoot = join(dirname(createRequire(import.meta.url).resolve('pretendard/package.json')), 'dist', 'web', 'variable');
   await cp(join(fontRoot, 'woff2-dynamic-subset'), join(siteDir, FONT_DIR, 'woff2-dynamic-subset'), { recursive: true });
   await copyFile(join(fontRoot, 'pretendardvariable-dynamic-subset.css'), join(siteDir, FONT_DIR, 'pretendard.css'));
+  // Noto Serif KR 600 (OFL-1.1) for headings, woff2 only, also split by unicode range.
+  const serifRoot = dirname(createRequire(import.meta.url).resolve('@fontsource/noto-serif-kr/package.json'));
+  const serifCss = (await readFile(join(serifRoot, '600.css'), 'utf8'))
+    .replace(/, url\(\.\/files\/[^)]+\.woff\) format\('woff'\)/g, '')
+    .replaceAll('./files/', './serif/');
+  await mkdir(join(siteDir, FONT_DIR, 'serif'), { recursive: true });
+  for (const file of (await readdir(join(serifRoot, 'files'))).filter((f) => f.endsWith('-600-normal.woff2'))) {
+    await copyFile(join(serifRoot, 'files', file), join(siteDir, FONT_DIR, 'serif', file));
+  }
+  await writeFile(join(siteDir, FONT_DIR, 'serif.css'), serifCss);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
