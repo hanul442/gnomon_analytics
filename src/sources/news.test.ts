@@ -41,7 +41,9 @@ test('Naver fetch sends the key headers and pages until a short page', async () 
   const seen: { start: string | null; id: string | null }[] = [];
   const fakeFetch = (async (url: string | URL | Request, init?: RequestInit) => {
     const u = new URL(String(url));
-    seen.push({ start: u.searchParams.get('start'), id: (init?.headers as Record<string, string>)['X-Naver-Client-Id'] ?? null });
+    assert.equal(`${u.origin}${u.pathname}`, 'https://naverapihub.apigw.ntruss.com/search/v1/news');
+    assert.equal((init?.headers as Record<string, string>)['X-NCP-APIGW-API-KEY'], 'secret');
+    seen.push({ start: u.searchParams.get('start'), id: (init?.headers as Record<string, string>)['X-NCP-APIGW-API-KEY-ID'] ?? null });
     return new Response(JSON.stringify(NAVER));
   }) as typeof fetch;
   await fetchNaverNews({ clientId: 'id', clientSecret: 'secret', query: 'SK하이닉스', fetch: fakeFetch, now: () => AT });
@@ -95,9 +97,15 @@ test('domain-like outlet names from Google are mapped to outlet names', () => {
   assert.equal(item?.title, 'SK하이닉스 소식');
 });
 
-test('a Naver auth failure reports its error code', async () => {
-  const denied = (async () => new Response(JSON.stringify({ errorMessage: 'Authentication failed', errorCode: '024' }), { status: 401 })) as typeof fetch;
-  await assert.rejects(fetchNaverNews({ clientId: 'i', clientSecret: 's', query: 'q', fetch: denied }), /NAVER_NEWS_HTTP_401:024 Authentication failed/);
+// Error bodies as observed from NAVER API HUB (gateway and API layers).
+test('NAVER API HUB errors report their code and message', async () => {
+  const reply = (status: number, body: unknown) => (async () => new Response(JSON.stringify(body), { status })) as typeof fetch;
+  await assert.rejects(fetchNaverNews({ clientId: 'i', clientSecret: 's', query: 'q', fetch: reply(401, { error: { errorCode: '200', message: 'Authentication Failed', details: 'Invalid authentication information.' } }) }),
+    /NAVER_NEWS_HTTP_401:200 Authentication Failed Invalid authentication information\./);
+  await assert.rejects(fetchNaverNews({ clientId: 'i', clientSecret: 's', query: 'q', fetch: reply(401, { error: { errorCode: 401, message: '요청한 API는 이 Application에서 활성화되어 있지 않습니다.' } }) }),
+    /NAVER_NEWS_HTTP_401:401 요청한 API는/);
+  await assert.rejects(fetchNaverNews({ clientId: 'i', clientSecret: 's', query: 'q', fetch: reply(400, { errorMessage: 'Incorrect query request', errorCode: 'SE01' }) }),
+    /NAVER_NEWS_HTTP_400:SE01 Incorrect query request/);
 });
 
 test('a non-object Naver error body still reports the HTTP status', async () => {
