@@ -180,7 +180,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .pl-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.pl-figure{position:relative;max-width:470px;margin:0 auto}
 .pl-svg{display:block;width:100%;height:auto;overflow:visible}
 .seat{cursor:pointer;stroke:#fff;stroke-width:.6;transition:opacity .2s ease,transform .2s ease;transform-box:fill-box;transform-origin:center;animation:seat-in .45s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--i) * 22ms)}
-.seat.s-abstain+.seat-tag{fill:#6b7686}.seat.is-dim+.seat-tag{opacity:.2}.seat.s-bull{fill:#d1373d}.seat.s-neutral{fill:#a3acba}.seat.s-bear{fill:#2a62c9}.seat.s-abstain{fill:#fff;stroke:#a3acba;stroke-width:.9}
+.seat.s-bull{fill:#d1373d}.seat.s-neutral{fill:#a3acba}.seat.s-bear{fill:#2a62c9}.seat.s-abstain{fill:#fff;stroke:#a3acba;stroke-width:.9}
 .seat.f-ai,.seat.f-desk{stroke:#0f2244;stroke-width:1.1}
 .seat:hover,.seat:focus-visible{transform:scale(1.25);outline:none}.seat.is-on{transform:scale(1.35);stroke:#0f2244;stroke-width:1.6}.seat.is-dim{opacity:.15}
 @keyframes seat-in{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
@@ -189,7 +189,16 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .pl-center b{font-size:22px;font-weight:800;letter-spacing:-.01em}.pl-center span{font-size:13px;color:var(--fg2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 3px 0 6px;vertical-align:0}.dot.s-bull{background:#d1373d}.dot.s-neutral{background:#a3acba}.dot.s-bear{background:#2a62c9}.dot.s-abstain{border:1.5px solid #a3acba}
 .pl-detail{border-left:1px solid var(--line);padding-left:20px;min-height:180px}.pl-detail p{margin:6px 0;font-size:14px;line-height:1.6}
-.why-fold{margin-top:14px}.why-fold>summary{font-weight:600}.seat-tag{fill:#fff;font-weight:700;text-anchor:middle;dominant-baseline:central;pointer-events:none;animation:seat-in .45s cubic-bezier(.16,1,.3,1) backwards}.pl-k{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}.pl-name{display:flex;align-items:center;gap:8px;margin:4px 0 2px;font-size:17px}
+.why-fold{margin-top:14px}.why-fold>summary{font-weight:600}
+.pl-small .pl-figure{max-width:400px}.pl-small .pl-center{bottom:10px}.pl-small .seat.is-on{transform:scale(1.15)}.pl-small .seat:hover{transform:scale(1.1)}
+.pl-tally{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden;margin:20px 0 4px}.pl-tally .s-bull{background:#d1373d}.pl-tally .s-neutral{background:#a3acba}.pl-tally .s-bear{background:#2a62c9}
+.pl-roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:12px}
+.pl-col{display:flex;flex-direction:column;gap:6px}.pl-col-h{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--fg2);padding-bottom:4px;border-bottom:1px solid var(--line)}.pl-col-h b{margin-left:auto;font-variant-numeric:tabular-nums}
+.member{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-left:4px solid #a3acba;border-radius:8px;background:var(--card);font:inherit;font-size:14px;text-align:left;cursor:pointer;color:var(--fg);transition:background .15s ease,border-color .15s ease,opacity .2s ease}
+.member.s-bull{border-left-color:#d1373d}.member.s-bear{border-left-color:#2a62c9}.member.s-abstain{border-left-style:dashed}
+.member:hover{background:#f4f6fa}.member:focus-visible{outline:2px solid #0f2244;outline-offset:2px}.member.is-on{background:#eef2fa;border-color:#0f2244}.member.is-dim{opacity:.3}
+.m-name{font-weight:600;line-height:1.3}
+@media (max-width:560px){.pl-roster{grid-template-columns:minmax(0,1fr)}.pl-col{flex-direction:row;flex-wrap:wrap}.pl-col-h{flex-basis:100%}.member{flex:1 1 calc(50% - 6px);min-width:0}.m-kind{display:none}}.m-kind{flex:none;font-size:11px;color:var(--muted);background:#eef1f5;border-radius:999px;padding:2px 7px}.pl-k{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}.pl-name{display:flex;align-items:center;gap:8px;margin:4px 0 2px;font-size:17px}
 .badge.pl-bull{background:#fde8e6;color:#b4232a}.badge.pl-bear{background:#e3ecfb;color:#1f4fa8}.badge.pl-neutral,.badge.pl-abstain{background:#eef1f5;color:var(--fg2)}
 @media (max-width:820px){.pl-card{grid-template-columns:minmax(0,1fr)}.pl-detail{border-left:0;border-top:1px solid var(--line);padding:14px 0 0;min-height:0}.pl-center b{font-size:18px}}
 .hs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;padding:6px}.hs-cell{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border-left:1px solid var(--line);text-align:center;min-width:0}.hs-cell:first-child{border-left:0}
@@ -559,8 +568,8 @@ ${marketStrip(report)}
   const flowsTab = m ? flowsPanel(m.flows, m.footprint) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>';
   const fundTab = m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>';
   const committee = report.commentary?.status === 'OK' ? parliament(report, ctx.commentaryFrom ?? null, {
-    id: 'parliament-ai', title: 'AI 위원회 표결', factions: ['ai', 'desk'], link: null,
-    note: '네이비 테두리 좌석은 분석가 6명, 나머지는 데스크 5곳이에요. 좌석을 누르면 판단·확신도·20거래일 뒤 예상가·근거·지난 성적이 나와요.',
+    id: 'parliament-ai', title: 'AI 위원회 표결', factions: ['ai', 'desk'], link: null, roster: true,
+    note: '위원은 AI 분석가 6명과 데스크 5곳이에요. 좌석이나 이름을 누르면 판단·확신도·20거래일 뒤 예상가·근거·지난 성적이 나와요.',
   }) : '';
   const aiTab = committee + (report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : ''}${whySection(report, { committee: !!committee })}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>') + (m ? analystScores(m.analystBoard) : '');
   const newsTab = `${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}

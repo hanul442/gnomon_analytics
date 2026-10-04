@@ -56,11 +56,12 @@ export function seatsFor(report: DailyReport): Seat[] {
 /** Seat centres for n seats over concentric arcs (unit radius), ordered left to right by angle. */
 export function hemicycle(n: number): { x: number; y: number; r: number }[] {
   if (!n) return [];
-  const rows = Math.min(n, n <= 16 ? 2 : n <= 36 ? 3 : n <= 64 ? 4 : 5);
+  const rows = Math.min(n, n <= 16 ? 1 : n <= 36 ? 3 : n <= 64 ? 4 : 5);
   // The inner ring leaves room for the verdict in the middle.
   const inner = 0.52, outer = 1;
   const gap = rows > 1 ? (outer - inner) / (rows - 1) : 0;
-  const radii = Array.from({ length: rows }, (_, i) => inner + gap * i);
+  // One row (a small chamber) sits on the outer arc, leaving the middle for the verdict.
+  const radii = rows === 1 ? [0.9] : Array.from({ length: rows }, (_, i) => inner + gap * i);
   const total = radii.reduce((s, r) => s + r, 0);
   // Seats per row in proportion to arc length; leftovers go to the outer rows.
   const counts = radii.map((r) => Math.max(1, Math.floor((n * r) / total)));
@@ -70,7 +71,7 @@ export function hemicycle(n: number): { x: number; y: number; r: number }[] {
   for (let i = 0, guard = 0; left < 0 && guard < rows * n; i = (i + 1) % rows, guard += 1) if (counts[i]! > 1) { counts[i]! -= 1; left += 1; }
   // As large as the tightest row and the row gap allow.
   const along = Math.min(...radii.map((r, i) => (counts[i]! > 1 ? (Math.PI * r) / (counts[i]! - 1) : 1)));
-  const seatR = Math.min(along * 0.44, gap ? gap * 0.44 : 0.12, 0.11);
+  const seatR = Math.min(along * 0.42, gap ? gap * 0.44 : 0.12, rows === 1 ? 0.12 : 0.11);
   const out: { x: number; y: number; r: number; a: number }[] = [];
   radii.forEach((rad, i) => {
     const k = counts[i]!;
@@ -92,7 +93,11 @@ export interface ParliamentOptions {
   factions?: readonly Faction[];
   link?: { href: string; label: string } | null;
   note?: string;
+  /** List every member by name under the seats, grouped by stance (for small chambers). */
+  roster?: boolean;
 }
+
+const MEMBER_KIND: Record<Faction, string> = { ai: '분석가', desk: '데스크', strategy: '전략', indicator: '지표' };
 
 export function parliament(report: DailyReport, from: string | null, opts: ParliamentOptions = {}): string {
   const id = opts.id ?? 'parliament';
@@ -108,9 +113,7 @@ export function parliament(report: DailyReport, from: string | null, opts: Parli
   const circles = seats.map((s, i) => {
     const p = pos[i]!;
     const x = (cx + p.x * R).toFixed(2), y = (cy - p.y * R).toFixed(2);
-    // Few seats: write each member's first letter on the seat so they can be told apart.
-    const tag = seats.length <= 16 ? `<text class="seat-tag" x="${x}" y="${y}" font-size="${(p.r * R * 0.95).toFixed(2)}">${esc(s.name.replace(/^\d+위\s*/, '').slice(0, 1))}</text>` : '';
-    return `<circle class="seat s-${s.stance} f-${s.faction}" data-i="${i}" data-f="${s.faction}" cx="${x}" cy="${y}" r="${(p.r * R).toFixed(2)}" style="--i:${i}" tabindex="0" role="button" aria-label="${esc(`${FACTION_WORD[s.faction]} ${s.name}: ${STANCE_WORD[s.stance]}`)}"><title>${esc(`${s.name} · ${STANCE_WORD[s.stance]}`)}</title></circle>${tag}`;
+    return `<circle class="seat s-${s.stance} f-${s.faction}" data-i="${i}" data-f="${s.faction}" cx="${x}" cy="${y}" r="${(p.r * R).toFixed(2)}" style="--i:${i}" tabindex="0" role="button" aria-label="${esc(`${FACTION_WORD[s.faction]} ${s.name}: ${STANCE_WORD[s.stance]}`)}"><title>${esc(`${s.name} · ${STANCE_WORD[s.stance]}`)}</title></circle>`;
   }).join('');
   const factions = (['ai', 'desk', 'strategy', 'indicator'] as const).filter((f) => seats.some((s) => s.faction === f));
   const chips = `<button type="button" class="chip-toggle" data-pf="" aria-pressed="true">전체 ${seats.length}</button>${factions.map((f) => `<button type="button" class="chip-toggle" data-pf="${f}" aria-pressed="false">${FACTION_WORD[f]} ${seats.filter((s) => s.faction === f).length}</button>`).join('')}`;
@@ -118,11 +121,16 @@ export function parliament(report: DailyReport, from: string | null, opts: Parli
   const summary = report.commentary?.status === 'OK' ? report.commentary.summary?.text : undefined;
   const link = opts.link === undefined ? { href: '#tab-ai', label: 'AI 위원회 자세히 ›' } : opts.link;
   const showChips = factions.length > 1;
-  return `<section class="block parliament" id="${id}"><div class="block-head"><h2>${esc(opts.title ?? '표결 현황')}</h2>${link ? `<a href="${link.href}" class="more-link">${esc(link.label)}</a>` : ''}</div>
+  const center = `<div class="pl-center"><b class="${lean >= 0.2 ? 'up' : lean <= -0.2 ? 'down' : ''}">${verdict}</b><span><i class="dot s-bull"></i>${bull} <i class="dot s-neutral"></i>${neutral} <i class="dot s-bear"></i>${bear}${abstain ? ` <i class="dot s-abstain"></i>${abstain}` : ''}</span></div>`;
+  // Roster: who voted which way, by name. Same indices as the seats, so either opens the same detail.
+  const groups = (['bull', 'neutral', 'bear', 'abstain'] as const).filter((st) => st !== 'abstain' || abstain);
+  const roster = opts.roster ? `<div class="pl-roster">${groups.map((st) => `<div class="pl-col"><div class="pl-col-h"><i class="dot s-${st}"></i>${STANCE_WORD[st]} <b>${count(st)}</b></div>${seats.map((x, i) => (x.stance === st ? `<button type="button" class="member s-${st}" data-i="${i}" data-f="${x.faction}"><span class="m-name">${esc(x.name)}</span><span class="m-kind">${MEMBER_KIND[x.faction]}</span></button>` : '')).join('') || '<span class="muted small">없음</span>'}</div>`).join('')}</div>` : '';
+  const tally = voting ? `<div class="pl-tally" aria-hidden="true">${(['bull', 'neutral', 'bear'] as const).filter((st) => count(st)).map((st) => `<span class="s-${st}" style="flex:${count(st)}"></span>`).join('')}</div>` : '';
+  return `<section class="block parliament${opts.roster ? ' pl-small' : ''}" id="${id}"><div class="block-head"><h2>${esc(opts.title ?? '표결 현황')}</h2>${link ? `<a href="${link.href}" class="more-link">${esc(link.label)}</a>` : ''}</div>
 <div class="card pl-card"><div class="pl-main">
 ${showChips ? `<div class="pl-chips" role="group" aria-label="세력별 보기">${chips}</div>` : ''}
 <div class="pl-figure"><svg viewBox="0 0 ${W} 104" class="pl-svg" role="group" aria-label="표결 의석 ${seats.length}석: 강세 ${bull}, 중립 ${neutral}, 약세 ${bear}${abstain ? `, 기권 ${abstain}` : ''}">${circles}</svg>
-<div class="pl-center"><b class="${lean >= 0.2 ? 'up' : lean <= -0.2 ? 'down' : ''}">${verdict}</b><span><i class="dot s-bull"></i>${bull} <i class="dot s-neutral"></i>${neutral} <i class="dot s-bear"></i>${bear}${abstain ? ` <i class="dot s-abstain"></i>${abstain}` : ''}</span></div></div>
+${center}</div>${opts.roster ? tally : ''}${roster}
 <p class="fine">${esc(opts.note ?? '좌석 하나가 표 하나예요. 왼쪽부터 강세(빨강)·중립(회색)·약세(파랑) 순이고, 빈 원은 기권이에요. 좌석을 누르면 그렇게 본 이유가 나와요.')}</p></div>
 <aside class="pl-detail" aria-live="polite">${summary ? `<div class="pl-k">AI 위원회 요약</div><p>${esc(summary)}</p>${from ? `<div class="muted small">${esc(from)} 리포트의 해설이에요.</div>` : ''}` : '<p class="muted">좌석을 누르면 그 표의 이유가 여기에 나와요.</p>'}</aside></div>
 <script type="application/json" class="pl-data">${data}</script></section>`;
@@ -135,12 +143,13 @@ export const PARLIAMENT_SCRIPT = `<script>
     var data = host.querySelector('.pl-data'), panel = host.querySelector('.pl-detail'); if (!data || !panel) return;
     var seats = JSON.parse(data.textContent);
     var show = function (el) {
-      host.querySelectorAll('.seat.is-on').forEach(function (x) { x.classList.remove('is-on'); });
-      el.classList.add('is-on');
-      var s = seats[Number(el.getAttribute('data-i'))];
+      var i = el.getAttribute('data-i');
+      host.querySelectorAll('.is-on').forEach(function (x) { x.classList.remove('is-on'); });
+      host.querySelectorAll('[data-i="' + i + '"]').forEach(function (x) { x.classList.add('is-on'); });
+      var s = seats[Number(i)];
       panel.innerHTML = '<div class="pl-k">' + esc(s.f) + '</div><div class="pl-name"><b>' + esc(s.n) + '</b><span class="badge pl-' + s.s + '">' + esc(s.w) + '</span></div>' + s.l.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join('');
     };
-    host.querySelectorAll('.seat').forEach(function (el) {
+    host.querySelectorAll('.seat, .member').forEach(function (el) {
       el.addEventListener('click', function () { show(el); });
       el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(el); } });
     });
@@ -148,7 +157,7 @@ export const PARLIAMENT_SCRIPT = `<script>
       b.addEventListener('click', function () {
         var f = b.getAttribute('data-pf');
         host.querySelectorAll('[data-pf]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
-        host.querySelectorAll('.seat').forEach(function (el) { el.classList.toggle('is-dim', !!f && el.getAttribute('data-f') !== f); });
+        host.querySelectorAll('.seat, .member').forEach(function (el) { el.classList.toggle('is-dim', !!f && el.getAttribute('data-f') !== f); });
       });
     });
   });
