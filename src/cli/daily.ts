@@ -94,7 +94,7 @@ export interface TickerResult {
   addedNews: number;
   newsStatus: NewsSourceStatus[];
   marketStatus: NewsSourceStatus[];
-  report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED';
+  report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' | 'SKIPPED';
 }
 
 export interface DailyRunResult {
@@ -116,7 +116,9 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   let selection = await latestSelection(root);
   let selected: string | null = null;
   const friday = new Date(Date.parse(`${today.date}T00:00:00Z`)).getUTCDay() === 5;
-  if (today.hour >= SETTLED_HOUR_KST && universe.rows?.length && (!selection || (friday && selection.date !== today.date))) {
+  // A missed Friday (failed run) is caught up by the next settled run once the selection is 8+ days old.
+  const stale = selection ? Date.parse(`${today.date}T00:00:00Z`) - Date.parse(`${selection.date}T00:00:00Z`) >= 8 * 86_400_000 : true;
+  if (today.hour >= SETTLED_HOUR_KST && universe.rows?.length && (stale || (friday && selection!.date !== today.date))) {
     selection = await runSelection({ root, date: today.date, now, apiKey: options.apiKey, universe: universe.rows, core: options.tickers, ...(options.selectionParams ? { params: options.selectionParams } : {}), ...fetchOpt });
     selected = today.date;
   }
@@ -153,7 +155,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   const lives = new Map<string, DailyReport>();
   const run = async ({ ticker, tier }: (typeof jobs)[number]) => {
     try {
-      const result = await runTicker(options, ticker, tier);
+      const result = await runTicker(options, ticker, tier, core.has(ticker.symbol));
       result.marketStatus.push(...benchStatus.filter((st) => benchmarksFor(ticker).some((b) => st.source.endsWith(`:${b.symbol}`))));
       results.push(result);
     } catch (error) {
@@ -189,7 +191,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   return { results, failed, universeStatus: universe.status, selected };
 }
 
-async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTier | null): Promise<TickerResult> {
+async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTier | null, core: boolean): Promise<TickerResult> {
   const { root, now } = options;
   const SYMBOL = ticker.symbol;
   const clock = () => now;
@@ -214,7 +216,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
   // Index and peer prices were fetched once by runDaily.
   const marketStatus = await collectMarketData(root, SYMBOL, today.date, fetchOptions, []);
 
-  let report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' = 'NOT_SETTLED';
+  let report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' | 'SKIPPED' = 'NOT_SETTLED';
   const reportPath = join(reportDir, `${today.date}.json`);
   const forecastPath = join(root, 'data', 'forecasts', `${SYMBOL}.jsonl`);
   if (today.hour >= SETTLED_HOUR_KST) {
@@ -223,6 +225,10 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
       report = 'EXISTS';
     } else {
       const built = await composeReport(root, ticker, now, { newsStatus, marketStatus });
+      // When a dated report is kept (G-27): core stocks on trading days only (a holiday adds nothing and
+      // would spend an AI call); weekly picks and requests only on the day their AI runs.
+      const keep = core ? built.status === 'SESSION' : tier !== null;
+      if (!keep) return { symbol: SYMBOL, addedBars: addedBars.length, addedFilings: addedFilings.length, addedNews: addedNews.length, newsStatus, marketStatus, report: 'SKIPPED' };
       // Forecasts are logged as made and never revised; a repeat of the same base session is skipped.
       await appendUnseen(forecastPath, built.market!.forecasts, forecastKey);
       // AI commentary never blocks the report: a failure is stored as status FAILED.
@@ -250,7 +256,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
         }), paperKey);
       }
       await mkdir(reportDir, { recursive: true });
-      await writeFile(reportPath, `${JSON.stringify(built, null, 2)}\n`, { flag: 'wx' });
+      await writeFile(reportPath, `${JSON.stringify(built)}\n`, { flag: 'wx' });
       report = 'WRITTEN';
     }
   }
