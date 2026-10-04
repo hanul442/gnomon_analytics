@@ -33,9 +33,18 @@ export function parseCorpCodes(xml: string): Record<string, string> {
 
 export async function fetchCorpCodes(options: { apiKey: string; fetch?: typeof fetch }): Promise<Record<string, string>> {
   if (!options.apiKey) throw new Error('OPENDART_API_KEY_MISSING');
-  const response = await (options.fetch ?? fetch)(`https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${encodeURIComponent(options.apiKey)}`, { signal: AbortSignal.timeout(60_000) });
-  if (!response.ok) throw new Error(`DART_CORP_HTTP_${response.status}`);
-  const codes = parseCorpCodes(firstZipEntry(Buffer.from(await response.arrayBuffer())).toString('utf8'));
+  // A ~3.6 MB zip that is sometimes slow to arrive: allow three minutes and one retry.
+  let zip: Buffer | null = null;
+  let last: unknown = null;
+  for (let attempt = 0; attempt < 2 && !zip; attempt += 1) {
+    try {
+      const response = await (options.fetch ?? fetch)(`https://opendart.fss.or.kr/api/corpCode.xml?crtfc_key=${encodeURIComponent(options.apiKey)}`, { signal: AbortSignal.timeout(180_000) });
+      if (!response.ok) throw new Error(`DART_CORP_HTTP_${response.status}`);
+      zip = Buffer.from(await response.arrayBuffer());
+    } catch (error) { last = error; }
+  }
+  if (!zip) throw last instanceof Error ? last : new Error('DART_CORP_FAILED');
+  const codes = parseCorpCodes(firstZipEntry(zip).toString('utf8'));
   if (Object.keys(codes).length < 1000) throw new Error('DART_CORP_TOO_FEW');
   return codes;
 }
