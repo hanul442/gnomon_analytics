@@ -5,13 +5,13 @@
 // Today's report is written only after 18:00 KST (the session is settled) and
 // never rewritten: if reports/<date>.json exists it is left as it is.
 
-import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
 import { writeCommentary } from '../analysis/commentary.js';
 import type Anthropic from '@anthropic-ai/sdk';
-import { CHART_ASSET, renderIndex, renderReport } from '../report/renderHtml.js';
+import { CHART_ASSET, FONT_DIR, renderIndex, renderReport } from '../report/renderHtml.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE, SK_HYNIX_CORP_CODE } from '../sources/opendart.js';
 import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
@@ -148,6 +148,10 @@ export async function renderSite(root: string): Promise<void> {
   const library = join(dirname(packageJson), 'dist', 'lightweight-charts.standalone.production.js');
   await mkdir(dirname(join(siteDir, CHART_ASSET)), { recursive: true });
   await copyFile(library, join(siteDir, CHART_ASSET));
+  // Pretendard (OFL-1.1), split by unicode range so a page loads only the glyphs it uses.
+  const fontRoot = join(dirname(createRequire(import.meta.url).resolve('pretendard/package.json')), 'dist', 'web', 'variable');
+  await cp(join(fontRoot, 'woff2-dynamic-subset'), join(siteDir, FONT_DIR, 'woff2-dynamic-subset'), { recursive: true });
+  await copyFile(join(fontRoot, 'pretendardvariable-dynamic-subset.css'), join(siteDir, FONT_DIR, 'pretendard.css'));
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
