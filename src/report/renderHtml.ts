@@ -196,6 +196,14 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .hs-k{font-size:12px;color:var(--muted);font-weight:600}.hs-cell b{font-size:15px;line-height:1.25;word-break:keep-all}.hs-sub{font-size:11px;color:var(--muted)}
 .hs-meter{position:relative;width:78%;height:6px;border-radius:3px;background:linear-gradient(90deg,#2a62c9,#c9d1dd 50%,#d1373d);margin:3px 0}.hs-meter i{position:absolute;top:-3px;width:4px;height:12px;margin-left:-2px;border-radius:2px;background:#0f2244}
 .home-more summary{font-weight:600}.home-more{margin-top:16px}
+.lock{width:14px;height:14px;flex:none;vertical-align:-2px;margin-right:4px}
+.stock-hero{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}.request-card{background:var(--accent-soft);border:1px solid #cdd8ea;border-radius:16px;padding:18px}.request-card p{margin:6px 0;font-size:14px}
+.lk-head{display:flex;align-items:center;gap:6px;color:var(--navy,#0f2244)}.lk-head .lock{width:18px;height:18px}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;margin:8px 0 2px;padding:12px 18px;border-radius:12px;background:var(--navy,#0f2244);color:#fff;font-weight:700;text-decoration:none;font-size:15px}.btn-primary:hover{background:#1d3a6e}.btn-primary .lock{width:16px;height:16px;margin:0}
+.locked-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}.locked{position:relative;overflow:hidden;min-height:132px}.locked p{margin:6px 0 10px;font-size:13px;color:var(--fg2)}
+.lk-ghost{display:flex;flex-direction:column;gap:7px;filter:blur(2px);opacity:.6}.lk-ghost i{display:block;height:9px;border-radius:5px;background:#dfe5ee}.lk-ghost i:nth-child(2){width:80%}.lk-ghost i:nth-child(3){width:55%}
+.sr-lock{color:var(--fg2)}
+@media (max-width:820px){#chart[style*="420px"]{height:320px!important}.stock-hero{grid-template-columns:minmax(0,1fr)}.btn-primary{width:100%;justify-content:center}.locked-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.locked{min-height:0}.locked p{font-size:12px}}
 /* kpis */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi .row{display:flex;align-items:center;gap:12px}
 .kpi .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--accent-strong);background:var(--accent-soft)!important;flex:none}.kpi .ico svg{width:20px;height:20px}
@@ -556,6 +564,7 @@ const SEARCH_SCRIPT = `<script>
 (function () {
   var q = document.getElementById('q'), out = document.getElementById('search-results'), items = null, timer = 0;
   var CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+  var LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
   var cho = function (s) { var r = ''; for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i) - 0xAC00; r += c >= 0 && c <= 11171 ? CHO[Math.floor(c / 588)] : s[i]; } return r; };
   var norm = function (s) { return s.toLowerCase().replace(/\\s+/g, ''); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -585,7 +594,7 @@ const SEARCH_SCRIPT = `<script>
     out.innerHTML = hits.map(function (p) {
       var it = p[1], ch = it.x;
       var price = it.p == null ? '' : '<span class="sr-price"><b>' + won(it.p) + '</b>' + (ch == null ? '' : ' <span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span>';
-      var right = it.r ? '<a class="sr-go" href="' + esc(it.c) + '/index.html">리포트 보기 ›</a>' : '<span class="badge b-LOW" title="리포트 요청은 크레딧 기능과 함께 열려요">리포트 없음</span>';
+      var right = it.r ? '<a class="sr-go" href="' + esc(it.c) + '/index.html">리포트 보기 ›</a>' : '<a class="sr-go sr-lock" href="stock.html?c=' + esc(it.c) + '">' + LOCK + '차트 보기 ›</a>';
       return '<div class="row-item sr-row"><div class="ri-main"><b>' + esc(it.n) + '</b><div class="muted small">' + esc(it.c) + ' · ' + (it.m === 'KOSPI' ? '코스피' : '코스닥') + '</div></div>' + price + right + '</div>';
     }).join('');
   };
@@ -595,6 +604,80 @@ const SEARCH_SCRIPT = `<script>
     timer = setTimeout(function () { load().then(function (list) { render(list, t); }, function () { out.hidden = false; out.innerHTML = '<p class="empty">종목 목록을 불러오지 못했어요.</p>'; }); }, 120);
   });
   q.addEventListener('focus', function () { load(); }, { once: true });
+})();
+</script>`;
+
+export const REPO_URL = 'https://github.com/hanul442/gnomon_analytics';
+const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+
+const LOCKED = [
+  ['표결 현황', '지표 16개·전략·AI 분석가가 각각 강세인지 약세인지, 그리고 그 이유'],
+  ['기간별 기술 신호', '15분봉부터 월봉까지 다섯 기간의 신호'],
+  ['적정가와 예측 범위', '기술적 적정가와 5·20·60·120거래일 예측 범위'],
+  ['전략 대결', 'BOT 전략 8개의 백테스트 순위와 매수·매도 시점'],
+  ['모의투자', '전략 챔피언과 AI 분석가를 따라 한 가상 계좌'],
+  ['수급과 펀더멘털', '외국인·기관 순매수, 수급 흔적, 분기 실적'],
+  ['AI 위원회', '데스크 의견, 레드팀 반론, 시나리오'],
+] as const;
+
+/** Shared page for listed stocks without a report: chart from s/<code>.json, analysis locked, request button. */
+export function renderStockPage(): string {
+  const locked = LOCKED.map(([t, d]) => `<div class="card locked"><div class="lk-head">${LOCK}<b>${t}</b></div><p>${d}</p><div class="lk-ghost" aria-hidden="true"><i></i><i></i><i></i></div></div>`).join('');
+  const body = `<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span>리포트 없음</span></div>
+<h1 id="sp-name">종목</h1><div class="hero-price" id="sp-price"></div><div class="hero-sub" id="sp-date"></div></div>
+<div class="request-card"><div class="lk-head">${LOCK}<b>분석은 아직 잠겨 있어요</b></div><p>이 종목은 아직 리포트가 없어요. 요청하면 다음 장 마감 뒤 심층 AI 위원회 리포트를 써 드려요.</p>
+<a class="btn-primary" id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">${LOCK}리포트 요청하기</a>
+<p class="fine">지금은 GitHub 이슈로 요청을 받아요. 크레딧 결제가 붙으면 이 버튼에서 바로 요청할 수 있게 바뀌어요.</p></div></section>
+<section class="block"><div class="card chart-card"><div class="chart-head"><div><div class="muted small">최근 1년 일봉</div><div class="period-stat" id="period-stat" aria-live="polite"></div></div>
+<div class="seg" role="group" aria-label="기간">${[['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250]].map(([l, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 126}">${l}</button>`).join('')}</div></div>
+<div id="chart" style="height:420px"><p class="empty" id="sp-empty" hidden>차트 데이터를 불러오지 못했어요. 상장 종목 코드가 맞는지 확인해 주세요.</p></div>
+<p class="fine">이동평균 20(주황)·60(보라)과 거래량이에요. 리포트가 생기면 지표 고르기, 전략 매매 시점, 공시·뉴스 표시가 함께 열려요.</p></div></section>
+<section class="block"><div class="block-head"><h2>리포트를 요청하면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>
+<footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요. 투자 권유가 아니에요.</p></footer>`;
+  return shell('', '종목 차트 | Gnomon Analytics', body, { scripts: `<script src="${CHART_ASSET}"></script>${STOCK_SCRIPT}` });
+}
+
+const STOCK_SCRIPT = `<script>
+(function () {
+  var code = (new URLSearchParams(location.search).get('c') || '').toUpperCase();
+  var $ = function (id) { return document.getElementById(id); };
+  var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
+  var fail = function () { $('sp-empty').hidden = false; $('sp-name').textContent = code ? code : '종목을 찾지 못했어요'; };
+  if (!/^[0-9A-Z]{6}$/.test(code)) { fail(); return; }
+  fetch('s/' + code + '.json').then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
+    document.title = d.name + ' 차트 | Gnomon Analytics';
+    $('sp-name').textContent = d.name; $('sp-code').textContent = d.symbol; $('sp-market').textContent = d.market === 'KOSDAQ' ? '코스닥' : '코스피';
+    var bars = d.bars.map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] }; });
+    var last = bars[bars.length - 1], prev = bars[bars.length - 2];
+    if (last) {
+      var ch = prev ? last.close - prev.close : 0, pc = prev ? (ch / prev.close) * 100 : 0;
+      $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + Math.abs(ch).toLocaleString('ko-KR') + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : '');
+      $('sp-date').textContent = last.time + ' 종가';
+    }
+    var title = '리포트 요청: ' + d.name + ' (' + d.symbol + ')';
+    var bodyText = '요청 종목: ' + d.name + ' (' + d.symbol + ')\\n\\n궁금한 점이나 보고 싶은 분석이 있으면 적어 주세요.\\n';
+    $('sp-request').href = '${REPO_URL}/issues/new?labels=report-request&title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(bodyText);
+    var L = window.LightweightCharts, el = $('chart');
+    var chart = L.createChart(el, { autoSize: true, layout: { background: { color: 'transparent' }, textColor: '#6b7686', fontFamily: 'inherit' }, grid: { vertLines: { visible: false }, horzLines: { color: '#eef1f5' } }, rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false }, localization: { priceFormatter: function (p) { return Math.round(p).toLocaleString('ko-KR'); } } });
+    var candle = chart.addSeries(L.CandlestickSeries, { upColor: '#d1373d', downColor: '#2a62c9', borderVisible: false, wickUpColor: '#d1373d', wickDownColor: '#2a62c9' });
+    candle.setData(bars);
+    var ma = function (n) { var out = [], s = 0; for (var i = 0; i < bars.length; i++) { s += bars[i].close; if (i >= n) s -= bars[i - n].close; if (i >= n - 1) out.push({ time: bars[i].time, value: s / n }); } return out; };
+    [[20, '#e8890c'], [60, '#7a4fb3']].forEach(function (m) { chart.addSeries(L.LineSeries, { color: m[1], lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }).setData(ma(m[0])); });
+    var vol = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceScaleId: 'v', priceLineVisible: false, lastValueVisible: false });
+    vol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+    vol.setData(bars.map(function (b, i) { return { time: b.time, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(42,98,201,.35)' : 'rgba(209,55,61,.35)' }; }));
+    var stat = $('period-stat'), current = 126, lastW = el.clientWidth;
+    var setRange = function (n) {
+      current = n; var from = Math.max(0, bars.length - n);
+      chart.timeScale().setVisibleLogicalRange({ from: from - 0.5, to: bars.length - 0.5 });
+      var w = bars.slice(from), c = (w[w.length - 1].close / w[0].open - 1) * 100;
+      var hi = Math.max.apply(null, w.map(function (b) { return b.high; })), lo = Math.min.apply(null, w.map(function (b) { return b.low; }));
+      stat.innerHTML = '<span>' + document.querySelector('[data-range="' + n + '"]').textContent + ' 동안</span><b class="' + (c > 0 ? 'up' : c < 0 ? 'down' : '') + '">' + (c > 0 ? '+' : '') + c.toFixed(2) + '%</b><span>최고 ' + won(hi) + '</span><span>최저 ' + won(lo) + '</span>';
+    };
+    chart.timeScale().subscribeSizeChange(function (w) { if (!lastW && w > 0) setRange(current); lastW = w; });
+    document.querySelectorAll('[data-range]').forEach(function (b) { b.addEventListener('click', function () { document.querySelectorAll('[data-range]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); setRange(Number(b.getAttribute('data-range'))); }); });
+    setRange(current);
+  }).catch(fail);
 })();
 </script>`;
 
@@ -624,7 +707,7 @@ ${e.reasons?.length && e.group === 'weekly' ? `<ul class="sc-why">${e.reasons.sl
 <p class="hero-line">공개 데이터로 계산한 기술 신호·적정가·예측 범위와 AI 위원회 해설을 종목마다 매일 만들어요. 예측은 기록해 두고 나중에 채점해요.</p></div></section>
 <section class="block search-block"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명, 코드, 초성으로 찾기 (예: 삼성, 005930, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
-<p class="muted small search-note">코스피·코스닥 상장 종목을 모두 찾을 수 있어요. 리포트가 없는 종목은 앞으로 크레딧으로 요청할 수 있게 할 예정이에요.</p></section>
+<p class="muted small search-note">코스피·코스닥 상장 종목을 모두 찾을 수 있어요. 리포트가 없는 종목도 차트를 볼 수 있고, 분석은 요청하면 열려요.</p></section>
 <section class="block"><div class="block-head"><h2>매일 리포트</h2><span class="muted">평일 장 마감 뒤 AI 위원회까지</span></div><div class="stock-grid">${core.map(card).join('')}</div></section>
 ${requests.length ? `<section class="block"><div class="block-head"><h2>요청한 리포트</h2><span class="muted">요청 뒤 첫 장 마감 리포트에 심층 AI 위원회</span></div><div class="stock-grid">${requests.map(card).join('')}</div></section>` : ''}
 ${weekly.length ? `<section class="block"><div class="block-head"><h2>이번 주 선정 ${weekly.length}종목</h2><span class="muted">${selection ? `${escape(selection.date)} 선정 · 시가총액 5,000억 원 이상 ${selection.eligible.toLocaleString('ko-KR')}종목 중` : ''}</span></div>

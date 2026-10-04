@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
 import { writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
 import type Anthropic from '@anthropic-ai/sdk';
-import { CHART_ASSET, FONT_DIR, renderHome, renderIndex, renderReport, type HomeEntry } from '../report/renderHtml.js';
+import { CHART_ASSET, FONT_DIR, renderHome, renderIndex, renderReport, renderStockPage, type HomeEntry } from '../report/renderHtml.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE } from '../sources/opendart.js';
 import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
@@ -30,6 +30,7 @@ import { aliasPattern, benchmarksFor, loadTickers, type Ticker } from '../config
 import { collectUniverse, readCorpCodes, readListedStocks, type ListedStock } from './universe.js';
 import { loadRequests, type ReportRequest } from '../config/requests.js';
 import { latestSelection, pickTicker, pool, runSelection } from './weekly.js';
+import { writeStockPages } from './stockPages.js';
 import type { Selection, SelectionParams } from '../analysis/selection.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
@@ -104,7 +105,7 @@ export interface DailyRunResult {
   selected: string | null;
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams }): Promise<DailyRunResult> {
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean }): Promise<DailyRunResult> {
   const { root, now } = options;
   const today = kstParts(now);
   const fetchOpt = options.fetch ? { fetch: options.fetch } : {};
@@ -171,6 +172,11 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   if (!results.length) throw new Error(`every stock failed: ${failed.map((f) => `${f.symbol} ${f.error}`).join('; ')}`);
   results.sort((a, b) => jobs.findIndex((j) => j.ticker.symbol === a.symbol) - jobs.findIndex((j) => j.ticker.symbol === b.symbol));
   await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested);
+  // Every other listed stock gets a chart page with the analysis locked (best effort).
+  if (universe.rows?.length && options.stockPages !== false) {
+    const withPages = new Set([...jobs.map((j) => j.ticker.symbol), ...(await readdir(join(root, 'reports')).catch(() => [] as string[]))]);
+    universe.status.push(await writeStockPages(join(root, 'site'), universe.rows, withPages, { now: () => now, ...fetchOpt }));
+  }
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
   await mkdir(join(root, 'data', 'status'), { recursive: true });
@@ -356,6 +362,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const group = past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : requested.has(ticker.symbol) ? 'request' : 'core';
     home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : {}) });
   }
+  await writeFile(join(siteDir, 'stock.html'), renderStockPage());
   await writeFile(join(siteDir, 'index.html'), renderHome(home, selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null));
   // Search index: every listed stock, with today's price when the list was fetched this run.
   const covered = new Set([...tickers, ...past].map((t) => t.symbol));

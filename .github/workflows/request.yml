@@ -1,0 +1,61 @@
+# Report requests from the site's "리포트 요청하기" button arrive as issues titled
+# "리포트 요청: <이름> (<코드>)". Only someone who can label issues (the owner)
+# approves one, by adding the "approved" label; the code is then appended to
+# requests.json and the next settled daily run writes the report.
+name: Approve report request
+on:
+  issues:
+    types: [labeled]
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: daily-report
+  cancel-in-progress: false
+jobs:
+  approve:
+    if: github.event.label.name == 'approved'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - name: Add to requests.json
+        id: add
+        env:
+          TITLE: ${{ github.event.issue.title }}
+          NUMBER: ${{ github.event.issue.number }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const m = /\(([0-9A-Z]{6})\)\s*$/.exec(process.env.TITLE || "");
+            if (!m) { console.log("result=no-code"); fs.appendFileSync(process.env.GITHUB_OUTPUT, "result=no-code\n"); process.exit(0); }
+            const list = fs.existsSync("requests.json") ? JSON.parse(fs.readFileSync("requests.json", "utf8")) : [];
+            if (list.some((r) => r.symbol === m[1])) { fs.appendFileSync(process.env.GITHUB_OUTPUT, "result=exists\n"); process.exit(0); }
+            const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+            list.push({ symbol: m[1], requestedAt: today, note: `issue #${process.env.NUMBER}` });
+            fs.writeFileSync("requests.json", JSON.stringify(list, null, 2) + "\n");
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `result=added\nsymbol=${m[1]}\n`);
+          '
+      - name: Commit
+        if: steps.add.outputs.result == 'added'
+        run: |
+          git config user.name "gnomon-bot"
+          git config user.email "gnomon-bot@users.noreply.github.com"
+          git add requests.json
+          git commit -m "request: ${{ steps.add.outputs.symbol }} (issue #${{ github.event.issue.number }})"
+          ok=0; for i in 1 2 3; do if git pull --rebase origin main && git push; then ok=1; break; fi; sleep 5; done
+          [ "$ok" = 1 ]
+      - name: Reply on the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ steps.add.outputs.result }}
+        run: |
+          case "$RESULT" in
+            added) msg="요청을 받았어요. 다음 평일 장 마감 뒤(18:30 KST) 리포트가 만들어지면 사이트에 올라와요.";;
+            exists) msg="이미 요청된 종목이에요. 리포트가 만들어지면 사이트에 올라와요.";;
+            *) msg="제목에서 종목코드를 찾지 못했어요. 제목을 '리포트 요청: 이름 (6자리 코드)' 형식으로 바꿔 주세요.";;
+          esac
+          gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "$msg"
+          if [ "$RESULT" != "no-code" ]; then gh issue close ${{ github.event.issue.number }} --repo ${{ github.repository }}; fi

@@ -63,6 +63,12 @@ test('a requested stock gets one deep committee report, then dashboards only', a
   assert.deepEqual(calls.sort(), ['SK하이닉스 (000660)', '조용한전자 (111110)']);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
   assert.ok(home.includes('요청한 리포트') && home.includes('href="111110/index.html"'));
+  // Stocks without a report get chart data for the shared, locked stock page.
+  const page = JSON.parse(await readFile(join(root, 'site', 's', '222220.json'), 'utf8')) as { name: string; bars: unknown[] };
+  assert.deepEqual([page.name, page.bars.length], ['뛰는바이오', 80]);
+  await assert.rejects(readFile(join(root, 'site', 's', '111110.json')));
+  const stockPage = await readFile(join(root, 'site', 'stock.html'), 'utf8');
+  assert.ok(stockPage.includes('id="sp-request"') && stockPage.includes('class="card locked"'));
   calls.length = 0;
   await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
   assert.deepEqual(calls, ['SK하이닉스 (000660)']);
