@@ -11,7 +11,7 @@ import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promi
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
-import { writeCommentary } from '../analysis/commentary.js';
+import { writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
 import type Anthropic from '@anthropic-ai/sdk';
 import { CHART_ASSET, FONT_DIR, renderHome, renderIndex, renderReport, type HomeEntry } from '../report/renderHtml.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
@@ -27,7 +27,9 @@ import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { aliasPattern, benchmarksFor, loadTickers, type Ticker } from '../config/tickers.js';
-import { collectUniverse, readListedStocks } from './universe.js';
+import { collectUniverse, readCorpCodes, readListedStocks } from './universe.js';
+import { latestSelection, pickTicker, pool, runSelection } from './weekly.js';
+import type { Selection, SelectionParams } from '../analysis/selection.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
 
@@ -93,28 +95,84 @@ export interface TickerResult {
   report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED';
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[] }): Promise<{ results: TickerResult[]; failed: { symbol: string; error: string }[]; universeStatus: NewsSourceStatus[] }> {
-  // Every listed stock, for search (best effort: the reports do not depend on it).
-  const universe = await collectUniverse(options.root, { apiKey: options.apiKey, now: options.now, ...(options.fetch ? { fetch: options.fetch } : {}) });
+export interface DailyRunResult {
+  results: TickerResult[];
+  failed: { symbol: string; error: string }[];
+  universeStatus: NewsSourceStatus[];
+  /** Date of the weekly selection made in this run, if any. */
+  selected: string | null;
+}
+
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; concurrency?: number; selectionParams?: SelectionParams }): Promise<DailyRunResult> {
+  const { root, now } = options;
+  const today = kstParts(now);
+  const fetchOpt = options.fetch ? { fetch: options.fetch } : {};
+  // Every listed stock, for search and the weekly selection (best effort).
+  const universe = await collectUniverse(root, { apiKey: options.apiKey, now, ...fetchOpt });
+
+  // Weekly selection: on Friday's settled run, or the first settled run when none exists yet.
+  let selection = await latestSelection(root);
+  let selected: string | null = null;
+  const friday = new Date(Date.parse(`${today.date}T00:00:00Z`)).getUTCDay() === 5;
+  if (today.hour >= SETTLED_HOUR_KST && universe.rows?.length && (!selection || (friday && selection.date !== today.date))) {
+    selection = await runSelection({ root, date: today.date, now, apiKey: options.apiKey, universe: universe.rows, core: options.tickers, ...(options.selectionParams ? { params: options.selectionParams } : {}), ...fetchOpt });
+    selected = today.date;
+  }
+  // Coverage: the always-covered stocks, then this week's picks. Picks get AI only on the day they are picked.
+  const corpCodes = await readCorpCodes(root);
+  const core = new Set(options.tickers.map((t) => t.symbol));
+  const jobs: { ticker: Ticker; tier: CommentaryTier | null }[] = [
+    ...options.tickers.map((t) => ({ ticker: t, tier: t.ai ? 'deep' as const : null })),
+    ...(selection?.picks ?? []).filter((p) => !core.has(p.symbol)).map((p) => ({ ticker: pickTicker(p, corpCodes), tier: selected ? p.tier : null })),
+  ];
+  // Index and peer prices once, before the stocks run in parallel (each stock then writes only its own files).
+  const benchStatus: NewsSourceStatus[] = [];
+  const benches = [...new Map(jobs.flatMap((j) => benchmarksFor(j.ticker)).map((b) => [b.symbol, b])).values()];
+  for (const b of benches) {
+    try {
+      const added = await appendNew(join(root, 'data', 'prices', `${b.symbol}.jsonl`), await fetchNaverDailyBars(b.symbol, 250, { now: () => now, ...fetchOpt }), priceKey);
+      benchStatus.push({ source: `naver:fchart:day:${b.symbol}`, ok: true, count: added.length });
+    } catch (error) {
+      benchStatus.push({ source: `naver:fchart:day:${b.symbol}`, ok: false, count: 0, error: error instanceof Error ? error.message.slice(0, 160) : 'UNKNOWN' });
+    }
+  }
   const results: TickerResult[] = [];
   const failed: { symbol: string; error: string }[] = [];
   const lives = new Map<string, DailyReport>();
-  for (const ticker of options.tickers) {
+  const run = async ({ ticker, tier }: (typeof jobs)[number]) => {
     try {
-      const result = await runTicker(options, ticker);
+      const result = await runTicker(options, ticker, tier);
+      result.marketStatus.push(...benchStatus.filter((st) => benchmarksFor(ticker).some((b) => st.source.endsWith(`:${b.symbol}`))));
       results.push(result);
-      // The front page is rebuilt from the latest data on every run; dated reports stay as written.
-      lives.set(ticker.symbol, await composeReport(options.root, ticker, options.now, { newsStatus: result.newsStatus, marketStatus: result.marketStatus, barsLimit: 1000 }));
     } catch (error) {
       failed.push({ symbol: ticker.symbol, error: error instanceof Error ? error.message.slice(0, 300) : String(error) });
     }
+  };
+  // Core stocks one by one (a peer may be another core stock whose price file is being written),
+  // then the weekly picks in parallel: each touches only its own files and reads prefetched index prices.
+  for (const job of jobs.filter((j) => core.has(j.ticker.symbol))) await run(job);
+  await pool(jobs.filter((j) => !core.has(j.ticker.symbol)), options.concurrency ?? 4, run);
+  // The dashboards are rebuilt from the latest data on every run; dated reports stay as written.
+  for (const r of results) {
+    const ticker = jobs.find((j) => j.ticker.symbol === r.symbol)!.ticker;
+    lives.set(r.symbol, await composeReport(root, ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
   }
   if (!results.length) throw new Error(`every stock failed: ${failed.map((f) => `${f.symbol} ${f.error}`).join('; ')}`);
-  await renderSite(options.root, options.tickers, lives, universe.rows);
-  return { results, failed, universeStatus: universe.status };
+  results.sort((a, b) => jobs.findIndex((j) => j.ticker.symbol === a.symbol) - jobs.findIndex((j) => j.ticker.symbol === b.symbol));
+  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection);
+  // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
+  const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
+  await mkdir(join(root, 'data', 'status'), { recursive: true });
+  await writeFile(join(root, 'data', 'status', 'last-run.json'), `${JSON.stringify({
+    at: now.toISOString(), selected,
+    universe: universe.status,
+    stocks: results.map((r) => ({ symbol: r.symbol, report: r.report, failedSources: failedSources([...r.newsStatus, ...r.marketStatus]) })),
+    failed,
+  }, null, 1)}\n`);
+  return { results, failed, universeStatus: universe.status, selected };
 }
 
-async function runTicker(options: RunOptions, ticker: Ticker): Promise<TickerResult> {
+async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTier | null): Promise<TickerResult> {
   const { root, now } = options;
   const SYMBOL = ticker.symbol;
   const clock = () => now;
@@ -127,7 +185,8 @@ async function runTicker(options: RunOptions, ticker: Ticker): Promise<TickerRes
 
   // About four years of sessions: enough history for strategy backtests.
   const bars = await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
-  const filings = await fetchDartFilings({ apiKey: options.apiKey, corpCode: ticker.dartCorpCode, from: monthAgo.compact, to: today.compact, ...fetchOptions });
+  // Without a corp code DART would return every company's filings, so skip it.
+  const filings = ticker.dartCorpCode ? await fetchDartFilings({ apiKey: options.apiKey, corpCode: ticker.dartCorpCode, from: monthAgo.compact, to: today.compact, ...fetchOptions }) : [];
   const addedBars = await appendNew(pricePath, bars, priceKey);
   const addedFilings = await appendNew(filingPath, filings, filingKey);
   // News is best effort: a failed source is recorded and shown, never fatal.
@@ -135,7 +194,8 @@ async function runTicker(options: RunOptions, ticker: Ticker): Promise<TickerRes
   const { items: news, status: newsStatus } = await collectNews(ticker, options, fetchOptions);
   const aliases = aliasPattern(ticker);
   const addedNews = await appendUnseen(newsPath, news.filter((n) => isRelevant(n.title, aliases)), newsKey);
-  const marketStatus = await collectMarketData(root, SYMBOL, today.date, fetchOptions, benchmarksFor(ticker));
+  // Index and peer prices were fetched once by runDaily.
+  const marketStatus = await collectMarketData(root, SYMBOL, today.date, fetchOptions, []);
 
   let report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' = 'NOT_SETTLED';
   const reportPath = join(reportDir, `${today.date}.json`);
@@ -149,9 +209,9 @@ async function runTicker(options: RunOptions, ticker: Ticker): Promise<TickerRes
       // Forecasts are logged as made and never revised; a repeat of the same base session is skipped.
       await appendUnseen(forecastPath, built.market!.forecasts, forecastKey);
       // AI commentary never blocks the report: a failure is stored as status FAILED.
-      if (ticker.ai) {
+      if (tier) {
         built.commentary = await writeCommentary(built, {
-          now: clock,
+          now: clock, tier,
           ...(options.anthropic ? { client: options.anthropic } : {}),
           ...(options.anthropicApiKey ? { apiKey: options.anthropicApiKey } : {}),
         });
@@ -248,10 +308,18 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  * dashboard (live when this run built one, else its latest dated report),
  * <symbol>/archive.html its dated reports and <symbol>/reports/<date>.html each one.
  */
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null): Promise<void> {
   const siteDir = join(root, 'site');
   const home: HomeEntry[] = [];
-  for (const ticker of tickers) {
+  // Stocks picked in earlier weeks keep their pages (latest dated report), off the front page.
+  const reportDirs = (await readdir(join(root, 'reports'), { withFileTypes: true }).catch(() => [])).filter((d) => d.isDirectory() && /^[0-9A-Z]{6}$/.test(d.name)).map((d) => d.name);
+  const past: Ticker[] = [];
+  for (const symbol of reportDirs.filter((d) => !tickers.some((t) => t.symbol === d))) {
+    const latest = (await loadReports(join(root, 'reports', symbol))).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
+    if (latest) past.push({ symbol, name: latest.name, market: 'KOSPI', dartCorpCode: '', newsQuery: latest.name, newsAliases: [latest.name], ai: false });
+  }
+  const picks = new Map((selection?.picks ?? []).map((p) => [p.symbol, p]));
+  for (const ticker of [...tickers, ...past]) {
     const dir = join(siteDir, ticker.symbol);
     const reports = await loadReports(join(root, 'reports', ticker.symbol));
     await mkdir(join(dir, 'reports'), { recursive: true });
@@ -273,11 +341,13 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     } else {
       await writeFile(join(dir, 'index.html'), renderIndex(reports, { base: '../', name: ticker.name }));
     }
-    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page });
+    const pick = picks.get(ticker.symbol);
+    const group = past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : 'core';
+    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : {}) });
   }
-  await writeFile(join(siteDir, 'index.html'), renderHome(home));
+  await writeFile(join(siteDir, 'index.html'), renderHome(home, selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null));
   // Search index: every listed stock, with today's price when the list was fetched this run.
-  const covered = new Set(tickers.map((t) => t.symbol));
+  const covered = new Set([...tickers, ...past].map((t) => t.symbol));
   const items = universe
     ? universe.map((r) => [r.symbol, r.name, r.market, r.close, r.changePct, covered.has(r.symbol) ? 1 : 0])
     : (await readListedStocks(root)).map((r) => [r.symbol, r.name, r.market, null, null, covered.has(r.symbol) ? 1 : 0]);

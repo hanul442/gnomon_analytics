@@ -167,7 +167,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .stock-card{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;transition:box-shadow .15s ease,transform .15s ease}.stock-card:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(22,27,38,.1)}
 .sc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.sc-name{font-weight:700;font-size:20px}
 .sc-price{display:flex;align-items:baseline;gap:10px;font-variant-numeric:tabular-nums}.sc-price b{font-size:24px}.sc-signal{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;font-size:14px}.sc-signal span{color:var(--muted)}
-.sc-line{margin:2px 0 0;font-size:14px;color:var(--muted)}.sc-go{margin-top:auto;padding-top:6px;color:var(--accent-strong);font-weight:600;font-size:13px}
+.sc-line{margin:2px 0 0;font-size:14px;color:var(--muted)}.sc-why{margin:2px 0 0;padding-left:18px;font-size:13px;color:var(--fg2)}.sc-why li{margin:1px 0}.sel-note{margin:-4px 2px 10px}.sc-go{margin-top:auto;padding-top:6px;color:var(--accent-strong);font-weight:600;font-size:13px}
 .nowrap-cells td,.nowrap-cells th{white-space:nowrap}.paper-list{display:flex;flex-direction:column}.paper-row{display:grid;grid-template-columns:minmax(0,1.6fr) 140px minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:center;padding:12px 10px;border-top:1px solid var(--line)}.paper-row:first-child{border-top:0}
 .paper-row.is-champ{background:var(--accent-soft);border-radius:12px}.pr-name,.pr-num{display:flex;flex-direction:column;gap:2px;min-width:0}.pr-num b{font-size:17px;font-variant-numeric:tabular-nums}.pr-num .badge{align-self:flex-start}
 @media (max-width:820px){.paper-row{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}.paper-row .spark{display:none}}
@@ -579,25 +579,36 @@ const SEARCH_SCRIPT = `<script>
 </script>`;
 
 /** One covered stock on the front page. `report` is its live dashboard, or null when nothing was built yet. */
-export interface HomeEntry { symbol: string; name: string; href: string; report: DailyReport | null }
+export interface HomeEntry {
+  symbol: string; name: string; href: string; report: DailyReport | null;
+  /** core: reported every day; weekly: this week's selection; past: picked in an earlier week (search only). */
+  group: 'core' | 'weekly' | 'past';
+  reasons?: string[];
+  tier?: 'deep' | 'brief';
+}
 
 /** Site front page: every covered stock with price, change, a sparkline and its medium-term signal. */
-export function renderHome(entries: readonly HomeEntry[]): string {
-  const cards = entries.map((e) => {
+export function renderHome(all: readonly HomeEntry[], selection: { date: string; eligible: number; universe: number } | null = null): string {
+  const card = (e: HomeEntry) => {
     const r = e.report, p = r?.price, m = r?.market;
     const mid = m?.horizons.find((h) => h.key === 'MEDIUM')?.summary;
     const spark = (r?.recentBars ?? []).slice(-60).map((b) => b.close);
     return `<a class="card stock-card" href="${escape(e.href)}"><div class="sc-top"><div><div class="sc-name">${escape(e.name)}</div><div class="muted small">${escape(e.symbol)}${m?.benchmarks[0] ? ` · ${escape(m.benchmarks[0].name)}` : ''}</div></div>${spark.length > 1 ? sparkline(spark, `${e.name} 최근 60거래일`) : ''}</div>
 ${p ? `<div class="sc-price"><b>${escape(won(p.close))}</b>${p.changePct === null ? '' : `<span class="${p.changePct > 0 ? 'up' : p.changePct < 0 ? 'down' : ''}">${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}</span>`}</div><div class="muted small">${escape(p.sessionDate ?? r!.date)} 종가</div>` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
 ${mid ? `<div class="sc-signal"><span>중기 기술 신호</span><b class="${mid.score === null ? '' : mid.score >= 0.1 ? 'up' : mid.score <= -0.1 ? 'down' : ''}">${escape(mid.label)}</b></div>` : ''}
-${r ? `<p class="sc-line">${escape(r.headline)}</p>` : ''}<span class="sc-go">대시보드 보기 ›</span></a>`;
-  }).join('');
-  const body = `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div><div class="hero-main"><div class="eyebrow"><span>종목</span><span>${entries.length}개</span></div><h1>Gnomon Analytics</h1>
+${e.reasons?.length && e.group === 'weekly' ? `<ul class="sc-why">${e.reasons.slice(0, 3).map((x) => `<li>${escape(x)}</li>`).join('')}</ul>` : r ? `<p class="sc-line">${escape(r.headline)}</p>` : ''}<span class="sc-go">${e.group === 'weekly' ? `${e.tier === 'deep' ? '심층' : '요약'} AI 리포트 · ` : ''}대시보드 보기 ›</span></a>`;
+  };
+  const entries = all.filter((e) => e.group !== 'past');
+  const core = entries.filter((e) => e.group === 'core'), weekly = entries.filter((e) => e.group === 'weekly');
+  const body = `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div><div class="hero-main"><div class="eyebrow"><span>리포트 ${entries.length}종목</span></div><h1>Gnomon Analytics</h1>
 <p class="hero-line">공개 데이터로 계산한 기술 신호·적정가·예측 범위와 AI 위원회 해설을 종목마다 매일 만들어요. 예측은 기록해 두고 나중에 채점해요.</p></div></section>
 <section class="block search-block"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명, 코드, 초성으로 찾기 (예: 삼성, 005930, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
 <p class="muted small search-note">코스피·코스닥 상장 종목을 모두 찾을 수 있어요. 리포트가 없는 종목은 앞으로 크레딧으로 요청할 수 있게 할 예정이에요.</p></section>
-<section class="block"><div class="block-head"><h2>리포트가 있는 종목</h2><span class="muted">평일 장 마감 뒤 갱신</span></div><div class="stock-grid">${cards}</div></section>
+<section class="block"><div class="block-head"><h2>매일 리포트</h2><span class="muted">평일 장 마감 뒤 AI 위원회까지</span></div><div class="stock-grid">${core.map(card).join('')}</div></section>
+${weekly.length ? `<section class="block"><div class="block-head"><h2>이번 주 선정 ${weekly.length}종목</h2><span class="muted">${selection ? `${escape(selection.date)} 선정 · 시가총액 5,000억 원 이상 ${selection.eligible.toLocaleString('ko-KR')}종목 중` : ''}</span></div>
+<p class="muted small sel-note">거래대금, 최근 5거래일 움직임, 평소 대비 거래대금, 실적·주요 공시를 함께 점수로 매겨 매주 금요일에 골라요. 위쪽 종목은 심층 AI 위원회, 나머지는 요약 AI 위원회가 써요. 대시보드의 계산은 매일 갱신돼요.</p>
+<div class="stock-grid">${weekly.map(card).join('')}</div></section>` : ''}
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   return shell('', '종목 | Gnomon Analytics', body, { scripts: SEARCH_SCRIPT });
 }

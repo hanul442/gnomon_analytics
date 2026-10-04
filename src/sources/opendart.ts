@@ -62,7 +62,10 @@ export function parseDartList(body: unknown, retrievedAt: Date): { filings: Disc
 export async function fetchDartFilings(
   options: {
     apiKey: string;
-    corpCode: string;
+    /** One company; leave out for every company's filings (then narrow with corpClass). */
+    corpCode?: string;
+    /** Y 유가증권(KOSPI), K 코스닥. */
+    corpClass?: 'Y' | 'K';
     /** YYYYMMDD, inclusive. */
     from: string;
     to: string;
@@ -72,10 +75,12 @@ export async function fetchDartFilings(
 ): Promise<Disclosure[]> {
   if (!options.apiKey.trim()) throw new Error('OPENDART_API_KEY_MISSING');
   const all: Disclosure[] = [];
-  for (let page = 1; page <= 20; page += 1) {
+  const maxPages = options.corpCode ? 20 : 60;
+  for (let page = 1; page <= maxPages; page += 1) {
     const url = new URL('https://opendart.fss.or.kr/api/list.json');
     url.searchParams.set('crtfc_key', options.apiKey);
-    url.searchParams.set('corp_code', options.corpCode);
+    if (options.corpCode) url.searchParams.set('corp_code', options.corpCode);
+    if (options.corpClass) url.searchParams.set('corp_cls', options.corpClass);
     url.searchParams.set('bgn_de', options.from);
     url.searchParams.set('end_de', options.to);
     url.searchParams.set('page_no', String(page));
