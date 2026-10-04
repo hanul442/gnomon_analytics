@@ -32,7 +32,7 @@ test('report pages have seven tabs with gauges, fair value, forecasts, flows and
   for (const key of ['rsi', 'macd', 'stoch', 'volume']) assert.ok(page.includes(`data-pane="${key}"`), key);
   // Strategy chips put buy/sell points on the chart; filings and news are dashed vertical lines.
   assert.ok(page.includes('data-strategy="macd"') && page.includes('id="strat-info"') && page.includes('data-show-strategy'));
-  assert.ok(page.includes('id="vlines"') && page.includes('class="trade-log"'));
+  assert.ok(page.includes('id="vlines"') && page.includes('id="ev-strip"') && page.includes('class="trade-log"'));
   // The front page is the live dashboard; the archive lists dated reports.
   const front = await readFile(join(root, 'site', 'index.html'), 'utf8');
   assert.ok(front.includes('기준 최신'));
