@@ -45,7 +45,10 @@ jobs:
           # data/ and reports/ are the only tracked outputs; site/ and dist/ are ignored.
           git add -A
           git diff --cached --quiet || git commit -m "data: daily run $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push
+          # main may have moved during the run (a merge, another run): replay this run's data on top.
+          # (During a rebase "theirs" is this run's commit, so its data wins a conflict.)
+          ok=0; for i in 1 2 3; do if git pull --rebase -X theirs origin main && git push; then ok=1; break; fi; sleep 5; done
+          [ "$ok" = 1 ]
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
