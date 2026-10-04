@@ -1,10 +1,13 @@
-// News headlines from the Naver news search API and RSS feeds
+// News headlines from the Naver news search API (NAVER API HUB on NAVER
+// Cloud Platform, which replaced the Developers Center endpoint) and RSS feeds
 // (Google News search, outlet feeds). Only headline, outlet, link and
 // publish time are kept — never the article body (docs/DESIGN.md §4.3).
 
 import type { NewsItem } from '../types.js';
 
 export const NAVER_NEWS_SOURCE = 'naver:news-search';
+/** NAVER API HUB gateway (NAVER Cloud Platform). */
+export const NAVER_API_HUB = 'https://naverapihub.apigw.ntruss.com';
 export const GOOGLE_NEWS_SOURCE = 'google:news-rss';
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', middot: '·', hellip: '…', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”' };
@@ -118,21 +121,23 @@ export async function fetchNaverNews(options: {
   if (!options.clientId.trim() || !options.clientSecret.trim()) throw new Error('NAVER_API_KEY_MISSING');
   const all: NewsItem[] = [];
   for (let page = 0; page < (options.pages ?? 3); page += 1) {
-    const url = new URL('https://openapi.naver.com/v1/search/news.json');
+    const url = new URL(`${NAVER_API_HUB}/search/v1/news`);
     url.searchParams.set('query', options.query);
     url.searchParams.set('display', '100');
     url.searchParams.set('start', String(page * 100 + 1));
     url.searchParams.set('sort', 'date');
     const response = await (options.fetch ?? fetch)(url, {
-      headers: { 'X-Naver-Client-Id': options.clientId, 'X-Naver-Client-Secret': options.clientSecret },
+      headers: { 'X-NCP-APIGW-API-KEY-ID': options.clientId.trim(), 'X-NCP-APIGW-API-KEY': options.clientSecret.trim() },
       signal: AbortSignal.timeout(20_000),
     });
     if (!response.ok) {
       // Naver's error body carries a code (e.g. 024 = authentication failed); it holds no secrets.
       const detail = await response.json().then((b: unknown) => {
         if (b === null || typeof b !== 'object') return '';
-        const { errorCode, errorMessage } = b as { errorCode?: unknown; errorMessage?: unknown };
-        return `${String(errorCode ?? '')} ${String(errorMessage ?? '')}`.trim();
+        // Gateway errors: {"error":{"errorCode","message","details"}}; API errors: {"errorCode","errorMessage"}.
+        const gateway = (b as { error?: unknown }).error;
+        const e = (gateway && typeof gateway === 'object' ? gateway : b) as { errorCode?: unknown; message?: unknown; errorMessage?: unknown; details?: unknown };
+        return [e.errorCode, e.message ?? e.errorMessage, e.details].filter((x) => x != null && x !== '').map(String).join(' ');
       }, () => '');
       throw new Error(`NAVER_NEWS_HTTP_${response.status}${detail ? `:${detail.slice(0, 120)}` : ''}`);
     }

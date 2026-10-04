@@ -14,7 +14,7 @@ const RSS = `<rss><channel><item><title>SK하이닉스, HBM4 양산 돌입 - 전
 const NAVER_NEWS = { items: [{ title: '<b>SK하이닉스</b> 3분기 영업이익 사상 최대', originallink: 'https://www.yna.co.kr/view/1', link: '', pubDate: 'Fri, 02 Oct 2026 16:00:00 +0900' }] };
 const fakeFetch = (async (url: string | URL | Request) => {
   const u = String(url);
-  if (u.includes('openapi.naver.com')) return new Response(JSON.stringify(NAVER_NEWS));
+  if (u.includes('naverapihub.apigw.ntruss.com')) return new Response(JSON.stringify(NAVER_NEWS));
   if (u.includes('fchart.stock.naver')) return new Response(FEED);
   if (u.includes('news.google.com') || u.includes('mk.co.kr')) return new Response(RSS);
   return new Response(JSON.stringify(DART));
