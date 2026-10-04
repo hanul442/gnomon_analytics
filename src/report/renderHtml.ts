@@ -7,20 +7,26 @@ import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim, Commentary } from '../analysis/commentary.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
+/** Pretendard web font, also served from our own site. */
+export const FONT_DIR = 'assets/fonts';
 
 const escape = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const won = (value: number): string => `${Math.round(value).toLocaleString('ko-KR')}원`;
-const pct = (value: number | null): string => (value === null ? '—' : `${value > 0 ? '+' : ''}${value.toFixed(2)}%`);
+const pct = (value: number | null): string => (value === null ? '없음' : `${value > 0 ? '+' : ''}${value.toFixed(2)}%`);
 const tone = (value: number | null): string => (value === null || value === 0 ? '' : value > 0 ? 'up' : 'down');
 const IMPORTANCE_LABEL = { HIGH: '중요', MEDIUM: '보통', LOW: '참고' } as const;
 const MIX_COLORS = ['#1f7a74', '#36b3a8', '#7fd3ca', '#b9e8e2', '#5b8f8b', '#d5efeb'];
+/** Meta details as separate items (spacing, not "·" chains). */
+const meta = (parts: readonly string[], cls = 'meta'): string => `<span class="${cls}">${parts.filter(Boolean).map((part) => `<span>${part}</span>`).join('')}</span>`;
 
 const ICON = {
   logo: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M16 16 L16 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M16 16 L25 21" stroke="#c9f27f" stroke-width="2.4" stroke-linecap="round"/></svg>',
   dashboard: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 12l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   archive: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   filing: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 12h6M10 16h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  why: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 16.6v.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  news: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h11v14H7a2 2 0 0 1-2-2zM16 9h3v8a2 2 0 0 1-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h5M8 12h5M8 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   source: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   price: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 4 3 7-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   week: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -33,15 +39,20 @@ const ICON = {
 const STYLE = `
 :root{--frame:#dfe9e7;--surface:#ffffff;--card:#f6f8f8;--line:#e6eceb;--fg:#18201f;--muted:#6a7673;
 --side:#1f5f5b;--side-fg:#d9ebe9;--pill:#c9f27f;--pill-fg:#173b38;--teal:#1f7a74;--teal-soft:#e3f1ef;
---up:#e0383e;--down:#2b6fd6;--warn:#c07a12}
-*{box-sizing:border-box}html,body{margin:0}body{background:var(--frame);color:var(--fg);
-font:15px/1.55 Inter,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;-webkit-font-smoothing:antialiased}
-a{color:inherit}.app{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;max-width:1440px;margin:0 auto;padding:16px;min-height:100vh}
+--up:#e0383e;--down:#2b6fd6;--warn:#c07a12;--focus:#1f7a74;--ease-out:cubic-bezier(.16,1,.3,1)}
+*{box-sizing:border-box}html{color-scheme:light}html,body{margin:0}body{background:var(--frame);color:var(--fg);
+font:15px/1.6 "Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
+a{color:inherit}button,a{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.side :focus-visible{outline-color:var(--pill)}
+.skip{position:absolute;left:16px;top:16px;z-index:10;background:var(--pill);color:var(--pill-fg);padding:8px 14px;border-radius:999px;font-weight:600;text-decoration:none;transform:translateY(-200%);transition:transform 150ms var(--ease-out)}
+.skip:focus{transform:none}[id]{scroll-margin-top:16px}h1,h2,h3{text-wrap:balance}p,li{text-wrap:pretty}
+.meta{display:inline-flex;flex-wrap:wrap;gap:2px 12px}.m-date.meta{display:none}.app{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;max-width:1440px;margin:0 auto;padding:16px;min-height:100vh}
 .side{background:var(--side);color:var(--side-fg);border-radius:18px;padding:24px 16px;position:sticky;top:16px;height:calc(100vh - 32px);display:flex;flex-direction:column;gap:28px}
 .brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:18px;padding:0 8px}.brand svg{width:30px;height:30px}
-.brand small{display:block;font-weight:500;font-size:11px;color:var(--side-fg);letter-spacing:.04em}
+.brand small{display:block;font-weight:500;font-size:12px;color:var(--side-fg)}
 .nav{display:flex;flex-direction:column;gap:6px}.nav a{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:999px;text-decoration:none;font-size:15px}
-.nav a svg{width:20px;height:20px;flex:none}.nav a:hover{background:rgba(255,255,255,.08)}.nav a.active{background:var(--pill);color:var(--pill-fg);font-weight:600}
+.nav a{transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.nav a svg{width:20px;height:20px;flex:none}.nav a:hover{background:rgba(255,255,255,.1)}.nav a.active{background:var(--pill);color:var(--pill-fg);font-weight:600}
 .side .foot{margin-top:auto;font-size:12px;color:var(--side-fg);opacity:.8;padding:0 8px}
 main{background:var(--surface);border-radius:18px;padding:20px 28px 40px;min-width:0}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
@@ -57,7 +68,7 @@ h1{font-size:28px;margin:24px 0 4px;letter-spacing:-.01em}.sub{color:var(--muted
 .grid2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;margin-top:16px}.grid-eq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
 .card h2{font-size:18px;margin:0;font-weight:650}.head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .seg{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px}.seg button{border:0;background:none;padding:5px 12px;border-radius:999px;font:inherit;font-size:13px;color:var(--muted);cursor:pointer}
-.seg button[aria-pressed=true]{background:var(--side);color:#fff}
+.seg button{transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.seg button:hover{color:var(--fg);background:var(--teal-soft)}.seg button[aria-pressed=true]{background:var(--side);color:#fff}.seg button:active{transform:scale(.97)}
 .legend-line{font-size:13px;color:var(--muted);min-height:20px;font-variant-numeric:tabular-nums}
 #chart{height:340px;position:relative}#chart svg{width:100%;height:100%}
 .donut{display:flex;flex-direction:column;align-items:center;gap:16px}.donut svg{width:180px;height:180px}
@@ -69,10 +80,10 @@ td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}td a{
 .why{color:var(--muted);font-size:13px;margin-top:2px}.badge{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;white-space:nowrap}
 .b-HIGH{background:#fde8e6;color:#b4232a}.b-MEDIUM{background:#fff3dc;color:var(--warn)}.b-LOW{background:#eef1f0;color:var(--muted)}.b-new{background:var(--pill);color:var(--pill-fg);margin-left:6px}
 .table-wrap{overflow-x:auto}
-.why-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}.why-col{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.why-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}.why-col{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .why-col h3,.why-h{font-size:14px;margin:0 0 6px}.why-h{margin-top:16px}.bull h3{color:var(--up)}.bear h3{color:var(--down)}.unc h3{color:var(--muted)}
 ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.chips{white-space:nowrap}
-.chip{display:inline-block;font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none}
+.chip{display:inline-block;font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.chip:hover{background:var(--teal);color:#fff}
 .evid li{font-size:13px}
 .story{padding:12px 0;border-top:1px solid var(--line)}.story:first-of-type{border-top:0}.story-title{font-weight:600;margin:4px 0 2px}.story-title a{text-decoration:none}.story-title a:hover{text-decoration:underline}
 .tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px}.more summary{cursor:pointer;color:var(--teal);font-size:13px;margin-top:4px}
@@ -80,37 +91,41 @@ ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.c
 .grid-signal{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;margin-bottom:16px}
 .signal{text-align:center}.gauge{width:100%;max-width:260px;display:block;margin:0 auto}.signal-label{font-size:24px;font-weight:700;margin:4px 0}
 .reason{margin:6px 0;font-size:14px}.tally{color:var(--muted);font-size:13px}.fine{color:var(--muted);font-size:11px;margin:10px 0 0}
-.moms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.mom{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.moms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.mom{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .mom .k{color:var(--muted);font-size:12px}.mom .v{font-size:18px;font-weight:700;margin:2px 0}
 .gbars{display:grid;gap:12px;margin-top:16px}.gtitle{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
 .track{display:flex;height:12px;border-radius:999px;overflow:hidden;background:#eef1f0;gap:2px}.track i{display:block;height:100%}
 .track i.v-BULLISH{background:#e5484d}.track i.v-BEARISH{background:#3b7be0}.track i.v-NEUTRAL{background:#c4cbc9}.track i.b-LOW{background:#e6eceb}
 .votes{margin-top:14px}.votes td{padding:8px}.votes summary{cursor:pointer;color:var(--teal);font-weight:600;font-size:14px}.votes table{margin-top:8px}
 .num{font-variant-numeric:tabular-nums;white-space:nowrap}.v-BULLISH{background:#fde8e6;color:#b4232a}.v-BEARISH{background:#e3ecfb;color:#1d4fa3}.v-NEUTRAL{background:#eef1f0;color:var(--muted)}.nowrap{white-space:nowrap}.m-date{display:none;color:var(--muted);font-size:12px}
-footer{margin-top:28px;color:var(--muted);font-size:12px}
+footer{margin-top:28px;color:var(--muted);font-size:12px}footer p{margin:2px 0}
+.needle{transform-box:view-box;transform-origin:110px 104px;transform:rotate(var(--r));animation:settle 900ms var(--ease-out) 200ms both}
+@keyframes settle{from{transform:rotate(0deg)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 @media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:820px){.app{grid-template-columns:minmax(0,1fr);padding:0;gap:0}
 .side{position:static;height:auto;border-radius:0;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;flex-wrap:wrap}
 .side .foot{display:none}.nav{flex-direction:row;gap:2px;overflow-x:auto}.nav a{padding:8px 12px;font-size:13px;white-space:nowrap}.nav a svg{display:none}
 main{border-radius:0;padding:16px 16px 32px}h1{font-size:22px}.kpis{gap:10px}.card{padding:14px}.kpi .value{font-size:18px}#chart{height:280px}
-.col-filer,.col-cat,.col-date{display:none}.m-date{display:block}
+.col-filer,.col-cat,.col-date{display:none}.m-date.meta{display:flex}
 .kpi .ico{display:none}.moms{gap:8px}.mom{padding:10px}.mom .v{font-size:15px}.votes .why{display:none}.kpi .value{font-size:17px;white-space:nowrap}.kpi .hint{margin-top:8px;font-size:12px}.stamp{text-align:left}}`;
 
 function shell(active: 'today' | 'archive', base: string, title: string, body: string, scripts = '', filingsHref = '#filings', hasWhy = true): string {
   const nav = [
     { key: 'today', href: `${base}index.html#latest`, icon: ICON.dashboard, label: '오늘 리포트' },
     { key: 'archive', href: `${base}index.html#archive`, icon: ICON.archive, label: '지난 리포트' },
-    ...(hasWhy ? [{ key: 'why', href: filingsHref.replace('#filings', '#why'), icon: ICON.dashboard, label: '왜?' }] : []),
-    { key: 'news', href: filingsHref.replace('#filings', '#news'), icon: ICON.source, label: '뉴스' },
+    ...(hasWhy ? [{ key: 'why', href: filingsHref.replace('#filings', '#why'), icon: ICON.why, label: '왜?' }] : []),
+    { key: 'news', href: filingsHref.replace('#filings', '#news'), icon: ICON.news, label: '뉴스' },
     { key: 'filings', href: filingsHref, icon: ICON.filing, label: '공시' },
     { key: 'sources', href: '#sources', icon: ICON.source, label: '데이터 출처' },
   ];
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${escape(title)}</title><style>${STYLE}</style></head><body><div class="app">
-<aside class="side"><div class="brand">${ICON.logo}<div>GNM<small>GNOMON ANALYTICS</small></div></div>
+<meta name="theme-color" content="#dfe9e7"><title>${escape(title)}</title>
+<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><style>${STYLE}</style></head><body><a class="skip" href="#main">본문으로 건너뛰기</a><div class="app">
+<aside class="side"><div class="brand">${ICON.logo}<div>GNM<small>Gnomon Analytics</small></div></div>
 <nav class="nav">${nav.map((n) => `<a href="${n.href}"${n.key === active ? ' class="active" aria-current="page"' : ''}>${n.icon}<span>${n.label}</span></a>`).join('')}</nav>
 <div class="foot">공개 데이터로 만든 리서치 리포트예요. 투자 권유가 아니에요.</div></aside>
-<main>${body}</main></div>${scripts}</body></html>`;
+<main id="main" tabindex="-1">${body}</main></div>${scripts}</body></html>`;
 }
 
 
@@ -132,9 +147,9 @@ function gaugeSvg(t: TechnicalSummary | undefined): string {
   }).join('');
   const needle = t && t.score !== null
     ? (() => {
-        const deg = angle(t.score);
-        const [x, y] = point(deg, r - 22), [bx1, by1] = point(deg + 90, 6), [bx2, by2] = point(deg - 90, 6);
-        return `<path d="M${bx1.toFixed(1)} ${by1.toFixed(1)} L${x.toFixed(1)} ${y.toFixed(1)} L${bx2.toFixed(1)} ${by2.toFixed(1)} Z" fill="#18201f"/><circle cx="${cx}" cy="${cy}" r="7" fill="#18201f"/>`;
+        // Drawn pointing straight up (neutral), then turned clockwise to the score; CSS lets it settle from neutral.
+        const turn = (90 - angle(t.score)).toFixed(1);
+        return `<g class="needle" style="--r:${turn}deg" transform="rotate(${turn} ${cx} ${cy})"><path d="M${cx - 6} ${cy} L${cx} ${cy - (r - 22)} L${cx + 6} ${cy} Z" fill="#18201f"/></g><circle cx="${cx}" cy="${cy}" r="7" fill="#18201f"/>`;
       })()
     : `<circle cx="${cx}" cy="${cy}" r="7" fill="#c4cbc9"/>`;
   return `<svg viewBox="0 0 220 118" class="gauge" role="img" aria-label="기술적 신호 ${escape(t?.label ?? '없음')}">${arcs}${needle}
@@ -147,7 +162,7 @@ function groupBars(t: TechnicalSummary): string {
     const n = votes.length;
     const count = (vote: string | null) => votes.filter((v) => v.vote === vote).length;
     const parts: [string, number, string][] = [['v-BEARISH', count('BEARISH'), '약세'], ['v-NEUTRAL', count('NEUTRAL'), '중립'], ['v-BULLISH', count('BULLISH'), '강세'], ['b-LOW', count(null), '계산 불가']];
-    return `<div class="gbar"><div class="gtitle"><span>${title}</span><span>${parts.filter(([, c]) => c).map(([, c, l]) => `${l} ${c}`).join(' · ')}</span></div>
+    return `<div class="gbar"><div class="gtitle"><span>${title}</span>${meta(parts.filter(([, c]) => c).map(([, c, l]) => `${l} ${c}`))}</div>
 <div class="track">${parts.filter(([, c]) => c).map(([cls, c, l]) => `<i class="${cls}" style="width:${((c / n) * 100).toFixed(1)}%" title="${l} ${c}"></i>`).join('')}</div></div>`;
   };
   return `<div class="gbars">${bar('MA', `이동평균 ${t.votes.filter((v) => v.group === 'MA').length}개`)}${bar('OSC', `오실레이터 ${t.votes.filter((v) => v.group === 'OSC').length}개`)}</div>`;
@@ -160,14 +175,14 @@ function signalSection(report: DailyReport): string {
   const trendMark = { UP: '▲', FLAT: '■', DOWN: '▼' } as const;
   const trendWord = { UP: '상승', FLAT: '보합', DOWN: '하락' } as const;
   const momentum = (report.momentum ?? []).map((m) => `<div class="mom"><div class="k">${escape(m.label)}</div>
-<div class="v ${m.trend === 'UP' ? 'up' : m.trend === 'DOWN' ? 'down' : ''}">${m.trend ? `${trendMark[m.trend]} ${trendWord[m.trend]}` : '—'}</div>
-<div class="k">${m.returnPct === null ? '기록 부족' : pct(m.returnPct)} · ${m.days}일</div></div>`).join('');
-  const rows = t.votes.map((v) => `<tr><td>${escape(v.label)}</td><td class="num">${v.value === null ? '—' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
+<div class="v ${m.trend === 'UP' ? 'up' : m.trend === 'DOWN' ? 'down' : ''}">${m.trend ? `${trendMark[m.trend]} ${trendWord[m.trend]}` : '판단 보류'}</div>
+<div class="k">${m.days}일 ${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}</div></div>`).join('');
+  const rows = t.votes.map((v) => `<tr><td>${escape(v.label)}</td><td class="num">${v.value === null ? '없음' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
 <td>${v.vote ? `<span class="badge v-${v.vote}">${VOTE_LABEL[v.vote]}</span>` : '<span class="badge b-LOW">계산 불가</span>'}</td><td class="why">${escape(v.rule)}</td></tr>`).join('');
   return `<div class="grid-signal" id="signal"><div class="card signal"><div class="head"><h2>기술적 신호</h2><span class="sub" style="margin:0">${escape(t.sessionDate)} 종가 기준</span></div>
 ${gaugeSvg(t)}<div class="signal-label ${tone}">${escape(t.label)}</div>
 <p class="reason">${escape(report.technicalReason ?? '')}</p>
-<div class="tally">강세 ${t.counts.bullish} · 중립 ${t.counts.neutral} · 약세 ${t.counts.bearish}${t.counts.abstained ? ` · 계산 불가 ${t.counts.abstained}` : ''}</div>
+<div class="tally">${meta([`강세 ${t.counts.bullish}`, `중립 ${t.counts.neutral}`, `약세 ${t.counts.bearish}`, t.counts.abstained ? `계산 불가 ${t.counts.abstained}` : ''])}</div>
 <p class="fine">기술적 지표 ${t.votes.length}개의 요약이에요. 오를 확률이 아니고, 투자 권유가 아니에요.</p></div>
 <div class="card"><div class="head"><h2>모멘텀</h2></div><div class="moms">${momentum}</div>
 ${groupBars(t)}
@@ -226,7 +241,7 @@ function chartCard(report: DailyReport, base: string): { html: string; script: s
 <button type="button" data-range="21">1개월</button><button type="button" data-range="63" aria-pressed="true">3개월</button><button type="button" data-range="126">6개월</button></div>
 ${hasOhlc ? '<div class="seg" role="group" aria-label="차트 종류"><button type="button" data-kind="candle" aria-pressed="true">캔들</button><button type="button" data-kind="line">라인</button></div>' : ''}</div></div>
 <div class="legend-line" id="legend">${bars.length ? `${escape(bars.at(-1)!.date)} 종가 ${escape(won(bars.at(-1)!.close))}` : ''}</div>
-<div id="chart">${fallbackSvg(bars)}</div><p class="fine">■ 공시 · ● 뉴스 (보통 이상 중요도)</p></div>`;
+<div id="chart">${fallbackSvg(bars)}</div><p class="fine">■ 공시와 ● 뉴스는 중요도 보통 이상만 표시해요.</p></div>`;
   const script = `<script type="application/json" id="bars">${data}</script>
 <script type="application/json" id="markers">${markers}</script>
 <script src="${base}${CHART_ASSET}" defer></script>
@@ -312,7 +327,7 @@ function mixCard(filings: readonly ReportedFiling[]): string {
     return arc;
   }).join('');
   const ring = `<circle r="${r}" cx="90" cy="90" fill="none" stroke="${MIX_COLORS[0]}" stroke-width="34"/>`;
-  return `<div class="card"><div class="head"><h2>공시 구성</h2><span class="sub" style="margin:0">최근 30일 · ${total}건</span></div>
+  return `<div class="card"><div class="head"><h2>공시 구성</h2><span class="sub" style="margin:0">최근 30일 ${total}건</span></div>
 <div class="donut"><svg viewBox="0 0 180 180" role="img" aria-label="최근 30일 공시 ${total}건의 종류별 구성">${ring}${arcs}
 <text x="90" y="86" text-anchor="middle" font-size="26" font-weight="700" fill="#18201f">${total}</text><text x="90" y="108" text-anchor="middle" font-size="12" fill="#6a7673">건</text></svg>
 <div class="legend">${mix.map(([cat, n], i) => `<div><i style="background:${MIX_COLORS[i % MIX_COLORS.length]}"></i>${escape(cat)} ${Math.round((n / total) * 100)}%</div>`).join('')}</div></div></div>`;
@@ -324,7 +339,7 @@ function filingsTable(report: DailyReport): string {
   if (!recent.length) return '<p class="empty">최근 30일 동안 나온 공시가 없어요.</p>';
   return `<div class="table-wrap"><table><thead><tr><th class="col-date">날짜</th><th>공시</th><th class="col-cat">종류</th><th>중요도</th><th class="col-filer">제출인</th></tr></thead><tbody>
 ${recent.map((f) => `<tr><td class="col-date nowrap">${escape(f.filedDate)}</td>
-<td><span class="m-date">${escape(f.filedDate)} · ${escape(f.category)}</span><a href="${escape(f.url)}" rel="noopener" target="_blank">${escape(f.title)}</a>${fresh.has(f.receiptNo) ? '<span class="badge b-new">새 공시</span>' : ''}<div class="why">${escape(f.why)}</div></td>
+<td>${meta([escape(f.filedDate), escape(f.category)], 'meta m-date')}<a href="${escape(f.url)}" rel="noopener" target="_blank">${escape(f.title)}</a>${fresh.has(f.receiptNo) ? '<span class="badge b-new">새 공시</span>' : ''}<div class="why">${escape(f.why)}</div></td>
 <td class="col-cat nowrap">${escape(f.category)}</td><td><span class="badge b-${f.importance}">${IMPORTANCE_LABEL[f.importance]}</span></td><td class="col-filer nowrap">${escape(f.filer)}</td></tr>`).join('')}
 </tbody></table></div>`;
 }
@@ -347,7 +362,7 @@ function whySection(report: DailyReport): string {
   if (!c) return '';
   if (c.status !== 'OK') {
     const reason = c.error ? (COMMENTARY_FAIL[c.error] ?? (c.error.startsWith('REFUSAL') ? 'AI가 해설 작성을 거절했어요' : 'AI 호출에 실패했어요')) : '';
-    return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2></div><p class="empty">AI 해설 없음${reason ? ` — ${escape(reason)}` : ''}. 위의 지표와 공시·뉴스를 직접 확인해 주세요.</p></div>`;
+    return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2></div><p class="empty">AI 해설이 없어요${reason ? `: ${escape(reason)}` : ''}. 위의 지표와 공시, 뉴스를 직접 확인해 주세요.</p></div>`;
   }
   const byId = new Map(c.evidence.map((e) => [e.id, e]));
   const chips = (ids: readonly string[]) => ids.map((id) => {
@@ -360,7 +375,7 @@ function whySection(report: DailyReport): string {
     ? `<ul class="claims">${claims.map((cl) => `<li>${escape(cl.text)} <span class="chips">${chips(cl.evidenceIds)}</span></li>`).join('')}</ul>`
     : `<p class="empty">${emptyText}</p>`);
   const legend = c.evidence.map((e) => `<li><b>${escape(e.id)}</b> ${e.url.startsWith('http') ? `<a href="${escape(e.url)}" rel="noopener" target="_blank">${escape(e.label)}</a>` : escape(e.label)}</li>`).join('');
-  return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2><span class="sub" style="margin:0">AI 해설 · 오늘 리포트의 근거만 인용</span></div>
+  return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2><span class="sub" style="margin:0">AI 해설, 오늘 리포트의 근거만 인용해요</span></div>
 ${c.summary ? `<p class="headline">${escape(c.summary.text)} <span class="chips">${chips(c.summary.evidenceIds)}</span></p>` : ''}
 <div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
 <div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish, '찾지 못했어요.')}</div>
@@ -375,7 +390,7 @@ function newsSection(report: DailyReport): string {
   const news = report.news;
   if (!news) return '';
   const failed = news.status.filter((st) => !st.ok);
-  const statusLine = news.status.map((st) => `${SOURCE_LABEL[st.source] ?? st.source} ${st.ok ? `${st.count}건` : '실패'}`).join(' · ');
+  const statusLine = news.status.map((st) => `${SOURCE_LABEL[st.source] ?? st.source} ${st.ok ? `${st.count}건` : '실패'}`).join(', ');
   const warn = failed.length
     ? `<p class="warn">일부 제한: ${failed.map((st) => escape(SOURCE_LABEL[st.source] ?? st.source)).join(', ')} 수집에 실패했어요. 이 소스의 기사는 빠져 있을 수 있어요.</p>` : '';
   const fresh = new Set(news.newIds);
@@ -383,12 +398,12 @@ function newsSection(report: DailyReport): string {
     const others = c.articles.filter((a) => a.url !== c.url);
     return `<div class="story"><div><span class="badge b-${c.importance}">${IMPORTANCE_LABEL[c.importance]}</span> <span class="tag">${escape(c.category)}</span>${fresh.has(c.id) ? '<span class="badge b-new">새 뉴스</span>' : ''}</div>
 <div class="story-title"><a href="${escape(c.url)}" rel="noopener" target="_blank">${escape(c.title)}</a></div>
-<div class="why">${escape(c.publisher)} (${TIER_LABEL[c.tier]}) · ${escape(kstTime(c.firstAt))}${c.articles.length > 1 ? ` · 같은 내용 기사 ${c.articles.length}건` : ''}</div>
-${others.length ? `<details class="more"><summary>다른 기사 ${others.length}건</summary><ul class="plain">${others.map((a) => `<li><a href="${escape(a.url)}" rel="noopener" target="_blank">${escape(a.title)}</a> <span class="why">${escape(a.publisher)} · ${escape(kstTime(a.publishedAt))}</span></li>`).join('')}</ul></details>` : ''}</div>`;
+<div class="why">${meta([`${escape(c.publisher)} (${TIER_LABEL[c.tier]})`, escape(kstTime(c.firstAt)), c.articles.length > 1 ? `같은 내용 기사 ${c.articles.length}건` : ''])}</div>
+${others.length ? `<details class="more"><summary>다른 기사 ${others.length}건</summary><ul class="plain">${others.map((a) => `<li><a href="${escape(a.url)}" rel="noopener" target="_blank">${escape(a.title)}</a> <span class="why">${meta([escape(a.publisher), escape(kstTime(a.publishedAt))])}</span></li>`).join('')}</ul></details>` : ''}</div>`;
   }).join('');
-  return `<div class="card" id="news" style="margin-top:16px"><div class="head"><h2>뉴스</h2><span class="sub" style="margin:0">최근 7일 · ${news.clusters.length}개 이야기</span></div>
+  return `<div class="card" id="news" style="margin-top:16px"><div class="head"><h2>뉴스</h2><span class="sub" style="margin:0">최근 7일, 이야기 ${news.clusters.length}개</span></div>
 ${warn}${rows || '<p class="empty">최근 7일 동안 관련 뉴스가 없어요.</p>'}
-<p class="fine">제목·언론사·링크만 모아요(본문은 저장하지 않아요). 비슷한 제목의 기사는 하나의 이야기로 묶고, 기사 수가 많다고 더 중요하게 보지 않아요. 수집: ${escape(statusLine)}</p></div>`;
+<p class="fine">제목과 언론사, 링크만 모아요(본문은 저장하지 않아요). 비슷한 제목의 기사는 하나의 이야기로 묶고, 기사 수가 많다고 더 중요하게 보지 않아요. 수집: ${escape(statusLine)}</p></div>`;
 }
 
 function chartMarkers(report: DailyReport): { date: string; kind: 'filing' | 'news'; text: string }[] {
@@ -403,7 +418,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const chart = chartCard(report, base);
   const notes = report.notes.length ? `<ul class="plain">${report.notes.map((n) => `<li>${escape(n)}</li>`).join('')}</ul>` : '<p class="empty">눈에 띄는 가격·거래량 신호는 없어요.</p>';
   const changes = report.changes?.length ? `<ul class="plain">${report.changes.map((c) => `<li>${escape(c)}</li>`).join('')}</ul>` : '<p class="empty">이 리포트에는 비교 기록이 없어요.</p>';
-  const body = `<div class="top"><div class="ticker">${escape(report.name)} <span>${escape(report.symbol)} · KOSPI</span></div>
+  const body = `<div class="top"><div class="ticker">${escape(report.name)} <span>${escape(report.symbol)}</span><span>KOSPI</span></div>
 <div class="stamp">${escape(report.date)} 리포트<br>생성 ${escape(report.generatedAt.replace('T', ' ').slice(0, 16))} UTC</div></div>
 <h1>${escape(report.name)} 일일 리포트</h1><p class="sub">${escape(report.headline)}</p>
 ${signalSection(report)}
@@ -413,22 +428,22 @@ ${whySection(report)}
 <div class="grid-eq"><div class="card"><div class="head"><h2>오늘의 요약</h2></div><p class="headline">${escape(report.headline)}</p>${notes}</div>
 <div class="card"><div class="head"><h2>어제 대비 바뀐 점</h2></div>${changes}</div></div>
 ${newsSection(report)}
-<div class="card" id="filings" style="margin-top:16px"><div class="head"><h2>공시</h2><span class="sub" style="margin:0">최근 30일 · DART 원문 링크</span></div>${filingsTable(report)}</div>
-<footer id="sources">데이터: Naver 금융 일봉(가격), OpenDART(공시) · 수집 기록은 고쳐 쓰지 않고 쌓아요 · 투자 권유가 아니에요 · <a href="${escape(links.index)}">지난 리포트</a></footer>`;
+<div class="card" id="filings" style="margin-top:16px"><div class="head"><h2>공시</h2><span class="sub" style="margin:0">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>
+<footer id="sources"><p>데이터: Naver 금융 일봉(가격), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).</p><p>수집 기록은 고쳐 쓰지 않고 쌓아요. 투자 권유가 아니에요. <a href="${escape(links.index)}">지난 리포트 보기</a></p></footer>`;
   // Reports written before AI commentary existed have no "왜?" section to link to.
-  return shell('today', base, `${report.name} ${report.date} 일일 리포트 — GNM`, body, chart.script, '#filings', Boolean(report.commentary));
+  return shell('today', base, `${report.name} ${report.date} 일일 리포트 | GNM`, body, chart.script, '#filings', Boolean(report.commentary));
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[]): string {
   const sorted = [...reports].sort((a, b) => (a.date < b.date ? 1 : -1));
   const latest = sorted[0];
-  const body = `<div class="top"><div class="ticker">SK하이닉스 <span>000660 · KOSPI</span></div><div class="stamp">리포트 ${sorted.length}건</div></div>
+  const body = `<div class="top"><div class="ticker">SK하이닉스 <span>000660</span><span>KOSPI</span></div><div class="stamp">리포트 ${sorted.length}건</div></div>
 <h1 id="latest">SK하이닉스 일일 리포트</h1><p class="sub">평일 장 마감 뒤(18:30 KST) 자동으로 만들어져요.</p>
-${latest ? `<div class="card"><div class="head"><h2>최신 리포트 · ${escape(latest.date)}</h2><a href="reports/${escape(latest.date)}.html" class="badge b-new" style="text-decoration:none;font-size:14px;padding:6px 14px">열기</a></div><p class="headline">${escape(latest.headline)}</p></div>` : '<div class="card empty">아직 리포트가 없어요.</div>'}
+${latest ? `<div class="card"><div class="head"><h2>최신 리포트 (${escape(latest.date)})</h2><a href="reports/${escape(latest.date)}.html" class="badge b-new" style="text-decoration:none;font-size:14px;padding:6px 14px">열기</a></div><p class="headline">${escape(latest.headline)}</p></div>` : '<div class="card empty">아직 리포트가 없어요.</div>'}
 <div class="card" id="archive" style="margin-top:16px"><div class="head"><h2>지난 리포트</h2></div><div class="table-wrap"><table><thead><tr><th>날짜</th><th>요약</th><th>거래</th></tr></thead><tbody>
 ${sorted.map((r) => `<tr><td style="white-space:nowrap"><a href="reports/${escape(r.date)}.html">${escape(r.date)}</a></td><td>${escape(r.headline)}</td><td>${r.status === 'SESSION' ? '거래일' : '휴장'}</td></tr>`).join('')}
 </tbody></table></div></div>
-<footer id="sources">데이터: Naver 금융 일봉(가격), OpenDART(공시) · 투자 권유가 아니에요</footer>`;
+<footer id="sources"><p>데이터: Naver 금융 일봉(가격), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).</p><p>투자 권유가 아니에요.</p></footer>`;
   // The index has no filings section; link to the latest report's.
-  return shell('archive', '', 'Gnomon Analytics — SK하이닉스 일일 리포트', body, '', latest ? `reports/${escape(latest.date)}.html#filings` : '#archive', Boolean(latest && (latest as Partial<DailyReport>).commentary));
+  return shell('archive', '', 'SK하이닉스 일일 리포트 | Gnomon Analytics', body, '', latest ? `reports/${escape(latest.date)}.html#filings` : '#archive', Boolean(latest && (latest as Partial<DailyReport>).commentary));
 }

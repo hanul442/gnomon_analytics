@@ -280,5 +280,5 @@ export function technicalReason(summary: TechnicalSummary): string {
   const above = ma.filter((v) => v.vote === 'BULLISH').length;
   const osc = summary.votes.filter((v) => v.group === 'OSC' && v.vote !== null);
   const ob = osc.filter((v) => v.vote === 'BULLISH').length, os = osc.filter((v) => v.vote === 'BEARISH').length;
-  return `종가가 이동평균 ${ma.length}개 중 ${above}개보다 위에 있고, 오실레이터 ${osc.length}개는 강세 ${ob}·약세 ${os}·중립 ${osc.length - ob - os}이에요.`;
+  return `종가가 이동평균 ${ma.length}개 중 ${above}개보다 위에 있고, 오실레이터 ${osc.length}개는 강세 ${ob}개, 약세 ${os}개, 중립 ${osc.length - ob - os}개예요.`;
 }
