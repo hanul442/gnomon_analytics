@@ -1,5 +1,5 @@
 {
- "at": "2026-10-04T11:29:19.608Z",
+ "at": "2026-10-04T11:54:05.147Z",
  "selected": null,
  "universe": [
   {
@@ -197,12 +197,12 @@
   },
   {
    "symbol": "003490",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "439090",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
