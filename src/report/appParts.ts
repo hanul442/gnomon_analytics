@@ -388,10 +388,15 @@ window.addEventListener('DOMContentLoaded', function () {
   show(bars.length - 1);
   chart.subscribeCrosshairMove(function (p) { show(p && p.time && byDate[p.time] != null ? byDate[p.time] : bars.length - 1); });
   var currentRange = 63;
+  var currentExtra = 0;
+  // A chart built inside a hidden tab has no width; once the tab is shown, apply the chosen range again.
+  var lastWidth = el.clientWidth;
+  chart.timeScale().subscribeSizeChange(function (w) { if (!lastWidth && w > 0) setRange(currentRange, currentExtra); lastWidth = w; });
   var setRange = function (n, extra) {
     currentRange = n;
     var from = Math.max(0, bars.length - n);
-    chart.timeScale().setVisibleLogicalRange({ from: from - 0.5, to: bars.length - 0.5 + (extra || 0) });
+    currentExtra = extra || 0;
+    chart.timeScale().setVisibleLogicalRange({ from: from - 0.5, to: bars.length - 0.5 + currentExtra });
     var w = bars.slice(from), first = w[0].open, lastC = w[w.length - 1].close, hi = Math.max.apply(null, w.map(function (b) { return b.high; })), lo = Math.min.apply(null, w.map(function (b) { return b.low; }));
     var ch = (lastC / first - 1) * 100, label = document.querySelector('[data-range="' + n + '"]').textContent;
     stat.innerHTML = '<span>' + label + ' 동안</span><b class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</b><span>최고 ' + won(hi) + '</span><span>최저 ' + won(lo) + '</span><span>' + w[0].date + ' ~ ' + w[w.length - 1].date + '</span>';
