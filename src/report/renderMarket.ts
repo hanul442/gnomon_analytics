@@ -208,7 +208,7 @@ function earningsChart(quarters: readonly FinancePeriod[]): string {
 <line x1="10" x2="${W - 10}" y1="${H - padB}" y2="${H - padB}" class="zero"/>${bars}</svg>`;
 }
 
-export function fundamentalsPanel(market: MarketSection, close: number | null): string {
+export function fundamentalsPanel(market: MarketSection, close: number | null, name = '이 종목'): string {
   const s: StockSnapshot | null = market.snapshot;
   const kpi = (label: string, value: string, hint = '') => `<div class="card kpi"><div class="label">${esc(label)}</div><div class="value">${value}</div>${hint ? `<div class="hint">${esc(hint)}</div>` : ''}</div>`;
   const x = (v: number | null, unit: string, d = 2) => (v === null ? '없음' : `${v.toFixed(d)}${unit}`);
@@ -228,7 +228,7 @@ ${kpi('증권가 평균 목표가', cons?.targetPriceMean ? won(cons.targetPrice
     const diff = raw === null ? null : Math.abs(raw) < 0.05 ? 0 : raw;
     return `<td class="num"><span class="${tone(r.benchmark)}">${pct(r.benchmark)}</span><br><small class="${tone(diff)}">차이 ${diff === null ? '없음' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%p`}</small></td>`;
   }).join('')}</tr>`).join('');
-  const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>SK하이닉스</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
+  const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
   const research = market.research.map((r) => `<li><span class="why">${esc(r.date)} ${esc(r.broker)}</span> ${esc(r.title)}</li>`).join('');
   return `${kpis}
 <div class="grid2 tight" style="margin-top:16px"><div class="card"><div class="head"><h2>분기 실적</h2><div class="legend-inline"><span><i class="sw-rev"></i>매출액</span><span><i class="sw-op"></i>영업이익</span><span><i class="sw-est"></i>추정치</span></div></div>
@@ -236,7 +236,7 @@ ${earningsChart(q)}
 <details class="more"><summary>표로 보기</summary><div class="table-wrap"><table class="compact"><thead><tr><th>분기</th><th class="num">매출액</th><th class="num">영업이익</th><th class="num">영업이익률</th><th class="num">순이익</th></tr></thead><tbody>${qRows}</tbody></table></div></details>
 <p class="fine">단위 억원. 출처: 네이버 증권(기업 실적 분석). 추정치는 증권사 컨센서스예요.</p></div>
 <div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5거래일</th><th class="num">20거래일</th><th class="num">60거래일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
-<p class="fine">차이는 SK하이닉스 수익률에서 비교 대상 수익률을 뺀 값이에요.</p>
+<p class="fine">차이는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 값이에요.</p>
 <h3 class="why-h">최근 증권사 리포트</h3>${research ? `<ul class="plain research">${research}</ul>` : '<p class="empty">아직 없어요.</p>'}
 <p class="fine">제목과 증권사, 날짜만 모아요. 본문은 저장하지 않아요.</p></div></div>`;
 }

@@ -154,6 +154,8 @@ export function buildDailyReport(input: {
   /** News articles known at generatedAt, and how each source fared this run. */
   news?: readonly NewsItem[];
   newsStatus?: readonly NewsSourceStatus[];
+  /** The stock's name pattern; left out of headline similarity. */
+  newsAliases?: RegExp;
   /** Daily bars kept for the chart (250 for dated reports; the live page keeps more). */
   barsLimit?: number;
 }): DailyReport {
@@ -217,7 +219,7 @@ export function buildDailyReport(input: {
     recentCloses: history.slice(-130).map((bar) => ({ date: bar.date, close: bar.close })),
     sources: [...input.sources],
   };
-  if (input.news || input.newsStatus) report.news = buildNewsSection(input.news ?? [], input.newsStatus ?? [], input.generatedAt, input.previous ?? null);
+  if (input.news || input.newsStatus) report.news = buildNewsSection(input.news ?? [], input.newsStatus ?? [], input.generatedAt, input.previous ?? null, input.newsAliases);
   if (report.news) {
     const fresh = report.news.clusters.filter((c) => report.news!.newIds.includes(c.id));
     const important = fresh.filter((c) => c.importance === 'HIGH').length;
@@ -275,13 +277,13 @@ const NEWS_WINDOW_MS = 7 * 24 * 60 * 60_000;
 export const MAX_NEWS_STORIES = 30;
 
 /** Stories of the last 7 days; "new" means an article earlier reports did not show. */
-export function buildNewsSection(items: readonly NewsItem[], status: readonly NewsSourceStatus[], generatedAt: Date, previous: DailyReport | null): NewsSection {
+export function buildNewsSection(items: readonly NewsItem[], status: readonly NewsSourceStatus[], generatedAt: Date, previous: DailyReport | null, aliases?: RegExp): NewsSection {
   const cutoff = generatedAt.getTime();
   const recent = items.filter((i) => {
     const at = Date.parse(i.publishedAt);
     return at <= cutoff && at > cutoff - NEWS_WINDOW_MS;
   });
-  const all = clusterNews(recent);
+  const all = clusterNews(recent, aliases);
   const seen = new Set((previous?.news?.clusters ?? []).flatMap((c) => c.articles.map((a) => a.url)));
   const isNew = (c: (typeof all)[number]) => (previous?.news
     ? c.articles.some((a) => !seen.has(a.url))

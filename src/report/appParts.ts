@@ -36,7 +36,7 @@ export function hero(report: DailyReport, options: { live: boolean; asOf: string
     m?.snapshot?.consensus?.targetPriceMean ? ['증권가 평균 목표가', won(m.snapshot.consensus.targetPriceMean), ''] : null,
   ].filter((x): x is string[] => x !== null);
   return `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div>
-<div class="hero-main"><div class="eyebrow"><span>${esc(report.symbol)}</span><span>코스피</span><span>${options.live ? `${esc(options.asOf)} 기준 최신` : `${esc(report.date)} 리포트`}</span></div>
+<div class="hero-main"><div class="eyebrow"><span>${esc(report.symbol)}</span>${m?.benchmarks[0] ? `<span>${esc(m.benchmarks[0].name)}</span>` : ''}<span>${options.live ? `${esc(options.asOf)} 기준 최신` : `${esc(report.date)} 리포트`}</span></div>
 <h1>${esc(report.name)}</h1>
 ${p ? `<div class="hero-price"><b>${esc(won(p.close))}</b>${p.changePct === null ? '' : `<span class="${tone(p.changePct)}">${p.change! > 0 ? '▲' : p.change! < 0 ? '▼' : ''} ${esc(num(Math.abs(p.change!)))} (${esc(pct(p.changePct))})</span>`}</div>
 <div class="hero-sub">${esc(p.sessionDate ?? report.date)} 종가</div>` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
@@ -55,7 +55,7 @@ export function marketStrip(report: DailyReport): string {
   }
   for (const b of m?.benchmarks ?? []) {
     if (b.last === null) continue;
-    items.push({ name: b.name, value: b.symbol === 'KOSPI' ? num(b.last, 2) : won(b.last), change: b.changePct, spark: b.spark });
+    items.push({ name: b.name, value: b.symbol === 'KOSPI' || b.symbol === 'KOSDAQ' ? num(b.last, 2) : won(b.last), change: b.changePct, spark: b.spark });
   }
   if (!items.length) return '';
   return `<section class="block"><div class="block-head"><h2>시장 한눈에</h2><span class="muted">최근 60거래일</span></div>

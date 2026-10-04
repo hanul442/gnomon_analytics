@@ -9,9 +9,6 @@ import { fetchNaverStockData } from '../sources/naverStock.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, PriceBar, ResearchNote, StockSnapshot } from '../types.js';
 
-/** Index and peer compared against the stock. */
-export const BENCHMARKS = [{ symbol: 'KOSPI', name: '코스피' }, { symbol: '005930', name: '삼성전자' }] as const;
-
 export const marketPaths = (root: string, symbol: string) => ({
   weekly: join(root, 'data', 'prices-week', `${symbol}.jsonl`),
   intraday: join(root, 'data', 'intraday', `${symbol}.jsonl`),
@@ -34,6 +31,8 @@ export async function collectMarketData(
   symbol: string,
   kstDate: string,
   fetchOptions: { now: () => Date; fetch?: typeof fetch },
+  /** Index and peer compared against the stock (config/tickers benchmarksFor). */
+  benchmarks: readonly { symbol: string }[],
 ): Promise<NewsSourceStatus[]> {
   const paths = marketPaths(root, symbol);
   const status: NewsSourceStatus[] = [];
@@ -46,7 +45,7 @@ export async function collectMarketData(
   };
   await job('naver:fchart:week', async () => (await appendNew(paths.weekly, await fetchNaverWeeklyBars(symbol, 260, fetchOptions), priceKey)).length);
   await job('naver:fchart:minute', async () => (await appendNew(paths.intraday, await fetchNaverIntraday(symbol, fetchOptions), intradayKey)).length);
-  for (const b of BENCHMARKS) {
+  for (const b of benchmarks) {
     await job(`naver:fchart:day:${b.symbol}`, async () => (await appendNew(paths.daily(b.symbol), await fetchNaverDailyBars(b.symbol, 250, fetchOptions), priceKey)).length);
   }
   await job('naver:m-stock', async () => {

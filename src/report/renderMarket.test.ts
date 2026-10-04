@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { runDaily } from '../cli/daily.js';
+import { loadTickers } from '../config/tickers.js';
 
 // One settled run on fixture data, then the page: six tabs and the new panels.
 const FIX = join(process.cwd(), 'test', 'fixtures', 'naver');
@@ -21,8 +22,9 @@ const fakeFetch = (async (url: string | URL | Request) => {
 
 test('report pages have seven tabs with gauges, fair value, forecasts, flows and fundamentals; the front page is live', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gnm-'));
-  await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch });
-  const page = await readFile(join(root, 'site', 'reports', '2026-10-02.html'), 'utf8');
+  const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
+  await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, tickers });
+  const page = await readFile(join(root, 'site', '000660', 'reports', '2026-10-02.html'), 'utf8');
   for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-flows', 'tab-fundamentals', 'tab-ai', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
   // Horizon gauges on the home and technical tabs, plus one per strategy in the arena.
   assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 10);
@@ -34,9 +36,9 @@ test('report pages have seven tabs with gauges, fair value, forecasts, flows and
   assert.ok(page.includes('data-strategy="macd"') && page.includes('id="strat-info"') && page.includes('data-show-strategy'));
   assert.ok(page.includes('id="vlines"') && page.includes('id="ev-strip"') && page.includes('class="trade-log"'));
   // The front page is the live dashboard; the archive lists dated reports.
-  const front = await readFile(join(root, 'site', 'index.html'), 'utf8');
+  const front = await readFile(join(root, 'site', '000660', 'index.html'), 'utf8');
   assert.ok(front.includes('기준 최신'));
-  assert.match(await readFile(join(root, 'site', 'archive.html'), 'utf8'), /reports\/2026-10-02\.html/);
+  assert.match(await readFile(join(root, 'site', '000660', 'archive.html'), 'utf8'), /reports\/2026-10-02\.html/);
   // The forecast made with the report is logged once.
   const log = (await readFile(join(root, 'data', 'forecasts', '000660.jsonl'), 'utf8')).trim().split('\n');
   assert.equal(log.length, 4);

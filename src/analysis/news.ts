@@ -7,12 +7,12 @@ import { outletName } from '../sources/news.js';
 export type NewsImportance = 'HIGH' | 'MEDIUM' | 'LOW';
 export type OutletTier = 'OFFICIAL' | 'WIRE_BIZ' | 'GENERAL';
 
-const ALIASES = /SK\s*하이닉스|하이닉스|SK\s*hynix/i;
 /** Sports, entertainment, personnel and obituary items are not investment news. */
 const EXCLUDED = /야구|축구|농구|배구|골프|e스포츠|프로게임|와이번스|랜더스|나이츠|연예|드라마|예능|\[인사\]|\[부고\]|부고|인사 발령|^\[포토\]|\[사진\]/;
 
-export function isRelevant(title: string): boolean {
-  return ALIASES.test(title) && !EXCLUDED.test(title);
+/** `aliases` is the stock's name pattern (config/tickers aliasPattern). */
+export function isRelevant(title: string, aliases: RegExp): boolean {
+  return aliases.test(title) && !EXCLUDED.test(title);
 }
 
 const RULES: readonly { category: string; importance: NewsImportance; pattern: RegExp }[] = [
@@ -59,9 +59,11 @@ export interface NewsCluster {
   articles: { title: string; url: string; publisher: string; publishedAt: string }[];
 }
 
-function bigrams(title: string): Set<string> {
+function bigrams(title: string, aliases?: RegExp): Set<string> {
   // The company name is in every headline; leave it out so it cannot make stories look alike.
-  const text = title.replace(/\[[^\]]*\]|\([^)]*\)/g, '').replace(new RegExp(ALIASES.source, 'gi'), '').replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
+  let text = title.replace(/\[[^\]]*\]|\([^)]*\)/g, '');
+  if (aliases) text = text.replace(new RegExp(aliases.source, 'gi'), '');
+  text = text.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
   const out = new Set<string>();
   for (let i = 0; i < text.length - 1; i += 1) out.add(text.slice(i, i + 2));
   return out;
@@ -84,13 +86,14 @@ const IMPORTANCE_RANK: Record<NewsImportance, number> = { HIGH: 0, MEDIUM: 1, LO
  * headline is similar (character-bigram Jaccard ≥ 0.45) to any article of
  * the story published within 48 hours. Duplicate URLs count once.
  */
-export function clusterNews(items: readonly NewsItem[]): NewsCluster[] {
+/** Without `aliases` the items are taken as already relevant; only excluded topics are dropped. */
+export function clusterNews(items: readonly NewsItem[], aliases?: RegExp): NewsCluster[] {
   const unique = new Map<string, NewsItem>();
-  for (const item of items) if (isRelevant(item.title) && !unique.has(item.url)) unique.set(item.url, { ...item, publisher: outletName(item.publisher) });
+  for (const item of items) if ((aliases ? isRelevant(item.title, aliases) : !EXCLUDED.test(item.title)) && !unique.has(item.url)) unique.set(item.url, { ...item, publisher: outletName(item.publisher) });
   const sorted = [...unique.values()].sort((a, b) => (a.publishedAt < b.publishedAt ? -1 : a.publishedAt > b.publishedAt ? 1 : a.url < b.url ? -1 : 1));
   const groups: { members: NewsItem[]; grams: Set<string>[] }[] = [];
   for (const item of sorted) {
-    const grams = bigrams(item.title);
+    const grams = bigrams(item.title, aliases);
     const at = Date.parse(item.publishedAt);
     const group = groups.find((g) => g.members.some((m, i) => at - Date.parse(m.publishedAt) <= WINDOW_MS && jaccard(g.grams[i]!, grams) >= SAME_STORY));
     if (group) { group.members.push(item); group.grams.push(grams); } else groups.push({ members: [item], grams: [grams] });

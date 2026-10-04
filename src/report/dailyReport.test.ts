@@ -14,7 +14,7 @@ function bars(closes: number[], startDay = 1): PriceBar[] {
 function filing(title: string, filedDate: string, receiptNo = '20261002000001'): Disclosure {
   return { receiptNo, corpName: 'SK하이닉스', stockCode: '000660', title, filer: 'SK하이닉스', filedDate, remark: '유', url: `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${receiptNo}`, source: 'opendart:list', retrievedAt: AT };
 }
-const base = { symbol: '000660', name: 'SK하이닉스', generatedAt: new Date(AT), sources: ['naver:fchart:day', 'opendart:list'] };
+const base = { symbol: '000660', name: 'SK하이닉스', generatedAt: new Date(AT), sources: ['naver:fchart:day', 'opendart:list'], newsAliases: /SK\s*하이닉스|하이닉스|SK\s*hynix/i };
 
 test('a session report has price context, filings since the last session, and a headline', () => {
   const history = bars(Array.from({ length: 25 }, (_, i) => 300000 + (i % 2) * 1000));
