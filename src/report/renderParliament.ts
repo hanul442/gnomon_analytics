@@ -147,7 +147,9 @@ export const PARLIAMENT_SCRIPT = `<script>
       host.querySelectorAll('.is-on').forEach(function (x) { x.classList.remove('is-on'); });
       host.querySelectorAll('[data-i="' + i + '"]').forEach(function (x) { x.classList.add('is-on'); });
       var s = seats[Number(i)];
-      panel.innerHTML = '<div class="pl-k">' + esc(s.f) + '</div><div class="pl-name"><b>' + esc(s.n) + '</b><span class="badge pl-' + s.s + '">' + esc(s.w) + '</span></div>' + s.l.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join('');
+      // AI members' reasons are a Plus feature; who voted which way stays free.
+      var locked = /^AI/.test(s.f) && document.documentElement.getAttribute('data-plan') === 'free';
+      panel.innerHTML = '<div class="pl-k">' + esc(s.f) + '</div><div class="pl-name"><b>' + esc(s.n) + '</b><span class="badge pl-' + s.s + '">' + esc(s.w) + '</span></div>' + (locked ? '<p class="muted">이 위원의 확신도·예상가·근거는 플러스부터 볼 수 있어요. <a href="' + (document.body.getAttribute('data-base') || '') + 'pricing.html">요금제 보기 ›</a></p>' : s.l.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join(''));
     };
     host.querySelectorAll('.seat, .member').forEach(function (el) {
       el.addEventListener('click', function () { show(el); });

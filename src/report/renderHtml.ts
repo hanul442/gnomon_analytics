@@ -9,6 +9,7 @@ import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow,
 import { councilCard, DART_SCRIPT, hero, latestLists, marketStrip, priceChart, sparkline } from './appParts.js';
 import { analystScores, arenaPanel, arenaTeaser, paperPanel } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
+import { ACCOUNT_SCRIPT, CREDIT_COST, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 /** Pretendard web font, also served from our own site. */
@@ -212,6 +213,10 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .locked-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}.locked{position:relative;overflow:hidden;min-height:132px}.locked p{margin:6px 0 10px;font-size:13px;color:var(--fg2)}
 .lk-ghost{display:flex;flex-direction:column;gap:7px;filter:blur(2px);opacity:.6}.lk-ghost i{display:block;height:9px;border-radius:5px;background:#dfe5ee}.lk-ghost i:nth-child(2){width:80%}.lk-ghost i:nth-child(3){width:55%}
 .sr-lock{color:var(--fg2)}
+.sp-one-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.sp-signal{font-size:20px;font-weight:800}.sp-one .headline{margin:8px 0 0}
+.sp-moves .mv,#sp-fair .mv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}.sp-moves .mv:first-child,#sp-fair .mv:first-child{border-top:0}
+.sp-votes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.vchip{font-size:12px;border-radius:8px;padding:4px 8px;background:#eef1f5;color:var(--fg2)}.vchip.v-BULLISH{background:#fde8e6;color:#9f1d24}.vchip.v-BEARISH{background:#e3ecfb;color:#1f4fa8}
+.request-card .credit-btn{margin:8px 0 2px}
 @media (max-width:820px){#chart[style*="420px"]{height:320px!important}.stock-hero{grid-template-columns:minmax(0,1fr)}.btn-primary{width:100%;justify-content:center}.locked-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.locked{min-height:0}.locked p{font-size:12px}}
 @media (max-width:820px){
 .arena-gauges,.hz-row,.analyst-grid,.desk-grid,.why-grid,.locked-grid.swipe{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin-left:-14px;margin-right:-14px;padding:2px 14px 8px;scrollbar-width:none}
@@ -269,6 +274,8 @@ ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.c
 .signal-label.up,.hz-label.up{color:var(--up)}
 .panel{display:block}.panel[hidden]{display:none}.panel+.panel{margin-top:32px}.js-tabs .panel+.panel{margin-top:0}.js-tabs .panel-title{display:none}.panel-title{margin:0 0 12px}.panel:focus{outline:none}
 footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--muted);font-size:12px}footer p{margin:2px 0}
+.bottom-nav{display:none}
+@media (max-width:820px){.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom))}.bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--fg2);text-decoration:none;min-height:44px;justify-content:center}.bottom-nav svg{width:22px;height:22px}body:has(.bottom-nav){padding-bottom:64px}}
 .needle{transform-box:view-box;transform-origin:110px 104px;transform:rotate(var(--r));animation:settle 900ms var(--ease-out) 200ms both}
 @keyframes settle{from{transform:rotate(0deg)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -293,18 +300,24 @@ const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'news', label: '뉴스·공시' },
 ];
 
-function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string }): string {
+export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean }): string {
   // The site root lists every covered stock; `base` always points at it.
   const rootHref = `${base}index.html`;
   const tabs = options.tabs ?? [];
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#ffffff"><title>${escape(title)}</title>
-<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}</style></head><body>
+  return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff"><title>${escape(title)}</title>${PLAN_BOOT}
+<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}${PLAN_CSS}</style></head><body data-base="${base}">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
-<nav class="top-links" aria-label="사이트"><a href="${rootHref}">종목</a>${options.homeHref ? `<a href="${options.homeHref}">최신</a>` : ''}${options.archiveHref ? `<a href="${options.archiveHref}">지난 리포트</a>` : ''}<a href="#sources" class="tl-hide">데이터 출처</a></nav></div>
+<nav class="top-links" aria-label="사이트"><a href="${rootHref}">홈</a>${options.homeHref ? `<a href="${options.homeHref}" class="tl-hide">최신</a>` : ''}${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>
-<main id="main" tabindex="-1">${body}</main>${options.scripts ?? ''}</body></html>`;
+<main id="main" tabindex="-1">${body}</main>${options.bottomNav ? bottomNav(base) : ''}${ACCOUNT_SCRIPT}${options.scripts ?? ''}</body></html>`;
+}
+
+/** Phone-only tab bar on the site's own pages (home, pricing). */
+function bottomNav(base: string): string {
+  const item = (href: string, label: string, path: string) => `<a href="${href}"><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg><span>${label}</span></a>`;
+  return `<nav class="bottom-nav" aria-label="빠른 이동">${item(`${base}index.html#top`, '홈', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>')}${item(`${base}index.html#search`, '검색', '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>')}${item(`${base}index.html#watch`, '관심', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>')}${item(`${base}pricing.html`, '요금제', '<rect x="3" y="6" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/>')}</nav>`;
 }
 
 const GAUGE_COLORS = ['#1d4fa3', '#3b7be0', '#8fb3ec', '#c4cbc9', '#f0a0a3', '#e5484d', '#a8262b'];
@@ -557,27 +570,28 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}
 ${m ? marketStatusWarning(m) : ''}
 ${parliament(report, ctx.commentaryFrom ?? null) || councilCard(report.commentary, ctx.commentaryFrom ?? null)}
-${m ? `<section class="block"><div class="block-head"><h2>기간별 기술 신호</h2><a href="#tab-technical" class="more-link">게이지로 보기 ›</a></div>${horizonStrip(m.horizons)}</section>` : ''}
-<div class="grid-eq"><section class="block"><div class="block-head"><h2>적정가와 예측</h2><a href="#tab-technical" class="more-link">자세히 보기 ›</a></div>${m ? valueCard(m) : '<div class="card empty">아직 계산하지 않았어요.</div>'}</section>
-${m ? arenaTeaser(m.arena) : ''}</div>
-${marketStrip(report)}
+${m ? gate(`<section class="block"><div class="block-head"><h2>기간별 기술 신호</h2><a href="#tab-technical" class="more-link">게이지로 보기 ›</a></div>${horizonStrip(m.horizons)}</section>
+<div class="grid-eq"><section class="block"><div class="block-head"><h2>적정가와 예측</h2><a href="#tab-technical" class="more-link">자세히 보기 ›</a></div>${valueCard(m)}</section>
+${arenaTeaser(m.arena)}</div>
+${marketStrip(report)}`, { base, what: '기간별 신호 · 적정가 · 전략 · 시장 비교' }) : ''}
 <div class="home-lists">${latestLists(report)}</div>
 <details class="card more home-more"><summary>오늘의 요약 · 어제 대비 바뀐 점</summary><div class="grid-eq" style="margin-top:10px"><div><p class="headline">${escape(report.headline)}</p>${notes}</div><div>${changes}</div></div></details>`;
   const chartTab = `${chart.html}<div style="margin-top:16px">${kpis(report)}</div>`;
-  const technical = `${m ? arenaPanel(m.arena) : ''}<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${signalSection(report)}${m ? `<div class="grid-eq">${valueCard(m)}${forecastCard(m.forecasts, m.forecastScores)}</div><div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`;
-  const flowsTab = m ? flowsPanel(m.flows, m.footprint) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>';
-  const fundTab = m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>';
+  const technical = gate(`${m ? arenaPanel(m.arena) : ''}<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${signalSection(report)}${m ? `<div class="grid-eq">${valueCard(m)}${forecastCard(m.forecasts, m.forecastScores)}</div><div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '전략 대결 · 기간별 게이지 · 지표 16개 · 적정가와 예측' });
+  const flowsTab = gate(m ? flowsPanel(m.flows, m.footprint) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>', { base, what: '외국인·기관 수급과 수급 흔적' });
+  const fundTab = gate(m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>', { base, what: '분기 실적 · 밸류에이션 · 증권가 목표가' });
   const committee = report.commentary?.status === 'OK' ? parliament(report, ctx.commentaryFrom ?? null, {
     id: 'parliament-ai', title: 'AI 위원회 표결', factions: ['ai', 'desk'], link: null, roster: true,
     note: '위원은 AI 분석가 6명과 데스크 5곳이에요. 좌석이나 이름을 누르면 판단·확신도·20거래일 뒤 예상가·근거·지난 성적이 나와요.',
   }) : '';
-  const aiTab = committee + (report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : ''}${whySection(report, { committee: !!committee })}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>') + (m ? analystScores(m.analystBoard) : '');
+  const summary = report.commentary?.status === 'OK' ? report.commentary.summary?.text : undefined;
+  const aiTab = committee + (report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : ''}${summary ? `<section class="block"><div class="card ai-one"><div class="pl-k">AI 위원회 한 단락</div><p class="headline">${escape(summary)}</p></div></section>` : ''}${gate(whySection(report, { committee: !!committee }) + (m ? analystScores(m.analystBoard) : ''), { base, what: '위원별 근거 · 레드팀 반론 · 시나리오 · 분석가 순위' })}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>') + askBox(report, base);
   const newsTab = `${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const body = `${panel('home', home)}
 ${panel('chart', chartTab)}
 ${panel('technical', technical)}
-${panel('paper', paperPanel(m?.paper))}
+${panel('paper', gate(paperPanel(m?.paper), { base, what: '전략 챔피언과 AI 분석가를 따라 한 모의투자 장부' }))}
 ${panel('flows', flowsTab)}
 ${panel('fundamentals', fundTab)}
 ${panel('ai', aiTab)}
@@ -586,6 +600,13 @@ ${panel('news', newsTab)}
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
   return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT, archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+}
+
+/** Ask the AI about this stock: 2 credits a question, any plan (MOCK answer until a server exists). */
+function askBox(report: DailyReport, base: string): string {
+  return `<section class="block" id="ask"><div class="block-head"><h2>AI에게 직접 질문</h2><span class="muted">질문 1회 ${CREDIT_COST.question}크레딧 · 요금제와 상관없이 크레딧으로</span></div>
+<div class="card"><form class="ask" data-symbol="${escape(report.symbol)}"><label class="muted small" for="ask-q">${escape(report.name)}에 대해 궁금한 것을 물어보세요. 리포트의 근거 안에서 답해요.</label><textarea id="ask-q" maxlength="300" placeholder="예: 외국인 매도가 계속되면 어디까지 볼 수 있어요?"></textarea>
+<div class="ask-row"><span class="muted small">남은 크레딧 <b data-credits>0</b>개 · <a href="${base}pricing.html#credits">충전</a></span><button type="submit" class="credit-btn">질문하기 <small>${CREDIT_COST.question}크레딧</small></button></div><div class="ask-out" hidden aria-live="polite"></div></form></div></section>`;
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[], links: { base?: string; homeHref?: string; name?: string } = {}): string {
@@ -601,7 +622,7 @@ export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headli
 }
 
 // Client-side search over search.json: name, code or Korean initial consonants (초성).
-const SEARCH_SCRIPT = `<script>
+export const SEARCH_SCRIPT = `<script>
 (function () {
   var q = document.getElementById('q'), out = document.getElementById('search-results'), items = null, timer = 0;
   var CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
@@ -652,30 +673,33 @@ export const REPO_URL = 'https://github.com/hanul442/gnomon_analytics';
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
 const LOCKED = [
-  ['표결 현황', '지표 16개·전략·AI 분석가가 각각 강세인지 약세인지, 그리고 그 이유'],
-  ['기간별 기술 신호', '15분봉부터 월봉까지 다섯 기간의 신호'],
-  ['적정가와 예측 범위', '기술적 적정가와 5·20·60·120거래일 예측 범위'],
-  ['전략 대결', 'BOT 전략 8개의 백테스트 순위와 매수·매도 시점'],
+  ['AI 위원회', '분석가 6명·데스크 5곳의 표결, 레드팀 반론, 시나리오'],
+  ['전략 대결', 'BOT 전략 8개의 4년 백테스트 순위와 매수·매도 시점'],
   ['모의투자', '전략 챔피언과 AI 분석가를 따라 한 가상 계좌'],
   ['수급과 펀더멘털', '외국인·기관 순매수, 수급 흔적, 분기 실적'],
-  ['AI 위원회', '데스크 의견, 레드팀 반론, 시나리오'],
 ] as const;
 
-/** Shared page for listed stocks without a report: chart from s/<code>.json, analysis locked, request button. */
+/** Shared page for listed stocks without a report: chart, the free computation (details for Plus), and a credit request. */
 export function renderStockPage(): string {
   const locked = LOCKED.map(([t, d]) => `<div class="card locked"><div class="lk-head">${LOCK}<b>${t}</b></div><p>${d}</p><div class="lk-ghost" aria-hidden="true"><i></i><i></i><i></i></div></div>`).join('');
-  const body = `<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span>리포트 없음</span></div>
+  const detail = `<section class="block"><div class="block-head"><h2>계산 상세</h2><span class="muted">매일 장 마감 뒤 다시 계산해요</span></div>
+<div class="grid-eq"><div class="card"><div class="pl-k">기간별 등락</div><div class="sp-moves" id="sp-moves"></div><div class="pl-k" style="margin-top:14px">기술적 적정가</div><div id="sp-fair"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div></div>
+<div class="card"><div class="pl-k">예측 범위 (10~90%)</div><div id="sp-fc"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div><p class="fine">최근 변동성으로 계산한 범위예요. 확률이나 목표가가 아니에요.</p></div></div>
+<div class="card" style="margin-top:12px"><div class="pl-k">지표 16개 판단</div><div class="sp-votes" id="sp-votes"></div></div></section>`;
+  const body = `<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span>AI 리포트 없음</span></div>
 <h1 id="sp-name">종목</h1><div class="hero-price" id="sp-price"></div><div class="hero-sub" id="sp-date"></div></div>
-<div class="request-card"><div class="lk-head">${LOCK}<b>분석은 아직 잠겨 있어요</b></div><p>이 종목은 아직 리포트가 없어요. 요청하면 다음 장 마감 뒤 심층 AI 위원회 리포트를 써 드려요.</p>
-<a class="btn-primary" id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">${LOCK}리포트 요청하기</a>
-<p class="fine">지금은 GitHub 이슈로 요청을 받아요. 크레딧 결제가 붙으면 이 버튼에서 바로 요청할 수 있게 바뀌어요.</p></div></section>
+<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 다음 장 마감 뒤 AI 위원회 리포트를 한 번 써 드려요. 요금제와 상관없이 크레딧으로 요청해요.</p>
+<button type="button" class="credit-btn" data-spend="report" id="sp-request-credit">리포트 요청 <small>${CREDIT_COST.report}크레딧</small></button>
+<p class="fine">남은 크레딧 <b data-credits>0</b>개 · <a href="pricing.html#credits">충전</a> · MOCK이라 실제 요청은 <a id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">GitHub 이슈</a>로 받아요.</p></div></section>
+<section class="block"><div class="card sp-one"><div class="sp-one-head"><span class="pl-k">한 줄 요약</span><b id="sp-signal" class="sp-signal">계산 중</b></div><p class="headline" id="sp-line">이 종목의 계산 결과를 불러오는 중이에요.</p><div class="pl-tally" id="sp-tally" aria-hidden="true"></div><p class="muted small" id="sp-counts"></p></div></section>
 <section class="block"><div class="card chart-card"><div class="chart-head"><div><div class="muted small">최근 1년 일봉</div><div class="period-stat" id="period-stat" aria-live="polite"></div></div>
 <div class="seg" role="group" aria-label="기간">${[['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250]].map(([l, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 126}">${l}</button>`).join('')}</div></div>
 <div id="chart" style="height:420px"><p class="empty" id="sp-empty" hidden>차트 데이터를 불러오지 못했어요. 상장 종목 코드가 맞는지 확인해 주세요.</p></div>
-<p class="fine">이동평균 20(주황)·60(보라)과 거래량이에요. 리포트가 생기면 지표 고르기, 전략 매매 시점, 공시·뉴스 표시가 함께 열려요.</p></div></section>
-<section class="block"><div class="block-head"><h2>리포트를 요청하면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>
-<footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '종목 차트 | Gnomon Analytics', body, { scripts: `<script src="${CHART_ASSET}"></script>${STOCK_SCRIPT}` });
+<p class="fine">이동평균 20(주황)·60(보라)과 거래량이에요.</p></div></section>
+${gate(detail, { base: '', what: '지표 16개 · 기간별 등락 · 적정가 · 예측 범위' })}
+<section class="block"><div class="block-head"><h2>AI 리포트가 생기면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>
+<footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
+  return shell('', '종목 차트 | Gnomon Analytics', body, { bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${STOCK_SCRIPT}` });
 }
 
 const STOCK_SCRIPT = `<script>
@@ -695,6 +719,21 @@ const STOCK_SCRIPT = `<script>
       $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + Math.abs(ch).toLocaleString('ko-KR') + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : '');
       $('sp-date').textContent = last.time + ' 종가';
     }
+    var rb = $('sp-request-credit'); rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name);
+    var c = d.calc, VOTE = { BULLISH: '강세', NEUTRAL: '중립', BEARISH: '약세' };
+    var signed = function (v) { return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%'; };
+    if (c) {
+      var sg = c.signal, cls = sg.score == null ? '' : sg.score >= 0.1 ? 'up' : sg.score <= -0.1 ? 'down' : '';
+      $('sp-signal').textContent = sg.label; $('sp-signal').className = 'sp-signal ' + cls;
+      $('sp-line').textContent = c.line;
+      var voted = sg.bull + sg.neutral + sg.bear;
+      $('sp-tally').innerHTML = voted ? [['bull', sg.bull], ['neutral', sg.neutral], ['bear', sg.bear]].filter(function (x) { return x[1]; }).map(function (x) { return '<span class="s-' + x[0] + '" style="flex:' + x[1] + '"></span>'; }).join('') : '';
+      $('sp-counts').textContent = '지표 ' + (voted + sg.abstain) + '개: 강세 ' + sg.bull + ' · 중립 ' + sg.neutral + ' · 약세 ' + sg.bear + (sg.abstain ? ' · 보류 ' + sg.abstain : '') + ' (' + c.date + ' 종가 기준)';
+      $('sp-moves').innerHTML = c.moves.map(function (m) { return '<div class="mv"><span>' + m.label + ' (' + m.days + '거래일)</span><b class="' + (m.pct > 0 ? 'up' : m.pct < 0 ? 'down' : '') + '">' + signed(m.pct) + '</b></div>'; }).join('');
+      if (c.fair) $('sp-fair').innerHTML = '<div class="mv"><span>중심</span><b>' + won(c.fair.center) + '</b></div><div class="mv"><span>범위</span><b>' + won(c.fair.low) + ' ~ ' + won(c.fair.high) + '</b></div><div class="mv"><span>종가와 차이</span><b>' + signed(c.fair.gapPct) + '</b></div>';
+      if (c.forecasts.length) $('sp-fc').innerHTML = '<table class="compact"><thead><tr><th>기간</th><th>범위</th><th>중앙</th></tr></thead><tbody>' + c.forecasts.map(function (f) { return '<tr><td>' + f.days + '거래일</td><td>' + won(f.p10) + ' ~ ' + won(f.p90) + '</td><td>' + won(f.p50) + '</td></tr>'; }).join('') + '</tbody></table>';
+      $('sp-votes').innerHTML = c.votes.map(function (v) { return '<span class="vchip v-' + (v[1] || 'NONE') + '">' + v[0] + ' <b>' + (v[1] ? VOTE[v[1]] : '보류') + '</b></span>'; }).join('');
+    } else { $('sp-signal').textContent = '계산 없음'; $('sp-line').textContent = '기록이 모자라 계산하지 못했어요.'; }
     var title = '리포트 요청: ' + d.name + ' (' + d.symbol + ')';
     var bodyText = '요청 종목: ' + d.name + ' (' + d.symbol + ')\\n\\n궁금한 점이나 보고 싶은 분석이 있으면 적어 주세요.\\n';
     $('sp-request').href = '${REPO_URL}/issues/new?labels=report-request&title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(bodyText);
@@ -731,29 +770,3 @@ export interface HomeEntry {
   tier?: 'deep' | 'brief';
 }
 
-/** Site front page: every covered stock with price, change, a sparkline and its medium-term signal. */
-export function renderHome(all: readonly HomeEntry[], selection: { date: string; eligible: number; universe: number } | null = null): string {
-  const card = (e: HomeEntry) => {
-    const r = e.report, p = r?.price, m = r?.market;
-    const mid = m?.horizons.find((h) => h.key === 'MEDIUM')?.summary;
-    const spark = (r?.recentBars ?? []).slice(-60).map((b) => b.close);
-    return `<a class="card stock-card" href="${escape(e.href)}"><div class="sc-top"><div><div class="sc-name">${escape(e.name)}</div><div class="muted small">${escape(e.symbol)}${m?.benchmarks[0] ? ` · ${escape(m.benchmarks[0].name)}` : ''}</div></div>${spark.length > 1 ? sparkline(spark, `${e.name} 최근 60거래일`) : ''}</div>
-${p ? `<div class="sc-price"><b>${escape(won(p.close))}</b>${p.changePct === null ? '' : `<span class="${p.changePct > 0 ? 'up' : p.changePct < 0 ? 'down' : ''}">${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}</span>`}</div><div class="muted small">${escape(p.sessionDate ?? r!.date)} 종가</div>` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
-${mid ? `<div class="sc-signal"><span>중기 기술 신호</span><b class="${mid.score === null ? '' : mid.score >= 0.1 ? 'up' : mid.score <= -0.1 ? 'down' : ''}">${escape(mid.label)}</b></div>` : ''}
-${e.reasons?.length && e.group === 'weekly' ? `<ul class="sc-why">${e.reasons.slice(0, 3).map((x) => `<li>${escape(x)}</li>`).join('')}</ul>` : r ? `<p class="sc-line">${escape(r.headline)}</p>` : ''}<span class="sc-go">${e.group === 'weekly' ? `${e.tier === 'deep' ? '심층' : '요약'} AI 리포트 · ` : ''}대시보드 보기 ›</span></a>`;
-  };
-  const entries = all.filter((e) => e.group !== 'past');
-  const core = entries.filter((e) => e.group === 'core'), weekly = entries.filter((e) => e.group === 'weekly'), requests = entries.filter((e) => e.group === 'request');
-  const body = `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div><div class="hero-main"><div class="eyebrow"><span>리포트 ${entries.length}종목</span></div><h1>Gnomon Analytics</h1>
-<p class="hero-line">공개 데이터로 계산한 기술 신호·적정가·예측 범위와 AI 해설을 붙여요. 계산은 매일 갱신하고, AI 리포트는 매주 금요일에 써요. 예측은 기록해 두고 나중에 채점해요.</p></div></section>
-<section class="block search-block"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명·코드·초성 (예: 삼성, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
-<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
-<p class="muted small search-note">코스피·코스닥 상장 종목을 모두 찾을 수 있어요. 리포트가 없는 종목도 차트를 볼 수 있고, 분석은 요청하면 열려요.</p></section>
-<section class="block"><div class="block-head"><h2>대표 종목</h2><span class="muted">매주 금요일 AI 위원회 전체</span></div><div class="stock-grid">${core.map(card).join('')}</div></section>
-${requests.length ? `<section class="block"><div class="block-head"><h2>요청한 리포트</h2><span class="muted">요청 뒤 첫 장 마감 리포트에 심층 AI 위원회</span></div><div class="stock-grid">${requests.map(card).join('')}</div></section>` : ''}
-${weekly.length ? `<section class="block"><div class="block-head"><h2>이번 주 선정 ${weekly.length}종목</h2><span class="muted">${selection ? `${escape(selection.date)} 선정 · 시가총액 5,000억 원 이상 ${selection.eligible.toLocaleString('ko-KR')}종목 중` : ''}</span></div>
-<p class="muted small sel-note">시가총액, 거래대금, 실적·주요 공시, 최근 5거래일 움직임, 평소 대비 거래대금을 함께 점수로 매겨 매주 금요일에 골라요. 시가총액 최상위 종목은 AI 위원회 전체, 나머지는 짧은 AI 요약을 써요. 대시보드의 계산은 매일 갱신돼요.</p>
-<div class="stock-grid">${weekly.map(card).join('')}</div></section>` : ''}
-<footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '종목 | Gnomon Analytics', body, { scripts: SEARCH_SCRIPT });
-}

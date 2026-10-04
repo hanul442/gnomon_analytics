@@ -13,7 +13,9 @@ import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
 import { writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
 import type Anthropic from '@anthropic-ai/sdk';
-import { CHART_ASSET, FONT_DIR, renderHome, renderIndex, renderReport, renderStockPage, type HomeEntry } from '../report/renderHtml.js';
+import { CHART_ASSET, FONT_DIR, renderIndex, renderReport, renderStockPage, type HomeEntry } from '../report/renderHtml.js';
+import { renderHome, type IndexQuote } from '../report/renderHome.js';
+import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE } from '../sources/opendart.js';
 import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
@@ -31,6 +33,7 @@ import { collectUniverse, readCorpCodes, readListedStocks, type ListedStock } fr
 import { loadRequests, type ReportRequest } from '../config/requests.js';
 import { latestSelection, pickTicker, pool, runSelection } from './weekly.js';
 import { writeStockPages } from './stockPages.js';
+import { marketPulse, quickCalc, type MarketPulse, type StockCalc } from '../analysis/quickCalc.js';
 import type { Selection, SelectionParams } from '../analysis/selection.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
@@ -182,12 +185,21 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   }
   if (!results.length) throw new Error(`every stock failed: ${failed.map((f) => `${f.symbol} ${f.error}`).join('; ')}`);
   results.sort((a, b) => jobs.findIndex((j) => j.ticker.symbol === a.symbol) - jobs.findIndex((j) => j.ticker.symbol === b.symbol));
-  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested);
-  // Every other listed stock gets a chart page with the analysis locked (best effort).
+  // Every other listed stock gets a chart page with the free computation (best effort).
+  const calcs = new Map<string, StockCalc>();
   if (universe.rows?.length && options.stockPages !== false) {
     const withPages = new Set([...jobs.map((j) => j.ticker.symbol), ...(await readdir(join(root, 'reports')).catch(() => [] as string[]))]);
-    universe.status.push(await writeStockPages(join(root, 'site'), universe.rows, withPages, { now: () => now, ...fetchOpt }));
+    const pages = await writeStockPages(join(root, 'site'), universe.rows, withPages, { now: () => now, ...fetchOpt });
+    universe.status.push(pages.status);
+    for (const [k, v] of pages.calcs) calcs.set(k, v);
   }
+  // Covered stocks count toward the market's temperature too, from their stored prices.
+  for (const j of jobs) {
+    const bars = asOf(await readLog<PriceBar>(join(root, 'data', 'prices', `${j.ticker.symbol}.jsonl`)), priceKey, now).slice(-250);
+    const calc = quickCalc(j.ticker.symbol, bars, now);
+    if (calc) calcs.set(j.ticker.symbol, calc);
+  }
+  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse: marketPulse([...calcs.values()]), calcs });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
   await mkdir(join(root, 'data', 'status'), { recursive: true });
@@ -350,7 +362,7 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  * dashboard (live when this run built one, else its latest dated report),
  * <symbol>/archive.html its dated reports and <symbol>/reports/<date>.html each one.
  */
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set()): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc> } = {}): Promise<void> {
   const siteDir = join(root, 'site');
   const home: HomeEntry[] = [];
   // Stocks picked in earlier weeks keep their pages (latest dated report), off the front page.
@@ -388,7 +400,20 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : {}) });
   }
   await writeFile(join(siteDir, 'stock.html'), renderStockPage());
-  await writeFile(join(siteDir, 'index.html'), renderHome(home, selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null));
+  await writeFile(join(siteDir, 'pricing.html'), renderPricing());
+  await writeFile(join(siteDir, 'checkout.html'), renderCheckout());
+  // Index quotes for the front page, from the stored index prices.
+  const indices: IndexQuote[] = [];
+  for (const [symbol, name] of [['KOSPI', '코스피'], ['KOSDAQ', '코스닥']] as const) {
+    // Last record per session (a session can be re-recorded while it is still open).
+    const bars = [...new Map((await readLog<PriceBar>(join(root, 'data', 'prices', `${symbol}.jsonl`))).map((b) => [b.date, b] as const)).values()].sort((a, b) => (a.date < b.date ? -1 : 1));
+    const last = bars.at(-1), prev = bars.at(-2);
+    if (last) indices.push({ symbol, name, date: last.date, close: last.close, changePct: prev ? (last.close / prev.close - 1) * 100 : null, closes: bars.slice(-60).map((b) => b.close) });
+  }
+  await writeFile(join(siteDir, 'index.html'), renderHome({
+    entries: home, universe, indices, pulse: extras.pulse ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
+    selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,
+  }));
   // Search index: every listed stock, with today's price when the list was fetched this run.
   const covered = new Set([...tickers, ...past].map((t) => t.symbol));
   const items = universe
