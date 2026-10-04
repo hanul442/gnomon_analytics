@@ -3,6 +3,7 @@
 // valuation snapshot, financials, benchmarks and research listings.
 // Pure: callers pass records already filtered to what was known at generation.
 
+import { paperBooks, type PaperBook, type PaperEntry } from '../analysis/paper.js';
 import { horizonGauges, type HorizonGauge } from '../analysis/horizons.js';
 import { runArena, type ArenaResult } from '../analysis/strategies.js';
 import { scoreAnalysts, type AnalystCall, type AnalystScore } from '../analysis/analysts.js';
@@ -43,6 +44,8 @@ export interface MarketSection {
   arena: ArenaResult | null;
   /** AI analyst battle leaderboard from logged calls (docs/DESIGN.md §5.6). */
   analystBoard: AnalystScore[];
+  /** Paper-trading ledger replayed from logged entries (G-21); absent in reports made before it existed. */
+  paper?: PaperBook[];
   /** Ranges made with this report (also appended to data/forecasts). */
   forecasts: PriceForecast[];
   forecastScores: ForecastScore[];
@@ -104,6 +107,8 @@ export function buildMarketSection(input: {
   loggedForecasts: readonly PriceForecast[];
   /** Analyst calls logged by earlier reports. */
   analystCalls?: readonly AnalystCall[];
+  /** Paper-trading entries logged by earlier settled runs. */
+  paperEntries?: readonly PaperEntry[];
   status: readonly NewsSourceStatus[];
 }): MarketSection {
   const upTo = <T extends { date: string }>(xs: readonly T[]) => [...xs].filter((x) => x.date <= input.date).sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -120,6 +125,7 @@ export function buildMarketSection(input: {
     footprint: footprint(daily, input.flows.filter((f) => f.symbol === input.symbol)),
     arena: runArena(daily),
     analystBoard: scoreAnalysts((input.analystCalls ?? []).filter((c) => c.symbol === input.symbol), daily),
+    paper: paperBooks((input.paperEntries ?? []).filter((e) => e.symbol === input.symbol && e.date <= input.date), daily),
     forecasts,
     forecastScores: scoreForecasts(input.loggedForecasts.filter((f) => f.symbol === input.symbol), daily),
     flows: buildFlowSection(input.flows.filter((f) => f.symbol === input.symbol), input.date),

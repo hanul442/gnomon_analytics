@@ -77,9 +77,9 @@ function ring(score: number | null): string {
   const r = 34, c = 2 * Math.PI * r;
   const len = score === null ? 0 : (score / 100) * c;
   return `<svg viewBox="0 0 84 84" class="ring" role="img" aria-label="위원회 합의 점수 ${score ?? '없음'}">
-<circle cx="42" cy="42" r="${r}" fill="none" stroke="#efe7d6" stroke-width="7"/>
+<circle cx="42" cy="42" r="${r}" fill="none" stroke="#d9e1ec" stroke-width="7"/>
 <circle cx="42" cy="42" r="${r}" fill="none" stroke="url(#ringGold)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 42 42)"/>
-<defs><linearGradient id="ringGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d4b67e"/><stop offset="1" stop-color="#8f6c3a"/></linearGradient></defs>
+<defs><linearGradient id="ringGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fa5c3"/><stop offset="1" stop-color="#243659"/></linearGradient></defs>
 <text x="42" y="47" text-anchor="middle" class="ring-num">${score ?? '–'}</text></svg>`;
 }
 
@@ -182,13 +182,13 @@ window.addEventListener('DOMContentLoaded', function () {
   if (bars.length < 2) return;
   var marks = JSON.parse(document.getElementById('marks').textContent) || [];
   var ov = JSON.parse(document.getElementById('overlays').textContent) || {};
-  var UP = '#d1373d', DOWN = '#2a62c9', GOLD = '#a8834a';
+  var UP = '#d1373d', DOWN = '#2a62c9', GOLD = '#2e4268';
   var mobile = window.matchMedia('(max-width: 820px)').matches;
   var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
   var chart = L.createChart(el, {
     autoSize: true,
-    layout: { background: { color: 'transparent' }, textColor: '#7b7f87', fontFamily: 'inherit', panes: { separatorColor: '#ebe4d6' } },
-    grid: { vertLines: { visible: false }, horzLines: { color: '#f2ece1' } },
+    layout: { background: { color: 'transparent' }, textColor: '#7b7f87', fontFamily: 'inherit', panes: { separatorColor: '#d6dfeb' } },
+    grid: { vertLines: { visible: false }, horzLines: { color: '#e2e8f1' } },
     rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false, rightOffset: 4 },
     crosshair: { mode: 0 },
     localization: { locale: 'ko-KR', priceFormatter: function (v) { return Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('ko-KR') : v.toFixed(2); } }
@@ -217,16 +217,16 @@ window.addEventListener('DOMContentLoaded', function () {
     ma120: function () { return [line(sma(C, 120), '#00968a')]; },
     ema12: function () { return [line(ema(C, 12), '#c2410c', 0, { lineStyle: 2 }), line(ema(C, 26), '#4338ca', 0, { lineStyle: 2 })]; },
     bb: function () { var m = sma(C, 20), s = std(C, 20, m); return [line(m, '#8a96a3', 0, { lineStyle: 2 }), line(m.map(function (x, i) { return x == null ? null : x + 2 * s[i]; }), '#8a96a3'), line(m.map(function (x, i) { return x == null ? null : x - 2 * s[i]; }), '#8a96a3')]; },
-    env: function () { var m = sma(C, 20); return [line(m.map(function (x) { return x == null ? null : x * 1.06; }), '#b08d57', 0, { lineStyle: 1 }), line(m.map(function (x) { return x == null ? null : x * 0.94; }), '#b08d57', 0, { lineStyle: 1 })]; },
+    env: function () { var m = sma(C, 20); return [line(m.map(function (x) { return x == null ? null : x * 1.06; }), '#34496f', 0, { lineStyle: 1 }), line(m.map(function (x) { return x == null ? null : x * 0.94; }), '#34496f', 0, { lineStyle: 1 })]; },
     ichimoku: function () {
       var conv = C.map(function (_, i) { return i < 8 ? null : (hh(9, i) + ll(9, i)) / 2; }), basev = C.map(function (_, i) { return i < 25 ? null : (hh(26, i) + ll(26, i)) / 2; });
-      return [line(conv, '#e11d48'), line(basev, '#2563eb'), line(C.map(function (_, i) { return i < 51 ? null : (hh(52, i) + ll(52, i)) / 2; }), '#a8834a', 0, { lineStyle: 2 }), line(conv.map(function (x, i) { return x == null || basev[i] == null ? null : (x + basev[i]) / 2; }), '#16a34a', 0, { lineStyle: 2 })];
+      return [line(conv, '#e11d48'), line(basev, '#2563eb'), line(C.map(function (_, i) { return i < 51 ? null : (hh(52, i) + ll(52, i)) / 2; }), '#2e4268', 0, { lineStyle: 2 }), line(conv.map(function (x, i) { return x == null || basev[i] == null ? null : (x + basev[i]) / 2; }), '#16a34a', 0, { lineStyle: 2 })];
     }
   };
   var lineMakers = {
     levels: function () { return (ov.levels || []).map(function (l) { return candle.createPriceLine({ price: l.price, color: l.kind === 'SUPPORT' ? DOWN : UP, lineWidth: 1, axisLabelVisible: true, title: l.kind === 'SUPPORT' ? '지지' : '저항' }); }); },
     fib: function () { return (ov.fib || []).map(function (f) { return candle.createPriceLine({ price: f.price, color: GOLD, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: 'Fib ' + (f.ratio * 100).toFixed(1) + '%' }); }); },
-    fair: function () { if (!ov.fair) return []; return [['low', '적정 하단'], ['center', '적정가'], ['high', '적정 상단']].map(function (k) { return candle.createPriceLine({ price: ov.fair[k[0]], color: '#8a6a37', lineWidth: k[0] === 'center' ? 2 : 1, lineStyle: k[0] === 'center' ? 0 : 2, axisLabelVisible: true, title: k[1] }); }); }
+    fair: function () { if (!ov.fair) return []; return [['low', '적정 하단'], ['center', '적정가'], ['high', '적정 상단']].map(function (k) { return candle.createPriceLine({ price: ov.fair[k[0]], color: '#223456', lineWidth: k[0] === 'center' ? 2 : 1, lineStyle: k[0] === 'center' ? 0 : 2, axisLabelVisible: true, title: k[1] }); }); }
   };
   var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); var w = d.getUTCDay(); if (w !== 0 && w !== 6) n--; } return d.toISOString().slice(0, 10); };
   overlayMakers.forecast = function () {
@@ -239,7 +239,7 @@ window.addEventListener('DOMContentLoaded', function () {
       var k = Math.min(1, Math.max(0, (h - 20) / 40)), sg = f20.sigma + (f60.sigma - f20.sigma) * k, mu = f20.drift * h, sp = z * sg * Math.sqrt(h);
       fan.p10.push({ time: d, value: f20.baseClose * Math.exp(mu - sp) }); fan.p50.push({ time: d, value: f20.baseClose * Math.exp(mu) }); fan.p90.push({ time: d, value: f20.baseClose * Math.exp(mu + sp) });
     }
-    return [['p90', UP, 2, '상단 90%'], ['p50', '#8a6a37', 0, '예측 중앙'], ['p10', DOWN, 2, '하단 10%']].map(function (q) {
+    return [['p90', UP, 2, '상단 90%'], ['p50', '#223456', 0, '예측 중앙'], ['p10', DOWN, 2, '하단 10%']].map(function (q) {
       var s = chart.addSeries(L.LineSeries, { color: q[1], lineWidth: q[0] === 'p50' ? 2 : 1, lineStyle: q[2], priceLineVisible: false, lastValueVisible: true, title: q[3], crosshairMarkerVisible: false });
       s.setData(fan[q[0]]); return s;
     });
@@ -248,7 +248,7 @@ window.addEventListener('DOMContentLoaded', function () {
   // ---- panes (below the price) ----
   var paneMakers = {
     volume: function (p) { var s = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false }, p); s.setData(bars.map(function (b, i) { return { time: b.date, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(42,98,201,.45)' : 'rgba(209,55,61,.45)' }; })); return [s]; },
-    rsi: function (p) { var s = line(rsi(14), '#7a4fb3', p, { lastValueVisible: true, title: 'RSI 14' }); s.createPriceLine({ price: 70, color: '#d9c39a', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: 30, color: '#d9c39a', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
+    rsi: function (p) { var s = line(rsi(14), '#7a4fb3', p, { lastValueVisible: true, title: 'RSI 14' }); s.createPriceLine({ price: 70, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: 30, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
     macd: function (p) {
       var f = ema(C, 12), s = ema(C, 26), m = C.map(function (_, i) { return i < 25 ? null : f[i] - s[i]; });
       var sig = ema(m, 9).map(function (x, i) { return i < 33 ? null : x; });
@@ -260,7 +260,7 @@ window.addEventListener('DOMContentLoaded', function () {
     cci: function (p) { var tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }), m = sma(tp, 20); return [line(tp.map(function (x, i) { if (m[i] == null) return null; var md = 0; for (var j = i - 19; j <= i; j++) md += Math.abs(tp[j] - m[i]); md /= 20; return md === 0 ? 0 : (x - m[i]) / (0.015 * md); }), '#0e7490', p, { title: 'CCI 20' })]; },
     wr: function (p) { return [line(C.map(function (c, i) { if (i < 13) return null; var h = hh(14, i), l = ll(14, i); return h === l ? -50 : (h - c) / (h - l) * -100; }), '#be185d', p, { title: '%R 14' })]; },
     obv: function (p) { var o = 0; return [line(C.map(function (c, i) { if (i) o += c > C[i - 1] ? V[i] : c < C[i - 1] ? -V[i] : 0; return o; }), '#475569', p, { title: 'OBV' })]; },
-    atr: function (p) { var a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * 13 + tr) / 14; return i < 14 ? null : a; }), '#8a6a37', p, { title: 'ATR 14' })]; }
+    atr: function (p) { var a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * 13 + tr) / 14; return i < 14 ? null : a; }), '#223456', p, { title: 'ATR 14' })]; }
   };
   var paneOrder = [];
   var rebuildPanes = function () {

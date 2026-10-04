@@ -3,7 +3,8 @@
 // experiment ledger. Styled after the mockup's Lab screen (champion race,
 // Monte Carlo, experiment ledger).
 
-import type { ArenaResult, StrategyResult } from '../analysis/strategies.js';
+import { ARENA_COST, type ArenaResult, type StrategyResult } from '../analysis/strategies.js';
+import { PAPER_START_KRW, type PaperBook } from '../analysis/paper.js';
 import { miniGauge } from './renderMarket.js';
 import type { AnalystScore } from '../analysis/analysts.js';
 import { ANALYSTS } from '../analysis/analysts.js';
@@ -24,7 +25,7 @@ function equitySpark(values: readonly number[], label: string): string {
   const w = 140, h = 40, lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1;
   const pts = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 3 - ((v - lo) / span) * (h - 6)).toFixed(1)}`).join(' ');
   const up = values.at(-1)! >= 1;
-  return `<svg viewBox="0 0 ${w} ${h}" class="spark" role="img" aria-label="${esc(label)}"><line x1="0" x2="${w}" y1="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" y2="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" stroke="#e6dccb" stroke-dasharray="2 3"/><polyline fill="none" stroke="${up ? '#d1373d' : '#2a62c9'}" stroke-width="1.6" points="${pts}"/></svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" class="spark" role="img" aria-label="${esc(label)}"><line x1="0" x2="${w}" y1="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" y2="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" stroke="#cdd7e4" stroke-dasharray="2 3"/><polyline fill="none" stroke="${up ? '#d1373d' : '#2a62c9'}" stroke-width="1.6" points="${pts}"/></svg>`;
 }
 
 const CROWN = '<svg viewBox="0 0 24 24" aria-hidden="true" class="crown"><path d="M3 18h18l-1.5-9-4.5 4-3-7-3 7-4.5-4z" fill="currentColor"/></svg>';
@@ -110,4 +111,25 @@ ${v ? `<div class="an-nums"><div><span class="label">확신도</span><b>${v.conf
 <div class="analyst-grid">${cards}</div>
 <div class="card" style="margin-top:14px"><div class="head"><h2>적중 순위</h2></div>${table}</div>
 <p class="fine">분석가는 같은 AI가 서로 다른 관점을 맡아 쓴 의견이에요. 예측은 쓴 날 그대로 기록하고 고치지 않아요. 방향 적중은 예상 가격과 실제 가격이 기준가의 같은 쪽에 있는지로 보고(중립은 ±2% 안), 오차는 예상 가격과 실제 가격의 차이예요. 투자 권유가 아니에요.</p></section>`;
+}
+
+/** Paper-trading ledger (G-21): each follower's virtual account, replayed from logged entries. */
+export function paperPanel(books: readonly PaperBook[] | undefined): string {
+  const list = books ?? [];
+  const note = `<p class="fine">평일 18시 이후 리포트를 만들 때 따라 하는 쪽마다 "그날 종가부터 보유할지"를 기록하고 고치지 않아요. 수익은 다음 거래일부터 계산하고, 사고팔 때마다 비용 ${(ARENA_COST * 50).toFixed(3)}%를 빼요. 공매도는 하지 않아요. AI 분석가는 강세 판단이면 보유, 중립·약세면 현금이에요. 가상 계좌이고, 투자 권유가 아니에요.</p>`;
+  if (!list.length) return `<section class="block"><div class="block-head"><h2>모의투자 장부</h2></div><div class="card"><p class="empty">아직 기록이 없어요. 평일 18시 이후 첫 리포트부터 매일 기록해요.</p>${note}</div></section>`;
+  const since = list.map((b) => b.since).sort()[0]!;
+  const hold = list.find((b) => b.follower === 'hold');
+  const rows = list.map((b) => {
+    const diff = hold && b.follower !== 'hold' ? b.totalReturn - hold.totalReturn : null;
+    return `<div class="paper-row${b.follower === 'champion' ? ' is-champ' : ''}"><div class="pr-name"><b>${esc(b.label)}</b><span class="muted small">${esc(b.follower === 'champion' ? `지금 따르는 전략: ${b.basis}` : b.follower === 'hold' ? '비교 기준' : `최근 판단: ${b.basis}`)}</span></div>
+${equitySpark(b.equity, `${b.label} 가상 계좌 추이`)}
+<div class="pr-num"><b class="${tone(b.totalReturn)}">${pct(b.totalReturn, 2)}</b><span class="muted small">${won(b.balance)}</span></div>
+<div class="pr-num"><span class="badge ${b.position ? 'b-HIGH' : 'b-LOW'}">${b.position ? '보유' : '현금'}</span><span class="muted small">거래 ${b.trades.length}번${diff === null ? '' : ` · 보유 대비 <span class="${tone(diff)}">${diff > 0 ? '+' : ''}${(diff * 100).toFixed(2)}%p</span>`}</span></div></div>`;
+  }).join('');
+  const trades = list.flatMap((b) => b.trades.map((t) => ({ ...t, who: b.label }))).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 20);
+  const log = trades.length ? `<div class="table-wrap"><table class="compact nowrap-cells"><thead><tr><th>날짜</th><th>누가</th><th>주문</th><th class="num">가격(종가)</th><th>근거</th></tr></thead><tbody>${trades.map((t) => `<tr><td class="nowrap">${esc(t.date)}</td><td>${esc(t.who)}</td><td class="${t.action === 'BUY' ? 'up' : 'down'}">${t.action === 'BUY' ? '매수' : '매도'}</td><td class="num">${won(t.price)}</td><td>${esc(t.basis)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">아직 주문이 없어요.</p>';
+  return `<section class="block"><div class="block-head"><h2>모의투자 장부</h2><span class="muted">${esc(since)}부터 · 가상 ${won(PAPER_START_KRW)}씩</span></div>
+<div class="card"><div class="paper-list">${rows}</div>${note}</div></section>
+<section class="block"><div class="block-head"><h2>주문 기록</h2><span class="muted">최근 20건</span></div><div class="card">${log}</div></section>`;
 }
