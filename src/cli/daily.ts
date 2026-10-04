@@ -20,6 +20,7 @@ import { isRelevant } from '../analysis/news.js';
 import { BENCHMARKS, collectMarketData, financeKey, flowKey, intradayKey, marketPaths, researchKey, snapshotKey } from './marketData.js';
 import { buildMarketSection } from '../report/marketSection.js';
 import { forecastKey, type PriceForecast } from '../analysis/valuation.js';
+import { analystCallKey, type AnalystCall } from '../analysis/analysts.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
@@ -113,6 +114,15 @@ export async function runDaily(options: {
         ...(options.anthropic ? { client: options.anthropic } : {}),
         ...(options.anthropicApiKey ? { apiKey: options.anthropicApiKey } : {}),
       });
+      // Analyst calls are logged as made, to be scored 20 sessions later.
+      const c = built.commentary;
+      if (c.status === 'OK' && c.analysts?.length && built.price) {
+        const calls: AnalystCall[] = c.analysts.map((v) => ({
+          symbol: SYMBOL, analyst: v.analyst, reportDate: today.date, baseDate: built.price!.sessionDate ?? today.date, baseClose: built.price!.close,
+          stance: v.stance, confidence: v.confidence, target: v.target, promptVersion: c.promptVersion, madeAt: now.toISOString(),
+        }));
+        await appendUnseen(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`), calls, analystCallKey);
+      }
       await mkdir(reportDir, { recursive: true });
       await writeFile(reportPath, `${JSON.stringify(built, null, 2)}\n`, { flag: 'wx' });
       report = 'WRITTEN';
@@ -170,6 +180,7 @@ export async function composeReport(
     research: asOf(await readLog<ResearchNote>(mp.research), researchKey, now),
     benchmarks: await Promise.all(BENCHMARKS.map(async (b) => ({ ...b, bars: asOf(await readLog<PriceBar>(mp.daily(b.symbol)), priceKey, now) }))),
     loggedForecasts: (await readLog<PriceForecast>(forecastPath)).filter((f) => f.madeAt <= now.toISOString()),
+    analystCalls: (await readLog<AnalystCall>(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`))).filter((c) => c.madeAt <= now.toISOString()),
     status: options.marketStatus ?? [],
   });
   return built;

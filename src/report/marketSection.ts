@@ -5,6 +5,7 @@
 
 import { horizonGauges, type HorizonGauge } from '../analysis/horizons.js';
 import { runArena, type ArenaResult } from '../analysis/strategies.js';
+import { scoreAnalysts, type AnalystCall, type AnalystScore } from '../analysis/analysts.js';
 import { footprint, structureSnapshot, type Footprint, type StructureSnapshot } from '../analysis/structure.js';
 import { forecastRanges, scoreForecasts, technicalFairValue, type ForecastScore, type PriceForecast, type TechnicalFairValue } from '../analysis/valuation.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, PriceBar, ResearchNote, StockSnapshot } from '../types.js';
@@ -40,6 +41,8 @@ export interface MarketSection {
   footprint: Footprint;
   /** Strategy arena on the available daily history (docs/DESIGN.md §5.5). */
   arena: ArenaResult | null;
+  /** AI analyst battle leaderboard from logged calls (docs/DESIGN.md §5.6). */
+  analystBoard: AnalystScore[];
   /** Ranges made with this report (also appended to data/forecasts). */
   forecasts: PriceForecast[];
   forecastScores: ForecastScore[];
@@ -99,6 +102,8 @@ export function buildMarketSection(input: {
   benchmarks: readonly { symbol: string; name: string; bars: readonly PriceBar[] }[];
   /** Forecasts logged by earlier reports. */
   loggedForecasts: readonly PriceForecast[];
+  /** Analyst calls logged by earlier reports. */
+  analystCalls?: readonly AnalystCall[];
   status: readonly NewsSourceStatus[];
 }): MarketSection {
   const upTo = <T extends { date: string }>(xs: readonly T[]) => [...xs].filter((x) => x.date <= input.date).sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -114,6 +119,7 @@ export function buildMarketSection(input: {
     weeklyStructure: structureSnapshot(weekly, 260),
     footprint: footprint(daily, input.flows.filter((f) => f.symbol === input.symbol)),
     arena: runArena(daily),
+    analystBoard: scoreAnalysts((input.analystCalls ?? []).filter((c) => c.symbol === input.symbol), daily),
     forecasts,
     forecastScores: scoreForecasts(input.loggedForecasts.filter((f) => f.symbol === input.symbol), daily),
     flows: buildFlowSection(input.flows.filter((f) => f.symbol === input.symbol), input.date),

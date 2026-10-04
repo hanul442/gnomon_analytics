@@ -7,7 +7,7 @@ import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim, Commentary } from '../analysis/commentary.js';
 import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { councilCard, DART_SCRIPT, hero, latestLists, marketStrip, priceChart } from './appParts.js';
-import { arenaPanel, arenaTeaser } from './renderArena.js';
+import { analystBattle, arenaPanel, arenaTeaser } from './renderArena.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 /** Pretendard web font, also served from our own site. */
@@ -142,10 +142,14 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#fbf6ec 22%,#ead9b8 52%,#c7
 .race{padding:6px 18px}.race-row{display:grid;grid-template-columns:44px minmax(0,1.4fr) 140px repeat(3,minmax(0,.6fr)) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.race-row:first-of-type{border-top:0}
 .race-row.is-champ{background:linear-gradient(90deg,rgba(214,185,128,.16),rgba(255,255,255,0));border-radius:12px}
 .race-name{display:flex;flex-direction:column;min-width:0}.race-num{display:flex;flex-direction:column;align-items:flex-end;font-variant-numeric:tabular-nums}.race-sig{text-align:right}
-.race .spark{width:140px;height:40px}.rank{display:inline-flex;align-items:center;gap:2px;color:var(--muted);font-variant-numeric:tabular-nums}.rank b{font-size:15px}
+.race .spark{width:140px;height:40px}.race-mini .race-row{grid-template-columns:44px minmax(0,1.4fr) 140px minmax(0,.6fr) auto}.rank{display:inline-flex;align-items:center;gap:2px;color:var(--muted);font-variant-numeric:tabular-nums}.rank b{font-size:15px}
 .crown{width:16px;height:16px;vertical-align:-2px}.rank.r1{color:#b08d57}.rank.r2{color:#9aa1ab}.rank.r3{color:#b07a4f}.champion h2 .crown{color:#b08d57;width:18px;height:18px}
 .champ-grid{display:grid;grid-template-columns:180px minmax(0,1fr);gap:18px;align-items:center}.champ-grid>div:first-child{text-align:center}.champ-grid .mini-gauge{max-width:170px}.rule{margin:0 0 4px;font-weight:600}
 .arena-gauges{grid-template-columns:repeat(4,minmax(0,1fr))}.trig{margin-top:4px;line-height:1.4}
+.analyst-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.analyst{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+.an-top{display:flex;gap:10px;align-items:center}.an-name{flex:1;min-width:0;display:flex;flex-direction:column}.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;flex:none;font-family:var(--serif);font-weight:600;color:#fff;background:var(--gold-grad)}
+.an-nums{display:grid;grid-template-columns:1fr 1fr;gap:10px}.an-nums .label{display:block;font-size:12px;color:var(--muted)}.an-nums b{font-variant-numeric:tabular-nums;margin-right:6px}
+.conf{height:5px;background:#f2ece1;border-radius:999px;margin-top:4px;overflow:hidden}.conf i{display:block;height:100%;background:var(--gold-grad)}.an-why{margin:0;font-size:14px;color:var(--fg2)}
 /* kpis */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi .row{display:flex;align-items:center;gap:12px}
 .kpi .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--accent-strong);background:var(--accent-soft)!important;flex:none}.kpi .ico svg{width:20px;height:20px}
@@ -177,8 +181,8 @@ footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--muted);fon
 .needle{transform-box:view-box;transform-origin:110px 104px;transform:rotate(var(--r));animation:settle 900ms var(--ease-out) 200ms both}
 @keyframes settle{from{transform:rotate(0deg)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-@media (max-width:1100px){.desk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hz-row{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}.hero{grid-template-columns:minmax(0,1fr)}}
-@media (max-width:820px){.race-row{grid-template-columns:34px minmax(0,1fr) auto auto}.race-row .spark,.race-row .rn-total,.race-row .rn-sharpe{display:none}.champ-grid{grid-template-columns:minmax(0,1fr)}.arena-gauges{grid-template-columns:repeat(2,minmax(0,1fr))}.topbar-in{padding:10px 16px}.chips{padding:0 12px 8px}.chips a{padding:6px 12px;font-size:13px}.top-links .tl-hide{display:none}
+@media (max-width:1100px){.analyst-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.desk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hz-row{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}.hero{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:820px){.analyst-grid{grid-template-columns:minmax(0,1fr)}.race-row{grid-template-columns:34px minmax(0,1fr) auto auto}.race-row .spark,.race-row .rn-total,.race-row .rn-sharpe{display:none}.champ-grid{grid-template-columns:minmax(0,1fr)}.arena-gauges{grid-template-columns:repeat(2,minmax(0,1fr))}.topbar-in{padding:10px 16px}.chips{padding:0 12px 8px}.chips a{padding:6px 12px;font-size:13px}.top-links .tl-hide{display:none}
 main{padding:14px 14px 48px}.hero{padding:22px 18px;border-radius:18px}.hero h1{font-size:30px}.hero-price b{font-size:28px}.orb{width:170px;height:170px;right:-50px;top:-40px}
 .strip{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:14px}.list{padding:4px 14px}
 .hz-row{grid-template-columns:repeat(2,minmax(0,1fr))}.value-head,.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .ico{display:none}.kpi .value{font-size:17px;white-space:nowrap}
@@ -469,7 +473,8 @@ ${latestLists(report)}
   const technical = `${m ? arenaPanel(m.arena) : ''}<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${signalSection(report)}${m ? `<div class="grid-eq">${valueCard(m)}${forecastCard(m.forecasts, m.forecastScores)}</div><div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`;
   const flowsTab = m ? flowsPanel(m.flows, m.footprint) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>';
   const fundTab = m ? fundamentalsPanel(m, report.price?.close ?? null) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>';
-  const aiTab = report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 평일 18시 이후 하루 한 번 만들어져요.</p>` : ''}${whySection(report)}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 평일 18시 이후 리포트에서 만들어져요.</p></div>';
+  const battle = m ? analystBattle(m.analystBoard, report.commentary, report.price?.close ?? null) : '';
+  const aiTab = battle + (report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 평일 18시 이후 하루 한 번 만들어져요.</p>` : ''}${whySection(report)}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 평일 18시 이후 리포트에서 만들어져요.</p></div>');
   const newsTab = `${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const body = `${panel('home', home)}

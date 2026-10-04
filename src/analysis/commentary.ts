@@ -10,15 +10,16 @@ import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import type { DailyReport } from '../report/dailyReport.js';
+import { ANALYSTS, ANALYST_HORIZON, type AnalystId } from './analysts.js';
 
 export const COMMENTARY_MODEL = 'claude-opus-5-5';
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v1';
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v2';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
 export interface EvidenceItem {
   id: string;
-  kind: 'PRICE' | 'TECHNICAL' | 'FILING' | 'NEWS' | 'HORIZON' | 'VALUE' | 'FORECAST' | 'STRUCTURE' | 'FLOW' | 'FUNDAMENTAL' | 'MARKET';
+  kind: 'PRICE' | 'TECHNICAL' | 'FILING' | 'NEWS' | 'HORIZON' | 'VALUE' | 'FORECAST' | 'STRUCTURE' | 'FLOW' | 'FUNDAMENTAL' | 'MARKET' | 'ARENA';
   label: string;
   detail: string;
   url: string;
@@ -32,6 +33,7 @@ export interface Claim {
 export type Desk = 'MARKET' | 'TECHNICAL' | 'FLOW' | 'FUNDAMENTAL' | 'EVENT';
 export type DeskStance = 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'INSUFFICIENT_DATA';
 export interface DeskView { desk: Desk; stance: DeskStance; view: Claim }
+export interface AnalystView { analyst: AnalystId; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; confidence: number; target: number; rationale: Claim }
 export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; catalysts: string[]; invalidation: string[] }
 
 export interface Commentary {
@@ -52,6 +54,8 @@ export interface Commentary {
   desks?: DeskView[];
   redTeam?: { counterargument: Claim; unresolved: string[] };
   scenarios?: Scenario[];
+  /** Analyst battle: each analyst's stance, confidence and 20-session target (scored later). */
+  analysts?: AnalystView[];
   /** Claims removed because none of their evidence IDs existed. */
   dropped: number;
   evidence: EvidenceItem[];
@@ -108,6 +112,11 @@ export function buildEvidence(report: DailyReport): EvidenceItem[] {
       items.push({ id: 'D1', kind: 'FUNDAMENTAL', label: '밸류에이션·실적·증권가 평균', url: '#tab-fundamentals',
         detail: `${s ? `PER ${s.per ?? '없음'}, 추정 PER ${s.estimatedPer ?? '없음'}, PBR ${s.pbr ?? '없음'}, 증권가 평균 목표가 ${s.consensus?.targetPriceMean ? won(s.consensus.targetPriceMean) : '없음'}. ` : ''}분기 영업이익(억원): ${q.map((p) => `${p.period}${p.isEstimate ? '(추정)' : ''} ${p.metrics['영업이익'] ?? '없음'}`).join(', ')}` });
     }
+    if (m.arena) {
+      const a = m.arena;
+      items.push({ id: 'A1', kind: 'ARENA', label: '전략 대결 (백테스트)', url: '#arena',
+        detail: `${a.from}~${a.sessionDate}, 검증 구간 ${a.oosFrom}~. ${a.results.map((x) => `${x.rank}위 ${x.name}: 검증 수익 ${(x.oosReturn * 100).toFixed(1)}%, 샤프 ${x.oosSharpe?.toFixed(2) ?? '없음'}, 지금 ${x.key === 'hold' ? '기준선' : x.position ? '보유 신호' : '관망'}`).join('; ')}` });
+    }
     if (m.benchmarks.length) {
       items.push({ id: 'M1', kind: 'MARKET', label: '시장 대비 수익률', url: '#tab-fundamentals',
         detail: m.benchmarks.map((b) => `${b.name}: ${b.returns.map((x) => `${x.days}일 종목 ${pct(x.stock)} vs ${pct(x.benchmark)}`).join(', ')}`).join('; ') });
@@ -148,6 +157,13 @@ export const CommentarySchema = z.object({
     unresolved: z.array(z.string()).describe('데스크끼리 풀리지 않은 이견'),
   }),
   scenarios: z.array(ScenarioSchema).describe('BULL, BASE, BEAR 정확히 하나씩'),
+  analysts: z.array(z.object({
+    analyst: z.enum(ANALYSTS.map((a) => a.id) as [AnalystId, ...AnalystId[]]),
+    stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']),
+    confidence: z.number().describe('0~100'),
+    target: z.number().describe(`P1 종가 기준 ${ANALYST_HORIZON}거래일 뒤 예상 가격(원)`),
+    rationale: ClaimSchema.describe('이 분석가의 근거 한두 문장'),
+  })).describe('분석가 6명 각각 하나씩'),
   bullish: z.array(ClaimSchema).describe('강세 쪽 근거. 없으면 빈 배열'),
   bearish: z.array(ClaimSchema).describe('약세 쪽 근거. 없으면 빈 배열'),
   uncertain: z.array(ClaimSchema).describe('방향이 불확실하거나 해석이 갈리는 점'),
@@ -158,10 +174,12 @@ export const CommentarySchema = z.object({
 const SYSTEM = `당신은 Gnomon Analytics의 리서치 위원회예요. SK하이닉스 일일 리포트의 "AI 해설"을 한 번에 씁니다.
 
 위원회 구성:
-- 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위, T1·H1·S1·V1·R1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
+- 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
 - 레드팀은 가장 우세한 의견에 맞서는 가장 강한 반론을 씁니다.
 - 마지막으로 강세(BULL)·기본(BASE)·약세(BEAR) 시나리오를 하나씩 쓰고, 각 시나리오의 촉매와 무효화 조건(가격 수준이나 사건)을 적습니다.
 - 데스크 근거가 없으면 stance를 INSUFFICIENT_DATA로 둡니다.
+- 분석가 대결: 아래 분석가 6명이 각자 자기 관점에서 판단(강세·약세·중립), 확신도(0~100), 20거래일 뒤 예상 가격을 냅니다. 예상 가격은 P1 종가에서 출발해 근거로 설명할 수 있는 수준이어야 하고, 기록되어 20거래일 뒤 실제 가격으로 채점됩니다. 서로 의견이 달라도 됩니다.
+${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 
 규칙:
 - 제공된 근거 목록에 있는 내용만 쓰고, 모든 주장에 근거 ID(P1, T1, F1, N1 …)를 답니다. 목록에 없는 사실·숫자·전망은 쓰지 않습니다.
@@ -229,6 +247,9 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const [summary] = clean([parsed.summary]);
     const desks = (parsed.desks ?? []).flatMap((d) => clean([d.view]).map((view) => ({ desk: d.desk, stance: d.stance, view })));
     const [counter] = parsed.redTeam ? clean([parsed.redTeam.counterargument]) : [];
+    const analysts = (parsed.analysts ?? []).flatMap((a) => (Number.isFinite(a.target) && a.target > 0 ? clean([a.rationale]).map((rationale) => ({
+      analyst: a.analyst, stance: a.stance, confidence: Math.max(0, Math.min(100, Math.round(a.confidence))), target: a.target, rationale,
+    })) : []));
     const scenarios = (parsed.scenarios ?? []).flatMap((sc) => clean([sc.narrative]).map((narrative) => ({
       kind: sc.kind, narrative, catalysts: sc.catalysts.map((c) => c.trim()).filter(Boolean), invalidation: sc.invalidation.map((c) => c.trim()).filter(Boolean),
     })));
@@ -238,7 +259,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       ...(summary ? { summary } : {}),
       bullish: clean(parsed.bullish), bearish: clean(parsed.bearish), uncertain: clean(parsed.uncertain), watch: clean(parsed.watch),
       dataGaps: parsed.dataGaps.map((g) => g.trim()).filter(Boolean),
-      desks, scenarios,
+      desks, scenarios, analysts,
       ...(counter ? { redTeam: { counterargument: counter, unresolved: (parsed.redTeam?.unresolved ?? []).map((u) => u.trim()).filter(Boolean) } } : {}),
       dropped, evidence,
     };

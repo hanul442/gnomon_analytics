@@ -94,6 +94,10 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
         { kind: 'BASE', narrative: { text: '횡보', evidenceIds: ['P1'] }, catalysts: [], invalidation: [] },
         { kind: 'BEAR', narrative: { text: '하락', evidenceIds: ['ZZ'] }, catalysts: [], invalidation: [] },
       ],
+      analysts: [
+        { analyst: 'trend_momentum', stance: 'BULLISH', confidence: 140, target: 330000, rationale: { text: '추세 유지', evidenceIds: ['T1'] } },
+        { analyst: 'fundamental', stance: 'BEARISH', confidence: 50, target: 0, rationale: { text: '가격 없음', evidenceIds: ['P1'] } },
+      ],
       bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [],
     },
   });
@@ -102,5 +106,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   assert.deepEqual(c.redTeam?.unresolved, ['수급 해석']);
   assert.deepEqual(c.scenarios?.map((s) => s.kind), ['BULL', 'BASE']);
   assert.equal(c.dropped, 2);
-  assert.equal(c.promptVersion, 'gnm-committee-v1');
+  assert.equal(c.promptVersion, 'gnm-committee-v2');
+  // Confidence is clamped to 0–100; a non-positive target drops the analyst.
+  assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
