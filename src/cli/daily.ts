@@ -17,6 +17,7 @@ import { fetchDartFilings, OPENDART_SOURCE, SK_HYNIX_CORP_CODE } from '../source
 import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
 import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { isRelevant } from '../analysis/news.js';
+import { collectMarketData } from './marketData.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
 
@@ -71,7 +72,7 @@ export async function runDaily(options: {
   /** Injected in tests instead of a real API client. */
   anthropic?: Anthropic;
   fetch?: typeof fetch;
-}): Promise<{ addedBars: number; addedFilings: number; addedNews: number; newsStatus: NewsSourceStatus[]; report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' }> {
+}): Promise<{ addedBars: number; addedFilings: number; addedNews: number; newsStatus: NewsSourceStatus[]; marketStatus: NewsSourceStatus[]; report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' }> {
   const { root, now } = options;
   const clock = () => now;
   const pricePath = join(root, 'data', 'prices', `${SYMBOL}.jsonl`);
@@ -89,6 +90,7 @@ export async function runDaily(options: {
   const newsPath = join(root, 'data', 'news', `${SYMBOL}.jsonl`);
   const { items: news, status: newsStatus } = await collectNews(options, fetchOptions);
   const addedNews = await appendUnseen(newsPath, news.filter((n) => isRelevant(n.title)), newsKey);
+  const marketStatus = await collectMarketData(root, SYMBOL, today.date, fetchOptions);
 
   let report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' = 'NOT_SETTLED';
   const reportPath = join(reportDir, `${today.date}.json`);
@@ -124,7 +126,7 @@ export async function runDaily(options: {
     }
   }
   await renderSite(root);
-  return { addedBars: addedBars.length, addedFilings: addedFilings.length, addedNews: addedNews.length, newsStatus, report };
+  return { addedBars: addedBars.length, addedFilings: addedFilings.length, addedNews: addedNews.length, newsStatus, marketStatus, report };
 }
 
 async function loadReports(reportDir: string): Promise<DailyReport[]> {
