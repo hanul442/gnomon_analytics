@@ -24,8 +24,9 @@ test('report pages have seven tabs with gauges, fair value, forecasts, flows and
   await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch });
   const page = await readFile(join(root, 'site', 'reports', '2026-10-02.html'), 'utf8');
   for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-flows', 'tab-fundamentals', 'tab-ai', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
-  // Horizon gauges appear on the home tab and the technical tab.
-  assert.equal((page.match(/class="mini-gauge"/g) ?? []).length, 10);
+  // Horizon gauges on the home and technical tabs, plus one per strategy in the arena.
+  assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 10);
+  assert.ok(page.includes('전략 대결') && page.includes('챔피언 레이스'));
   for (const text of ['기술적 적정가', '예측 범위', '누적 순매수', '수급 흔적', '분기 실적', '증권가 평균 목표가', '가격 구조', '시장 대비 수익률']) assert.ok(page.includes(text), text);
   assert.ok(page.includes('data-ov="forecast"'));
   for (const key of ['rsi', 'macd', 'stoch', 'volume']) assert.ok(page.includes(`data-pane="${key}"`), key);

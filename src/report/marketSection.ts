@@ -4,6 +4,7 @@
 // Pure: callers pass records already filtered to what was known at generation.
 
 import { horizonGauges, type HorizonGauge } from '../analysis/horizons.js';
+import { runArena, type ArenaResult } from '../analysis/strategies.js';
 import { footprint, structureSnapshot, type Footprint, type StructureSnapshot } from '../analysis/structure.js';
 import { forecastRanges, scoreForecasts, technicalFairValue, type ForecastScore, type PriceForecast, type TechnicalFairValue } from '../analysis/valuation.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, PriceBar, ResearchNote, StockSnapshot } from '../types.js';
@@ -37,6 +38,8 @@ export interface MarketSection {
   /** Weekly swing structure for the longer view. */
   weeklyStructure: StructureSnapshot | null;
   footprint: Footprint;
+  /** Strategy arena on the available daily history (docs/DESIGN.md §5.5). */
+  arena: ArenaResult | null;
   /** Ranges made with this report (also appended to data/forecasts). */
   forecasts: PriceForecast[];
   forecastScores: ForecastScore[];
@@ -110,6 +113,7 @@ export function buildMarketSection(input: {
     structure: structureSnapshot(daily),
     weeklyStructure: structureSnapshot(weekly, 260),
     footprint: footprint(daily, input.flows.filter((f) => f.symbol === input.symbol)),
+    arena: runArena(daily),
     forecasts,
     forecastScores: scoreForecasts(input.loggedForecasts.filter((f) => f.symbol === input.symbol), daily),
     flows: buildFlowSection(input.flows.filter((f) => f.symbol === input.symbol), input.date),
