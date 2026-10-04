@@ -1,5 +1,5 @@
 {
- "at": "2026-10-04T10:15:38.256Z",
+ "at": "2026-10-04T10:47:36.903Z",
  "selected": null,
  "universe": [
   {
@@ -8,9 +8,10 @@
    "count": 2768
   },
   {
-   "source": "opendart:corpCode",
+   "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 3998
+   "count": 2705,
+   "error": "27 failed "
   }
  ],
  "stocks": [
