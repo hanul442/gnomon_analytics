@@ -581,8 +581,8 @@ const SEARCH_SCRIPT = `<script>
 /** One covered stock on the front page. `report` is its live dashboard, or null when nothing was built yet. */
 export interface HomeEntry {
   symbol: string; name: string; href: string; report: DailyReport | null;
-  /** core: reported every day; weekly: this week's selection; past: picked in an earlier week (search only). */
-  group: 'core' | 'weekly' | 'past';
+  /** core: reported every day; weekly: this week's selection; request: asked for; past: picked in an earlier week (search only). */
+  group: 'core' | 'weekly' | 'request' | 'past';
   reasons?: string[];
   tier?: 'deep' | 'brief';
 }
@@ -599,13 +599,14 @@ ${mid ? `<div class="sc-signal"><span>중기 기술 신호</span><b class="${mid
 ${e.reasons?.length && e.group === 'weekly' ? `<ul class="sc-why">${e.reasons.slice(0, 3).map((x) => `<li>${escape(x)}</li>`).join('')}</ul>` : r ? `<p class="sc-line">${escape(r.headline)}</p>` : ''}<span class="sc-go">${e.group === 'weekly' ? `${e.tier === 'deep' ? '심층' : '요약'} AI 리포트 · ` : ''}대시보드 보기 ›</span></a>`;
   };
   const entries = all.filter((e) => e.group !== 'past');
-  const core = entries.filter((e) => e.group === 'core'), weekly = entries.filter((e) => e.group === 'weekly');
+  const core = entries.filter((e) => e.group === 'core'), weekly = entries.filter((e) => e.group === 'weekly'), requests = entries.filter((e) => e.group === 'request');
   const body = `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div><div class="hero-main"><div class="eyebrow"><span>리포트 ${entries.length}종목</span></div><h1>Gnomon Analytics</h1>
 <p class="hero-line">공개 데이터로 계산한 기술 신호·적정가·예측 범위와 AI 위원회 해설을 종목마다 매일 만들어요. 예측은 기록해 두고 나중에 채점해요.</p></div></section>
 <section class="block search-block"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명, 코드, 초성으로 찾기 (예: 삼성, 005930, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
 <p class="muted small search-note">코스피·코스닥 상장 종목을 모두 찾을 수 있어요. 리포트가 없는 종목은 앞으로 크레딧으로 요청할 수 있게 할 예정이에요.</p></section>
 <section class="block"><div class="block-head"><h2>매일 리포트</h2><span class="muted">평일 장 마감 뒤 AI 위원회까지</span></div><div class="stock-grid">${core.map(card).join('')}</div></section>
+${requests.length ? `<section class="block"><div class="block-head"><h2>요청한 리포트</h2><span class="muted">요청 뒤 첫 장 마감 리포트에 심층 AI 위원회</span></div><div class="stock-grid">${requests.map(card).join('')}</div></section>` : ''}
 ${weekly.length ? `<section class="block"><div class="block-head"><h2>이번 주 선정 ${weekly.length}종목</h2><span class="muted">${selection ? `${escape(selection.date)} 선정 · 시가총액 5,000억 원 이상 ${selection.eligible.toLocaleString('ko-KR')}종목 중` : ''}</span></div>
 <p class="muted small sel-note">거래대금, 최근 5거래일 움직임, 평소 대비 거래대금, 실적·주요 공시를 함께 점수로 매겨 매주 금요일에 골라요. 위쪽 종목은 심층 AI 위원회, 나머지는 요약 AI 위원회가 써요. 대시보드의 계산은 매일 갱신돼요.</p>
 <div class="stock-grid">${weekly.map(card).join('')}</div></section>` : ''}

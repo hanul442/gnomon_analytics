@@ -52,3 +52,18 @@ test('the first settled run picks the week: core first, deep and brief AI by tie
   assert.equal(again.selected, null);
   assert.deepEqual(models, ['claude-opus-5-5']);
 });
+
+test('a requested stock gets one deep committee report, then dashboards only', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
+  const calls: string[] = [];
+  const anthropic = { beta: { messages: { parse: async (req: { model: string; messages: { content: string }[] }) => { calls.push(/"종목": "([^"]+)"/.exec(req.messages[0]!.content)?.[1] ?? '?'); return { stop_reason: 'end_turn', model: req.model, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
+  const opts = { root, apiKey: 'k', fetch: fake, tickers, anthropic, requests: [{ symbol: '111110', requestedAt: '2026-10-02' }], selectionParams: { ...DEFAULT_SELECTION, size: 1, deep: 1 } };
+  await runDaily({ ...opts, now: new Date('2026-10-02T09:30:00Z') });
+  assert.deepEqual(calls.sort(), ['SK하이닉스 (000660)', '조용한전자 (111110)']);
+  const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
+  assert.ok(home.includes('요청한 리포트') && home.includes('href="111110/index.html"'));
+  calls.length = 0;
+  await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
+  assert.deepEqual(calls, ['SK하이닉스 (000660)']);
+});
