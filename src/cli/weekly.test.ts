@@ -9,7 +9,7 @@ import { DEFAULT_SELECTION } from '../analysis/selection.js';
 
 const FIX = join(process.cwd(), 'test', 'fixtures', 'naver');
 const M_STOCK: [string, string][] = [['/trend', 'trend.json'], ['/integration', 'integration.json'], ['/finance/quarter', 'finance-quarter.json'], ['/finance/annual', 'finance-annual.json']];
-const day = (i: number) => new Date(Date.UTC(2026, 5, 1) + i * 86_400_000).toISOString().slice(0, 10).replaceAll('-', '');
+const day = (i: number) => new Date(Date.UTC(2026, 6, 18) + i * 86_400_000).toISOString().slice(0, 10).replaceAll('-', '');
 // 80 sessions; 222220 jumps in the last five on heavy volume.
 const feed = (symbol: string) => `<chartdata symbol="${symbol}">${Array.from({ length: 80 }, (_, i) => {
   const c = symbol === '222220' && i >= 75 ? 10000 + (i - 74) * 500 : 10000;
@@ -51,6 +51,8 @@ test('the first settled run picks the week: core first, deep and brief AI by tie
   const again = await runDaily({ root, now: new Date('2026-10-05T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: { ...DEFAULT_SELECTION, size: 3, deep: 2 } });
   assert.equal(again.selected, null);
   assert.deepEqual(models, ['claude-opus-5-5']);
+  // Picks keep only the dated report of the day their AI ran.
+  assert.deepEqual(again.results.map((r) => [r.symbol, r.report]), [['000660', 'WRITTEN'], ['222220', 'SKIPPED'], ['111110', 'SKIPPED']]);
 });
 
 test('a requested stock gets one deep committee report, then dashboards only', async () => {

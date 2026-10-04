@@ -80,6 +80,17 @@ test('a settled run writes the report once and renders the site', async () => {
   assert.match(await readFile(join(root, 'site', 'assets', 'lightweight-charts.js'), 'utf8'), /LightweightCharts/);
 });
 
+test('a holiday keeps no dated report and spends no AI call', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  let calls = 0;
+  const anthropic = { beta: { messages: { parse: async () => { calls += 1; throw new Error('should not be called'); } } } } as never;
+  // Saturday 10/3: the last session is Friday 10/2.
+  const result = await run({ root, now: new Date('2026-10-03T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, naver, anthropic });
+  assert.equal(result.report, 'SKIPPED');
+  assert.equal(calls, 0);
+  await assert.rejects(readFile(join(root, 'reports', '000660', '2026-10-03.json')));
+});
+
 test('one stock failing does not stop the others', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gnm-'));
   const broken = { ...tickers[0]!, symbol: '999990', name: '없는종목' };
