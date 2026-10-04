@@ -20,12 +20,12 @@ const fakeFetch = (async (url: string | URL | Request) => {
   return new Response('<rss><channel></channel></rss>');
 }) as typeof fetch;
 
-test('report pages have seven tabs with gauges, fair value, forecasts, flows and fundamentals; the front page is live', async () => {
+test('report pages have eight tabs with gauges, fair value, forecasts, flows and fundamentals; the front page is live', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gnm-'));
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, tickers });
   const page = await readFile(join(root, 'site', '000660', 'reports', '2026-10-02.html'), 'utf8');
-  for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-flows', 'tab-fundamentals', 'tab-ai', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
+  for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-paper', 'tab-flows', 'tab-fundamentals', 'tab-ai', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
   // Horizon gauges on the home and technical tabs, plus one per strategy in the arena.
   assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 10);
   assert.ok(page.includes('전략 대결') && page.includes('챔피언 레이스'));

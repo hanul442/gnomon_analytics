@@ -23,6 +23,7 @@ import { collectMarketData, financeKey, flowKey, intradayKey, marketPaths, resea
 import { buildMarketSection } from '../report/marketSection.js';
 import { forecastKey, type PriceForecast } from '../analysis/valuation.js';
 import { analystCallKey, type AnalystCall } from '../analysis/analysts.js';
+import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { aliasPattern, benchmarksFor, loadTickers, type Ticker } from '../config/tickers.js';
@@ -160,6 +161,13 @@ async function runTicker(options: RunOptions, ticker: Ticker): Promise<TickerRes
         }));
         await appendUnseen(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`), calls, analystCallKey);
       }
+      // Paper ledger: what each follower holds from this close (G-21).
+      if (built.price && built.market) {
+        await appendUnseen(join(root, 'data', 'paper', `${SYMBOL}.jsonl`), paperEntries({
+          symbol: SYMBOL, sessionDate: built.price.sessionDate ?? today.date, close: built.price.close, arena: built.market.arena,
+          analysts: c?.status === 'OK' ? c.analysts : undefined, recordedAt: now.toISOString(),
+        }), paperKey);
+      }
       await mkdir(reportDir, { recursive: true });
       await writeFile(reportPath, `${JSON.stringify(built, null, 2)}\n`, { flag: 'wx' });
       report = 'WRITTEN';
@@ -218,6 +226,7 @@ export async function composeReport(
     benchmarks: await Promise.all(benchmarksFor(ticker).map(async (b) => ({ ...b, bars: asOf(await readLog<PriceBar>(mp.daily(b.symbol)), priceKey, now) }))),
     loggedForecasts: (await readLog<PriceForecast>(forecastPath)).filter((f) => f.madeAt <= now.toISOString()),
     analystCalls: (await readLog<AnalystCall>(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`))).filter((c) => c.madeAt <= now.toISOString()),
+    paperEntries: (await readLog<PaperEntry>(join(root, 'data', 'paper', `${SYMBOL}.jsonl`))).filter((e) => e.recordedAt <= now.toISOString()),
     status: options.marketStatus ?? [],
   });
   return built;

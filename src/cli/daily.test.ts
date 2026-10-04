@@ -102,4 +102,8 @@ test('analyst calls from the AI committee are logged once with the report', asyn
   const lines = (await readFile(join(root, 'data', 'analysts', '000660.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as Record<string, unknown>);
   assert.equal(lines.length, 1);
   assert.deepEqual([lines[0]!.analyst, lines[0]!.baseDate, lines[0]!.baseClose, lines[0]!.target], ['trend_momentum', '2026-10-02', 318500, 330000]);
+  // The paper ledger records buy-and-hold and the analyst from the same close (two bars are too few for a strategy champion).
+  const paper = (await readFile(join(root, 'data', 'paper', '000660.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as Record<string, unknown>);
+  assert.deepEqual(paper.map((p) => [p.follower, p.date, p.close]), [['hold', '2026-10-02', 318500], ['analyst:trend_momentum', '2026-10-02', 318500]]);
+  assert.equal(paper[1]!.position, 1);
 });
