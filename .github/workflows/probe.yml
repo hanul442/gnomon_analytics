@@ -18,21 +18,19 @@ jobs:
           mkdir -p test/fixtures/probe
           cd test/fixtures/probe
           UA='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36'
-          get() { curl -sS -m 20 -A "$UA" -o "$1" -w "$1 %{http_code} %{size_download}\n" "$2" >> status.txt 2>&1; }
-          get frgn.html 'https://finance.naver.com/item/frgn.naver?code=000660&page=1'
-          get main.html 'https://finance.naver.com/item/main.naver?code=000660'
-          get integration.json 'https://m.stock.naver.com/api/stock/000660/integration'
-          get finance-quarter.json 'https://m.stock.naver.com/api/stock/000660/finance/quarter'
-          get finance-annual.json 'https://m.stock.naver.com/api/stock/000660/finance/annual'
-          get minute.xml 'https://fchart.stock.naver.com/sise.nhn?symbol=000660&timeframe=minute&count=800&requestType=0'
-          get week.xml 'https://fchart.stock.naver.com/sise.nhn?symbol=000660&timeframe=week&count=260&requestType=0'
-          get kospi.xml 'https://fchart.stock.naver.com/sise.nhn?symbol=KOSPI&timeframe=day&count=30&requestType=0'
-          get samsung.xml 'https://fchart.stock.naver.com/sise.nhn?symbol=005930&timeframe=day&count=30&requestType=0'
-          get siseTime.html 'https://finance.naver.com/item/sise_time.naver?code=000660&thistime=20261002160000&page=1'
+          get() { curl -sS -L -m 20 -A "$UA" -o "$1" -w "$1 %{http_code} %{size_download} %{url_effective}\n" "$2" >> status.txt 2>&1; }
+          rm -f status.txt
+          get trend.json 'https://m.stock.naver.com/api/stock/000660/trend?pageSize=60'
+          get trend2.json 'https://m.stock.naver.com/api/stock/000660/investorTrend?pageSize=60'
+          get dealtrend.json 'https://m.stock.naver.com/api/stock/000660/dealTrend?pageSize=60&page=1'
+          get basic.json 'https://m.stock.naver.com/api/stock/000660/basic'
+          get research.json 'https://m.stock.naver.com/api/research/stock/000660?pageSize=20'
+          get frgn2.html 'https://finance.naver.com/item/frgn.naver?code=000660' -L
+          get kospi-week.xml 'https://fchart.stock.naver.com/sise.nhn?symbol=KOSPI&timeframe=week&count=10&requestType=0'
           cat status.txt
       - name: Commit samples
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add test/fixtures/probe
-          git commit -m "test: raw samples from candidate data sources" && git push origin HEAD:claude/busy-ramanujan-yrcmb7
+          git commit -m "test: raw samples from candidate data sources (round 2)" && git push origin HEAD:claude/busy-ramanujan-yrcmb7
