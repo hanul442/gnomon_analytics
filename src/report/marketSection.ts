@@ -23,6 +23,10 @@ export interface BenchmarkComparison {
   name: string;
   /** Returns in percent over 5 / 20 / 60 sessions: [stock, benchmark]. */
   returns: { days: number; stock: number | null; benchmark: number | null }[];
+  /** Last close, its change in percent, and the last 60 closes for a sparkline. */
+  last: number | null;
+  changePct: number | null;
+  spark: number[];
 }
 
 export interface MarketSection {
@@ -114,7 +118,10 @@ export function buildMarketSection(input: {
     years: latestPeriods(input.finance, 'ANNUAL'),
     benchmarks: input.benchmarks.map((b) => {
       const closes = upTo(b.bars).map((x) => x.close);
-      return { symbol: b.symbol, name: b.name, returns: [5, 20, 60].map((days) => ({ days, stock: ret(stockCloses, days), benchmark: ret(closes, days) })) };
+      return {
+        symbol: b.symbol, name: b.name, returns: [5, 20, 60].map((days) => ({ days, stock: ret(stockCloses, days), benchmark: ret(closes, days) })),
+        last: closes.at(-1) ?? null, changePct: ret(closes, 1), spark: closes.slice(-60),
+      };
     }),
     research: upTo(input.research).reverse().slice(0, 10),
     status: [...input.status],
