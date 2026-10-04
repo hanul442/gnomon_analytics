@@ -145,6 +145,7 @@ const RANGES: [string, number][] = [['1개월', 21], ['3개월', 63], ['6개월'
 /** Candlestick chart with indicator menu; the client script draws from embedded data. */
 export function priceChart(report: DailyReport, overlays: unknown, base: string, chartAsset: string): { html: string; script: string } {
   const bars = report.recentBars ?? [];
+  const strategies = (report.market?.arena?.results ?? []).filter((x) => x.key !== 'hold').map((x) => ({ key: x.key, name: x.name, rank: x.rank, position: x.position, trigger: x.trigger, trades: x.tradeLog ?? [] }));
   const last = bars.at(-1), prev = bars.at(-2);
   const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
   const chip = (group: string, [key, label, on]: [string, string, boolean]) => `<button type="button" class="chip-toggle" data-${group}="${key}" aria-pressed="${on}">${esc(label)}</button>`;
@@ -155,14 +156,18 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
 <div class="seg" role="group" aria-label="기간">${RANGES.map(([label, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 63}">${label}</button>`).join('')}</div></div>
 <details class="ind-menu"><summary>지표 고르기</summary>
 <div class="ind-group"><span class="label">가격 위에</span>${OVERLAYS.map((o) => chip('ov', o)).join('')}</div>
-<div class="ind-group"><span class="label">아래 창</span>${PANES.map((o) => chip('pane', o)).join('')}</div></details>
+<div class="ind-group"><span class="label">아래 창</span>${PANES.map((o) => chip('pane', o)).join('')}</div>
+<div class="ind-group"><span class="label">표시</span>${chip('vl', ['filing', '공시 세로선', true])}${chip('vl', ['news', '뉴스 세로선', true])}</div></details>
+${strategies.length ? `<div class="strat-row" role="group" aria-label="전략 매매 시점"><span class="label">전략 매매 시점</span><button type="button" class="chip-toggle" data-strategy="" aria-pressed="true">끄기</button>${strategies.map((st) => `<button type="button" class="chip-toggle" data-strategy="${esc(st.key)}" aria-pressed="false">${st.rank}위 ${esc(st.name)}</button>`).join('')}</div>
+<div class="strat-info" id="strat-info" aria-live="polite" hidden></div>` : ''}
 <div class="legend-line" id="legend"></div>
-<div id="chart" style="height:520px">${bars.length < 2 ? '<p class="empty">차트를 그릴 가격 기록이 부족해요.</p>' : ''}</div>
+<div class="chart-wrap"><div id="chart" style="height:520px">${bars.length < 2 ? '<p class="empty">차트를 그릴 가격 기록이 부족해요.</p>' : ''}</div><div class="vlines" id="vlines"></div></div>
 <div class="mark-pop" id="mark-pop" hidden></div>
-<p class="fine">■ 공시, ● 뉴스 표시를 누르면 원문이 열려요. 같은 날 여러 건이면 목록이 떠요. 지표는 이 페이지의 일봉으로 계산해요.</p></section>`;
+<p class="fine">금색 점선은 공시, 청록 점선은 뉴스(중요도 보통 이상)예요. 선이나 위쪽 표시를 누르면 원문이 열리고, 같은 날 여러 건이면 목록이 떠요. 전략 매매 시점의 ▲매수·▼매도는 그 전략 규칙이 과거 일봉에서 신호를 낸 날의 종가예요(백테스트, 투자 권유 아님).</p></section>`;
   const script = `<script type="application/json" id="bars">${json(bars)}</script>
 <script type="application/json" id="marks">${json(chartMarks(report))}</script>
 <script type="application/json" id="overlays">${json(overlays)}</script>
+<script type="application/json" id="strategies">${json(strategies)}</script>
 <script src="${base}${chartAsset}" defer></script>
 <script>${CHART_JS}</script>`;
   return { html, script };
@@ -279,26 +284,76 @@ window.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('[data-pane]').forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); rebuildPanes(); }); });
   rebuildPanes();
 
-  // ---- filing / news markers: click opens the source ----
+  // ---- filings and news as dashed vertical lines (an HTML overlay kept in step with the time scale) ----
   var byBar = {};
   marks.forEach(function (m) { for (var i = 0; i < bars.length; i++) if (bars[i].date >= m.date) { (byBar[bars[i].date] = byBar[bars[i].date] || []).push(m); break; } });
-  var mk = [];
-  Object.keys(byBar).sort().forEach(function (d) {
-    var f = byBar[d].filter(function (m) { return m.kind === 'filing'; }).length, n = byBar[d].length - f;
-    if (f) mk.push({ time: d, position: 'aboveBar', color: '#8a6a37', shape: 'square', text: '공시' + (f > 1 ? ' ' + f : '') });
-    if (n) mk.push({ time: d, position: 'belowBar', color: '#00968a', shape: 'circle', text: '뉴스' + (n > 1 ? ' ' + n : '') });
-  });
-  L.createSeriesMarkers(candle, mk);
-  var urlOf = function (m) { return m.url; };
-  var pop = document.getElementById('mark-pop');
-  chart.subscribeClick(function (p) {
-    if (!p || !p.time || !byBar[p.time]) { pop.hidden = true; return; }
-    var list = byBar[p.time];
-    if (list.length === 1) { window.open(urlOf(list[0]), '_blank', 'noopener'); return; }
-    pop.innerHTML = '<div class="mp-head">' + p.time + ' 공시·뉴스 ' + list.length + '건<button type="button" aria-label="닫기">×</button></div>' + list.map(function (m) { var a = document.createElement('a'); a.href = urlOf(m); a.textContent = m.title; a.target = '_blank'; a.rel = 'noopener'; return '<div class="mp-row"><span class="badge ' + (m.kind === 'filing' ? 'b-MEDIUM">공시' : 'b-LOW">뉴스') + '</span>' + a.outerHTML + '</div>'; }).join('');
+  var vl = document.getElementById('vlines'), pop = document.getElementById('mark-pop');
+  var showKind = { filing: true, news: true };
+  var openList = function (day, list) {
+    if (list.length === 1) { window.open(list[0].url, '_blank', 'noopener'); return; }
+    pop.innerHTML = '<div class="mp-head">' + day + ' 공시·뉴스 ' + list.length + '건<button type="button" aria-label="닫기">×</button></div>' + list.map(function (m) { var a = document.createElement('a'); a.href = m.url; a.textContent = m.title; a.target = '_blank'; a.rel = 'noopener'; return '<div class="mp-row"><span class="badge ' + (m.kind === 'filing' ? 'b-MEDIUM">공시' : 'b-LOW">뉴스') + '</span>' + a.outerHTML + '</div>'; }).join('');
     pop.hidden = false;
     pop.querySelector('button').onclick = function () { pop.hidden = true; };
+  };
+  var drawLines = function () {
+    var h = chart.panes()[0].getHeight(), w = el.clientWidth - chart.priceScale('right').width();
+    var html = '', lastRight = -1e9;
+    Object.keys(byBar).sort().forEach(function (day) {
+      var list = byBar[day].filter(function (m) { return showKind[m.kind]; });
+      if (!list.length) return;
+      var x = chart.timeScale().timeToCoordinate(day);
+      if (x == null || x < 0 || x > w) return;
+      var f = list.filter(function (m) { return m.kind === 'filing'; }).length, n = list.length - f;
+      var cls = f && n ? 'both' : f ? 'filing' : 'news';
+      var label = (f ? '공시' + (f > 1 ? f : '') : '') + (f && n ? '·' : '') + (n ? '뉴스' + (n > 1 ? n : '') : '');
+      // Labels that would overlap the previous one are hidden; the dashed line stays clickable.
+      var half = label.length * 6 + 6, hide = x - half < lastRight + 2;
+      if (!hide) lastRight = x + half;
+      var title = list.map(function (m) { return (m.kind === 'filing' ? '[공시] ' : '[뉴스] ') + m.title; }).join('\\n').replace(/"/g, '&quot;');
+      html += '<button type="button" class="vline ' + cls + '" data-day="' + day + '" style="left:' + Math.round(x) + 'px;height:' + h + 'px" title="' + title + '" aria-label="' + day + ' ' + label + '">' + (hide ? '' : '<span>' + label + '</span>') + '</button>';
+    });
+    vl.innerHTML = html;
+  };
+  vl.addEventListener('click', function (e) {
+    var b = e.target.closest('.vline'); if (!b) return;
+    var day = b.getAttribute('data-day');
+    openList(day, byBar[day].filter(function (m) { return showKind[m.kind]; }));
   });
+  chart.timeScale().subscribeVisibleLogicalRangeChange(function () { requestAnimationFrame(drawLines); });
+  chart.timeScale().subscribeSizeChange(function () { requestAnimationFrame(drawLines); });
+  document.querySelectorAll('[data-vl]').forEach(function (b) {
+    b.addEventListener('click', function () { var on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); showKind[b.getAttribute('data-vl')] = on; drawLines(); });
+  });
+  document.querySelectorAll('[data-pane]').forEach(function (b) { b.addEventListener('click', function () { setTimeout(drawLines, 260); }); });
+
+  // ---- strategy buy/sell points (from the arena backtest) ----
+  var strategies = JSON.parse(document.getElementById('strategies').textContent) || [];
+  var stratMarkers = L.createSeriesMarkers(candle, []);
+  var info = document.getElementById('strat-info');
+  var selectStrategy = function (key) {
+    document.querySelectorAll('[data-strategy]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-strategy') === key)); });
+    var st = strategies.filter(function (x) { return x.key === key; })[0];
+    if (!st) { stratMarkers.setMarkers([]); if (info) info.hidden = true; return; }
+    var mk = [];
+    st.trades.forEach(function (tr) {
+      if (byDate[tr.entry] != null) mk.push({ time: tr.entry, position: 'belowBar', color: UP, shape: 'arrowUp', text: '매수 ' + won(tr.entryPrice) });
+      if (tr.exit && byDate[tr.exit] != null) mk.push({ time: tr.exit, position: 'aboveBar', color: DOWN, shape: 'arrowDown', text: '매도 ' + (tr.ret >= 0 ? '+' : '') + (tr.ret * 100).toFixed(1) + '%' });
+    });
+    mk.sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
+    stratMarkers.setMarkers(mk);
+    var last = st.trades[st.trades.length - 1];
+    var rows = st.trades.slice(-8).reverse().map(function (tr) {
+      return '<tr><td>' + tr.entry + '</td><td class="num">' + won(tr.entryPrice) + '</td><td>' + (tr.exit || '보유 중') + '</td><td class="num">' + (tr.exitPrice ? won(tr.exitPrice) : '') + '</td><td class="num ' + (tr.ret >= 0 ? 'up' : 'down') + '">' + (tr.ret >= 0 ? '+' : '') + (tr.ret * 100).toFixed(1) + '%</td></tr>';
+    }).join('');
+    info.innerHTML = '<div class="si-head"><b>' + st.rank + '위 ' + st.name + '</b><span class="badge ' + (st.position ? 'v-BULLISH">지금: 보유 신호' : 'b-LOW">지금: 관망') + '</span></div>' +
+      '<p>' + (last ? (last.exit ? '마지막 신호: ' + last.exit + ' 매도 (' + won(last.exitPrice) + ')' : '마지막 신호: ' + last.entry + ' 매수 (' + won(last.entryPrice) + '), 아직 보유 중') : '이 기간에 신호가 없었어요.') + '</p>' +
+      '<p class="muted small">다음 신호 조건: ' + st.trigger + '</p>' +
+      (rows ? '<div class="table-wrap"><table class="compact"><thead><tr><th>매수일</th><th class="num">매수가</th><th>매도일</th><th class="num">매도가</th><th class="num">수익</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '');
+    info.hidden = false;
+  };
+  document.querySelectorAll('[data-strategy]').forEach(function (b) { b.addEventListener('click', function () { selectStrategy(b.getAttribute('data-strategy')); }); });
+  // Links elsewhere on the page ("차트에서 매매 시점 보기") pick a strategy here.
+  document.querySelectorAll('[data-show-strategy]').forEach(function (a) { a.addEventListener('click', function () { var k = a.getAttribute('data-show-strategy'); setTimeout(function () { selectStrategy(k); setRange(250); }, 50); }); });
 
   // ---- legend, ranges and period change ----
   var legend = document.getElementById('legend'), stat = document.getElementById('period-stat');
@@ -323,5 +378,6 @@ window.addEventListener('DOMContentLoaded', function () {
     });
   });
   setRange(63);
+  requestAnimationFrame(drawLines);
 });
 `;

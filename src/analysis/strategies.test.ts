@@ -14,6 +14,9 @@ test('buy and hold earns the whole move, minus one entry cost', () => {
   near(r.totalReturn, (1.001 - ARENA_COST / 2) * 1.001 ** 198 - 1, 1e-9);
   assert.equal(r.trades, 1);
   assert.equal(r.exposure, 1);
+  // The trade log records the signal day and its close; an open trade has no exit.
+  assert.deepEqual(r.tradeLog.map((t) => [t.entry, t.exit, t.exitPrice]), [[b[0]!.date, null, null]]);
+  near(r.tradeLog[0]!.entryPrice, b[0]!.close);
 });
 
 test('no look-ahead: a rule earns nothing on the session that triggered it', () => {
@@ -30,6 +33,8 @@ test('trend following holds a steady rise and exits a fall', () => {
   const r = backtest(def('trend'), bars([...up, ...down]));
   assert.ok(r.trades >= 1);
   assert.equal(r.position, 0);
+  const last = r.tradeLog.at(-1)!;
+  assert.ok(last.exit !== null && last.exit > last.entry && last.exitPrice! < up.at(-1)!);
   assert.ok(r.maxDrawdown > -0.25, `drawdown ${r.maxDrawdown}`);
 });
 
