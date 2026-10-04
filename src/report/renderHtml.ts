@@ -5,6 +5,7 @@
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim, Commentary } from '../analysis/commentary.js';
+import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 /** Pretendard web font, also served from our own site. */
@@ -27,6 +28,9 @@ const ICON = {
   filing: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 12h6M10 16h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   why: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 16.6v.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   news: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h11v14H7a2 2 0 0 1-2-2zM16 9h3v8a2 2 0 0 1-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h5M8 12h5M8 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  flow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l4-4 4 3 8-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  fundamentals: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="4" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="10" y="7" width="4" height="13" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="16" y="4" width="4" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 4v16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="8" width="4" height="7" rx="1" fill="currentColor"/><rect x="15" y="6" width="4" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
   source: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   price: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 4 3 7-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   week: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -84,7 +88,8 @@ td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}td a{
 .why-col h3,.why-h{font-size:14px;margin:0 0 6px}.why-h{margin-top:16px}.bull h3{color:var(--up)}.bear h3{color:var(--down)}.unc h3{color:var(--muted)}
 ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.chips{white-space:nowrap}
 .chip{display:inline-block;font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.chip:hover{background:var(--teal);color:#fff}
-.evid li{font-size:13px}
+.evid li{font-size:13px}.desk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.desk-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}.desk-grid p,.why-grid p{margin:4px 0;font-size:14px}
+.red-team{margin-top:12px;border-left:4px solid var(--warn);background:#fff8ec;border-radius:0 10px 10px 0;padding:10px 14px}.red-team h3{font-size:14px;margin:0 0 4px;color:#7a4a00}.red-team p{margin:4px 0}
 .story{padding:12px 0;border-top:1px solid var(--line)}.story:first-of-type{border-top:0}.story-title{font-weight:600;margin:4px 0 2px}.story-title a{text-decoration:none}.story-title a:hover{text-decoration:underline}
 .tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px}.more summary{cursor:pointer;color:var(--teal);font-size:13px;margin-top:4px}
 .warn{background:#fff3dc;color:#7a4a00;border-radius:10px;padding:8px 12px;font-size:13px}
@@ -99,31 +104,65 @@ ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.c
 .votes{margin-top:14px}.votes td{padding:8px}.votes summary{cursor:pointer;color:var(--teal);font-weight:600;font-size:14px}.votes table{margin-top:8px}
 .num{font-variant-numeric:tabular-nums;white-space:nowrap}.v-BULLISH{background:#fde8e6;color:#b4232a}.v-BEARISH{background:#e3ecfb;color:#1d4fa3}.v-NEUTRAL{background:#eef1f0;color:var(--muted)}.nowrap{white-space:nowrap}.m-date{display:none;color:var(--muted);font-size:12px}
 footer{margin-top:28px;color:var(--muted);font-size:12px}footer p{margin:2px 0}
+.tabs{display:flex;gap:4px;margin:4px 0 16px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs a{padding:10px 14px;text-decoration:none;color:var(--muted);font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;transition:color 150ms var(--ease-out),border-color 150ms var(--ease-out)}
+.tabs a:hover{color:var(--fg)}.tabs a[aria-selected=true]{color:var(--fg);border-bottom-color:var(--teal)}
+.panel{display:block}.panel[hidden]{display:none}.panel+.panel{margin-top:28px}.js-tabs .panel+.panel{margin-top:0}.js-tabs .panel-title{display:none}
+.panel-title{font-size:20px;margin:0 0 12px}.panel:focus{outline:none}
+.hz-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.hz{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center}
+.hz-top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px}.hz-top span{color:var(--muted);font-size:12px}
+.mini-gauge{width:100%;max-width:150px;display:block;margin:4px auto 0}.hz-label{font-weight:700;font-size:16px}
+.hz-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:0 10px;color:var(--muted);font-size:12px}
+.value-head{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:6px}.value-head .label,.facts .label{display:block;color:var(--muted);font-size:12px}
+.big{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}.mid{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.value-strip{width:100%;height:auto;display:block;margin:6px 0}.value-strip text{font-size:11px;fill:var(--muted)}.vs-axis{stroke:var(--line);stroke-width:2}
+.vs-band{fill:var(--teal-soft);stroke:#9fd1cb}.vs-center line{stroke:var(--teal);stroke-width:2}.vs-close line{stroke:var(--fg);stroke-width:3}.vs-cons line{stroke:#7a4fb3;stroke-width:2;stroke-dasharray:3 3}.vs-p50 line{stroke:#d97706;stroke-width:2;stroke-dasharray:3 3}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:10px}.facts.one{grid-template-columns:1fr;margin-top:10px}.facts b{font-variant-numeric:tabular-nums}
+.overlay-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-4px 0 8px}.overlay-row .label{color:var(--muted);font-size:12px;margin-right:2px}
+.chip-toggle{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 10px;font:inherit;font-size:12px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}
+.chip-toggle i{display:inline-block;width:10px;height:3px;border-radius:2px}.chip-toggle[aria-pressed=true]{background:var(--teal-soft);color:var(--fg);border-color:#9fd1cb}.chip-toggle:hover{color:var(--fg)}
+.flow-chart,.earn-chart{width:100%;height:auto;display:block}.flow-chart .zero,.earn-chart .zero{stroke:#c4cbc9;stroke-width:1}.flow-chart .hit{fill:transparent}.flow-chart .hit:hover{fill:rgba(31,122,116,.08)}
+.flow-label{font-size:12px;fill:var(--fg);font-weight:600}.axis-label{font-size:11px;fill:var(--muted)}
+.legend-inline{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}.legend-inline i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.b-rev{fill:#00968a}.b-op{fill:#7a4fb3}.b-rev.est{fill:url(#hatch);color:#00968a;stroke:#00968a}.b-op.est{fill:url(#hatch);color:#7a4fb3;stroke:#7a4fb3}
+.sw-rev{background:#00968a}.sw-op{background:#7a4fb3}.sw-est{background:repeating-linear-gradient(45deg,#6a7673 0 2px,#fff 2px 4px)}
+table.compact td,table.compact th{padding:6px 8px}.grid2.tight{margin-top:0}.research li{font-size:14px}.muted{color:var(--muted)}
+.ai-teaser{margin-top:16px}.more-link{font-size:13px;color:var(--teal);font-weight:600}
 .needle{transform-box:view-box;transform-origin:110px 104px;transform:rotate(var(--r));animation:settle 900ms var(--ease-out) 200ms both}
 @keyframes settle{from{transform:rotate(0deg)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px){.desk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hz-row{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:820px){.app{grid-template-columns:minmax(0,1fr);padding:0;gap:0}
 .side{position:static;height:auto;border-radius:0;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;flex-wrap:wrap}
 .side .foot{display:none}.nav{flex-direction:row;gap:2px;overflow-x:auto}.nav a{padding:8px 12px;font-size:13px;white-space:nowrap}.nav a svg{display:none}
 main{border-radius:0;padding:16px 16px 32px}h1{font-size:22px}.kpis{gap:10px}.card{padding:14px}.kpi .value{font-size:18px}#chart{height:280px}
 .col-filer,.col-cat,.col-date{display:none}.m-date.meta{display:flex}
-.kpi .ico{display:none}.moms{gap:8px}.mom{padding:10px}.mom .v{font-size:15px}.votes .why{display:none}.kpi .value{font-size:17px;white-space:nowrap}.kpi .hint{margin-top:8px;font-size:12px}.stamp{text-align:left}}`;
+.kpi .ico{display:none}.hz-row{grid-template-columns:repeat(2,minmax(0,1fr))}.value-head,.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.tabs a{padding:8px 10px}.moms{gap:8px}.mom{padding:10px}.mom .v{font-size:15px}.votes .why{display:none}.kpi .value{font-size:17px;white-space:nowrap}.kpi .hint{margin-top:8px;font-size:12px}.stamp{text-align:left}}`;
 
-function shell(active: 'today' | 'archive', base: string, title: string, body: string, scripts = '', filingsHref = '#filings', hasWhy = true): string {
+type TabKey = 'overview' | 'chart' | 'flows' | 'fundamentals' | 'ai' | 'news';
+const TABS: readonly { key: TabKey; label: string; icon: string }[] = [
+  { key: 'overview', label: '개요', icon: ICON.dashboard },
+  { key: 'chart', label: '차트·기술', icon: ICON.chart },
+  { key: 'flows', label: '수급', icon: ICON.flow },
+  { key: 'fundamentals', label: '펀더멘털', icon: ICON.fundamentals },
+  { key: 'ai', label: 'AI 해설', icon: ICON.why },
+  { key: 'news', label: '뉴스·공시', icon: ICON.news },
+];
+
+function shell(active: 'today' | 'archive', base: string, title: string, body: string, scripts = '', reportHref = '#tab-overview', hasWhy = true): string {
+  const page = reportHref.replace(/#.*$/, '');
   const nav = [
-    { key: 'today', href: `${base}index.html#latest`, icon: ICON.dashboard, label: '오늘 리포트' },
+    ...TABS.filter((t) => t.key !== 'ai' || hasWhy).map((t) => ({ key: t.key as string, href: `${page}#tab-${t.key}`, icon: t.icon, label: t.label })),
     { key: 'archive', href: `${base}index.html#archive`, icon: ICON.archive, label: '지난 리포트' },
-    ...(hasWhy ? [{ key: 'why', href: filingsHref.replace('#filings', '#why'), icon: ICON.why, label: '왜?' }] : []),
-    { key: 'news', href: filingsHref.replace('#filings', '#news'), icon: ICON.news, label: '뉴스' },
-    { key: 'filings', href: filingsHref, icon: ICON.filing, label: '공시' },
     { key: 'sources', href: '#sources', icon: ICON.source, label: '데이터 출처' },
   ];
+  const isActive = (key: string) => (active === 'archive' ? key === 'archive' : key === 'overview');
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#dfe9e7"><title>${escape(title)}</title>
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><style>${STYLE}</style></head><body><a class="skip" href="#main">본문으로 건너뛰기</a><div class="app">
 <aside class="side"><div class="brand">${ICON.logo}<div>GNM<small>Gnomon Analytics</small></div></div>
-<nav class="nav">${nav.map((n) => `<a href="${n.href}"${n.key === active ? ' class="active" aria-current="page"' : ''}>${n.icon}<span>${n.label}</span></a>`).join('')}</nav>
+<nav class="nav" aria-label="리포트 메뉴">${nav.map((n) => `<a href="${n.href}" data-nav="${n.key}"${isActive(n.key) ? ' class="active" aria-current="page"' : ''}>${n.icon}<span>${n.label}</span></a>`).join('')}</nav>
 <div class="foot">공개 데이터로 만든 리서치 리포트예요. 투자 권유가 아니에요.</div></aside>
 <main id="main" tabindex="-1">${body}</main></div>${scripts}</body></html>`;
 }
@@ -236,14 +275,22 @@ function chartCard(report: DailyReport, base: string): { html: string; script: s
   const hasOhlc = Boolean(report.recentBars?.length);
   const data = JSON.stringify(bars).replace(/</g, '\\u003c');
   const markers = JSON.stringify(chartMarkers(report)).replace(/</g, '\\u003c');
+  const overlays = JSON.stringify(chartOverlays(report.market)).replace(/</g, '\\u003c');
   const html = `<div class="card"><div class="head"><h2>주가 차트</h2>
 <div style="display:flex;gap:8px;flex-wrap:wrap"><div class="seg" role="group" aria-label="기간">
 <button type="button" data-range="21">1개월</button><button type="button" data-range="63" aria-pressed="true">3개월</button><button type="button" data-range="126">6개월</button></div>
 ${hasOhlc ? '<div class="seg" role="group" aria-label="차트 종류"><button type="button" data-kind="candle" aria-pressed="true">캔들</button><button type="button" data-kind="line">라인</button></div>' : ''}</div></div>
+<div class="overlay-row" role="group" aria-label="보조선"><span class="label">보조선</span>
+<button type="button" class="chip-toggle" data-overlay="ma" aria-pressed="true"><i style="background:#d97706"></i><i style="background:#7a4fb3"></i><i style="background:#00968a"></i>이동평균 20·60·120</button>
+<button type="button" class="chip-toggle" data-overlay="bb" aria-pressed="false"><i style="background:#8a96a3"></i>볼린저</button>
+${report.market?.structure ? '<button type="button" class="chip-toggle" data-overlay="levels" aria-pressed="false"><i style="background:#18201f"></i>지지·저항</button><button type="button" class="chip-toggle" data-overlay="fib" aria-pressed="false"><i style="background:#c07a12"></i>피보나치</button>' : ''}
+${report.market?.forecasts.length ? '<button type="button" class="chip-toggle" data-overlay="forecast" aria-pressed="false"><i style="background:#1f5f5b"></i>예측 범위</button>' : ''}
+</div>
 <div class="legend-line" id="legend">${bars.length ? `${escape(bars.at(-1)!.date)} 종가 ${escape(won(bars.at(-1)!.close))}` : ''}</div>
 <div id="chart">${fallbackSvg(bars)}</div><p class="fine">■ 공시와 ● 뉴스는 중요도 보통 이상만 표시해요.</p></div>`;
   const script = `<script type="application/json" id="bars">${data}</script>
 <script type="application/json" id="markers">${markers}</script>
+<script type="application/json" id="overlays">${overlays}</script>
 <script src="${base}${CHART_ASSET}" defer></script>
 <script>
 window.addEventListener('DOMContentLoaded', function () {
@@ -298,6 +345,54 @@ window.addEventListener('DOMContentLoaded', function () {
     btn.addEventListener('click', function () {
       document.querySelectorAll('[data-range]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
       setRange(Number(btn.getAttribute('data-range')));
+    });
+  });
+  // ---- overlays ----
+  var ov = JSON.parse(document.getElementById('overlays').textContent) || {};
+  var closes = bars.map(function (b) { return b.close; });
+  var avg = function (n) { return bars.map(function (b, i) { if (i < n - 1) return null; var s = 0; for (var j = i - n + 1; j <= i; j++) s += closes[j]; return { time: b.date, value: s / n }; }).filter(Boolean); };
+  var line = function (color, width, style) { return chart.addLineSeries({ color: color, lineWidth: width || 2, lineStyle: style || 0, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }); };
+  var groups = { ma: [], bb: [], levels: [], fib: [], forecast: [] };
+  [[20, '#d97706'], [60, '#7a4fb3'], [120, '#00968a']].forEach(function (p) { var sr = line(p[1], 2); sr.setData(avg(p[0])); groups.ma.push(sr); });
+  var bb = bars.map(function (b, i) { if (i < 19) return null; var w = closes.slice(i - 19, i + 1), m = w.reduce(function (a, c) { return a + c; }, 0) / 20; var sd = Math.sqrt(w.reduce(function (a, c) { return a + (c - m) * (c - m); }, 0) / 20); return { t: b.date, u: m + 2 * sd, l: m - 2 * sd }; }).filter(Boolean);
+  var up = line('#8a96a3', 1, 2), lo = line('#8a96a3', 1, 2);
+  up.setData(bb.map(function (x) { return { time: x.t, value: x.u }; })); lo.setData(bb.map(function (x) { return { time: x.t, value: x.l }; }));
+  groups.bb.push(up, lo);
+  var priceLines = { levels: [], fib: [] };
+  var addLines = function (key) {
+    if (key === 'levels') (ov.levels || []).forEach(function (l) { priceLines.levels.push(candle.createPriceLine({ price: l.price, color: l.kind === 'SUPPORT' ? '#2b6fd6' : '#e0383e', lineWidth: 1, lineStyle: 0, axisLabelVisible: true, title: l.kind === 'SUPPORT' ? '지지' : '저항' })); });
+    if (key === 'fib') (ov.fib || []).forEach(function (f) { priceLines.fib.push(candle.createPriceLine({ price: f.price, color: '#c07a12', lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: 'Fib ' + (f.ratio * 100).toFixed(1) + '%' })); });
+  };
+  var removeLines = function (key) { priceLines[key].forEach(function (pl) { candle.removePriceLine(pl); }); priceLines[key] = []; };
+  // Weekdays only; exchange holidays are not known in advance.
+  var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); var w = d.getUTCDay(); if (w !== 0 && w !== 6) n--; } return d.toISOString().slice(0, 10); };
+  // Forecast fan: one point per weekday up to 60 sessions ahead. Volatility moves from the 20-day to the 60-day setting, so the fan meets the table at both.
+  var f20 = (ov.forecasts || []).filter(function (f) { return f.horizon === 20; })[0], f60 = (ov.forecasts || []).filter(function (f) { return f.horizon === 60; })[0];
+  var fanDays = 0;
+  if (f20 && f60) {
+    var z = 1.2815515655446004, fan = { p10: [], p50: [], p90: [] }, d = f20.baseDate;
+    [['p10', -1], ['p50', 0], ['p90', 1]].forEach(function (q) { fan[q[0]].push({ time: f20.baseDate, value: f20.baseClose }); });
+    for (var h = 1; h <= 60; h++) {
+      d = addDays(d, 1);
+      var t = Math.min(1, Math.max(0, (h - 20) / 40)), sg = f20.sigma + (f60.sigma - f20.sigma) * t, mu = f20.drift * h, sp = z * sg * Math.sqrt(h);
+      fan.p10.push({ time: d, value: f20.baseClose * Math.exp(mu - sp) }); fan.p50.push({ time: d, value: f20.baseClose * Math.exp(mu) }); fan.p90.push({ time: d, value: f20.baseClose * Math.exp(mu + sp) });
+    }
+    fanDays = 60;
+    [['p90', '#e0383e', 2, '상단 (90%)'], ['p50', '#1f5f5b', 0, '예측 중앙'], ['p10', '#2b6fd6', 2, '하단 (10%)']].forEach(function (q) {
+      var sr = line(q[1], q[0] === 'p50' ? 2 : 1, q[2]);
+      sr.setData(fan[q[0]]);
+      sr.applyOptions({ visible: false, lastValueVisible: true, title: q[3] });
+      groups.forecast.push(sr);
+    });
+  }
+  groups.bb.forEach(function (sr) { sr.applyOptions({ visible: false }); });
+  document.querySelectorAll('[data-overlay]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var key = btn.getAttribute('data-overlay'), on = btn.getAttribute('aria-pressed') !== 'true';
+      btn.setAttribute('aria-pressed', String(on));
+      if (key === 'levels' || key === 'fib') { if (on) addLines(key); else removeLines(key); return; }
+      groups[key].forEach(function (sr) { sr.applyOptions({ visible: on }); });
+      if (key === 'forecast') chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, bars.length - 63) - 0.5, to: bars.length - 0.5 + (on ? fanDays : 0) });
     });
   });
   document.querySelectorAll('[data-kind]').forEach(function (btn) {
@@ -362,7 +457,7 @@ function whySection(report: DailyReport): string {
   if (!c) return '';
   if (c.status !== 'OK') {
     const reason = c.error ? (COMMENTARY_FAIL[c.error] ?? (c.error.startsWith('REFUSAL') ? 'AI가 해설 작성을 거절했어요' : 'AI 호출에 실패했어요')) : '';
-    return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2></div><p class="empty">AI 해설이 없어요${reason ? `: ${escape(reason)}` : ''}. 위의 지표와 공시, 뉴스를 직접 확인해 주세요.</p></div>`;
+    return `<div class="card" id="why"><div class="head"><h2>AI 위원회 해설</h2></div><p class="empty">AI 해설이 없어요${reason ? `: ${escape(reason)}` : ''}. 위의 지표와 공시, 뉴스를 직접 확인해 주세요.</p></div>`;
   }
   const byId = new Map(c.evidence.map((e) => [e.id, e]));
   const chips = (ids: readonly string[]) => ids.map((id) => {
@@ -374,10 +469,21 @@ function whySection(report: DailyReport): string {
   const list = (claims: readonly Claim[], emptyText: string) => (claims.length
     ? `<ul class="claims">${claims.map((cl) => `<li>${escape(cl.text)} <span class="chips">${chips(cl.evidenceIds)}</span></li>`).join('')}</ul>`
     : `<p class="empty">${emptyText}</p>`);
+  const DESK = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDAMENTAL: '펀더멘털', EVENT: '공시·뉴스' } as const;
+  const STANCE = { BULLISH: ['강세', 'up'], BEARISH: ['약세', 'down'], NEUTRAL: ['중립', ''], INSUFFICIENT_DATA: ['근거 부족', 'muted'] } as const;
+  const desks = c.desks?.length ? `<h3 class="why-h">데스크별 의견</h3><div class="desk-grid">${c.desks.map((d) => `<div class="why-col"><div class="desk-top"><b>${DESK[d.desk]}</b><span class="${STANCE[d.stance][1]}">${STANCE[d.stance][0]}</span></div><p>${escape(d.view.text)} <span class="chips">${chips(d.view.evidenceIds)}</span></p></div>`).join('')}</div>` : '';
+  const red = c.redTeam ? `<div class="red-team"><h3>레드팀 반론</h3><p>${escape(c.redTeam.counterargument.text)} <span class="chips">${chips(c.redTeam.counterargument.evidenceIds)}</span></p>${c.redTeam.unresolved.length ? `<p class="why">풀리지 않은 이견: ${c.redTeam.unresolved.map(escape).join(', ')}</p>` : ''}</div>` : '';
+  const SC = { BULL: ['강세 시나리오', 'bull'], BASE: ['기본 시나리오', 'unc'], BEAR: ['약세 시나리오', 'bear'] } as const;
+  const scenarios = c.scenarios?.length ? `<h3 class="why-h">시나리오</h3><div class="why-grid">${(['BULL', 'BASE', 'BEAR'] as const).map((k) => {
+    const sc = c.scenarios!.find((x) => x.kind === k);
+    return `<div class="why-col ${SC[k][1]}"><h3>${SC[k][0]}</h3>${sc ? `<p>${escape(sc.narrative.text)} <span class="chips">${chips(sc.narrative.evidenceIds)}</span></p>
+${sc.catalysts.length ? `<p class="why"><b>촉매</b> ${sc.catalysts.map(escape).join(', ')}</p>` : ''}${sc.invalidation.length ? `<p class="why"><b>무효화 조건</b> ${sc.invalidation.map(escape).join(', ')}</p>` : ''}` : '<p class="empty">근거가 있는 시나리오를 쓰지 못했어요.</p>'}</div>`;
+  }).join('')}</div>` : '';
   const legend = c.evidence.map((e) => `<li><b>${escape(e.id)}</b> ${e.url.startsWith('http') ? `<a href="${escape(e.url)}" rel="noopener" target="_blank">${escape(e.label)}</a>` : escape(e.label)}</li>`).join('');
-  return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2><span class="sub" style="margin:0">AI 해설, 오늘 리포트의 근거만 인용해요</span></div>
+  return `<div class="card" id="why"><div class="head"><h2>AI 위원회 해설</h2><span class="sub" style="margin:0">데스크 5곳과 레드팀이 오늘 리포트의 근거만 인용해요</span></div>
 ${c.summary ? `<p class="headline">${escape(c.summary.text)} <span class="chips">${chips(c.summary.evidenceIds)}</span></p>` : ''}
-<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
+${desks}${red}${scenarios}
+${desks || scenarios ? '<h3 class="why-h">근거 정리</h3>' : ''}<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
 <div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish, '찾지 못했어요.')}</div>
 <div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain, '없어요.')}</div></div>
 <h3 class="why-h">판단이 바뀔 수 있는 것</h3>${list(c.watch, '없어요.')}
@@ -413,25 +519,82 @@ function chartMarkers(report: DailyReport): { date: string; kind: 'filing' | 'ne
   return markers;
 }
 
+const TAB_SCRIPT = `<script>
+(function () {
+  var panels = Array.prototype.slice.call(document.querySelectorAll('[role=tabpanel]'));
+  if (!panels.length) return;
+  document.documentElement.classList.add('js-tabs');
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role=tab]'));
+  function show(id, focus) {
+    var panel = document.getElementById(id);
+    if (!panel || panel.getAttribute('role') !== 'tabpanel') return false;
+    panels.forEach(function (p) { p.hidden = p !== panel; });
+    tabs.forEach(function (t) { var on = t.getAttribute('aria-controls') === id; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+    document.querySelectorAll('[data-nav]').forEach(function (a) {
+      var on = a.getAttribute('data-nav') === id.replace('tab-', '');
+      a.classList.toggle('active', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    window.dispatchEvent(new Event('resize'));
+    return true;
+  }
+  function route() {
+    var id = (location.hash || '#tab-overview').slice(1);
+    if (show(id)) { window.scrollTo(0, 0); return; }
+    // An anchor inside a panel (e.g. #filings): open its panel, then scroll to it.
+    var el = document.getElementById(id), panel = el && el.closest('[role=tabpanel]');
+    if (panel && show(panel.id)) el.scrollIntoView(); else show('tab-overview');
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      e.preventDefault();
+      var next = tabs[(i + d + tabs.length) % tabs.length];
+      history.replaceState(null, '', '#' + next.getAttribute('aria-controls'));
+      show(next.getAttribute('aria-controls'), true);
+    });
+  });
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>`;
+
 export function renderReport(report: DailyReport, links: { index: string; base?: string }): string {
   const base = links.base ?? '../';
   const chart = chartCard(report, base);
+  const m = report.market;
+  const hasWhy = Boolean(report.commentary);
+  const tabs = TABS.filter((t) => t.key !== 'ai' || hasWhy);
   const notes = report.notes.length ? `<ul class="plain">${report.notes.map((n) => `<li>${escape(n)}</li>`).join('')}</ul>` : '<p class="empty">눈에 띄는 가격·거래량 신호는 없어요.</p>';
   const changes = report.changes?.length ? `<ul class="plain">${report.changes.map((c) => `<li>${escape(c)}</li>`).join('')}</ul>` : '<p class="empty">이 리포트에는 비교 기록이 없어요.</p>';
+  const c = report.commentary;
+  const aiTeaser = c?.status === 'OK' && c.summary
+    ? `<div class="card ai-teaser"><div class="head"><h2>AI 한 줄 해설</h2><a href="#tab-ai" class="more-link">자세히 보기</a></div><p class="headline">${escape(c.summary.text)}</p></div>` : '';
+  const panel = (key: TabKey, html: string) => `<section class="panel" id="tab-${key}" role="tabpanel" aria-labelledby="t-${key}" tabindex="-1"><h2 class="panel-title">${TABS.find((t) => t.key === key)!.label}</h2>${html}</section>`;
+  const overview = `${m ? horizonRow(m.horizons) : ''}
+<div style="margin-top:16px">${kpis(report)}</div>
+${m ? `<div class="grid-eq">${valueCard(m)}${forecastCard(m.forecasts, m.forecastScores)}</div>` : ''}
+${aiTeaser}
+<div class="grid-eq"><div class="card"><div class="head"><h2>오늘의 요약</h2></div><p class="headline">${escape(report.headline)}</p>${notes}</div>
+<div class="card"><div class="head"><h2>어제 대비 바뀐 점</h2></div>${changes}</div></div>`;
+  const chartTab = `${chart.html}<div style="margin-top:16px">${signalSection(report)}</div>${m ? structureCard(m.structure, m.weeklyStructure) : ''}`;
+  const flowsTab = m ? flowsPanel(m.flows, m.footprint) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>';
+  const fundTab = m ? fundamentalsPanel(m, report.price?.close ?? null) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>';
+  const newsTab = `${newsSection(report)}
+<div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub" style="margin:0">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const body = `<div class="top"><div class="ticker">${escape(report.name)} <span>${escape(report.symbol)}</span><span>KOSPI</span></div>
 <div class="stamp">${escape(report.date)} 리포트<br>생성 ${escape(report.generatedAt.replace('T', ' ').slice(0, 16))} UTC</div></div>
 <h1>${escape(report.name)} 일일 리포트</h1><p class="sub">${escape(report.headline)}</p>
-${signalSection(report)}
-${kpis(report)}
-<div class="grid2">${chart.html}${mixCard(report.recentFilings ?? report.filings)}</div>
-${whySection(report)}
-<div class="grid-eq"><div class="card"><div class="head"><h2>오늘의 요약</h2></div><p class="headline">${escape(report.headline)}</p>${notes}</div>
-<div class="card"><div class="head"><h2>어제 대비 바뀐 점</h2></div>${changes}</div></div>
-${newsSection(report)}
-<div class="card" id="filings" style="margin-top:16px"><div class="head"><h2>공시</h2><span class="sub" style="margin:0">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>
-<footer id="sources"><p>데이터: Naver 금융 일봉(가격), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).</p><p>수집 기록은 고쳐 쓰지 않고 쌓아요. 투자 권유가 아니에요. <a href="${escape(links.index)}">지난 리포트 보기</a></p></footer>`;
-  // Reports written before AI commentary existed have no "왜?" section to link to.
-  return shell('today', base, `${report.name} ${report.date} 일일 리포트 | GNM`, body, chart.script, '#filings', Boolean(report.commentary));
+${m ? marketStatusWarning(m) : ''}
+<div class="tabs" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>
+${panel('overview', overview)}
+${panel('chart', chartTab)}
+${panel('flows', flowsTab)}
+${panel('fundamentals', fundTab)}
+${hasWhy ? panel('ai', whySection(report)) : ''}
+${panel('news', newsTab)}
+<footer id="sources"><p>데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).</p><p>수집 기록은 고쳐 쓰지 않고 쌓아요. 적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${escape(links.index)}">지난 리포트 보기</a></p></footer>`;
+  return shell('today', base, `${report.name} ${report.date} 일일 리포트 | GNM`, body, chart.script + TAB_SCRIPT, '#tab-overview', hasWhy);
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[]): string {
@@ -445,5 +608,5 @@ ${sorted.map((r) => `<tr><td style="white-space:nowrap"><a href="reports/${escap
 </tbody></table></div></div>
 <footer id="sources"><p>데이터: Naver 금융 일봉(가격), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).</p><p>투자 권유가 아니에요.</p></footer>`;
   // The index has no filings section; link to the latest report's.
-  return shell('archive', '', 'SK하이닉스 일일 리포트 | Gnomon Analytics', body, '', latest ? `reports/${escape(latest.date)}.html#filings` : '#archive', Boolean(latest && (latest as Partial<DailyReport>).commentary));
+  return shell('archive', '', 'SK하이닉스 일일 리포트 | Gnomon Analytics', body, '', latest ? `reports/${escape(latest.date)}.html#tab-overview` : '#archive', Boolean(latest && (latest as Partial<DailyReport>).commentary));
 }

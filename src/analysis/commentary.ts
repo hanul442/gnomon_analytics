@@ -12,13 +12,13 @@ import { z } from 'zod';
 import type { DailyReport } from '../report/dailyReport.js';
 
 export const COMMENTARY_MODEL = 'claude-opus-5-5';
-export const COMMENTARY_PROMPT_VERSION = 'gnm-why-v1';
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v1';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
 export interface EvidenceItem {
   id: string;
-  kind: 'PRICE' | 'TECHNICAL' | 'FILING' | 'NEWS';
+  kind: 'PRICE' | 'TECHNICAL' | 'FILING' | 'NEWS' | 'HORIZON' | 'VALUE' | 'FORECAST' | 'STRUCTURE' | 'FLOW' | 'FUNDAMENTAL' | 'MARKET';
   label: string;
   detail: string;
   url: string;
@@ -28,6 +28,11 @@ export interface Claim {
   text: string;
   evidenceIds: string[];
 }
+
+export type Desk = 'MARKET' | 'TECHNICAL' | 'FLOW' | 'FUNDAMENTAL' | 'EVENT';
+export type DeskStance = 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'INSUFFICIENT_DATA';
+export interface DeskView { desk: Desk; stance: DeskStance; view: Claim }
+export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; catalysts: string[]; invalidation: string[] }
 
 export interface Commentary {
   status: 'OK' | 'FAILED' | 'SKIPPED';
@@ -43,6 +48,10 @@ export interface Commentary {
   /** What would change the reading (invalidation / things to watch). */
   watch: Claim[];
   dataGaps: string[];
+  /** Committee (C단계): one view per desk, the red team's strongest objection, three scenarios. */
+  desks?: DeskView[];
+  redTeam?: { counterargument: Claim; unresolved: string[] };
+  scenarios?: Scenario[];
   /** Claims removed because none of their evidence IDs existed. */
   dropped: number;
   evidence: EvidenceItem[];
@@ -71,6 +80,39 @@ export function buildEvidence(report: DailyReport): EvidenceItem[] {
       detail: `${t.label}${t.score == null ? '' : ` (점수 ${t.score.toFixed(2)})`}, 강세 ${t.counts.bullish}·중립 ${t.counts.neutral}·약세 ${t.counts.bearish}·계산 불가 ${t.counts.abstained}. 모멘텀: ${momentum}. ${report.technicalReason ?? ''}`,
     });
   }
+  const m = report.market;
+  if (m) {
+    items.push({ id: 'H1', kind: 'HORIZON', label: '기간별 신호', url: '#horizons',
+      detail: m.horizons.map((h) => `${h.label}(${h.barLabel}) ${h.summary.label}${h.summary.score === null ? '' : ` ${h.summary.score.toFixed(2)}`}`).join(', ') });
+    if (m.fairValue) {
+      const fv = m.fairValue;
+      items.push({ id: 'V1', kind: 'VALUE', label: '기술적 적정가', url: '#value',
+        detail: `중심 ${won(fv.center)}, 범위 ${won(fv.low)}~${won(fv.high)}, 현재가 괴리 ${pct(fv.gapPct)} (${fv.position === 'ABOVE' ? '범위 위' : fv.position === 'BELOW' ? '범위 아래' : '범위 안'}). 기준값: ${fv.anchors.map((a) => `${a.label} ${won(a.value)}`).join(', ')}` });
+    }
+    if (m.forecasts.length) {
+      items.push({ id: 'R1', kind: 'FORECAST', label: '예측 범위', url: '#forecast',
+        detail: `${m.forecasts.map((f) => `${f.horizon}거래일 하단 ${won(f.p10)} 중앙 ${won(f.p50)} 상단 ${won(f.p90)}`).join('; ')}. 지난 예측 채점: ${m.forecastScores.map((sc) => `${sc.horizon}일 ${sc.scored ? `${Math.round(sc.coverage! * 100)}%(${sc.scored}건)` : '없음'}`).join(', ')}` });
+    }
+    if (m.structure) {
+      const st = m.structure, b = st.breaks.at(-1);
+      items.push({ id: 'S1', kind: 'STRUCTURE', label: '가격 구조', url: '#structure',
+        detail: `일봉 ${st.bias}, 주봉 ${m.weeklyStructure?.bias ?? '없음'}; 최근 돌파 ${b ? `${b.date} ${b.type} ${b.direction} (스윙 ${won(b.brokenSwing.price)})` : '없음'}; 피보나치 ${st.fibonacci?.retracement != null ? `${(st.fibonacci.retracement * 100).toFixed(1)}%` : '없음'}; 지지·저항 ${st.levels.map((l) => `${l.kind === 'SUPPORT' ? '지지' : '저항'} ${won(l.price)}`).join(', ')}; 볼린저 %B ${st.bollinger ? Math.round(st.bollinger.percentB * 100) : '없음'}` });
+    }
+    if (m.flows) {
+      const sums = m.flows.sums.map((x) => `${x.days}일 외국인 ${x.foreign ?? '없음'}주, 기관 ${x.institution ?? '없음'}주, 개인 ${x.individual ?? '없음'}주`).join('; ');
+      items.push({ id: 'Q1', kind: 'FLOW', label: '투자자별 수급', url: '#tab-flows',
+        detail: `${sums}. 외국인 보유율 20일 변화 ${m.flows.holdRatioChange20?.toFixed(2) ?? '없음'}%p. 수급 흔적 ${m.footprint.state} (점수 ${m.footprint.score}). ${m.footprint.reasons.join(' ')}` });
+    }
+    if (m.snapshot || m.quarters.length) {
+      const s = m.snapshot, q = m.quarters.slice(-4);
+      items.push({ id: 'D1', kind: 'FUNDAMENTAL', label: '밸류에이션·실적·증권가 평균', url: '#tab-fundamentals',
+        detail: `${s ? `PER ${s.per ?? '없음'}, 추정 PER ${s.estimatedPer ?? '없음'}, PBR ${s.pbr ?? '없음'}, 증권가 평균 목표가 ${s.consensus?.targetPriceMean ? won(s.consensus.targetPriceMean) : '없음'}. ` : ''}분기 영업이익(억원): ${q.map((p) => `${p.period}${p.isEstimate ? '(추정)' : ''} ${p.metrics['영업이익'] ?? '없음'}`).join(', ')}` });
+    }
+    if (m.benchmarks.length) {
+      items.push({ id: 'M1', kind: 'MARKET', label: '시장 대비 수익률', url: '#tab-fundamentals',
+        detail: m.benchmarks.map((b) => `${b.name}: ${b.returns.map((x) => `${x.days}일 종목 ${pct(x.stock)} vs ${pct(x.benchmark)}`).join(', ')}`).join('; ') });
+    }
+  }
   (report.recentFilings ?? report.filings).slice(0, MAX_FILINGS).forEach((f, i) => {
     items.push({ id: `F${i + 1}`, kind: 'FILING', label: f.title, url: f.url, detail: `${f.filedDate} 공시, 종류 ${f.category}, 중요도 ${f.importance}, 제출 ${f.filer}. ${f.why}` });
   });
@@ -85,8 +127,27 @@ const ClaimSchema = z.object({
   evidenceIds: z.array(z.string()).describe('근거 목록의 ID만 (예: P1, T1, F2, N3)'),
 });
 
+const DeskSchema = z.object({
+  desk: z.enum(['MARKET', 'TECHNICAL', 'FLOW', 'FUNDAMENTAL', 'EVENT']).describe('MARKET 시장·상대강도, TECHNICAL 기술·구조, FLOW 수급, FUNDAMENTAL 실적·밸류에이션, EVENT 공시·뉴스'),
+  stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL', 'INSUFFICIENT_DATA']),
+  view: ClaimSchema.describe('이 데스크의 판단 한두 문장'),
+});
+
+const ScenarioSchema = z.object({
+  kind: z.enum(['BULL', 'BASE', 'BEAR']),
+  narrative: ClaimSchema.describe('이 시나리오가 어떻게 전개되는지 한두 문장'),
+  catalysts: z.array(z.string()).describe('이 시나리오를 앞당길 일'),
+  invalidation: z.array(z.string()).describe('이 시나리오가 틀렸다고 볼 조건(가격 수준이나 사건)'),
+});
+
 export const CommentarySchema = z.object({
   summary: ClaimSchema.describe('오늘 무슨 일이 있었고 왜 중요한지 2~3문장 요약'),
+  desks: z.array(DeskSchema).describe('데스크 5곳(MARKET, TECHNICAL, FLOW, FUNDAMENTAL, EVENT) 각각 하나씩'),
+  redTeam: z.object({
+    counterargument: ClaimSchema.describe('가장 우세한 의견에 대한 가장 강한 반론'),
+    unresolved: z.array(z.string()).describe('데스크끼리 풀리지 않은 이견'),
+  }),
+  scenarios: z.array(ScenarioSchema).describe('BULL, BASE, BEAR 정확히 하나씩'),
   bullish: z.array(ClaimSchema).describe('강세 쪽 근거. 없으면 빈 배열'),
   bearish: z.array(ClaimSchema).describe('약세 쪽 근거. 없으면 빈 배열'),
   uncertain: z.array(ClaimSchema).describe('방향이 불확실하거나 해석이 갈리는 점'),
@@ -94,7 +155,13 @@ export const CommentarySchema = z.object({
   dataGaps: z.array(z.string()).describe('근거가 부족해서 판단할 수 없는 부분'),
 });
 
-const SYSTEM = `당신은 Gnomon Analytics의 리서치 해설 작성자예요. SK하이닉스 일일 리포트의 "왜?" 섹션을 씁니다.
+const SYSTEM = `당신은 Gnomon Analytics의 리서치 위원회예요. SK하이닉스 일일 리포트의 "AI 해설"을 한 번에 씁니다.
+
+위원회 구성:
+- 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위, T1·H1·S1·V1·R1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
+- 레드팀은 가장 우세한 의견에 맞서는 가장 강한 반론을 씁니다.
+- 마지막으로 강세(BULL)·기본(BASE)·약세(BEAR) 시나리오를 하나씩 쓰고, 각 시나리오의 촉매와 무효화 조건(가격 수준이나 사건)을 적습니다.
+- 데스크 근거가 없으면 stance를 INSUFFICIENT_DATA로 둡니다.
 
 규칙:
 - 제공된 근거 목록에 있는 내용만 쓰고, 모든 주장에 근거 ID(P1, T1, F1, N1 …)를 답니다. 목록에 없는 사실·숫자·전망은 쓰지 않습니다.
@@ -160,12 +227,19 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       return result.kept;
     };
     const [summary] = clean([parsed.summary]);
+    const desks = (parsed.desks ?? []).flatMap((d) => clean([d.view]).map((view) => ({ desk: d.desk, stance: d.stance, view })));
+    const [counter] = parsed.redTeam ? clean([parsed.redTeam.counterargument]) : [];
+    const scenarios = (parsed.scenarios ?? []).flatMap((sc) => clean([sc.narrative]).map((narrative) => ({
+      kind: sc.kind, narrative, catalysts: sc.catalysts.map((c) => c.trim()).filter(Boolean), invalidation: sc.invalidation.map((c) => c.trim()).filter(Boolean),
+    })));
     return {
       status: 'OK', model: COMMENTARY_MODEL, promptVersion: COMMENTARY_PROMPT_VERSION, generatedAt: now.toISOString(),
       servedBy: response.model,
       ...(summary ? { summary } : {}),
       bullish: clean(parsed.bullish), bearish: clean(parsed.bearish), uncertain: clean(parsed.uncertain), watch: clean(parsed.watch),
       dataGaps: parsed.dataGaps.map((g) => g.trim()).filter(Boolean),
+      desks, scenarios,
+      ...(counter ? { redTeam: { counterargument: counter, unresolved: (parsed.redTeam?.unresolved ?? []).map((u) => u.trim()).filter(Boolean) } } : {}),
       dropped, evidence,
     };
   } catch (error) {

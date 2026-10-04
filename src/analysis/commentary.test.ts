@@ -78,3 +78,29 @@ test('the page shows claims with evidence chips, or why there is no commentary',
   const failed = { ...report, commentary: await writeCommentary(report, {}) };
   assert.match(renderReport(failed, { index: '../index.html' }), /AI 해설이 없어요: API 키가 설정되지 않았어요/);
 });
+
+test('the committee keeps desk views, the red team and three scenarios, each citing evidence', async () => {
+  const client = fakeClient({
+    stop_reason: 'end_turn', model: COMMENTARY_MODEL,
+    parsed_output: {
+      summary: { text: '요약', evidenceIds: ['P1'] },
+      desks: [
+        { desk: 'TECHNICAL', stance: 'BULLISH', view: { text: '이동평균 위', evidenceIds: ['T1'] } },
+        { desk: 'FLOW', stance: 'INSUFFICIENT_DATA', view: { text: '근거 없음', evidenceIds: ['Q9'] } },
+      ],
+      redTeam: { counterargument: { text: '과열', evidenceIds: ['P1'] }, unresolved: ['수급 해석', ' '] },
+      scenarios: [
+        { kind: 'BULL', narrative: { text: '돌파', evidenceIds: ['T1'] }, catalysts: ['실적'], invalidation: ['170만 원 이탈'] },
+        { kind: 'BASE', narrative: { text: '횡보', evidenceIds: ['P1'] }, catalysts: [], invalidation: [] },
+        { kind: 'BEAR', narrative: { text: '하락', evidenceIds: ['ZZ'] }, catalysts: [], invalidation: [] },
+      ],
+      bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [],
+    },
+  });
+  const c = await writeCommentary(report, { client, now: () => new Date(AT) });
+  assert.deepEqual(c.desks?.map((d) => [d.desk, d.stance]), [['TECHNICAL', 'BULLISH']]);
+  assert.deepEqual(c.redTeam?.unresolved, ['수급 해석']);
+  assert.deepEqual(c.scenarios?.map((s) => s.kind), ['BULL', 'BASE']);
+  assert.equal(c.dropped, 2);
+  assert.equal(c.promptVersion, 'gnm-committee-v1');
+});
