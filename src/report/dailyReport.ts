@@ -211,7 +211,7 @@ export function buildDailyReport(input: {
     price,
     filings,
     recentFilings,
-    recentBars: history.slice(-130).map(({ date, open, high, low, close, volume }) => ({ date, open, high, low, close, volume })),
+    recentBars: history.slice(-250).map(({ date, open, high, low, close, volume }) => ({ date, open, high, low, close, volume })),
     recentCloses: history.slice(-130).map((bar) => ({ date: bar.date, close: bar.close })),
     sources: [...input.sources],
   };
