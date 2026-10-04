@@ -12,8 +12,12 @@ const FEED = `<chartdata symbol="000660">
 const DART = { status: '000', total_page: 1, list: [{ corp_name: 'SK하이닉스', stock_code: '000660', report_nm: '주요사항보고서(자기주식취득결정)', rcept_no: '20261002000123', flr_nm: 'SK하이닉스', rcept_dt: '20261002', rm: '유' }] };
 const RSS = `<rss><channel><item><title>SK하이닉스, HBM4 양산 돌입 - 전자신문</title><link>https://news.google.com/rss/articles/1</link><pubDate>Fri, 02 Oct 2026 06:00:00 GMT</pubDate><source url="https://www.etnews.com">전자신문</source></item></channel></rss>`;
 const NAVER_NEWS = { items: [{ title: '<b>SK하이닉스</b> 3분기 영업이익 사상 최대', originallink: 'https://www.yna.co.kr/view/1', link: '', pubDate: 'Fri, 02 Oct 2026 16:00:00 +0900' }] };
+const FIXTURES = join(process.cwd(), 'test', 'fixtures', 'naver');
+const M_STOCK: [string, string][] = [['/trend', 'trend.json'], ['/integration', 'integration.json'], ['/finance/quarter', 'finance-quarter.json'], ['/finance/annual', 'finance-annual.json']];
 const fakeFetch = (async (url: string | URL | Request) => {
   const u = String(url);
+  const m = M_STOCK.find(([path]) => u.includes('m.stock.naver.com') && u.includes(path));
+  if (m) return new Response(await readFile(join(FIXTURES, m[1]), 'utf8'));
   if (u.includes('naverapihub.apigw.ntruss.com')) return new Response(JSON.stringify(NAVER_NEWS));
   if (u.includes('fchart.stock.naver')) return new Response(FEED);
   if (u.includes('news.google.com') || u.includes('mk.co.kr')) return new Response(RSS);
@@ -29,8 +33,13 @@ test('KST date and hour', () => {
 test('a daily run before 18:00 KST collects but does not freeze a report', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gnm-'));
   const result = await runDaily({ root, now: new Date('2026-10-02T05:00:00Z'), apiKey: 'k', fetch: fakeFetch, naver });
-  assert.deepEqual({ ...result, newsStatus: undefined }, { addedBars: 2, addedFilings: 1, addedNews: 2, newsStatus: undefined, report: 'NOT_SETTLED' });
+  assert.deepEqual({ ...result, newsStatus: undefined, marketStatus: undefined }, { addedBars: 2, addedFilings: 1, addedNews: 2, newsStatus: undefined, marketStatus: undefined, report: 'NOT_SETTLED' });
   assert.deepEqual(result.newsStatus.map((st) => st.ok), [true, true, true]);
+  // Stage A sources: all collected; 60 flow days + 1 snapshot + 10 finance periods + 5 research notes.
+  assert.deepEqual(result.marketStatus.map((st) => [st.source, st.ok]), [
+    ['naver:fchart:week', true], ['naver:fchart:minute', true], ['naver:fchart:day:KOSPI', true], ['naver:fchart:day:005930', true], ['naver:m-stock', true],
+  ]);
+  assert.equal(result.marketStatus.at(-1)!.count, 60 + 1 + 10 + 5);
 });
 
 test('a settled run writes the report once and renders the site', async () => {
