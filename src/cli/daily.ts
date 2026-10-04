@@ -27,6 +27,8 @@ import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { aliasPattern, benchmarksFor, loadTickers, type Ticker } from '../config/tickers.js';
+import { collectUniverse, readListedStocks } from './universe.js';
+import type { UniverseRow } from '../sources/naverList.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
 
 const KST_MS = 9 * 60 * 60_000;
@@ -91,7 +93,9 @@ export interface TickerResult {
   report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED';
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[] }): Promise<{ results: TickerResult[]; failed: { symbol: string; error: string }[] }> {
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[] }): Promise<{ results: TickerResult[]; failed: { symbol: string; error: string }[]; universeStatus: NewsSourceStatus[] }> {
+  // Every listed stock, for search (best effort: the reports do not depend on it).
+  const universe = await collectUniverse(options.root, { apiKey: options.apiKey, now: options.now, ...(options.fetch ? { fetch: options.fetch } : {}) });
   const results: TickerResult[] = [];
   const failed: { symbol: string; error: string }[] = [];
   const lives = new Map<string, DailyReport>();
@@ -106,8 +110,8 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     }
   }
   if (!results.length) throw new Error(`every stock failed: ${failed.map((f) => `${f.symbol} ${f.error}`).join('; ')}`);
-  await renderSite(options.root, options.tickers, lives);
-  return { results, failed };
+  await renderSite(options.root, options.tickers, lives, universe.rows);
+  return { results, failed, universeStatus: universe.status };
 }
 
 async function runTicker(options: RunOptions, ticker: Ticker): Promise<TickerResult> {
@@ -244,7 +248,7 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  * dashboard (live when this run built one, else its latest dated report),
  * <symbol>/archive.html its dated reports and <symbol>/reports/<date>.html each one.
  */
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map()): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null): Promise<void> {
   const siteDir = join(root, 'site');
   const home: HomeEntry[] = [];
   for (const ticker of tickers) {
@@ -272,6 +276,13 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page });
   }
   await writeFile(join(siteDir, 'index.html'), renderHome(home));
+  // Search index: every listed stock, with today's price when the list was fetched this run.
+  const covered = new Set(tickers.map((t) => t.symbol));
+  const items = universe
+    ? universe.map((r) => [r.symbol, r.name, r.market, r.close, r.changePct, covered.has(r.symbol) ? 1 : 0])
+    : (await readListedStocks(root)).map((r) => [r.symbol, r.name, r.market, null, null, covered.has(r.symbol) ? 1 : 0]);
+  for (const t of tickers) if (!items.some((i) => i[0] === t.symbol)) items.push([t.symbol, t.name, t.market, null, null, 1]);
+  await writeFile(join(siteDir, 'search.json'), JSON.stringify({ fields: ['symbol', 'name', 'market', 'close', 'changePct', 'report'], items }));
   // The chart library is served from the site itself, not a CDN.
   // "exports" hides the standalone build; package.json is exported, so locate it from there.
   const packageJson = createRequire(import.meta.url).resolve('lightweight-charts/package.json');

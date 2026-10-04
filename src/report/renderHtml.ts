@@ -171,6 +171,10 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .nowrap-cells td,.nowrap-cells th{white-space:nowrap}.paper-list{display:flex;flex-direction:column}.paper-row{display:grid;grid-template-columns:minmax(0,1.6fr) 140px minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:center;padding:12px 10px;border-top:1px solid var(--line)}.paper-row:first-child{border-top:0}
 .paper-row.is-champ{background:var(--accent-soft);border-radius:12px}.pr-name,.pr-num{display:flex;flex-direction:column;gap:2px;min-width:0}.pr-num b{font-size:17px;font-variant-numeric:tabular-nums}.pr-num .badge{align-self:flex-start}
 @media (max-width:820px){.paper-row{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}.paper-row .spark{display:none}}
+.search-box{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line-strong);border-radius:14px;padding:0 16px;box-shadow:var(--shadow)}.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.search-box svg{width:20px;height:20px;color:var(--muted);flex:none}.search-box input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:16px;padding:14px 0;color:var(--fg)}
+.search-results{margin-top:8px}.sr-row{align-items:center;gap:12px}.sr-row .ri-main{flex:1}.sr-price{font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}.sr-go{font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;font-size:14px}.sr-go:hover{text-decoration:underline}.search-note{margin:8px 2px 0}
+@media (max-width:820px){.sr-price{display:none}}
 /* kpis */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi .row{display:flex;align-items:center;gap:12px}
 .kpi .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--accent-strong);background:var(--accent-soft)!important;flex:none}.kpi .ico svg{width:20px;height:20px}
@@ -527,6 +531,53 @@ export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headli
   return shell(base, `${name} 지난 리포트 | Gnomon Analytics`, body, { archiveHref: 'archive.html', homeHref: links.homeHref ?? 'index.html' });
 }
 
+// Client-side search over search.json: name, code or Korean initial consonants (초성).
+const SEARCH_SCRIPT = `<script>
+(function () {
+  var q = document.getElementById('q'), out = document.getElementById('search-results'), items = null, timer = 0;
+  var CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+  var cho = function (s) { var r = ''; for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i) - 0xAC00; r += c >= 0 && c <= 11171 ? CHO[Math.floor(c / 588)] : s[i]; } return r; };
+  var norm = function (s) { return s.toLowerCase().replace(/\\s+/g, ''); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
+  var load = function () {
+    if (items) return Promise.resolve(items);
+    return fetch('search.json').then(function (r) { return r.json(); }).then(function (d) {
+      items = d.items.map(function (x, i) { return { c: x[0], n: x[1], m: x[2], p: x[3], x: x[4], r: x[5], k: norm(x[1]), h: cho(norm(x[1])), i: i }; });
+      return items;
+    });
+  };
+  var score = function (it, t, onlyCho) {
+    if (it.c === t) return 0;
+    if (onlyCho) return it.h.indexOf(t) === 0 ? 2 : it.h.indexOf(t) > 0 ? 4 : -1;
+    if (it.k === t) return 0;
+    if (it.c.indexOf(t) === 0 || it.k.indexOf(t) === 0) return 1;
+    if (it.k.indexOf(t) > 0) return 3;
+    return -1;
+  };
+  var render = function (list, t) {
+    if (!t) { out.hidden = true; out.innerHTML = ''; return; }
+    var onlyCho = /^[ㄱ-ㅎ]+$/.test(t);
+    var hits = list.map(function (it) { return [score(it, t, onlyCho), it]; }).filter(function (p) { return p[0] >= 0; })
+      .sort(function (a, b) { return a[0] - b[0] || b[1].r - a[1].r || a[1].i - b[1].i; }).slice(0, 20);
+    out.hidden = false;
+    if (!hits.length) { out.innerHTML = '<p class="empty">찾는 종목이 없어요. 상장 종목의 이름이나 6자리 코드로 찾아 보세요.</p>'; return; }
+    out.innerHTML = hits.map(function (p) {
+      var it = p[1], ch = it.x;
+      var price = it.p == null ? '' : '<span class="sr-price"><b>' + won(it.p) + '</b>' + (ch == null ? '' : ' <span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span>';
+      var right = it.r ? '<a class="sr-go" href="' + esc(it.c) + '/index.html">리포트 보기 ›</a>' : '<span class="badge b-LOW" title="리포트 요청은 크레딧 기능과 함께 열려요">리포트 없음</span>';
+      return '<div class="row-item sr-row"><div class="ri-main"><b>' + esc(it.n) + '</b><div class="muted small">' + esc(it.c) + ' · ' + (it.m === 'KOSPI' ? '코스피' : '코스닥') + '</div></div>' + price + right + '</div>';
+    }).join('');
+  };
+  q.addEventListener('input', function () {
+    clearTimeout(timer);
+    var t = norm(q.value);
+    timer = setTimeout(function () { load().then(function (list) { render(list, t); }, function () { out.hidden = false; out.innerHTML = '<p class="empty">종목 목록을 불러오지 못했어요.</p>'; }); }, 120);
+  });
+  q.addEventListener('focus', function () { load(); }, { once: true });
+})();
+</script>`;
+
 /** One covered stock on the front page. `report` is its live dashboard, or null when nothing was built yet. */
 export interface HomeEntry { symbol: string; name: string; href: string; report: DailyReport | null }
 
@@ -543,7 +594,10 @@ ${r ? `<p class="sc-line">${escape(r.headline)}</p>` : ''}<span class="sc-go">�
   }).join('');
   const body = `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div><div class="hero-main"><div class="eyebrow"><span>종목</span><span>${entries.length}개</span></div><h1>Gnomon Analytics</h1>
 <p class="hero-line">공개 데이터로 계산한 기술 신호·적정가·예측 범위와 AI 위원회 해설을 종목마다 매일 만들어요. 예측은 기록해 두고 나중에 채점해요.</p></div></section>
-<section class="block"><div class="block-head"><h2>다루는 종목</h2><span class="muted">평일 장 마감 뒤 갱신</span></div><div class="stock-grid">${cards}</div></section>
+<section class="block search-block"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명, 코드, 초성으로 찾기 (예: 삼성, 005930, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
+<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
+<p class="muted small search-note">코스피·코스닥 상장 종목을 모두 찾을 수 있어요. 리포트가 없는 종목은 앞으로 크레딧으로 요청할 수 있게 할 예정이에요.</p></section>
+<section class="block"><div class="block-head"><h2>리포트가 있는 종목</h2><span class="muted">평일 장 마감 뒤 갱신</span></div><div class="stock-grid">${cards}</div></section>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '종목 | Gnomon Analytics', body, {});
+  return shell('', '종목 | Gnomon Analytics', body, { scripts: SEARCH_SCRIPT });
 }

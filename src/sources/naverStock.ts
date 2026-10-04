@@ -113,7 +113,7 @@ export function parseFinance(payload: unknown, symbol: string, periodType: Finan
   });
 }
 
-async function getJson(path: string, fetcher: typeof fetch): Promise<unknown> {
+export async function getJson(path: string, fetcher: typeof fetch): Promise<unknown> {
   const response = await fetcher(`${BASE}${path}`, { headers: HEADERS, signal: AbortSignal.timeout(20_000) });
   if (!response.ok) throw new Error(`NAVER_STOCK_HTTP_${response.status}`);
   return response.json();

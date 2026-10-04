@@ -73,6 +73,10 @@ test('a settled run writes the report once and renders the site', async () => {
   // The site root lists the covered stocks.
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
   assert.ok(home.includes('href="000660/index.html"') && home.includes('SK하이닉스'));
+  // Search covers listed stocks; without a list this run it still has the covered ones.
+  assert.ok(home.includes('id="q"'));
+  const search = JSON.parse(await readFile(join(root, 'site', 'search.json'), 'utf8')) as { items: unknown[][] };
+  assert.deepEqual(search.items.find((i) => i[0] === '000660'), ['000660', 'SK하이닉스', 'KOSPI', null, null, 1]);
   assert.match(await readFile(join(root, 'site', 'assets', 'lightweight-charts.js'), 'utf8'), /LightweightCharts/);
 });
 
