@@ -274,7 +274,7 @@ ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.c
 .signal-label.up,.hz-label.up{color:var(--up)}
 .panel{display:block}.panel[hidden]{display:none}.panel+.panel{margin-top:32px}.js-tabs .panel+.panel{margin-top:0}.js-tabs .panel-title{display:none}.panel-title{margin:0 0 12px}.panel:focus{outline:none}
 footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--muted);font-size:12px}footer p{margin:2px 0}
-.bottom-nav{display:none}
+.bottom-nav{display:none}.site-links{display:flex;flex-wrap:wrap;gap:6px 16px;max-width:1180px;margin:8px auto 0;padding:0 24px;font-size:12px;color:var(--muted)}.site-links a{color:var(--fg2)}
 @media (max-width:820px){.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom))}.bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--fg2);text-decoration:none;min-height:44px;justify-content:center}.bottom-nav svg{width:22px;height:22px}body:has(.bottom-nav){padding-bottom:64px}}
 .needle{transform-box:view-box;transform-origin:110px 104px;transform:rotate(var(--r));animation:settle 900ms var(--ease-out) 200ms both}
 @keyframes settle{from{transform:rotate(0deg)}}
@@ -309,9 +309,9 @@ export function shell(base: string, title: string, body: string, options: { tabs
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}${PLAN_CSS}</style></head><body data-base="${base}">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
-<nav class="top-links" aria-label="사이트"><a href="${rootHref}">홈</a>${options.homeHref ? `<a href="${options.homeHref}" class="tl-hide">최신</a>` : ''}${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
+<nav class="top-links" aria-label="사이트"><a href="${rootHref}">홈</a>${options.homeHref ? `<a href="${options.homeHref}" class="tl-hide">최신</a>` : ''}${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}scorecard.html" class="tl-hide">성적표</a><a href="${base}pricing.html" class="tl-hide">요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>
-<main id="main" tabindex="-1">${body}</main>${options.bottomNav ? bottomNav(base) : ''}${ACCOUNT_SCRIPT}${options.scripts ?? ''}</body></html>`;
+<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}scorecard.html">성적표</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav ? bottomNav(base) : ''}${ACCOUNT_SCRIPT}${options.scripts ?? ''}</body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */

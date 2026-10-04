@@ -105,7 +105,7 @@ function scorecard(entries: readonly HomeEntry[]): string {
   }
   const board = [...by.values()].filter((x) => x.scored > 0).sort((a, b) => b.hits / b.scored - a.hits / a.scored).slice(0, 3);
   const pending = [...by.values()].reduce((s, x) => s + x.pending, 0);
-  return `<section class="block"><div class="block-head"><h2>성적표</h2><span class="muted">무료 공개</span></div><div class="card sc-card">
+  return `<section class="block"><div class="block-head"><h2>성적표</h2><a href="scorecard.html" class="more-link">전체 보기 ›</a></div><div class="card sc-card">
 <div class="sc-k">예측 범위 적중</div>${fScored ? `<div class="sc-v">${Math.round((fInside / fScored) * 100)}%</div><div class="muted small">채점 ${fScored.toLocaleString('ko-KR')}건 · 10~90% 범위라 정직하면 80% 안팎이에요</div>` : `<div class="muted">아직 채점 전이에요. 예측은 기간이 지나면 실제 가격으로 채점해요.</div>`}
 <div class="sc-k" style="margin-top:14px">AI 분석가 방향 적중</div>${board.length ? `<ol class="sc-board">${board.map((x) => `<li><span>${esc(x.name)}</span><b>${Math.round((x.hits / x.scored) * 100)}%</b><span class="muted small">${x.scored}건</span></li>`).join('')}</ol>` : `<div class="muted">채점 대기 ${pending.toLocaleString('ko-KR')}건. 첫 채점은 예측 20거래일 뒤예요.</div>`}</div></section>`;
 }
