@@ -5,9 +5,10 @@
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim, Commentary } from '../analysis/commentary.js';
-import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
+import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow, horizonStrip, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { councilCard, DART_SCRIPT, hero, latestLists, marketStrip, priceChart, sparkline } from './appParts.js';
 import { analystBattle, arenaPanel, arenaTeaser, paperPanel } from './renderArena.js';
+import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 /** Pretendard web font, also served from our own site. */
@@ -175,6 +176,26 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .search-box svg{width:20px;height:20px;color:var(--muted);flex:none}.search-box input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:16px;padding:14px 0;color:var(--fg)}
 .search-results{margin-top:8px}.sr-row{align-items:center;gap:12px}.sr-row .ri-main{flex:1}.sr-price{font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}.sr-go{font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap;font-size:14px}.sr-go:hover{text-decoration:underline}.search-note{margin:8px 2px 0}
 @media (max-width:820px){.sr-price{display:none}}
+.pl-card{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:22px;align-items:start}
+.pl-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.pl-figure{position:relative;max-width:470px;margin:0 auto}
+.pl-svg{display:block;width:100%;height:auto;overflow:visible}
+.seat{cursor:pointer;stroke:#fff;stroke-width:.6;transition:opacity .2s ease,transform .2s ease;transform-box:fill-box;transform-origin:center;animation:seat-in .45s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--i) * 22ms)}
+.seat.s-bull{fill:#d1373d}.seat.s-neutral{fill:#a3acba}.seat.s-bear{fill:#2a62c9}.seat.s-abstain{fill:#fff;stroke:#a3acba;stroke-width:.9}
+.seat.f-ai,.seat.f-desk{stroke:#0f2244;stroke-width:1.1}
+.seat:hover,.seat:focus-visible{transform:scale(1.25);outline:none}.seat.is-on{transform:scale(1.35);stroke:#0f2244;stroke-width:1.6}.seat.is-dim{opacity:.15}
+@keyframes seat-in{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.seat{animation:none;transition:none}}
+.pl-center{position:absolute;left:50%;bottom:4px;transform:translateX(-50%);text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none}
+.pl-center b{font-size:22px;font-weight:800;letter-spacing:-.01em}.pl-center span{font-size:13px;color:var(--fg2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 3px 0 6px;vertical-align:0}.dot.s-bull{background:#d1373d}.dot.s-neutral{background:#a3acba}.dot.s-bear{background:#2a62c9}.dot.s-abstain{border:1.5px solid #a3acba}
+.pl-detail{border-left:1px solid var(--line);padding-left:20px;min-height:180px}.pl-detail p{margin:6px 0;font-size:14px;line-height:1.6}
+.pl-k{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.02em}.pl-name{display:flex;align-items:center;gap:8px;margin:4px 0 2px;font-size:17px}
+.badge.pl-bull{background:#fde8e6;color:#b4232a}.badge.pl-bear{background:#e3ecfb;color:#1f4fa8}.badge.pl-neutral,.badge.pl-abstain{background:#eef1f5;color:var(--fg2)}
+@media (max-width:820px){.pl-card{grid-template-columns:minmax(0,1fr)}.pl-detail{border-left:0;border-top:1px solid var(--line);padding:14px 0 0;min-height:0}.pl-center b{font-size:18px}}
+.hs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;padding:6px}.hs-cell{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border-left:1px solid var(--line);text-align:center;min-width:0}.hs-cell:first-child{border-left:0}
+.hs-k{font-size:12px;color:var(--muted);font-weight:600}.hs-cell b{font-size:15px;line-height:1.25;word-break:keep-all}.hs-sub{font-size:11px;color:var(--muted)}
+.hs-meter{position:relative;width:78%;height:6px;border-radius:3px;background:linear-gradient(90deg,#2a62c9,#c9d1dd 50%,#d1373d);margin:3px 0}.hs-meter i{position:absolute;top:-3px;width:4px;height:12px;margin-left:-2px;border-radius:2px;background:#0f2244}
+.home-more summary{font-weight:600}.home-more{margin-top:16px}
 /* kpis */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi .row{display:flex;align-items:center;gap:12px}
 .kpi .ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--accent-strong);background:var(--accent-soft)!important;flex:none}.kpi .ico svg{width:20px;height:20px}
@@ -209,7 +230,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--muted);fon
 @media (max-width:1100px){.analyst-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.desk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hz-row{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}.hero{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:820px){.analyst-grid{grid-template-columns:minmax(0,1fr)}.race-row{grid-template-columns:34px minmax(0,1fr) auto auto}.race-row .spark,.race-row .rn-total,.race-row .rn-sharpe{display:none}.champ-grid{grid-template-columns:minmax(0,1fr)}.arena-gauges{grid-template-columns:repeat(2,minmax(0,1fr))}.topbar-in{padding:10px 16px}.chips{padding:0 12px 8px}.chips a{padding:6px 12px;font-size:13px}.top-links .tl-hide{display:none}
 main{padding:14px 14px 48px}.hero{padding:22px 18px;border-radius:18px}.hero h1{font-size:30px}.hero-price b{font-size:28px}.orb{width:170px;height:170px;right:-50px;top:-40px}
-.strip{grid-template-columns:minmax(0,1fr)}.card{padding:14px;border-radius:14px}.list{padding:4px 14px}
+.si-value{font-size:17px;white-space:nowrap}.race-mini .race-row{grid-template-columns:30px minmax(0,1fr) auto;row-gap:2px}.race-mini .race-name .small{display:none}.race-mini .race-sig{grid-column:2/4;justify-self:start}.race-mini .race-num{flex-direction:row;gap:6px}.strip{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin:0 -14px;padding:2px 14px 6px;scrollbar-width:none}.strip::-webkit-scrollbar{display:none}.strip-item{flex:0 0 72%;scroll-snap-align:start}.home-lists .row-item:nth-child(n+4){display:none}.key-points ul{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.key-points li{flex-direction:column;gap:1px;padding:7px 0}.key-points li:nth-child(2){border-top:0}.key-points{padding:10px 14px}.hero .hero-line{display:none}.hs-cell b{font-size:13px}.hs-k{font-size:11px}.hs-sub{display:none}.card{padding:14px;border-radius:14px}.list{padding:4px 14px}
 .hz-row{grid-template-columns:repeat(2,minmax(0,1fr))}.value-head,.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .ico{display:none}.kpi .value{font-size:17px;white-space:nowrap}
 .col-filer,.col-cat,.col-date{display:none}.m-date.meta{display:flex}.moms{gap:8px}.mom{padding:10px}.mom .v{font-size:15px}.votes .why{display:none}.cur-price b{font-size:24px}.ind-group .label{width:100%}
 footer{padding:0 16px 32px}}
@@ -489,14 +510,13 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}
 ${m ? marketStatusWarning(m) : ''}
+${parliament(report, ctx.commentaryFrom ?? null) || councilCard(report.commentary, ctx.commentaryFrom ?? null)}
+${m ? `<section class="block"><div class="block-head"><h2>기간별 기술 신호</h2><a href="#tab-technical" class="more-link">게이지로 보기 ›</a></div>${horizonStrip(m.horizons)}</section>` : ''}
+<div class="grid-eq"><section class="block"><div class="block-head"><h2>적정가와 예측</h2><a href="#tab-technical" class="more-link">자세히 보기 ›</a></div>${m ? valueCard(m) : '<div class="card empty">아직 계산하지 않았어요.</div>'}</section>
+${m ? arenaTeaser(m.arena) : ''}</div>
 ${marketStrip(report)}
-${m ? `<section class="block"><div class="block-head"><h2>기간별 기술 신호</h2><a href="#tab-technical" class="more-link">자세히 보기 ›</a></div>${horizonRow(m.horizons).replace('<div class="card" id="horizons"><div class="head"><h2>기간별 신호</h2>', '<div class="card" id="horizons"><div class="head" style="display:none"><h2>기간별 신호</h2>')}</section>` : ''}
-${m ? arenaTeaser(m.arena) : ''}
-<div class="grid-eq">${councilCard(report.commentary, ctx.commentaryFrom ?? null)}
-<section class="block"><div class="block-head"><h2>적정가와 예측</h2><a href="#tab-technical" class="more-link">자세히 보기 ›</a></div>${m ? valueCard(m) : '<div class="card empty">아직 계산하지 않았어요.</div>'}</section></div>
-${latestLists(report)}
-<div class="grid-eq"><section class="block"><div class="block-head"><h2>오늘의 요약</h2></div><div class="card"><p class="headline">${escape(report.headline)}</p>${notes}</div></section>
-<section class="block"><div class="block-head"><h2>어제 대비 바뀐 점</h2></div><div class="card">${changes}</div></section></div>`;
+<div class="home-lists">${latestLists(report)}</div>
+<details class="card more home-more"><summary>오늘의 요약 · 어제 대비 바뀐 점</summary><div class="grid-eq" style="margin-top:10px"><div><p class="headline">${escape(report.headline)}</p>${notes}</div><div>${changes}</div></div></details>`;
   const chartTab = `${chart.html}<div style="margin-top:16px">${kpis(report)}</div>`;
   const technical = `${m ? arenaPanel(m.arena) : ''}<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${signalSection(report)}${m ? `<div class="grid-eq">${valueCard(m)}${forecastCard(m.forecasts, m.forecastScores)}</div><div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`;
   const flowsTab = m ? flowsPanel(m.flows, m.footprint) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>';
@@ -516,7 +536,7 @@ ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스). ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
-  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT, archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT, archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[], links: { base?: string; homeHref?: string; name?: string } = {}): string {

@@ -259,3 +259,15 @@ export function chartOverlays(market: MarketSection | undefined): unknown {
     fair: market.fairValue ? { low: market.fairValue.low, center: market.fairValue.center, high: market.fairValue.high } : null,
   };
 }
+
+/** Home-page version of the horizon gauges: one row of five cells, each a verdict and a −1…+1 meter. */
+export function horizonStrip(horizons: readonly HorizonGauge[]): string {
+  if (!horizons.length) return '';
+  const cells = horizons.map((h) => {
+    const s = h.summary;
+    const t = s.score === null ? '' : s.score >= 0.1 ? 'up' : s.score <= -0.1 ? 'down' : '';
+    const pos = s.score === null ? 50 : Math.round(((s.score + 1) / 2) * 100);
+    return `<div class="hs-cell" title="${esc(`${h.label} (${h.barLabel}, ${h.span}): ${s.label}, 강세 ${s.counts.bullish} · 약세 ${s.counts.bearish}`)}"><span class="hs-k">${esc(h.label)}</span><b class="${t}">${esc(s.label)}</b><span class="hs-meter" aria-hidden="true"><i style="left:${pos}%"></i></span><span class="hs-sub">${esc(h.barLabel)}</span></div>`;
+  }).join('');
+  return `<div class="card hs" role="group" aria-label="기간별 기술 신호">${cells}</div>`;
+}
