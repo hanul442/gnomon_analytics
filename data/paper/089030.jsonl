@@ -1,0 +1,8 @@
+{"symbol":"089030","date":"2026-10-02","close":55700,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
+{"symbol":"089030","date":"2026-10-02","close":55700,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"볼린저 반등"}
+{"symbol":"089030","date":"2026-10-02","close":55700,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"analyst:trend_momentum","label":"추세·모멘텀 PM","position":1,"basis":"강세"}
+{"symbol":"089030","date":"2026-10-02","close":55700,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"analyst:mean_reversion","label":"평균회귀 PM","position":0,"basis":"약세"}
+{"symbol":"089030","date":"2026-10-02","close":55700,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"analyst:wave_structure","label":"파동·구조 분석가","position":1,"basis":"강세"}
+{"symbol":"089030","date":"2026-10-02","close":55700,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"analyst:volume_flow","label":"거래량·수급 분석가","position":1,"basis":"강세"}
+{"symbol":"089030","date":"2026-10-02","close":55700,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"analyst:fundamental","label":"실적·밸류에이션 분석가","position":0,"basis":"중립"}
+{"symbol":"089030","date":"2026-10-02","close":55700,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"analyst:event_catalyst","label":"이벤트·뉴스 분석가","position":0,"basis":"중립"}
