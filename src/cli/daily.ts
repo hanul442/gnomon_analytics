@@ -37,6 +37,7 @@ import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVE
 
 const KST_MS = 9 * 60 * 60_000;
 const SETTLED_HOUR_KST = 18;
+const daysBetween = (from: string, to: string) => (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
 
 export function kstParts(at: Date): { date: string; compact: string; hour: number } {
   const kst = new Date(at.getTime() + KST_MS);
@@ -117,19 +118,27 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   let selected: string | null = null;
   const friday = new Date(Date.parse(`${today.date}T00:00:00Z`)).getUTCDay() === 5;
   // A missed Friday (failed run) is caught up by the next settled run once the selection is 8+ days old.
-  const stale = selection ? Date.parse(`${today.date}T00:00:00Z`) - Date.parse(`${selection.date}T00:00:00Z`) >= 8 * 86_400_000 : true;
+  const stale = selection ? daysBetween(selection.date, today.date) >= 8 : true;
   if (today.hour >= SETTLED_HOUR_KST && universe.rows?.length && (stale || (friday && selection!.date !== today.date))) {
     selection = await runSelection({ root, date: today.date, now, apiKey: options.apiKey, universe: universe.rows, core: options.tickers, ...(options.selectionParams ? { params: options.selectionParams } : {}), ...fetchOpt });
     selected = today.date;
   }
-  // Coverage: the always-covered stocks, then this week's picks. Picks get AI only on the day they are picked.
+  // Coverage: the always-covered stocks, then this week's picks (G-28: dated reports and AI once a week).
+  // Core stocks report on Friday's settled run, or the first settled run once their last report is 8+ days old.
+  // Picks get AI and a dated report only on the day they are picked; on other days every page is a live dashboard.
   const corpCodes = await readCorpCodes(root);
   const core = new Set(options.tickers.map((t) => t.symbol));
-  const jobs: { ticker: Ticker; tier: CommentaryTier | null }[] = [
-    ...options.tickers.map((t) => ({ ticker: t, tier: t.ai ? 'deep' as const : null })),
-    ...(selection?.picks ?? []).filter((p) => !core.has(p.symbol)).map((p) => ({ ticker: pickTicker(p, corpCodes), tier: selected ? p.tier : null })),
-  ];
-  // Requested stocks: a deep committee until one report has it, then daily dashboards only.
+  const weeklyDue = async (symbol: string) => {
+    const last = (await readdir(join(root, 'reports', symbol)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0, 10) < today.date).sort().at(-1)?.slice(0, 10);
+    return friday || !last || daysBetween(last, today.date) >= 8;
+  };
+  const jobs: { ticker: Ticker; tier: CommentaryTier | null; reportDay: boolean }[] = [];
+  for (const t of options.tickers) {
+    const due = await weeklyDue(t.symbol);
+    jobs.push({ ticker: t, tier: due && t.ai ? 'deep' : null, reportDay: due });
+  }
+  for (const p of (selection?.picks ?? []).filter((x) => !core.has(x.symbol))) jobs.push({ ticker: pickTicker(p, corpCodes), tier: selected ? p.tier : null, reportDay: selected !== null });
+  // Requested stocks: a deep committee right away until one report has it, then dashboards only.
   const listed: readonly ListedStock[] = universe.rows ?? await readListedStocks(root);
   const requested = new Set<string>();
   for (const r of options.requests ?? []) {
@@ -137,7 +146,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     if (!stock || jobs.some((j) => j.ticker.symbol === r.symbol)) continue;
     requested.add(r.symbol);
     const hasAi = (await loadReports(join(root, 'reports', r.symbol))).some((rep) => rep.commentary?.status === 'OK');
-    jobs.push({ ticker: pickTicker(stock, corpCodes), tier: hasAi ? null : 'deep' });
+    jobs.push({ ticker: pickTicker(stock, corpCodes), tier: hasAi ? null : 'deep', reportDay: !hasAi });
   }
   // Index and peer prices once, before the stocks run in parallel (each stock then writes only its own files).
   const benchStatus: NewsSourceStatus[] = [];
@@ -153,9 +162,9 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   const results: TickerResult[] = [];
   const failed: { symbol: string; error: string }[] = [];
   const lives = new Map<string, DailyReport>();
-  const run = async ({ ticker, tier }: (typeof jobs)[number]) => {
+  const run = async ({ ticker, tier, reportDay }: (typeof jobs)[number]) => {
     try {
-      const result = await runTicker(options, ticker, tier, core.has(ticker.symbol));
+      const result = await runTicker(options, ticker, tier, core.has(ticker.symbol), reportDay);
       result.marketStatus.push(...benchStatus.filter((st) => benchmarksFor(ticker).some((b) => st.source.endsWith(`:${b.symbol}`))));
       results.push(result);
     } catch (error) {
@@ -191,7 +200,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   return { results, failed, universeStatus: universe.status, selected };
 }
 
-async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTier | null, core: boolean): Promise<TickerResult> {
+async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTier | null, core: boolean, reportDay: boolean): Promise<TickerResult> {
   const { root, now } = options;
   const SYMBOL = ticker.symbol;
   const clock = () => now;
@@ -225,10 +234,20 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
       report = 'EXISTS';
     } else {
       const built = await composeReport(root, ticker, now, { newsStatus, marketStatus });
-      // When a dated report is kept (G-27): core stocks on trading days only (a holiday adds nothing and
-      // would spend an AI call); weekly picks and requests only on the day their AI runs.
-      const keep = core ? built.status === 'SESSION' : tier !== null;
-      if (!keep) return { symbol: SYMBOL, addedBars: addedBars.length, addedFilings: addedFilings.length, addedNews: addedNews.length, newsStatus, marketStatus, report: 'SKIPPED' };
+      // When a dated report is kept (G-27, G-28): on the weekly report day only, and for core stocks only
+      // on a trading day (a holiday adds nothing and would spend an AI call).
+      const session = built.status === 'SESSION';
+      const keep = reportDay && (!core || session);
+      // Core stocks still log forecasts and paper positions every trading day, report or not.
+      if (!keep) {
+        if (core && session && built.price && built.market) {
+          await appendUnseen(forecastPath, built.market.forecasts, forecastKey);
+          await appendUnseen(join(root, 'data', 'paper', `${SYMBOL}.jsonl`), paperEntries({
+            symbol: SYMBOL, sessionDate: built.price.sessionDate ?? today.date, close: built.price.close, arena: built.market.arena, recordedAt: now.toISOString(),
+          }), paperKey);
+        }
+        return { symbol: SYMBOL, addedBars: addedBars.length, addedFilings: addedFilings.length, addedNews: addedNews.length, newsStatus, marketStatus, report: 'SKIPPED' };
+      }
       // Forecasts are logged as made and never revised; a repeat of the same base session is skipped.
       await appendUnseen(forecastPath, built.market!.forecasts, forecastKey);
       // AI commentary never blocks the report: a failure is stored as status FAILED.

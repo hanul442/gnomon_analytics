@@ -85,7 +85,7 @@ function ring(score: number | null): string {
 
 export function councilCard(c: Commentary | undefined, from: string | null): string {
   if (!c || c.status !== 'OK') {
-    return `<section class="block"><div class="block-head"><h2>AI 위원회</h2></div><div class="card"><p class="empty">${c ? 'AI 해설을 만들지 못했어요.' : '아직 AI 위원회 해설이 없어요. 평일 18시 이후 리포트에서 만들어져요.'}</p></div></section>`;
+    return `<section class="block"><div class="block-head"><h2>AI 위원회</h2></div><div class="card"><p class="empty">${c ? 'AI 해설을 만들지 못했어요.' : '아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.'}</p></div></section>`;
   }
   const score = consensusScore(c);
   const label = score === null ? '판단 보류' : score >= 60 ? '강세 우위' : score <= 40 ? '약세 우위' : '팽팽함';

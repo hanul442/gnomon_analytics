@@ -562,7 +562,7 @@ ${marketStrip(report)}
     id: 'parliament-ai', title: 'AI 위원회 표결', factions: ['ai', 'desk'], link: null,
     note: '네이비 테두리 좌석은 분석가 6명, 나머지는 데스크 5곳이에요. 좌석을 누르면 판단·확신도·20거래일 뒤 예상가·근거·지난 성적이 나와요.',
   }) : '';
-  const aiTab = committee + (report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 평일 18시 이후 하루 한 번 만들어져요.</p>` : ''}${whySection(report, { committee: !!committee })}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 평일 18시 이후 리포트에서 만들어져요.</p></div>') + (m ? analystScores(m.analystBoard) : '');
+  const aiTab = committee + (report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : ''}${whySection(report, { committee: !!committee })}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>') + (m ? analystScores(m.analystBoard) : '');
   const newsTab = `${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const body = `${panel('home', home)}
@@ -585,7 +585,7 @@ export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headli
   const name = links.name ?? sorted[0]?.name ?? '';
   // The archive sits next to its reports/ folder, so report links are relative to it.
   const body = `<section class="hero" id="archive-top"><div class="orb" aria-hidden="true"></div><div class="hero-main"><div class="eyebrow"><span>지난 리포트</span><span>${sorted.length}건</span></div><h1>${escape(name)} 일일 리포트</h1>
-<p class="hero-line">평일 장 마감 뒤(18:30 KST)에 하루 한 번 만들고, 만든 뒤에는 고치지 않아요. 최신 데이터는 대시보드에서 볼 수 있어요.</p></div></section>
+<p class="hero-line">매주 금요일 장 마감 뒤(18:30 KST)에 한 번 만들고, 만든 뒤에는 고치지 않아요. 최신 데이터는 대시보드에서 볼 수 있어요.</p></div></section>
 <section class="block" id="archive"><div class="card list">${sorted.length ? sorted.map((r) => `<div class="row-item"><span class="badge ${r.status === 'SESSION' ? 'b-MEDIUM' : 'b-LOW'}">${r.status === 'SESSION' ? '거래일' : '휴장'}</span><div class="ri-main"><a href="reports/${escape(r.date)}.html">${escape(r.date)}</a><div class="muted small">${escape(r.headline)}</div></div></div>`).join('') : '<p class="empty">아직 리포트가 없어요.</p>'}</div></section>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 투자 권유가 아니에요.</p></footer>`;
   return shell(base, `${name} 지난 리포트 | Gnomon Analytics`, body, { archiveHref: 'archive.html', homeHref: links.homeHref ?? 'index.html' });
@@ -736,14 +736,14 @@ ${e.reasons?.length && e.group === 'weekly' ? `<ul class="sc-why">${e.reasons.sl
   const entries = all.filter((e) => e.group !== 'past');
   const core = entries.filter((e) => e.group === 'core'), weekly = entries.filter((e) => e.group === 'weekly'), requests = entries.filter((e) => e.group === 'request');
   const body = `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div><div class="hero-main"><div class="eyebrow"><span>리포트 ${entries.length}종목</span></div><h1>Gnomon Analytics</h1>
-<p class="hero-line">공개 데이터로 계산한 기술 신호·적정가·예측 범위와 AI 위원회 해설을 종목마다 매일 만들어요. 예측은 기록해 두고 나중에 채점해요.</p></div></section>
+<p class="hero-line">공개 데이터로 계산한 기술 신호·적정가·예측 범위와 AI 해설을 붙여요. 계산은 매일 갱신하고, AI 리포트는 매주 금요일에 써요. 예측은 기록해 두고 나중에 채점해요.</p></div></section>
 <section class="block search-block"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명·코드·초성 (예: 삼성, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
 <p class="muted small search-note">코스피·코스닥 상장 종목을 모두 찾을 수 있어요. 리포트가 없는 종목도 차트를 볼 수 있고, 분석은 요청하면 열려요.</p></section>
-<section class="block"><div class="block-head"><h2>매일 리포트</h2><span class="muted">평일 장 마감 뒤 AI 위원회까지</span></div><div class="stock-grid">${core.map(card).join('')}</div></section>
+<section class="block"><div class="block-head"><h2>대표 종목</h2><span class="muted">매주 금요일 AI 위원회 전체</span></div><div class="stock-grid">${core.map(card).join('')}</div></section>
 ${requests.length ? `<section class="block"><div class="block-head"><h2>요청한 리포트</h2><span class="muted">요청 뒤 첫 장 마감 리포트에 심층 AI 위원회</span></div><div class="stock-grid">${requests.map(card).join('')}</div></section>` : ''}
 ${weekly.length ? `<section class="block"><div class="block-head"><h2>이번 주 선정 ${weekly.length}종목</h2><span class="muted">${selection ? `${escape(selection.date)} 선정 · 시가총액 5,000억 원 이상 ${selection.eligible.toLocaleString('ko-KR')}종목 중` : ''}</span></div>
-<p class="muted small sel-note">거래대금, 최근 5거래일 움직임, 평소 대비 거래대금, 실적·주요 공시를 함께 점수로 매겨 매주 금요일에 골라요. 위쪽 종목은 심층 AI 위원회, 나머지는 요약 AI 위원회가 써요. 대시보드의 계산은 매일 갱신돼요.</p>
+<p class="muted small sel-note">시가총액, 거래대금, 실적·주요 공시, 최근 5거래일 움직임, 평소 대비 거래대금을 함께 점수로 매겨 매주 금요일에 골라요. 시가총액 최상위 종목은 AI 위원회 전체, 나머지는 짧은 AI 요약을 써요. 대시보드의 계산은 매일 갱신돼요.</p>
 <div class="stock-grid">${weekly.map(card).join('')}</div></section>` : ''}
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   return shell('', '종목 | Gnomon Analytics', body, { scripts: SEARCH_SCRIPT });

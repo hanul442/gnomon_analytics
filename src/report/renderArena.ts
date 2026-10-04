@@ -91,7 +91,7 @@ const STANCE = { BULLISH: ['강세', 'v-BULLISH'], BEARISH: ['약세', 'v-BEARIS
 export function analystBattle(board: readonly AnalystScore[], c: Commentary | undefined, baseClose: number | null): string {
   const views = c?.status === 'OK' ? c.analysts ?? [] : [];
   if (!views.length && !board.some((b) => b.latest)) {
-    return '<section class="block" id="analysts"><div class="block-head"><h2>AI 분석가 대결</h2></div><div class="card"><p class="empty">아직 분석가 예측이 없어요. 평일 18시 이후 리포트부터 매일 기록하고, 20거래일 뒤 실제 가격으로 채점해요.</p></div></section>';
+    return '<section class="block" id="analysts"><div class="block-head"><h2>AI 분석가 대결</h2></div><div class="card"><p class="empty">아직 분석가 예측이 없어요. 주간 리포트(금요일 장 마감 뒤)를 만들 때 기록하고, 20거래일 뒤 실제 가격으로 채점해요.</p></div></section>';
   }
   const anyScored = board.some((b) => b.scored > 0);
   const cards = ANALYSTS.map((a) => {
@@ -126,8 +126,8 @@ export function analystScores(board: readonly AnalystScore[]): string {
 /** Paper-trading ledger (G-21): each follower's virtual account, replayed from logged entries. */
 export function paperPanel(books: readonly PaperBook[] | undefined): string {
   const list = books ?? [];
-  const note = `<p class="fine">평일 18시 이후 리포트를 만들 때 따라 하는 쪽마다 "그날 종가부터 보유할지"를 기록하고 고치지 않아요. 수익은 다음 거래일부터 계산하고, 사고팔 때마다 비용 ${(ARENA_COST * 50).toFixed(3)}%를 빼요. 공매도는 하지 않아요. AI 분석가는 강세 판단이면 보유, 중립·약세면 현금이에요. 가상 계좌이고, 투자 권유가 아니에요.</p>`;
-  if (!list.length) return `<section class="block"><div class="block-head"><h2>모의투자 장부</h2></div><div class="card"><p class="empty">아직 기록이 없어요. 평일 18시 이후 첫 리포트부터 매일 기록해요.</p>${note}</div></section>`;
+  const note = `<p class="fine">장 마감 뒤 기록할 때마다 따라 하는 쪽마다 "그날 종가부터 보유할지"를 기록하고 고치지 않아요. 수익은 다음 거래일부터 계산하고, 사고팔 때마다 비용 ${(ARENA_COST * 50).toFixed(3)}%를 빼요. 공매도는 하지 않아요. AI 분석가는 강세 판단이면 보유, 중립·약세면 현금이에요. 가상 계좌이고, 투자 권유가 아니에요.</p>`;
+  if (!list.length) return `<section class="block"><div class="block-head"><h2>모의투자 장부</h2></div><div class="card"><p class="empty">아직 기록이 없어요. 장 마감 뒤 첫 기록부터 쌓여요.</p>${note}</div></section>`;
   const since = list.map((b) => b.since).sort()[0]!;
   const hold = list.find((b) => b.follower === 'hold');
   const rows = list.map((b) => {
