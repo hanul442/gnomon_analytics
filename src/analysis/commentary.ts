@@ -13,6 +13,9 @@ import type { DailyReport } from '../report/dailyReport.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystId } from './analysts.js';
 
 export const COMMENTARY_MODEL = 'claude-opus-5-5';
+/** Weekly picks outside the top tier (G-25): same committee, cheaper model and lower effort. */
+export const BRIEF_MODEL = 'claude-sonnet-5-5';
+export type CommentaryTier = 'deep' | 'brief';
 export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v2';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
@@ -43,6 +46,9 @@ export interface Commentary {
   generatedAt: string;
   /** Model that actually answered (differs when a server-side fallback ran). */
   servedBy?: string;
+  tier?: CommentaryTier;
+  /** Tokens billed, for cost tracking. */
+  usage?: { inputTokens: number; outputTokens: number };
   summary?: Claim;
   bullish: Claim[];
   bearish: Claim[];
@@ -210,8 +216,10 @@ function empty(status: Commentary['status'], generatedAt: Date, evidence: Eviden
   };
 }
 
-export async function writeCommentary(report: DailyReport, options: { client?: Anthropic; apiKey?: string; now?: () => Date } = {}): Promise<Commentary> {
+export async function writeCommentary(report: DailyReport, options: { client?: Anthropic; apiKey?: string; now?: () => Date; tier?: CommentaryTier } = {}): Promise<Commentary> {
   const now = (options.now ?? (() => new Date()))();
+  const tier = options.tier ?? 'deep';
+  const model = tier === 'deep' ? COMMENTARY_MODEL : BRIEF_MODEL;
   const evidence = buildEvidence(report);
   if (!options.client && !options.apiKey?.trim()) return empty('SKIPPED', now, evidence, 'ANTHROPIC_API_KEY_MISSING');
   if (!evidence.length) return empty('SKIPPED', now, evidence, 'NO_EVIDENCE');
@@ -224,12 +232,12 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
   };
   try {
     const response = await client.beta.messages.parse({
-      model: COMMENTARY_MODEL,
+      model,
       max_tokens: 16000,
       // Safety-classifier declines re-run on Anthropic's recommended fallback model.
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
-      output_config: { effort: 'medium', format: betaZodOutputFormat(CommentarySchema) },
+      output_config: { effort: tier === 'deep' ? 'medium' : 'low', format: betaZodOutputFormat(CommentarySchema) },
       system: system(report.name),
       messages: [{ role: 'user', content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.\n\n${JSON.stringify(input, null, 2)}` }],
     });
@@ -254,8 +262,9 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       kind: sc.kind, narrative, catalysts: sc.catalysts.map((c) => c.trim()).filter(Boolean), invalidation: sc.invalidation.map((c) => c.trim()).filter(Boolean),
     })));
     return {
-      status: 'OK', model: COMMENTARY_MODEL, promptVersion: COMMENTARY_PROMPT_VERSION, generatedAt: now.toISOString(),
-      servedBy: response.model,
+      status: 'OK', model, promptVersion: COMMENTARY_PROMPT_VERSION, generatedAt: now.toISOString(),
+      servedBy: response.model, tier,
+      ...(response.usage ? { usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens } } : {}),
       ...(summary ? { summary } : {}),
       bullish: clean(parsed.bullish), bearish: clean(parsed.bearish), uncertain: clean(parsed.uncertain), watch: clean(parsed.watch),
       dataGaps: parsed.dataGaps.map((g) => g.trim()).filter(Boolean),

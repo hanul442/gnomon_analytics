@@ -42,9 +42,9 @@ test('a daily run before 18:00 KST collects but does not freeze a report', async
   assert.deepEqual(result.newsStatus.map((st) => st.ok), [true, true, true]);
   // Stage A sources: all collected; 60 flow days + 1 snapshot + 10 finance periods + 5 research notes.
   assert.deepEqual(result.marketStatus.map((st) => [st.source, st.ok]), [
-    ['naver:fchart:week', true], ['naver:fchart:minute', true], ['naver:fchart:day:KOSPI', true], ['naver:fchart:day:005930', true], ['naver:m-stock', true],
+    ['naver:fchart:week', true], ['naver:fchart:minute', true], ['naver:m-stock', true], ['naver:fchart:day:KOSPI', true], ['naver:fchart:day:005930', true],
   ]);
-  assert.equal(result.marketStatus.at(-1)!.count, 60 + 1 + 10 + 5);
+  assert.equal(result.marketStatus.find((st) => st.source === 'naver:m-stock')!.count, 60 + 1 + 10 + 5);
 });
 
 test('a settled run writes the report once and renders the site', async () => {
