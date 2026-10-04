@@ -20,6 +20,12 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: main
+      # A queued run must start from the data the previous run pushed, not from
+      # the commit it was triggered on, or its push is rejected.
+      - name: Start from the latest data
+        run: git pull --ff-only origin main
       - uses: actions/setup-node@v5
         with:
           node-version: 22
