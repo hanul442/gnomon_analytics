@@ -1,5 +1,5 @@
 {
- "at": "2026-10-04T10:47:36.903Z",
+ "at": "2026-10-04T11:29:19.608Z",
  "selected": null,
  "universe": [
   {
@@ -10,7 +10,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2705,
+   "count": 2703,
    "error": "27 failed "
   }
  ],
@@ -193,6 +193,16 @@
   {
    "symbol": "452190",
    "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "003490",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "439090",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
