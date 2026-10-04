@@ -16,6 +16,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { CHART_ASSET, FONT_DIR, renderIndex, renderReport, renderStockPage, type HomeEntry } from '../report/renderHtml.js';
 import { renderHome, type IndexQuote } from '../report/renderHome.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
+import { renderScorecard, renderTerms } from '../report/renderScorecard.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE } from '../sources/opendart.js';
 import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
@@ -402,6 +403,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'stock.html'), renderStockPage());
   await writeFile(join(siteDir, 'pricing.html'), renderPricing());
   await writeFile(join(siteDir, 'checkout.html'), renderCheckout());
+  await writeFile(join(siteDir, 'scorecard.html'), renderScorecard(home.filter((e) => e.group !== 'past')));
+  await writeFile(join(siteDir, 'terms.html'), renderTerms());
   // Index quotes for the front page, from the stored index prices.
   const indices: IndexQuote[] = [];
   for (const [symbol, name] of [['KOSPI', '코스피'], ['KOSDAQ', '코스닥']] as const) {
