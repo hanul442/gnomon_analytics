@@ -27,7 +27,8 @@ import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { aliasPattern, benchmarksFor, loadTickers, type Ticker } from '../config/tickers.js';
-import { collectUniverse, readCorpCodes, readListedStocks } from './universe.js';
+import { collectUniverse, readCorpCodes, readListedStocks, type ListedStock } from './universe.js';
+import { loadRequests, type ReportRequest } from '../config/requests.js';
 import { latestSelection, pickTicker, pool, runSelection } from './weekly.js';
 import type { Selection, SelectionParams } from '../analysis/selection.js';
 import type { UniverseRow } from '../sources/naverList.js';
@@ -103,7 +104,7 @@ export interface DailyRunResult {
   selected: string | null;
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; concurrency?: number; selectionParams?: SelectionParams }): Promise<DailyRunResult> {
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams }): Promise<DailyRunResult> {
   const { root, now } = options;
   const today = kstParts(now);
   const fetchOpt = options.fetch ? { fetch: options.fetch } : {};
@@ -125,6 +126,16 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     ...options.tickers.map((t) => ({ ticker: t, tier: t.ai ? 'deep' as const : null })),
     ...(selection?.picks ?? []).filter((p) => !core.has(p.symbol)).map((p) => ({ ticker: pickTicker(p, corpCodes), tier: selected ? p.tier : null })),
   ];
+  // Requested stocks: a deep committee until one report has it, then daily dashboards only.
+  const listed: readonly ListedStock[] = universe.rows ?? await readListedStocks(root);
+  const requested = new Set<string>();
+  for (const r of options.requests ?? []) {
+    const stock = listed.find((x) => x.symbol === r.symbol);
+    if (!stock || jobs.some((j) => j.ticker.symbol === r.symbol)) continue;
+    requested.add(r.symbol);
+    const hasAi = (await loadReports(join(root, 'reports', r.symbol))).some((rep) => rep.commentary?.status === 'OK');
+    jobs.push({ ticker: pickTicker(stock, corpCodes), tier: hasAi ? null : 'deep' });
+  }
   // Index and peer prices once, before the stocks run in parallel (each stock then writes only its own files).
   const benchStatus: NewsSourceStatus[] = [];
   const benches = [...new Map(jobs.flatMap((j) => benchmarksFor(j.ticker)).map((b) => [b.symbol, b])).values()];
@@ -159,7 +170,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   }
   if (!results.length) throw new Error(`every stock failed: ${failed.map((f) => `${f.symbol} ${f.error}`).join('; ')}`);
   results.sort((a, b) => jobs.findIndex((j) => j.ticker.symbol === a.symbol) - jobs.findIndex((j) => j.ticker.symbol === b.symbol));
-  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection);
+  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested);
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
   await mkdir(join(root, 'data', 'status'), { recursive: true });
@@ -308,7 +319,7 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  * dashboard (live when this run built one, else its latest dated report),
  * <symbol>/archive.html its dated reports and <symbol>/reports/<date>.html each one.
  */
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set()): Promise<void> {
   const siteDir = join(root, 'site');
   const home: HomeEntry[] = [];
   // Stocks picked in earlier weeks keep their pages (latest dated report), off the front page.
@@ -342,7 +353,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
       await writeFile(join(dir, 'index.html'), renderIndex(reports, { base: '../', name: ticker.name }));
     }
     const pick = picks.get(ticker.symbol);
-    const group = past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : 'core';
+    const group = past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : requested.has(ticker.symbol) ? 'request' : 'core';
     home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : {}) });
   }
   await writeFile(join(siteDir, 'index.html'), renderHome(home, selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null));
@@ -378,9 +389,9 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
 if (import.meta.url === `file://${process.argv[1]}`) {
   const rootFlag = process.argv.indexOf('--root');
   const root = rootFlag >= 0 ? process.argv[rootFlag + 1] ?? '.' : '.';
-  loadTickers(join(root, 'tickers.json'))
-    .then((tickers) => runDaily({
-      root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '', tickers,
+  Promise.all([loadTickers(join(root, 'tickers.json')), loadRequests(join(root, 'requests.json'))])
+    .then(([tickers, requests]) => runDaily({
+      root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '', tickers, requests,
       naver: { clientId: process.env.NAVER_CLIENT_ID ?? '', clientSecret: process.env.NAVER_CLIENT_SECRET ?? '' },
       anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
     }))
