@@ -88,7 +88,8 @@ td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}td a{
 .why-col h3,.why-h{font-size:14px;margin:0 0 6px}.why-h{margin-top:16px}.bull h3{color:var(--up)}.bear h3{color:var(--down)}.unc h3{color:var(--muted)}
 ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.chips{white-space:nowrap}
 .chip{display:inline-block;font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.chip:hover{background:var(--teal);color:#fff}
-.evid li{font-size:13px}
+.evid li{font-size:13px}.desk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.desk-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}.desk-grid p,.why-grid p{margin:4px 0;font-size:14px}
+.red-team{margin-top:12px;border-left:4px solid var(--warn);background:#fff8ec;border-radius:0 10px 10px 0;padding:10px 14px}.red-team h3{font-size:14px;margin:0 0 4px;color:#7a4a00}.red-team p{margin:4px 0}
 .story{padding:12px 0;border-top:1px solid var(--line)}.story:first-of-type{border-top:0}.story-title{font-weight:600;margin:4px 0 2px}.story-title a{text-decoration:none}.story-title a:hover{text-decoration:underline}
 .tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px}.more summary{cursor:pointer;color:var(--teal);font-size:13px;margin-top:4px}
 .warn{background:#fff3dc;color:#7a4a00;border-radius:10px;padding:8px 12px;font-size:13px}
@@ -131,7 +132,7 @@ table.compact td,table.compact th{padding:6px 8px}.grid2.tight{margin-top:0}.res
 .needle{transform-box:view-box;transform-origin:110px 104px;transform:rotate(var(--r));animation:settle 900ms var(--ease-out) 200ms both}
 @keyframes settle{from{transform:rotate(0deg)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-@media (max-width:1100px){.hz-row{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1100px){.desk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hz-row{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:820px){.app{grid-template-columns:minmax(0,1fr);padding:0;gap:0}
 .side{position:static;height:auto;border-radius:0;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;flex-wrap:wrap}
 .side .foot{display:none}.nav{flex-direction:row;gap:2px;overflow-x:auto}.nav a{padding:8px 12px;font-size:13px;white-space:nowrap}.nav a svg{display:none}
@@ -456,7 +457,7 @@ function whySection(report: DailyReport): string {
   if (!c) return '';
   if (c.status !== 'OK') {
     const reason = c.error ? (COMMENTARY_FAIL[c.error] ?? (c.error.startsWith('REFUSAL') ? 'AI가 해설 작성을 거절했어요' : 'AI 호출에 실패했어요')) : '';
-    return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2></div><p class="empty">AI 해설이 없어요${reason ? `: ${escape(reason)}` : ''}. 위의 지표와 공시, 뉴스를 직접 확인해 주세요.</p></div>`;
+    return `<div class="card" id="why"><div class="head"><h2>AI 위원회 해설</h2></div><p class="empty">AI 해설이 없어요${reason ? `: ${escape(reason)}` : ''}. 위의 지표와 공시, 뉴스를 직접 확인해 주세요.</p></div>`;
   }
   const byId = new Map(c.evidence.map((e) => [e.id, e]));
   const chips = (ids: readonly string[]) => ids.map((id) => {
@@ -468,10 +469,21 @@ function whySection(report: DailyReport): string {
   const list = (claims: readonly Claim[], emptyText: string) => (claims.length
     ? `<ul class="claims">${claims.map((cl) => `<li>${escape(cl.text)} <span class="chips">${chips(cl.evidenceIds)}</span></li>`).join('')}</ul>`
     : `<p class="empty">${emptyText}</p>`);
+  const DESK = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDAMENTAL: '펀더멘털', EVENT: '공시·뉴스' } as const;
+  const STANCE = { BULLISH: ['강세', 'up'], BEARISH: ['약세', 'down'], NEUTRAL: ['중립', ''], INSUFFICIENT_DATA: ['근거 부족', 'muted'] } as const;
+  const desks = c.desks?.length ? `<h3 class="why-h">데스크별 의견</h3><div class="desk-grid">${c.desks.map((d) => `<div class="why-col"><div class="desk-top"><b>${DESK[d.desk]}</b><span class="${STANCE[d.stance][1]}">${STANCE[d.stance][0]}</span></div><p>${escape(d.view.text)} <span class="chips">${chips(d.view.evidenceIds)}</span></p></div>`).join('')}</div>` : '';
+  const red = c.redTeam ? `<div class="red-team"><h3>레드팀 반론</h3><p>${escape(c.redTeam.counterargument.text)} <span class="chips">${chips(c.redTeam.counterargument.evidenceIds)}</span></p>${c.redTeam.unresolved.length ? `<p class="why">풀리지 않은 이견: ${c.redTeam.unresolved.map(escape).join(', ')}</p>` : ''}</div>` : '';
+  const SC = { BULL: ['강세 시나리오', 'bull'], BASE: ['기본 시나리오', 'unc'], BEAR: ['약세 시나리오', 'bear'] } as const;
+  const scenarios = c.scenarios?.length ? `<h3 class="why-h">시나리오</h3><div class="why-grid">${(['BULL', 'BASE', 'BEAR'] as const).map((k) => {
+    const sc = c.scenarios!.find((x) => x.kind === k);
+    return `<div class="why-col ${SC[k][1]}"><h3>${SC[k][0]}</h3>${sc ? `<p>${escape(sc.narrative.text)} <span class="chips">${chips(sc.narrative.evidenceIds)}</span></p>
+${sc.catalysts.length ? `<p class="why"><b>촉매</b> ${sc.catalysts.map(escape).join(', ')}</p>` : ''}${sc.invalidation.length ? `<p class="why"><b>무효화 조건</b> ${sc.invalidation.map(escape).join(', ')}</p>` : ''}` : '<p class="empty">근거가 있는 시나리오를 쓰지 못했어요.</p>'}</div>`;
+  }).join('')}</div>` : '';
   const legend = c.evidence.map((e) => `<li><b>${escape(e.id)}</b> ${e.url.startsWith('http') ? `<a href="${escape(e.url)}" rel="noopener" target="_blank">${escape(e.label)}</a>` : escape(e.label)}</li>`).join('');
-  return `<div class="card" id="why" style="margin-top:16px"><div class="head"><h2>왜?</h2><span class="sub" style="margin:0">AI 해설, 오늘 리포트의 근거만 인용해요</span></div>
+  return `<div class="card" id="why"><div class="head"><h2>AI 위원회 해설</h2><span class="sub" style="margin:0">데스크 5곳과 레드팀이 오늘 리포트의 근거만 인용해요</span></div>
 ${c.summary ? `<p class="headline">${escape(c.summary.text)} <span class="chips">${chips(c.summary.evidenceIds)}</span></p>` : ''}
-<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
+${desks}${red}${scenarios}
+${desks || scenarios ? '<h3 class="why-h">근거 정리</h3>' : ''}<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
 <div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish, '찾지 못했어요.')}</div>
 <div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain, '없어요.')}</div></div>
 <h3 class="why-h">판단이 바뀔 수 있는 것</h3>${list(c.watch, '없어요.')}
