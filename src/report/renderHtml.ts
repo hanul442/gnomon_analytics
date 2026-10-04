@@ -17,12 +17,12 @@ const won = (value: number): string => `${Math.round(value).toLocaleString('ko-K
 const pct = (value: number | null): string => (value === null ? '없음' : `${value > 0 ? '+' : ''}${value.toFixed(2)}%`);
 const tone = (value: number | null): string => (value === null || value === 0 ? '' : value > 0 ? 'up' : 'down');
 const IMPORTANCE_LABEL = { HIGH: '중요', MEDIUM: '보통', LOW: '참고' } as const;
-const MIX_COLORS = ['#1f7a74', '#36b3a8', '#7fd3ca', '#b9e8e2', '#5b8f8b', '#d5efeb'];
+const MIX_COLORS = ['#8f6c3a', '#b08d57', '#d4b67e', '#e8d7b2', '#6b6f78', '#f3ead8'];
 /** Meta details as separate items (spacing, not "·" chains). */
 const meta = (parts: readonly string[], cls = 'meta'): string => `<span class="${cls}">${parts.filter(Boolean).map((part) => `<span>${part}</span>`).join('')}</span>`;
 
 const ICON = {
-  logo: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M16 16 L16 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M16 16 L25 21" stroke="#c9f27f" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  logo: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M16 16 L16 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M16 16 L25 21" stroke="#b08d57" stroke-width="2.4" stroke-linecap="round"/></svg>',
   dashboard: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 12l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   archive: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   filing: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 12h6M10 16h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -41,38 +41,38 @@ const ICON = {
 };
 
 const STYLE = `
-:root{--frame:#dfe9e7;--surface:#ffffff;--card:#f6f8f8;--line:#e6eceb;--fg:#18201f;--muted:#6a7673;
---side:#1f5f5b;--side-fg:#d9ebe9;--pill:#c9f27f;--pill-fg:#173b38;--teal:#1f7a74;--teal-soft:#e3f1ef;
---up:#e0383e;--down:#2b6fd6;--warn:#c07a12;--focus:#1f7a74;--ease-out:cubic-bezier(.16,1,.3,1)}
+:root{--frame:#f6f2ea;--surface:#ffffff;--card:#fcfaf6;--line:#ebe4d6;--fg:#1b2230;--muted:#7b7f87;
+--accent:#a8834a;--accent-strong:#8a6a37;--accent-soft:#f6eedf;--gold-grad:linear-gradient(135deg,#d4b67e 0%,#b08d57 55%,#8f6c3a 100%);
+--up:#d1373d;--down:#2a62c9;--warn:#b07a1e;--focus:#a8834a;--serif:"Noto Serif KR","Nanum Myeongjo","AppleMyungjo",serif;--ease-out:cubic-bezier(.16,1,.3,1)}
 *{box-sizing:border-box}html{color-scheme:light}html,body{margin:0}body{background:var(--frame);color:var(--fg);
 font:15px/1.6 "Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
 -webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
 a{color:inherit}button,a{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-:focus-visible{outline:2px solid var(--focus);outline-offset:2px}.side :focus-visible{outline-color:var(--pill)}
-.skip{position:absolute;left:16px;top:16px;z-index:10;background:var(--pill);color:var(--pill-fg);padding:8px 14px;border-radius:999px;font-weight:600;text-decoration:none;transform:translateY(-200%);transition:transform 150ms var(--ease-out)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.skip{position:absolute;left:16px;top:16px;z-index:10;background:var(--gold-grad);color:#fff;padding:8px 14px;border-radius:999px;font-weight:600;text-decoration:none;transform:translateY(-200%);transition:transform 150ms var(--ease-out)}
 .skip:focus{transform:none}[id]{scroll-margin-top:16px}h1,h2,h3{text-wrap:balance}p,li{text-wrap:pretty}
 .meta{display:inline-flex;flex-wrap:wrap;gap:2px 12px}.m-date.meta{display:none}.app{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;max-width:1440px;margin:0 auto;padding:16px;min-height:100vh}
-.side{background:var(--side);color:var(--side-fg);border-radius:18px;padding:24px 16px;position:sticky;top:16px;height:calc(100vh - 32px);display:flex;flex-direction:column;gap:28px}
-.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:18px;padding:0 8px}.brand svg{width:30px;height:30px}
-.brand small{display:block;font-weight:500;font-size:12px;color:var(--side-fg)}
+.side{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:18px;padding:24px 16px;position:sticky;top:16px;height:calc(100vh - 32px);display:flex;flex-direction:column;gap:28px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--fg);padding:0 8px;text-decoration:none}.brand svg{width:30px;height:30px;color:var(--fg)}
+.brand b{display:block;font-family:var(--serif);font-weight:600;font-size:19px;letter-spacing:.14em}.brand small{display:block;font-size:11px;color:var(--accent);letter-spacing:.08em}
 .nav{display:flex;flex-direction:column;gap:6px}.nav a{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:999px;text-decoration:none;font-size:15px}
-.nav a{transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.nav a svg{width:20px;height:20px;flex:none}.nav a:hover{background:rgba(255,255,255,.1)}.nav a.active{background:var(--pill);color:var(--pill-fg);font-weight:600}
-.side .foot{margin-top:auto;font-size:12px;color:var(--side-fg);opacity:.8;padding:0 8px}
-main{background:var(--surface);border-radius:18px;padding:20px 28px 40px;min-width:0}
+.nav a{transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.nav a svg{width:20px;height:20px;flex:none}.nav a{color:#4a505a}.nav a:hover{background:var(--accent-soft);color:var(--fg)}.nav a.active{background:var(--gold-grad);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(143,108,58,.25)}
+.side .foot{margin-top:auto;font-size:12px;color:var(--muted);padding:0 8px;border-top:1px solid var(--line);padding-top:14px}
+main{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 28px 40px;min-width:0}
 .top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .ticker{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:10px;padding:8px 14px;font-weight:600}.ticker span{color:var(--muted);font-weight:500}
 .stamp{color:var(--muted);font-size:13px;text-align:right}
-h1{font-size:28px;margin:24px 0 4px;letter-spacing:-.01em}.sub{color:var(--muted);margin:0 0 20px}
+h1{font-family:var(--serif);font-weight:600;font-size:34px;margin:0 0 6px;letter-spacing:-.01em}.sub{color:var(--muted);margin:0 0 20px}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-.card{background:var(--card);border-radius:14px;padding:18px 20px;min-width:0}
-.kpi .row{display:flex;align-items:center;gap:12px}.kpi .ico{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;color:#fff;flex:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;min-width:0;box-shadow:0 1px 2px rgba(27,34,48,.03)}
+.kpi .row{display:flex;align-items:center;gap:12px}.kpi .ico{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;color:var(--accent-strong);background:var(--accent-soft)!important;flex:none}
 .kpi .ico svg{width:22px;height:22px}.kpi .label{color:var(--muted);font-size:13px}.kpi .value{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px}
 .kpi .value svg{width:20px;height:20px}.kpi .hint{color:var(--muted);font-size:13px;margin-top:14px}
 .up{color:var(--up)}.down{color:var(--down)}
 .grid2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;margin-top:16px}.grid-eq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
-.card h2{font-size:18px;margin:0;font-weight:650}.head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.card h2{font-family:var(--serif);font-size:18px;margin:0;font-weight:600}.head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .seg{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px}.seg button{border:0;background:none;padding:5px 12px;border-radius:999px;font:inherit;font-size:13px;color:var(--muted);cursor:pointer}
-.seg button{transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.seg button:hover{color:var(--fg);background:var(--teal-soft)}.seg button[aria-pressed=true]{background:var(--side);color:#fff}.seg button:active{transform:scale(.97)}
+.seg button{transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.seg button:hover{color:var(--fg);background:var(--accent-soft)}.seg button[aria-pressed=true]{background:var(--gold-grad);color:#fff}.seg button:active{transform:scale(.97)}
 .legend-line{font-size:13px;color:var(--muted);min-height:20px;font-variant-numeric:tabular-nums}
 #chart{height:340px;position:relative}#chart svg{width:100%;height:100%}
 .donut{display:flex;flex-direction:column;align-items:center;gap:16px}.donut svg{width:180px;height:180px}
@@ -82,16 +82,16 @@ h1{font-size:28px;margin:24px 0 4px;letter-spacing:-.01em}.sub{color:var(--muted
 table{width:100%;border-collapse:collapse;font-size:14px}th{text-align:left;color:var(--muted);font-weight:500;font-size:13px;padding:10px 8px;border-bottom:1px solid var(--line)}
 td{padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}td a{text-decoration:none;font-weight:500}td a:hover{text-decoration:underline}
 .why{color:var(--muted);font-size:13px;margin-top:2px}.badge{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;white-space:nowrap}
-.b-HIGH{background:#fde8e6;color:#b4232a}.b-MEDIUM{background:#fff3dc;color:var(--warn)}.b-LOW{background:#eef1f0;color:var(--muted)}.b-new{background:var(--pill);color:var(--pill-fg);margin-left:6px}
+.b-HIGH{background:#fde8e6;color:#b4232a}.b-MEDIUM{background:#fff3dc;color:var(--warn)}.b-LOW{background:#eef1f0;color:var(--muted)}.b-new{background:var(--accent-soft);color:var(--accent-strong);margin-left:6px;border:1px solid #e6d5b4}
 .table-wrap{overflow-x:auto}
 .why-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}.why-col{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
 .why-col h3,.why-h{font-size:14px;margin:0 0 6px}.why-h{margin-top:16px}.bull h3{color:var(--up)}.bear h3{color:var(--down)}.unc h3{color:var(--muted)}
 ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.chips{white-space:nowrap}
-.chip{display:inline-block;font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.chip:hover{background:var(--teal);color:#fff}
+.chip{display:inline-block;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}.chip:hover{background:var(--accent);color:#fff}
 .evid li{font-size:13px}.desk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.desk-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}.desk-grid p,.why-grid p{margin:4px 0;font-size:14px}
 .red-team{margin-top:12px;border-left:4px solid var(--warn);background:#fff8ec;border-radius:0 10px 10px 0;padding:10px 14px}.red-team h3{font-size:14px;margin:0 0 4px;color:#7a4a00}.red-team p{margin:4px 0}
 .story{padding:12px 0;border-top:1px solid var(--line)}.story:first-of-type{border-top:0}.story-title{font-weight:600;margin:4px 0 2px}.story-title a{text-decoration:none}.story-title a:hover{text-decoration:underline}
-.tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px}.more summary{cursor:pointer;color:var(--teal);font-size:13px;margin-top:4px}
+.tag{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:0 8px}.more summary{cursor:pointer;color:var(--accent);font-size:13px;margin-top:4px}
 .warn{background:#fff3dc;color:#7a4a00;border-radius:10px;padding:8px 12px;font-size:13px}
 .grid-signal{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;margin-bottom:16px}
 .signal{text-align:center}.gauge{width:100%;max-width:260px;display:block;margin:0 auto}.signal-label{font-size:24px;font-weight:700;margin:4px 0}
@@ -101,12 +101,19 @@ ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.c
 .gbars{display:grid;gap:12px;margin-top:16px}.gtitle{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
 .track{display:flex;height:12px;border-radius:999px;overflow:hidden;background:#eef1f0;gap:2px}.track i{display:block;height:100%}
 .track i.v-BULLISH{background:#e5484d}.track i.v-BEARISH{background:#3b7be0}.track i.v-NEUTRAL{background:#c4cbc9}.track i.b-LOW{background:#e6eceb}
-.votes{margin-top:14px}.votes td{padding:8px}.votes summary{cursor:pointer;color:var(--teal);font-weight:600;font-size:14px}.votes table{margin-top:8px}
+.votes{margin-top:14px}.votes td{padding:8px}.votes summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px}.votes table{margin-top:8px}
 .num{font-variant-numeric:tabular-nums;white-space:nowrap}.v-BULLISH{background:#fde8e6;color:#b4232a}.v-BEARISH{background:#e3ecfb;color:#1d4fa3}.v-NEUTRAL{background:#eef1f0;color:var(--muted)}.nowrap{white-space:nowrap}.m-date{display:none;color:var(--muted);font-size:12px}
 footer{margin-top:28px;color:var(--muted);font-size:12px}footer p{margin:2px 0}
+.hero{position:relative;overflow:hidden;margin:16px 0 18px;padding:26px 28px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(120deg,#fffdf9 0%,#f7f0e3 60%,#efe4cf 100%)}
+.hero .eyebrow{font-size:12px;color:var(--accent-strong);font-weight:600;margin-bottom:6px}.hero .sub{margin:0;max-width:62ch;position:relative}.hero h1{position:relative}
+.hero-meta{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:12px;font-size:13px;color:var(--muted);position:relative}.hero-meta b{color:var(--fg);font-variant-numeric:tabular-nums}
+.orb{position:absolute;right:-30px;top:50%;width:210px;height:210px;transform:translateY(-50%);border-radius:50%;pointer-events:none;
+background:radial-gradient(circle at 34% 30%,#ffffff 0%,#fbf6ec 22%,#ead9b8 52%,#c7a774 78%,#9c7b48 100%);box-shadow:inset -18px -24px 40px rgba(120,90,40,.25),0 18px 40px rgba(143,108,58,.18);opacity:.9}
+.orb::after{content:"";position:absolute;inset:18% 30% 52% 22%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,255,255,0) 70%)}
+.panel-title,.big,.signal-label,.hz-label,.why-col h3,.red-team h3{font-family:var(--serif)}
 .tabs{display:flex;gap:4px;margin:4px 0 16px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
 .tabs a{padding:10px 14px;text-decoration:none;color:var(--muted);font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;transition:color 150ms var(--ease-out),border-color 150ms var(--ease-out)}
-.tabs a:hover{color:var(--fg)}.tabs a[aria-selected=true]{color:var(--fg);border-bottom-color:var(--teal)}
+.tabs a:hover{color:var(--fg)}.tabs a[aria-selected=true]{color:var(--fg);border-bottom-color:var(--accent)}
 .panel{display:block}.panel[hidden]{display:none}.panel+.panel{margin-top:28px}.js-tabs .panel+.panel{margin-top:0}.js-tabs .panel-title{display:none}
 .panel-title{font-size:20px;margin:0 0 12px}.panel:focus{outline:none}
 .hz-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
@@ -117,26 +124,29 @@ footer{margin-top:28px;color:var(--muted);font-size:12px}footer p{margin:2px 0}
 .value-head{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:6px}.value-head .label,.facts .label{display:block;color:var(--muted);font-size:12px}
 .big{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}.mid{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
 .value-strip{width:100%;height:auto;display:block;margin:6px 0}.value-strip text{font-size:11px;fill:var(--muted)}.vs-axis{stroke:var(--line);stroke-width:2}
-.vs-band{fill:var(--teal-soft);stroke:#9fd1cb}.vs-center line{stroke:var(--teal);stroke-width:2}.vs-close line{stroke:var(--fg);stroke-width:3}.vs-cons line{stroke:#7a4fb3;stroke-width:2;stroke-dasharray:3 3}.vs-p50 line{stroke:#d97706;stroke-width:2;stroke-dasharray:3 3}
+.vs-band{fill:var(--accent-soft);stroke:#d9c39a}.vs-center line{stroke:var(--accent);stroke-width:2}.vs-close line{stroke:var(--fg);stroke-width:3}.vs-cons line{stroke:#7a4fb3;stroke-width:2;stroke-dasharray:3 3}.vs-p50 line{stroke:#d97706;stroke-width:2;stroke-dasharray:3 3}
 .facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:10px}.facts.one{grid-template-columns:1fr;margin-top:10px}.facts b{font-variant-numeric:tabular-nums}
 .overlay-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-4px 0 8px}.overlay-row .label{color:var(--muted);font-size:12px;margin-right:2px}
 .chip-toggle{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 10px;font:inherit;font-size:12px;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}
-.chip-toggle i{display:inline-block;width:10px;height:3px;border-radius:2px}.chip-toggle[aria-pressed=true]{background:var(--teal-soft);color:var(--fg);border-color:#9fd1cb}.chip-toggle:hover{color:var(--fg)}
-.flow-chart,.earn-chart{width:100%;height:auto;display:block}.flow-chart .zero,.earn-chart .zero{stroke:#c4cbc9;stroke-width:1}.flow-chart .hit{fill:transparent}.flow-chart .hit:hover{fill:rgba(31,122,116,.08)}
+.chip-toggle i{display:inline-block;width:10px;height:3px;border-radius:2px}.chip-toggle[aria-pressed=true]{background:var(--accent-soft);color:var(--fg);border-color:#d9c39a}.chip-toggle:hover{color:var(--fg)}
+.flow-chart,.earn-chart{width:100%;height:auto;display:block}.flow-chart .zero,.earn-chart .zero{stroke:#c4cbc9;stroke-width:1}.flow-chart .hit{fill:transparent}.flow-chart .hit:hover{fill:rgba(168,131,74,.08)}
 .flow-label{font-size:12px;fill:var(--fg);font-weight:600}.axis-label{font-size:11px;fill:var(--muted)}
 .legend-inline{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}.legend-inline i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .b-rev{fill:#00968a}.b-op{fill:#7a4fb3}.b-rev.est{fill:url(#hatch);color:#00968a;stroke:#00968a}.b-op.est{fill:url(#hatch);color:#7a4fb3;stroke:#7a4fb3}
 .sw-rev{background:#00968a}.sw-op{background:#7a4fb3}.sw-est{background:repeating-linear-gradient(45deg,#6a7673 0 2px,#fff 2px 4px)}
 table.compact td,table.compact th{padding:6px 8px}.grid2.tight{margin-top:0}.research li{font-size:14px}.muted{color:var(--muted)}
-.ai-teaser{margin-top:16px}.more-link{font-size:13px;color:var(--teal);font-weight:600}
+.ai-teaser{margin-top:16px}.more-link{font-size:13px;color:var(--accent);font-weight:600}
 .needle{transform-box:view-box;transform-origin:110px 104px;transform:rotate(var(--r));animation:settle 900ms var(--ease-out) 200ms both}
 @keyframes settle{from{transform:rotate(0deg)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 @media (max-width:1100px){.desk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hz-row{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2,.grid-eq,.grid-signal,.why-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:820px){.app{grid-template-columns:minmax(0,1fr);padding:0;gap:0}
-.side{position:static;height:auto;border-radius:0;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 16px;gap:8px;flex-wrap:wrap}
-.side .foot{display:none}.nav{flex-direction:row;gap:2px;overflow-x:auto}.nav a{padding:8px 12px;font-size:13px;white-space:nowrap}.nav a svg{display:none}
-main{border-radius:0;padding:16px 16px 32px}h1{font-size:22px}.kpis{gap:10px}.card{padding:14px}.kpi .value{font-size:18px}#chart{height:280px}
+.side{position:sticky;top:0;z-index:15;height:auto;border:0;border-bottom:1px solid var(--line);border-radius:0;flex-direction:row;align-items:center;padding:10px 16px;gap:8px;background:#fff}
+.side .foot{display:none}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;flex-direction:row;justify-content:space-around;gap:0;background:#fff;border-top:1px solid var(--line);padding:6px 2px calc(6px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(27,34,48,.05)}
+.nav a{flex:1;flex-direction:column;justify-content:center;gap:2px;padding:6px 2px;font-size:11px;border-radius:10px;white-space:nowrap;min-width:0}.nav a svg{width:20px;height:20px}
+.nav a.active{background:none;box-shadow:none;color:var(--accent-strong)}.nav a[data-nav=sources]{display:none}
+.tabs{display:none}main{border:0;border-radius:0;padding:12px 16px 96px}h1{font-size:26px}.hero{padding:20px 18px;margin-top:8px}.orb{width:140px;height:140px;right:-46px;opacity:.75}.kpis{gap:10px}.card{padding:14px}.kpi .value{font-size:18px}#chart{height:280px}
 .col-filer,.col-cat,.col-date{display:none}.m-date.meta{display:flex}
 .kpi .ico{display:none}.hz-row{grid-template-columns:repeat(2,minmax(0,1fr))}.value-head,.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.tabs a{padding:8px 10px}.moms{gap:8px}.mom{padding:10px}.mom .v{font-size:15px}.votes .why{display:none}.kpi .value{font-size:17px;white-space:nowrap}.kpi .hint{margin-top:8px;font-size:12px}.stamp{text-align:left}}`;
 
@@ -159,9 +169,9 @@ function shell(active: 'today' | 'archive', base: string, title: string, body: s
   ];
   const isActive = (key: string) => (active === 'archive' ? key === 'archive' : key === 'overview');
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#dfe9e7"><title>${escape(title)}</title>
-<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><style>${STYLE}</style></head><body><a class="skip" href="#main">본문으로 건너뛰기</a><div class="app">
-<aside class="side"><div class="brand">${ICON.logo}<div>GNM<small>Gnomon Analytics</small></div></div>
+<meta name="theme-color" content="#f6f2ea"><title>${escape(title)}</title>
+<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}</style></head><body><a class="skip" href="#main">본문으로 건너뛰기</a><div class="app">
+<aside class="side"><a class="brand" href="${base}index.html">${ICON.logo}<div><b>GNOMON</b><small>Analytics</small></div></a>
 <nav class="nav" aria-label="리포트 메뉴">${nav.map((n) => `<a href="${n.href}" data-nav="${n.key}"${isActive(n.key) ? ' class="active" aria-current="page"' : ''}>${n.icon}<span>${n.label}</span></a>`).join('')}</nav>
 <div class="foot">공개 데이터로 만든 리서치 리포트예요. 투자 권유가 아니에요.</div></aside>
 <main id="main" tabindex="-1">${body}</main></div>${scripts}</body></html>`;
@@ -265,9 +275,9 @@ function fallbackSvg(bars: readonly Bar[]): string {
   const pts = bars.map((b, i) => [pad + (i * (w - 2 * pad)) / (bars.length - 1), h - pad - ((b.close - min) / span) * (h - 2 * pad)] as const);
   const line = pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="최근 ${bars.length}거래일 종가 ${won(min)}~${won(max)}">
-<defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f7a74" stop-opacity=".25"/><stop offset="1" stop-color="#1f7a74" stop-opacity="0"/></linearGradient></defs>
+<defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8834a" stop-opacity=".25"/><stop offset="1" stop-color="#a8834a" stop-opacity="0"/></linearGradient></defs>
 <polygon fill="url(#fill)" points="${pts[0]![0]},${h - pad} ${line} ${pts.at(-1)![0]},${h - pad}"/>
-<polyline fill="none" stroke="#1f7a74" stroke-width="2" points="${line}"/></svg>`;
+<polyline fill="none" stroke="#a8834a" stroke-width="2" points="${line}"/></svg>`;
 }
 
 function chartCard(report: DailyReport, base: string): { html: string; script: string } {
@@ -284,7 +294,7 @@ ${hasOhlc ? '<div class="seg" role="group" aria-label="차트 종류"><button ty
 <button type="button" class="chip-toggle" data-overlay="ma" aria-pressed="true"><i style="background:#d97706"></i><i style="background:#7a4fb3"></i><i style="background:#00968a"></i>이동평균 20·60·120</button>
 <button type="button" class="chip-toggle" data-overlay="bb" aria-pressed="false"><i style="background:#8a96a3"></i>볼린저</button>
 ${report.market?.structure ? '<button type="button" class="chip-toggle" data-overlay="levels" aria-pressed="false"><i style="background:#18201f"></i>지지·저항</button><button type="button" class="chip-toggle" data-overlay="fib" aria-pressed="false"><i style="background:#c07a12"></i>피보나치</button>' : ''}
-${report.market?.forecasts.length ? '<button type="button" class="chip-toggle" data-overlay="forecast" aria-pressed="false"><i style="background:#1f5f5b"></i>예측 범위</button>' : ''}
+${report.market?.forecasts.length ? '<button type="button" class="chip-toggle" data-overlay="forecast" aria-pressed="false"><i style="background:#8a6a37"></i>예측 범위</button>' : ''}
 </div>
 <div class="legend-line" id="legend">${bars.length ? `${escape(bars.at(-1)!.date)} 종가 ${escape(won(bars.at(-1)!.close))}` : ''}</div>
 <div id="chart">${fallbackSvg(bars)}</div><p class="fine">■ 공시와 ● 뉴스는 중요도 보통 이상만 표시해요.</p></div>`;
@@ -302,8 +312,8 @@ window.addEventListener('DOMContentLoaded', function () {
   var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
   var chart = LWC.createChart(el, {
     autoSize: true,
-    layout: { background: { color: 'transparent' }, textColor: '#6a7673', fontFamily: 'inherit' },
-    grid: { vertLines: { visible: false }, horzLines: { color: '#e6eceb' } },
+    layout: { background: { color: 'transparent' }, textColor: '#7b7f87', fontFamily: 'inherit' },
+    grid: { vertLines: { visible: false }, horzLines: { color: '#f0eadf' } },
     rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.08, bottom: 0.24 } },
     timeScale: { borderVisible: false },
     crosshair: { mode: 0 },
@@ -311,7 +321,7 @@ window.addEventListener('DOMContentLoaded', function () {
   });
   var candle = chart.addCandlestickSeries({ upColor: '#e0383e', downColor: '#2b6fd6', borderVisible: false, wickUpColor: '#e0383e', wickDownColor: '#2b6fd6' });
   candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
-  var area = chart.addAreaSeries({ lineColor: '#1f7a74', topColor: 'rgba(31,122,116,.28)', bottomColor: 'rgba(31,122,116,0)', lineWidth: 2, visible: false });
+  var area = chart.addAreaSeries({ lineColor: '#a8834a', topColor: 'rgba(168,131,74,.25)', bottomColor: 'rgba(168,131,74,0)', lineWidth: 2, visible: false });
   area.setData(bars.map(function (b) { return { time: b.date, value: b.close }; }));
   var volume = chart.addHistogramSeries({ priceScaleId: 'vol', priceFormat: { type: 'volume' }, lastValueVisible: false, priceLineVisible: false });
   chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
@@ -328,7 +338,7 @@ window.addEventListener('DOMContentLoaded', function () {
     .sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; })
     .map(function (m) { return m.kind === 'filing'
       ? { time: m.time, position: 'aboveBar', color: '#7a4fb3', shape: 'square', text: '공시' }
-      : { time: m.time, position: 'belowBar', color: '#1f7a74', shape: 'circle', text: '뉴스' }; });
+      : { time: m.time, position: 'belowBar', color: '#a8834a', shape: 'circle', text: '뉴스' }; });
   candle.setMarkers(snapped); area.setMarkers(snapped);
   var legend = document.getElementById('legend');
   var show = function (b) {
@@ -378,7 +388,7 @@ window.addEventListener('DOMContentLoaded', function () {
       fan.p10.push({ time: d, value: f20.baseClose * Math.exp(mu - sp) }); fan.p50.push({ time: d, value: f20.baseClose * Math.exp(mu) }); fan.p90.push({ time: d, value: f20.baseClose * Math.exp(mu + sp) });
     }
     fanDays = 60;
-    [['p90', '#e0383e', 2, '상단 (90%)'], ['p50', '#1f5f5b', 0, '예측 중앙'], ['p10', '#2b6fd6', 2, '하단 (10%)']].forEach(function (q) {
+    [['p90', '#e0383e', 2, '상단 (90%)'], ['p50', '#8a6a37', 0, '예측 중앙'], ['p10', '#2b6fd6', 2, '하단 (10%)']].forEach(function (q) {
       var sr = line(q[1], q[0] === 'p50' ? 2 : 1, q[2]);
       sr.setData(fan[q[0]]);
       sr.applyOptions({ visible: false, lastValueVisible: true, title: q[3] });
@@ -539,7 +549,8 @@ const TAB_SCRIPT = `<script>
   }
   function route() {
     var id = (location.hash || '#tab-overview').slice(1);
-    if (show(id)) { window.scrollTo(0, 0); return; }
+    // A tab hash would otherwise scroll past the hero; start the tab from the top.
+    if (show(id)) { window.scrollTo(0, 0); setTimeout(function () { window.scrollTo(0, 0); }, 0); return; }
     // An anchor inside a panel (e.g. #filings): open its panel, then scroll to it.
     var el = document.getElementById(id), panel = el && el.closest('[role=tabpanel]');
     if (panel && show(panel.id)) el.scrollIntoView(); else show('tab-overview');
@@ -584,7 +595,9 @@ ${aiTeaser}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub" style="margin:0">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const body = `<div class="top"><div class="ticker">${escape(report.name)} <span>${escape(report.symbol)}</span><span>KOSPI</span></div>
 <div class="stamp">${escape(report.date)} 리포트<br>생성 ${escape(report.generatedAt.replace('T', ' ').slice(0, 16))} UTC</div></div>
-<h1>${escape(report.name)} 일일 리포트</h1><p class="sub">${escape(report.headline)}</p>
+<section class="hero"><div class="orb" aria-hidden="true"></div><div class="eyebrow">일일 리서치 리포트</div>
+<h1>${escape(report.name)}</h1><p class="sub">${escape(report.headline)}</p>
+${report.price ? `<div class="hero-meta"><span>종가 <b>${escape(won(report.price.close))}</b></span>${report.price.changePct === null ? '' : `<span class="${tone(report.price.changePct)}">${escape(pct(report.price.changePct))}</span>`}${m?.horizons ? `<span>중기 신호 <b>${escape(m.horizons.find((h) => h.key === 'MEDIUM')?.summary.label ?? '')}</b></span>` : ''}${m?.fairValue ? `<span>기술적 적정가 <b>${escape(won(m.fairValue.center))}</b></span>` : ''}</div>` : ''}</section>
 ${m ? marketStatusWarning(m) : ''}
 <div class="tabs" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>
 ${panel('overview', overview)}
@@ -601,7 +614,7 @@ export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headli
   const sorted = [...reports].sort((a, b) => (a.date < b.date ? 1 : -1));
   const latest = sorted[0];
   const body = `<div class="top"><div class="ticker">SK하이닉스 <span>000660</span><span>KOSPI</span></div><div class="stamp">리포트 ${sorted.length}건</div></div>
-<h1 id="latest">SK하이닉스 일일 리포트</h1><p class="sub">평일 장 마감 뒤(18:30 KST) 자동으로 만들어져요.</p>
+<section class="hero" id="latest"><div class="orb" aria-hidden="true"></div><div class="eyebrow">일일 리서치 리포트</div><h1>SK하이닉스</h1><p class="sub">평일 장 마감 뒤(18:30 KST) 자동으로 만들어져요. 공개 데이터와 계산 규칙, 근거를 인용하는 AI 해설로 써요.</p></section>
 ${latest ? `<div class="card"><div class="head"><h2>최신 리포트 (${escape(latest.date)})</h2><a href="reports/${escape(latest.date)}.html" class="badge b-new" style="text-decoration:none;font-size:14px;padding:6px 14px">열기</a></div><p class="headline">${escape(latest.headline)}</p></div>` : '<div class="card empty">아직 리포트가 없어요.</div>'}
 <div class="card" id="archive" style="margin-top:16px"><div class="head"><h2>지난 리포트</h2></div><div class="table-wrap"><table><thead><tr><th>날짜</th><th>요약</th><th>거래</th></tr></thead><tbody>
 ${sorted.map((r) => `<tr><td style="white-space:nowrap"><a href="reports/${escape(r.date)}.html">${escape(r.date)}</a></td><td>${escape(r.headline)}</td><td>${r.status === 'SESSION' ? '거래일' : '휴장'}</td></tr>`).join('')}
