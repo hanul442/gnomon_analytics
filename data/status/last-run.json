@@ -1,5 +1,5 @@
 {
- "at": "2026-10-04T10:06:08.002Z",
+ "at": "2026-10-04T10:15:38.256Z",
  "selected": null,
  "universe": [
   {
@@ -9,9 +9,8 @@
   },
   {
    "source": "opendart:corpCode",
-   "ok": false,
-   "count": 0,
-   "error": "The operation was aborted due to timeout"
+   "ok": true,
+   "count": 3998
   }
  ],
  "stocks": [
