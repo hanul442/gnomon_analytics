@@ -1,10 +1,7 @@
-frgn.html 302 0
-main.html 302 0
-integration.json 200 9257
-finance-quarter.json 200 5136
-finance-annual.json 200 3886
-minute.xml 200 255108
-week.xml 200 18291
-kospi.xml 200 2351
-samsung.xml 200 2304
-siseTime.html 410 1746
+trend.json 200 20956 https://m.stock.naver.com/api/stock/000660/trend?pageSize=60
+trend2.json 404 4209 https://m.stock.naver.com/api/stock/000660/investorTrend?pageSize=60
+dealtrend.json 404 4209 https://m.stock.naver.com/api/stock/000660/dealTrend?pageSize=60&page=1
+basic.json 200 4196 https://m.stock.naver.com/api/stock/000660/basic
+research.json 200 9472 https://m.stock.naver.com/api/research/stock/000660?pageSize=20
+frgn2.html 200 133333 https://stock.naver.com/domestic/stock/000660/investmentinfo
+kospi-week.xml 200 928 https://fchart.stock.naver.com/sise.nhn?symbol=KOSPI&timeframe=week&count=10&requestType=0
