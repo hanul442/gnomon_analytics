@@ -154,6 +154,8 @@ export function buildDailyReport(input: {
   /** News articles known at generatedAt, and how each source fared this run. */
   news?: readonly NewsItem[];
   newsStatus?: readonly NewsSourceStatus[];
+  /** Daily bars kept for the chart (250 for dated reports; the live page keeps more). */
+  barsLimit?: number;
 }): DailyReport {
   const history = [...input.bars]
     .filter((bar) => bar.symbol === input.symbol && bar.date <= input.date)
@@ -211,7 +213,7 @@ export function buildDailyReport(input: {
     price,
     filings,
     recentFilings,
-    recentBars: history.slice(-250).map(({ date, open, high, low, close, volume }) => ({ date, open, high, low, close, volume })),
+    recentBars: history.slice(-(input.barsLimit ?? 250)).map(({ date, open, high, low, close, volume }) => ({ date, open, high, low, close, volume })),
     recentCloses: history.slice(-130).map((bar) => ({ date: bar.date, close: bar.close })),
     sources: [...input.sources],
   };

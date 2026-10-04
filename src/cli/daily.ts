@@ -20,6 +20,7 @@ import { isRelevant } from '../analysis/news.js';
 import { BENCHMARKS, collectMarketData, financeKey, flowKey, intradayKey, marketPaths, researchKey, snapshotKey } from './marketData.js';
 import { buildMarketSection } from '../report/marketSection.js';
 import { forecastKey, type PriceForecast } from '../analysis/valuation.js';
+import { analystCallKey, type AnalystCall } from '../analysis/analysts.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
@@ -85,7 +86,8 @@ export async function runDaily(options: {
   const monthAgo = kstParts(new Date(now.getTime() - 31 * 24 * 60 * 60_000));
   const fetchOptions = { now: clock, ...(options.fetch ? { fetch: options.fetch } : {}) };
 
-  const bars = await fetchNaverDailyBars(SYMBOL, 250, fetchOptions);
+  // About four years of sessions: enough history for strategy backtests.
+  const bars = await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
   const filings = await fetchDartFilings({ apiKey: options.apiKey, corpCode: SK_HYNIX_CORP_CODE, from: monthAgo.compact, to: today.compact, ...fetchOptions });
   const addedBars = await appendNew(pricePath, bars, priceKey);
   const addedFilings = await appendNew(filingPath, filings, filingKey);
@@ -97,56 +99,91 @@ export async function runDaily(options: {
 
   let report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' = 'NOT_SETTLED';
   const reportPath = join(reportDir, `${today.date}.json`);
+  const forecastPath = join(root, 'data', 'forecasts', `${SYMBOL}.jsonl`);
   if (today.hour >= SETTLED_HOUR_KST) {
     const exists = await readFile(reportPath).then(() => true, () => false);
     if (exists) {
       report = 'EXISTS';
     } else {
-      const earlier = await loadReports(reportDir);
-      const built = buildDailyReport({
-        symbol: SYMBOL,
-        name: NAME,
-        date: today.date,
-        generatedAt: now,
-        bars: asOf(await readLog<PriceBar>(pricePath), priceKey, now),
-        disclosures: asOf(await readLog<Disclosure>(filingPath), filingKey, now),
-        news: asOf(await readLog<NewsItem>(newsPath), newsKey, now),
-        newsStatus,
-        sources: [NAVER_PRICE_SOURCE, OPENDART_SOURCE],
-        // The first report (no earlier ones) lists the past month's filings as context.
-        previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))),
-        previous: [...earlier].sort((a, b) => (a.date < b.date ? -1 : 1)).filter((r) => r.date < today.date).at(-1) ?? null,
-      });
-      const mp = marketPaths(root, SYMBOL);
-      const forecastPath = join(root, 'data', 'forecasts', `${SYMBOL}.jsonl`);
-      built.market = buildMarketSection({
-        symbol: SYMBOL, date: today.date, generatedAt: now,
-        daily: asOf(await readLog<PriceBar>(pricePath), priceKey, now),
-        weekly: asOf(await readLog<PriceBar>(mp.weekly), priceKey, now),
-        intraday: asOf(await readLog<IntradaySession>(mp.intraday), intradayKey, now),
-        flows: asOf(await readLog<InvestorFlow>(mp.flows), flowKey, now),
-        snapshots: asOf(await readLog<StockSnapshot>(mp.snapshots), snapshotKey, now),
-        finance: asOf(await readLog<FinancePeriod>(mp.finance), financeKey, now),
-        research: asOf(await readLog<ResearchNote>(mp.research), researchKey, now),
-        benchmarks: await Promise.all(BENCHMARKS.map(async (b) => ({ ...b, bars: asOf(await readLog<PriceBar>(mp.daily(b.symbol)), priceKey, now) }))),
-        loggedForecasts: (await readLog<PriceForecast>(forecastPath)).filter((f) => f.madeAt <= now.toISOString()),
-        status: marketStatus,
-      });
+      const built = await composeReport(root, now, { newsStatus, marketStatus });
       // Forecasts are logged as made and never revised; a repeat of the same base session is skipped.
-      await appendUnseen(forecastPath, built.market.forecasts, forecastKey);
+      await appendUnseen(forecastPath, built.market!.forecasts, forecastKey);
       // AI commentary never blocks the report: a failure is stored as status FAILED.
       built.commentary = await writeCommentary(built, {
         now: clock,
         ...(options.anthropic ? { client: options.anthropic } : {}),
         ...(options.anthropicApiKey ? { apiKey: options.anthropicApiKey } : {}),
       });
+      // Analyst calls are logged as made, to be scored 20 sessions later.
+      const c = built.commentary;
+      if (c.status === 'OK' && c.analysts?.length && built.price) {
+        const calls: AnalystCall[] = c.analysts.map((v) => ({
+          symbol: SYMBOL, analyst: v.analyst, reportDate: today.date, baseDate: built.price!.sessionDate ?? today.date, baseClose: built.price!.close,
+          stance: v.stance, confidence: v.confidence, target: v.target, promptVersion: c.promptVersion, madeAt: now.toISOString(),
+        }));
+        await appendUnseen(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`), calls, analystCallKey);
+      }
       await mkdir(reportDir, { recursive: true });
       await writeFile(reportPath, `${JSON.stringify(built, null, 2)}\n`, { flag: 'wx' });
       report = 'WRITTEN';
     }
   }
-  await renderSite(root);
+  // The front page is rebuilt from the latest data on every run; dated reports stay as written.
+  const live = await composeReport(root, now, { newsStatus, marketStatus, barsLimit: 1000 });
+  await renderSite(root, live);
   return { addedBars: addedBars.length, addedFilings: addedFilings.length, addedNews: addedNews.length, newsStatus, marketStatus, report };
+}
+
+/**
+ * Builds a report from everything known at `now`. Used for the dated report
+ * (written once after 18:00 KST) and for the live front page (every run).
+ * The live page reuses the latest dated report's AI commentary, labelled
+ * with that report's date; it never calls the model itself.
+ */
+export async function composeReport(
+  root: string,
+  now: Date,
+  options: { newsStatus?: readonly NewsSourceStatus[]; marketStatus?: readonly NewsSourceStatus[]; barsLimit?: number } = {},
+): Promise<DailyReport> {
+  const today = kstParts(now);
+  const reportDir = join(root, 'reports');
+  const pricePath = join(root, 'data', 'prices', `${SYMBOL}.jsonl`);
+  const filingPath = join(root, 'data', 'disclosures', `${SYMBOL}.jsonl`);
+  const newsPath = join(root, 'data', 'news', `${SYMBOL}.jsonl`);
+  const forecastPath = join(root, 'data', 'forecasts', `${SYMBOL}.jsonl`);
+  const earlier = (await loadReports(reportDir)).filter((r) => r.date < today.date).sort((a, b) => (a.date < b.date ? -1 : 1));
+  const daily = asOf(await readLog<PriceBar>(pricePath), priceKey, now);
+  const built = buildDailyReport({
+    symbol: SYMBOL,
+    name: NAME,
+    date: today.date,
+    generatedAt: now,
+    bars: daily,
+    disclosures: asOf(await readLog<Disclosure>(filingPath), filingKey, now),
+    news: asOf(await readLog<NewsItem>(newsPath), newsKey, now),
+    newsStatus: options.newsStatus ?? [],
+    sources: [NAVER_PRICE_SOURCE, OPENDART_SOURCE],
+    // The first report (no earlier ones) lists the past month's filings as context.
+    previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))),
+    previous: earlier.at(-1) ?? null,
+    ...(options.barsLimit ? { barsLimit: options.barsLimit } : {}),
+  });
+  const mp = marketPaths(root, SYMBOL);
+  built.market = buildMarketSection({
+    symbol: SYMBOL, date: today.date, generatedAt: now,
+    daily,
+    weekly: asOf(await readLog<PriceBar>(mp.weekly), priceKey, now),
+    intraday: asOf(await readLog<IntradaySession>(mp.intraday), intradayKey, now),
+    flows: asOf(await readLog<InvestorFlow>(mp.flows), flowKey, now),
+    snapshots: asOf(await readLog<StockSnapshot>(mp.snapshots), snapshotKey, now),
+    finance: asOf(await readLog<FinancePeriod>(mp.finance), financeKey, now),
+    research: asOf(await readLog<ResearchNote>(mp.research), researchKey, now),
+    benchmarks: await Promise.all(BENCHMARKS.map(async (b) => ({ ...b, bars: asOf(await readLog<PriceBar>(mp.daily(b.symbol)), priceKey, now) }))),
+    loggedForecasts: (await readLog<PriceForecast>(forecastPath)).filter((f) => f.madeAt <= now.toISOString()),
+    analystCalls: (await readLog<AnalystCall>(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`))).filter((c) => c.madeAt <= now.toISOString()),
+    status: options.marketStatus ?? [],
+  });
+  return built;
 }
 
 async function loadReports(reportDir: string): Promise<DailyReport[]> {
@@ -156,14 +193,25 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
   return reports;
 }
 
-export async function renderSite(root: string): Promise<void> {
+export async function renderSite(root: string, live?: DailyReport): Promise<void> {
   const siteDir = join(root, 'site');
   const reports = await loadReports(join(root, 'reports'));
   await mkdir(join(siteDir, 'reports'), { recursive: true });
   for (const report of reports) {
-    await writeFile(join(siteDir, 'reports', `${report.date}.html`), renderReport(report, { index: '../index.html' }));
+    await writeFile(join(siteDir, 'reports', `${report.date}.html`), renderReport(report, { index: '../archive.html', base: '../' }));
   }
-  await writeFile(join(siteDir, 'index.html'), renderIndex(reports));
+  await writeFile(join(siteDir, 'archive.html'), renderIndex(reports));
+  // Front page: the live dashboard when this run built one, else the latest dated report.
+  const latest = [...reports].sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
+  if (live) {
+    const withAi = [...reports].filter((r) => r.commentary).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
+    const page = { ...live, ...(withAi?.commentary ? { commentary: withAi.commentary } : {}) };
+    await writeFile(join(siteDir, 'index.html'), renderReport(page, { index: 'archive.html', base: '', live: true, homeHref: 'index.html', archiveHref: 'archive.html', commentaryFrom: withAi?.date ?? null }));
+  } else if (latest) {
+    await writeFile(join(siteDir, 'index.html'), renderReport(latest, { index: 'archive.html', base: '', homeHref: 'index.html', archiveHref: 'archive.html' }));
+  } else {
+    await writeFile(join(siteDir, 'index.html'), renderIndex(reports));
+  }
   // The chart library is served from the site itself, not a CDN.
   // "exports" hides the standalone build; package.json is exported, so locate it from there.
   const packageJson = createRequire(import.meta.url).resolve('lightweight-charts/package.json');

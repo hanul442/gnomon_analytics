@@ -4,6 +4,8 @@
 // Pure: callers pass records already filtered to what was known at generation.
 
 import { horizonGauges, type HorizonGauge } from '../analysis/horizons.js';
+import { runArena, type ArenaResult } from '../analysis/strategies.js';
+import { scoreAnalysts, type AnalystCall, type AnalystScore } from '../analysis/analysts.js';
 import { footprint, structureSnapshot, type Footprint, type StructureSnapshot } from '../analysis/structure.js';
 import { forecastRanges, scoreForecasts, technicalFairValue, type ForecastScore, type PriceForecast, type TechnicalFairValue } from '../analysis/valuation.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, PriceBar, ResearchNote, StockSnapshot } from '../types.js';
@@ -23,6 +25,10 @@ export interface BenchmarkComparison {
   name: string;
   /** Returns in percent over 5 / 20 / 60 sessions: [stock, benchmark]. */
   returns: { days: number; stock: number | null; benchmark: number | null }[];
+  /** Last close, its change in percent, and the last 60 closes for a sparkline. */
+  last: number | null;
+  changePct: number | null;
+  spark: number[];
 }
 
 export interface MarketSection {
@@ -33,6 +39,10 @@ export interface MarketSection {
   /** Weekly swing structure for the longer view. */
   weeklyStructure: StructureSnapshot | null;
   footprint: Footprint;
+  /** Strategy arena on the available daily history (docs/DESIGN.md §5.5). */
+  arena: ArenaResult | null;
+  /** AI analyst battle leaderboard from logged calls (docs/DESIGN.md §5.6). */
+  analystBoard: AnalystScore[];
   /** Ranges made with this report (also appended to data/forecasts). */
   forecasts: PriceForecast[];
   forecastScores: ForecastScore[];
@@ -92,6 +102,8 @@ export function buildMarketSection(input: {
   benchmarks: readonly { symbol: string; name: string; bars: readonly PriceBar[] }[];
   /** Forecasts logged by earlier reports. */
   loggedForecasts: readonly PriceForecast[];
+  /** Analyst calls logged by earlier reports. */
+  analystCalls?: readonly AnalystCall[];
   status: readonly NewsSourceStatus[];
 }): MarketSection {
   const upTo = <T extends { date: string }>(xs: readonly T[]) => [...xs].filter((x) => x.date <= input.date).sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -106,6 +118,8 @@ export function buildMarketSection(input: {
     structure: structureSnapshot(daily),
     weeklyStructure: structureSnapshot(weekly, 260),
     footprint: footprint(daily, input.flows.filter((f) => f.symbol === input.symbol)),
+    arena: runArena(daily),
+    analystBoard: scoreAnalysts((input.analystCalls ?? []).filter((c) => c.symbol === input.symbol), daily),
     forecasts,
     forecastScores: scoreForecasts(input.loggedForecasts.filter((f) => f.symbol === input.symbol), daily),
     flows: buildFlowSection(input.flows.filter((f) => f.symbol === input.symbol), input.date),
@@ -114,7 +128,10 @@ export function buildMarketSection(input: {
     years: latestPeriods(input.finance, 'ANNUAL'),
     benchmarks: input.benchmarks.map((b) => {
       const closes = upTo(b.bars).map((x) => x.close);
-      return { symbol: b.symbol, name: b.name, returns: [5, 20, 60].map((days) => ({ days, stock: ret(stockCloses, days), benchmark: ret(closes, days) })) };
+      return {
+        symbol: b.symbol, name: b.name, returns: [5, 20, 60].map((days) => ({ days, stock: ret(stockCloses, days), benchmark: ret(closes, days) })),
+        last: closes.at(-1) ?? null, changePct: ret(closes, 1), spark: closes.slice(-60),
+      };
     }),
     research: upTo(input.research).reverse().slice(0, 10),
     status: [...input.status],

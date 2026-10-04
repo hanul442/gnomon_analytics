@@ -68,3 +68,19 @@ test('a settled run writes the report once and renders the site', async () => {
   assert.match(await readFile(join(root, 'site', 'index.html'), 'utf8'), /2026-10-02/);
   assert.match(await readFile(join(root, 'site', 'assets', 'lightweight-charts.js'), 'utf8'), /LightweightCharts/);
 });
+
+test('analyst calls from the AI committee are logged once with the report', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const anthropic = { beta: { messages: { parse: async () => ({
+    stop_reason: 'end_turn', model: 'm',
+    parsed_output: {
+      summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], redTeam: { counterargument: { text: '반론', evidenceIds: ['P1'] }, unresolved: [] }, scenarios: [],
+      analysts: [{ analyst: 'trend_momentum', stance: 'BULLISH', confidence: 70, target: 330000, rationale: { text: '추세', evidenceIds: ['P1'] } }],
+      bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [],
+    },
+  }) } } } as unknown as Parameters<typeof runDaily>[0]['anthropic'];
+  await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, ...(anthropic ? { anthropic } : {}) });
+  const lines = (await readFile(join(root, 'data', 'analysts', '000660.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as Record<string, unknown>);
+  assert.equal(lines.length, 1);
+  assert.deepEqual([lines[0]!.analyst, lines[0]!.baseDate, lines[0]!.baseClose, lines[0]!.target], ['trend_momentum', '2026-10-02', 318500, 330000]);
+});
