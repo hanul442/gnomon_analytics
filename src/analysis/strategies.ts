@@ -165,7 +165,8 @@ export const STRATEGIES: readonly StrategyDef[] = [
   },
 ];
 
-export interface TradeRecord { entry: string; exit: string | null; ret: number }
+/** One round trip: the rule's signal sessions and their closes (the backtest trades at those closes). */
+export interface TradeRecord { entry: string; entryPrice: number; exit: string | null; exitPrice: number | null; ret: number }
 
 export interface StrategyResult {
   key: string; name: string; origin: string; rule: string;
@@ -173,6 +174,8 @@ export interface StrategyResult {
   totalReturn: number; cagr: number | null; sharpe: number | null; maxDrawdown: number; trades: number; winRate: number | null; exposure: number;
   /** Out-of-sample (last 30%). */
   oosReturn: number; oosSharpe: number | null; oosMaxDrawdown: number; oosTrades: number;
+  /** Round trips, oldest first (at most the last 80); an open trade has no exit. */
+  tradeLog: TradeRecord[];
   /** Equity curve, 1 = start, sampled to at most 120 points. */
   equity: number[];
   monteCarlo: { p05: number; p50: number; p95: number; lossProbability: number } | null;
@@ -236,17 +239,17 @@ export function backtest(def: StrategyDef, bars: readonly ArenaBar[], ctx = cont
   // Daily strategy returns: position at i-1 earns the move from i-1 to i; a change of position pays half the round-trip cost.
   const daily: number[] = [];
   const trades: TradeRecord[] = [];
-  let open: { entry: string; eq: number } | null = null, eq = 1;
+  let open: { entry: string; price: number; eq: number } | null = null, eq = 1;
   for (let i = 1; i < n; i += 1) {
     const held = positions[i - 1]!;
     let r = held ? ctx.close[i]! / ctx.close[i - 1]! - 1 : 0;
     const prevPos = i >= 2 ? positions[i - 2]! : 0;
     if (held !== prevPos) r -= ARENA_COST / 2;
     eq *= 1 + r; daily.push(r);
-    if (held && !prevPos) open = { entry: bars[i - 1]!.date, eq: eq / (1 + r) };
-    if (!held && prevPos && open) { trades.push({ entry: open.entry, exit: bars[i - 1]!.date, ret: eq / open.eq - 1 }); open = null; }
+    if (held && !prevPos) open = { entry: bars[i - 1]!.date, price: ctx.close[i - 1]!, eq: eq / (1 + r) };
+    if (!held && prevPos && open) { trades.push({ entry: open.entry, entryPrice: open.price, exit: bars[i - 1]!.date, exitPrice: ctx.close[i - 1]!, ret: eq / open.eq - 1 }); open = null; }
   }
-  if (open) trades.push({ entry: open.entry, exit: null, ret: eq / open.eq - 1 });
+  if (open) trades.push({ entry: open.entry, entryPrice: open.price, exit: null, exitPrice: null, ret: eq / open.eq - 1 });
   const split = Math.floor(n * (1 - OOS_SHARE));
   const all = stats(daily), oos = stats(daily.slice(split - 1));
   const years = (n - 1) / 250;
@@ -263,7 +266,7 @@ export function backtest(def: StrategyDef, bars: readonly ArenaBar[], ctx = cont
     trades: trades.length, winRate: trades.length ? trades.filter((t) => t.ret > 0).length / trades.length : null,
     exposure: positions.reduce<number>((s, p) => s + p, 0) / n,
     oosReturn: oos.total, oosSharpe: oos.sharpe, oosMaxDrawdown: oos.mdd, oosTrades,
-    equity, monteCarlo: def.key === 'hold' ? null : monteCarlo(trades.map((t) => t.ret)),
+    tradeLog: trades.slice(-80), equity, monteCarlo: def.key === 'hold' ? null : monteCarlo(trades.map((t) => t.ret)),
     position: positions[last]!, score: def.score(ctx, last), target: lv.target, invalidation: lv.invalidation, trigger: lv.trigger,
   };
 }

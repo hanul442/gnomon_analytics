@@ -30,6 +30,9 @@ test('report pages have seven tabs with gauges, fair value, forecasts, flows and
   for (const text of ['기술적 적정가', '예측 범위', '누적 순매수', '수급 흔적', '분기 실적', '증권가 평균 목표가', '가격 구조', '시장 대비 수익률']) assert.ok(page.includes(text), text);
   assert.ok(page.includes('data-ov="forecast"'));
   for (const key of ['rsi', 'macd', 'stoch', 'volume']) assert.ok(page.includes(`data-pane="${key}"`), key);
+  // Strategy chips put buy/sell points on the chart; filings and news are dashed vertical lines.
+  assert.ok(page.includes('data-strategy="macd"') && page.includes('id="strat-info"') && page.includes('data-show-strategy'));
+  assert.ok(page.includes('id="vlines"') && page.includes('class="trade-log"'));
   // The front page is the live dashboard; the archive lists dated reports.
   const front = await readFile(join(root, 'site', 'index.html'), 'utf8');
   assert.ok(front.includes('기준 최신'));
