@@ -85,7 +85,7 @@ function ring(score: number | null): string {
 
 export function councilCard(c: Commentary | undefined, from: string | null): string {
   if (!c || c.status !== 'OK') {
-    return `<section class="block"><div class="block-head"><h2>AI 위원회</h2></div><div class="card"><p class="empty">${c ? 'AI 해설을 만들지 못했어요.' : '아직 AI 위원회 해설이 없어요. 평일 18시 이후 리포트에서 만들어져요.'}</p></div></section>`;
+    return `<section class="block"><div class="block-head"><h2>AI 위원회</h2></div><div class="card"><p class="empty">${c ? 'AI 해설을 만들지 못했어요.' : '아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.'}</p></div></section>`;
   }
   const score = consensusScore(c);
   const label = score === null ? '판단 보류' : score >= 60 ? '강세 우위' : score <= 40 ? '약세 우위' : '팽팽함';
@@ -140,36 +140,59 @@ const PANES: [string, string, boolean][] = [
   ['volume', '거래량', true], ['rsi', 'RSI', false], ['macd', 'MACD', false], ['stoch', '스토캐스틱', false],
   ['cci', 'CCI', false], ['wr', '윌리엄스 %R', false], ['obv', 'OBV', false], ['atr', 'ATR', false],
 ];
+const DESC: Record<string, string> = {
+  ma5: '최근 5거래일 평균 가격', ma20: '한 달 평균 가격, 단기 추세', ma60: '석 달 평균 가격, 중기 추세', ma120: '반년 평균 가격, 장기 추세',
+  ema12: '최근 가격에 무게를 둔 평균 두 개', bb: '20일 평균 ± 표준편차 2배, 변동 범위', ichimoku: '구름대로 보는 추세와 지지', env: '20일 평균 ±5% 띠',
+  levels: '자주 막히거나 받친 가격대', fib: '최근 큰 흐름의 되돌림 비율', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위(10~90%)',
+  volume: '하루 거래된 주식 수', rsi: '과열(70 이상)·과매도(30 이하)', macd: '단기·장기 평균의 차이로 보는 추세 전환', stoch: '최근 범위 안에서 지금 가격의 위치',
+  cci: '평균에서 얼마나 벗어났는지', wr: '최근 고점 대비 위치(과열·과매도)', obv: '오른 날·내린 날 거래량 누적', atr: '하루 평균 움직임 폭',
+};
+const PRESETS: [string, string, string[], string[]][] = [
+  ['basic', '기본', ['ma20', 'ma60'], ['volume']],
+  ['trend', '추세', ['ma5', 'ma20', 'ma60', 'ma120'], ['volume', 'macd']],
+  ['momentum', '모멘텀', ['ma20'], ['rsi', 'macd', 'stoch']],
+  ['volatility', '변동성', ['bb'], ['volume', 'atr']],
+  ['levels', '가격대', ['levels', 'fib', 'fair', 'forecast'], ['volume']],
+];
+const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true" class="gear"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const RANGES: [string, number][] = [['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250], ['3년', 750], ['전체', 100000]];
 
 /** Candlestick chart with indicator menu; the client script draws from embedded data. */
 export function priceChart(report: DailyReport, overlays: unknown, base: string, chartAsset: string): { html: string; script: string } {
   const bars = report.recentBars ?? [];
-  const strategies = (report.market?.arena?.results ?? []).filter((x) => x.key !== 'hold').map((x) => ({ key: x.key, name: x.name, rank: x.rank, position: x.position, trigger: x.trigger, trades: x.tradeLog ?? [] }));
+  const strategies = (report.market?.arena?.results ?? []).filter((x) => x.key !== 'hold').map((x) => ({ key: x.key, name: x.name, rank: x.rank, position: x.position, trigger: x.trigger, oos: x.oosReturn, trades: x.tradeLog ?? [] }));
   const last = bars.at(-1), prev = bars.at(-2);
   const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
-  const chip = (group: string, [key, label, on]: [string, string, boolean]) => `<button type="button" class="chip-toggle" data-${group}="${key}" aria-pressed="${on}">${esc(label)}</button>`;
+  const opt = (group: string, key: string, label: string, on: boolean, desc = DESC[key] ?? '') => `<button type="button" class="opt" data-${group}="${key}" aria-pressed="${on}"><span class="opt-t"><b>${esc(label)}</b>${desc ? `<small>${esc(desc)}</small>` : ''}</span><i class="tog" aria-hidden="true"></i></button>`;
   const html = `<section class="card chart-card" id="chart-card">
 <div class="chart-head"><div><div class="muted small">현재가 (${esc(last?.date ?? '')} 종가)</div>
 <div class="cur-price"><b>${last ? esc(won(last.close)) : '없음'}</b>${last && prev ? `<span class="${tone(last.close - prev.close)}">${last.close >= prev.close ? '▲' : '▼'} ${esc(num(Math.abs(last.close - prev.close)))} (${esc(pct((last.close / prev.close - 1) * 100))})</span>` : ''}</div>
 <div class="period-stat" id="period-stat" aria-live="polite"></div></div>
 <div class="seg" role="group" aria-label="기간">${RANGES.map(([label, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 63}">${label}</button>`).join('')}</div></div>
-<details class="ind-menu"><summary>지표 고르기</summary>
-<div class="ind-group"><span class="label">가격 위에</span>${OVERLAYS.map((o) => chip('ov', o)).join('')}</div>
-<div class="ind-group"><span class="label">아래 창</span>${PANES.map((o) => chip('pane', o)).join('')}</div>
-<div class="ind-group"><span class="label">표시</span>${chip('vl', ['filing', '공시', true])}${chip('vl', ['news', '뉴스', true])}</div></details>
-${strategies.length ? `<div class="strat-row" role="group" aria-label="전략 매매 시점"><span class="label">전략 매매 시점</span><button type="button" class="chip-toggle" data-strategy="" aria-pressed="true">끄기</button>${strategies.map((st) => `<button type="button" class="chip-toggle" data-strategy="${esc(st.key)}" aria-pressed="false">${st.rank}위 ${esc(st.name)}</button>`).join('')}</div>
-<div class="strat-info" id="strat-info" aria-live="polite" hidden></div>` : ''}
+<div class="chart-tools"><div class="preset-row" role="group" aria-label="지표 묶음"><span class="label">지표</span>${PRESETS.map(([k, l]) => `<button type="button" class="chip-toggle" data-preset="${k}" aria-pressed="${k === 'basic'}">${l}</button>`).join('')}<button type="button" class="tool-btn" data-open="ind-sheet" aria-haspopup="dialog">${GEAR}직접 고르기</button></div>
+${strategies.length ? `<button type="button" class="strat-pick" data-open="strat-sheet" aria-haspopup="dialog"><span class="label">전략 매매 시점</span><b id="strat-current">끄기</b><span class="caret" aria-hidden="true">▾</span></button>` : ''}</div>
+<div class="active-pills" id="active-pills" aria-label="켜진 지표"></div>
+<div class="sheet" id="ind-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="ind-sheet-t"><div class="sheet-head"><b id="ind-sheet-t">지표 직접 고르기</b><button type="button" class="sheet-done" data-close>완료</button></div>
+<div class="opt-group"><div class="opt-k">가격 위에 겹치기</div>${OVERLAYS.map(([k, l, on]) => opt('ov', k, l, on)).join('')}</div>
+<div class="opt-group"><div class="opt-k">아래 창</div>${PANES.map(([k, l, on]) => opt('pane', k, l, on)).join('')}</div>
+<div class="opt-group"><div class="opt-k">차트 위 표시</div>${opt('vl', 'filing', '공시', true, '공시가 나온 날 문서 아이콘과 점선')}${opt('vl', 'news', '뉴스', true, '중요도 보통 이상 뉴스가 나온 날 아이콘')}</div></div></div>
+${strategies.length ? `<div class="sheet" id="strat-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="strat-sheet-t"><div class="sheet-head"><b id="strat-sheet-t">전략 매매 시점 보기</b><button type="button" class="sheet-done" data-close>닫기</button></div>
+<p class="muted small" style="margin:0 0 6px">고른 전략의 과거 매수(▲)·매도(▼) 시점을 차트에 표시해요. 순위는 검증 구간 샤프 순이에요.</p>
+<button type="button" class="opt" data-strategy="" aria-pressed="true"><span class="opt-t"><b>끄기</b><small>매매 시점을 표시하지 않아요</small></span><i class="radio" aria-hidden="true"></i></button>
+${strategies.map((st) => `<button type="button" class="opt" data-strategy="${esc(st.key)}" aria-pressed="false"><span class="opt-t"><b>${st.rank}위 ${esc(st.name)}</b><small><span class="${st.position ? 'up' : 'muted'}">${st.position ? '지금 보유 신호' : '지금 관망'}</span> · 검증 수익 <span class="${tone(st.oos)}">${(st.oos * 100).toFixed(1)}%</span> · 매매 ${st.trades.length}번</small></span><i class="radio" aria-hidden="true"></i></button>`).join('')}</div></div>
+` : ''}
 <div class="legend-line" id="legend"></div>
 <div class="chart-wrap"><div class="ev-strip" id="ev-strip" role="group" aria-label="공시·뉴스"></div><div class="chart-body"><div id="chart" style="height:520px">${bars.length < 2 ? '<p class="empty">차트를 그릴 가격 기록이 부족해요.</p>' : ''}</div><div class="vlines" id="vlines" aria-hidden="true"></div></div>
 <div class="mark-pop" id="mark-pop" role="dialog" aria-label="공시·뉴스 내용" hidden></div></div>
+${strategies.length ? '<div class="strat-info" id="strat-info" aria-live="polite" hidden></div>' : ''}
 <p class="fine">차트 위 아이콘을 누르면 그날의 공시(금색)·뉴스(청록, 중요도 보통 이상) 내용이 뜨고, 거기서 원문으로 갈 수 있어요. 점선은 날짜 위치 표시예요. 전략 매매 시점의 ▲매수·▼매도는 그 전략 규칙이 과거 일봉에서 신호를 낸 날의 종가예요(백테스트, 투자 권유 아님).</p></section>`;
   const script = `<script type="application/json" id="bars">${json(bars)}</script>
 <script type="application/json" id="marks">${json(chartMarks(report))}</script>
 <script type="application/json" id="overlays">${json(overlays)}</script>
 <script type="application/json" id="strategies">${json(strategies)}</script>
 <script src="${base}${chartAsset}" defer></script>
-<script>${CHART_JS}</script>`;
+<script>${CHART_JS}</script>
+<script>${TOOLS_JS(PRESETS)}</script>`;
   return { html, script };
 }
 
@@ -411,4 +434,44 @@ window.addEventListener('DOMContentLoaded', function () {
   setRange(63);
   requestAnimationFrame(drawLines);
 });
+`;
+
+/** Chart toolbar: presets, the indicator and strategy sheets, and the pills of what is on. */
+const TOOLS_JS = (presets: readonly [string, string, string[], string[]][]) => `
+(function () {
+  var PRESETS = ${JSON.stringify(Object.fromEntries(presets.map(([k, , ov, pane]) => [k, { ov: ov, pane: pane }])))};
+  var applying = false, pills = document.getElementById('active-pills');
+  var on = function (b) { return b.getAttribute('aria-pressed') === 'true'; };
+  var renderPills = function () {
+    if (!pills) return;
+    var items = Array.prototype.slice.call(document.querySelectorAll('#ind-sheet [data-ov], #ind-sheet [data-pane]')).filter(on);
+    pills.innerHTML = items.map(function (b) { var k = b.hasAttribute('data-ov') ? 'data-ov' : 'data-pane'; return '<button type="button" class="pill" data-pill="' + k + ':' + b.getAttribute(k) + '" aria-label="' + b.querySelector('b').textContent + ' 끄기">' + b.querySelector('b').textContent + ' <span aria-hidden="true">×</span></button>'; }).join('');
+  };
+  var setPresetMark = function (key) { document.querySelectorAll('[data-preset]').forEach(function (p) { p.setAttribute('aria-pressed', String(p.getAttribute('data-preset') === key)); }); };
+  document.querySelectorAll('[data-preset]').forEach(function (p) {
+    p.addEventListener('click', function () {
+      var want = PRESETS[p.getAttribute('data-preset')]; applying = true;
+      document.querySelectorAll('#ind-sheet [data-ov]').forEach(function (b) { if (on(b) !== (want.ov.indexOf(b.getAttribute('data-ov')) >= 0)) b.click(); });
+      document.querySelectorAll('#ind-sheet [data-pane]').forEach(function (b) { if (on(b) !== (want.pane.indexOf(b.getAttribute('data-pane')) >= 0)) b.click(); });
+      applying = false; setPresetMark(p.getAttribute('data-preset')); renderPills();
+    });
+  });
+  document.querySelectorAll('#ind-sheet [data-ov], #ind-sheet [data-pane]').forEach(function (b) { b.addEventListener('click', function () { if (!applying) { setPresetMark(null); setTimeout(renderPills, 0); } }); });
+  if (pills) pills.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-pill]'); if (!t) return;
+    var kv = t.getAttribute('data-pill').split(':'), b = document.querySelector('#ind-sheet [' + kv[0] + '="' + kv[1] + '"]');
+    if (b) b.click();
+  });
+  var opened = null;
+  var close = function () { if (!opened) return; opened.hidden = true; document.body.classList.remove('sheet-open'); var o = opened; opened = null; var btn = document.querySelector('[data-open="' + o.id + '"]'); if (btn) btn.focus(); };
+  document.querySelectorAll('[data-open]').forEach(function (b) {
+    b.addEventListener('click', function () { var sh = document.getElementById(b.getAttribute('data-open')); if (!sh) return; sh.hidden = false; opened = sh; document.body.classList.add('sheet-open'); var f = sh.querySelector('.sheet-done'); if (f) f.focus(); });
+  });
+  document.querySelectorAll('.sheet [data-close]').forEach(function (b) { b.addEventListener('click', close); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  document.querySelectorAll('#strat-sheet [data-strategy]').forEach(function (b) {
+    b.addEventListener('click', function () { var cur = document.getElementById('strat-current'); if (cur) cur.textContent = b.getAttribute('data-strategy') ? b.querySelector('b').textContent : '끄기'; setTimeout(close, 120); });
+  });
+  renderPills();
+})();
 `;

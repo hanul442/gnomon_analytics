@@ -75,6 +75,9 @@ test('the page shows claims with evidence chips, or why there is no commentary',
   assert.ok(html.includes('요약 &lt;b&gt;'));
   assert.ok(html.includes(`href="${filing.url}"`));
   assert.ok(html.includes('강세 이유'));
+  // With desk votes, the AI tab opens with a parliament of the committee.
+  const voted = { ...ok, commentary: { ...ok.commentary, desks: [{ desk: 'TECHNICAL', stance: 'BULLISH', view: { text: '추세 위', evidenceIds: ['P1'] } }] } } as typeof ok;
+  assert.ok(!html.includes('id="parliament-ai"') && renderReport(voted, { index: '../index.html' }).includes('id="parliament-ai"'));
   const failed = { ...report, commentary: await writeCommentary(report, {}) };
   assert.match(renderReport(failed, { index: '../index.html' }), /AI 해설이 없어요: API 키가 설정되지 않았어요/);
 });

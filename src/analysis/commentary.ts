@@ -13,8 +13,8 @@ import type { DailyReport } from '../report/dailyReport.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystId } from './analysts.js';
 
 export const COMMENTARY_MODEL = 'claude-opus-5-5';
-/** Weekly picks outside the top tier (G-25): same committee, cheaper model and lower effort. */
-export const BRIEF_MODEL = 'claude-sonnet-5-5';
+/** Weekly picks outside the top tier (G-28): a short summary only, on the small model. */
+export const BRIEF_MODEL = 'claude-haiku-4-5';
 export type CommentaryTier = 'deep' | 'brief';
 export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v2';
 const MAX_FILINGS = 15;
@@ -177,6 +177,28 @@ export const CommentarySchema = z.object({
   dataGaps: z.array(z.string()).describe('근거가 부족해서 판단할 수 없는 부분'),
 });
 
+/** The brief: summary, both sides and what to watch. No desks, analysts or scenarios. */
+export const BriefSchema = z.object({
+  summary: CommentarySchema.shape.summary,
+  bullish: CommentarySchema.shape.bullish,
+  bearish: CommentarySchema.shape.bearish,
+  uncertain: CommentarySchema.shape.uncertain,
+  watch: CommentarySchema.shape.watch,
+  dataGaps: CommentarySchema.shape.dataGaps,
+});
+
+const briefSystem = (name: string) => `당신은 Gnomon Analytics의 리서치 요약 담당이에요. ${name} 주간 리포트의 짧은 AI 요약을 씁니다.
+
+- summary: 이번 주 무슨 일이 있었고 왜 중요한지 2~3문장.
+- bullish·bearish: 강세·약세 쪽 근거 각각 최대 3개. uncertain은 해석이 갈리는 점 최대 2개.
+- watch: 무엇이 나오면 판단이 바뀌는지 최대 3개.
+
+규칙:
+- 제공된 근거 목록에 있는 내용만 쓰고, 모든 주장에 근거 ID(P1, T1, F1, N1 …)를 답니다. 목록에 없는 사실·숫자·전망은 쓰지 않습니다.
+- 한국어 해요체로, 짧고 분명하게 씁니다. 내부 코드명이나 영어 약어 대신 뜻을 풀어 씁니다.
+- 매수·매도를 권하거나 목표가를 제시하지 않습니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
+- 같은 이야기의 재보도는 하나의 근거로 봅니다. 근거가 부족하면 dataGaps에 적고 억지로 결론 내지 않습니다.`;
+
 const system = (name: string) => `당신은 Gnomon Analytics의 리서치 위원회예요. ${name} 일일 리포트의 "AI 해설"을 한 번에 씁니다.
 
 위원회 구성:
@@ -231,19 +253,25 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     근거_목록: evidence.map(({ id, label, detail }) => ({ id, 제목: label, 내용: detail })),
   };
   try {
-    const response = await client.beta.messages.parse({
-      model,
-      max_tokens: 16000,
-      // Safety-classifier declines re-run on Anthropic's recommended fallback model.
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      output_config: { effort: tier === 'deep' ? 'medium' : 'low', format: betaZodOutputFormat(CommentarySchema) },
-      system: system(report.name),
-      messages: [{ role: 'user', content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.\n\n${JSON.stringify(input, null, 2)}` }],
-    });
+    const user = { role: 'user' as const, content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.\n\n${JSON.stringify(input, null, 2)}` };
+    // Deep: the full committee on the large model, with the server-side fallback for safety declines.
+    // Brief: the small model takes no effort setting or fallback.
+    const response = tier === 'deep'
+      ? await client.beta.messages.parse({
+        model, max_tokens: 16000,
+        betas: ['server-side-fallback-2026-07-01'],
+        fallbacks: 'default',
+        output_config: { effort: 'medium', format: betaZodOutputFormat(CommentarySchema) },
+        system: system(report.name), messages: [user],
+      })
+      : await client.beta.messages.parse({
+        model, max_tokens: 4000,
+        output_config: { format: betaZodOutputFormat(BriefSchema) },
+        system: briefSystem(report.name), messages: [user],
+      });
     if (response.stop_reason === 'refusal') return empty('FAILED', now, evidence, `REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
     if (response.stop_reason === 'max_tokens') return empty('FAILED', now, evidence, 'MAX_TOKENS');
-    const parsed = response.parsed_output;
+    const parsed = response.parsed_output as (z.infer<typeof BriefSchema> & Partial<z.infer<typeof CommentarySchema>>) | null;
     if (!parsed) return empty('FAILED', now, evidence, 'UNPARSEABLE_OUTPUT');
     const known = new Set(evidence.map((e) => e.id));
     let dropped = 0;

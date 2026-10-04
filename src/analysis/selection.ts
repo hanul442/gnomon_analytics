@@ -1,26 +1,29 @@
-// Weekly selection (docs/DESIGN.md §5.10, G-25): about 35 stocks a week get a
-// report. The always-covered stocks from tickers.json come first; the rest are
-// picked by one composite score over stocks above a market-cap floor:
-// liquidity (20-session trading value), the size of the 5-session move, a
-// trading-value surge against the prior 60 sessions, and major filings.
-// The top few get the deep AI committee, the rest a brief one. Pure.
+// Weekly selection (docs/DESIGN.md §5.10, G-25, G-28): about 40 stocks a week
+// get a report. The full AI committee goes to the always-covered stocks from
+// tickers.json plus the largest companies by market cap (five in all). The rest
+// get a brief summary and are picked by one composite score over stocks above a
+// market-cap floor, so that big, much-traded and newsworthy stocks come before
+// the week's biggest movers: size (market cap), liquidity (20-session trading
+// value), major filings, the 5-session move and a trading-value surge. Pure.
 
 import type { UniverseRow } from '../sources/naverList.js';
 
-export const SELECTION_METHOD = 'gnm-select-v1';
+export const SELECTION_METHOD = 'gnm-select-v2';
 
 export interface SelectionParams {
   size: number;
-  /** Picks (core included) that get the deep committee. */
-  deep: number;
+  /** Largest companies by market cap added to the core stocks for the deep committee. */
+  bigCaps: number;
   /** KRW. */
   minMarketCap: number;
-  weights: { liquidity: number; move: number; surge: number; event: number };
+  weights: Weights;
 }
 
+type Weights = { size: number; liquidity: number; event: number; move: number; surge: number };
+
 export const DEFAULT_SELECTION: SelectionParams = {
-  size: 35, deep: 10, minMarketCap: 5e11,
-  weights: { liquidity: 0.35, move: 0.25, surge: 0.2, event: 0.2 },
+  size: 40, bigCaps: 3, minMarketCap: 5e11,
+  weights: { size: 0.25, liquidity: 0.25, event: 0.25, move: 0.15, surge: 0.1 },
 };
 
 /** Common shares only: preferred shares end in 5/7/9/K, SPACs are excluded. */
@@ -52,16 +55,16 @@ export interface Pick {
   market: 'KOSPI' | 'KOSDAQ';
   core: boolean;
   tier: 'deep' | 'brief';
-  /** 0–1 composite; null for core stocks picked regardless. */
+  /** 0–1 composite; null for stocks picked regardless (core and the largest by market cap). */
   score: number | null;
-  parts: { liquidity: number; move: number; surge: number; event: number } | null;
+  parts: Weights | null;
   ret5: number | null;
   surge: number | null;
   reasons: string[];
 }
 
 export interface Selection {
-  method: typeof SELECTION_METHOD;
+  method: string;
   /** Session the selection is based on. */
   date: string;
   generatedAt: string;
@@ -90,7 +93,7 @@ function stats(c: CandidateInput) {
   return { liq, ret5, surge, ev: eventScore(c.filings) };
 }
 
-const eok = (krw: number) => `${Math.round(krw / 1e8).toLocaleString('ko-KR')}억`;
+const eok = (krw: number) => (krw >= 1e12 ? `${(krw / 1e12).toFixed(1).replace(/\.0$/, '')}조` : `${Math.round(krw / 1e8).toLocaleString('ko-KR')}억`);
 
 export function selectWeekly(input: {
   date: string;
@@ -104,22 +107,26 @@ export function selectWeekly(input: {
   const params = input.params ?? DEFAULT_SELECTION;
   const coreSet = new Set(input.core.map((c) => c.symbol));
   const scored = input.candidates.filter((c) => !coreSet.has(c.row.symbol)).map((c) => ({ c, s: stats(c) }));
-  const liqs = scored.map((x) => x.s.liq), moves = scored.map((x) => Math.abs(x.s.ret5 ?? 0)), surges = scored.map((x) => x.s.surge ?? 0);
+  const caps = scored.map((x) => x.c.row.marketCap ?? 0), liqs = scored.map((x) => x.s.liq), moves = scored.map((x) => Math.abs(x.s.ret5 ?? 0)), surges = scored.map((x) => x.s.surge ?? 0);
   const w = params.weights;
   const ranked = scored.map(({ c, s }) => {
-    const parts = { liquidity: percentile(liqs, s.liq), move: percentile(moves, Math.abs(s.ret5 ?? 0)), surge: percentile(surges, s.surge ?? 0), event: s.ev.score };
-    const score = w.liquidity * parts.liquidity + w.move * parts.move + w.surge * parts.surge + w.event * parts.event;
+    const parts: Weights = { size: percentile(caps, c.row.marketCap ?? 0), liquidity: percentile(liqs, s.liq), event: s.ev.score, move: percentile(moves, Math.abs(s.ret5 ?? 0)), surge: percentile(surges, s.surge ?? 0) };
+    const score = w.size * parts.size + w.liquidity * parts.liquidity + w.event * parts.event + w.move * parts.move + w.surge * parts.surge;
     const reasons: string[] = [];
+    if (parts.size >= 0.9 && c.row.marketCap) reasons.push(`시가총액 ${eok(c.row.marketCap)}원`);
     if (parts.liquidity >= 0.9) reasons.push(`20일 평균 거래대금 ${eok(s.liq)}원`);
+    for (const h of s.ev.hits) reasons.push(`공시: ${h}`);
     if (s.ret5 !== null && Math.abs(s.ret5) >= 0.08) reasons.push(`5거래일 ${s.ret5 > 0 ? '+' : ''}${(s.ret5 * 100).toFixed(1)}%`);
     if (s.surge !== null && s.surge >= 1.8) reasons.push(`거래대금 평소의 ${s.surge.toFixed(1)}배`);
-    for (const h of s.ev.hits) reasons.push(`공시: ${h}`);
     if (!reasons.length) reasons.push('종합 점수 상위');
-    return { pick: { symbol: c.row.symbol, name: c.row.name, market: c.row.market, core: false, tier: 'brief', score, parts, ret5: s.ret5, surge: s.surge, reasons } as Pick };
+    return { cap: c.row.marketCap ?? 0, pick: { symbol: c.row.symbol, name: c.row.name, market: c.row.market, core: false, tier: 'brief', score, parts, ret5: s.ret5, surge: s.surge, reasons } as Pick };
   }).sort((a, b) => b.pick.score! - a.pick.score! || (a.pick.symbol < b.pick.symbol ? -1 : 1));
-  const core: Pick[] = input.core.map((c) => ({ ...c, core: true, tier: 'deep', score: null, parts: null, ret5: null, surge: null, reasons: ['매일 리포트하는 대표 종목'] }));
-  const picks = [...core, ...ranked.slice(0, Math.max(0, params.size - core.length)).map((r) => r.pick)];
-  picks.forEach((p, i) => { p.tier = i < params.deep ? 'deep' : 'brief'; });
+  const core: Pick[] = input.core.map((c) => ({ ...c, core: true, tier: 'deep', score: null, parts: null, ret5: null, surge: null, reasons: ['매주 리포트하는 대표 종목'] }));
+  // The largest companies join the core for the full committee, whatever their score.
+  const big = [...ranked].sort((a, b) => b.cap - a.cap).slice(0, params.bigCaps).map((r) => ({ ...r.pick, tier: 'deep' as const, score: null, reasons: [`시가총액 상위 (${eok(r.cap)}원)`] }));
+  const bigSet = new Set(big.map((p) => p.symbol));
+  const rest = ranked.filter((r) => !bigSet.has(r.pick.symbol)).map((r) => r.pick);
+  const picks = [...core, ...big, ...rest].slice(0, Math.max(params.size, core.length + big.length));
   return {
     method: SELECTION_METHOD, date: input.date, generatedAt: input.generatedAt.toISOString(), params,
     universe: input.universe, eligible: input.eligibleCount, scored: scored.length, picks,
@@ -127,16 +134,18 @@ export function selectWeekly(input: {
 }
 
 /**
- * Which eligible stocks are worth fetching bars for: the most traded today,
- * the biggest movers today, and anything with a major filing. Keeps the run short.
+ * Which eligible stocks are worth fetching bars for: the largest, the most
+ * traded today, the biggest movers today, and anything with a major filing.
+ * Keeps the run short.
  */
 export function shortlist(rows: readonly UniverseRow[], filingsBySymbol: ReadonlyMap<string, readonly string[]>, params: SelectionParams = DEFAULT_SELECTION, limit = 220): UniverseRow[] {
   const ok = rows.filter((r) => eligible(r, params));
+  const byCap = [...ok].sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0)).slice(0, 80);
   const byValue = [...ok].sort((a, b) => (b.tradingValue ?? 0) - (a.tradingValue ?? 0)).slice(0, 140);
   const byMove = [...ok].sort((a, b) => Math.abs(b.changePct ?? 0) - Math.abs(a.changePct ?? 0)).slice(0, 50);
   const byEvent = ok.filter((r) => eventScore(filingsBySymbol.get(r.symbol) ?? []).score > 0);
   const seen = new Set<string>();
   const out: UniverseRow[] = [];
-  for (const r of [...byValue, ...byMove, ...byEvent]) if (!seen.has(r.symbol)) { seen.add(r.symbol); out.push(r); }
+  for (const r of [...byCap, ...byValue, ...byMove, ...byEvent]) if (!seen.has(r.symbol)) { seen.add(r.symbol); out.push(r); }
   return out.slice(0, limit);
 }

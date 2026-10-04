@@ -36,6 +36,8 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   assert.ok(page.includes('data-strategy="macd"') && page.includes('id="strat-info"') && page.includes('data-show-strategy'));
   // The parliament: every vote as a seat, with faction chips and seat details.
   assert.ok(page.includes('id="parliament"') && page.includes('data-pf="indicator"') && (page.match(/class="seat /g) ?? []).length >= 16);
+  // Chart tools: presets, an indicator sheet and a strategy sheet.
+  for (const s of ['data-preset="momentum"', 'id="ind-sheet"', 'id="strat-sheet"', 'id="active-pills"']) assert.ok(page.includes(s), s);
   assert.ok(page.includes('class="card hs"'));
   assert.ok(page.includes('id="vlines"') && page.includes('id="ev-strip"') && page.includes('class="trade-log"'));
   // The front page is the live dashboard; the archive lists dated reports.

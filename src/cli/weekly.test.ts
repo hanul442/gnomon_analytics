@@ -16,10 +16,10 @@ const feed = (symbol: string) => `<chartdata symbol="${symbol}">${Array.from({ l
   const v = symbol === '222220' && i >= 75 ? 300000 : 100000;
   return `<item data="${day(i)}|${c}|${c}|${c}|${c}|${v}" />`;
 }).join('')}</chartdata>`;
-const listed = (code: string, name: string) => ({ itemCode: code, stockName: name, stockEndType: 'stock', closePrice: '10,000', fluctuationsRatio: '1.0', accumulatedTradingValue: '100,000', marketValue: '100,000' });
+const listed = (code: string, name: string, cap = '100,000') => ({ itemCode: code, stockName: name, stockEndType: 'stock', closePrice: '10,000', fluctuationsRatio: '1.0', accumulatedTradingValue: '100,000', marketValue: cap });
 const fake = (async (url: string | URL | Request) => {
   const u = String(url);
-  if (u.includes('/stocks/marketValue/KOSPI')) return new Response(JSON.stringify({ stocks: [listed('000660', 'SK하이닉스'), listed('111110', '조용한전자'), listed('222220', '뛰는바이오')], totalCount: 3 }));
+  if (u.includes('/stocks/marketValue/KOSPI')) return new Response(JSON.stringify({ stocks: [listed('000660', 'SK하이닉스'), listed('111110', '조용한전자', '300,000'), listed('222220', '뛰는바이오')], totalCount: 3 }));
   if (u.includes('/stocks/marketValue/KOSDAQ')) return new Response(JSON.stringify({ stocks: [], totalCount: 0 }));
   const m = M_STOCK.find(([path]) => u.includes('m.stock.naver.com') && u.includes(path));
   if (m) return new Response(await readFile(join(FIX, m[1]), 'utf8'));
@@ -30,29 +30,34 @@ const fake = (async (url: string | URL | Request) => {
   return new Response('<rss><channel></channel></rss>');
 }) as typeof fetch;
 
-test('the first settled run picks the week: core first, deep and brief AI by tier, cards on the front page', async () => {
+test('the first settled run picks the week: core and the largest company get the committee, the rest a brief', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gnm-'));
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const models: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string }) => { models.push(req.model); return { stop_reason: 'end_turn', model: req.model, usage: { input_tokens: 100, output_tokens: 50 }, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
-  const out = await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: { ...DEFAULT_SELECTION, size: 3, deep: 2 } });
+  const params = { ...DEFAULT_SELECTION, size: 3, bigCaps: 1 };
+  const out = await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: params });
   assert.equal(out.selected, '2026-10-02');
   const sel = JSON.parse(await readFile(join(root, 'data', 'selections', '2026-10-02.json'), 'utf8')) as { picks: { symbol: string; tier: string; reasons: string[] }[] };
-  assert.deepEqual(sel.picks.map((p) => [p.symbol, p.tier]), [['000660', 'deep'], ['222220', 'deep'], ['111110', 'brief']]);
-  assert.ok(sel.picks[2]!.reasons.some((r) => r.includes('영업(잠정)실적')));
-  assert.deepEqual(out.results.map((r) => [r.symbol, r.report]), [['000660', 'WRITTEN'], ['222220', 'WRITTEN'], ['111110', 'WRITTEN']]);
-  assert.deepEqual(models.sort(), ['claude-opus-5-5', 'claude-opus-5-5', 'claude-sonnet-5-5']);
-  const report = JSON.parse(await readFile(join(root, 'reports', '111110', '2026-10-02.json'), 'utf8')) as { commentary: { tier: string; usage: unknown } };
+  assert.deepEqual(sel.picks.map((p) => [p.symbol, p.tier]), [['000660', 'deep'], ['111110', 'deep'], ['222220', 'brief']]);
+  assert.deepEqual(sel.picks[1]!.reasons, ['시가총액 상위 (30조원)']);
+  assert.deepEqual(out.results.map((r) => [r.symbol, r.report]), [['000660', 'WRITTEN'], ['111110', 'WRITTEN'], ['222220', 'WRITTEN']]);
+  assert.deepEqual(models.sort(), ['claude-haiku-4-5', 'claude-opus-5-5', 'claude-opus-5-5']);
+  const report = JSON.parse(await readFile(join(root, 'reports', '222220', '2026-10-02.json'), 'utf8')) as { commentary: { tier: string; usage: unknown } };
   assert.deepEqual([report.commentary.tier, report.commentary.usage], ['brief', { inputTokens: 100, outputTokens: 50 }]);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
   assert.ok(home.includes('이번 주 선정 2종목') && home.includes('href="222220/index.html"') && home.includes('5거래일 +25.0%'));
-  // The next run the same week: no new selection, picks keep their pages, no AI for them.
+  // Monday: no new selection and no AI; every page is a live dashboard and no dated report is kept.
   models.length = 0;
-  const again = await runDaily({ root, now: new Date('2026-10-05T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: { ...DEFAULT_SELECTION, size: 3, deep: 2 } });
+  const again = await runDaily({ root, now: new Date('2026-10-05T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: params });
   assert.equal(again.selected, null);
-  assert.deepEqual(models, ['claude-opus-5-5']);
-  // Picks keep only the dated report of the day their AI ran.
-  assert.deepEqual(again.results.map((r) => [r.symbol, r.report]), [['000660', 'WRITTEN'], ['222220', 'SKIPPED'], ['111110', 'SKIPPED']]);
+  assert.deepEqual(models, []);
+  assert.deepEqual(again.results.map((r) => [r.symbol, r.report]), [['000660', 'SKIPPED'], ['111110', 'SKIPPED'], ['222220', 'SKIPPED']]);
+  // Core stocks still log forecasts and the paper ledger on a trading day without a report.
+  const paper = (await readFile(join(root, 'data', 'paper', '000660.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as { date: string });
+  assert.ok(paper.some((p) => p.date === '2026-10-05'));
+  // The live page carries the latest committee's commentary with its date.
+  assert.match(await readFile(join(root, 'site', '000660', 'index.html'), 'utf8'), /2026-10-02 리포트의 AI 위원회 해설/);
 });
 
 test('a requested stock gets one deep committee report, then dashboards only', async () => {
@@ -60,7 +65,7 @@ test('a requested stock gets one deep committee report, then dashboards only', a
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const calls: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string; messages: { content: string }[] }) => { calls.push(/"종목": "([^"]+)"/.exec(req.messages[0]!.content)?.[1] ?? '?'); return { stop_reason: 'end_turn', model: req.model, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
-  const opts = { root, apiKey: 'k', fetch: fake, tickers, anthropic, requests: [{ symbol: '111110', requestedAt: '2026-10-02' }], selectionParams: { ...DEFAULT_SELECTION, size: 1, deep: 1 } };
+  const opts = { root, apiKey: 'k', fetch: fake, tickers, anthropic, requests: [{ symbol: '111110', requestedAt: '2026-10-02' }], selectionParams: { ...DEFAULT_SELECTION, size: 1, bigCaps: 0 } };
   await runDaily({ ...opts, now: new Date('2026-10-02T09:30:00Z') });
   assert.deepEqual(calls.sort(), ['SK하이닉스 (000660)', '조용한전자 (111110)']);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
@@ -73,5 +78,5 @@ test('a requested stock gets one deep committee report, then dashboards only', a
   assert.ok(stockPage.includes('id="sp-request"') && stockPage.includes('class="card locked"'));
   calls.length = 0;
   await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
-  assert.deepEqual(calls, ['SK하이닉스 (000660)']);
+  assert.deepEqual(calls, []);
 });
