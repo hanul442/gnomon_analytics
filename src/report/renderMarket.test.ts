@@ -38,6 +38,8 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   assert.ok(page.includes('id="parliament"') && page.includes('data-pf="indicator"') && (page.match(/class="seat /g) ?? []).length >= 16);
   // Chart tools: presets, an indicator sheet and a strategy sheet.
   for (const s of ['data-preset="momentum"', 'id="ind-sheet"', 'id="strat-sheet"', 'id="active-pills"']) assert.ok(page.includes(s), s);
+  // Plans: details sit behind Plus gates; anyone can ask the AI with credits.
+  assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 5 && page.includes('id="ask"') && page.includes('data-plan="free"'));
   assert.ok(page.includes('class="card hs"'));
   assert.ok(page.includes('id="vlines"') && page.includes('id="ev-strip"') && page.includes('class="trade-log"'));
   // The front page is the live dashboard; the archive lists dated reports.

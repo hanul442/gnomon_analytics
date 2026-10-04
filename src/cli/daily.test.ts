@@ -99,7 +99,7 @@ test('one stock failing does not stop the others', async () => {
   assert.deepEqual(out.results.map((r) => r.symbol), ['000660']);
   assert.deepEqual(out.failed.map((f) => f.symbol), ['999990']);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
-  assert.ok(home.includes('없는종목') && home.includes('아직 가격 기록이 없어요'));
+  assert.ok(home.includes('없는종목') && home.includes('가격 기록 없음'));
   await assert.rejects(runDaily({ root, now: new Date('2026-10-02T05:00:00Z'), apiKey: 'k', fetch: failing, naver, tickers: [broken] }), /every stock failed/);
 });
 

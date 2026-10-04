@@ -46,7 +46,10 @@ test('the first settled run picks the week: core and the largest company get the
   const report = JSON.parse(await readFile(join(root, 'reports', '222220', '2026-10-02.json'), 'utf8')) as { commentary: { tier: string; usage: unknown } };
   assert.deepEqual([report.commentary.tier, report.commentary.usage], ['brief', { inputTokens: 100, outputTokens: 50 }]);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
-  assert.ok(home.includes('이번 주 선정 2종목') && home.includes('href="222220/index.html"') && home.includes('5거래일 +25.0%'));
+  assert.ok(home.includes('이번 주 AI 리포트 3종목') && home.includes('href="222220/index.html"') && home.includes('data-kind="weekly"'));
+  // The market dashboard: index quotes, temperature from every stock's computation, movers; pricing pages exist.
+  assert.ok(home.includes('시장 온도') && home.includes('id="movers"') && home.includes('id="watch"'));
+  assert.ok((await readFile(join(root, 'site', 'pricing.html'), 'utf8')).includes('플러스') && (await readFile(join(root, 'site', 'checkout.html'), 'utf8')).includes('MOCK'));
   // Monday: no new selection and no AI; every page is a live dashboard and no dated report is kept.
   models.length = 0;
   const again = await runDaily({ root, now: new Date('2026-10-05T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: params });
@@ -69,13 +72,16 @@ test('a requested stock gets one deep committee report, then dashboards only', a
   await runDaily({ ...opts, now: new Date('2026-10-02T09:30:00Z') });
   assert.deepEqual(calls.sort(), ['SK하이닉스 (000660)', '조용한전자 (111110)']);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
-  assert.ok(home.includes('요청한 리포트') && home.includes('href="111110/index.html"'));
+  assert.ok(home.includes('data-kind="request"') && home.includes('href="111110/index.html"'));
   // Stocks without a report get chart data for the shared, locked stock page.
   const page = JSON.parse(await readFile(join(root, 'site', 's', '222220.json'), 'utf8')) as { name: string; bars: unknown[] };
   assert.deepEqual([page.name, page.bars.length], ['뛰는바이오', 80]);
   await assert.rejects(readFile(join(root, 'site', 's', '111110.json')));
   const stockPage = await readFile(join(root, 'site', 'stock.html'), 'utf8');
-  assert.ok(stockPage.includes('id="sp-request"') && stockPage.includes('class="card locked"'));
+  assert.ok(stockPage.includes('data-spend="report"') && stockPage.includes('class="gate"') && stockPage.includes('class="card locked"'));
+  // Every stock page carries the free computation: signal, one line, moves, fair value, forecasts.
+  const calc = (page as unknown as { calc: { signal: { label: string }; line: string; moves: unknown[]; forecasts: unknown[] } }).calc;
+  assert.ok(calc.signal.label && calc.line.includes('기술 신호') && calc.moves.length === 3 && Array.isArray(calc.forecasts), JSON.stringify(calc).slice(0, 200));
   calls.length = 0;
   await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
   assert.deepEqual(calls, []);
