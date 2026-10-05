@@ -136,8 +136,9 @@ export function renderHome(data: HomeData): string {
   const asOf = data.pulse?.date ?? data.indices[0]?.date ?? '';
   const body = `${HOME_STYLE}<section class="hero home-hero" id="top"><div class="hero-main"><div class="eyebrow"><span>오늘 시장</span>${asOf ? `<span>${esc(asOf)} 기준</span>` : ''}</div><h1>지금 무엇을 봐야 할까요</h1>
 <p class="hero-line">전 종목의 기술 신호를 매일 계산하고, 매주 금요일 AI 리포트를 써요. 예측은 기록해 두고 나중에 채점해요.</p>
-<div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명·코드·초성 (예: 삼성, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
-<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div></div></section>
+<div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
+<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div>
+<nav class="mkt-tabs" aria-label="시장"><a href="screener.html">국내 주식<small>스크리너</small></a><a href="etfs.html">ETF<small>국내 상장 전체</small></a><a href="coins.html">코인<small>업비트 원화</small></a></nav></div></section>
 ${indexStrip(data.indices, data.universe)}
 <div class="home-grid"><div class="home-main">${FEED}${pulseCard(data.pulse)}${WATCH}${reportRows(sorted, data.selection)}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
@@ -172,7 +173,8 @@ const FEED_SCRIPT = `<script>
 })();
 </script>`;
 
-const HOME_STYLE = `<style>
+const HOME_STYLE = `<style>.mkt-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.mkt-tabs a{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line-strong);border-radius:12px;padding:9px 12px;background:#fff;text-decoration:none;color:var(--fg);font-weight:700;font-size:14px}.mkt-tabs a small{font-weight:500;font-size:11px;color:var(--muted)}.mkt-tabs a:hover{border-color:var(--accent)}
+
 .feed{background:linear-gradient(135deg,#f3f7fd,#fff)}.feed-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.feed-head b{font-size:16px}.feed-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chip-link{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:999px;padding:5px 11px;font-size:13px;text-decoration:none;background:#fff}.chip-link.alt{border-color:var(--navy);color:var(--navy);font-weight:700}.muted-chip{color:var(--muted);background:#f4f6f9}
 .home-hero{grid-template-columns:minmax(0,1fr)}.home-hero h1{font-size:30px}.home-hero .search-block{margin-top:14px;position:relative}

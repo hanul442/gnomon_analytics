@@ -324,7 +324,7 @@ export function shell(base: string, title: string, body: string, options: { tabs
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
 <nav class="top-links" aria-label="사이트"><a href="${rootHref}"${cur('home')}>홈</a>${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}screener.html" class="tl-hide"${cur('screener')}>스크리너</a><a href="${base}etfs.html" class="tl-hide"${cur('etfs')}>ETF</a><a href="${base}coins.html" class="tl-hide"${cur('coins')}>코인</a><a href="${base}scorecard.html" class="tl-hide"${cur('scorecard') || cur('paper')}>성적표</a><a href="${base}pricing.html" class="tl-hide"${cur('pricing')}>요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>
-<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}scorecard.html">성적표</a><a href="${base}paper.html">모의투자</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.js?v=${ASSET_VERSION}"></script>${options.scripts ?? ''}<script src="${base}assets/ui.js?v=${ASSET_VERSION}"></script></body></html>`;
+<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}screener.html">스크리너</a><a href="${base}etfs.html">ETF</a><a href="${base}coins.html">코인</a><a href="${base}scorecard.html">성적표</a><a href="${base}paper.html">모의투자</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.js?v=${ASSET_VERSION}"></script>${options.scripts ?? ''}<script src="${base}assets/ui.js?v=${ASSET_VERSION}"></script></body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
@@ -697,19 +697,26 @@ export const SEARCH_SCRIPT = `<script>
   var cho = function (s) { var r = ''; for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i) - 0xAC00; r += c >= 0 && c <= 11171 ? CHO[Math.floor(c / 588)] : s[i]; } return r; };
   var norm = function (s) { return s.toLowerCase().replace(/\\s+/g, ''); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
+  var won = function (v) { var a = Math.abs(v); return (a >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: a >= 1 ? 2 : 4 })) + '원'; };
+  var MKT = { KOSPI: '코스피', KOSDAQ: '코스닥', ETF: 'ETF', COIN: '코인 · 업비트' };
   var load = function () {
     if (items) return Promise.resolve(items);
     return fetch('search.json').then(function (r) { return r.json(); }).then(function (d) {
-      items = d.items.map(function (x, i) { return { c: x[0], n: x[1], m: x[2], p: x[3], x: x[4], r: x[5], k: norm(x[1]), h: cho(norm(x[1])), i: i }; });
-      return items;
+      items = d.items.map(function (x, i) { return { c: x[0], n: x[1], m: x[2], p: x[3], x: x[4], r: x[5], k: norm(x[1]), h: cho(norm(x[1])), e: '', i: i }; });
+      // ETFs and coins come from their own lists; either may be missing.
+      var extra = function (url, kind) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { (d.rows || []).forEach(function (x) {
+        var sym = kind === 'COIN' ? x[0].replace('KRW-', '') : x[0];
+        items.push({ c: x[0], n: x[1], m: kind, p: x[4], x: x[5], r: 0, k: norm(x[1]), h: cho(norm(x[1])), e: norm(sym + ' ' + (x[2] || '')), i: items.length });
+      }); }).catch(function () {}); };
+      return Promise.all([extra('etfs.json', 'ETF'), extra('coins.json', 'COIN')]).then(function () { return items; });
     });
   };
   var score = function (it, t, onlyCho) {
     if (it.c === t) return 0;
     if (onlyCho) return it.h.indexOf(t) === 0 ? 2 : it.h.indexOf(t) > 0 ? 4 : -1;
     if (it.k === t) return 0;
-    if (it.c.indexOf(t) === 0 || it.k.indexOf(t) === 0) return 1;
+    if (it.c.indexOf(t) === 0 || it.k.indexOf(t) === 0 || (it.e && it.e.indexOf(t) === 0)) return 1;
+    if (it.e && it.e.indexOf(t) > 0) return 3;
     if (it.k.indexOf(t) > 0) return 3;
     return -1;
   };
@@ -719,12 +726,12 @@ export const SEARCH_SCRIPT = `<script>
     var hits = list.map(function (it) { return [score(it, t, onlyCho), it]; }).filter(function (p) { return p[0] >= 0; })
       .sort(function (a, b) { return a[0] - b[0] || b[1].r - a[1].r || a[1].i - b[1].i; }).slice(0, 20);
     out.hidden = false;
-    if (!hits.length) { out.innerHTML = '<p class="empty">찾는 종목이 없어요. 상장 종목의 이름이나 6자리 코드로 찾아 보세요.</p>'; return; }
+    if (!hits.length) { out.innerHTML = '<p class="empty">찾는 종목이 없어요. 종목·ETF 이름이나 6자리 코드, 코인 이름이나 심볼로 찾아 보세요.</p>'; return; }
     out.innerHTML = hits.map(function (p) {
       var it = p[1], ch = it.x;
       var price = it.p == null ? '' : '<span class="sr-price"><b>' + won(it.p) + '</b>' + (ch == null ? '' : ' <span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span>';
-      var right = it.r ? '<a class="sr-go" href="' + esc(it.c) + '/index.html">리포트 보기 ›</a>' : '<a class="sr-go sr-lock" href="stock.html?c=' + esc(it.c) + '">' + LOCK + '차트 보기 ›</a>';
-      return '<div class="row-item sr-row"><div class="ri-main"><b>' + esc(it.n) + '</b><div class="muted small">' + esc(it.c) + ' · ' + (it.m === 'KOSPI' ? '코스피' : '코스닥') + '</div></div>' + price + right + '</div>';
+      var right = it.r ? '<a class="sr-go" href="' + esc(it.c) + '/index.html">리포트 보기 ›</a>' : it.m === 'COIN' ? '<a class="sr-go" href="coin.html?m=' + esc(it.c) + '">차트 보기 ›</a>' : '<a class="sr-go sr-lock" href="stock.html?c=' + esc(it.c) + '">' + LOCK + '차트 보기 ›</a>';
+      return '<div class="row-item sr-row"><div class="ri-main"><b>' + esc(it.n) + '</b><div class="muted small">' + esc(it.m === 'COIN' ? it.c.replace('KRW-', '') : it.c) + ' · ' + (MKT[it.m] || it.m) + '</div></div>' + price + right + '</div>';
     }).join('');
   };
   q.addEventListener('input', function () {
