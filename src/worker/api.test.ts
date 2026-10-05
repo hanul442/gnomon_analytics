@@ -195,3 +195,29 @@ test('saved screens alert once per data date, only on newly matching stocks', as
   await t.call('POST', '/notifications/read', {}, u.session);
   assert.equal((await t.call('GET', '/notifications', undefined, u.session)).body.unread, 0);
 });
+
+test('intraday: Pro-level watchers hear once when volume runs ahead of its usual pace', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('i@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  assert.deepEqual((await t.call('POST', '/watch', { symbols: ['000660', 'bad', '000660'] }, u.session)).body.count, 1);
+  assert.deepEqual((await t.call('GET', '/watch', undefined, u.session)).body.symbols, ['000660']);
+  // Minute feed: two earlier sessions with 1,000 shares by 10:00; today 5,000 by 10:00 and +6%.
+  const item = (d: string, hm: string, close: number, cum: number) => `<item data="${d}${hm}|null|null|null|${close}|${cum}"/>`;
+  const feed = `<chartdata>${item('20261001', '1000', 100, 1000)}${item('20261001', '1530', 100, 3000)}${item('20261002', '1000', 100, 1000)}${item('20261002', '1530', 100, 3000)}${item('20261005', '0930', 103, 2000)}${item('20261005', '1000', 106, 5000)}</chartdata>`;
+  const real = t.deps.fetch;
+  t.deps.fetch = (async (url: string, init?: RequestInit) => {
+    if (String(url).includes('fchart.stock.naver.com')) return new Response(feed);
+    if (String(url).endsWith('/search.json')) return Response.json({ items: [['000660', 'SK하이닉스']] });
+    return real(url, init);
+  }) as typeof fetch;
+  const { runIntraday } = await import('./api.js');
+  t.tick(Date.parse('2026-10-05T01:05:00Z') - t.deps.now().getTime()); // 10:05 KST, Monday
+  assert.deepEqual(await runIntraday(t.env, t.deps), { symbols: 1, alerts: 2 });
+  assert.deepEqual(await runIntraday(t.env, t.deps), { symbols: 1, alerts: 0 });
+  const n = (await t.call('GET', '/notifications', undefined, u.session)).body.items.map((x: any) => x.title);
+  assert.ok(n.some((x: string) => /SK하이닉스 거래량이 평소 이 시간의 5\.0배/.test(x)) && n.some((x: string) => /\+6\.0% 올랐어요/.test(x)), JSON.stringify(n));
+  // Outside the session nothing runs.
+  t.tick(10 * 3600_000);
+  assert.deepEqual(await runIntraday(t.env, t.deps), { symbols: 0, alerts: 0 });
+});

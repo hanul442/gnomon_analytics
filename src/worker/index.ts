@@ -1,7 +1,7 @@
 // Cloudflare Worker entry (wrangler.toml). Wires the real clock, fetch and Anthropic client into the API.
 
 import Anthropic from '@anthropic-ai/sdk';
-import { handle, runAlerts, type Env } from './api.js';
+import { handle, runAlerts, runIntraday, type Env } from './api.js';
 import type { AskClient } from './ask.js';
 
 export default {
@@ -12,7 +12,10 @@ export default {
     return handle(req, env, { now: () => new Date(), fetch: (input, init) => fetch(input, init), ...(ai ? { ai } : {}) });
   },
   /** Cron (wrangler.toml): screener alerts after the site's daily build. */
-  async scheduled(_event: unknown, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<void> {
-    ctx.waitUntil(runAlerts(env, { now: () => new Date(), fetch: (input, init) => fetch(input, init) }).then((r) => console.log('alerts', JSON.stringify(r))));
+  async scheduled(event: { cron: string }, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<void> {
+    const deps = { now: () => new Date(), fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init) };
+    // Every-10-minute trigger: the intraday scan; the evening triggers: screener alerts.
+    const job = event.cron.startsWith('*/10') ? runIntraday(env, deps) : runAlerts(env, deps);
+    ctx.waitUntil(job.then((r) => console.log(event.cron, JSON.stringify(r))));
   },
 };

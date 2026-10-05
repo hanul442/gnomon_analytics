@@ -200,7 +200,8 @@ const HOME_SCRIPT = `<script>
 (function () {
   var KEY = 'gnm-watch';
   var read = function () { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
-  var write = function (w) { try { localStorage.setItem(KEY, JSON.stringify(w)); } catch (e) {} };
+  // The alpha layer keeps the list on the server too (intraday alerts); it listens for this event.
+  var write = function (w) { try { localStorage.setItem(KEY, JSON.stringify(w)); localStorage.setItem('gnm-watch-at', String(Date.now())); } catch (e) {} window.dispatchEvent(new Event('gnm-watch')); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var items = null;
   var drawWatch = function () {

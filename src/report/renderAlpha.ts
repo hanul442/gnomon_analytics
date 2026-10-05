@@ -138,7 +138,7 @@ export function renderOnboarding(): string {
       // Holdings and watched stocks go straight into the watchlist.
       var w = JSON.parse(localStorage.getItem('gnm-watch') || '[]');
       picked.forEach(function (p) { if (w.indexOf(p[0]) < 0) w.push(p[0]); });
-      localStorage.setItem('gnm-watch', JSON.stringify(w));
+      localStorage.setItem('gnm-watch', JSON.stringify(w)); localStorage.setItem('gnm-watch-at', String(Date.now()));
     } catch (x) {}
     if (!window.GNM || !GNM.api) { location.href = 'index.html#feed'; return; }
     GNM.call('POST', '/survey', { kind: 'onboarding', answers: a }).then(function (r) {
