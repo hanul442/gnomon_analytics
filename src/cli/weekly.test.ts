@@ -53,6 +53,10 @@ test('the first settled run picks the week: core and the largest company get the
   const scorecard = await readFile(join(root, 'site', 'scorecard.html'), 'utf8');
   assert.ok(scorecard.includes('예측 범위 적중') && scorecard.includes('AI 분석가 순위') && scorecard.includes('href="222220/index.html"'));
   assert.ok((await readFile(join(root, 'site', 'terms.html'), 'utf8')).includes('투자 자문이나 매매 권유가 아니에요'));
+  // The screener: one row per stock with a computation, covered stocks marked.
+  const screener = JSON.parse(await readFile(join(root, 'site', 'screener.json'), 'utf8')) as { rows: unknown[][] };
+  assert.ok(screener.rows.length >= 3 && screener.rows.some((r) => r[0] === '222220' && r[13] === 1));
+  assert.ok((await readFile(join(root, 'site', 'screener.html'), 'utf8')).includes('data-preset="rebound"'));
   // Monday: no new selection and no AI; every page is a live dashboard and no dated report is kept.
   models.length = 0;
   const again = await runDaily({ root, now: new Date('2026-10-05T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: params });
