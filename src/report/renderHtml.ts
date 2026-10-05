@@ -604,9 +604,9 @@ ${panel('news', newsTab)}
 
 /** Ask the AI about this stock: 2 credits a question, any plan (MOCK answer until a server exists). */
 function askBox(report: DailyReport, base: string): string {
-  return `<section class="block" id="ask"><div class="block-head"><h2>AI에게 직접 질문</h2><span class="muted">질문 1회 ${CREDIT_COST.question}크레딧 · 요금제와 상관없이 크레딧으로</span></div>
+  return `<section class="block" id="ask"><div class="block-head"><h2>AI에게 직접 질문</h2><span class="muted">빠른 질문 ${CREDIT_COST.question} · 심층 질문 ${CREDIT_COST.deep}크레딧 · 요금제와 상관없이</span></div>
 <div class="card"><form class="ask" data-symbol="${escape(report.symbol)}"><label class="muted small" for="ask-q">${escape(report.name)}에 대해 궁금한 것을 물어보세요. 리포트의 근거 안에서 답해요.</label><textarea id="ask-q" maxlength="300" placeholder="예: 외국인 매도가 계속되면 어디까지 볼 수 있어요?"></textarea>
-<div class="ask-row"><span class="muted small">남은 크레딧 <b data-credits>0</b>개 · <a href="${base}pricing.html#credits">충전</a></span><button type="submit" class="credit-btn">질문하기 <small>${CREDIT_COST.question}크레딧</small></button></div><div class="ask-out" hidden aria-live="polite"></div></form></div></section>`;
+<div class="ask-row"><span class="muted small">남은 크레딧 <b data-credits>0</b>개 · <a href="${base}pricing.html#credits">충전</a></span><span class="ask-btns"><button type="submit" name="kind" value="question" class="credit-btn ghost">빠른 질문 <small>${CREDIT_COST.question}크레딧</small></button><button type="submit" name="kind" value="deep" class="credit-btn">심층 질문 <small>${CREDIT_COST.deep}크레딧</small></button></span></div><div class="ask-out" hidden aria-live="polite"></div></form></div></section>`;
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[], links: { base?: string; homeHref?: string; name?: string } = {}): string {

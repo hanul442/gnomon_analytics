@@ -6,30 +6,53 @@
 // Plans change depth, never the truth: every visitor sees the same signals,
 // numbers and records; paying shows more of the reasoning.
 
-export type PlanKey = 'free' | 'plus' | 'pro';
+export type PlanKey = 'free' | 'plus' | 'pro' | 'max';
+export const PLAN_RANK: Record<PlanKey, number> = { free: 0, plus: 1, pro: 2, max: 3 };
 
-export interface Plan { key: PlanKey; name: string; price: number; tagline: string; monthlyCredits: number; features: string[] }
+export interface Plan {
+  key: PlanKey; name: string; price: number; tagline: string; monthlyCredits: number;
+  /** Extra credits on top-ups, percent. */
+  topUpBonus: number;
+  /** Watchlist stocks covered by the full AI committee every week (Max). */
+  weeklyCoverage: number;
+  /** What this plan adds over the one below. */
+  adds: string[];
+  /** Not built yet: shown as "출시 예정". */
+  soon?: string[];
+}
 
 export const PLANS: readonly Plan[] = [
-  { key: 'free', name: '무료', price: 0, tagline: '한 줄 요약', monthlyCredits: 0, features: ['전 종목 검색과 1년 차트', '종목마다 한 줄 요약과 종합 기술 신호', 'AI 위원회 표결 분포와 요약', '뉴스·공시', '성적표 요약(예측 적중률·분석가 순위)'] },
-  { key: 'plus', name: '플러스', price: 9900, tagline: '상세 설명', monthlyCredits: 0, features: ['무료의 모든 것', '지표 16개 판단과 기간별 신호', '적정가와 예측 범위', '전략 대결과 모의투자 장부', '수급·펀더멘털 상세', 'AI 위원회 전체(분석가 근거·레드팀·시나리오)'] },
-  { key: 'pro', name: '프로', price: 29000, tagline: '상세 설명 + 매달 100크레딧', monthlyCredits: 100, features: ['플러스의 모든 것', '매달 100크레딧 포함', '리포트 요청과 AI 질문에 크레딧 사용', '충전 크레딧은 그대로 쌓여요'] },
+  { key: 'free', name: '무료', price: 0, tagline: '한 줄 요약', monthlyCredits: 0, topUpBonus: 0, weeklyCoverage: 0,
+    adds: ['전 종목 검색과 1년 차트', '종목마다 한 줄 요약과 종합 기술 신호', 'AI 위원회 표결 분포와 한 단락 요약', '뉴스·공시', '성적표 요약', '관심 종목 10개'] },
+  { key: 'plus', name: '플러스', price: 12900, tagline: '상세 설명', monthlyCredits: 0, topUpBonus: 0, weeklyCoverage: 0,
+    adds: ['지표 16개 판단과 기간별 신호', '적정가와 예측 범위', '전략 대결과 모의투자 장부', '수급·펀더멘털 상세', 'AI 위원회 전체(위원별 근거·레드팀·시나리오)', '성적표 상세(빗나간 예측)', '관심 종목 30개'] },
+  { key: 'pro', name: '프로', price: 29900, tagline: '상세 설명 + 직접 묻고 요청', monthlyCredits: 200, topUpBonus: 10, weeklyCoverage: 0,
+    adds: ['매달 200크레딧 (리포트 요청 4번 또는 질문 66번)', '충전할 때 크레딧 10% 더', '관심 종목 100개'],
+    soon: ['관심 종목 공시·신호 변화 알림', '지난 리포트 비교(이번 주 vs 지난주)'] },
+  { key: 'max', name: '맥스', price: 79000, tagline: '내 종목을 매주 위원회가 분석', monthlyCredits: 600, topUpBonus: 20, weeklyCoverage: 5,
+    adds: ['관심 종목 5개를 매주 AI 위원회 전체로 자동 리포트', '매달 600크레딧', '충전할 때 크레딧 20% 더', '관심 종목 무제한'],
+    soon: ['내 전략 백테스트(4년, 검증 구간 포함)', '데이터 내보내기(CSV)', '예측 실패 원인 분석 상세'] },
 ];
 
 /** What a credit action costs. Anyone with credits can use them, whatever the plan. */
-export const CREDIT_COST = { report: 30, question: 2 } as const;
+export const CREDIT_COST = { report: 50, deep: 10, question: 3 } as const;
+export const CREDIT_ACTIONS: readonly { key: keyof typeof CREDIT_COST; label: string; detail: string }[] = [
+  { key: 'report', label: '리포트 요청', detail: '리포트가 없는 종목에 AI 위원회 리포트를 한 번 써요' },
+  { key: 'deep', label: 'AI 심층 질문', detail: '위원회 모델(Opus)이 리포트 근거 전체를 다시 보고 답해요' },
+  { key: 'question', label: 'AI 빠른 질문', detail: '리포트 근거 안에서 빠르게 답해요' },
+];
 
 export interface CreditPack { key: string; credits: number; price: number }
 export const CREDIT_PACKS: readonly CreditPack[] = [
-  { key: 'c50', credits: 50, price: 4900 },
-  { key: 'c120', credits: 120, price: 9900 },
-  { key: 'c300', credits: 300, price: 22000 },
+  { key: 'c100', credits: 100, price: 9900 },
+  { key: 'c300', credits: 300, price: 27900 },
+  { key: 'c1000', credits: 1000, price: 84900 },
 ];
 
 export const won = (v: number) => `${v.toLocaleString('ko-KR')}원`;
 
 /** Runs in <head> before paint so locked sections never flash open. */
-export const PLAN_BOOT = `<script>try{var a=JSON.parse(localStorage.getItem('gnm-account')||'{}');if(a.plan==='plus'||a.plan==='pro')document.documentElement.setAttribute('data-plan',a.plan)}catch(e){}</script>`;
+export const PLAN_BOOT = `<script>try{var a=JSON.parse(localStorage.getItem('gnm-account')||'{}');if(a.plan==='plus'||a.plan==='pro'||a.plan==='max')document.documentElement.setAttribute('data-plan',a.plan)}catch(e){}</script>`;
 
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
@@ -47,6 +70,7 @@ html[data-plan=free] .gate>.gate-cta{display:flex;align-items:center;gap:12px;po
 .mock-note{background:#fff7e6;border:1px solid #f1d9a6;color:#6d4a00;border-radius:12px;padding:10px 14px;font-size:13px}
 .credit-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:12px;background:var(--navy);color:#fff;font:inherit;font-weight:700;padding:11px 16px;cursor:pointer}.credit-btn:hover{background:#1d3a6e}.credit-btn small{font-weight:600;opacity:.75}
 .ask{display:flex;flex-direction:column;gap:8px}.ask textarea{width:100%;min-height:76px;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}.ask-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.ask-btns{display:flex;gap:8px;flex-wrap:wrap}.credit-btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}.credit-btn.ghost:hover{background:var(--accent-soft)}
 .ask-out{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;font-size:14px}.ask-out li{margin:6px 0}.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:80;background:#0f1b2d;color:#fff;border-radius:12px;padding:10px 16px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 @media (max-width:820px){html[data-plan=free] .gate>.gate-cta{flex-wrap:wrap;top:80px}.gate-cta .btn-primary{width:100%}.acct i{display:none}}
 `;
@@ -54,7 +78,7 @@ html[data-plan=free] .gate>.gate-cta{display:flex;align-items:center;gap:12px;po
 /** Account state, credit spending and the mock AI question. Shared by every page. */
 export const ACCOUNT_SCRIPT = `<script>
 (function () {
-  var KEY = 'gnm-account', NAMES = { free: '무료', plus: '플러스', pro: '프로' }, COST = ${JSON.stringify(CREDIT_COST)};
+  var KEY = 'gnm-account', NAMES = { free: '무료', plus: '플러스', pro: '프로', max: '맥스' }, COST = ${JSON.stringify(CREDIT_COST)};
   var read = function () { try { var a = JSON.parse(localStorage.getItem(KEY) || '{}'); return { plan: a.plan || 'free', credits: a.credits || 0, log: a.log || [], requests: a.requests || [] }; } catch (e) { return { plan: 'free', credits: 0, log: [], requests: [] }; } };
   var write = function (a) { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} paint(); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -96,13 +120,14 @@ export const ACCOUNT_SCRIPT = `<script>
       e.preventDefault();
       var q = f.querySelector('textarea').value.trim();
       if (q.length < 2) { toast('질문을 적어 주세요.'); return; }
-      if (!spend('question', q.slice(0, 40))) return;
+      var kind = (e.submitter && e.submitter.value) || 'question';
+      if (!spend(kind, (kind === 'deep' ? '[심층] ' : '') + q.slice(0, 40))) return;
       var words = q.split(/[\\s,.?!]+/).filter(function (w) { return w.length >= 2; }).map(function (w) { return w.replace(/(은|는|이|가|을|를|의|에|도|요|까|나)$/, ''); }).filter(function (w) { return w.length >= 2; });
       var pool = [].slice.call(document.querySelectorAll('.why-grid li, .claims li, .red-team p, .story-title, .pl-detail p, .headline'));
       var hits = pool.map(function (el) { var t = el.textContent.replace(/\\s+/g, ' ').trim(); return [words.filter(function (w) { return t.indexOf(w) >= 0; }).length, t]; })
-        .filter(function (p) { return p[0] > 0; }).sort(function (x, y) { return y[0] - x[0]; }).slice(0, 3);
+        .filter(function (p) { return p[0] > 0; }).sort(function (x, y) { return y[0] - x[0]; }).slice(0, kind === 'deep' ? 6 : 3);
       out.hidden = false;
-      out.innerHTML = '<p class="muted small">MOCK 답변이에요. AI 연결 전이라 이 페이지의 근거에서 질문과 가까운 문장을 찾아 보여 드려요. 남은 크레딧 ' + read().credits + '개.</p>' +
+      out.innerHTML = '<p class="muted small">' + (kind === 'deep' ? '심층 질문 · ' : '') + 'MOCK 답변이에요. AI 연결 전이라 이 페이지의 근거에서 질문과 가까운 문장을 찾아 보여 드려요. 남은 크레딧 ' + read().credits + '개.</p>' +
         (hits.length ? '<ul>' + hits.map(function (h) { return '<li>' + esc(h[1]) + '</li>'; }).join('') + '</ul>' : '<p>관련 근거를 찾지 못했어요. 다른 낱말로 물어봐 주세요.</p>');
     });
   });
