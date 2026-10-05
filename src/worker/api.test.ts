@@ -163,3 +163,33 @@ test('CORS answers the site only; the quick tier skips thinking', async () => {
   const p = askParams({ tier: 'question', question: 'q' });
   assert.deepEqual([p.model, 'thinking' in p], ['claude-haiku-4-5', false]);
 });
+
+test('saved screens alert once per data date, only on newly matching stocks', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('w@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  const screen = { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 3 }] };
+  assert.equal((await t.call('POST', '/screens', { name: '급증', screen: { rules: [{ f: 'bad', op: '>=', v: 1 }] } }, u.session)).body.error, 'BAD_SCREEN');
+  assert.equal((await t.call('POST', '/screens', { name: '급증', screen }, u.session)).status, 200);
+  const id = (await t.call('GET', '/screens', undefined, u.session)).body.screens[0].id;
+  assert.equal((await t.call('POST', `/screens/${id}`, { alert: true }, u.session)).status, 200);
+  // [code, name, …, vol1 at 14]
+  const mk = (code: string, vol1: number) => { const r: unknown[] = Array(23).fill(null); r[0] = code; r[1] = `종목${code}`; r[14] = vol1; r[21] = 0; return r; };
+  let feed = { date: '2026-10-05', rows: [mk('000001', 4), mk('000002', 1)] };
+  const real = t.deps.fetch;
+  t.deps.fetch = (async (url: string, init?: RequestInit) => (String(url).endsWith('/screener.json') ? Response.json(feed) : real(url, init))) as typeof fetch;
+  const { runAlerts } = await import('./api.js');
+  // First run: today's matches become the baseline, no message.
+  assert.deepEqual(await runAlerts(t.env, t.deps), { date: '2026-10-05', screens: 1, sent: 0 });
+  // Same data date again: nothing to do.
+  assert.equal((await runAlerts(t.env, t.deps)).screens, 0);
+  feed = { date: '2026-10-06', rows: [mk('000001', 5), mk('000002', 3.5), mk('000003', 9)] };
+  assert.equal((await runAlerts(t.env, t.deps)).sent, 1);
+  const n = await t.call('GET', '/notifications', undefined, u.session);
+  assert.equal(n.body.unread, 1);
+  assert.match(n.body.items[0].title, /새로 걸린 종목 2개/);
+  assert.match(n.body.items[0].body, /종목000002, 종목000003/);
+  assert.ok(t.mails.some((m) => m.to === 'w@example.com'));
+  await t.call('POST', '/notifications/read', {}, u.session);
+  assert.equal((await t.call('GET', '/notifications', undefined, u.session)).body.unread, 0);
+});

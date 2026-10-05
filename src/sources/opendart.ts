@@ -66,6 +66,9 @@ export async function fetchDartFilings(
     corpCode?: string;
     /** Y 유가증권(KOSPI), K 코스닥. */
     corpClass?: 'Y' | 'K';
+    /** pblntf_ty: B 주요사항보고, I 거래소공시 … */
+    kind?: string;
+    maxPages?: number;
     /** YYYYMMDD, inclusive. */
     from: string;
     to: string;
@@ -75,12 +78,13 @@ export async function fetchDartFilings(
 ): Promise<Disclosure[]> {
   if (!options.apiKey.trim()) throw new Error('OPENDART_API_KEY_MISSING');
   const all: Disclosure[] = [];
-  const maxPages = options.corpCode ? 20 : 60;
+  const maxPages = options.maxPages ?? (options.corpCode ? 20 : 60);
   for (let page = 1; page <= maxPages; page += 1) {
     const url = new URL('https://opendart.fss.or.kr/api/list.json');
     url.searchParams.set('crtfc_key', options.apiKey);
     if (options.corpCode) url.searchParams.set('corp_code', options.corpCode);
     if (options.corpClass) url.searchParams.set('corp_cls', options.corpClass);
+    if (options.kind) url.searchParams.set('pblntf_ty', options.kind);
     url.searchParams.set('bgn_de', options.from);
     url.searchParams.set('end_de', options.to);
     url.searchParams.set('page_no', String(page));

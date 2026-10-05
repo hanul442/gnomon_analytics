@@ -19,8 +19,41 @@ export interface StockCalc {
   moves: { label: string; days: number; pct: number | null }[];
   fair: { center: number; low: number; high: number; gapPct: number; position: 'ABOVE' | 'INSIDE' | 'BELOW' } | null;
   forecasts: { days: number; p10: number; p50: number; p90: number }[];
+  /** Volume read from daily bars (G-48). Null with fewer than 25 sessions. */
+  volume?: VolumeRead | null;
+  /** Close against the highest high of the last year, % (0 at a new high). */
+  hi52GapPct?: number | null;
   /** The free one-line summary. */
   line: string;
+}
+
+export interface VolumeRead {
+  /** Last session's volume ÷ the average of the 20 sessions before it. */
+  ratio1: number;
+  /** Average of the last 5 sessions ÷ the average of the 20 before them. */
+  ratio5: number;
+  /** Close against the 20-session volume-weighted average price, %. */
+  vwapGapPct: number;
+  /** On-balance volume change over 20 sessions, as % of those sessions' total volume (−100…100). */
+  obvPct: number;
+  /** ACCUM: OBV rising while the price went nowhere or down; DIST: the reverse. */
+  flow: 'ACCUM' | 'DIST' | null;
+}
+
+/** Volume factors (G-48): surges, VWAP position, OBV trend and its divergence from price. */
+export function volumeRead(bars: readonly DailyBar[]): VolumeRead | null {
+  if (bars.length < 25) return null;
+  const avg = (xs: readonly DailyBar[]) => xs.reduce((s, b) => s + b.volume, 0) / xs.length;
+  const n = bars.length, last = bars[n - 1]!;
+  const base1 = avg(bars.slice(n - 21, n - 1)), base5 = avg(bars.slice(n - 25, n - 5)), last5 = avg(bars.slice(n - 5));
+  if (!(base1 > 0) || !(base5 > 0)) return null;
+  const w = bars.slice(n - 20), vol = w.reduce((s, b) => s + b.volume, 0);
+  const vwap = vol > 0 ? w.reduce((s, b) => s + ((b.high + b.low + b.close) / 3) * b.volume, 0) / vol : last.close;
+  let obv = 0;
+  for (let i = n - 20; i < n; i += 1) { const d = bars[i]!.close - bars[i - 1]!.close; obv += d > 0 ? bars[i]!.volume : d < 0 ? -bars[i]!.volume : 0; }
+  const obvPct = vol > 0 ? (obv / vol) * 100 : 0, priceChg = (last.close / bars[n - 21]!.close - 1) * 100;
+  const flow = obvPct >= 20 && priceChg <= 3 ? 'ACCUM' : obvPct <= -20 && priceChg >= -3 ? 'DIST' : null;
+  return { ratio1: last.volume / base1, ratio5: last5 / base5, vwapGapPct: (last.close / vwap - 1) * 100, obvPct, flow };
 }
 
 const signed = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
@@ -35,6 +68,9 @@ export function quickCalc(symbol: string, bars: readonly DailyBar[], now: Date):
   const fv = technicalFairValue(sorted);
   const fair = fv ? { center: fv.center, low: fv.low, high: fv.high, gapPct: fv.gapPct, position: fv.position } : null;
   const forecasts = forecastRanges(symbol, sorted, now).map((f) => ({ days: f.horizon, p10: f.p10, p50: f.p50, p90: f.p90 }));
+  const volume = volumeRead(sorted);
+  const year = sorted.slice(-250), hi = Math.max(...year.map((b) => b.high));
+  const hi52GapPct = hi > 0 ? (lastBar.close / hi - 1) * 100 : null;
   const signal = { label: t.label, level: t.level, score: t.score, bull: t.counts.bullish, neutral: t.counts.neutral, bear: t.counts.bearish, abstain: t.counts.abstained };
   const mid = moves.find((m) => m.days === 20);
   const parts = [
@@ -44,7 +80,7 @@ export function quickCalc(symbol: string, bars: readonly DailyBar[], now: Date):
   ].filter(Boolean);
   return {
     method: QUICK_METHOD, date: lastBar.date, close: lastBar.close, signal,
-    votes: t.votes.map((v) => [v.label, v.vote]), moves, fair, forecasts, line: parts.join(' · '),
+    votes: t.votes.map((v) => [v.label, v.vote]), moves, fair, forecasts, volume, hi52GapPct, line: parts.join(' · '),
   };
 }
 

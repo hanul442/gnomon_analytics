@@ -5,6 +5,7 @@
 import { ALPHA, ASK_TIERS, CREDIT_ACTIONS, CREDIT_COST, type AskTier, type CreditAction } from '../report/plans.js';
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
 import type { D1 } from './db.js';
+import { cleanScreen, FIELD_INDEX, matches } from '../analysis/screenRules.js';
 
 export interface Env {
   DB: D1;
@@ -290,15 +291,15 @@ route('GET', '/me/ledger', async ({ req, env, now }) => {
 route('GET', '/me/export', async ({ req, env, now }) => {
   const u = await authed(req, env, now), db = env.DB;
   const all = (t: string) => db.prepare(`SELECT * FROM ${t} WHERE user_id = ?`).bind(u.id).all().then((r) => r.results);
-  const [ledger, creditRequests, actions, questions, surveys, feedback, events] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events'].map(all));
-  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events };
+  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications'].map(all));
+  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications };
 });
 
 route('POST', '/me/delete', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   if (b.confirm !== '삭제') fail(400, 'CONFIRM', "확인 문구 '삭제'를 적어 주세요.");
   const db = env.DB;
-  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
+  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
     db.prepare('DELETE FROM login_tokens WHERE email = ?').bind(u.email), db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)]);
   return { ok: true };
 });
@@ -362,6 +363,97 @@ route('POST', '/events', async ({ req, env, now }) => {
     .bind(u.id, e.name, str(e.page, 200), JSON.stringify(e.props ?? {}).slice(0, 500), iso(now))));
   return { ok: true, saved: list.length };
 });
+
+// ---- saved screens and alerts (G-50) ----
+const ALERT_LIMIT: Record<string, number> = { free: 0, plus: 3, pro: 20, max: 20, alpha: 20 };
+
+route('GET', '/screens', async ({ req, env, now }) => {
+  const u = await authed(req, env, now);
+  const rows = (await env.DB.prepare('SELECT id, name, screen, alert, last_date, created_at FROM screens WHERE user_id = ? ORDER BY id').bind(u.id).all<{ id: number; name: string; screen: string; alert: number; last_date: string | null; created_at: string }>()).results;
+  return { screens: rows.map((r) => ({ id: r.id, name: r.name, screen: JSON.parse(r.screen), alert: !!r.alert, lastDate: r.last_date })), alertLimit: ALERT_LIMIT[u.plan] ?? 0 };
+});
+
+route('POST', '/screens', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req);
+  if (RANK[u.plan]! < RANK.plus!) fail(403, 'PLAN_REQUIRED', '조건 저장은 플러스부터 쓸 수 있어요.');
+  const screen = cleanScreen(b.screen), name = str(b.name, 40);
+  if (!screen || !screen.rules.length || !name) fail(400, 'BAD_SCREEN', '조건과 이름을 확인해 주세요.');
+  const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM screens WHERE user_id = ?').bind(u.id).first<{ n: number }>();
+  if ((n?.n ?? 0) >= 30) fail(409, 'TOO_MANY', '조건은 30개까지 저장할 수 있어요.');
+  await env.DB.prepare('INSERT INTO screens (user_id, name, screen, created_at) VALUES (?, ?, ?, ?)').bind(u.id, name, JSON.stringify(screen), iso(now)).run();
+  return { ok: true };
+});
+
+route('POST', '/screens/(\\d+)', async ({ req, env, now, params }) => {
+  const u = await authed(req, env, now), b = await body(req), id = Number(params[0]);
+  if (b.alert === true) {
+    const on = await env.DB.prepare('SELECT COUNT(*) AS n FROM screens WHERE user_id = ? AND alert = 1 AND id != ?').bind(u.id, id).first<{ n: number }>();
+    const limit = ALERT_LIMIT[u.plan] ?? 0;
+    if ((on?.n ?? 0) >= limit) fail(403, 'ALERT_LIMIT', limit ? `알림은 ${limit}개 조건까지 켤 수 있어요.` : '알림은 플러스부터 쓸 수 있어요.');
+  }
+  // Turning alerts on starts from today's matches, so the first message lists only what is new afterwards.
+  const r = await env.DB.prepare('UPDATE screens SET alert = ?, last_symbols = CASE WHEN ? = 1 THEN NULL ELSE last_symbols END WHERE id = ? AND user_id = ?').bind(b.alert ? 1 : 0, b.alert ? 1 : 0, id, u.id).run();
+  if ((r.meta?.changes ?? 0) !== 1) fail(404, 'NO_SCREEN', '없는 조건이에요.');
+  return { ok: true };
+});
+
+route('POST', '/screens/(\\d+)/delete', async ({ req, env, now, params }) => {
+  const u = await authed(req, env, now);
+  await env.DB.prepare('DELETE FROM screens WHERE id = ? AND user_id = ?').bind(Number(params[0]), u.id).run();
+  return { ok: true };
+});
+
+route('GET', '/notifications', async ({ req, env, now }) => {
+  const u = await authed(req, env, now);
+  const rows = (await env.DB.prepare('SELECT id, kind, title, body, link, read_at, created_at FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 30').bind(u.id).all()).results;
+  return { items: rows, unread: rows.filter((r) => !(r as { read_at: string | null }).read_at).length };
+});
+
+route('POST', '/notifications/read', async ({ req, env, now }) => {
+  const u = await authed(req, env, now);
+  await env.DB.prepare('UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL').bind(iso(now), u.id).run();
+  return { ok: true };
+});
+
+/**
+ * Daily alert job (cron, after the site's daily build): checks every alerting screen against the
+ * published screener.json and tells each user which stocks newly match. Runs once per data date.
+ */
+export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | null; screens: number; sent: number }> {
+  const now = deps.now(), db = env.DB;
+  const r = await deps.fetch(`${env.SITE_URL.replace(/\/$/, '')}/screener.json`, { signal: AbortSignal.timeout(20_000) });
+  if (!r.ok) return { date: null, screens: 0, sent: 0 };
+  const data = await r.json() as { date: string | null; rows: unknown[][] };
+  if (!data.date || !data.rows?.length) return { date: null, screens: 0, sent: 0 };
+  const list = (await db.prepare(`SELECT s.id, s.user_id, s.name, s.screen, s.last_symbols, s.last_date, u.email, u.plan FROM screens s JOIN users u ON u.id = s.user_id
+    WHERE s.alert = 1 AND u.disabled = 0 AND (s.last_date IS NULL OR s.last_date < ?)`).bind(data.date).all<{ id: number; user_id: string; name: string; screen: string; last_symbols: string | null; last_date: string | null; email: string; plan: string }>()).results;
+  let sent = 0;
+  for (const s of list) {
+    const screen = cleanScreen(JSON.parse(s.screen));
+    if (!screen) continue;
+    const hits = data.rows.filter((row) => matches(row, screen, FIELD_INDEX));
+    const symbols = hits.map((row) => String(row[0]));
+    const before = s.last_symbols ? new Set(JSON.parse(s.last_symbols) as string[]) : null;
+    const fresh = before ? hits.filter((row) => !before.has(String(row[0]))) : [];
+    const stmts = [db.prepare('UPDATE screens SET last_symbols = ?, last_date = ? WHERE id = ?').bind(JSON.stringify(symbols), data.date, s.id)];
+    if (fresh.length) {
+      const names = fresh.slice(0, 8).map((row) => String(row[1])).join(', ') + (fresh.length > 8 ? ` 외 ${fresh.length - 8}개` : '');
+      stmts.push(db.prepare('INSERT INTO notifications (user_id, kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(s.user_id, 'screen', `'${s.name}' 조건에 새로 걸린 종목 ${fresh.length}개`, `${data.date} 장 마감 기준: ${names}`, `screener.html`, iso(now)));
+      sent += 1;
+    }
+    await db.batch(stmts);
+    if (fresh.length && env.RESEND_API_KEY) {
+      // Best effort: before our own mail domain is verified, only the account owner's address receives mail.
+      const lines = fresh.slice(0, 20).map((row) => `<li><b>${String(row[1]).replace(/[<>&]/g, '')}</b> ${String(row[0])}</li>`).join('');
+      await deps.fetch('https://api.resend.com/emails', {
+        method: 'POST', headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: env.MAIL_FROM || 'Gnomon <onboarding@resend.dev>', to: [s.email], subject: `[그노몬] '${s.name}' 새 종목 ${fresh.length}개`, html: `<p>${data.date} 장 마감 기준으로 새로 걸린 종목이에요.</p><ul>${lines}</ul><p><a href="${env.SITE_URL}/screener.html">스크리너에서 보기</a></p><p style="color:#666;font-size:12px">계산 결과이고 투자 권유가 아니에요.</p>` }),
+      }).catch(() => undefined);
+    }
+  }
+  return { date: data.date, screens: list.length, sent };
+}
 
 // ---- admin ----
 const admin = async (req: Request, env: Env, now: Date) => {

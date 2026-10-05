@@ -53,5 +53,7 @@ export function compactCalc(c: StockCalc): StockCalc {
     moves: c.moves.map((m) => ({ ...m, pct: r1(m.pct) })),
     fair: c.fair ? { ...c.fair, center: r0(c.fair.center), low: r0(c.fair.low), high: r0(c.fair.high), gapPct: r1(c.fair.gapPct)! } : null,
     forecasts: c.forecasts.map((f) => ({ days: f.days, p10: r0(f.p10), p50: r0(f.p50), p90: r0(f.p90) })),
+    volume: c.volume ? { ratio1: r1(c.volume.ratio1)!, ratio5: r1(c.volume.ratio5)!, vwapGapPct: r1(c.volume.vwapGapPct)!, obvPct: r0(c.volume.obvPct), flow: c.volume.flow } : null,
+    hi52GapPct: c.hi52GapPct == null ? null : r1(c.hi52GapPct),
   };
 }
