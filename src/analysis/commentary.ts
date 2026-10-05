@@ -16,7 +16,8 @@ export const COMMENTARY_MODEL = 'claude-opus-5-5';
 /** Weekly picks outside the top tier (G-28): a short summary only, on the small model. */
 export const BRIEF_MODEL = 'claude-haiku-4-5';
 export type CommentaryTier = 'deep' | 'brief';
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v2';
+/** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v3';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -28,9 +29,12 @@ export interface EvidenceItem {
   url: string;
 }
 
+export type ClaimKind = 'FACT' | 'INFERENCE' | 'ASSUMPTION';
 export interface Claim {
   text: string;
   evidenceIds: string[];
+  /** Absent in commentary made before prompt v3. */
+  kind?: ClaimKind;
 }
 
 export type Desk = 'MARKET' | 'TECHNICAL' | 'FLOW' | 'FUNDAMENTAL' | 'EVENT';
@@ -140,6 +144,7 @@ export function buildEvidence(report: DailyReport): EvidenceItem[] {
 const ClaimSchema = z.object({
   text: z.string().describe('한국어 한두 문장'),
   evidenceIds: z.array(z.string()).describe('근거 목록의 ID만 (예: P1, T1, F2, N3)'),
+  kind: z.enum(['FACT', 'INFERENCE', 'ASSUMPTION']).describe('FACT 근거에 그대로 있는 사실, INFERENCE 근거에서 끌어낸 해석, ASSUMPTION 근거로 확인되지 않은 가정'),
 });
 
 const DeskSchema = z.object({
@@ -195,6 +200,7 @@ const briefSystem = (name: string) => `당신은 Gnomon Analytics의 리서치 �
 
 규칙:
 - 제공된 근거 목록에 있는 내용만 쓰고, 모든 주장에 근거 ID(P1, T1, F1, N1 …)를 답니다. 목록에 없는 사실·숫자·전망은 쓰지 않습니다.
+- 모든 주장에 종류(kind)를 붙입니다: 근거에 그대로 있는 사실은 FACT, 근거에서 끌어낸 해석은 INFERENCE, 근거로 확인되지 않은 가정은 ASSUMPTION. 해석을 사실처럼 쓰지 않습니다.
 - 한국어 해요체로, 짧고 분명하게 씁니다. 내부 코드명이나 영어 약어 대신 뜻을 풀어 씁니다.
 - 매수·매도를 권하거나 목표가를 제시하지 않습니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
 - 같은 이야기의 재보도는 하나의 근거로 봅니다. 근거가 부족하면 dataGaps에 적고 억지로 결론 내지 않습니다.`;
@@ -211,6 +217,7 @@ ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 
 규칙:
 - 제공된 근거 목록에 있는 내용만 쓰고, 모든 주장에 근거 ID(P1, T1, F1, N1 …)를 답니다. 목록에 없는 사실·숫자·전망은 쓰지 않습니다.
+- 모든 주장에 종류(kind)를 붙입니다: 근거에 그대로 있는 사실은 FACT, 근거에서 끌어낸 해석은 INFERENCE, 근거로 확인되지 않은 가정은 ASSUMPTION. 해석을 사실처럼 쓰지 않습니다.
 - 한국어 해요체로, 짧고 분명하게 씁니다. 내부 코드명이나 영어 약어 대신 뜻을 풀어 씁니다.
 - 매수·매도를 권하거나 목표가를 제시하지 않습니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
 - 기사 수가 많다고 근거가 강한 것이 아닙니다. 같은 이야기의 재보도는 하나의 근거로 봅니다.
@@ -226,7 +233,7 @@ export function sanitizeClaims(claims: readonly Claim[], known: ReadonlySet<stri
     const ids = [...new Set(claim.evidenceIds.map((id) => id.trim().toUpperCase()))].filter((id) => known.has(id));
     const text = claim.text.trim();
     if (!ids.length || !text) { dropped += 1; continue; }
-    kept.push({ text, evidenceIds: ids });
+    kept.push({ text, evidenceIds: ids, ...(claim.kind ? { kind: claim.kind } : {}) });
   }
   return { kept, dropped };
 }

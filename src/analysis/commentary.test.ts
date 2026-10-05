@@ -109,7 +109,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   assert.deepEqual(c.redTeam?.unresolved, ['수급 해석']);
   assert.deepEqual(c.scenarios?.map((s) => s.kind), ['BULL', 'BASE']);
   assert.equal(c.dropped, 2);
-  assert.equal(c.promptVersion, 'gnm-committee-v2');
+  assert.equal(c.promptVersion, 'gnm-committee-v3');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
