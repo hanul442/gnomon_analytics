@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { runDaily } from '../cli/daily.js';
 import { loadTickers } from '../config/tickers.js';
+import { APP_CSS, UI_JS } from './renderHtml.js';
 
 // One settled run on fixture data, then the page: six tabs and the new panels.
 const FIX = join(process.cwd(), 'test', 'fixtures', 'naver');
@@ -42,7 +43,7 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   // Chart v6: drawing tools, day/week/month and the index comparison (the benchmark series is embedded).
   assert.ok(page.includes('data-draw="fib"') && page.includes('data-tf="W"') && page.includes('data-compare') && page.includes('id="benchmarks"') && page.includes('window.GNMChart'));
   // UI layer: price in the header after scrolling, a bottom tab bar, glossary terms, the indicator names marked for it.
-  assert.ok(page.includes('id="price-bar"') && page.includes('class="bottom-nav"') && page.includes('"몬테카를로"') && page.includes('class="term-cell"'));
+  assert.ok(page.includes('id="price-bar"') && page.includes('class="bottom-nav"') && page.includes('assets/ui.js?v=') && UI_JS.includes('"몬테카를로"') && APP_CSS.includes('.chat-fab') && page.includes('class="term-cell"'));
   // Plans: details sit behind Plus gates; anyone can ask the AI with credits.
   assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 3 && (page.match(/class="gate" data-need="pro"/g) ?? []).length >= 2 && page.includes('id="ask"') && page.includes('data-plan="free"'));
   assert.ok(page.includes('class="card hs"'));

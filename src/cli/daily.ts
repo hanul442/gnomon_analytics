@@ -18,7 +18,7 @@ import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
 import { skippedCommentary, writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
 import { AiBudget } from './aiBudget.js';
 import type Anthropic from '@anthropic-ai/sdk';
-import { CHART_ASSET, FONT_DIR, renderIndex, renderReport, renderStockPage, type HomeEntry } from '../report/renderHtml.js';
+import { CHART_ASSET, FONT_DIR, renderIndex, renderReport, renderStockPage, type HomeEntry, writeAssets } from '../report/renderHtml.js';
 import { renderHome, type IndexQuote } from '../report/renderHome.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
@@ -424,6 +424,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const group = past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : requested.has(ticker.symbol) ? 'request' : 'core';
     home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : {}) });
   }
+  await writeAssets(siteDir);
   await writeFile(join(siteDir, 'stock.html'), renderStockPage());
   // Closed alpha pages (G-44); they need the API address to do anything.
   await writeFile(join(siteDir, 'login.html'), renderLogin());
