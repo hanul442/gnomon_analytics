@@ -9,7 +9,7 @@
 // 30% allowance for retries, failures and longer pages. Prices per million
 // tokens: Opus 5.5 $4 / $20, Sonnet 5.5 $2 / $10, Haiku 4.5 $1 / $5.
 
-import { CREDIT_COST, CREDIT_PACKS, PLANS, type Plan } from './plans.js';
+import { CREDIT_COST, CREDIT_PACKS, PLANS, type CreditAction, type Plan } from './plans.js';
 
 export const ASSUMPTIONS = {
   krwPerUsd: 1400,
@@ -29,9 +29,17 @@ const callKrw = (model: keyof typeof MODELS, inTok: number, outTok: number) =>
   ((inTok * MODELS[model][0] + outTok * MODELS[model][1]) / 1e6) * ASSUMPTIONS.allowance * ASSUMPTIONS.krwPerUsd;
 
 /** What one use of each credit action costs us, KRW. */
-export const ACTION_COST: Record<keyof typeof CREDIT_COST, number> = {
+export const ACTION_COST: Record<CreditAction, number> = {
   // Measured: deep committee median 10.1K in / 3.9K out.
   report: callKrw('opus', 10_100, 3_940),
+  // A brief on the small model (summary, both sides, watch items).
+  brief: callKrw('haiku', 9_500, 1_800),
+  // Rewriting a brief as the full committee costs a full report.
+  upgrade: callKrw('opus', 10_100, 3_940),
+  // An invited expert writes one opinion over the report's evidence.
+  invite: callKrw('opus', 11_000, 2_500),
+  // Red team over the report's evidence and the user's idea, with invalidation conditions.
+  idea: callKrw('opus', 12_000, 3_000),
   // The committee model over the report's evidence plus the question.
   deep: callKrw('opus', 11_000, 2_000),
   // Sonnet over the same evidence, short answer.
@@ -67,7 +75,9 @@ export function planChecks(): PlanCheck[] {
   const fixedShare = ASSUMPTIONS.fixedMonthly / ASSUMPTIONS.subscribers;
   const worstPerCredit = Math.max(...(Object.keys(CREDIT_COST) as (keyof typeof CREDIT_COST)[]).map((k) => ACTION_COST[k] / CREDIT_COST[k]));
   return PLANS.filter((p) => p.price > 0).map((p) => {
-    const worstCost = fixedShare + p.monthlyCredits * worstPerCredit + p.weeklyCoverage * WEEKLY_COVERAGE_COST;
+    // Included invitations, and standing experts writing on every weekly report of the covered stocks.
+    const experts = (p.includedInvites + p.standingExperts * 4.35) * ACTION_COST.invite;
+    const worstCost = fixedShare + p.monthlyCredits * worstPerCredit + p.weeklyCoverage * WEEKLY_COVERAGE_COST + experts;
     const net = netOf(p.price);
     return { key: p.key, price: p.price, net, worstCost, ratio: worstCost / net };
   });

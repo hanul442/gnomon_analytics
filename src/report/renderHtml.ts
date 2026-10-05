@@ -7,9 +7,9 @@ import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim, Commentary } from '../analysis/commentary.js';
 import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow, horizonStrip, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { councilCard, DART_SCRIPT, hero, latestLists, marketStrip, priceChart, sparkline } from './appParts.js';
-import { analystScores, arenaPanel, arenaTeaser, paperPanel } from './renderArena.js';
+import { analystScores, arenaHeadline, arenaPanel, arenaRanking, arenaTeaser } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
-import { ACCOUNT_SCRIPT, CREDIT_COST, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
+import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 /** Pretendard web font, also served from our own site. */
@@ -206,7 +206,11 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .hs-k{font-size:12px;color:var(--muted);font-weight:600}.hs-cell b{font-size:15px;line-height:1.25;word-break:keep-all}.hs-sub{font-size:11px;color:var(--muted)}
 .hs-meter{position:relative;width:78%;height:6px;border-radius:3px;background:linear-gradient(90deg,#2a62c9,#c9d1dd 50%,#d1373d);margin:3px 0}.hs-meter i{position:absolute;top:-3px;width:4px;height:12px;margin-left:-2px;border-radius:2px;background:#0f2244}
 .home-more summary{font-weight:600}.home-more{margin-top:16px}
-.lock{width:14px;height:14px;flex:none;vertical-align:-2px;margin-right:4px}
+.lock{width:14px;height:14px;flex:none;vertical-align:-2px;margin-right:4px}html:not([data-plan=pro]):not([data-plan=max]) [data-ov="forecast"],html:not([data-plan=pro]):not([data-plan=max]) .strat-pick,html:not([data-plan=pro]):not([data-plan=max]) #strat-info{display:none!important}
+.dk-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.dk{display:inline-flex;gap:6px;font-size:13px;border-radius:8px;padding:4px 10px;background:#eef1f5}.dk b{font-weight:700}.dk-BULLISH{background:#fde8e6;color:#9f1d24}.dk-BEARISH{background:#e3ecfb;color:#1f4fa8}
+.ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:10px}.ex{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:9px 10px;cursor:pointer}.ex:has(input:checked){border-color:var(--navy);background:var(--accent-soft)}.ex span{display:flex;flex-direction:column}.ex small{color:var(--muted);font-size:12px}.ex input{accent-color:var(--navy);margin-top:3px}
+.fresh{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:999px;padding:1px 9px;background:#e7f5ec;color:#1d6b3a}.fresh i{width:7px;height:7px;border-radius:50%;background:currentColor}.fresh.f-STALE{background:#eef1f5;color:#4a5566}.fresh.f-DEGRADED{background:#fff3d6;color:#7a4a00}.fresh.f-NOT_AVAILABLE{background:#fde8e6;color:#9f1d24}
+.paper-link{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.paper-link p{margin:2px 0 0}.paper-link .btn-primary{margin:0}
 .stock-hero{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}.request-card{background:var(--accent-soft);border:1px solid #cdd8ea;border-radius:16px;padding:18px}.request-card p{margin:6px 0;font-size:14px}
 .lk-head{display:flex;align-items:center;gap:6px;color:var(--navy,#0f2244)}.lk-head .lock{width:18px;height:18px}
 .btn-primary{display:inline-flex;align-items:center;gap:6px;margin:8px 0 2px;padding:12px 18px;border-radius:12px;background:var(--navy,#0f2244);color:#fff;font-weight:700;text-decoration:none;font-size:15px}.btn-primary:hover{background:#1d3a6e}.btn-primary .lock{width:16px;height:16px;margin:0}
@@ -216,7 +220,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .sp-one-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.sp-signal{font-size:20px;font-weight:800}.sp-one .headline{margin:8px 0 0}
 .sp-moves .mv,#sp-fair .mv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}.sp-moves .mv:first-child,#sp-fair .mv:first-child{border-top:0}
 .sp-votes{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.vchip{font-size:12px;border-radius:8px;padding:4px 8px;background:#eef1f5;color:var(--fg2)}.vchip.v-BULLISH{background:#fde8e6;color:#9f1d24}.vchip.v-BEARISH{background:#e3ecfb;color:#1f4fa8}
-.request-card .credit-btn{margin:8px 0 2px}
+.request-card .credit-btn{margin:8px 0 2px}.req-btns{display:flex;gap:8px;flex-wrap:wrap}
 @media (max-width:820px){#chart[style*="420px"]{height:320px!important}.stock-hero{grid-template-columns:minmax(0,1fr)}.btn-primary{width:100%;justify-content:center}.locked-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.locked{min-height:0}.locked p{font-size:12px}}
 @media (max-width:820px){
 .arena-gauges,.hz-row,.analyst-grid,.desk-grid,.why-grid,.locked-grid.swipe{display:flex!important;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;margin-left:-14px;margin-right:-14px;padding:2px 14px 8px;scrollbar-width:none}
@@ -288,12 +292,12 @@ main{padding:14px 14px 48px}.hero{padding:22px 18px;border-radius:18px}.hero h1{
 footer{padding:0 16px 32px}}
 `;
 
-type TabKey = 'home' | 'chart' | 'technical' | 'paper' | 'flows' | 'fundamentals' | 'ai' | 'news';
+type TabKey = 'home' | 'chart' | 'technical' | 'strategy' | 'flows' | 'fundamentals' | 'ai' | 'news';
 const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'home', label: '홈' },
   { key: 'chart', label: '차트' },
   { key: 'technical', label: '기술 분석' },
-  { key: 'paper', label: '모의투자' },
+  { key: 'strategy', label: '전략' },
   { key: 'flows', label: '수급' },
   { key: 'fundamentals', label: '펀더멘털' },
   { key: 'ai', label: 'AI 위원회' },
@@ -309,7 +313,7 @@ export function shell(base: string, title: string, body: string, options: { tabs
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}${PLAN_CSS}</style></head><body data-base="${base}">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
-<nav class="top-links" aria-label="사이트"><a href="${rootHref}">홈</a>${options.homeHref ? `<a href="${options.homeHref}" class="tl-hide">최신</a>` : ''}${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}scorecard.html" class="tl-hide">성적표</a><a href="${base}pricing.html" class="tl-hide">요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
+<nav class="top-links" aria-label="사이트"><a href="${rootHref}">홈</a>${options.homeHref ? `<a href="${options.homeHref}" class="tl-hide">최신</a>` : ''}${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}paper.html" class="tl-hide">모의투자</a><a href="${base}scorecard.html" class="tl-hide">성적표</a><a href="${base}pricing.html" class="tl-hide">요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>
 <main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}scorecard.html">성적표</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav ? bottomNav(base) : ''}${ACCOUNT_SCRIPT}${options.scripts ?? ''}</body></html>`;
 }
@@ -571,27 +575,37 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
 ${m ? marketStatusWarning(m) : ''}
 ${parliament(report, ctx.commentaryFrom ?? null) || councilCard(report.commentary, ctx.commentaryFrom ?? null)}
 ${m ? gate(`<section class="block"><div class="block-head"><h2>기간별 기술 신호</h2><a href="#tab-technical" class="more-link">게이지로 보기 ›</a></div>${horizonStrip(m.horizons)}</section>
-<div class="grid-eq"><section class="block"><div class="block-head"><h2>적정가와 예측</h2><a href="#tab-technical" class="more-link">자세히 보기 ›</a></div>${valueCard(m)}</section>
-${arenaTeaser(m.arena)}</div>
-${marketStrip(report)}`, { base, what: '기간별 신호 · 적정가 · 전략 · 시장 비교' }) : ''}
+<section class="block"><div class="block-head"><h2>기술적 적정가</h2><a href="#tab-technical" class="more-link">자세히 보기 ›</a></div>${valueCard(m, false)}</section>`, { base, what: '기간별 신호 · 기술적 적정가' }) : ''}
+${marketStrip(report)}
+${m ? gate(arenaTeaser(m.arena), { base, what: '전략 챔피언 레이스와 지금 신호' }) : ''}
 <div class="home-lists">${latestLists(report)}</div>
 <details class="card more home-more"><summary>오늘의 요약 · 어제 대비 바뀐 점</summary><div class="grid-eq" style="margin-top:10px"><div><p class="headline">${escape(report.headline)}</p>${notes}</div><div>${changes}</div></div></details>`;
   const chartTab = `${chart.html}<div style="margin-top:16px">${kpis(report)}</div>`;
-  const technical = gate(`${m ? arenaPanel(m.arena) : ''}<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${signalSection(report)}${m ? `<div class="grid-eq">${valueCard(m)}${forecastCard(m.forecasts, m.forecastScores)}</div><div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '전략 대결 · 기간별 게이지 · 지표 16개 · 적정가와 예측' });
-  const flowsTab = gate(m ? flowsPanel(m.flows, m.footprint) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>', { base, what: '외국인·기관 수급과 수급 흔적' });
-  const fundTab = gate(m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>', { base, what: '분기 실적 · 밸류에이션 · 증권가 목표가' });
+  // Free: the 16-indicator summary (public elsewhere too). Plus: our horizon gauges, fair value, forecasts and structure.
+  const technical = `${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
+  // Free: the champion's name. Plus: the ranking. Pro: trades, curves, Monte Carlo and chart markers.
+  const strategyTab = `${m ? arenaHeadline(m.arena) : ''}${gate(m ? arenaRanking(m.arena) : '', { base, what: '전략 8개 순위표 · 지금 신호 · 검증 구간 수익' })}${gate(m ? arenaPanel(m.arena) : '<div class="card empty">이 리포트에는 전략 대결 기록이 없어요.</div>', { base, what: '매매 시점 · 수익 곡선 · 몬테카를로 · 거래 기록', need: 'pro' })}
+<section class="block"><div class="card paper-link"><div><b>모의투자 장부</b><p class="muted small">전략 챔피언과 AI 분석가를 따라 했다면 어땠는지, 리포트 종목 전체를 모아 따로 보여 줘요.</p></div><a class="btn-primary" href="${base}paper.html">모의투자 보기</a></div></section>`;
+  // Investor flows and fundamentals are public data: free. Our footprint reading is Plus.
+  const flowsTab = m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>';
+  const fundTab = m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>';
   const committee = report.commentary?.status === 'OK' ? parliament(report, ctx.commentaryFrom ?? null, {
     id: 'parliament-ai', title: 'AI 위원회 표결', factions: ['ai', 'desk'], link: null, roster: true,
     note: '위원은 AI 분석가 6명과 데스크 5곳이에요. 좌석이나 이름을 누르면 판단·확신도·20거래일 뒤 예상가·근거·지난 성적이 나와요.',
   }) : '';
   const summary = report.commentary?.status === 'OK' ? report.commentary.summary?.text : undefined;
-  const aiTab = committee + (report.commentary ? `${ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : ''}${summary ? `<section class="block"><div class="card ai-one"><div class="pl-k">AI 위원회 한 단락</div><p class="headline">${escape(summary)}</p></div></section>` : ''}${gate(whySection(report, { committee: !!committee }) + (m ? analystScores(m.analystBoard) : ''), { base, what: '위원별 근거 · 레드팀 반론 · 시나리오 · 분석가 순위' })}` : '<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>') + askBox(report, base);
+  const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>요약 리포트예요</b><p class="muted small">AI 위원회 전체(데스크 5곳·분석가 6명·레드팀·시나리오)로 다시 쓰려면 심층 리포트로 업그레이드하세요. 프로부터 쓸 수 있어요.</p></div><button type="button" class="credit-btn" data-spend="upgrade" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">심층으로 업그레이드 <small>${CREDIT_COST.upgrade}크레딧</small></button></div></section>` : '';
+  // Free: the tally only. Plus: a limited committee (conclusion, desk stances, one line of red team). Pro: everything, plus expert invitations.
+  const fromNote = ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : '';
+  const aiTab = report.commentary
+    ? `${upgrade}${committee}${fromNote}${report.commentary.status === 'OK' ? gate(committeeLite(report), { base, what: '제한된 AI 위원회: 결론 · 데스크 입장 · 레드팀 한 줄' }) : ''}${gate(whySection(report, { committee: !!committee }) + (m ? analystScores(m.analystBoard) : ''), { base, what: '위원별 근거 · 예측 · 레드팀 반론 · 시나리오 · 분석가 순위', need: 'pro' })}${inviteBox(report, base)}${askBox(report, base)}`
+    : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>${askBox(report, base)}`;
   const newsTab = `${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const body = `${panel('home', home)}
 ${panel('chart', chartTab)}
 ${panel('technical', technical)}
-${panel('paper', gate(paperPanel(m?.paper), { base, what: '전략 챔피언과 AI 분석가를 따라 한 모의투자 장부' }))}
+${panel('strategy', strategyTab)}
 ${panel('flows', flowsTab)}
 ${panel('fundamentals', fundTab)}
 ${panel('ai', aiTab)}
@@ -602,9 +616,32 @@ ${panel('news', newsTab)}
   return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT, archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
 
+const STANCE_WORD = { BULLISH: '강세', BEARISH: '약세', NEUTRAL: '중립', INSUFFICIENT_DATA: '근거 부족' } as const;
+const DESK_NAME = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDAMENTAL: '펀더멘털', EVENT: '공시·뉴스' } as const;
+
+/** Plus: the committee's conclusion, each desk's stance (no reasons) and the red team's first sentence. */
+function committeeLite(report: DailyReport): string {
+  const c = report.commentary;
+  if (c?.status !== 'OK') return '';
+  const desks = (c.desks ?? []).map((d) => `<span class="dk dk-${d.stance}"><b>${DESK_NAME[d.desk]}</b>${STANCE_WORD[d.stance]}</span>`).join('');
+  const red = c.redTeam?.counterargument.text.split(/(?<=요\.)\s/)[0];
+  return `<section class="block"><div class="block-head"><h2>AI 위원회 결론</h2><span class="muted">${c.tier === 'brief' ? '요약 리포트' : '위원회 리포트'}</span></div><div class="card ai-one">
+${c.summary ? `<p class="headline">${escape(c.summary.text)}</p>` : ''}${desks ? `<div class="pl-k">데스크 입장</div><div class="dk-row">${desks}</div>` : ''}
+${red ? `<div class="red-team" style="margin-top:12px"><h3>레드팀 한 줄</h3><p>${escape(red)}</p></div>` : ''}
+<p class="fine">위원별 근거·예측·시나리오는 프로부터 볼 수 있어요.</p></div></section>`;
+}
+
+/** Pro: invite an expert AI to this stock's committee with credits. Max: 30 a month included, and standing experts. */
+function inviteBox(report: DailyReport, base: string): string {
+  return `<section class="block" id="invite"><div class="block-head"><h2>전문가 AI 초청</h2><span class="muted">프로 ${CREDIT_COST.invite}크레딧 · 맥스 매달 30회 포함</span></div>
+<div class="card"><form class="invite" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}"><div class="ex-grid">${EXPERTS.map((e, i) => `<label class="ex"><input type="radio" name="expert" value="${e.key}"${i ? '' : ' checked'}><span><b>${e.name}</b><small>${e.focus}</small></span></label>`).join('')}</div>
+<div class="ask-row"><label class="muted small"><input type="checkbox" name="standing"> 맥스: 이 종목 주간 위원회에 고정으로 앉히기</label><button type="submit" class="credit-btn">초청하기</button></div><div class="ask-out" hidden aria-live="polite"></div></form>
+<p class="fine">초청한 전문가는 이 종목 리포트의 근거를 보고 의견·위험·지켜볼 것을 써요. MOCK이라 지금은 접수만 기록돼요. <a href="${base}pricing.html">요금제 보기</a></p></div></section>`;
+}
+
 /** Ask the AI about this stock: 2 credits a question, any plan (MOCK answer until a server exists). */
 function askBox(report: DailyReport, base: string): string {
-  return `<section class="block" id="ask"><div class="block-head"><h2>AI에게 직접 질문</h2><span class="muted">빠른 질문 ${CREDIT_COST.question} · 심층 질문 ${CREDIT_COST.deep}크레딧 · 요금제와 상관없이</span></div>
+  return `<section class="block" id="ask"><div class="block-head"><h2>AI에게 직접 질문</h2><span class="muted">빠른 질문 ${CREDIT_COST.question} · 심층 질문 ${CREDIT_COST.deep}크레딧 · 플러스부터</span></div>
 <div class="card"><form class="ask" data-symbol="${escape(report.symbol)}"><label class="muted small" for="ask-q">${escape(report.name)}에 대해 궁금한 것을 물어보세요. 리포트의 근거 안에서 답해요.</label><textarea id="ask-q" maxlength="300" placeholder="예: 외국인 매도가 계속되면 어디까지 볼 수 있어요?"></textarea>
 <div class="ask-row"><span class="muted small">남은 크레딧 <b data-credits>0</b>개 · <a href="${base}pricing.html#credits">충전</a></span><span class="ask-btns"><button type="submit" name="kind" value="question" class="credit-btn ghost">빠른 질문 <small>${CREDIT_COST.question}크레딧</small></button><button type="submit" name="kind" value="deep" class="credit-btn">심층 질문 <small>${CREDIT_COST.deep}크레딧</small></button></span></div><div class="ask-out" hidden aria-live="polite"></div></form></div></section>`;
 }
@@ -682,21 +719,21 @@ const LOCKED = [
 /** Shared page for listed stocks without a report: chart, the free computation (details for Plus), and a credit request. */
 export function renderStockPage(): string {
   const locked = LOCKED.map(([t, d]) => `<div class="card locked"><div class="lk-head">${LOCK}<b>${t}</b></div><p>${d}</p><div class="lk-ghost" aria-hidden="true"><i></i><i></i><i></i></div></div>`).join('');
-  const detail = `<section class="block"><div class="block-head"><h2>계산 상세</h2><span class="muted">매일 장 마감 뒤 다시 계산해요</span></div>
-<div class="grid-eq"><div class="card"><div class="pl-k">기간별 등락</div><div class="sp-moves" id="sp-moves"></div><div class="pl-k" style="margin-top:14px">기술적 적정가</div><div id="sp-fair"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div></div>
-<div class="card"><div class="pl-k">예측 범위 (10~90%)</div><div id="sp-fc"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div><p class="fine">최근 변동성으로 계산한 범위예요. 확률이나 목표가가 아니에요.</p></div></div>
-<div class="card" style="margin-top:12px"><div class="pl-k">지표 16개 판단</div><div class="sp-votes" id="sp-votes"></div></div></section>`;
+  const open = `<section class="block"><div class="grid-eq"><div class="card"><div class="pl-k">기간별 등락</div><div class="sp-moves" id="sp-moves"></div></div>
+<div class="card"><div class="pl-k">지표 16개 판단</div><div class="sp-votes" id="sp-votes"></div></div></div></section>`;
+  const detail = `<section class="block"><div class="block-head"><h2>기술적 적정가</h2><span class="muted">매일 장 마감 뒤 다시 계산해요</span></div><div class="card"><div id="sp-fair"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div></div></section>`;
+  const forecast = `<section class="block"><div class="block-head"><h2>예측 가격 범위 (10~90%)</h2></div><div class="card"><div id="sp-fc"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div><p class="fine">최근 변동성으로 계산한 범위예요. 확률이나 목표가가 아니에요.</p></div></section>`;
   const body = `<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span>AI 리포트 없음</span></div>
 <h1 id="sp-name">종목</h1><div class="hero-price" id="sp-price"></div><div class="hero-sub" id="sp-date"></div></div>
-<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 다음 장 마감 뒤 AI 위원회 리포트를 한 번 써 드려요. 요금제와 상관없이 크레딧으로 요청해요.</p>
-<button type="button" class="credit-btn" data-spend="report" id="sp-request-credit">리포트 요청 <small>${CREDIT_COST.report}크레딧</small></button>
+<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 다음 장 마감 뒤 리포트를 한 번 써 드려요. 크레딧 요청은 플러스부터예요.</p>
+<span class="req-btns"><button type="button" class="credit-btn ghost" data-spend="brief" id="sp-request-brief">요약 리포트 <small>${CREDIT_COST.brief}크레딧</small></button><button type="button" class="credit-btn" data-spend="report" id="sp-request-credit">심층 리포트 <small>${CREDIT_COST.report}크레딧</small></button></span>
 <p class="fine">남은 크레딧 <b data-credits>0</b>개 · <a href="pricing.html#credits">충전</a> · MOCK이라 실제 요청은 <a id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">GitHub 이슈</a>로 받아요.</p></div></section>
 <section class="block"><div class="card sp-one"><div class="sp-one-head"><span class="pl-k">한 줄 요약</span><b id="sp-signal" class="sp-signal">계산 중</b></div><p class="headline" id="sp-line">이 종목의 계산 결과를 불러오는 중이에요.</p><div class="pl-tally" id="sp-tally" aria-hidden="true"></div><p class="muted small" id="sp-counts"></p></div></section>
 <section class="block"><div class="card chart-card"><div class="chart-head"><div><div class="muted small">최근 1년 일봉</div><div class="period-stat" id="period-stat" aria-live="polite"></div></div>
 <div class="seg" role="group" aria-label="기간">${[['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250]].map(([l, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 126}">${l}</button>`).join('')}</div></div>
 <div id="chart" style="height:420px"><p class="empty" id="sp-empty" hidden>차트 데이터를 불러오지 못했어요. 상장 종목 코드가 맞는지 확인해 주세요.</p></div>
 <p class="fine">이동평균 20(주황)·60(보라)과 거래량이에요.</p></div></section>
-${gate(detail, { base: '', what: '지표 16개 · 기간별 등락 · 적정가 · 예측 범위' })}
+${open}${gate(detail, { base: '', what: '기술적 적정가' })}${gate(forecast, { base: '', what: '예측 가격 범위', need: 'pro' })}
 <section class="block"><div class="block-head"><h2>AI 리포트가 생기면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   return shell('', '종목 차트 | Gnomon Analytics', body, { bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${STOCK_SCRIPT}` });
@@ -719,7 +756,7 @@ const STOCK_SCRIPT = `<script>
       $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + Math.abs(ch).toLocaleString('ko-KR') + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : '');
       $('sp-date').textContent = last.time + ' 종가';
     }
-    var rb = $('sp-request-credit'); rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name);
+    ['sp-request-credit', 'sp-request-brief'].forEach(function (id) { var rb = $(id); rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name); });
     var c = d.calc, VOTE = { BULLISH: '강세', NEUTRAL: '중립', BEARISH: '약세' };
     var signed = function (v) { return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%'; };
     if (c) {

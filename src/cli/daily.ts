@@ -11,12 +11,14 @@ import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promi
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
-import { writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
+import { skippedCommentary, writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
+import { AiBudget } from './aiBudget.js';
 import type Anthropic from '@anthropic-ai/sdk';
 import { CHART_ASSET, FONT_DIR, renderIndex, renderReport, renderStockPage, type HomeEntry } from '../report/renderHtml.js';
 import { renderHome, type IndexQuote } from '../report/renderHome.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
-import { renderScorecard, renderTerms } from '../report/renderScorecard.js';
+import { validPromos } from '../report/plans.js';
+import { renderPaper, renderScorecard, renderTerms } from '../report/renderScorecard.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE } from '../sources/opendart.js';
 import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
@@ -87,6 +89,9 @@ interface RunOptions {
   apiKey: string;
   naver?: { clientId: string; clientSecret: string };
   anthropicApiKey?: string;
+  /** Monthly AI budget in USD (env GNM_AI_BUDGET_USD); shared by every stock in the run. */
+  aiBudgetUsd?: number;
+  budget?: AiBudget;
   /** Injected in tests instead of a real API client. */
   anthropic?: Anthropic;
   fetch?: typeof fetch;
@@ -163,12 +168,13 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
       benchStatus.push({ source: `naver:fchart:day:${b.symbol}`, ok: false, count: 0, error: error instanceof Error ? error.message.slice(0, 160) : 'UNKNOWN' });
     }
   }
+  const budget = options.budget ?? await AiBudget.load(root, now, options.aiBudgetUsd);
   const results: TickerResult[] = [];
   const failed: { symbol: string; error: string }[] = [];
   const lives = new Map<string, DailyReport>();
   const run = async ({ ticker, tier, reportDay }: (typeof jobs)[number]) => {
     try {
-      const result = await runTicker(options, ticker, tier, core.has(ticker.symbol), reportDay);
+      const result = await runTicker({ ...options, budget }, ticker, tier, core.has(ticker.symbol), reportDay);
       result.marketStatus.push(...benchStatus.filter((st) => benchmarksFor(ticker).some((b) => st.source.endsWith(`:${b.symbol}`))));
       results.push(result);
     } catch (error) {
@@ -264,12 +270,16 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
       // Forecasts are logged as made and never revised; a repeat of the same base session is skipped.
       await appendUnseen(forecastPath, built.market!.forecasts, forecastKey);
       // AI commentary never blocks the report: a failure is stored as status FAILED.
-      if (tier) {
+      if (tier && options.budget && !options.budget.allows(tier)) {
+        built.commentary = skippedCommentary(built, `AI_MONTHLY_BUDGET:${options.budget.limit}USD`, now);
+      } else if (tier) {
+        options.budget?.reserve(tier);
         built.commentary = await writeCommentary(built, {
           now: clock, tier,
           ...(options.anthropic ? { client: options.anthropic } : {}),
           ...(options.anthropicApiKey ? { apiKey: options.anthropicApiKey } : {}),
         });
+        await options.budget?.record(SYMBOL, tier, built.commentary, now);
       }
       // Analyst calls are logged as made, to be scored 20 sessions later.
       const c = built.commentary;
@@ -402,9 +412,13 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   }
   await writeFile(join(siteDir, 'stock.html'), renderStockPage());
   await writeFile(join(siteDir, 'pricing.html'), renderPricing());
+  // Trial-credit promotions (G-38): edited by hand in promos.json, published as-is when valid.
+  const promos = validPromos(JSON.parse(await readFile(join(root, 'promos.json'), 'utf8').catch(() => '[]')));
+  await writeFile(join(siteDir, 'promos.json'), JSON.stringify(promos));
   await writeFile(join(siteDir, 'checkout.html'), renderCheckout());
   await writeFile(join(siteDir, 'scorecard.html'), renderScorecard(home.filter((e) => e.group !== 'past')));
   await writeFile(join(siteDir, 'terms.html'), renderTerms());
+  await writeFile(join(siteDir, 'paper.html'), renderPaper(home.filter((e) => e.group !== 'past')));
   // Index quotes for the front page, from the stored index prices.
   const indices: IndexQuote[] = [];
   for (const [symbol, name] of [['KOSPI', '코스피'], ['KOSDAQ', '코스닥']] as const) {
@@ -454,6 +468,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '', tickers, requests,
       naver: { clientId: process.env.NAVER_CLIENT_ID ?? '', clientSecret: process.env.NAVER_CLIENT_SECRET ?? '' },
       anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
+      ...(process.env.GNM_AI_BUDGET_USD ? { aiBudgetUsd: Number(process.env.GNM_AI_BUDGET_USD) } : {}),
     }))
     .then((result) => {
       console.log(JSON.stringify(result));

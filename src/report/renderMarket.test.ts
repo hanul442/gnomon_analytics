@@ -25,7 +25,7 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, tickers });
   const page = await readFile(join(root, 'site', '000660', 'reports', '2026-10-02.html'), 'utf8');
-  for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-paper', 'tab-flows', 'tab-fundamentals', 'tab-ai', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
+  for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-strategy', 'tab-flows', 'tab-fundamentals', 'tab-ai', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
   // Horizon gauges on the home and technical tabs, plus one per strategy in the arena.
   assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 10);
   assert.ok(page.includes('전략 대결') && page.includes('챔피언 레이스'));
@@ -39,14 +39,26 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   // Chart tools: presets, an indicator sheet and a strategy sheet.
   for (const s of ['data-preset="momentum"', 'id="ind-sheet"', 'id="strat-sheet"', 'id="active-pills"']) assert.ok(page.includes(s), s);
   // Plans: details sit behind Plus gates; anyone can ask the AI with credits.
-  assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 5 && page.includes('id="ask"') && page.includes('data-plan="free"'));
+  assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 3 && (page.match(/class="gate" data-need="pro"/g) ?? []).length >= 2 && page.includes('id="ask"') && page.includes('data-plan="free"'));
   assert.ok(page.includes('class="card hs"'));
   assert.ok(page.includes('id="vlines"') && page.includes('id="ev-strip"') && page.includes('class="trade-log"'));
   // The front page is the live dashboard; the archive lists dated reports.
   const front = await readFile(join(root, 'site', '000660', 'index.html'), 'utf8');
-  assert.ok(front.includes('기준 최신'));
+  assert.ok(front.includes('class="fresh '));
   assert.match(await readFile(join(root, 'site', '000660', 'archive.html'), 'utf8'), /reports\/2026-10-02\.html/);
   // The forecast made with the report is logged once.
   const log = (await readFile(join(root, 'data', 'forecasts', '000660.jsonl'), 'utf8')).trim().split('\n');
   assert.equal(log.length, 4);
+});
+
+test('freshness: live, stale by weekdays, degraded, not available', async () => {
+  const { freshness, weekdaysBetween } = await import('./appParts.js');
+  assert.equal(weekdaysBetween('2026-10-02', '2026-10-05'), 1); // Fri → Mon
+  const base = { date: '2026-10-05', generatedAt: '2026-10-05T09:30:00Z', price: { close: 1, sessionDate: '2026-10-05' }, market: { status: [] } } as never;
+  assert.equal(freshness(base).state, 'LIVE');
+  assert.equal(freshness({ ...(base as object), price: { close: 1, sessionDate: '2026-10-01' } } as never).label, '2거래일 전 데이터');
+  // Before 16:00 KST, Friday's close is still the latest on Monday.
+  assert.equal(freshness({ ...(base as object), generatedAt: '2026-10-05T01:00:00Z', price: { close: 1, sessionDate: '2026-10-02' } } as never).state, 'LIVE');
+  assert.equal(freshness({ ...(base as object), market: { status: [{ source: 'x', ok: false, count: 0 }] } } as never).state, 'DEGRADED');
+  assert.equal(freshness({ ...(base as object), price: null } as never).state, 'NOT_AVAILABLE');
 });

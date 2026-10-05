@@ -231,6 +231,11 @@ export function sanitizeClaims(claims: readonly Claim[], known: ReadonlySet<stri
   return { kept, dropped };
 }
 
+/** A commentary that was not written, with the reason (e.g. the monthly AI budget). */
+export function skippedCommentary(report: DailyReport, reason: string, now: Date): Commentary {
+  return empty('SKIPPED', now, buildEvidence(report), reason);
+}
+
 function empty(status: Commentary['status'], generatedAt: Date, evidence: EvidenceItem[], error?: string): Commentary {
   return {
     status, model: COMMENTARY_MODEL, promptVersion: COMMENTARY_PROMPT_VERSION, generatedAt: generatedAt.toISOString(),

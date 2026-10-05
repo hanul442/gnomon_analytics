@@ -86,11 +86,12 @@ ${mark(fv.center, '적정가', 'center', -1)}${consensus ? mark(consensus, '증�
 
 const POSITION = { ABOVE: '적정 범위보다 위', INSIDE: '적정 범위 안', BELOW: '적정 범위보다 아래' } as const;
 
-export function valueCard(market: MarketSection): string {
+/** `withForecast` adds the 20-session forecast centre to the strip (a Pro item, G-40). */
+export function valueCard(market: MarketSection, withForecast = true): string {
   const fv = market.fairValue;
   if (!fv) return '<div class="card"><div class="head"><h2>기술적 적정가</h2></div><p class="empty">일봉이 120개보다 적어서 계산하지 않았어요.</p></div>';
   const consensus = market.snapshot?.consensus?.targetPriceMean ?? null;
-  const p20 = market.forecasts.find((f) => f.horizon === 20)?.p50 ?? null;
+  const p20 = withForecast ? market.forecasts.find((f) => f.horizon === 20)?.p50 ?? null : null;
   return `<div class="card" id="value"><div class="head"><h2>기술적 적정가</h2><span class="sub" style="margin:0">${esc(fv.sessionDate)} 종가 기준</span></div>
 <div class="value-head"><div><div class="label">적정가 중심</div><div class="big">${won(fv.center)}</div></div>
 <div><div class="label">적정 범위</div><div class="mid">${won(fv.low)} ~ ${won(fv.high)}</div></div>
@@ -170,7 +171,8 @@ ${hits}</svg>`;
 
 const FOOTPRINT = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' } as const;
 
-export function flowsPanel(flow: FlowSection | null, fp: Footprint): string {
+/** `lockFootprint` wraps our footprint reading (Plus); the investor flows themselves are public data and stay free. */
+export function flowsPanel(flow: FlowSection | null, fp: Footprint, lockFootprint: (html: string) => string = (h) => h): string {
   if (!flow) return '<div class="card"><div class="head"><h2>투자자별 수급</h2></div><p class="empty">수급 기록이 아직 없어요.</p></div>';
   const legend = (['foreign', 'institution', 'individual'] as const).map((k) => `<span><i style="background:${FLOW_COLORS[k]}"></i>${{ foreign: '외국인', institution: '기관', individual: '개인' }[k]}</span>`).join('');
   const sums = flow.sums.map((s) => `<tr><td>최근 ${s.days}거래일</td><td class="num ${tone(s.foreign)}">${shares(s.foreign)}</td><td class="num ${tone(s.institution)}">${shares(s.institution)}</td><td class="num ${tone(s.individual)}">${shares(s.individual)}</td></tr>`).join('');
@@ -179,11 +181,11 @@ export function flowsPanel(flow: FlowSection | null, fp: Footprint): string {
   return `<div class="grid2 tight">
 <div class="card"><div class="head"><h2>누적 순매수</h2><div class="legend-inline">${legend}</div></div>${flowChart(flow)}
 <p class="fine">${flow.days.length}거래일 동안 투자자별 순매수(주)를 더해 간 선이에요. 선 위에 올리면 그날 숫자가 보여요.</p></div>
-<div class="card"><div class="head"><h2>수급 흔적</h2></div>
+${lockFootprint(`<div class="card"><div class="head"><h2>수급 흔적</h2></div>
 <div class="signal-label ${fpTone}" style="text-align:left">${FOOTPRINT[fp.state]}</div><div class="tally">점수 ${fp.score > 0 ? '+' : ''}${fp.score} (−100 분산 ~ +100 매집)</div>
 <ul class="plain">${fp.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
 <div class="facts one"><div><span class="label">외국인 보유율 20일 변화</span><b class="${tone(flow.holdRatioChange20)}">${flow.holdRatioChange20 === null ? '없음' : `${flow.holdRatioChange20 > 0 ? '+' : ''}${flow.holdRatioChange20.toFixed(2)}%p`}</b></div></div>
-<p class="fine">거래량과 투자자별 순매수로 본 흔적이에요. 누가 샀는지는 네이버의 투자자 구분까지만 말하고, 조작의 증거가 아니에요.</p></div></div>
+<p class="fine">거래량과 투자자별 순매수로 본 흔적이에요. 누가 샀는지는 네이버의 투자자 구분까지만 말하고, 조작의 증거가 아니에요.</p></div>`)}</div>
 <div class="card" style="margin-top:16px"><div class="head"><h2>기간별 순매수 합계</h2></div><div class="table-wrap"><table><thead><tr><th>기간</th><th class="num">외국인</th><th class="num">기관</th><th class="num">개인</th></tr></thead><tbody>${sums}</tbody></table></div>
 <h3 class="why-h">최근 10거래일</h3><div class="table-wrap"><table class="compact"><thead><tr><th>날짜</th><th class="num">외국인</th><th class="num">기관</th><th class="num">개인</th><th class="num">외국인 보유율</th></tr></thead><tbody>${recent}</tbody></table></div>
 <p class="fine">출처: 네이버 증권 투자자별 매매동향. 기타법인 등은 빠져 있어 세 줄의 합이 0이 아닐 수 있어요.</p></div>`;

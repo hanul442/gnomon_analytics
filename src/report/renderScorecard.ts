@@ -5,6 +5,7 @@
 
 import type { DailyReport } from './dailyReport.js';
 import { gate } from './plans.js';
+import { paperPanel } from './renderArena.js';
 import { shell, type HomeEntry } from './renderHtml.js';
 
 const esc = (value: string): string =>
@@ -59,9 +60,11 @@ ${board.length ? `<table class="compact"><thead><tr><th>분석가</th><th>채점
 <p class="fine">검증 구간은 백테스트의 마지막 30%예요. 장부는 기록을 시작한 날부터 다음 거래일 수익으로 쌓고, 사고팔 때 비용을 빼요.</p></div></section>`;
   misses.sort((a, b) => (a.target < b.target ? 1 : -1));
   const missCard = `<section class="block"><div class="block-head"><h2>빗나간 예측</h2><span class="muted">범위 밖으로 나간 최근 예측</span></div><div class="card table-wrap">${misses.length ? `<table class="compact"><thead><tr><th>종목</th><th>기간</th><th>예측 범위</th><th>실제</th><th>중앙값 대비</th></tr></thead><tbody>${misses.slice(0, 40).map((x) => `<tr><td><a href="${esc(x.href)}">${esc(x.name)}</a><div class="muted small">${esc(x.base)} → ${esc(x.target)}</div></td><td>${x.horizon}거래일</td><td>${won(x.p10)} ~ ${won(x.p90)}</td><td><b>${won(x.actual)}</b></td><td class="${tone(x.err)}">${pct(x.err)}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">아직 범위 밖으로 나간 예측이 없어요.</p>'}</div></section>`;
+  // Free: one headline number. Plus: the summary tables. Pro: per-stock records and every miss.
+  const teaser = `<section class="block"><div class="card paper-link"><div><div class="pl-k">예측 범위 적중 (전체)</div><b style="font-size:24px">${totalScored ? `${Math.round((horizons.reduce((s, [, x]) => s + x.inside, 0) / totalScored) * 100)}%` : '채점 전'}</b><p class="muted small">${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건 · ` : ''}기간별 적중과 분석가 순위는 플러스, 종목별 상세와 빗나간 예측은 프로부터 볼 수 있어요.</p></div></div></section>`;
   const body = `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>성적표</span><span>리포트 종목 ${live.length}개</span></div><h1>맞았는지, 기록으로 보여 드려요</h1>
 <p class="hero-line">예측과 판단은 만든 날 그대로 기록하고, 기간이 지나면 실제 가격으로 채점해요. 틀린 기록도 지우지 않아요.</p></div></section>
-${forecastCard}${analystCard}${strategyCard}${gate(missCard, { base: '', what: '빗나간 예측 하나하나와 오차' })}
+${teaser}${gate(forecastCard + analystCard, { base: '', what: '기간별 예측 적중 · AI 분석가 순위' })}${gate(strategyCard + missCard, { base: '', what: '종목별 전략·모의투자 성적 · 빗나간 예측 하나하나', need: 'pro' })}
 <footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 투자 권유가 아니에요.</p></footer>`;
   return shell('', '성적표 | Gnomon Analytics', body, { bottomNav: true });
 }
@@ -101,4 +104,23 @@ ${sec('privacy', '개인정보', [
 ${sec('contact', '문의', ['오류 신고와 리포트 요청은 GitHub 이슈로 받아요.'])}
 <footer id="sources" style="padding:24px 0 0"><p>마지막 수정: 초안. 투자 권유가 아니에요.</p></footer>`;
   return shell('', '이용약관·면책 | Gnomon Analytics', body, { bottomNav: true });
+}
+
+/** Paper trading, all covered stocks (moved out of the stock tabs, G-36). Summary free, ledgers Pro. */
+export function renderPaper(entries: readonly HomeEntry[]): string {
+  const live = entries.filter((e): e is HomeEntry & { report: DailyReport } => !!e.report?.market?.paper?.length);
+  const avg = (follower: (f: string) => boolean) => {
+    const xs = live.flatMap((e) => e.report.market!.paper!.filter((b) => follower(b.follower)).map((b) => b.totalReturn));
+    return xs.length ? (xs.reduce((s, v) => s + v, 0) / xs.length) * 100 : null;
+  };
+  const card = (label: string, v: number | null, sub: string) => `<div class="card ix"><div class="pl-k">${label}</div><div class="ix-v ${tone(v)}">${pct(v, 2)}</div><div class="muted small">${sub}</div></div>`;
+  const summary = `<section class="block"><div class="ix-row pp-row">${card('전략 챔피언 따라 하기', avg((f) => f === 'champion'), '종목 평균')}${card('매수 후 보유', avg((f) => f === 'hold'), '비교 기준 · 종목 평균')}${card('AI 분석가 따라 하기', avg((f) => f.startsWith('analyst:')), '분석가 전체 평균')}</div></section>`;
+  const ledgers = live.map((e) => `<section class="block"><div class="block-head"><h2><a href="${esc(e.href)}">${esc(e.name)}</a></h2></div>${paperPanel(e.report.market!.paper)}</section>`).join('');
+  const body = `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>모의투자</span><span>리포트 종목 ${live.length}개</span></div><h1>따라 했다면 어땠을까요</h1>
+<p class="hero-line">전략 챔피언과 AI 분석가의 판단을 그날 종가부터 따라 한 가상 계좌예요. 기록은 고치지 않고, 사고팔 때 비용을 빼요.</p></div></section>
+<style>.pp-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ix-v{font-size:22px;font-weight:800}@media (max-width:820px){.pp-row{grid-template-columns:minmax(0,1fr)}}</style>
+<section class="block"><div class="card"><p class="muted small" style="margin:0">평균 성과는 플러스, 종목별 장부·매매 내역은 프로부터 볼 수 있어요. 내 가상 포트폴리오는 맥스에 출시 예정이에요.</p></div></section>
+${gate(summary, { base: '', what: '따라 하기 평균 성과' })}${gate(ledgers || '<div class="card"><p class="empty">아직 장부 기록이 없어요.</p></div>', { base: '', what: '종목별 장부 · 매매 내역 · 수익 곡선', need: 'pro' })}
+<footer id="sources" style="padding:24px 0 0"><p>가상 계좌예요. 과거 성과가 앞으로의 결과를 보장하지 않아요. 투자 권유가 아니에요.</p></footer>`;
+  return shell('', '모의투자 | Gnomon Analytics', body, { bottomNav: true });
 }

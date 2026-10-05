@@ -10,18 +10,28 @@ type Cell = boolean | string;
 /** One row per feature: free, plus, pro, max. */
 const COMPARE: readonly [string, Cell, Cell, Cell, Cell][] = [
   ['전 종목 검색과 1년 차트', true, true, true, true],
-  ['한 줄 요약 · 종합 기술 신호 · 표결 분포', true, true, true, true],
-  ['뉴스·공시 · 성적표 요약', true, true, true, true],
-  ['지표 16개 · 기간별 신호 · 적정가 · 예측 범위', false, true, true, true],
-  ['전략 대결 · 모의투자 장부 · 수급 · 펀더멘털', false, true, true, true],
-  ['AI 위원회 전체(위원별 근거·레드팀·시나리오)', false, true, true, true],
-  ['성적표 상세(빗나간 예측)', false, true, true, true],
-  ['관심 종목', '10개', '30개', '100개', '무제한'],
-  ['매달 포함 크레딧', false, false, '200', '600'],
+  ['한 줄 요약 · 지표 16개 판단 · AI 표 분포', true, true, true, true],
+  ['외국인·기관 수급 · 실적·밸류에이션 · 뉴스·공시', true, true, true, true],
+  ['성적표 대표 숫자 · 전략 챔피언 이름', true, true, true, true],
+  ['성적표 요약표 · 전략 순위표 · 모의투자 평균', false, true, true, true],
+  ['기간별 신호 게이지 · 기술적 적정가', false, true, true, true],
+  ['예측 가격 범위 · 분석가 예상가', false, false, true, true],
+  ['수급 흔적 · 가격 구조 분석', false, true, true, true],
+  ['전략 대결 전체 · 모의투자 종목별 장부', false, false, true, true],
+  ['요약 리포트 · 제한된 AI 위원회(결론·데스크 입장·레드팀 한 줄)', false, true, true, true],
+  ['AI 위원회 리포트 전체(위원별 근거·예측·레드팀·시나리오)', false, false, true, true],
+  ['성적표 종목별 상세 · 빗나간 예측', false, false, true, true],
+  ['관심 종목', '5개', '30개', '100개', '무제한'],
+  ['매달 포함 크레딧', false, false, '300', '1,000'],
+  ['크레딧 충전 · 리포트 요청 · AI 질문', false, true, true, true],
+  ['요약 리포트를 심층으로 업그레이드', false, false, true, true],
+  ['전문가 AI 초청', false, false, '크레딧', '매달 30회 포함'],
+  ['전문가 정기 초청(주간 위원회 고정)', false, false, false, '5명'],
   ['충전할 때 추가 크레딧', false, false, '+10%', '+20%'],
-  ['관심 종목 매주 AI 위원회 자동 리포트', false, false, false, '5종목'],
-  ['공시·신호 변화 알림 (출시 예정)', false, false, true, true],
-  ['내 전략 백테스트 · 데이터 내보내기 (출시 예정)', false, false, false, true],
+  ['관심 종목 매주 AI 위원회 자동 리포트', false, false, false, '10종목'],
+  ['스크리너 (출시 예정)', false, '조건 검색', '+ 조건 백테스트', '+ 조건 백테스트'],
+  ['아이디어 검증 · 이벤트 스터디 · 수급 랭킹 · 알림 (출시 예정)', false, false, true, true],
+  ['전략 랩 · 포트폴리오 리스크 · 시점 재현 · 내보내기 (출시 예정)', false, false, false, true],
 ];
 
 const STYLE = `<style>
@@ -53,24 +63,24 @@ ${i ? `<div class="inherits">${PLANS[i - 1]!.name}의 모든 것에 더해</div>
   const body = `${STYLE}<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>요금제</span></div><h1>필요한 만큼 깊이 보세요</h1>
 <p class="hero-line">결제는 깊이를 바꿀 뿐, 진실을 바꾸지 않아요. 같은 종목의 신호·숫자·기록은 누구에게나 같고, 유료는 그 이유를 더 자세히 보여 줘요.</p></div></section>
 <section class="block"><p class="mock-note"><b>MOCK 화면이에요.</b> 실제로 결제되지 않고, 요금제와 크레딧은 이 브라우저에만 저장돼요. 가격과 구성은 출시 전에 바뀔 수 있어요.</p></section>
-<section class="block"><div class="card acct-card"><div><div class="muted small">지금 요금제</div><b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧</div><div><a href="#log" class="link-btn">크레딧 사용 내역</a></div></div></section>
+<section class="block"><div class="card acct-card"><div><div class="muted small">지금 요금제</div><b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧 <span class="muted small" data-trial></span></div><div><a href="#log" class="link-btn">크레딧 사용 내역</a></div></div></section>
 <section class="block"><div class="pr-grid">${PLANS.map(plan).join('')}</div></section>
 <section class="block"><div class="block-head"><h2>요금제별로 볼 수 있는 것</h2></div><div class="card table-wrap"><table class="cmp"><thead><tr><th>기능</th>${PLANS.map((p) => `<th>${p.name}</th>`).join('')}</tr></thead><tbody>
 ${COMPARE.map(([label, ...cells]) => `<tr><td>${label}</td>${cells.map(yes).join('')}</tr>`).join('')}</tbody></table></div></section>
-<section class="block" id="credits"><div class="block-head"><h2>크레딧 충전</h2><span class="muted">요금제와 상관없이 누구나 충전해서 써요</span></div>
+<section class="block" id="credits"><div class="block-head"><h2>크레딧 충전</h2><span class="muted">플러스부터 충전하고 쓸 수 있어요</span></div>
 <div class="packs">${CREDIT_PACKS.map((k) => {
     const per = k.price / k.credits, off = Math.round((1 - per / base) * 100);
     return `<div class="card pack"><span class="muted small">${off > 0 ? `${off}% 더 저렴` : '기본'}</span><b>${k.credits}크레딧</b><div class="price" style="font-size:20px;font-weight:800">${won(k.price)}</div><span class="per">크레딧당 ${Math.round(per)}원</span><a class="btn-primary" href="checkout.html?item=${k.key}">충전하기</a></div>`;
   }).join('')}</div>
-<div class="card" style="margin-top:12px"><table class="compact"><thead><tr><th>크레딧으로 하는 일</th><th>필요한 크레딧</th></tr></thead><tbody>
-${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>${CREDIT_COST[a.key]}</b></td></tr>`).join('')}</tbody></table>
-<p class="fine">프로는 충전할 때 10%, 맥스는 20%를 더 받아요. 요금제에 포함된 크레딧은 매달 새로 채워지고 이월되지 않아요. 충전한 크레딧은 1년 동안 써요.</p></div></section>
+<div class="card" style="margin-top:12px"><table class="compact"><thead><tr><th>크레딧으로 하는 일</th><th>필요한 크레딧</th><th>쓸 수 있는 요금제</th></tr></thead><tbody>
+${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>${CREDIT_COST[a.key]}</b></td><td>${PLANS.find((p) => p.key === a.min)!.name}부터</td></tr>`).join('')}</tbody></table>
+<p class="fine">가끔 이벤트로 체험 크레딧을 드려요. 무료 이용자도 체험 크레딧으로 빠른 질문과 요약 리포트 요청을 해 볼 수 있고, 이벤트가 끝나면 남은 체험 크레딧은 사라져요. 프로는 충전할 때 10%, 맥스는 20%를 더 받아요. 요금제에 포함된 크레딧은 매달 새로 채워지고 이월되지 않아요. 충전한 크레딧은 1년 동안 써요.</p></div></section>
 <section class="block" id="log"><div class="block-head"><h2>크레딧 사용 내역</h2><span class="muted">이 브라우저 기록</span></div><div class="card"><div id="log-body"><p class="empty">아직 내역이 없어요.</p></div></div></section>
 <section class="block faq"><div class="block-head"><h2>자주 묻는 것</h2></div><div class="card">
 <details><summary>지금 결제하면 실제로 돈이 나가나요?</summary><p>아니요. 이 화면은 요금제 구조를 보여 주는 MOCK이에요. 결제 버튼은 이 브라우저의 요금제와 크레딧만 바꿔요.</p></details>
 <details><summary>잠긴 내용은 어떻게 열리나요?</summary><p>플러스부터 상세 내용이 보여요. 지금은 화면에서만 가리는 MOCK이고, 실제 서비스에서는 로그인한 계정으로 확인해요.</p></details>
 <details><summary>크레딧은 언제 사라지나요? (초안)</summary><p>프로·맥스에 포함된 크레딧은 매달 새로 채워지고, 남은 포함 크레딧은 이월되지 않아요. 따로 충전한 크레딧은 1년 동안 써요.</p></details>
-<details><summary>프로와 맥스는 무엇이 달라요?</summary><p>프로는 궁금한 종목을 직접 요청하고 질문하는 요금제예요. 맥스는 관심 종목 5개를 매주 AI 위원회가 알아서 분석해 리포트를 써 주고, 크레딧도 세 배예요.</p></details>
+<details><summary>요금제마다 무엇이 달라요?</summary><p>플러스는 계산 상세와 요약 리포트를 보고 크레딧으로 리포트를 요청해요. 프로는 AI 위원회 리포트 전체·전략·모의투자를 보고, 요약 리포트를 심층으로 업그레이드해요. 맥스는 관심 종목 10개를 매주 AI 위원회가 알아서 분석하고, 전문가용 도구(전략 랩·포트폴리오 리스크·시점 재현)를 써요.</p></details>
 <details><summary>투자 자문인가요?</summary><p>아니요. 공개 데이터로 계산한 결과와 AI 해설이고, 매수·매도를 권하지 않아요. 유료 서비스를 열기 전에 관련 법(유사투자자문업 신고 등)을 확인할 예정이에요.</p></details></div></section>
 <footer id="sources" style="padding:24px 0 0"><p>가격은 부가세 포함 기준의 초안이에요. 투자 권유가 아니에요.</p></footer>`;
   return shell('', '요금제 | Gnomon Analytics', body, { bottomNav: true, scripts: PRICING_SCRIPT });
@@ -79,7 +89,7 @@ ${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>$
 const PRICING_SCRIPT = `<script>
 (function () {
   var G = window.GNM; if (!G) return;
-  var KIND = { report: '리포트 요청', question: 'AI 빠른 질문', deep: 'AI 심층 질문', topup: '충전', plan: '요금제' };
+  var KIND = { report: '심층 리포트 요청', brief: '요약 리포트 요청', upgrade: '심층 업그레이드', idea: '아이디어 검증', question: 'AI 빠른 질문', deep: 'AI 심층 질문', topup: '충전', trial: '체험 크레딧', plan: '요금제' };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var draw = function () {
     var a = G.read(), el = document.getElementById('log-body');
@@ -95,7 +105,7 @@ const PRICING_SCRIPT = `<script>
 
 const ITEMS = [
   ...PLANS.filter((p) => p.price).map((p) => ({ key: p.key, title: `${p.name} 요금제 (월)`, price: p.price, plan: p.key, credits: p.monthlyCredits, note: p.monthlyCredits ? `매달 ${p.monthlyCredits}크레딧 포함` : '상세 설명 전체' })),
-  ...CREDIT_PACKS.map((k) => ({ key: k.key, title: `${k.credits}크레딧 충전`, price: k.price, plan: null as string | null, credits: k.credits, note: '요금제와 상관없이 사용 · 프로 +10%, 맥스 +20%' })),
+  ...CREDIT_PACKS.map((k) => ({ key: k.key, title: `${k.credits}크레딧 충전`, price: k.price, plan: null as string | null, credits: k.credits, note: '플러스부터 사용 · 프로 +10%, 맥스 +20%' })),
 ];
 
 export function renderCheckout(): string {
@@ -117,6 +127,7 @@ export function renderCheckout(): string {
   var $ = function (id) { return document.getElementById(id); };
   var won = function (v) { return v.toLocaleString('ko-KR') + '원'; };
   if (!item || !G) return;
+  if (!item.plan && G.read().plan === 'free') { document.getElementById('co-form').innerHTML = '<div class="card"><p>크레딧은 플러스 요금제부터 충전할 수 있어요.</p><p><a class="btn-primary" href="checkout.html?item=plus">플러스 시작하기</a></p></div>'; return; }
   $('co-title').textContent = item.title; $('co-price').textContent = won(item.price); $('co-note').textContent = item.note; $('co-total').textContent = won(item.price);
   $('co-agree').addEventListener('change', function (e) { $('co-pay').disabled = !e.target.checked; });
   $('co-pay').addEventListener('click', function () {
