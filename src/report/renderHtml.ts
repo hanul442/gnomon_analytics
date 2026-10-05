@@ -5,6 +5,8 @@
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim, Commentary } from '../analysis/commentary.js';
+import { apiMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
+import { CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
 import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow, horizonStrip, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { councilCard, DART_SCRIPT, freshness, freshnessBadge, hero, latestLists, marketStrip, priceChart, sparkline } from './appParts.js';
 import { analystScores, arenaHeadline, arenaPanel, arenaRanking, arenaTeaser } from './renderArena.js';
@@ -307,19 +309,19 @@ const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'news', label: '뉴스·공시' },
 ];
 
-export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' }): string {
+export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account'; chat?: boolean; noFeedback?: boolean }): string {
   const cur = (k: string) => (options.active === k ? ' aria-current="page"' : '');
   // The site root lists every covered stock; `base` always points at it.
   const rootHref = `${base}index.html`;
   const tabs = options.tabs ?? [];
   return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#ffffff"><title>${escape(title)}</title>${PLAN_BOOT}
-<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}</style></head><body data-base="${base}">
+<meta name="theme-color" content="#ffffff"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}
+<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}</style></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
 <nav class="top-links" aria-label="사이트"><a href="${rootHref}"${cur('home')}>홈</a>${options.homeHref ? `<a href="${options.homeHref}" class="tl-hide">최신</a>` : ''}${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}screener.html" class="tl-hide"${cur('screener')}>스크리너</a><a href="${base}paper.html" class="tl-hide"${cur('paper')}>모의투자</a><a href="${base}scorecard.html" class="tl-hide"${cur('scorecard')}>성적표</a><a href="${base}pricing.html" class="tl-hide"${cur('pricing')}>요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>
-<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}scorecard.html">성적표</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${ACCOUNT_SCRIPT}${options.scripts ?? ''}${UI_SCRIPT}</body></html>`;
+<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}scorecard.html">성적표</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}${ACCOUNT_SCRIPT}${ALPHA_SCRIPT}${options.scripts ?? ''}${options.chat === false ? '' : CHAT_SCRIPT}${UI_SCRIPT}</body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
@@ -654,11 +656,12 @@ function inviteBox(report: DailyReport, base: string): string {
 <p class="fine">초청한 전문가는 이 종목 리포트의 근거를 보고 의견·위험·지켜볼 것을 써요. MOCK이라 지금은 접수만 기록돼요. <a href="${base}pricing.html">요금제 보기</a></p></div></section>`;
 }
 
-/** Ask the AI about this stock: 2 credits a question, any plan (MOCK answer until a server exists). */
-function askBox(report: DailyReport, base: string): string {
-  return `<section class="block" id="ask"><div class="block-head"><h2>AI에게 직접 질문</h2><span class="muted">빠른 질문 ${CREDIT_COST.question} · 심층 질문 ${CREDIT_COST.deep}크레딧 · 플러스부터</span></div>
-<div class="card"><form class="ask" data-symbol="${escape(report.symbol)}"><label class="muted small" for="ask-q">${escape(report.name)}에 대해 궁금한 것을 물어보세요. 리포트의 근거 안에서 답해요.</label><textarea id="ask-q" maxlength="300" placeholder="예: 외국인 매도가 계속되면 어디까지 볼 수 있어요?"></textarea>
-<div class="ask-row"><span class="muted small">남은 크레딧 <b data-credits>0</b>개 · <a href="${base}pricing.html#credits">충전</a></span><span class="ask-btns"><button type="submit" name="kind" value="question" class="credit-btn ghost">빠른 질문 <small>${CREDIT_COST.question}크레딧</small></button><button type="submit" name="kind" value="deep" class="credit-btn">심층 질문 <small>${CREDIT_COST.deep}크레딧</small></button></span></div><div class="ask-out" hidden aria-live="polite"></div></form></div></section>`;
+/** Questions go to the chat (bottom right); this card opens it with the stock as context. */
+function askBox(report: DailyReport, _base: string): string {
+  const ex = ['요즘 왜 이렇게 움직였어요?', '지금 가장 큰 위험 요인은?', 'AI 위원회 결론을 쉽게 풀어 줘요'];
+  return `<section class="block" id="ask"><div class="block-head"><h2>AI에게 직접 질문</h2><span class="muted">빠른 ${CREDIT_COST.question} · 표준 ${CREDIT_COST.standard} · 깊은 ${CREDIT_COST.deep}크레딧</span></div>
+<div class="card"><p class="muted small" style="margin-top:0">${escape(report.name)}의 리포트와 지금 보는 화면을 근거로 답해요. 오른쪽 아래 <b>AI 질문</b> 버튼으로 어느 화면에서나 물어볼 수 있어요.</p>
+<div class="chat-sugg">${ex.map((q) => `<button type="button" data-open-chat data-ask="${escape(q)}">${escape(q)}</button>`).join('')}</div></div></section>`;
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[], links: { base?: string; homeHref?: string; name?: string } = {}): string {

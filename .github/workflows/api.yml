@@ -1,0 +1,73 @@
+name: Deploy API
+# The alpha API on Cloudflare Workers + D1 (docs/DESIGN.md §5.13). Needs repository secrets
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; RESEND_API_KEY, ANTHROPIC_API_KEY and
+# GNM_ADMIN_EMAILS are passed on to the Worker when present. Skips quietly until set up.
+on:
+  push:
+    branches: [main]
+    paths: ['src/worker/**', 'src/report/plans.ts', 'migrations/**', 'wrangler.toml', '.github/workflows/api.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - name: Check Cloudflare settings
+        id: cf
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Cloudflare secrets are not set yet; skipping the deploy." >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v5
+        if: steps.cf.outputs.ready == 'true'
+      - uses: actions/setup-node@v5
+        if: steps.cf.outputs.ready == 'true'
+        with:
+          node-version: 22
+      - if: steps.cf.outputs.ready == 'true'
+        run: npm ci --ignore-scripts && npm i --no-save wrangler@4
+      - name: Find or create the D1 database
+        if: steps.cf.outputs.ready == 'true'
+        run: |
+          id=$(npx wrangler d1 list --json | node -e "const l=JSON.parse(require('fs').readFileSync(0,'utf8'));const d=l.find(x=>x.name==='gnm');process.stdout.write(d?d.uuid:'')")
+          if [ -z "$id" ]; then
+            npx wrangler d1 create gnm --location apac
+            id=$(npx wrangler d1 list --json | node -e "const l=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write(l.find(x=>x.name==='gnm').uuid)")
+          fi
+          sed -i "s/^database_id = .*/database_id = \"$id\"/" wrangler.toml
+      - name: Apply migrations
+        if: steps.cf.outputs.ready == 'true'
+        run: npx wrangler d1 migrations apply gnm --remote
+      - name: Deploy
+        if: steps.cf.outputs.ready == 'true'
+        run: npx wrangler deploy 2>&1 | tee deploy.log
+      - name: Pass secrets to the Worker
+        if: steps.cf.outputs.ready == 'true'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ADMIN_EMAILS: ${{ secrets.GNM_ADMIN_EMAILS }}
+        run: |
+          for name in RESEND_API_KEY ANTHROPIC_API_KEY ADMIN_EMAILS; do
+            value="${!name}"
+            if [ -n "$value" ]; then printf '%s' "$value" | npx wrangler secret put "$name" >/dev/null && echo "set $name"; else echo "skip $name (not set)"; fi
+          done
+      - name: Report the API address
+        if: steps.cf.outputs.ready == 'true'
+        run: |
+          url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          echo "API: $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "API: $url"
+          curl -fsS "$url/health"

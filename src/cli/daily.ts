@@ -7,6 +7,8 @@
 // never rewritten: if reports/<symbol>/<date>.json exists it is left as it is.
 // One stock failing does not stop the others.
 
+import { SITE_CONFIG } from '../report/alpha.js';
+import { renderAccount, renderAdmin, renderLogin, renderOnboarding } from '../report/renderAlpha.js';
 import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -376,6 +378,9 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  */
 export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc> } = {}): Promise<void> {
   const siteDir = join(root, 'site');
+  // The alpha API address (G-44): GNM_API_URL wins over gnm.config.json; empty keeps the browser-only MOCK.
+  const config = JSON.parse(await readFile(join(root, 'gnm.config.json'), 'utf8').catch(() => '{}')) as { apiUrl?: string };
+  SITE_CONFIG.apiUrl = process.env.GNM_API_URL ?? config.apiUrl ?? '';
   const home: HomeEntry[] = [];
   // Stocks picked in earlier weeks keep their pages (latest dated report), off the front page.
   const reportDirs = (await readdir(join(root, 'reports'), { withFileTypes: true }).catch(() => [])).filter((d) => d.isDirectory() && /^[0-9A-Z]{6}$/.test(d.name)).map((d) => d.name);
@@ -415,6 +420,11 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : {}) });
   }
   await writeFile(join(siteDir, 'stock.html'), renderStockPage());
+  // Closed alpha pages (G-44); they need the API address to do anything.
+  await writeFile(join(siteDir, 'login.html'), renderLogin());
+  await writeFile(join(siteDir, 'onboarding.html'), renderOnboarding());
+  await writeFile(join(siteDir, 'account.html'), renderAccount());
+  await writeFile(join(siteDir, 'admin.html'), renderAdmin());
   await writeFile(join(siteDir, 'pricing.html'), renderPricing());
   // Trial-credit promotions (G-38): edited by hand in promos.json, published as-is when valid.
   const promos = validPromos(JSON.parse(await readFile(join(root, 'promos.json'), 'utf8').catch(() => '[]')));
