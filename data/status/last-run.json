@@ -1,5 +1,5 @@
 {
- "at": "2026-10-05T11:29:04.311Z",
+ "at": "2026-10-05T11:39:00.978Z",
  "selected": null,
  "universe": [
   {
@@ -224,6 +224,11 @@
   {
    "symbol": "439090",
    "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-WLD",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
