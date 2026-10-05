@@ -66,7 +66,7 @@ ${board.length ? `<table class="compact"><thead><tr><th>분석가</th><th>채점
 <p class="hero-line">예측과 판단은 만든 날 그대로 기록하고, 기간이 지나면 실제 가격으로 채점해요. 틀린 기록도 지우지 않아요.</p></div></section>
 ${teaser}${gate(forecastCard + analystCard, { base: '', what: '기간별 예측 적중 · AI 분석가 순위' })}${gate(strategyCard + missCard, { base: '', what: '종목별 전략·모의투자 성적 · 빗나간 예측 하나하나', need: 'pro' })}
 <footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '성적표 | Gnomon Analytics', body, { bottomNav: true });
+  return shell('', '성적표 | Gnomon Analytics', body, { active: 'scorecard' });
 }
 
 export function renderTerms(): string {
@@ -103,7 +103,7 @@ ${sec('privacy', '개인정보', [
   ])}
 ${sec('contact', '문의', ['오류 신고와 리포트 요청은 GitHub 이슈로 받아요.'])}
 <footer id="sources" style="padding:24px 0 0"><p>마지막 수정: 초안. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '이용약관·면책 | Gnomon Analytics', body, { bottomNav: true });
+  return shell('', '이용약관·면책 | Gnomon Analytics', body, {});
 }
 
 /** Paper trading, all covered stocks (moved out of the stock tabs, G-36). Summary free, ledgers Pro. */
@@ -122,5 +122,5 @@ export function renderPaper(entries: readonly HomeEntry[]): string {
 <section class="block"><div class="card"><p class="muted small" style="margin:0">평균 성과는 플러스, 종목별 장부·매매 내역은 프로부터 볼 수 있어요. 내 가상 포트폴리오는 맥스에 출시 예정이에요.</p></div></section>
 ${gate(summary, { base: '', what: '따라 하기 평균 성과' })}${gate(ledgers || '<div class="card"><p class="empty">아직 장부 기록이 없어요.</p></div>', { base: '', what: '종목별 장부 · 매매 내역 · 수익 곡선', need: 'pro' })}
 <footer id="sources" style="padding:24px 0 0"><p>가상 계좌예요. 과거 성과가 앞으로의 결과를 보장하지 않아요. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '모의투자 | Gnomon Analytics', body, { bottomNav: true });
+  return shell('', '모의투자 | Gnomon Analytics', body, { active: 'paper' });
 }

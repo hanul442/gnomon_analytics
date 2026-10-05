@@ -38,6 +38,8 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   assert.ok(page.includes('id="parliament"') && page.includes('data-pf="indicator"') && (page.match(/class="seat /g) ?? []).length >= 16);
   // Chart tools: presets, an indicator sheet and a strategy sheet.
   for (const s of ['data-preset="momentum"', 'id="ind-sheet"', 'id="strat-sheet"', 'id="active-pills"']) assert.ok(page.includes(s), s);
+  // UI layer: price in the header after scrolling, a bottom tab bar, glossary terms, the indicator names marked for it.
+  assert.ok(page.includes('id="price-bar"') && page.includes('class="bottom-nav"') && page.includes('"몬테카를로"') && page.includes('class="term-cell"'));
   // Plans: details sit behind Plus gates; anyone can ask the AI with credits.
   assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 3 && (page.match(/class="gate" data-need="pro"/g) ?? []).length >= 2 && page.includes('id="ask"') && page.includes('data-plan="free"'));
   assert.ok(page.includes('class="card hs"'));
