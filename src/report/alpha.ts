@@ -21,6 +21,9 @@ export const ALPHA_CSS = `
 .wk-pulse textarea{width:100%;margin-top:8px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;min-height:54px}.wk-pulse .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 .wk-pulse .row button{border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}.wk-pulse .row .later{background:#eef1f5;color:var(--fg2)}.wk-pulse .row .go{background:var(--navy);color:#fff}
 @media (max-width:820px){.wk-pulse{left:14px;bottom:78px}}
+.bell-btn{position:relative;border:1px solid rgba(255,255,255,.28);background:none;color:#fff;border-radius:999px;width:32px;height:30px;cursor:pointer;font-size:14px}.bell-btn i{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#e5484d;color:#fff;font:700 10px/16px inherit;font-style:normal;padding:0 4px}
+.bell-pop{position:absolute;right:16px;top:58px;z-index:70;width:min(360px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:#fff;color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(15,27,45,.22);padding:8px}
+.bell-pop a{display:block;padding:9px 10px;border-radius:10px;text-decoration:none;color:inherit}.bell-pop a:hover{background:var(--accent-soft)}.bell-pop a.unread b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5484d;margin-right:6px;vertical-align:1px}.bell-pop small{display:block;color:var(--muted)}
 `;
 
 export const ALPHA_SCRIPT = `<script>
@@ -67,6 +70,26 @@ export const ALPHA_SCRIPT = `<script>
   G.refresh = function () {
     if (!get(SK)) { G.me = null; paint(); return Promise.resolve(null); }
     return G.call('GET', '/me').then(function (r) { if (!r.error) { G.me = r; set(MK, JSON.stringify(r)); paint(); } return G.me; });
+  };
+  // Notifications (screener alerts): a bell next to the account badge.
+  var bell = function () {
+    var nav = document.querySelector('.top-links'), acct = nav && nav.querySelector('.acct');
+    if (!G.me || !acct || document.getElementById('bell')) return;
+    var b = document.createElement('button'); b.type = 'button'; b.id = 'bell'; b.className = 'bell-btn'; b.setAttribute('aria-label', '알림'); b.innerHTML = '🔔';
+    nav.insertBefore(b, acct);
+    var pop = null;
+    G.call('GET', '/notifications').then(function (r) {
+      if (r.error) return;
+      if (r.unread) b.insertAdjacentHTML('beforeend', '<i>' + r.unread + '</i>');
+      b.addEventListener('click', function () {
+        if (pop) { pop.remove(); pop = null; return; }
+        pop = document.createElement('div'); pop.className = 'bell-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '알림');
+        pop.innerHTML = r.items.length ? r.items.map(function (n) { return '<a class="' + (n.read_at ? '' : 'unread') + '" href="' + base + esc(n.link || '') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small></a>'; }).join('') : '<p class="muted small" style="padding:10px">알림이 없어요. 스크리너에서 저장한 조건의 🔔를 켜면 매일 장 마감 뒤 새로 걸린 종목을 알려 드려요.</p>';
+        document.querySelector('.topbar').appendChild(pop);
+        if (r.unread) { G.call('POST', '/notifications/read'); var i = b.querySelector('i'); if (i) i.remove(); r.unread = 0; }
+        G.track('bell_open', {});
+      });
+    });
   };
   G.signIn = function (session, me) { set(SK, session); G.me = me; set(MK, JSON.stringify(me)); paint(); };
   G.signOut = function () { return G.call('POST', '/auth/logout').then(function () { set(SK, null); set(MK, null); G.me = null; paint(); }); };
@@ -162,6 +185,6 @@ export const ALPHA_SCRIPT = `<script>
     }
   };
   paint();
-  G.ready = G.refresh().then(function () { feedback(); nudges(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return G.me; });
+  G.ready = G.refresh().then(function () { feedback(); nudges(); bell(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return G.me; });
 })();
 </script>`;

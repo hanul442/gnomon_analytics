@@ -5,6 +5,10 @@ compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
+# Screener alerts after the daily build (18:30 KST run): 20:10 and 22:10 KST on weekdays; once per data date.
+[triggers]
+crons = ["10 11,13 * * 1-5"]
+
 [vars]
 SITE_URL = "https://hanul442.github.io/gnomon_analytics"
 ALLOW_ORIGINS = "http://localhost:8765"

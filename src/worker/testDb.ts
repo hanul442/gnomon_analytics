@@ -15,7 +15,7 @@ class Stmt implements D1Stmt {
 
 export function testDb(): D1 {
   const db = new DatabaseSync(':memory:');
-  db.exec(readFileSync(new URL('../../migrations/0001_alpha.sql', import.meta.url), 'utf8'));
+  db.exec(['0001_alpha.sql', '0002_screens.sql'].map((f) => readFileSync(new URL(`../../migrations/${f}`, import.meta.url), 'utf8')).join('\n'));
   return {
     prepare: (sql) => new Stmt(db, sql),
     // D1 runs a batch as one transaction.

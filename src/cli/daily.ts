@@ -7,6 +7,8 @@
 // never rewritten: if reports/<symbol>/<date>.json exists it is left as it is.
 // One stock failing does not stop the others.
 
+import { collectRiskFilings } from './riskCollect.js';
+import type { RiskFlag } from '../analysis/riskFilings.js';
 import { SITE_CONFIG } from '../report/alpha.js';
 import { renderAccount, renderAdmin, renderLogin, renderOnboarding } from '../report/renderAlpha.js';
 import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
@@ -209,7 +211,10 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const calc = quickCalc(j.ticker.symbol, bars, now);
     if (calc) calcs.set(j.ticker.symbol, calc);
   }
-  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse: marketPulse([...calcs.values()]), calcs });
+  // Filing risk flags for every listed company (G-49), shown next to screener results.
+  const risk = await collectRiskFilings({ root, apiKey: options.apiKey, today: today.date, now: () => now, ...fetchOpt });
+  universe.status.push({ source: 'opendart:risk-filings', ok: !risk.error, count: risk.fetched, ...(risk.error ? { error: risk.error } : {}) });
+  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse: marketPulse([...calcs.values()]), calcs, risk: risk.flags });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
   await mkdir(join(root, 'data', 'status'), { recursive: true });
@@ -376,7 +381,7 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  * dashboard (live when this run built one, else its latest dated report),
  * <symbol>/archive.html its dated reports and <symbol>/reports/<date>.html each one.
  */
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc> } = {}): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag> } = {}): Promise<void> {
   const siteDir = join(root, 'site');
   // The alpha API address (G-44): GNM_API_URL wins over gnm.config.json; empty keeps the browser-only MOCK.
   const config = JSON.parse(await readFile(join(root, 'gnm.config.json'), 'utf8').catch(() => '{}')) as { apiUrl?: string };
@@ -435,7 +440,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'paper.html'), renderPaper(home.filter((e) => e.group !== 'past')));
   // Screener over every stock's free computation (G-43).
   await writeFile(join(siteDir, 'screener.html'), renderScreener());
-  await writeFile(join(siteDir, 'screener.json'), JSON.stringify({ date: extras.pulse?.date ?? null, rows: universe && extras.calcs ? screenerRows(universe, extras.calcs, new Set(home.map((e) => e.symbol))) : [] }));
+  await writeFile(join(siteDir, 'screener.json'), JSON.stringify({ date: extras.pulse?.date ?? null, rows: universe && extras.calcs ? screenerRows(universe, extras.calcs, new Set(home.map((e) => e.symbol)), extras.risk) : [] }));
   // Index quotes for the front page, from the stored index prices.
   const indices: IndexQuote[] = [];
   for (const [symbol, name] of [['KOSPI', '코스피'], ['KOSDAQ', '코스닥']] as const) {
