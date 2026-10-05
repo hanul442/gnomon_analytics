@@ -30,12 +30,12 @@ const callKrw = (model: keyof typeof MODELS, inTok: number, outTok: number) =>
 
 /** What one use of each credit action costs us, KRW. */
 export const ACTION_COST: Record<CreditAction, number> = {
-  // Measured: deep committee median 10.1K in / 3.9K out.
-  report: callKrw('opus', 10_100, 3_940),
+  // Measured: deep committee median 10.1K in / 3.9K out; v4 adds the debate, worst case and tab lines (~+900 out).
+  report: callKrw('opus', 10_100, 4_850),
   // A brief on the small model (summary, both sides, watch items).
-  brief: callKrw('haiku', 9_500, 1_800),
+  brief: callKrw('haiku', 9_500, 2_200),
   // Rewriting a brief as the full committee costs a full report.
-  upgrade: callKrw('opus', 10_100, 3_940),
+  upgrade: callKrw('opus', 10_100, 4_850),
   // An invited expert writes one opinion over the report's evidence.
   invite: callKrw('opus', 11_000, 2_500),
   // Red team over the report's evidence and the user's idea, with invalidation conditions.

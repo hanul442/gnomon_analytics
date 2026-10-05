@@ -17,7 +17,7 @@ export const COMMENTARY_MODEL = 'claude-opus-5-5';
 export const BRIEF_MODEL = 'claude-haiku-4-5';
 export type CommentaryTier = 'deep' | 'brief';
 /** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v3';
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v4';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -42,6 +42,10 @@ export type DeskStance = 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'INSUFFICIENT_DATA'
 export interface DeskView { desk: Desk; stance: DeskStance; view: Claim }
 export interface AnalystView { analyst: AnalystId; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; confidence: number; target: number; rationale: Claim }
 export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; catalysts: string[]; invalidation: string[] }
+/** A debate turn (v4): the bull and bear sides answer each other; the moderator closes. */
+export interface DebateTurn { side: 'BULL' | 'BEAR' | 'MODERATOR'; claim: Claim }
+/** Where a short AI line sits: at the top of that report tab. */
+export type InsightKey = 'technical' | 'strategy' | 'flow' | 'fundamental' | 'news';
 
 export interface Commentary {
   status: 'OK' | 'FAILED' | 'SKIPPED';
@@ -64,6 +68,12 @@ export interface Commentary {
   desks?: DeskView[];
   redTeam?: { counterargument: Claim; unresolved: string[] };
   scenarios?: Scenario[];
+  /** v4: bull and bear answer each other in turns, then a moderator closes (committee only). */
+  debate?: DebateTurn[];
+  /** v4: the worst plausible case and the checks a reader should make (not orders). */
+  worstCase?: { narrative: Claim; checks: string[] };
+  /** v4: one line per report tab. */
+  insights?: Partial<Record<InsightKey, Claim>>;
   /** Analyst battle: each analyst's stance, confidence and 20-session target (scored later). */
   analysts?: AnalystView[];
   /** Claims removed because none of their evidence IDs existed. */
@@ -160,6 +170,24 @@ const ScenarioSchema = z.object({
   invalidation: z.array(z.string()).describe('이 시나리오가 틀렸다고 볼 조건(가격 수준이나 사건)'),
 });
 
+const InsightsSchema = z.object({
+  technical: ClaimSchema.describe('기술 분석 탭 맨 위에 붙일 한 줄: 지표·기간별 신호·가격 구조에서 지금 가장 중요한 것'),
+  strategy: ClaimSchema.describe('전략 탭 한 줄: 전략 대결 결과에서 읽을 점'),
+  flow: ClaimSchema.describe('수급 탭 한 줄: 외국인·기관 흐름에서 읽을 점'),
+  fundamental: ClaimSchema.describe('펀더멘털 탭 한 줄: 실적·밸류에이션에서 읽을 점'),
+  news: ClaimSchema.describe('뉴스·공시 탭 한 줄: 이번 주 가장 중요한 공시·뉴스와 그 의미'),
+}).partial().describe('탭마다 한 줄. 근거가 없는 탭은 비워 둡니다');
+
+const DebateSchema = z.array(z.object({
+  side: z.enum(['BULL', 'BEAR', 'MODERATOR']),
+  claim: ClaimSchema.describe('이 차례의 말 한두 문장. BULL·BEAR는 앞 차례 상대 주장을 직접 반박합니다'),
+})).describe('BULL, BEAR, BULL, BEAR 순서로 4번 주고받고 마지막에 MODERATOR 한 번 (총 5개)');
+
+const WorstCaseSchema = z.object({
+  narrative: ClaimSchema.describe('근거로 그릴 수 있는 가장 나쁜 전개 한두 문장'),
+  checks: z.array(z.string()).describe('읽는 사람이 스스로 점검할 위험 관리 항목 2~4개 (예: 무효화 가격 확인, 한 종목 비중 점검, 다음 실적 발표일 확인). 매수·매도 지시가 아닙니다'),
+});
+
 export const CommentarySchema = z.object({
   summary: ClaimSchema.describe('오늘 무슨 일이 있었고 왜 중요한지 2~3문장 요약'),
   desks: z.array(DeskSchema).describe('데스크 5곳(MARKET, TECHNICAL, FLOW, FUNDAMENTAL, EVENT) 각각 하나씩'),
@@ -175,6 +203,9 @@ export const CommentarySchema = z.object({
     target: z.number().describe(`P1 종가 기준 ${ANALYST_HORIZON}거래일 뒤 예상 가격(원)`),
     rationale: ClaimSchema.describe('이 분석가의 근거 한두 문장'),
   })).describe('분석가 6명 각각 하나씩'),
+  debate: DebateSchema,
+  worstCase: WorstCaseSchema,
+  insights: InsightsSchema,
   bullish: z.array(ClaimSchema).describe('강세 쪽 근거. 없으면 빈 배열'),
   bearish: z.array(ClaimSchema).describe('약세 쪽 근거. 없으면 빈 배열'),
   uncertain: z.array(ClaimSchema).describe('방향이 불확실하거나 해석이 갈리는 점'),
@@ -190,6 +221,7 @@ export const BriefSchema = z.object({
   uncertain: CommentarySchema.shape.uncertain,
   watch: CommentarySchema.shape.watch,
   dataGaps: CommentarySchema.shape.dataGaps,
+  insights: InsightsSchema,
 });
 
 const briefSystem = (name: string) => `당신은 Gnomon Analytics의 리서치 요약 담당이에요. ${name} 주간 리포트의 짧은 AI 요약을 씁니다.
@@ -197,12 +229,13 @@ const briefSystem = (name: string) => `당신은 Gnomon Analytics의 리서치 �
 - summary: 이번 주 무슨 일이 있었고 왜 중요한지 2~3문장.
 - bullish·bearish: 강세·약세 쪽 근거 각각 최대 3개. uncertain은 해석이 갈리는 점 최대 2개.
 - watch: 무엇이 나오면 판단이 바뀌는지 최대 3개.
+- insights: 기술·전략·수급·펀더멘털·뉴스 탭 맨 위에 붙일 한 줄씩. 근거가 없는 탭은 비웁니다.
 
 규칙:
 - 제공된 근거 목록에 있는 내용만 쓰고, 모든 주장에 근거 ID(P1, T1, F1, N1 …)를 답니다. 목록에 없는 사실·숫자·전망은 쓰지 않습니다.
 - 모든 주장에 종류(kind)를 붙입니다: 근거에 그대로 있는 사실은 FACT, 근거에서 끌어낸 해석은 INFERENCE, 근거로 확인되지 않은 가정은 ASSUMPTION. 해석을 사실처럼 쓰지 않습니다.
 - 한국어 해요체로, 짧고 분명하게 씁니다. 내부 코드명이나 영어 약어 대신 뜻을 풀어 씁니다.
-- 매수·매도를 권하거나 목표가를 제시하지 않습니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
+- 매수·매도를 권하거나 목표가·익절가·손절가를 제시하지 않습니다. 가격을 말해야 하면 시나리오 가격대와 무효화 가격으로만 씁니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
 - 같은 이야기의 재보도는 하나의 근거로 봅니다. 근거가 부족하면 dataGaps에 적고 억지로 결론 내지 않습니다.`;
 
 const system = (name: string) => `당신은 Gnomon Analytics의 리서치 위원회예요. ${name} 일일 리포트의 "AI 해설"을 한 번에 씁니다.
@@ -211,6 +244,9 @@ const system = (name: string) => `당신은 Gnomon Analytics의 리서치 위원
 - 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
 - 레드팀은 가장 우세한 의견에 맞서는 가장 강한 반론을 씁니다.
 - 마지막으로 강세(BULL)·기본(BASE)·약세(BEAR) 시나리오를 하나씩 쓰고, 각 시나리오의 촉매와 무효화 조건(가격 수준이나 사건)을 적습니다.
+- 토론(debate): 낙관론자(BULL)와 비관론자(BEAR)가 BULL→BEAR→BULL→BEAR 순서로 주고받습니다. 두 번째 차례부터는 바로 앞 상대 주장을 직접 짚어 반박합니다. 마지막에 진행자(MODERATOR)가 무엇이 합의됐고 무엇이 남았는지 정리합니다. 진행자는 승패를 정하지 않습니다.
+- 최악의 경우(worstCase): 근거로 그릴 수 있는 가장 나쁜 전개와, 읽는 사람이 스스로 점검할 위험 관리 항목을 적습니다. 매수·매도·가격 지시가 아닌 점검 항목만 씁니다.
+- 탭별 한 줄(insights): 기술·전략·수급·펀더멘털·뉴스 탭 맨 위에 붙일 한 줄씩 씁니다.
 - 데스크 근거가 없으면 stance를 INSUFFICIENT_DATA로 둡니다.
 - 분석가 대결: 아래 분석가 6명이 각자 자기 관점에서 판단(강세·약세·중립), 확신도(0~100), 20거래일 뒤 예상 가격을 냅니다. 예상 가격은 P1 종가에서 출발해 근거로 설명할 수 있는 수준이어야 하고, 기록되어 20거래일 뒤 실제 가격으로 채점됩니다. 서로 의견이 달라도 됩니다.
 ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
@@ -219,7 +255,7 @@ ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 - 제공된 근거 목록에 있는 내용만 쓰고, 모든 주장에 근거 ID(P1, T1, F1, N1 …)를 답니다. 목록에 없는 사실·숫자·전망은 쓰지 않습니다.
 - 모든 주장에 종류(kind)를 붙입니다: 근거에 그대로 있는 사실은 FACT, 근거에서 끌어낸 해석은 INFERENCE, 근거로 확인되지 않은 가정은 ASSUMPTION. 해석을 사실처럼 쓰지 않습니다.
 - 한국어 해요체로, 짧고 분명하게 씁니다. 내부 코드명이나 영어 약어 대신 뜻을 풀어 씁니다.
-- 매수·매도를 권하거나 목표가를 제시하지 않습니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
+- 매수·매도를 권하거나 목표가·익절가·손절가를 제시하지 않습니다. 가격을 말해야 하면 시나리오 가격대와 무효화 가격으로만 씁니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
 - 기사 수가 많다고 근거가 강한 것이 아닙니다. 같은 이야기의 재보도는 하나의 근거로 봅니다.
 - 모르는 것은 중립이 아닙니다. 근거가 부족하면 dataGaps에 적고, 억지로 결론 내지 않습니다.
 - 기술적 신호는 지표 요약일 뿐 오를 확률이 아닙니다.
@@ -277,7 +313,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
         system: system(report.name), messages: [user],
       })
       : await client.beta.messages.parse({
-        model, max_tokens: 4000,
+        model, max_tokens: 6000,
         output_config: { format: betaZodOutputFormat(BriefSchema) },
         system: briefSystem(report.name), messages: [user],
       });
@@ -301,7 +337,14 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const scenarios = (parsed.scenarios ?? []).flatMap((sc) => clean([sc.narrative]).map((narrative) => ({
       kind: sc.kind, narrative, catalysts: sc.catalysts.map((c) => c.trim()).filter(Boolean), invalidation: sc.invalidation.map((c) => c.trim()).filter(Boolean),
     })));
+    const debate = (parsed.debate ?? []).flatMap((t) => clean([t.claim]).map((claim) => ({ side: t.side, claim })));
+    const [worst] = parsed.worstCase ? clean([parsed.worstCase.narrative]) : [];
+    const insights: Partial<Record<InsightKey, Claim>> = {};
+    for (const [k, v] of Object.entries(parsed.insights ?? {}) as [InsightKey, Claim | undefined][]) { const [c] = v ? clean([v]) : []; if (c) insights[k] = c; }
     return {
+      ...(debate.length ? { debate } : {}),
+      ...(worst ? { worstCase: { narrative: worst, checks: (parsed.worstCase?.checks ?? []).map((c) => c.trim()).filter(Boolean).slice(0, 5) } } : {}),
+      ...(Object.keys(insights).length ? { insights } : {}),
       status: 'OK', model, promptVersion: COMMENTARY_PROMPT_VERSION, generatedAt: now.toISOString(),
       servedBy: response.model, tier,
       ...(response.usage ? { usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens } } : {}),

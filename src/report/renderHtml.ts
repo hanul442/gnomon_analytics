@@ -16,7 +16,7 @@ import { analystScores, arenaHeadline, arenaPanel, arenaRanking, arenaTeaser } f
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 import { priceBar, UI_CSS, UI_SCRIPT } from './ui.js';
-import { decisionTrace, EXTRAS_CSS, kindChip, weekDiffSection } from './renderReportExtras.js';
+import { debateSection, decisionTrace, EXTRAS_CSS, insightLine, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
@@ -600,13 +600,13 @@ ${m ? gate(arenaTeaser(m.arena), { base, what: '전략 챔피언 레이스와 �
 <details class="card more home-more"><summary>오늘의 요약 · 어제 대비 바뀐 점</summary><div class="grid-eq" style="margin-top:10px"><div><p class="headline">${escape(report.headline)}</p>${notes}</div><div>${changes}</div></div></details>`;
   const chartTab = `${chart.html}<div style="margin-top:16px">${kpis(report)}</div>`;
   // Free: the 16-indicator summary (public elsewhere too). Plus: our horizon gauges, fair value, forecasts and structure.
-  const technical = `${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
+  const technical = `${insightLine(report, 'technical', base)}${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
   // Free: the champion's name. Plus: the ranking. Pro: trades, curves, Monte Carlo and chart markers.
-  const strategyTab = `${m ? arenaHeadline(m.arena) : ''}${gate(m ? arenaRanking(m.arena) : '', { base, what: '전략 8개 순위표 · 지금 신호 · 검증 구간 수익' })}${gate(m ? arenaPanel(m.arena) : '<div class="card empty">이 리포트에는 전략 대결 기록이 없어요.</div>', { base, what: '매매 시점 · 수익 곡선 · 몬테카를로 · 거래 기록', need: 'pro' })}
+  const strategyTab = `${insightLine(report, 'strategy', base)}${m ? arenaHeadline(m.arena) : ''}${gate(m ? arenaRanking(m.arena) : '', { base, what: '전략 8개 순위표 · 지금 신호 · 검증 구간 수익' })}${gate(m ? arenaPanel(m.arena) : '<div class="card empty">이 리포트에는 전략 대결 기록이 없어요.</div>', { base, what: '매매 시점 · 수익 곡선 · 몬테카를로 · 거래 기록', need: 'pro' })}
 <section class="block"><div class="card paper-link"><div><b>모의투자 장부</b><p class="muted small">전략 챔피언과 AI 분석가를 따라 했다면 어땠는지, 리포트 종목 전체를 모아 따로 보여 줘요.</p></div><a class="btn-primary" href="${base}paper.html">모의투자 보기</a></div></section>`;
   // Investor flows and fundamentals are public data: free. Our footprint reading is Plus.
-  const flowsTab = m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>';
-  const fundTab = m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>';
+  const flowsTab = insightLine(report, 'flow', base) + (m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>');
+  const fundTab = insightLine(report, 'fundamental', base) + (m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>');
   const committee = report.commentary?.status === 'OK' ? parliament(report, ctx.commentaryFrom ?? null, {
     id: 'parliament-ai', title: 'AI 위원회 표결', factions: ['ai', 'desk'], link: null, roster: true,
     note: '위원은 AI 분석가 6명과 데스크 5곳이에요. 좌석이나 이름을 누르면 판단·확신도·20거래일 뒤 예상가·근거·지난 성적이 나와요.',
@@ -621,13 +621,13 @@ ${m ? gate(arenaTeaser(m.arena), { base, what: '전략 챔피언 레이스와 �
     ? gate(whySection(report), { base, what: '요약 리포트: 요약 · 강세와 약세 근거 · 지켜볼 것' })
     : report.commentary?.status === 'OK'
       // Plus sees at least what a brief shows (conclusion, desk stances, the evidence lists); Pro adds the committee's structure.
-      ? `${gate(committeeLite(report) + whySection(report, { only: 'claims' }), { base, what: '제한된 AI 위원회: 결론 · 데스크 입장 · 레드팀 한 줄 · 강세와 약세 근거' })}${gate(whySection(report, { committee: !!committee, only: 'structure' }) + (m ? analystScores(m.analystBoard) : ''), { base, what: '위원별 근거 · 예측 · 레드팀 반론 · 시나리오 · 분석가 순위', need: 'pro' })}`
+      ? `${gate(committeeLite(report) + whySection(report, { only: 'claims' }), { base, what: '제한된 AI 위원회: 결론 · 데스크 입장 · 레드팀 한 줄 · 강세와 약세 근거' })}${gate(debateSection(report) + whySection(report, { committee: !!committee, only: 'structure' }) + (m ? analystScores(m.analystBoard) : ''), { base, what: '토론형 위원회 · 최악의 경우 · 위원별 근거 · 시나리오 · 분석가 순위', need: 'pro' })}`
       : whySection(report);
   const proExtras = gate(weekDiffSection(report, ctx.previous ?? null) + decisionTrace(report, ctx.live), { base, what: '지난 리포트 대비 · 이 판단을 만든 입력', need: 'pro' });
   const aiTab = report.commentary
     ? `${upgrade}${committee}${fromNote}${aiBody}${proExtras}${inviteBox(report, base)}${askBox(report, base)}`
     : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>${askBox(report, base)}`;
-  const newsTab = `${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
+  const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const p = report.price;
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
