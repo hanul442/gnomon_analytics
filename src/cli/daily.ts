@@ -170,15 +170,18 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   }
   // Index and peer prices once, before the stocks run in parallel (each stock then writes only its own files).
   const benchStatus: NewsSourceStatus[] = [];
-  const benches = [...new Map(jobs.flatMap((j) => benchmarksFor(j.ticker)).map((b) => [b.symbol, b])).values()];
-  for (const b of benches) {
-    try {
-      const added = await appendNew(join(root, 'data', 'prices', `${b.symbol}.jsonl`), await benchBars(b.symbol, now, fetchOpt), priceKey);
-      benchStatus.push({ source: `naver:fchart:day:${b.symbol}`, ok: true, count: added.length });
-    } catch (error) {
-      benchStatus.push({ source: `naver:fchart:day:${b.symbol}`, ok: false, count: 0, error: error instanceof Error ? error.message.slice(0, 160) : 'UNKNOWN' });
+  const fetchBenches = async (list: readonly Ticker[]) => {
+    const benches = [...new Map(list.flatMap((t) => benchmarksFor(t)).map((b) => [b.symbol, b])).values()].filter((b) => !benchStatus.some((st) => st.source.endsWith(`:${b.symbol}`)));
+    for (const b of benches) {
+      try {
+        const added = await appendNew(join(root, 'data', 'prices', `${b.symbol}.jsonl`), await benchBars(b.symbol, now, fetchOpt), priceKey);
+        benchStatus.push({ source: `${b.symbol.startsWith('KRW-') ? 'upbit:candles:days' : 'naver:fchart:day'}:${b.symbol}`, ok: true, count: added.length });
+      } catch (error) {
+        benchStatus.push({ source: `${b.symbol.startsWith('KRW-') ? 'upbit:candles:days' : 'naver:fchart:day'}:${b.symbol}`, ok: false, count: 0, error: error instanceof Error ? error.message.slice(0, 160) : 'UNKNOWN' });
+      }
     }
-  }
+  };
+  await fetchBenches(jobs.map((j) => j.ticker));
   const budget = options.budget ?? await AiBudget.load(root, now, options.aiBudgetUsd);
   const results: TickerResult[] = [];
   const failed: { symbol: string; error: string }[] = [];
@@ -250,7 +253,9 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     reqJobs.push({ ticker, tier: hasAi ? null : 'deep', reportDay: !hasAi });
   }
   jobs.push(...reqJobs);
-  await pool(reqJobs, options.concurrency ?? 4, run);
+  // Index and Bitcoin prices first; one at a time, since a requested Bitcoin writes the file another coin reads.
+  await fetchBenches(reqJobs.map((j) => j.ticker));
+  for (const job of reqJobs) await run(job);
   for (const j of reqJobs) {
     const r = results.find((x) => x.symbol === j.ticker.symbol);
     if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
@@ -268,6 +273,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const fresh = picks.filter((p) => !jobs.some((j) => j.ticker.symbol === p.symbol));
     const pickJobs = fresh.map((p) => ({ ticker: dailyTicker(p, corpCodes), tier: p.tier, reportDay: true }));
     jobs.push(...pickJobs);
+    await fetchBenches(pickJobs.map((j) => j.ticker));
     await pool(pickJobs, options.concurrency ?? 4, run);
     for (const j of pickJobs) {
       const r = results.find((x) => x.symbol === j.ticker.symbol);
