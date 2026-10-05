@@ -8,6 +8,7 @@
 // One stock failing does not stop the others.
 
 import { collectRiskFilings } from './riskCollect.js';
+import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
 import { SITE_CONFIG } from '../report/alpha.js';
 import { renderAccount, renderAdmin, renderLogin, renderOnboarding } from '../report/renderAlpha.js';
@@ -436,12 +437,16 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const promos = validPromos(JSON.parse(await readFile(join(root, 'promos.json'), 'utf8').catch(() => '[]')));
   await writeFile(join(siteDir, 'promos.json'), JSON.stringify(promos));
   await writeFile(join(siteDir, 'checkout.html'), renderCheckout());
-  await writeFile(join(siteDir, 'scorecard.html'), renderScorecard(home.filter((e) => e.group !== 'past')));
+  // Screener rows over every stock's free computation (G-43), and the presets' track record (G-53).
+  const rows = universe && extras.calcs ? screenerRows(universe, extras.calcs, new Set(home.map((e) => e.symbol)), extras.risk) : [];
+  const dataDate = extras.pulse?.date ?? null;
+  const signals = await trackSignals(root, rows, dataDate, dataDate ?? kstParts(new Date()).date);
+  await writeFile(join(siteDir, 'scorecard.html'), renderScorecard(home.filter((e) => e.group !== 'past'), signals.board));
   await writeFile(join(siteDir, 'terms.html'), renderTerms());
   await writeFile(join(siteDir, 'paper.html'), renderPaper(home.filter((e) => e.group !== 'past')));
   // Screener over every stock's free computation (G-43).
   await writeFile(join(siteDir, 'screener.html'), renderScreener());
-  await writeFile(join(siteDir, 'screener.json'), JSON.stringify({ date: extras.pulse?.date ?? null, rows: universe && extras.calcs ? screenerRows(universe, extras.calcs, new Set(home.map((e) => e.symbol)), extras.risk) : [] }));
+  await writeFile(join(siteDir, 'screener.json'), JSON.stringify({ date: dataDate, rows }));
   // Index quotes for the front page, from the stored index prices.
   const indices: IndexQuote[] = [];
   for (const [symbol, name] of [['KOSPI', '코스피'], ['KOSDAQ', '코스닥']] as const) {

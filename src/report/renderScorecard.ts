@@ -5,6 +5,8 @@
 
 import type { DailyReport } from './dailyReport.js';
 import { gate } from './plans.js';
+import { PRESETS } from '../analysis/screenRules.js';
+import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { paperPanel } from './renderArena.js';
 import { shell, type HomeEntry } from './renderHtml.js';
 
@@ -14,7 +16,19 @@ const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const pct = (v: number | null, d = 1) => (v === null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(d)}%`);
 const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 
-export function renderScorecard(entries: readonly HomeEntry[]): string {
+/** Screener presets' track record (G-53): public to everyone, the losing ones included. */
+function signalCard(rows: readonly SignalBoardRow[]): string {
+  const p = (v: number | null) => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
+  const t = (v: number | null) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
+  const name = (k: string) => PRESETS.find((x) => x.key === k)?.label ?? k;
+  const body = rows.length
+    ? `<table class="compact"><thead><tr><th>빠른 조건</th><th>기간</th><th class="num">신호</th><th class="num">평균 수익</th><th class="num">오른 비율</th><th class="num">지수 대비</th><th class="num">지수 이긴 비율</th></tr></thead><tbody>${rows.map((r) => `<tr><td><a href="screener.html#${r.preset}">${name(r.preset)}</a></td><td>${r.horizon}거래일</td><td class="num">${r.n}</td><td class="num ${t(r.avgPct)}">${p(r.avgPct)}</td><td class="num">${Math.round(r.hitRate * 100)}%</td><td class="num ${t(r.avgExcessPct)}">${p(r.avgExcessPct)}</td><td class="num">${r.beatRate == null ? '—' : `${Math.round(r.beatRate * 100)}%`}</td></tr>`).join('')}</tbody></table>`
+    : '<p class="empty">신호를 기록하기 시작했어요. 5거래일이 지나면 첫 채점이 나와요.</p>';
+  return `<section class="block" id="signals"><div class="block-head"><h2>스크리너 신호 성과</h2><span class="muted">모두에게 공개</span></div><div class="card table-wrap">${body}
+<p class="fine">매일 장 마감 뒤 빠른 조건마다 상위 10종목을 그날 종가로 기록하고, 5·20거래일 뒤 첫 실행에서 종가와 같은 기간 코스피·코스닥 지수로 채점해요. 비용과 세금은 빼지 않았어요. 과거 성과가 앞으로를 보장하지 않아요.</p></div></section>`;
+}
+
+export function renderScorecard(entries: readonly HomeEntry[], signals: readonly SignalBoardRow[] = []): string {
   const live = entries.filter((e): e is HomeEntry & { report: DailyReport } => !!e.report?.market);
   // Forecast ranges by horizon.
   const byH = new Map<number, { scored: number; inside: number; err: number[] }>();
@@ -64,7 +78,7 @@ ${board.length ? `<table class="compact"><thead><tr><th>분석가</th><th>채점
   const teaser = `<section class="block"><div class="card paper-link"><div><div class="pl-k">예측 범위 적중 (전체)</div><b style="font-size:24px">${totalScored ? `${Math.round((horizons.reduce((s, [, x]) => s + x.inside, 0) / totalScored) * 100)}%` : '채점 전'}</b><p class="muted small">${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건 · ` : ''}기간별 적중과 분석가 순위는 플러스, 종목별 상세와 빗나간 예측은 프로부터 볼 수 있어요.</p></div></div></section>`;
   const body = `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>성적표</span><span>리포트 종목 ${live.length}개</span></div><h1>맞았는지, 기록으로 보여 드려요</h1>
 <p class="hero-line">예측과 판단은 만든 날 그대로 기록하고, 기간이 지나면 실제 가격으로 채점해요. 틀린 기록도 지우지 않아요.</p></div></section>
-${teaser}${gate(forecastCard + analystCard, { base: '', what: '기간별 예측 적중 · AI 분석가 순위' })}${gate(strategyCard + missCard, { base: '', what: '종목별 전략·모의투자 성적 · 빗나간 예측 하나하나', need: 'pro' })}
+${teaser}${signalCard(signals)}${gate(forecastCard + analystCard, { base: '', what: '기간별 예측 적중 · AI 분석가 순위' })}${gate(strategyCard + missCard, { base: '', what: '종목별 전략·모의투자 성적 · 빗나간 예측 하나하나', need: 'pro' })}
 <footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 투자 권유가 아니에요.</p></footer>`;
   return shell('', '성적표 | Gnomon Analytics', body, { active: 'scorecard' });
 }
