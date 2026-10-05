@@ -1,9 +1,19 @@
 [
-  { "symbol": "452190", "requestedAt": "2026-10-04", "note": "한빛레이저, 한서님 요청" },
-  { "symbol": "003490", "requestedAt": "2026-10-04", "note": "대한항공, 한서님 요청" },
-  { "symbol": "439090", "requestedAt": "2026-10-04", "note": "마녀공장, 한서님 요청" },
+  { "symbol": "452190", "requestedAt": "2026-10-04", "note": "한빛레이저, 한서님 요청", "refresh": true },
+  { "symbol": "003490", "requestedAt": "2026-10-04", "note": "대한항공, 한서님 요청", "refresh": true },
+  { "symbol": "439090", "requestedAt": "2026-10-04", "note": "마녀공장, 한서님 요청", "refresh": true },
   { "symbol": "KRW-BTC", "requestedAt": "2026-10-05", "note": "비트코인, 한서님 요청" },
   { "symbol": "KRW-ETH", "requestedAt": "2026-10-05", "note": "이더리움, 한서님 요청" },
   { "symbol": "KRW-WLD", "requestedAt": "2026-10-05", "note": "월드코인, 한서님 요청" },
-  { "symbol": "069500", "requestedAt": "2026-10-05", "note": "KODEX 200 (대표 ETF), 한서님 요청" }
+  { "symbol": "069500", "requestedAt": "2026-10-05", "note": "KODEX 200 (대표 ETF), 한서님 요청" },
+  { "symbol": "000660", "requestedAt": "2026-10-05", "note": "SK하이닉스, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true },
+  { "symbol": "005930", "requestedAt": "2026-10-05", "note": "삼성전자, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true },
+  { "symbol": "009830", "requestedAt": "2026-10-05", "note": "한화솔루션, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true },
+  { "symbol": "042700", "requestedAt": "2026-10-05", "note": "한미반도체, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true },
+  { "symbol": "043260", "requestedAt": "2026-10-05", "note": "성호전자, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true },
+  { "symbol": "232140", "requestedAt": "2026-10-05", "note": "와이씨, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true },
+  { "symbol": "327260", "requestedAt": "2026-10-05", "note": "RF머트리얼즈, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true },
+  { "symbol": "353200", "requestedAt": "2026-10-05", "note": "대덕전자, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true },
+  { "symbol": "403870", "requestedAt": "2026-10-05", "note": "HPSP, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true },
+  { "symbol": "490470", "requestedAt": "2026-10-05", "note": "세미파이브, 현재 포맷 심층 재작성 (한서님 요청)", "refresh": true }
 ]
