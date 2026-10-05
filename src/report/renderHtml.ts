@@ -15,7 +15,7 @@ import { councilCard, DART_SCRIPT, freshness, freshnessBadge, hero, latestLists,
 import { analystScores, arenaHeadline, arenaPanel, arenaRanking, arenaTeaser } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
-import { priceBar, UI_CSS, UI_SCRIPT } from './ui.js';
+import { priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { debateSection, decisionTrace, EXTRAS_CSS, insightLine, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 
@@ -763,7 +763,7 @@ export function renderStockPage(coin = false): string {
   const detail = `<section class="block"><div class="block-head"><h2>기술적 적정가</h2><span class="muted">매일 장 마감 뒤 다시 계산해요</span></div><div class="card"><div id="sp-fair"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div></div></section>`;
   const forecast = `<section class="block"><div class="block-head"><h2>예측 가격 범위 (10~90%)</h2></div><div class="card"><div id="sp-fc"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div><p class="fine">최근 변동성으로 계산한 범위예요. 확률이나 목표가가 아니에요.</p></div></section>`;
   const body = `${priceBar({ name: '<span id="pb-name"></span>', symbol: '<span id="pb-code"></span>', price: '<span id="pb-price"></span>', change: '<span id="pb-change"></span>', tone: '', badge: '' })}<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span>AI 리포트 없음</span></div>
-<h1 id="sp-name" class="skel">종목 이름</h1><div class="hero-price" id="sp-price"></div><div class="hero-sub" id="sp-date"></div></div>
+<div class="h1-row"><h1 id="sp-name" class="skel">종목 이름</h1>${starButton('', '이 종목', 'sp-star')}</div><div class="hero-price" id="sp-price"></div><div class="hero-sub" id="sp-date"></div></div>
 ${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산</b></div><p>업비트 원화 마켓 일봉으로 주식과 같은 지표 16개, 기간별 등락, 기술적 적정가를 계산해요. 코인 AI 리포트는 매일 거래대금 상위 코인 가운데 하나씩 써요.</p><p class="fine">코인은 24시간 거래돼서 일봉은 매일 09:00(KST)에 끊어요. 변동성이 커서 예측 범위가 넓어요.</p></div>' : `<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 다음 장 마감 뒤 리포트를 한 번 써 드려요. 크레딧 요청은 플러스부터예요.</p>
 <span class="req-btns"><button type="button" class="credit-btn ghost" data-spend="brief" id="sp-request-brief">요약 리포트 <small>${CREDIT_COST.brief}크레딧</small></button><button type="button" class="credit-btn" data-spend="report" id="sp-request-credit">심층 리포트 <small>${CREDIT_COST.report}크레딧</small></button></span>
 <p class="fine">남은 크레딧 <b data-credits>0</b>개 · <a href="pricing.html#credits">충전</a> · MOCK이라 실제 요청은 <a id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">GitHub 이슈</a>로 받아요.</p></div>`}</section>
@@ -792,6 +792,7 @@ const stockScript = (coin: boolean) => `<script>
   var toReport = function () { return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
   fetch((COIN ? 'c/' : 's/') + code + '.json').then(function (r) { if (r.status === 404 && !COIN) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     document.title = d.name + ' 차트 | Gnomon Analytics';
+    $('sp-star').setAttribute('data-star', code); if (window.GNM_starSync) GNM_starSync();
     // ETFs and coins picked for a daily AI report (G-56) keep their chart page; point to the report.
     fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { var rc = document.querySelector('.request-card'); if (r.ok && rc) rc.innerHTML = '<div class="lk-head"><b>AI 리포트가 있어요</b></div><p>매일 AI 리포트로 고른 적이 있어서 위원회 해설과 전체 대시보드가 있어요.</p><a class="btn-primary" href="' + code + '/index.html">AI 리포트 보기</a>'; }, function () {});
     $('sp-name').textContent = d.name; $('sp-code').textContent = d.symbol; $('sp-market').textContent = COIN ? '업비트 원화' + (d.warning ? ' · 유의 종목' : '') : (d.market === 'KOSDAQ' ? '코스닥' : '코스피') + (d.kind === 'etf' ? ' ETF' : '');

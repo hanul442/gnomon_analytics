@@ -40,7 +40,13 @@ export const GLOSSARY: Record<string, string> = {
   '전략 챔피언': '전략 8개 가운데 검증 구간 성과가 가장 좋은 전략이에요.',
 };
 
-export const UI_CSS = `
+const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg>';
+/** A watchlist star; the shared script (UI_SCRIPT) toggles it. `symbol` may be empty and set later by a page script. */
+export const starButton = (symbol: string, label: string, id = '') => `<button type="button" class="star"${id ? ` id="${id}"` : ''} data-star="${symbol.replace(/"/g, '')}" aria-pressed="false" aria-label="${label.replace(/[<>"&]/g, '')} 관심 종목">${STAR_SVG}</button>`;
+
+export const UI_CSS = `.h1-row{display:flex;align-items:center;gap:6px}.h1-row h1{margin:0}
+.star{width:36px;height:36px;border:0;background:none;cursor:pointer;color:#b8c0cc;display:grid;place-items:center;padding:0}.star svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}.star[aria-pressed=true]{color:#e8a20c}.star[aria-pressed=true] svg{fill:currentColor}
+
 :root{--fs-xs:12px;--fs-sm:13px;--fs-base:15px;--fs-md:17px;--fs-lg:20px;--fs-xl:26px;--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;--r-sm:8px;--r-md:12px;--r-lg:16px}
 .top-links a[aria-current=page]{background:rgba(255,255,255,.16);color:#fff}
 .price-bar{display:none;flex:1;min-width:0;align-items:center;gap:10px;color:#fff;font-size:var(--fs-sm);overflow:hidden;white-space:nowrap}
@@ -66,6 +72,25 @@ export function priceBar(opts: { name: string; symbol: string; price: string; ch
 
 export const UI_SCRIPT = `<script>
 (function () {
+  // Watchlist stars (stocks, ETFs and coins) on every page: localStorage gnm-watch, newest first. The alpha
+  // layer and the home list listen for the gnm-watch event.
+  var WK = 'gnm-watch';
+  var readW = function () { try { return JSON.parse(localStorage.getItem(WK) || '[]'); } catch (e) { return []; } };
+  var syncStars = function () { var w = readW(); document.querySelectorAll('[data-star]').forEach(function (b) { b.setAttribute('aria-pressed', String(w.indexOf(b.getAttribute('data-star')) >= 0)); }); };
+  window.GNM_starSync = syncStars;
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-star]'); if (!b) return;
+    e.preventDefault();
+    var sym = b.getAttribute('data-star'), w = readW(), i = w.indexOf(sym);
+    var plan = document.documentElement.getAttribute('data-plan') || 'free', LIMIT = { free: 5, plus: 30, pro: 100, alpha: 100, max: 1e9 };
+    if (i >= 0) w.splice(i, 1);
+    else if (w.length >= (LIMIT[plan] || 5)) { if (window.GNM && GNM.toast) GNM.toast('관심 종목은 ' + (LIMIT[plan] || 5) + '개까지예요. 요금제를 올리면 더 담을 수 있어요.'); return; }
+    else w.unshift(sym);
+    try { localStorage.setItem(WK, JSON.stringify(w)); localStorage.setItem('gnm-watch-at', String(Date.now())); } catch (x) {}
+    syncStars();
+    window.dispatchEvent(new Event('gnm-watch'));
+  });
+  syncStars();
   // Price in the header: moved next to the brand, shown while the hero is out of view.
   var bar = document.getElementById('price-bar'), hero = document.querySelector('.hero'), top = document.querySelector('.topbar'), brand = document.querySelector('.brand');
   if (bar && hero && top && brand && 'IntersectionObserver' in window) {
