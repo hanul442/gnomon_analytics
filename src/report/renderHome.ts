@@ -71,7 +71,7 @@ function dailyRows(entries: readonly HomeEntry[]): string {
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
     const kind = e.tier === 'deep' ? 'core' : 'weekly';
     return `<div class="rr" data-kind="${kind}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span><span class="tier t-${kind}">${GROUP[kind]}</span></div><p class="rr-line">${esc(line || (e.reasons?.[0] ?? ''))}</p></a>
-<div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${e.kind === 'coin' ? '' : star(e.symbol, e.name)}</div>`;
+<div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="daily"><div class="block-head"><h2>매일 AI 리포트</h2><span class="muted">평일 주식 5·ETF 1·코인 1, 주말 코인 1</span></div>
 <div class="card list rr-list">${days.map((d, i) => `<div class="dl-day${i ? ' dl-old' : ''}">${esc(d.slice(5).replace('-', '/'))}${i ? '' : ' · 최신'}</div>${entries.filter((e) => e.pickDate === d).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1)).map(row).join('')}`).join('')}</div>
@@ -143,7 +143,7 @@ function filings(entries: readonly HomeEntry[]): string {
 const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class="pl-k">지금 요금제 <b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧</div>
 <p>무료는 한 줄 요약, <b>플러스</b>는 상세 설명, <b>프로</b>는 직접 요청하고 질문하기, <b>맥스</b>는 내 종목을 매주 위원회가 분석해요. 크레딧은 누구나 충전해서 써요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
 
-const WATCH = `<section class="block" id="watch"><div class="block-head"><h2>관심 종목</h2><span class="muted">이 브라우저에 저장돼요</span></div><div class="card list" id="watch-list"><p class="empty">☆를 눌러 관심 종목을 모아 보세요.</p></div></section>`;
+const WATCH = `<section class="block" id="watch"><div class="block-head"><h2>관심 종목</h2><span class="muted">이 브라우저에 저장돼요</span></div><div class="card list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div></section>`;
 
 export function renderHome(data: HomeData): string {
   const entries = data.entries.filter((e) => e.group !== 'past' && e.group !== 'daily');
@@ -207,7 +207,7 @@ const HOME_STYLE = `<style>.dl-day{font-size:12px;font-weight:700;color:var(--ac
 .rr-side{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:13px;font-variant-numeric:tabular-nums}.rr-side b{font-size:14px}.sig{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:#eef1f5;color:var(--fg2)}.sig.up{background:#fde8e6;color:#9f1d24}.sig.down{background:#e3ecfb;color:#1f4fa8}
 .tier{font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;background:#eef1f5;color:var(--fg2)}.tier.t-core{background:var(--navy);color:#fff}.tier.t-request{background:#fff3d6;color:#7a4a00}
 .rr[hidden]{display:none}
-.star{width:36px;height:36px;border:0;background:none;cursor:pointer;color:#b8c0cc;display:grid;place-items:center;padding:0}.star svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}.star[aria-pressed=true]{color:#e8a20c}.star[aria-pressed=true] svg{fill:currentColor}
+
 .mv-tabs{margin:10px 0 4px}.mvr{display:grid;grid-template-columns:22px minmax(0,1fr) auto 36px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.mvr-i{color:var(--muted);font-weight:700;font-size:13px}.mvr-n{text-decoration:none;display:flex;flex-direction:column;min-width:0}.mvr-n b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mvr-v{display:flex;flex-direction:column;align-items:flex-end;font-size:13px;font-variant-numeric:tabular-nums}
 .sc-free{margin-bottom:10px}.sc-k{font-size:12px;font-weight:700;color:var(--muted)}.sc-v{font-size:28px;font-weight:800}.sc-board{margin:6px 0 0;padding-left:18px}.sc-board li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:4px 0;font-size:14px}
 .fl{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;padding:9px 0;border-top:1px solid var(--line)}.fl:first-child{border-top:0}.fl a{text-decoration:none}
@@ -228,26 +228,28 @@ const HOME_SCRIPT = `<script>
   var drawWatch = function () {
     var w = read(), box = document.getElementById('watch-list'); if (!box) return;
     document.querySelectorAll('[data-star]').forEach(function (b) { b.setAttribute('aria-pressed', String(w.indexOf(b.getAttribute('data-star')) >= 0)); });
-    if (!w.length) { box.innerHTML = '<p class="empty">☆를 눌러 관심 종목을 모아 보세요.</p>'; return; }
+    if (!w.length) { box.innerHTML = '<p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p>'; return; }
     var show = function () {
       box.innerHTML = w.map(function (sym) {
         var it = (items || []).find(function (x) { return x[0] === sym; }) || [sym, sym, '', null, null, 0];
-        var ch = it[4], href = it[5] ? sym + '/index.html' : 'stock.html?c=' + sym;
-        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b> <span class="muted small">' + esc(sym) + '</span></a><span>' + (it[3] == null ? '' : '<b>' + Math.round(it[3]).toLocaleString('ko-KR') + '원</b> ') + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
+        var ch = it[4], coin = sym.indexOf('KRW-') === 0, href = it[5] ? sym + '/index.html' : coin ? 'coin.html?m=' + sym : 'stock.html?c=' + sym;
+        var p = it[3], price = p == null ? '' : '<b>' + (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원</b> ';
+        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b> <span class="muted small">' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : sym + (it[2] === 'ETF' ? ' · ETF' : '')) + '</span></a><span>' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
       }).join('');
     };
     show();
-    if (!items) fetch('search.json').then(function (r) { return r.json(); }).then(function (d) { items = d.items; show(); }).catch(function () {});
+    // Stocks from search.json; ETFs and coins from their lists (same row shape: code, name, market, price, change, report).
+    if (!items) {
+      var list = function (url, kind) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { return (d.rows || []).map(function (x) { return [x[0], x[1], kind, x[4], x[5], 0]; }); }).catch(function () { return []; }); };
+      Promise.all([fetch('search.json').then(function (r) { return r.json(); }).then(function (d) { return d.items; }).catch(function () { return []; }), list('etfs.json', 'ETF'), list('coins.json', 'COIN')]).then(function (all) {
+        var seen = {}; items = [];
+        all.forEach(function (xs) { xs.forEach(function (x) { if (!seen[x[0]]) { seen[x[0]] = 1; items.push(x); } }); });
+        show();
+      });
+    }
   };
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-star]'); if (!b) return;
-    var sym = b.getAttribute('data-star'), w = read(), i = w.indexOf(sym);
-    var plan = document.documentElement.getAttribute('data-plan') || 'free', LIMIT = { free: 5, plus: 30, pro: 100, max: 1e9 };
-    if (i >= 0) w.splice(i, 1);
-    else if (w.length >= LIMIT[plan]) { if (window.GNM) window.GNM.toast('관심 종목은 ' + LIMIT[plan] + '개까지예요. 요금제를 올리면 더 담을 수 있어요.'); return; }
-    else w.unshift(sym);
-    write(w); drawWatch();
-  });
+  // Stars anywhere on the page toggle through the shared script (assets/ui.js), which fires this event.
+  window.addEventListener('gnm-watch', drawWatch);
   drawWatch();
   // Report filters.
   document.querySelectorAll('[data-rf]').forEach(function (c) {

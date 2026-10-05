@@ -466,7 +466,7 @@ route('GET', '/watch', async ({ req, env, now }) => {
 
 route('POST', '/watch', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
-  const symbols = [...new Set((Array.isArray(b.symbols) ? b.symbols : []).filter((x): x is string => typeof x === 'string' && /^[0-9A-Z]{6}$/.test(x)))].slice(0, 100);
+  const symbols = [...new Set((Array.isArray(b.symbols) ? b.symbols : []).filter((x): x is string => typeof x === 'string' && /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/.test(x)))].slice(0, 100);
   await env.DB.prepare('INSERT INTO watchlists (user_id, symbols, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET symbols = excluded.symbols, updated_at = excluded.updated_at')
     .bind(u.id, JSON.stringify(symbols), iso(now)).run();
   return { ok: true, count: symbols.length, updatedAt: iso(now) };
@@ -486,7 +486,8 @@ export async function runIntraday(env: Env, deps: Deps): Promise<{ symbols: numb
   const rows = (await db.prepare('SELECT w.user_id, w.symbols, u.plan FROM watchlists w JOIN users u ON u.id = w.user_id WHERE u.disabled = 0').all<{ user_id: string; symbols: string; plan: string }>()).results
     .filter((r) => (RANK[r.plan] ?? 0) >= RANK.pro!);
   const watchers = new Map<string, string[]>();
-  for (const r of rows) for (const sym of JSON.parse(r.symbols) as string[]) (watchers.get(sym) ?? watchers.set(sym, []).get(sym)!).push(r.user_id);
+  // Coins trade around the clock on Upbit and are not scanned here; stocks and ETFs only.
+  for (const r of rows) for (const sym of (JSON.parse(r.symbols) as string[]).filter((x) => /^[0-9A-Z]{6}$/.test(x))) (watchers.get(sym) ?? watchers.set(sym, []).get(sym)!).push(r.user_id);
   const symbols = [...watchers.keys()].slice(0, 150);
   if (!symbols.length) return { symbols: 0, alerts: 0 };
   const names = new Map<string, string>();

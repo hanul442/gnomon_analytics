@@ -200,8 +200,9 @@ test('intraday: Pro-level watchers hear once when volume runs ahead of its usual
   const t = setup();
   const boss = await t.login('boss@example.com');
   const u = await t.login('i@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
-  assert.deepEqual((await t.call('POST', '/watch', { symbols: ['000660', 'bad', '000660'] }, u.session)).body.count, 1);
-  assert.deepEqual((await t.call('GET', '/watch', undefined, u.session)).body.symbols, ['000660']);
+  // Coins are kept on the list but not scanned (they are not on Naver's minute feed).
+  assert.deepEqual((await t.call('POST', '/watch', { symbols: ['000660', 'KRW-BTC', 'bad', '000660'] }, u.session)).body.count, 2);
+  assert.deepEqual((await t.call('GET', '/watch', undefined, u.session)).body.symbols, ['000660', 'KRW-BTC']);
   // Minute feed: two earlier sessions with 1,000 shares by 10:00; today 5,000 by 10:00 and +6%.
   const item = (d: string, hm: string, close: number, cum: number) => `<item data="${d}${hm}|null|null|null|${close}|${cum}"/>`;
   const feed = `<chartdata>${item('20261001', '1000', 100, 1000)}${item('20261001', '1530', 100, 3000)}${item('20261002', '1000', 100, 1000)}${item('20261002', '1530', 100, 3000)}${item('20261005', '0930', 103, 2000)}${item('20261005', '1000', 106, 5000)}</chartdata>`;
