@@ -1,5 +1,5 @@
 {
- "at": "2026-10-04T12:53:22.169Z",
+ "at": "2026-10-05T00:57:49.074Z",
  "selected": null,
  "universe": [
   {
@@ -17,192 +17,192 @@
  "stocks": [
   {
    "symbol": "000660",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "005930",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "009830",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "042700",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "327260",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "232140",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "490470",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "403870",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "043260",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "353200",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "010060",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "098460",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "080220",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "003160",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "036930",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "009150",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "011790",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "000150",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "001820",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "005380",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "222800",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "316140",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "000270",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "000250",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "093370",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "007810",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "089030",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "096770",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "178320",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "028300",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "253590",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "058470",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "067310",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "010950",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "036540",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "452190",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "003490",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "439090",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   }
  ],
