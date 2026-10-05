@@ -312,7 +312,7 @@ const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'news', label: '뉴스·공시' },
 ];
 
-export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account'; chat?: boolean; noFeedback?: boolean }): string {
+export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins'; chat?: boolean; noFeedback?: boolean }): string {
   const cur = (k: string) => (options.active === k ? ' aria-current="page"' : '');
   // The site root lists every covered stock; `base` always points at it.
   const rootHref = `${base}index.html`;
@@ -322,7 +322,7 @@ export function shell(base: string, title: string, body: string, options: { tabs
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.css?v=${ASSET_VERSION}"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
-<nav class="top-links" aria-label="사이트"><a href="${rootHref}"${cur('home')}>홈</a>${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}screener.html" class="tl-hide"${cur('screener')}>스크리너</a><a href="${base}scorecard.html" class="tl-hide"${cur('scorecard') || cur('paper')}>성적표</a><a href="${base}pricing.html" class="tl-hide"${cur('pricing')}>요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
+<nav class="top-links" aria-label="사이트"><a href="${rootHref}"${cur('home')}>홈</a>${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}screener.html" class="tl-hide"${cur('screener')}>스크리너</a><a href="${base}coins.html" class="tl-hide"${cur('coins')}>코인</a><a href="${base}scorecard.html" class="tl-hide"${cur('scorecard') || cur('paper')}>성적표</a><a href="${base}pricing.html" class="tl-hide"${cur('pricing')}>요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>
 <main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}scorecard.html">성적표</a><a href="${base}paper.html">모의투자</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.js?v=${ASSET_VERSION}"></script>${options.scripts ?? ''}<script src="${base}assets/ui.js?v=${ASSET_VERSION}"></script></body></html>`;
 }
@@ -747,7 +747,7 @@ const LOCKED = [
 ] as const;
 
 /** Shared page for listed stocks without a report: chart, the free computation (details for Plus), and a credit request. */
-export function renderStockPage(): string {
+export function renderStockPage(coin = false): string {
   const locked = LOCKED.map(([t, d]) => `<div class="card locked"><div class="lk-head">${LOCK}<b>${t}</b></div><p>${d}</p><div class="lk-ghost" aria-hidden="true"><i></i><i></i><i></i></div></div>`).join('');
   const open = `<section class="block"><div class="grid-eq"><div class="card"><div class="pl-k">기간별 등락</div><div class="sp-moves" id="sp-moves"></div></div>
 <div class="card"><div class="pl-k">지표 16개 판단</div><div class="sp-votes" id="sp-votes"></div></div></div></section>`;
@@ -755,43 +755,46 @@ export function renderStockPage(): string {
   const forecast = `<section class="block"><div class="block-head"><h2>예측 가격 범위 (10~90%)</h2></div><div class="card"><div id="sp-fc"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div><p class="fine">최근 변동성으로 계산한 범위예요. 확률이나 목표가가 아니에요.</p></div></section>`;
   const body = `${priceBar({ name: '<span id="pb-name"></span>', symbol: '<span id="pb-code"></span>', price: '<span id="pb-price"></span>', change: '<span id="pb-change"></span>', tone: '', badge: '' })}<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span>AI 리포트 없음</span></div>
 <h1 id="sp-name" class="skel">종목 이름</h1><div class="hero-price" id="sp-price"></div><div class="hero-sub" id="sp-date"></div></div>
-<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 다음 장 마감 뒤 리포트를 한 번 써 드려요. 크레딧 요청은 플러스부터예요.</p>
+${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산</b></div><p>업비트 원화 마켓 일봉으로 주식과 같은 지표 16개, 기간별 등락, 기술적 적정가를 계산해요. 코인 AI 리포트는 준비 중이에요.</p><p class="fine">코인은 24시간 거래돼서 일봉은 매일 09:00(KST)에 끊어요. 변동성이 커서 예측 범위가 넓어요.</p></div>' : `<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 다음 장 마감 뒤 리포트를 한 번 써 드려요. 크레딧 요청은 플러스부터예요.</p>
 <span class="req-btns"><button type="button" class="credit-btn ghost" data-spend="brief" id="sp-request-brief">요약 리포트 <small>${CREDIT_COST.brief}크레딧</small></button><button type="button" class="credit-btn" data-spend="report" id="sp-request-credit">심층 리포트 <small>${CREDIT_COST.report}크레딧</small></button></span>
-<p class="fine">남은 크레딧 <b data-credits>0</b>개 · <a href="pricing.html#credits">충전</a> · MOCK이라 실제 요청은 <a id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">GitHub 이슈</a>로 받아요.</p></div></section>
+<p class="fine">남은 크레딧 <b data-credits>0</b>개 · <a href="pricing.html#credits">충전</a> · MOCK이라 실제 요청은 <a id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">GitHub 이슈</a>로 받아요.</p></div>`}</section>
 <section class="block"><div class="card sp-one"><div class="sp-one-head"><span class="pl-k">한 줄 요약</span><b id="sp-signal" class="sp-signal">계산 중</b></div><p class="headline skel" id="sp-line">이 종목의 계산 결과를 불러오는 중이에요.</p><div class="pl-tally" id="sp-tally" aria-hidden="true"></div><p class="muted small" id="sp-counts"></p></div></section>
 <section class="block"><div class="card chart-card"><div class="chart-head"><div><div class="muted small">최근 1년 일봉</div><div class="period-stat" id="period-stat" aria-live="polite"></div></div>
 <div class="seg" role="group" aria-label="기간">${[['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250]].map(([l, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 126}">${l}</button>`).join('')}</div></div>
 <div id="chart" style="height:420px"><p class="empty" id="sp-empty" hidden>차트 데이터를 불러오지 못했어요. 상장 종목 코드가 맞는지 확인해 주세요.</p></div>
 <p class="fine">이동평균 20(주황)·60(보라)과 거래량이에요.</p></div></section>
 ${open}${gate(detail, { base: '', what: '기술적 적정가' })}${gate(forecast, { base: '', what: '예측 가격 범위', need: 'pro' })}
-<section class="block"><div class="block-head"><h2>AI 리포트가 생기면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>
-<footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '종목 차트 | Gnomon Analytics', body, { bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${STOCK_SCRIPT}` });
+${coin ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트가 생기면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>`}
+<footer id="sources" style="padding:24px 0 0"><p>${coin ? '데이터: 업비트 원화 마켓 일봉(09:00 KST 기준). 매일 저녁 갱신해요. 가상자산은 원금 손실 위험이 커요.' : '데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
+  return shell('', coin ? '코인 차트 | Gnomon Analytics' : '종목 차트 | Gnomon Analytics', body, { bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(coin)}` });
 }
 
-const STOCK_SCRIPT = `<script>
+/** The free chart page; coins (upbit KRW markets) reuse it with their own data folder and wording. */
+const stockScript = (coin: boolean) => `<script>
 (function () {
-  var code = (new URLSearchParams(location.search).get('c') || '').toUpperCase();
+  var COIN = ${coin};
+  var code = (new URLSearchParams(location.search).get(COIN ? 'm' : 'c') || '').toUpperCase();
   var $ = function (id) { return document.getElementById(id); };
-  var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
+  // Coins can trade below 100원: keep the decimals they are quoted in.
+  var won = function (v) { var a = Math.abs(v); return (a >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: a >= 1 ? 2 : 4 })) + '원'; };
   var fail = function () { $('sp-empty').hidden = false; $('sp-name').textContent = code ? code : '종목을 찾지 못했어요'; document.querySelectorAll('.skel').forEach(function (x) { x.classList.remove('skel'); }); };
-  if (!/^[0-9A-Z]{6}$/.test(code)) { fail(); return; }
+  if (!(COIN ? /^KRW-[A-Z0-9]{1,15}$/ : /^[0-9A-Z]{6}$/).test(code)) { fail(); return; }
   // Stocks with an AI report have their own page and no s/<code>.json: go there instead.
   var toReport = function () { return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
-  fetch('s/' + code + '.json').then(function (r) { if (r.status === 404) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
+  fetch((COIN ? 'c/' : 's/') + code + '.json').then(function (r) { if (r.status === 404 && !COIN) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     document.title = d.name + ' 차트 | Gnomon Analytics';
-    $('sp-name').textContent = d.name; $('sp-code').textContent = d.symbol; $('sp-market').textContent = d.market === 'KOSDAQ' ? '코스닥' : '코스피';
+    $('sp-name').textContent = d.name; $('sp-code').textContent = d.symbol; $('sp-market').textContent = COIN ? '업비트 원화' + (d.warning ? ' · 유의 종목' : '') : d.market === 'KOSDAQ' ? '코스닥' : '코스피';
     var bars = d.bars.map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] }; });
     var last = bars[bars.length - 1], prev = bars[bars.length - 2];
     if (last) {
       var ch = prev ? last.close - prev.close : 0, pc = prev ? (ch / prev.close) * 100 : 0;
-      $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + Math.abs(ch).toLocaleString('ko-KR') + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : '');
-      $('sp-date').textContent = last.time + ' 종가';
+      $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + (Math.abs(ch) >= 100 ? Math.round(Math.abs(ch)).toLocaleString('ko-KR') : Number(Math.abs(ch).toPrecision(3)).toLocaleString('ko-KR', { maximumFractionDigits: 8 })) + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : '');
+      $('sp-date').textContent = last.time + (COIN ? ' 일봉 (09:00 KST 기준)' : ' 종가');
       $('pb-name').textContent = d.name; $('pb-code').textContent = d.symbol; $('pb-price').textContent = won(last.close);
       $('pb-change').textContent = prev ? (pc > 0 ? '▲ +' : pc < 0 ? '▼ ' : '') + pc.toFixed(2) + '%' : ''; $('pb-change').className = ch > 0 ? 'up' : ch < 0 ? 'down' : '';
       document.querySelectorAll('.skel').forEach(function (x) { x.classList.remove('skel'); });
     }
-    ['sp-request-credit', 'sp-request-brief'].forEach(function (id) { var rb = $(id); rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name); });
+    ['sp-request-credit', 'sp-request-brief'].forEach(function (id) { var rb = $(id); if (rb) { rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name); } });
     var c = d.calc, VOTE = { BULLISH: '강세', NEUTRAL: '중립', BEARISH: '약세' };
     var signed = function (v) { return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%'; };
     if (c) {
@@ -801,14 +804,14 @@ const STOCK_SCRIPT = `<script>
       var voted = sg.bull + sg.neutral + sg.bear;
       $('sp-tally').innerHTML = voted ? [['bull', sg.bull], ['neutral', sg.neutral], ['bear', sg.bear]].filter(function (x) { return x[1]; }).map(function (x) { return '<span class="s-' + x[0] + '" style="flex:' + x[1] + '"></span>'; }).join('') : '';
       $('sp-counts').textContent = '지표 ' + (voted + sg.abstain) + '개: 강세 ' + sg.bull + ' · 중립 ' + sg.neutral + ' · 약세 ' + sg.bear + (sg.abstain ? ' · 보류 ' + sg.abstain : '') + ' (' + c.date + ' 종가 기준)';
-      $('sp-moves').innerHTML = c.moves.map(function (m) { return '<div class="mv"><span>' + m.label + ' (' + m.days + '거래일)</span><b class="' + (m.pct > 0 ? 'up' : m.pct < 0 ? 'down' : '') + '">' + signed(m.pct) + '</b></div>'; }).join('');
+      $('sp-moves').innerHTML = c.moves.map(function (m) { return '<div class="mv"><span>' + m.label + ' (' + m.days + (COIN ? '일' : '거래일') + ')</span><b class="' + (m.pct > 0 ? 'up' : m.pct < 0 ? 'down' : '') + '">' + signed(m.pct) + '</b></div>'; }).join('');
       if (c.fair) $('sp-fair').innerHTML = '<div class="mv"><span>중심</span><b>' + won(c.fair.center) + '</b></div><div class="mv"><span>범위</span><b>' + won(c.fair.low) + ' ~ ' + won(c.fair.high) + '</b></div><div class="mv"><span>종가와 차이</span><b>' + signed(c.fair.gapPct) + '</b></div>';
       if (c.forecasts.length) $('sp-fc').innerHTML = '<table class="compact"><thead><tr><th>기간</th><th>범위</th><th>중앙</th></tr></thead><tbody>' + c.forecasts.map(function (f) { return '<tr><td>' + f.days + '거래일</td><td>' + won(f.p10) + ' ~ ' + won(f.p90) + '</td><td>' + won(f.p50) + '</td></tr>'; }).join('') + '</tbody></table>';
       $('sp-votes').innerHTML = c.votes.map(function (v) { return '<span class="vchip v-' + (v[1] || 'NONE') + '">' + v[0] + ' <b>' + (v[1] ? VOTE[v[1]] : '보류') + '</b></span>'; }).join('');
     } else { $('sp-signal').textContent = '계산 없음'; $('sp-line').textContent = '기록이 모자라 계산하지 못했어요.'; }
     var title = '리포트 요청: ' + d.name + ' (' + d.symbol + ')';
     var bodyText = '요청 종목: ' + d.name + ' (' + d.symbol + ')\\n\\n궁금한 점이나 보고 싶은 분석이 있으면 적어 주세요.\\n';
-    $('sp-request').href = '${REPO_URL}/issues/new?labels=report-request&title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(bodyText);
+    if ($('sp-request')) $('sp-request').href = '${REPO_URL}/issues/new?labels=report-request&title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(bodyText);
     var L = window.LightweightCharts, el = $('chart');
     var chart = L.createChart(el, { autoSize: true, layout: { background: { color: 'transparent' }, textColor: '#6b7686', fontFamily: 'inherit' }, grid: { vertLines: { visible: false }, horzLines: { color: '#eef1f5' } }, rightPriceScale: { borderVisible: false }, timeScale: { borderVisible: false }, localization: { priceFormatter: function (p) { return Math.round(p).toLocaleString('ko-KR'); } } });
     var candle = chart.addSeries(L.CandlestickSeries, { upColor: '#d1373d', downColor: '#2a62c9', borderVisible: false, wickUpColor: '#d1373d', wickDownColor: '#2a62c9' });

@@ -8,6 +8,8 @@
 // One stock failing does not stop the others.
 
 import { collectRiskFilings } from './riskCollect.js';
+import { writeCoinPages } from './coins.js';
+import { renderCoins } from '../report/renderCoins.js';
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
 import { SITE_CONFIG } from '../report/alpha.js';
@@ -121,7 +123,7 @@ export interface DailyRunResult {
   selected: string | null;
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean }): Promise<DailyRunResult> {
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean }): Promise<DailyRunResult> {
   const { root, now } = options;
   const today = kstParts(now);
   const fetchOpt = options.fetch ? { fetch: options.fetch } : {};
@@ -212,6 +214,8 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const calc = quickCalc(j.ticker.symbol, bars, now);
     if (calc) calcs.set(j.ticker.symbol, calc);
   }
+  // Every Upbit KRW market (G-54): best effort, never fails the run.
+  if (options.coins !== false) universe.status.push((await writeCoinPages(join(root, 'site'), { now: () => now, ...fetchOpt })).status);
   // Filing risk flags for every listed company (G-49), shown next to screener results.
   const risk = await collectRiskFilings({ root, apiKey: options.apiKey, today: today.date, now: () => now, ...fetchOpt });
   universe.status.push({ source: 'opendart:risk-filings', ok: !risk.error, count: risk.fetched, ...(risk.error ? { error: risk.error } : {}) });
@@ -427,6 +431,9 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   }
   await writeAssets(siteDir);
   await writeFile(join(siteDir, 'stock.html'), renderStockPage());
+  // Coins (G-54): the same chart page over site/c/, and the list.
+  await writeFile(join(siteDir, 'coin.html'), renderStockPage(true));
+  await writeFile(join(siteDir, 'coins.html'), renderCoins());
   // Closed alpha pages (G-44); they need the API address to do anything.
   await writeFile(join(siteDir, 'login.html'), renderLogin());
   await writeFile(join(siteDir, 'onboarding.html'), renderOnboarding());
