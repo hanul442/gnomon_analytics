@@ -236,6 +236,25 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   const risk = await collectRiskFilings({ root, apiKey: options.apiKey, today: today.date, now: () => now, ...fetchOpt });
   universe.status.push({ source: 'opendart:risk-filings', ok: !risk.error, count: risk.fetched, ...(risk.error ? { error: risk.error } : {}) });
   const pulse = marketPulse([...calcs.values()]);
+  // Requested ETFs and coins (G-56), named from the lists just computed: a deep committee until one
+  // report has it, then dashboards only (the same as a requested stock). Unknown symbols are recorded.
+  const reqJobs: (typeof jobs)[number][] = [];
+  for (const r of options.requests ?? []) {
+    const coin = r.symbol.startsWith('KRW-');
+    if (jobs.some((j) => j.ticker.symbol === r.symbol) || (!coin && !universe.etfs.some((e) => e.symbol === r.symbol))) continue;
+    const name = coin ? coinList.find((c) => c[0] === r.symbol)?.[1] : universe.etfs.find((e) => e.symbol === r.symbol)?.name;
+    if (!name) { universe.status.push({ source: `request:${r.symbol}`, ok: false, count: 0, error: coin ? 'NOT_ON_UPBIT_KRW' : 'NOT_LISTED' }); continue; }
+    requested.add(r.symbol);
+    const hasAi = (await loadReports(join(root, 'reports', r.symbol))).some((rep) => rep.commentary?.status === 'OK');
+    const ticker = dailyTicker({ date: today.date, symbol: r.symbol, name, kind: coin ? 'coin' : 'etf', market: coin ? 'UPBIT' : 'KOSPI', tier: 'deep', reason: '요청' }, corpCodes);
+    reqJobs.push({ ticker, tier: hasAi ? null : 'deep', reportDay: !hasAi });
+  }
+  jobs.push(...reqJobs);
+  await pool(reqJobs, options.concurrency ?? 4, run);
+  for (const j of reqJobs) {
+    const r = results.find((x) => x.symbol === j.ticker.symbol);
+    if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
+  }
   // Daily AI reports (G-56): five stocks, an ETF and a coin drawn from the lists just computed, after
   // the close; on a day without a stock session (weekend, holiday) the coin only. They run last, so
   // the monthly AI budget goes to the core stocks and the weekly picks first.
