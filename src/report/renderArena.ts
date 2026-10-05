@@ -92,7 +92,7 @@ export function arenaHeadline(a: ArenaResult | null): string {
 /** Plus: every strategy's rank, current signal and out-of-sample return, without trades or curves. */
 export function arenaRanking(a: ArenaResult | null): string {
   if (!a) return '<div class="card"><p class="empty">전략 대결 기록이 없어요.</p></div>';
-  const rows = a.results.filter((r) => r.key !== 'hold').map((r) => `<tr${r.key === a.championKey ? ' class="is-champ"' : ''}><td>${r.rank}</td><td><b>${esc(r.name)}</b><div class="muted small">${esc(r.origin)}</div></td><td>${signalBadge(r)}</td><td class="num ${tone(r.oosReturn)}">${pct(r.oosReturn)}</td><td class="num">${r.oosTrades}</td></tr>`).join('');
+  const rows = a.results.filter((r) => r.key !== 'hold').map((r) => `<tr${r.key === a.championKey ? ' class="is-champ"' : ''}><td>${r.rank}</td><td class="nm"><b>${esc(r.name)}</b><div class="muted small">${esc(r.origin)}</div></td><td>${signalBadge(r)}</td><td class="num ${tone(r.oosReturn)}">${pct(r.oosReturn)}</td><td class="num">${r.oosTrades}</td></tr>`).join('');
   const hold = a.results.find((r) => r.key === 'hold');
   return `<section class="block"><div class="block-head"><h2>전략 순위표</h2><span class="muted small">${esc(a.oosFrom)}부터 검증 구간${hold ? ` · 보유 ${pct(hold.oosReturn)}` : ''}</span></div><div class="card table-wrap"><table class="compact"><thead><tr><th>순위</th><th>전략</th><th>지금 신호</th><th class="num">검증 구간 수익</th><th class="num">거래 수</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
