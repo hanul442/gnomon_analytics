@@ -123,7 +123,7 @@ function filings(entries: readonly HomeEntry[]): string {
 }
 
 const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class="pl-k">지금 요금제 <b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧</div>
-<p>무료는 한 줄 요약까지, <b>플러스</b>는 지표·적정가·전략·AI 위원회 상세까지 보여요. 크레딧은 누구나 충전해서 리포트 요청과 AI 질문에 써요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
+<p>무료는 한 줄 요약, <b>플러스</b>는 상세 설명, <b>프로</b>는 직접 요청하고 질문하기, <b>맥스</b>는 내 종목을 매주 위원회가 분석해요. 크레딧은 누구나 충전해서 써요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
 
 const WATCH = `<section class="block" id="watch"><div class="block-head"><h2>관심 종목</h2><span class="muted">이 브라우저에 저장돼요</span></div><div class="card list" id="watch-list"><p class="empty">☆를 눌러 관심 종목을 모아 보세요.</p></div></section>`;
 
@@ -190,7 +190,10 @@ const HOME_SCRIPT = `<script>
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-star]'); if (!b) return;
     var sym = b.getAttribute('data-star'), w = read(), i = w.indexOf(sym);
-    if (i >= 0) w.splice(i, 1); else w.unshift(sym);
+    var plan = document.documentElement.getAttribute('data-plan') || 'free', LIMIT = { free: 10, plus: 30, pro: 100, max: 1e9 };
+    if (i >= 0) w.splice(i, 1);
+    else if (w.length >= LIMIT[plan]) { if (window.GNM) window.GNM.toast('관심 종목은 ' + LIMIT[plan] + '개까지예요. 요금제를 올리면 더 담을 수 있어요.'); return; }
+    else w.unshift(sym);
     write(w); drawWatch();
   });
   drawWatch();
