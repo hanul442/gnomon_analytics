@@ -7,8 +7,10 @@ export interface Ticker {
   /** KRX code, e.g. 005930. */
   symbol: string;
   name: string;
-  /** Index the stock is compared against. */
-  market: 'KOSPI' | 'KOSDAQ';
+  /** Index the stock is compared against; UPBIT for coins (KRW-XXX symbols). */
+  market: 'KOSPI' | 'KOSDAQ' | 'UPBIT';
+  /** ETFs and coins (G-56) are reported with the same pipeline; their prompts and sources differ. */
+  kind?: 'etf' | 'coin';
   /** OpenDART corp_code (8 digits), not the stock code. */
   dartCorpCode: string;
   /** Search term for news sources. */
@@ -22,10 +24,11 @@ export interface Ticker {
 }
 
 const MARKET_NAME = { KOSPI: '코스피', KOSDAQ: '코스닥' } as const;
+export const BTC = { symbol: 'KRW-BTC', name: '비트코인' } as const;
 
-/** Index first, then the peer. */
+/** Index first, then the peer. A coin is compared against Bitcoin (Bitcoin against nothing). */
 export const benchmarksFor = (t: Ticker): { symbol: string; name: string }[] =>
-  [{ symbol: t.market, name: MARKET_NAME[t.market] }, ...(t.peer ? [t.peer] : [])];
+  t.market === 'UPBIT' ? (t.symbol === BTC.symbol ? [] : [{ ...BTC }]) : [{ symbol: t.market, name: MARKET_NAME[t.market] }, ...(t.peer ? [t.peer] : [])];
 
 export const aliasPattern = (t: Pick<Ticker, 'newsAliases'>): RegExp => new RegExp(t.newsAliases.join('|'), 'i');
 

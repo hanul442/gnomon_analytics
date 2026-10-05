@@ -228,7 +228,12 @@ export const BriefSchema = z.object({
   insights: InsightsSchema,
 });
 
-const briefSystem = (name: string) => `당신은 Gnomon Analytics의 리서치 요약 담당이에요. ${name} 주간 리포트의 짧은 AI 요약을 씁니다.
+/** Extra rules for an ETF or a coin (G-56); a stock's prompt is unchanged. */
+export const kindRule = (kind?: 'etf' | 'coin') => !kind ? '' : kind === 'etf'
+  ? '\n- 이 종목은 ETF예요. 개별 기업의 실적·공시·증권가 목표가 근거는 없고, 기초지수 구성·괴리율·총보수 정보도 받지 않았어요. 가격·거래량·기술·수급·뉴스 근거로만 판단하고, 없는 정보는 dataGaps에 적습니다. FUNDAMENTAL 데스크는 근거가 없으면 INSUFFICIENT_DATA로 둡니다.'
+  : '\n- 이 종목은 업비트 원화 마켓의 가상자산(코인)이에요. 24시간 거래되고 일봉은 매일 09:00(KST)에 끊으며, "거래일"은 하루를 뜻합니다. 실적·공시·투자자별 수급·증권가 근거가 없으니 FLOW·FUNDAMENTAL 데스크는 INSUFFICIENT_DATA로 둡니다. 비교 대상은 비트코인이에요. 변동성이 주식보다 훨씬 크다는 점을 시나리오 가격대에 반영합니다.';
+
+const briefSystem = (name: string, kind?: 'etf' | 'coin') => `당신은 Gnomon Analytics의 리서치 요약 담당이에요. ${name} 주간 리포트의 짧은 AI 요약을 씁니다.
 
 - summary: 이번 주 무슨 일이 있었고 왜 중요한지 2~3문장.
 - bullish·bearish: 강세·약세 쪽 근거 각각 최대 3개. uncertain은 해석이 갈리는 점 최대 2개.
@@ -240,9 +245,9 @@ const briefSystem = (name: string) => `당신은 Gnomon Analytics의 리서치 �
 - 모든 주장에 종류(kind)를 붙입니다: 근거에 그대로 있는 사실은 FACT, 근거에서 끌어낸 해석은 INFERENCE, 근거로 확인되지 않은 가정은 ASSUMPTION. 해석을 사실처럼 쓰지 않습니다.
 - 한국어 해요체로, 짧고 분명하게 씁니다. 내부 코드명이나 영어 약어 대신 뜻을 풀어 씁니다.
 - 매수·매도를 권하거나 목표가·익절가·손절가를 제시하지 않습니다. 가격을 말해야 하면 시나리오 가격대와 무효화 가격으로만 씁니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
-- 같은 이야기의 재보도는 하나의 근거로 봅니다. 근거가 부족하면 dataGaps에 적고 억지로 결론 내지 않습니다.`;
+- 같은 이야기의 재보도는 하나의 근거로 봅니다. 근거가 부족하면 dataGaps에 적고 억지로 결론 내지 않습니다.${kindRule(kind)}`;
 
-const system = (name: string) => `당신은 Gnomon Analytics의 리서치 위원회예요. ${name} 일일 리포트의 "AI 해설"을 한 번에 씁니다.
+const system = (name: string, kind?: 'etf' | 'coin') => `당신은 Gnomon Analytics의 리서치 위원회예요. ${name} 일일 리포트의 "AI 해설"을 한 번에 씁니다.
 
 위원회 구성:
 - 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
@@ -263,7 +268,7 @@ ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 - 기사 수가 많다고 근거가 강한 것이 아닙니다. 같은 이야기의 재보도는 하나의 근거로 봅니다.
 - 모르는 것은 중립이 아닙니다. 근거가 부족하면 dataGaps에 적고, 억지로 결론 내지 않습니다.
 - 기술적 신호는 지표 요약일 뿐 오를 확률이 아닙니다.
-- 반대 근거를 함께 찾고, 무엇이 나오면 해석이 바뀌는지(watch)를 씁니다.`;
+- 반대 근거를 함께 찾고, 무엇이 나오면 해석이 바뀌는지(watch)를 씁니다.${kindRule(kind)}`;
 
 /** Keeps only known IDs; drops claims left with none. */
 export function sanitizeClaims(claims: readonly Claim[], known: ReadonlySet<string>): { kept: Claim[]; dropped: number } {
@@ -300,6 +305,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
   const client = options.client ?? new Anthropic({ apiKey: options.apiKey! });
   const input = {
     종목: `${report.name} (${report.symbol})`,
+    ...(report.kind ? { 자산_종류: report.kind === 'etf' ? 'ETF' : '코인 (업비트 원화 마켓)' } : {}),
     리포트_날짜: report.date,
     헤드라인: report.headline,
     근거_목록: evidence.map(({ id, label, detail }) => ({ id, 제목: label, 내용: detail })),
@@ -314,12 +320,12 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
         output_config: { effort: 'medium', format: betaZodOutputFormat(CommentarySchema) },
-        system: system(report.name), messages: [user],
+        system: system(report.name, report.kind), messages: [user],
       })
       : await client.beta.messages.parse({
         model, max_tokens: 6000,
         output_config: { format: betaZodOutputFormat(BriefSchema) },
-        system: briefSystem(report.name), messages: [user],
+        system: briefSystem(report.name, report.kind), messages: [user],
       });
     if (response.stop_reason === 'refusal') return empty('FAILED', now, evidence, `REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
     if (response.stop_reason === 'max_tokens') return empty('FAILED', now, evidence, 'MAX_TOKENS');

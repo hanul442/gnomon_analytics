@@ -128,3 +128,18 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
+
+test('a coin or an ETF gets its own rules and asset line; a stock prompt is unchanged (G-56)', async () => {
+  const reply = { stop_reason: 'end_turn', model: COMMENTARY_MODEL, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } };
+  const seen: { system: string; messages: { content: string }[] }[] = [];
+  const coin = buildDailyReport({ symbol: 'KRW-BTC', name: '비트코인', kind: 'coin', date: '2026-09-30', generatedAt: new Date(AT), bars: bars.map((b) => ({ ...b, symbol: 'KRW-BTC' })), disclosures: [], sources: [], news: [], newsStatus: [] });
+  await writeCommentary(coin, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT), tier: 'brief' });
+  await writeCommentary({ ...report, kind: 'etf' }, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
+  await writeCommentary(report, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
+  assert.match(seen[0]!.system, /가상자산\(코인\)/);
+  assert.match(seen[0]!.messages[0]!.content, /"자산_종류": "코인/);
+  assert.doesNotMatch(coin.headline, /공시/);
+  assert.match(seen[1]!.system, /이 종목은 ETF예요/);
+  assert.doesNotMatch(seen[2]!.system, /ETF예요|가상자산/);
+  assert.doesNotMatch(seen[2]!.messages[0]!.content, /자산_종류/);
+});

@@ -52,3 +52,20 @@ export const fetchUpbitMarkets = (fetcher: typeof fetch = fetch) => get('/market
 export const fetchUpbitTickers = (markets: readonly string[], fetcher: typeof fetch = fetch) => get(`/ticker?markets=${markets.join(',')}`, fetcher).then(parseUpbitTickers);
 /** 200 days (the API's most per request). */
 export const fetchUpbitDays = (market: string, now: Date, fetcher: typeof fetch = fetch) => get(`/candles/days?market=${market}&count=200`, fetcher).then((j) => parseUpbitDays(j, market, now));
+
+/**
+ * Up to `total` days, 200 per request, paging back with `to` (exclusive, UTC). A KST-dated candle
+ * starts at 00:00 UTC of that date. Used for reported coins (G-56), whose strategy backtests want ~4 years.
+ */
+export async function fetchUpbitDaysLong(market: string, now: Date, total = 1000, fetcher: typeof fetch = fetch, pauseMs = 150): Promise<PriceBar[]> {
+  const out = new Map<string, PriceBar>();
+  let to = '';
+  while (out.size < total) {
+    const page = await get(`/candles/days?market=${market}&count=200${to ? `&to=${encodeURIComponent(to)}` : ''}`, fetcher).then((j) => parseUpbitDays(j, market, now));
+    for (const b of page) out.set(b.date, b);
+    if (page.length < 200) break;
+    to = `${page[0]!.date}T00:00:00Z`;
+    if (pauseMs) await new Promise((r) => setTimeout(r, pauseMs));
+  }
+  return [...out.values()].sort((a, b) => (a.date < b.date ? -1 : 1)).slice(-total);
+}

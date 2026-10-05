@@ -8,7 +8,10 @@
 // One stock failing does not stop the others.
 
 import { collectRiskFilings } from './riskCollect.js';
-import { etfRows, writeCoinPages } from './coins.js';
+import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
+import { chooseDailyPicks, type DailyPick } from '../analysis/dailyPicks.js';
+import { fetchUpbitDays, fetchUpbitDaysLong, UPBIT_SOURCE } from '../sources/upbit.js';
+import { escapeRegex } from './weekly.js';
 import { renderCoins } from '../report/renderCoins.js';
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
@@ -123,7 +126,7 @@ export interface DailyRunResult {
   selected: string | null;
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean }): Promise<DailyRunResult> {
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; dailyPicks?: boolean }): Promise<DailyRunResult> {
   const { root, now } = options;
   const today = kstParts(now);
   const fetchOpt = options.fetch ? { fetch: options.fetch } : {};
@@ -170,7 +173,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   const benches = [...new Map(jobs.flatMap((j) => benchmarksFor(j.ticker)).map((b) => [b.symbol, b])).values()];
   for (const b of benches) {
     try {
-      const added = await appendNew(join(root, 'data', 'prices', `${b.symbol}.jsonl`), await fetchNaverDailyBars(b.symbol, 250, { now: () => now, ...fetchOpt }), priceKey);
+      const added = await appendNew(join(root, 'data', 'prices', `${b.symbol}.jsonl`), await benchBars(b.symbol, now, fetchOpt), priceKey);
       benchStatus.push({ source: `naver:fchart:day:${b.symbol}`, ok: true, count: added.length });
     } catch (error) {
       benchStatus.push({ source: `naver:fchart:day:${b.symbol}`, ok: false, count: 0, error: error instanceof Error ? error.message.slice(0, 160) : 'UNKNOWN' });
@@ -215,17 +218,44 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     if (calc) calcs.set(j.ticker.symbol, calc);
   }
   // ETFs (G-55): the same free pages as stocks, listed apart.
+  let etfList: CoinRow[] = [];
   if (universe.etfs.length && options.stockPages !== false) {
     const etf = await writeStockPages(join(root, 'site'), universe.etfs, new Set(), { now: () => now, ...fetchOpt });
     universe.status.push({ ...etf.status, source: 'naver:fchart:day:etf' });
-    await writeFile(join(root, 'site', 'etfs.json'), JSON.stringify({ date: now.toISOString(), rows: etfRows(universe.etfs, etf.calcs) }));
+    etfList = etfRows(universe.etfs, etf.calcs);
+    await writeFile(join(root, 'site', 'etfs.json'), JSON.stringify({ date: now.toISOString(), rows: etfList }));
   }
   // Every Upbit KRW market (G-54): best effort, never fails the run.
-  if (options.coins !== false) universe.status.push((await writeCoinPages(join(root, 'site'), { now: () => now, ...fetchOpt })).status);
+  let coinList: CoinRow[] = [];
+  if (options.coins !== false) {
+    const coins = await writeCoinPages(join(root, 'site'), { now: () => now, ...fetchOpt });
+    universe.status.push(coins.status);
+    coinList = coins.rows;
+  }
   // Filing risk flags for every listed company (G-49), shown next to screener results.
   const risk = await collectRiskFilings({ root, apiKey: options.apiKey, today: today.date, now: () => now, ...fetchOpt });
   universe.status.push({ source: 'opendart:risk-filings', ok: !risk.error, count: risk.fetched, ...(risk.error ? { error: risk.error } : {}) });
-  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse: marketPulse([...calcs.values()]), calcs, risk: risk.flags });
+  const pulse = marketPulse([...calcs.values()]);
+  // Daily AI reports (G-56): five stocks, an ETF and a coin drawn from the lists just computed, after
+  // the close; on a day without a stock session (weekend, holiday) the coin only. They run last, so
+  // the monthly AI budget goes to the core stocks and the weekly picks first.
+  if (today.hour >= SETTLED_HOUR_KST && options.dailyPicks !== false) {
+    const session = pulse?.date === today.date;
+    const exclude = new Set([...jobs.map((j) => j.ticker.symbol), ...await recentlyReported(root, today.date, 28)]);
+    const picks = await dailyPicksFor(root, today.date, () => chooseDailyPicks({
+      date: today.date, weekday: session ? new Date(`${today.date}T00:00:00Z`).getUTCDay() : 0,
+      stocks: session && universe.rows ? screenerRows(universe.rows, calcs, new Set(), risk.flags) : [], etfs: session ? etfList : [], coins: coinList, exclude,
+    }));
+    const fresh = picks.filter((p) => !jobs.some((j) => j.ticker.symbol === p.symbol));
+    const pickJobs = fresh.map((p) => ({ ticker: dailyTicker(p, corpCodes), tier: p.tier, reportDay: true }));
+    jobs.push(...pickJobs);
+    await pool(pickJobs, options.concurrency ?? 4, run);
+    for (const j of pickJobs) {
+      const r = results.find((x) => x.symbol === j.ticker.symbol);
+      if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
+    }
+  }
+  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')) });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
   await mkdir(join(root, 'data', 'status'), { recursive: true });
@@ -236,6 +266,37 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     failed,
   }, null, 1)}\n`);
   return { results, failed, universeStatus: universe.status, selected };
+}
+
+/** Index prices from Naver; Bitcoin (a coin's benchmark) from Upbit. */
+const benchBars = (symbol: string, now: Date, fetchOpt: { fetch?: typeof fetch }) =>
+  symbol.startsWith('KRW-') ? fetchUpbitDays(symbol, now, fetchOpt.fetch) : fetchNaverDailyBars(symbol, 250, { now: () => now, ...fetchOpt });
+
+/** Symbols with a dated report in the last `days` days. */
+async function recentlyReported(root: string, date: string, days: number): Promise<string[]> {
+  const out: string[] = [];
+  for (const d of await readdir(join(root, 'reports')).catch(() => [] as string[])) {
+    const last = (await readdir(join(root, 'reports', d)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().at(-1)?.slice(0, 10);
+    if (last && daysBetween(last, date) < days) out.push(d);
+  }
+  return out;
+}
+
+/** Today's picks as logged; drawn and logged once a day, so a re-run reports the same names. */
+async function dailyPicksFor(root: string, date: string, choose: () => DailyPick[]): Promise<DailyPick[]> {
+  const path = join(root, 'data', 'daily-picks.jsonl');
+  const logged = (await readLog<DailyPick>(path)).filter((p) => p.date === date);
+  if (logged.length) return logged;
+  const picks = choose();
+  await appendUnseen(path, picks, (p) => `${p.date}|${p.symbol}`);
+  return picks;
+}
+
+export function dailyTicker(p: DailyPick, corpCodes: Readonly<Record<string, string>>): Ticker {
+  if (p.kind === 'stock') return pickTicker({ symbol: p.symbol, name: p.name, market: p.market === 'KOSDAQ' ? 'KOSDAQ' : 'KOSPI' }, corpCodes);
+  const sym = p.symbol.replace('KRW-', '');
+  return { symbol: p.symbol, name: p.name, market: p.kind === 'coin' ? 'UPBIT' : 'KOSPI', kind: p.kind, dartCorpCode: '', newsQuery: p.kind === 'coin' ? `${p.name} 코인` : p.name,
+    newsAliases: p.kind === 'coin' ? [escapeRegex(p.name), `\\b${escapeRegex(sym)}\\b`] : [escapeRegex(p.name)], ai: true };
 }
 
 async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTier | null, core: boolean, reportDay: boolean): Promise<TickerResult> {
@@ -250,7 +311,8 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
   const fetchOptions = { now: clock, ...(options.fetch ? { fetch: options.fetch } : {}) };
 
   // About four years of sessions: enough history for strategy backtests.
-  const bars = await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
+  const coin = ticker.market === 'UPBIT';
+  const bars = coin ? await fetchUpbitDaysLong(SYMBOL, now, 1000, options.fetch) : await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
   // Without a corp code DART would return every company's filings, so skip it.
   const filings = ticker.dartCorpCode ? await fetchDartFilings({ apiKey: options.apiKey, corpCode: ticker.dartCorpCode, from: monthAgo.compact, to: today.compact, ...fetchOptions }) : [];
   const addedBars = await appendNew(pricePath, bars, priceKey);
@@ -261,7 +323,8 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
   const aliases = aliasPattern(ticker);
   const addedNews = await appendUnseen(newsPath, news.filter((n) => isRelevant(n.title, aliases)), newsKey);
   // Index and peer prices were fetched once by runDaily.
-  const marketStatus = await collectMarketData(root, SYMBOL, today.date, fetchOptions, []);
+  // Coins have no Naver weekly, minute, flow or finance pages.
+  const marketStatus = coin ? [] : await collectMarketData(root, SYMBOL, today.date, fetchOptions, []);
 
   let report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' | 'SKIPPED' = 'NOT_SETTLED';
   const reportPath = join(reportDir, `${today.date}.json`);
@@ -348,6 +411,7 @@ export async function composeReport(
   const built = buildDailyReport({
     symbol: SYMBOL,
     name: ticker.name,
+    ...(ticker.kind ? { kind: ticker.kind } : {}),
     date: today.date,
     generatedAt: now,
     bars: daily,
@@ -355,7 +419,7 @@ export async function composeReport(
     news: asOf(await readLog<NewsItem>(newsPath), newsKey, now),
     newsStatus: options.newsStatus ?? [],
     newsAliases: aliasPattern(ticker),
-    sources: [NAVER_PRICE_SOURCE, OPENDART_SOURCE],
+    sources: ticker.market === 'UPBIT' ? [UPBIT_SOURCE] : ticker.kind === 'etf' ? [NAVER_PRICE_SOURCE] : [NAVER_PRICE_SOURCE, OPENDART_SOURCE],
     // The first report (no earlier ones) lists the past month's filings as context.
     previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))),
     previous: earlier.at(-1) ?? null,
@@ -392,20 +456,23 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  * dashboard (live when this run built one, else its latest dated report),
  * <symbol>/archive.html its dated reports and <symbol>/reports/<date>.html each one.
  */
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag> } = {}): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[] } = {}): Promise<void> {
   const siteDir = join(root, 'site');
   // The alpha API address (G-44): GNM_API_URL wins over gnm.config.json; empty keeps the browser-only MOCK.
   const config = JSON.parse(await readFile(join(root, 'gnm.config.json'), 'utf8').catch(() => '{}')) as { apiUrl?: string };
   SITE_CONFIG.apiUrl = process.env.GNM_API_URL ?? config.apiUrl ?? '';
   const home: HomeEntry[] = [];
   // Stocks picked in earlier weeks keep their pages (latest dated report), off the front page.
-  const reportDirs = (await readdir(join(root, 'reports'), { withFileTypes: true }).catch(() => [])).filter((d) => d.isDirectory() && /^[0-9A-Z]{6}$/.test(d.name)).map((d) => d.name);
+  const reportDirs = (await readdir(join(root, 'reports'), { withFileTypes: true }).catch(() => [])).filter((d) => d.isDirectory() && /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/.test(d.name)).map((d) => d.name);
   const past: Ticker[] = [];
   for (const symbol of reportDirs.filter((d) => !tickers.some((t) => t.symbol === d))) {
     const latest = (await loadReports(join(root, 'reports', symbol))).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
-    if (latest) past.push({ symbol, name: latest.name, market: 'KOSPI', dartCorpCode: '', newsQuery: latest.name, newsAliases: [latest.name], ai: false });
+    if (latest) past.push({ symbol, name: latest.name, market: symbol.startsWith('KRW-') ? 'UPBIT' : 'KOSPI', ...(latest.kind ? { kind: latest.kind } : {}), dartCorpCode: '', newsQuery: latest.name, newsAliases: [latest.name], ai: false });
   }
   const picks = new Map((selection?.picks ?? []).map((p) => [p.symbol, p]));
+  // Daily picks of the last seven days stay on the front page (G-56), newest first.
+  const weekAgo = new Date(Date.parse(`${kstParts(new Date()).date}T00:00:00Z`) - 6 * 86_400_000).toISOString().slice(0, 10);
+  const daily = new Map([...(extras.daily ?? [])].filter((p) => p.date >= weekAgo).sort((a, b) => (a.date < b.date ? -1 : 1)).map((p) => [p.symbol, p]));
   for (const ticker of [...tickers, ...past]) {
     const dir = join(siteDir, ticker.symbol);
     const reports = await loadReports(join(root, 'reports', ticker.symbol));
@@ -432,8 +499,9 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
       await writeFile(join(dir, 'index.html'), renderIndex(reports, { base: '../', name: ticker.name }));
     }
     const pick = picks.get(ticker.symbol);
-    const group = past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : requested.has(ticker.symbol) ? 'request' : 'core';
-    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : {}) });
+    const day = daily.get(ticker.symbol);
+    const group = day && !pick ? 'daily' : past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : requested.has(ticker.symbol) ? 'request' : 'core';
+    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : day ? { reasons: [day.reason], tier: day.tier, pickDate: day.date, kind: day.kind } : {}) });
   }
   await writeAssets(siteDir);
   await writeFile(join(siteDir, 'stock.html'), renderStockPage());

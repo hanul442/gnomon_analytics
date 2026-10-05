@@ -3,7 +3,7 @@ import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { parseUpbitDays, parseUpbitMarkets } from './upbit.js';
+import { fetchUpbitDaysLong, parseUpbitDays, parseUpbitMarkets } from './upbit.js';
 import { writeCoinPages } from '../cli/coins.js';
 
 const candle = (i: number, close: number) => ({ market: 'KRW-BTC', candle_date_time_kst: new Date(Date.UTC(2026, 3, 1) + i * 86_400_000).toISOString().slice(0, 10) + 'T09:00:00', opening_price: close, high_price: close * 1.01, low_price: close * 0.99, trade_price: close, candle_acc_trade_volume: 100 + i });
@@ -34,4 +34,20 @@ test('coin pages: every KRW market gets a chart file and a list row; small price
   // Upbit unreachable: the run goes on with a failed status.
   const down = await writeCoinPages(site, { now: () => new Date(), fetch: (async () => new Response('', { status: 503 })) as typeof fetch, pauseMs: 0 });
   assert.deepEqual([down.status.ok, down.rows.length], [false, 0]);
+});
+
+test('upbit: long history pages back 200 days at a time with `to`', async () => {
+  const all = Array.from({ length: 450 }, (_, i) => candle(i, 100 + i));
+  const urls: string[] = [];
+  const fake = (async (url: string) => {
+    urls.push(url);
+    const to = new URL(url).searchParams.get('to');
+    const before = to ? all.filter((c) => `${c.candle_date_time_kst.slice(0, 10)}T00:00:00Z` < to) : all;
+    return new Response(JSON.stringify(before.slice(-200).reverse()));
+  }) as typeof fetch;
+  const bars = await fetchUpbitDaysLong('KRW-BTC', new Date(), 1000, fake, 0);
+  assert.equal(bars.length, 450);
+  assert.equal(urls.length, 3);
+  assert.deepEqual([bars[0]!.date, bars.at(-1)!.date], [all[0]!.candle_date_time_kst.slice(0, 10), all.at(-1)!.candle_date_time_kst.slice(0, 10)]);
+  assert.equal((await fetchUpbitDaysLong('KRW-BTC', new Date(), 300, fake, 0)).length, 300);
 });

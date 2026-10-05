@@ -80,7 +80,7 @@ test('a requested stock gets one deep committee report, then dashboards only', a
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const calls: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string; messages: { content: string }[] }) => { calls.push(/"종목": "([^"]+)"/.exec(req.messages[0]!.content)?.[1] ?? '?'); return { stop_reason: 'end_turn', model: req.model, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
-  const opts = { root, apiKey: 'k', fetch: fake, tickers, anthropic, requests: [{ symbol: '111110', requestedAt: '2026-10-02' }], selectionParams: { ...DEFAULT_SELECTION, size: 1, bigCaps: 0 } };
+  const opts = { root, apiKey: 'k', fetch: fake, tickers, anthropic, requests: [{ symbol: '111110', requestedAt: '2026-10-02' }], selectionParams: { ...DEFAULT_SELECTION, size: 1, bigCaps: 0 }, dailyPicks: false };
   await runDaily({ ...opts, now: new Date('2026-10-02T09:30:00Z') });
   assert.deepEqual(calls.sort(), ['SK하이닉스 (000660)', '조용한전자 (111110)']);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
@@ -97,6 +97,28 @@ test('a requested stock gets one deep committee report, then dashboards only', a
   calls.length = 0;
   await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
   assert.deepEqual(calls, []);
+});
+
+test('daily picks (G-56): drawn once a day from the screener, reported once, shown on the front page', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
+  const calls: string[] = [];
+  const anthropic = { beta: { messages: { parse: async (req: { model: string; messages: { content: string }[] }) => { calls.push(/"종목": "([^"]+)"/.exec(req.messages[0]!.content)?.[1] ?? '?'); return { stop_reason: 'end_turn', model: req.model, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
+  const opts = { root, apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: { ...DEFAULT_SELECTION, size: 1, bigCaps: 0 } };
+  await runDaily({ ...opts, now: new Date('2026-10-02T09:30:00Z') });
+  calls.length = 0;
+  await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
+  const picks = (await readFile(join(root, 'data', 'daily-picks.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as { date: string; symbol: string; kind: string; tier: string });
+  assert.ok(picks.length >= 1 && picks.every((p) => p.date === '2026-10-05' && p.kind === 'stock'));
+  assert.equal(picks[0]!.tier, 'deep');
+  assert.equal(calls.length, picks.length);
+  const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
+  assert.ok(home.includes('id="daily"') && home.includes(`href="${picks[0]!.symbol}/index.html"`));
+  // A re-run the same day draws nothing new and calls no model.
+  calls.length = 0;
+  await runDaily({ ...opts, now: new Date('2026-10-05T11:00:00Z') });
+  assert.deepEqual(calls, []);
+  assert.equal((await readFile(join(root, 'data', 'daily-picks.jsonl'), 'utf8')).trim().split('\n').length, picks.length);
 });
 
 test('the monthly AI budget: core stocks spend it first, the rest skip AI with the reason; every call is in the ledger', async () => {

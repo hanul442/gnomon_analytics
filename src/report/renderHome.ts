@@ -59,7 +59,24 @@ function pulseCard(p: MarketPulse | null): string {
 ${p.up20 !== null ? `<p class="muted small">20거래일 전보다 오른 종목은 ${Math.round(p.up20 * 100)}%예요. 지표 16개를 종목마다 계산해 모은 값이고, 오를 확률이 아니에요.</p>` : ''}</div></section>`;
 }
 
-const GROUP = { core: '위원회 전체', weekly: '요약', request: '요청', past: '' } as const;
+const GROUP = { core: '위원회 전체', weekly: '요약', request: '요청', past: '', daily: '' } as const;
+const KIND = { stock: '주식', etf: 'ETF', coin: '코인' } as const;
+
+/** Daily picks of the last seven days (G-56), newest day first. */
+function dailyRows(entries: readonly HomeEntry[]): string {
+  if (!entries.length) return '';
+  const days = [...new Set(entries.map((e) => e.pickDate ?? ''))].sort().reverse();
+  const row = (e: HomeEntry) => {
+    const r = e.report, p = r?.price, c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
+    const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
+    const kind = e.tier === 'deep' ? 'core' : 'weekly';
+    return `<div class="rr" data-kind="${kind}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span><span class="tier t-${kind}">${GROUP[kind]}</span></div><p class="rr-line">${esc(line || (e.reasons?.[0] ?? ''))}</p></a>
+<div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${e.kind === 'coin' ? '' : star(e.symbol, e.name)}</div>`;
+  };
+  return `<section class="block" id="daily"><div class="block-head"><h2>매일 AI 리포트</h2><span class="muted">평일 주식 5·ETF 1·코인 1, 주말 코인 1</span></div>
+<div class="card list rr-list">${days.map((d, i) => `<div class="dl-day${i ? ' dl-old' : ''}">${esc(d.slice(5).replace('-', '/'))}${i ? '' : ' · 최신'}</div>${entries.filter((e) => e.pickDate === d).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1)).map(row).join('')}`).join('')}</div>
+<p class="muted small">스크리너 상위 종목, 거래대금 상위 ETF·코인 가운데 무작위로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></section>`;
+}
 
 function reportRows(entries: readonly HomeEntry[], selection: HomeData['selection']): string {
   const rows = entries.map((e) => {
@@ -129,18 +146,19 @@ const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class=
 const WATCH = `<section class="block" id="watch"><div class="block-head"><h2>관심 종목</h2><span class="muted">이 브라우저에 저장돼요</span></div><div class="card list" id="watch-list"><p class="empty">☆를 눌러 관심 종목을 모아 보세요.</p></div></section>`;
 
 export function renderHome(data: HomeData): string {
-  const entries = data.entries.filter((e) => e.group !== 'past');
-  const order = { core: 0, weekly: 1, request: 2, past: 3 } as const;
+  const entries = data.entries.filter((e) => e.group !== 'past' && e.group !== 'daily');
+  const daily = data.entries.filter((e) => e.group === 'daily');
+  const order = { core: 0, weekly: 1, request: 2, past: 3, daily: 4 } as const;
   const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
   const covered = new Set(data.entries.map((e) => e.symbol));
   const asOf = data.pulse?.date ?? data.indices[0]?.date ?? '';
   const body = `${HOME_STYLE}<section class="hero home-hero" id="top"><div class="hero-main"><div class="eyebrow"><span>오늘 시장</span>${asOf ? `<span>${esc(asOf)} 기준</span>` : ''}</div><h1>지금 무엇을 봐야 할까요</h1>
-<p class="hero-line">전 종목의 기술 신호를 매일 계산하고, 매주 금요일 AI 리포트를 써요. 예측은 기록해 두고 나중에 채점해요.</p>
+<p class="hero-line">전 종목의 기술 신호를 매일 계산하고, 매일 주식·ETF·코인 AI 리포트를 써요. 예측은 기록해 두고 나중에 채점해요.</p>
 <div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div>
 <nav class="mkt-tabs" aria-label="시장"><a href="screener.html">국내 주식<small>스크리너</small></a><a href="etfs.html">ETF<small>국내 상장 전체</small></a><a href="coins.html">코인<small>업비트 원화</small></a></nav></div></section>
 ${indexStrip(data.indices, data.universe)}
-<div class="home-grid"><div class="home-main">${FEED}${pulseCard(data.pulse)}${WATCH}${reportRows(sorted, data.selection)}${movers(data.universe, covered)}</div>
+<div class="home-grid"><div class="home-main">${FEED}${pulseCard(data.pulse)}${WATCH}${dailyRows(daily)}${reportRows(sorted, data.selection)}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT });
@@ -173,7 +191,8 @@ const FEED_SCRIPT = `<script>
 })();
 </script>`;
 
-const HOME_STYLE = `<style>.mkt-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.mkt-tabs a{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line-strong);border-radius:12px;padding:9px 12px;background:#fff;text-decoration:none;color:var(--fg);font-weight:700;font-size:14px}.mkt-tabs a small{font-weight:500;font-size:11px;color:var(--muted)}.mkt-tabs a:hover{border-color:var(--accent)}
+const HOME_STYLE = `<style>.dl-day{font-size:12px;font-weight:700;color:var(--accent-strong);padding:10px 0 2px}.dl-old{border-top:1px solid var(--line);margin-top:4px;color:var(--muted)}.tier.t-k{background:#eef1f5;color:var(--fg2)}
+.mkt-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.mkt-tabs a{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line-strong);border-radius:12px;padding:9px 12px;background:#fff;text-decoration:none;color:var(--fg);font-weight:700;font-size:14px}.mkt-tabs a small{font-weight:500;font-size:11px;color:var(--muted)}.mkt-tabs a:hover{border-color:var(--accent)}
 
 .feed{background:linear-gradient(135deg,#f3f7fd,#fff)}.feed-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.feed-head b{font-size:16px}.feed-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chip-link{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:999px;padding:5px 11px;font-size:13px;text-decoration:none;background:#fff}.chip-link.alt{border-color:var(--navy);color:var(--navy);font-weight:700}.muted-chip{color:var(--muted);background:#f4f6f9}
