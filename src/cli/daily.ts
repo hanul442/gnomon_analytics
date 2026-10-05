@@ -21,7 +21,7 @@ import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promi
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
-import { skippedCommentary, writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
+import { COMMENTARY_PROMPT_VERSION, skippedCommentary, writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
 import { AiBudget } from './aiBudget.js';
 import type Anthropic from '@anthropic-ai/sdk';
 import { CHART_ASSET, FONT_DIR, renderIndex, renderReport, renderStockPage, type HomeEntry, writeAssets } from '../report/renderHtml.js';
@@ -152,7 +152,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const last = (await readdir(join(root, 'reports', symbol)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0, 10) < today.date).sort().at(-1)?.slice(0, 10);
     return friday || !last || daysBetween(last, today.date) >= 8;
   };
-  const jobs: { ticker: Ticker; tier: CommentaryTier | null; reportDay: boolean }[] = [];
+  const jobs: { ticker: Ticker; tier: CommentaryTier | null; reportDay: boolean; force?: boolean }[] = [];
   for (const t of options.tickers) {
     const due = await weeklyDue(t.symbol);
     jobs.push({ ticker: t, tier: due && t.ai ? 'deep' : null, reportDay: due });
@@ -167,6 +167,16 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     requested.add(r.symbol);
     const hasAi = (await loadReports(join(root, 'reports', r.symbol))).some((rep) => rep.commentary?.status === 'OK');
     jobs.push({ ticker: pickTicker(stock, corpCodes), tier: hasAi ? null : 'deep', reportDay: !hasAi });
+  }
+  // Refresh requests: a new deep committee report today, once, for a stock whose committee reports
+  // all predate the current prompt (earlier dated reports stay as written). Any day, session or not.
+  for (const r of (options.requests ?? []).filter((x) => x.refresh)) {
+    let job = jobs.find((j) => j.ticker.symbol === r.symbol);
+    const stock = listed.find((x) => x.symbol === r.symbol);
+    if (!job && stock) jobs.push(job = { ticker: pickTicker(stock, corpCodes), tier: null, reportDay: false });
+    if (!job || !job.ticker.ai) continue;
+    const current = (await loadReports(join(root, 'reports', r.symbol))).some((rep) => rep.commentary?.status === 'OK' && rep.commentary.promptVersion === COMMENTARY_PROMPT_VERSION);
+    if (!current) Object.assign(job, { tier: 'deep', reportDay: true, force: true });
   }
   // Index and peer prices once, before the stocks run in parallel (each stock then writes only its own files).
   const benchStatus: NewsSourceStatus[] = [];
@@ -186,9 +196,9 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   const results: TickerResult[] = [];
   const failed: { symbol: string; error: string }[] = [];
   const lives = new Map<string, DailyReport>();
-  const run = async ({ ticker, tier, reportDay }: (typeof jobs)[number]) => {
+  const run = async ({ ticker, tier, reportDay, force }: (typeof jobs)[number]) => {
     try {
-      const result = await runTicker({ ...options, budget }, ticker, tier, core.has(ticker.symbol), reportDay);
+      const result = await runTicker({ ...options, budget }, ticker, tier, core.has(ticker.symbol), reportDay, force);
       result.marketStatus.push(...benchStatus.filter((st) => benchmarksFor(ticker).some((b) => st.source.endsWith(`:${b.symbol}`))));
       results.push(result);
     } catch (error) {
@@ -324,7 +334,7 @@ export function dailyTicker(p: DailyPick, corpCodes: Readonly<Record<string, str
     newsAliases: p.kind === 'coin' ? [escapeRegex(p.name), `\\b${escapeRegex(sym)}\\b`] : [escapeRegex(p.name)], ai: true };
 }
 
-async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTier | null, core: boolean, reportDay: boolean): Promise<TickerResult> {
+async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTier | null, core: boolean, reportDay: boolean, force = false): Promise<TickerResult> {
   const { root, now } = options;
   const SYMBOL = ticker.symbol;
   const clock = () => now;
@@ -363,7 +373,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
       // When a dated report is kept (G-27, G-28): on the weekly report day only, and for core stocks only
       // on a trading day (a holiday adds nothing and would spend an AI call).
       const session = built.status === 'SESSION';
-      const keep = reportDay && (!core || session);
+      const keep = reportDay && (!core || session || force);
       // Core stocks still log forecasts and paper positions every trading day, report or not.
       if (!keep) {
         if (core && session && built.price && built.market) {

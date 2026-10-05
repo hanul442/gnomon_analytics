@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -96,6 +96,30 @@ test('a requested stock gets one deep committee report, then dashboards only', a
   assert.ok(calc.signal.label && calc.line.includes('기술 신호') && calc.moves.length === 3 && Array.isArray(calc.forecasts), JSON.stringify(calc).slice(0, 200));
   calls.length = 0;
   await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
+  assert.deepEqual(calls, []);
+});
+
+test('a refresh request writes one new deep report in the current prompt, even on a non-session day', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
+  const calls: string[] = [];
+  const anthropic = { beta: { messages: { parse: async (req: { model: string; messages: { content: string }[] }) => { calls.push(/"종목": "([^"]+)"/.exec(req.messages[0]!.content)?.[1] ?? '?'); return { stop_reason: 'end_turn', model: req.model, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
+  const opts = { root, apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: { ...DEFAULT_SELECTION, size: 1, bigCaps: 0 }, dailyPicks: false };
+  await runDaily({ ...opts, now: new Date('2026-10-02T09:30:00Z') });
+  // Make the core report look written by an older prompt.
+  const path = join(root, 'reports', '000660', '2026-10-02.json');
+  const old = JSON.parse(await readFile(path, 'utf8')) as { commentary: { promptVersion: string } };
+  old.commentary.promptVersion = 'gnm-committee-v2';
+  await writeFile(path, JSON.stringify(old));
+  calls.length = 0;
+  const refresh = [{ symbol: '000660', requestedAt: '2026-10-03', refresh: true }];
+  await runDaily({ ...opts, requests: refresh, now: new Date('2026-10-03T09:30:00Z') });
+  assert.deepEqual(calls, ['SK하이닉스 (000660)']);
+  assert.match(await readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'), /gnm-committee-v4/);
+  assert.match(await readFile(path, 'utf8'), /gnm-committee-v2/);
+  // Once a current report exists, the request does nothing.
+  calls.length = 0;
+  await runDaily({ ...opts, requests: refresh, now: new Date('2026-10-04T09:30:00Z') });
   assert.deepEqual(calls, []);
 });
 
