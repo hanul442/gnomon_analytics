@@ -2,6 +2,9 @@
 // Look: BLACK ORACLE mobile mockup v1 tone (docs/DESIGN.md G-15). The price chart
 // uses TradingView Lightweight Charts v5, served from our own site.
 
+import { createHash } from 'node:crypto';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim, Commentary } from '../analysis/commentary.js';
@@ -316,12 +319,12 @@ export function shell(base: string, title: string, body: string, options: { tabs
   const tabs = options.tabs ?? [];
   return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffffff"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}
-<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}</style></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
+<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.css?v=${ASSET_VERSION}"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
 <nav class="top-links" aria-label="사이트"><a href="${rootHref}"${cur('home')}>홈</a>${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}screener.html" class="tl-hide"${cur('screener')}>스크리너</a><a href="${base}scorecard.html" class="tl-hide"${cur('scorecard') || cur('paper')}>성적표</a><a href="${base}pricing.html" class="tl-hide"${cur('pricing')}>요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>
-<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}scorecard.html">성적표</a><a href="${base}paper.html">모의투자</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}${ACCOUNT_SCRIPT}${ALPHA_SCRIPT}${options.scripts ?? ''}${options.chat === false ? '' : CHAT_SCRIPT}${UI_SCRIPT}</body></html>`;
+<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}scorecard.html">성적표</a><a href="${base}paper.html">모의투자</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.js?v=${ASSET_VERSION}"></script>${options.scripts ?? ''}<script src="${base}assets/ui.js?v=${ASSET_VERSION}"></script></body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
@@ -773,7 +776,9 @@ const STOCK_SCRIPT = `<script>
   var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
   var fail = function () { $('sp-empty').hidden = false; $('sp-name').textContent = code ? code : '종목을 찾지 못했어요'; document.querySelectorAll('.skel').forEach(function (x) { x.classList.remove('skel'); }); };
   if (!/^[0-9A-Z]{6}$/.test(code)) { fail(); return; }
-  fetch('s/' + code + '.json').then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
+  // Stocks with an AI report have their own page and no s/<code>.json: go there instead.
+  var toReport = function () { return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
+  fetch('s/' + code + '.json').then(function (r) { if (r.status === 404) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     document.title = d.name + ' 차트 | Gnomon Analytics';
     $('sp-name').textContent = d.name; $('sp-code').textContent = d.symbol; $('sp-market').textContent = d.market === 'KOSDAQ' ? '코스닥' : '코스피';
     var bars = d.bars.map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] }; });
@@ -837,3 +842,17 @@ export interface HomeEntry {
   tier?: 'deep' | 'brief';
 }
 
+
+// Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
+const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
+export const APP_CSS = `${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
+/** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
+export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
+/** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
+export const UI_JS = `${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)}`;
+const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).digest('hex').slice(0, 10);
+
+export async function writeAssets(siteDir: string): Promise<void> {
+  await mkdir(join(siteDir, 'assets'), { recursive: true });
+  await Promise.all([writeFile(join(siteDir, 'assets', 'app.css'), APP_CSS), writeFile(join(siteDir, 'assets', 'app.js'), APP_JS), writeFile(join(siteDir, 'assets', 'ui.js'), UI_JS)]);
+}
