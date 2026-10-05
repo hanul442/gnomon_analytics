@@ -91,6 +91,19 @@ export const ALPHA_SCRIPT = `<script>
       });
     });
   };
+  // Watchlist sync (G-52): the newer side wins; local changes are pushed as they happen.
+  var watchSync = function () {
+    if (!G.me) return;
+    var local = []; try { local = JSON.parse(get('gnm-watch') || '[]'); } catch (e) {}
+    var at = Number(get('gnm-watch-at') || 0);
+    G.call('GET', '/watch').then(function (r) {
+      if (r.error) return;
+      var serverAt = r.updatedAt ? Date.parse(r.updatedAt) : 0;
+      if (serverAt > at && JSON.stringify(r.symbols) !== JSON.stringify(local)) { set('gnm-watch', JSON.stringify(r.symbols)); set('gnm-watch-at', String(serverAt)); }
+      else if (at > serverAt) G.call('POST', '/watch', { symbols: local });
+    });
+  };
+  window.addEventListener('gnm-watch', function () { if (!G.me) return; var w = []; try { w = JSON.parse(get('gnm-watch') || '[]'); } catch (e) {} G.call('POST', '/watch', { symbols: w }); });
   G.signIn = function (session, me) { set(SK, session); G.me = me; set(MK, JSON.stringify(me)); paint(); };
   G.signOut = function () { return G.call('POST', '/auth/logout').then(function () { set(SK, null); set(MK, null); G.me = null; paint(); }); };
   // Usage events, batched (what people actually open and use).
@@ -185,6 +198,6 @@ export const ALPHA_SCRIPT = `<script>
     }
   };
   paint();
-  G.ready = G.refresh().then(function () { feedback(); nudges(); bell(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return G.me; });
+  G.ready = G.refresh().then(function () { feedback(); nudges(); bell(); watchSync(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return G.me; });
 })();
 </script>`;

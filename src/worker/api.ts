@@ -6,6 +6,8 @@ import { ALPHA, ASK_TIERS, CREDIT_ACTIONS, CREDIT_COST, type AskTier, type Credi
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, matches } from '../analysis/screenRules.js';
+import { intradaySignals, readIntraday } from '../analysis/intraday.js';
+import { parseNaverMinuteChart } from '../sources/naverPrice.js';
 
 export interface Env {
   DB: D1;
@@ -291,15 +293,15 @@ route('GET', '/me/ledger', async ({ req, env, now }) => {
 route('GET', '/me/export', async ({ req, env, now }) => {
   const u = await authed(req, env, now), db = env.DB;
   const all = (t: string) => db.prepare(`SELECT * FROM ${t} WHERE user_id = ?`).bind(u.id).all().then((r) => r.results);
-  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications'].map(all));
-  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications };
+  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists'].map(all));
+  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist };
 });
 
 route('POST', '/me/delete', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   if (b.confirm !== '삭제') fail(400, 'CONFIRM', "확인 문구 '삭제'를 적어 주세요.");
   const db = env.DB;
-  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
+  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
     db.prepare('DELETE FROM login_tokens WHERE email = ?').bind(u.email), db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)]);
   return { ok: true };
 });
@@ -453,6 +455,61 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
     }
   }
   return { date: data.date, screens: list.length, sent };
+}
+
+// ---- watchlist on the server and intraday alerts (G-52) ----
+route('GET', '/watch', async ({ req, env, now }) => {
+  const u = await authed(req, env, now);
+  const r = await env.DB.prepare('SELECT symbols, updated_at FROM watchlists WHERE user_id = ?').bind(u.id).first<{ symbols: string; updated_at: string }>();
+  return { symbols: r ? JSON.parse(r.symbols) : [], updatedAt: r?.updated_at ?? null };
+});
+
+route('POST', '/watch', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req);
+  const symbols = [...new Set((Array.isArray(b.symbols) ? b.symbols : []).filter((x): x is string => typeof x === 'string' && /^[0-9A-Z]{6}$/.test(x)))].slice(0, 100);
+  await env.DB.prepare('INSERT INTO watchlists (user_id, symbols, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET symbols = excluded.symbols, updated_at = excluded.updated_at')
+    .bind(u.id, JSON.stringify(symbols), iso(now)).run();
+  return { ok: true, count: symbols.length, updatedAt: iso(now) };
+});
+
+const latin1 = (buf: ArrayBuffer) => { const a = new Uint8Array(buf); let s = ''; for (let i = 0; i < a.length; i += 8192) s += String.fromCharCode(...a.subarray(i, i + 8192)); return s; };
+
+/**
+ * Intraday job (cron every 10 minutes in the session): scans the stocks Pro-level users watch and
+ * tells them when volume runs far ahead of its usual pace or the price moves 5%. Once per stock,
+ * day and kind. Naver's minute feed is a few minutes behind, and the message says the time it saw.
+ */
+export async function runIntraday(env: Env, deps: Deps): Promise<{ symbols: number; alerts: number }> {
+  const now = deps.now(), kstNow = kst(now), today = kstNow.slice(0, 10), hhmm = kstNow.slice(11, 16), dow = new Date(Date.parse(`${today}T00:00:00Z`)).getUTCDay();
+  if (dow === 0 || dow === 6 || hhmm < '09:10' || hhmm > '15:45') return { symbols: 0, alerts: 0 };
+  const db = env.DB;
+  const rows = (await db.prepare('SELECT w.user_id, w.symbols, u.plan FROM watchlists w JOIN users u ON u.id = w.user_id WHERE u.disabled = 0').all<{ user_id: string; symbols: string; plan: string }>()).results
+    .filter((r) => (RANK[r.plan] ?? 0) >= RANK.pro!);
+  const watchers = new Map<string, string[]>();
+  for (const r of rows) for (const sym of JSON.parse(r.symbols) as string[]) (watchers.get(sym) ?? watchers.set(sym, []).get(sym)!).push(r.user_id);
+  const symbols = [...watchers.keys()].slice(0, 150);
+  if (!symbols.length) return { symbols: 0, alerts: 0 };
+  const names = new Map<string, string>();
+  try {
+    const s = await deps.fetch(`${env.SITE_URL.replace(/\/$/, '')}/search.json`, { signal: AbortSignal.timeout(15_000) });
+    if (s.ok) for (const it of ((await s.json()) as { items: unknown[][] }).items) names.set(String(it[0]), String(it[1]));
+  } catch { /* names are a nicety */ }
+  let alerts = 0;
+  const one = async (sym: string) => {
+    const r = await deps.fetch(`https://fchart.stock.naver.com/sise.nhn?symbol=${sym}&timeframe=minute&count=4000&requestType=0`, { signal: AbortSignal.timeout(15_000) });
+    if (!r.ok) return;
+    const read = readIntraday(parseNaverMinuteChart(latin1(await r.arrayBuffer()), sym, now), today);
+    if (!read) return;
+    for (const sig of intradaySignals(read, names.get(sym) ?? sym)) {
+      const fresh = await db.prepare('INSERT OR IGNORE INTO intraday_alerts (symbol, date, kind, detail, created_at) VALUES (?, ?, ?, ?, ?)').bind(sym, today, sig.kind, JSON.stringify(read), iso(now)).run();
+      if ((fresh.meta?.changes ?? 0) !== 1) continue;
+      alerts += 1;
+      await db.batch((watchers.get(sym) ?? []).map((uid) => db.prepare('INSERT INTO notifications (user_id, kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(uid, 'intraday', `장중 · ${sig.text}`, '관심 종목 장중 감시예요. 네이버 분봉 기준이라 몇 분 늦을 수 있고, 투자 권유가 아니에요.', `stock.html?c=${sym}`, iso(now))));
+    }
+  };
+  for (let i = 0; i < symbols.length; i += 6) await Promise.all(symbols.slice(i, i + 6).map((sym) => one(sym).catch(() => undefined)));
+  return { symbols: symbols.length, alerts };
 }
 
 // ---- admin ----
