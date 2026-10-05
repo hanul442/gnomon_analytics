@@ -10,6 +10,7 @@ import type { MarketPulse, PulseBucket, StockCalc } from '../analysis/quickCalc.
 import { LEVEL_LABEL } from '../analysis/technicals.js';
 import { sparkline } from './appParts.js';
 import { SEARCH_SCRIPT, shell, type HomeEntry } from './renderHtml.js';
+import { gate } from './plans.js';
 
 const esc = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -50,7 +51,7 @@ function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseR
 function pulseCard(p: MarketPulse | null): string {
   if (!p) return `<section class="block"><div class="block-head"><h2>시장 온도</h2></div><div class="card"><p class="empty">전 종목 계산은 다음 장 마감 실행에서 나와요.</p></div></section>`;
   const pct = (n: number) => Math.round((n / p.counted) * 100);
-  const lean = p.bull - p.bear, verdict = lean > p.counted * 0.1 ? '강세 쪽' : lean < -p.counted * 0.1 ? '약세 쪽' : '팽팽함';
+  const lean = p.bull - p.bear, verdict = lean > p.counted * 0.1 ? '강세 종목이 많아요' : lean < -p.counted * 0.1 ? '약세 종목이 많아요' : '엇갈려요';
   return `<section class="block"><div class="block-head"><h2>시장 온도</h2><span class="muted">${esc(p.date)} 종가 · ${p.counted.toLocaleString('ko-KR')}종목의 기술 신호</span></div>
 <div class="card pulse"><div class="pulse-head"><b class="${lean > 0 ? 'up' : lean < 0 ? 'down' : ''}">${verdict}</b><span><span class="up">강세 ${pct(p.bull)}%</span> · 중립 ${pct(p.neutral)}% · <span class="down">약세 ${pct(p.bear)}%</span></span></div>
 <div class="pulse-bar" role="img" aria-label="${BUCKETS.map(([k, l]) => `${l} ${p.buckets[k]}종목`).join(', ')}">${BUCKETS.map(([k, l, c]) => (p.buckets[k] ? `<span style="flex:${p.buckets[k]};background:${c}" title="${l} ${p.buckets[k]}종목"></span>` : '')).join('')}</div>
@@ -105,9 +106,9 @@ function scorecard(entries: readonly HomeEntry[]): string {
   }
   const board = [...by.values()].filter((x) => x.scored > 0).sort((a, b) => b.hits / b.scored - a.hits / a.scored).slice(0, 3);
   const pending = [...by.values()].reduce((s, x) => s + x.pending, 0);
-  return `<section class="block"><div class="block-head"><h2>성적표</h2><a href="scorecard.html" class="more-link">전체 보기 ›</a></div><div class="card sc-card">
-<div class="sc-k">예측 범위 적중</div>${fScored ? `<div class="sc-v">${Math.round((fInside / fScored) * 100)}%</div><div class="muted small">채점 ${fScored.toLocaleString('ko-KR')}건 · 10~90% 범위라 정직하면 80% 안팎이에요</div>` : `<div class="muted">아직 채점 전이에요. 예측은 기간이 지나면 실제 가격으로 채점해요.</div>`}
-<div class="sc-k" style="margin-top:14px">AI 분석가 방향 적중</div>${board.length ? `<ol class="sc-board">${board.map((x) => `<li><span>${esc(x.name)}</span><b>${Math.round((x.hits / x.scored) * 100)}%</b><span class="muted small">${x.scored}건</span></li>`).join('')}</ol>` : `<div class="muted">채점 대기 ${pending.toLocaleString('ko-KR')}건. 첫 채점은 예측 20거래일 뒤예요.</div>`}</div></section>`;
+  const detail = `<div class="card sc-card"><div class="sc-k">AI 분석가 방향 적중</div>${board.length ? `<ol class="sc-board">${board.map((x) => `<li><span>${esc(x.name)}</span><b>${Math.round((x.hits / x.scored) * 100)}%</b><span class="muted small">${x.scored}건</span></li>`).join('')}</ol>` : `<div class="muted">채점 대기 ${pending.toLocaleString('ko-KR')}건. 첫 채점은 예측 20거래일 뒤예요.</div>`}</div>`;
+  // Free: the headline number. Plus: the analyst ranking.
+  return `<section class="block"><div class="block-head"><h2>성적표</h2><a href="scorecard.html" class="more-link">전체 보기 ›</a></div><div class="card sc-card sc-free"><div class="sc-k">예측 범위 적중</div>${fScored ? `<div class="sc-v">${Math.round((fInside / fScored) * 100)}%</div><div class="muted small">채점 ${fScored.toLocaleString('ko-KR')}건 · 10~90% 범위라 정직하면 80% 안팎이에요</div>` : '<div class="muted">아직 채점 전이에요. 예측은 기간이 지나면 실제 가격으로 채점해요.</div>'}</div>${gate(detail, { base: '', what: 'AI 분석가 순위' })}</section>`;
 }
 
 function filings(entries: readonly HomeEntry[]): string {
@@ -158,7 +159,7 @@ const HOME_STYLE = `<style>
 .rr[hidden]{display:none}
 .star{width:36px;height:36px;border:0;background:none;cursor:pointer;color:#b8c0cc;display:grid;place-items:center;padding:0}.star svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}.star[aria-pressed=true]{color:#e8a20c}.star[aria-pressed=true] svg{fill:currentColor}
 .mv-tabs{margin:10px 0 4px}.mvr{display:grid;grid-template-columns:22px minmax(0,1fr) auto 36px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.mvr-i{color:var(--muted);font-weight:700;font-size:13px}.mvr-n{text-decoration:none;display:flex;flex-direction:column;min-width:0}.mvr-n b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mvr-v{display:flex;flex-direction:column;align-items:flex-end;font-size:13px;font-variant-numeric:tabular-nums}
-.sc-k{font-size:12px;font-weight:700;color:var(--muted)}.sc-v{font-size:28px;font-weight:800}.sc-board{margin:6px 0 0;padding-left:18px}.sc-board li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:4px 0;font-size:14px}
+.sc-free{margin-bottom:10px}.sc-k{font-size:12px;font-weight:700;color:var(--muted)}.sc-v{font-size:28px;font-weight:800}.sc-board{margin:6px 0 0;padding-left:18px}.sc-board li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;padding:4px 0;font-size:14px}
 .fl{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px;padding:9px 0;border-top:1px solid var(--line)}.fl:first-child{border-top:0}.fl a{text-decoration:none}
 .plan-cta p{font-size:14px;margin:8px 0}.plan-cta .btn-primary{width:100%;justify-content:center}
 .wl{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.wl:first-child{border-top:0}.wl a{text-decoration:none}
@@ -190,7 +191,7 @@ const HOME_SCRIPT = `<script>
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-star]'); if (!b) return;
     var sym = b.getAttribute('data-star'), w = read(), i = w.indexOf(sym);
-    var plan = document.documentElement.getAttribute('data-plan') || 'free', LIMIT = { free: 10, plus: 30, pro: 100, max: 1e9 };
+    var plan = document.documentElement.getAttribute('data-plan') || 'free', LIMIT = { free: 5, plus: 30, pro: 100, max: 1e9 };
     if (i >= 0) w.splice(i, 1);
     else if (w.length >= LIMIT[plan]) { if (window.GNM) window.GNM.toast('관심 종목은 ' + LIMIT[plan] + '개까지예요. 요금제를 올리면 더 담을 수 있어요.'); return; }
     else w.unshift(sym);

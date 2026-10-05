@@ -108,7 +108,8 @@ export function parliament(report: DailyReport, from: string | null, opts: Parli
   const bull = count('bull'), bear = count('bear'), neutral = count('neutral'), abstain = count('abstain');
   const voting = bull + bear + neutral;
   const lean = voting ? (bull - bear) / voting : 0;
-  const verdict = lean >= 0.2 ? '강세 우위' : lean <= -0.2 ? '약세 우위' : '팽팽함';
+  // A tally of votes, not a decision (BOT constitution §8: no majority-vote verdicts). The committee's conclusion is its own text.
+  const verdict = lean >= 0.2 ? '강세 표가 많아요' : lean <= -0.2 ? '약세 표가 많아요' : '표가 엇갈려요';
   const W = 200, cx = 100, cy = 98, R = 92;
   const circles = seats.map((s, i) => {
     const p = pos[i]!;
@@ -131,8 +132,8 @@ export function parliament(report: DailyReport, from: string | null, opts: Parli
 ${showChips ? `<div class="pl-chips" role="group" aria-label="세력별 보기">${chips}</div>` : ''}
 <div class="pl-figure"><svg viewBox="0 0 ${W} 104" class="pl-svg" role="group" aria-label="표결 의석 ${seats.length}석: 강세 ${bull}, 중립 ${neutral}, 약세 ${bear}${abstain ? `, 기권 ${abstain}` : ''}">${circles}</svg>
 ${center}</div>${opts.roster ? tally : ''}${roster}
-<p class="fine">${esc(opts.note ?? '좌석 하나가 표 하나예요. 왼쪽부터 강세(빨강)·중립(회색)·약세(파랑) 순이고, 빈 원은 기권이에요. 좌석을 누르면 그렇게 본 이유가 나와요.')}</p></div>
-<aside class="pl-detail" aria-live="polite">${summary ? `<div class="pl-k">AI 위원회 요약</div><p>${esc(summary)}</p>${from ? `<div class="muted small">${esc(from)} 리포트의 해설이에요.</div>` : ''}` : '<p class="muted">좌석을 누르면 그 표의 이유가 여기에 나와요.</p>'}</aside></div>
+<p class="fine">${esc(opts.note ?? '좌석 하나가 표 하나예요. 왼쪽부터 강세(빨강)·중립(회색)·약세(파랑) 순이고, 빈 원은 기권이에요. 표 분포는 결론이 아니에요. 좌석을 누르면 그렇게 본 이유가 나와요.')}</p></div>
+<aside class="pl-detail" aria-live="polite">${summary ? `<div class="need-plus"><div class="pl-k">AI 위원회 결론</div><p>${esc(summary)}</p>${from ? `<div class="muted small">${esc(from)} 리포트의 해설이에요.</div>` : ''}</div><p class="muted only-free">표 분포는 결론이 아니에요. 위원회 결론은 플러스, 위원별 이유는 프로부터 볼 수 있어요. 지표·전략 좌석은 눌러서 이유를 볼 수 있어요.</p>` : '<p class="muted">좌석을 누르면 그 표의 이유가 여기에 나와요.</p>'}</aside></div>
 <script type="application/json" class="pl-data">${data}</script></section>`;
 }
 
@@ -148,8 +149,9 @@ export const PARLIAMENT_SCRIPT = `<script>
       host.querySelectorAll('[data-i="' + i + '"]').forEach(function (x) { x.classList.add('is-on'); });
       var s = seats[Number(i)];
       // AI members' reasons are a Plus feature; who voted which way stays free.
-      var locked = /^AI/.test(s.f) && document.documentElement.getAttribute('data-plan') === 'free';
-      panel.innerHTML = '<div class="pl-k">' + esc(s.f) + '</div><div class="pl-name"><b>' + esc(s.n) + '</b><span class="badge pl-' + s.s + '">' + esc(s.w) + '</span></div>' + (locked ? '<p class="muted">이 위원의 확신도·예상가·근거는 플러스부터 볼 수 있어요. <a href="' + (document.body.getAttribute('data-base') || '') + 'pricing.html">요금제 보기 ›</a></p>' : s.l.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join(''));
+      var plan = document.documentElement.getAttribute('data-plan');
+      var locked = /^AI/.test(s.f) && (plan === 'free' || plan === 'plus');
+      panel.innerHTML = '<div class="pl-k">' + esc(s.f) + '</div><div class="pl-name"><b>' + esc(s.n) + '</b><span class="badge pl-' + s.s + '">' + esc(s.w) + '</span></div>' + (locked ? '<p class="muted">이 위원의 확신도·예상가·근거는 프로부터 볼 수 있어요. <a href="' + (document.body.getAttribute('data-base') || '') + 'pricing.html">요금제 보기 ›</a></p>' : s.l.map(function (l) { return '<p>' + esc(l) + '</p>'; }).join(''));
     };
     host.querySelectorAll('.seat, .member').forEach(function (el) {
       el.addEventListener('click', function () { show(el); });

@@ -89,3 +89,18 @@ test('a requested stock gets one deep committee report, then dashboards only', a
   await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
   assert.deepEqual(calls, []);
 });
+
+test('the monthly AI budget: core stocks spend it first, the rest skip AI with the reason; every call is in the ledger', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
+  const models: string[] = [];
+  const anthropic = { beta: { messages: { parse: async (req: { model: string }) => { models.push(req.model); return { stop_reason: 'end_turn', model: req.model, usage: { input_tokens: 10_000, output_tokens: 4_000 }, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
+  const out = await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, aiBudgetUsd: 0.2, selectionParams: { ...DEFAULT_SELECTION, size: 3, bigCaps: 1 } });
+  // Core (Opus) first; then the big-cap deep call no longer fits, the cheap brief still does.
+  assert.deepEqual(models.sort(), ['claude-haiku-4-5', 'claude-opus-5-5']);
+  const skipped = JSON.parse(await readFile(join(root, 'reports', '111110', '2026-10-02.json'), 'utf8')) as { commentary: { status: string; error: string } };
+  assert.deepEqual([skipped.commentary.status, skipped.commentary.error], ['SKIPPED', 'AI_MONTHLY_BUDGET:0.2USD']);
+  assert.equal(out.results.length, 3);
+  const ledger = (await readFile(join(root, 'data', 'status', 'ai-usage.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as { symbol: string; usd: number; month: string });
+  assert.deepEqual(ledger.map((l) => [l.symbol, l.usd, l.month]).sort(), [['000660', 0.12, '2026-10'], ['222220', 0.03, '2026-10']]);
+});

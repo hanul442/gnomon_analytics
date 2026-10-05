@@ -26,6 +26,39 @@ export function sparkline(values: readonly number[], label: string, width = 120,
 const FOOTPRINT_WORD = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' } as const;
 const POSITION_WORD = { ABOVE: '적정 범위 위', INSIDE: '적정 범위 안', BELOW: '적정 범위 아래' } as const;
 
+export type Freshness = { state: 'LIVE' | 'STALE' | 'DEGRADED' | 'NOT_AVAILABLE'; label: string; detail: string };
+
+/** Weekdays after `from` up to and including `to` (ISO dates). Holidays count, so a gap of 1 may be a market holiday. */
+export function weekdaysBetween(from: string, to: string): number {
+  let n = 0;
+  for (let t = Date.parse(`${from}T00:00:00Z`) + 86_400_000; t <= Date.parse(`${to}T00:00:00Z`); t += 86_400_000) {
+    const d = new Date(t).getUTCDay();
+    if (d !== 0 && d !== 6) n += 1;
+  }
+  return n;
+}
+
+/**
+ * Data freshness state (BOR North Star §5.3, BOT marketDataFreshness): LIVE, STALE (n weekdays behind),
+ * DEGRADED (some sources failed) or NOT_AVAILABLE. Today's session counts once the report was made after 16:00 KST.
+ */
+export function freshness(report: DailyReport): Freshness {
+  const p = report.price;
+  if (!p) return { state: 'NOT_AVAILABLE', label: '데이터 없음', detail: '가격 기록이 없어요' };
+  const kstHour = new Date(Date.parse(report.generatedAt) + 9 * 3600_000).getUTCHours();
+  const session = p.sessionDate ?? report.date;
+  const until = kstHour >= 16 ? report.date : new Date(Date.parse(`${report.date}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+  const gap = session >= until ? 0 : weekdaysBetween(session, until);
+  const failed = (report.market?.status ?? []).filter((s) => !s.ok);
+  if (gap > 0) return { state: 'STALE', label: `${gap}거래일 전 데이터`, detail: `${session} 종가가 마지막이에요. 휴장일이었다면 정상이에요` };
+  if (failed.length) return { state: 'DEGRADED', label: '일부 제한', detail: `받지 못한 데이터: ${failed.map((s) => s.source).join(', ')}` };
+  return { state: 'LIVE', label: '최신', detail: `${session} 종가 기준` };
+}
+
+export function freshnessBadge(f: Freshness): string {
+  return `<span class="fresh f-${f.state}" title="${esc(f.detail)}"><i aria-hidden="true"></i>${esc(f.label)}</span>`;
+}
+
 export function hero(report: DailyReport, options: { live: boolean; asOf: string }): string {
   const p = report.price, m = report.market;
   const mid = m?.horizons.find((h) => h.key === 'MEDIUM')?.summary;
@@ -36,7 +69,7 @@ export function hero(report: DailyReport, options: { live: boolean; asOf: string
     m?.snapshot?.consensus?.targetPriceMean ? ['증권가 평균 목표가', won(m.snapshot.consensus.targetPriceMean), ''] : null,
   ].filter((x): x is string[] => x !== null);
   return `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div>
-<div class="hero-main"><div class="eyebrow"><span>${esc(report.symbol)}</span>${m?.benchmarks[0] ? `<span>${esc(m.benchmarks[0].name)}</span>` : ''}<span>${options.live ? `${esc(options.asOf)} 기준 최신` : `${esc(report.date)} 리포트`}</span></div>
+<div class="hero-main"><div class="eyebrow"><span>${esc(report.symbol)}</span>${m?.benchmarks[0] ? `<span>${esc(m.benchmarks[0].name)}</span>` : ''}<span>${options.live ? `${esc(options.asOf)} 기준` : `${esc(report.date)} 리포트`}</span>${freshnessBadge(freshness(report))}</div>
 <h1>${esc(report.name)}</h1>
 ${p ? `<div class="hero-price"><b>${esc(won(p.close))}</b>${p.changePct === null ? '' : `<span class="${tone(p.changePct)}">${p.change! > 0 ? '▲' : p.change! < 0 ? '▼' : ''} ${esc(num(Math.abs(p.change!)))} (${esc(pct(p.changePct))})</span>`}</div>
 <div class="hero-sub">${esc(p.sessionDate ?? report.date)} 종가</div>` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
@@ -88,7 +121,7 @@ export function councilCard(c: Commentary | undefined, from: string | null): str
     return `<section class="block"><div class="block-head"><h2>AI 위원회</h2></div><div class="card"><p class="empty">${c ? 'AI 해설을 만들지 못했어요.' : '아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.'}</p></div></section>`;
   }
   const score = consensusScore(c);
-  const label = score === null ? '판단 보류' : score >= 60 ? '강세 우위' : score <= 40 ? '약세 우위' : '팽팽함';
+  const label = score === null ? '판단 보류' : score >= 60 ? '강세 의견이 많아요' : score <= 40 ? '약세 의견이 많아요' : '의견이 엇갈려요';
   const desks = c.desks ?? [];
   const bars = desks.map((d) => {
     const v = d.stance === 'INSUFFICIENT_DATA' ? null : STANCE_SCORE[d.stance];
