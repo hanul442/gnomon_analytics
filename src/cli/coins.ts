@@ -7,6 +7,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { quickCalc, type StockCalc } from '../analysis/quickCalc.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
+import type { UniverseRow } from '../sources/naverList.js';
 import { fetchUpbitDays, fetchUpbitMarkets, fetchUpbitTickers } from '../sources/upbit.js';
 import { compactCalc } from './stockPages.js';
 
@@ -24,6 +25,16 @@ export function coinCalc(c: StockCalc): StockCalc {
     fair: c.fair ? { ...r.fair!, center: sig(c.fair.center), low: sig(c.fair.low), high: sig(c.fair.high) } : null,
     forecasts: c.forecasts.map((f) => ({ days: f.days, p10: sig(f.p10), p50: sig(f.p50), p90: sig(f.p90) })),
   };
+}
+
+/** ETFs (G-55) in the coins list's row shape: no caution flag, trading value of the day. */
+export function etfRows(rows: readonly UniverseRow[], calcs: ReadonlyMap<string, StockCalc>): CoinRow[] {
+  const r1 = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10) / 10);
+  return rows.filter((u) => calcs.has(u.symbol)).map((u): CoinRow => {
+    const c = calcs.get(u.symbol)!, mv = (d: number) => r1(c.moves.find((x) => x.days === d)?.pct);
+    return [u.symbol, u.name, '', 0, c.close, r1(u.changePct), c.signal.level ?? 'WITHHELD', c.signal.score == null ? null : Math.round(c.signal.score * 100), mv(5), mv(20), mv(120),
+      r1(c.volume?.ratio1), u.tradingValue == null ? null : Math.round(u.tradingValue / 1e8), r1(c.fair?.gapPct), c.fair ? (c.fair.position === 'ABOVE' ? 'A' : c.fair.position === 'BELOW' ? 'B' : 'I') : null, r1(c.hi52GapPct)];
+  }).sort((a, b) => (b[12] ?? 0) - (a[12] ?? 0));
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
