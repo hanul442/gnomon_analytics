@@ -8,7 +8,7 @@
 // One stock failing does not stop the others.
 
 import { collectRiskFilings } from './riskCollect.js';
-import { writeCoinPages } from './coins.js';
+import { etfRows, writeCoinPages } from './coins.js';
 import { renderCoins } from '../report/renderCoins.js';
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
@@ -213,6 +213,12 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const bars = asOf(await readLog<PriceBar>(join(root, 'data', 'prices', `${j.ticker.symbol}.jsonl`)), priceKey, now).slice(-250);
     const calc = quickCalc(j.ticker.symbol, bars, now);
     if (calc) calcs.set(j.ticker.symbol, calc);
+  }
+  // ETFs (G-55): the same free pages as stocks, listed apart.
+  if (universe.etfs.length && options.stockPages !== false) {
+    const etf = await writeStockPages(join(root, 'site'), universe.etfs, new Set(), { now: () => now, ...fetchOpt });
+    universe.status.push({ ...etf.status, source: 'naver:fchart:day:etf' });
+    await writeFile(join(root, 'site', 'etfs.json'), JSON.stringify({ date: now.toISOString(), rows: etfRows(universe.etfs, etf.calcs) }));
   }
   // Every Upbit KRW market (G-54): best effort, never fails the run.
   if (options.coins !== false) universe.status.push((await writeCoinPages(join(root, 'site'), { now: () => now, ...fetchOpt })).status);
@@ -434,6 +440,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   // Coins (G-54): the same chart page over site/c/, and the list.
   await writeFile(join(siteDir, 'coin.html'), renderStockPage(true));
   await writeFile(join(siteDir, 'coins.html'), renderCoins());
+  await writeFile(join(siteDir, 'etfs.html'), renderCoins('etf'));
   // Closed alpha pages (G-44); they need the API address to do anything.
   await writeFile(join(siteDir, 'login.html'), renderLogin());
   await writeFile(join(siteDir, 'onboarding.html'), renderOnboarding());

@@ -31,7 +31,7 @@ export async function writeStockPages(
       if (!bars.length) return;
       const calc = quickCalc(r.symbol, bars, options.now());
       if (calc) calcs.set(r.symbol, calc);
-      const body = { symbol: r.symbol, name: r.name, market: r.market, marketCap: r.marketCap, bars: bars.map((b) => [b.date, b.open, b.high, b.low, b.close, b.volume]), calc: calc ? compactCalc(calc) : null };
+      const body = { symbol: r.symbol, name: r.name, market: r.market, kind: r.kind, marketCap: r.marketCap, bars: bars.map((b) => [b.date, b.open, b.high, b.low, b.close, b.volume]), calc: calc ? compactCalc(calc) : null };
       await writeFile(join(dir, `${r.symbol}.json`), JSON.stringify(body));
       ok += 1;
     } catch (error) {

@@ -37,17 +37,20 @@ export async function readCorpCodes(root: string): Promise<Record<string, string
 }
 
 /** Live rows (common stocks only) or null when the list could not be fetched. Never throws. */
-export async function collectUniverse(root: string, options: { apiKey: string; now: Date; fetch?: typeof fetch }): Promise<{ rows: UniverseRow[] | null; status: NewsSourceStatus[] }> {
+export async function collectUniverse(root: string, options: { apiKey: string; now: Date; fetch?: typeof fetch }): Promise<{ rows: UniverseRow[] | null; etfs: UniverseRow[]; status: NewsSourceStatus[] }> {
   const paths = universePaths(root);
   const status: NewsSourceStatus[] = [];
   const fetchOpt = options.fetch ? { fetch: options.fetch } : {};
-  let rows: UniverseRow[] | null = null;
+  let rows: UniverseRow[] | null = null, etfs: UniverseRow[] = [];
   try {
     const all = [...await fetchMarketUniverse('KOSPI', fetchOpt), ...await fetchMarketUniverse('KOSDAQ', fetchOpt)];
     rows = all.filter((r) => r.kind === 'stock');
+    // ETFs come in the same list (G-55); kept apart from stocks everywhere.
+    etfs = all.filter((r) => r.kind.toLowerCase() === 'etf');
     const list: ListedStock[] = rows.map((r) => ({ symbol: r.symbol, name: r.name, market: r.market })).sort((a, b) => (a.symbol < b.symbol ? -1 : 1));
     await writeIfChanged(paths.stocks, list);
     status.push({ source: 'naver:m-stock:marketValue', ok: true, count: rows.length });
+    status.push({ source: 'naver:m-stock:etf', ok: etfs.length > 0, count: etfs.length, ...(etfs.length ? {} : { error: 'NO_ETF_IN_LIST' }) });
   } catch (error) {
     status.push({ source: 'naver:m-stock:marketValue', ok: false, count: 0, error: error instanceof Error ? error.message.slice(0, 160) : 'UNKNOWN' });
   }
@@ -63,5 +66,5 @@ export async function collectUniverse(root: string, options: { apiKey: string; n
       status.push({ source: 'opendart:corpCode', ok: false, count: 0, error: error instanceof Error ? error.message.slice(0, 160) : 'UNKNOWN' });
     }
   }
-  return { rows, status };
+  return { rows, etfs, status };
 }

@@ -18,7 +18,9 @@ test('the listed-stock list keeps common stocks only; a failed corp-code fetch i
   const out = await collectUniverse(root, { apiKey: 'k', now: new Date('2026-10-05T09:00:00Z'), fetch: fake });
   assert.deepEqual(out.rows!.map((r) => r.symbol), ['005930', '196170']);
   assert.deepEqual(await readListedStocks(root), [{ symbol: '005930', name: '삼성전자', market: 'KOSPI' }, { symbol: '196170', name: '알테오젠', market: 'KOSDAQ' }]);
-  assert.deepEqual(out.status.map((s) => [s.source, s.ok]), [['naver:m-stock:marketValue', true], ['opendart:corpCode', false]]);
+  assert.deepEqual(out.status.map((s) => [s.source, s.ok]), [['naver:m-stock:marketValue', true], ['naver:m-stock:etf', true], ['opendart:corpCode', false]]);
+  // ETFs from the same list are kept apart (G-55).
+  assert.deepEqual(out.etfs.map((r) => r.symbol), ['069500']);
   // Unchanged list: the file is left as it is.
   const before = await readFile(join(root, 'data', 'universe', 'stocks.json'), 'utf8');
   await collectUniverse(root, { apiKey: 'k', now: new Date('2026-10-06T09:00:00Z'), fetch: fake });
