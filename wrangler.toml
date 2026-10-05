@@ -11,7 +11,7 @@ crons = ["10 11,13 * * 1-5"]
 
 [vars]
 SITE_URL = "https://hanul442.github.io/gnomon_analytics"
-ALLOW_ORIGINS = "http://localhost:8765"
+ALLOW_ORIGINS = "https://gnm-analytics.kro.kr,https://www.gnm-analytics.kro.kr,http://localhost:8765"
 MAIL_FROM = "Gnomon <onboarding@resend.dev>"
 # All users together, USD a day (KST); a user's questions a day.
 AI_DAILY_USD = "5"
