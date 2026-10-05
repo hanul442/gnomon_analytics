@@ -52,7 +52,7 @@ function pulseCard(p: MarketPulse | null): string {
   if (!p) return `<section class="block"><div class="block-head"><h2>시장 온도</h2></div><div class="card"><p class="empty">전 종목 계산은 다음 장 마감 실행에서 나와요.</p></div></section>`;
   const pct = (n: number) => Math.round((n / p.counted) * 100);
   const lean = p.bull - p.bear, verdict = lean > p.counted * 0.1 ? '강세 종목이 많아요' : lean < -p.counted * 0.1 ? '약세 종목이 많아요' : '엇갈려요';
-  return `<section class="block"><div class="block-head"><h2>시장 온도</h2><span class="muted">${esc(p.date)} 종가 · ${p.counted.toLocaleString('ko-KR')}종목의 기술 신호</span></div>
+  return `<section class="block"><div class="block-head"><h2>시장 온도</h2><a class="more-link" href="screener.html">${p.counted.toLocaleString('ko-KR')}종목 조건으로 걸러 보기 ›</a></div>
 <div class="card pulse"><div class="pulse-head"><b class="${lean > 0 ? 'up' : lean < 0 ? 'down' : ''}">${verdict}</b><span><span class="up">강세 ${pct(p.bull)}%</span> · 중립 ${pct(p.neutral)}% · <span class="down">약세 ${pct(p.bear)}%</span></span></div>
 <div class="pulse-bar" role="img" aria-label="${BUCKETS.map(([k, l]) => `${l} ${p.buckets[k]}종목`).join(', ')}">${BUCKETS.map(([k, l, c]) => (p.buckets[k] ? `<span style="flex:${p.buckets[k]};background:${c}" title="${l} ${p.buckets[k]}종목"></span>` : '')).join('')}</div>
 <div class="pulse-legend">${BUCKETS.map(([k, l, c]) => `<span><i style="background:${c}"></i>${l} <b>${p.buckets[k].toLocaleString('ko-KR')}</b></span>`).join('')}${p.buckets.WITHHELD ? `<span><i style="background:#fff;border:1px solid #c4cbc9"></i>보류 <b>${p.buckets.WITHHELD}</b></span>` : ''}</div>

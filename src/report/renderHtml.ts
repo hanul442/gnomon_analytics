@@ -12,6 +12,7 @@ import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 import { priceBar, UI_CSS, UI_SCRIPT } from './ui.js';
 import { decisionTrace, EXTRAS_CSS, kindChip, weekDiffSection } from './renderReportExtras.js';
+import { CHART_V6_CSS } from './chartTools.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 /** Pretendard web font, also served from our own site. */
@@ -306,17 +307,17 @@ const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'news', label: '뉴스·공시' },
 ];
 
-export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' }): string {
+export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' }): string {
   const cur = (k: string) => (options.active === k ? ' aria-current="page"' : '');
   // The site root lists every covered stock; `base` always points at it.
   const rootHref = `${base}index.html`;
   const tabs = options.tabs ?? [];
   return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffffff"><title>${escape(title)}</title>${PLAN_BOOT}
-<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}</style></head><body data-base="${base}">
+<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><style>${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}</style></head><body data-base="${base}">
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
-<nav class="top-links" aria-label="사이트"><a href="${rootHref}"${cur('home')}>홈</a>${options.homeHref ? `<a href="${options.homeHref}" class="tl-hide">최신</a>` : ''}${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}paper.html" class="tl-hide"${cur('paper')}>모의투자</a><a href="${base}scorecard.html" class="tl-hide"${cur('scorecard')}>성적표</a><a href="${base}pricing.html" class="tl-hide"${cur('pricing')}>요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
+<nav class="top-links" aria-label="사이트"><a href="${rootHref}"${cur('home')}>홈</a>${options.homeHref ? `<a href="${options.homeHref}" class="tl-hide">최신</a>` : ''}${options.archiveHref ? `<a href="${options.archiveHref}" class="tl-hide">지난 리포트</a>` : ''}<a href="${base}screener.html" class="tl-hide"${cur('screener')}>스크리너</a><a href="${base}paper.html" class="tl-hide"${cur('paper')}>모의투자</a><a href="${base}scorecard.html" class="tl-hide"${cur('scorecard')}>성적표</a><a href="${base}pricing.html" class="tl-hide"${cur('pricing')}>요금제</a><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>
 <main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}scorecard.html">성적표</a><a href="${base}pricing.html">요금제</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${ACCOUNT_SCRIPT}${options.scripts ?? ''}${UI_SCRIPT}</body></html>`;
 }

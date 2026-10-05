@@ -19,6 +19,7 @@ import { renderHome, type IndexQuote } from '../report/renderHome.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
 import { renderPaper, renderScorecard, renderTerms } from '../report/renderScorecard.js';
+import { renderScreener, screenerRows } from '../report/renderScreener.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE } from '../sources/opendart.js';
 import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
@@ -422,6 +423,9 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'scorecard.html'), renderScorecard(home.filter((e) => e.group !== 'past')));
   await writeFile(join(siteDir, 'terms.html'), renderTerms());
   await writeFile(join(siteDir, 'paper.html'), renderPaper(home.filter((e) => e.group !== 'past')));
+  // Screener over every stock's free computation (G-43).
+  await writeFile(join(siteDir, 'screener.html'), renderScreener());
+  await writeFile(join(siteDir, 'screener.json'), JSON.stringify({ date: extras.pulse?.date ?? null, rows: universe && extras.calcs ? screenerRows(universe, extras.calcs, new Set(home.map((e) => e.symbol))) : [] }));
   // Index quotes for the front page, from the stored index prices.
   const indices: IndexQuote[] = [];
   for (const [symbol, name] of [['KOSPI', '코스피'], ['KOSDAQ', '코스닥']] as const) {

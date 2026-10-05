@@ -3,6 +3,7 @@
 // latest news and filings lists, and the interactive candlestick chart with an
 // indicator menu (Lightweight Charts v5 panes).
 
+import { CHART_V6_JS, chartToolbar } from './chartTools.js';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { Commentary } from '../analysis/commentary.js';
 
@@ -197,7 +198,7 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
   const last = bars.at(-1), prev = bars.at(-2);
   const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
   const opt = (group: string, key: string, label: string, on: boolean, desc = DESC[key] ?? '') => `<button type="button" class="opt" data-${group}="${key}" aria-pressed="${on}"><span class="opt-t"><b>${esc(label)}</b>${desc ? `<small>${esc(desc)}</small>` : ''}</span><i class="tog" aria-hidden="true"></i></button>`;
-  const html = `<section class="card chart-card" id="chart-card">
+  const html = `<section class="card chart-card" id="chart-card" data-symbol="${esc(report.symbol)}">
 <div class="chart-head"><div><div class="muted small">현재가 (${esc(last?.date ?? '')} 종가)</div>
 <div class="cur-price"><b>${last ? esc(won(last.close)) : '없음'}</b>${last && prev ? `<span class="${tone(last.close - prev.close)}">${last.close >= prev.close ? '▲' : '▼'} ${esc(num(Math.abs(last.close - prev.close)))} (${esc(pct((last.close / prev.close - 1) * 100))})</span>` : ''}</div>
 <div class="period-stat" id="period-stat" aria-live="polite"></div></div>
@@ -205,6 +206,7 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
 <div class="chart-tools"><div class="preset-row" role="group" aria-label="지표 묶음"><span class="label">지표</span>${PRESETS.map(([k, l]) => `<button type="button" class="chip-toggle" data-preset="${k}" aria-pressed="${k === 'basic'}">${l}</button>`).join('')}<button type="button" class="tool-btn" data-open="ind-sheet" aria-haspopup="dialog">${GEAR}직접 고르기</button></div>
 ${strategies.length ? `<button type="button" class="strat-pick" data-open="strat-sheet" aria-haspopup="dialog"><span class="label">전략 매매 시점</span><b id="strat-current">끄기</b><span class="caret" aria-hidden="true">▾</span></button>` : ''}</div>
 <div class="active-pills" id="active-pills" aria-label="켜진 지표"></div>
+${chartToolbar(!!report.market?.benchmarks.some((b) => b.series?.length))}
 <div class="sheet" id="ind-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="ind-sheet-t"><div class="sheet-head"><b id="ind-sheet-t">지표 직접 고르기</b><button type="button" class="sheet-done" data-close>완료</button></div>
 <div class="opt-group"><div class="opt-k">가격 위에 겹치기</div>${OVERLAYS.map(([k, l, on]) => opt('ov', k, l, on)).join('')}</div>
 <div class="opt-group"><div class="opt-k">아래 창</div>${PANES.map(([k, l, on]) => opt('pane', k, l, on)).join('')}</div>
@@ -223,9 +225,11 @@ ${strategies.length ? '<div class="strat-info" id="strat-info" aria-live="polite
 <script type="application/json" id="marks">${json(chartMarks(report))}</script>
 <script type="application/json" id="overlays">${json(overlays)}</script>
 <script type="application/json" id="strategies">${json(strategies)}</script>
+<script type="application/json" id="benchmarks">${json((report.market?.benchmarks ?? []).filter((b) => b.series?.length).map((b) => ({ name: b.name, series: b.series })))}</script>
 <script src="${base}${chartAsset}" defer></script>
 <script>${CHART_JS}</script>
-<script>${TOOLS_JS(PRESETS)}</script>`;
+<script>${TOOLS_JS(PRESETS)}</script>
+<script>${CHART_V6_JS}</script>`;
   return { html, script };
 }
 
@@ -249,6 +253,9 @@ window.addEventListener('DOMContentLoaded', function () {
     crosshair: { mode: 0 },
     localization: { locale: 'ko-KR', priceFormatter: function (v) { return Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('ko-KR') : v.toFixed(2); } }
   });
+  // Every series, so chart tools (chartTools.ts) can hide them on the weekly and monthly views.
+  var allSeries = [], addSeries = chart.addSeries.bind(chart);
+  chart.addSeries = function () { var s = addSeries.apply(null, arguments); allSeries.push(s); return s; };
   var t = function (i) { return bars[i].date; };
   var C = bars.map(function (b) { return b.close; }), H = bars.map(function (b) { return b.high; }), Lo = bars.map(function (b) { return b.low; }), V = bars.map(function (b) { return b.volume; });
   var candle = chart.addSeries(L.CandlestickSeries, { upColor: UP, downColor: DOWN, borderVisible: false, wickUpColor: UP, wickDownColor: DOWN });
@@ -466,6 +473,7 @@ window.addEventListener('DOMContentLoaded', function () {
   });
   setRange(63);
   requestAnimationFrame(drawLines);
+  window.GNMChart = { L: L, chart: chart, candle: candle, bars: bars, series: function () { return allSeries.slice(); } };
 });
 `;
 

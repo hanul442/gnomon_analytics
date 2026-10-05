@@ -30,6 +30,8 @@ export interface BenchmarkComparison {
   last: number | null;
   changePct: number | null;
   spark: number[];
+  /** Last 250 daily closes, [date, close], for the chart's comparison line (absent in older reports). */
+  series?: [string, number][];
 }
 
 export interface MarketSection {
@@ -133,10 +135,11 @@ export function buildMarketSection(input: {
     quarters: latestPeriods(input.finance, 'QUARTER'),
     years: latestPeriods(input.finance, 'ANNUAL'),
     benchmarks: input.benchmarks.map((b) => {
-      const closes = upTo(b.bars).map((x) => x.close);
+      const upto = upTo(b.bars), closes = upto.map((x) => x.close);
       return {
         symbol: b.symbol, name: b.name, returns: [5, 20, 60].map((days) => ({ days, stock: ret(stockCloses, days), benchmark: ret(closes, days) })),
         last: closes.at(-1) ?? null, changePct: ret(closes, 1), spark: closes.slice(-60),
+        series: upto.slice(-250).map((x) => [x.date, x.close] as [string, number]),
       };
     }),
     research: upTo(input.research).reverse().slice(0, 10),
