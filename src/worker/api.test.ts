@@ -160,6 +160,8 @@ test('CORS answers the site only; the quick tier skips thinking', async () => {
   const t = setup();
   assert.equal((await t.call('GET', '/health')).headers.get('Access-Control-Allow-Origin'), 'https://hanul442.github.io');
   assert.equal((await t.call('GET', '/health', undefined, undefined, 'https://evil.example')).headers.get('Access-Control-Allow-Origin'), null);
+  const root = await handle(new Request('https://api.test/'), t.env, t.deps);
+  assert.deepEqual([root.status, root.headers.get('Location')], [302, `${SITE}/index.html`]);
   const p = askParams({ tier: 'question', question: 'q' });
   assert.deepEqual([p.model, 'thinking' in p], ['claude-haiku-4-5', false]);
 });

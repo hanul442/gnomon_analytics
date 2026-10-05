@@ -555,6 +555,8 @@ export async function handle(req: Request, env: Env, deps: Deps): Promise<Respon
   const cors = corsHeaders(req, env);
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   const path = new URL(req.url).pathname.replace(/\/+$/, '') || '/';
+  // The API's own address opened in a browser: send people to the site.
+  if (path === '/' && req.method === 'GET') return Response.redirect(`${env.SITE_URL.replace(/\/$/, '')}/index.html`, 302);
   try {
     for (const [method, re, h] of routes) {
       const m = re.exec(path);
