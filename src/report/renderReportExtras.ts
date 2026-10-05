@@ -3,7 +3,7 @@
 // and claim-kind chips. Pure rendering from stored reports.
 
 import type { DailyReport } from './dailyReport.js';
-import type { ClaimKind, Commentary } from '../analysis/commentary.js';
+import type { ClaimKind, Commentary, InsightKey } from '../analysis/commentary.js';
 
 const esc = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -71,4 +71,27 @@ export function decisionTrace(report: DailyReport, live: boolean): string {
 <p class="fine">같은 입력과 같은 방법 버전이면 같은 계산이 나와요. AI 해설은 입력·모델·프롬프트 버전을 함께 남겨요.</p></div></section>`;
 }
 
-export const EXTRAS_CSS = `.ck{display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:0 5px;margin-right:4px;vertical-align:1px}.ck-FACT{background:#e7f5ec;color:#1d6b3a}.ck-INFERENCE{background:#e8eef7;color:#1d3a6e}.ck-ASSUMPTION{background:#fff3d6;color:#7a4a00}`;
+/** v4: the bull and bear sides answering each other, as chat bubbles; the moderator closes in the middle. */
+export function debateSection(report: DailyReport): string {
+  const c = report.commentary;
+  if (c?.status !== 'OK' || !c.debate?.length) return '';
+  const WHO = { BULL: ['낙관론자', 'bull'], BEAR: ['비관론자', 'bear'], MODERATOR: ['진행자', 'mod'] } as const;
+  return `<section class="block" id="debate"><div class="block-head"><h2>위원회 토론</h2><span class="muted">낙관론자와 비관론자가 서로 반박해요</span></div><div class="card debate">
+${c.debate.map((t) => `<div class="db-turn db-${WHO[t.side][1]}"><div class="db-who">${WHO[t.side][0]}</div><div class="db-bubble">${kindChip(t.claim.kind)}${esc(t.claim.text)} <span class="db-ids">${t.claim.evidenceIds.map(esc).join(' ')}</span></div></div>`).join('')}
+${c.worstCase ? `<div class="worst"><h3>최악의 경우</h3><p>${kindChip(c.worstCase.narrative.kind)}${esc(c.worstCase.narrative.text)}</p>${c.worstCase.checks.length ? `<div class="pl-k">스스로 점검할 것</div><ul class="plain">${c.worstCase.checks.map((x) => `<li>☐ ${esc(x)}</li>`).join('')}</ul>` : ''}<p class="fine">매수·매도 지시가 아니라 위험을 점검하는 목록이에요.</p></div>` : ''}
+<p class="fine">근거 ID는 아래 근거 목록의 번호예요. 진행자는 승패를 정하지 않아요.</p></div></section>`;
+}
+
+const INSIGHT_TAB: Record<InsightKey, string> = { technical: '기술', strategy: '전략', flow: '수급', fundamental: '펀더멘털', news: '뉴스·공시' };
+/** v4: one AI line at the top of a report tab (Plus). Free visitors see where it would be. */
+export function insightLine(report: DailyReport, key: InsightKey, base: string): string {
+  const c = report.commentary, line = c?.status === 'OK' ? c.insights?.[key] : undefined;
+  if (!line) return '';
+  return `<div class="insight need-plus"><span class="ins-k">AI 한 줄 · ${INSIGHT_TAB[key]}</span>${kindChip(line.kind)}${esc(line.text)}</div><div class="insight only-free"><span class="ins-k">AI 한 줄</span><span class="muted">탭마다 AI 한 줄 코멘트는 <a href="${base}pricing.html">플러스</a>부터 보여요.</span></div>`;
+}
+
+export const EXTRAS_CSS = `.card.debate{display:flex;flex-direction:column;gap:10px;background:#fff}.worst ul{list-style:none;padding-left:0}.db-turn{display:flex;flex-direction:column;max-width:82%}.db-bull{align-self:flex-start}.db-bear{align-self:flex-end;align-items:flex-end}.db-mod{align-self:center;max-width:92%;align-items:center}
+.db-who{font-size:11px;font-weight:700;color:var(--muted);margin:0 6px 3px}.db-bubble{border-radius:16px;padding:10px 13px;font-size:14px;line-height:1.6}.db-bull .db-bubble{background:#fde8e6;border-bottom-left-radius:4px}.db-bear .db-bubble{background:#e3ecfb;border-bottom-right-radius:4px}.db-mod .db-bubble{background:#f1f3f6;border:1px dashed var(--line-strong);text-align:center}
+.db-ids{font-size:11px;color:var(--muted)}.worst{margin-top:8px;border-top:1px solid var(--line);padding-top:10px}.worst h3{margin:0 0 4px;font-size:15px;color:#9b1c1c}
+.insight{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;background:linear-gradient(90deg,#eef3fb,#fff);border:1px solid #d7e2f3;border-radius:12px;padding:10px 13px;margin-bottom:14px;font-size:14px}.ins-k{font-size:11px;font-weight:800;color:#1d3a6e;background:#dfe8f6;border-radius:6px;padding:1px 6px}
+.ck{display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:0 5px;margin-right:4px;vertical-align:1px}.ck-FACT{background:#e7f5ec;color:#1d6b3a}.ck-INFERENCE{background:#e8eef7;color:#1d3a6e}.ck-ASSUMPTION{background:#fff3d6;color:#7a4a00}`;

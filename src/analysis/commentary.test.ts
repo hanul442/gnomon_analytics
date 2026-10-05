@@ -101,15 +101,28 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
         { analyst: 'trend_momentum', stance: 'BULLISH', confidence: 140, target: 330000, rationale: { text: '추세 유지', evidenceIds: ['T1'] } },
         { analyst: 'fundamental', stance: 'BEARISH', confidence: 50, target: 0, rationale: { text: '가격 없음', evidenceIds: ['P1'] } },
       ],
+      debate: [
+        { side: 'BULL', claim: { text: '추세 위', evidenceIds: ['T1'], kind: 'INFERENCE' } },
+        { side: 'BEAR', claim: { text: '근거 없는 반박', evidenceIds: ['Q9'] } },
+        { side: 'MODERATOR', claim: { text: '정리', evidenceIds: ['P1'] } },
+      ],
+      worstCase: { narrative: { text: '급락', evidenceIds: ['P1'] }, checks: ['무효화 가격 확인', ' '] },
+      insights: { technical: { text: '지표가 강세 쪽', evidenceIds: ['T1'] }, flow: { text: '근거 없음', evidenceIds: ['ZZ'] } },
       bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [],
     },
   });
   const c = await writeCommentary(report, { client, now: () => new Date(AT) });
+  // v4: debate turns, the worst case and tab lines keep only cited claims.
+  assert.deepEqual(c.debate?.map((t) => t.side), ['BULL', 'MODERATOR']);
+  assert.deepEqual(c.worstCase?.checks, ['무효화 가격 확인']);
+  assert.deepEqual(Object.keys(c.insights ?? {}), ['technical']);
+  const page = renderReport({ ...report, commentary: c }, { index: '../index.html' });
+  assert.ok(page.includes('id="debate"') && page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술'));
   assert.deepEqual(c.desks?.map((d) => [d.desk, d.stance]), [['TECHNICAL', 'BULLISH']]);
   assert.deepEqual(c.redTeam?.unresolved, ['수급 해석']);
   assert.deepEqual(c.scenarios?.map((s) => s.kind), ['BULL', 'BASE']);
-  assert.equal(c.dropped, 2);
-  assert.equal(c.promptVersion, 'gnm-committee-v3');
+  assert.equal(c.dropped, 4);
+  assert.equal(c.promptVersion, 'gnm-committee-v4');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
