@@ -142,7 +142,7 @@ ${indexStrip(data.indices, data.universe)}
 <div class="home-grid"><div class="home-main">${pulseCard(data.pulse)}${WATCH}${reportRows(sorted, data.selection)}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'Gnomon Analytics | 오늘 시장', body, { bottomNav: true, scripts: SEARCH_SCRIPT + HOME_SCRIPT });
+  return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT });
 }
 
 const HOME_STYLE = `<style>
