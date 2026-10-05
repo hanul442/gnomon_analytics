@@ -388,8 +388,10 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const dir = join(siteDir, ticker.symbol);
     const reports = await loadReports(join(root, 'reports', ticker.symbol));
     await mkdir(join(dir, 'reports'), { recursive: true });
-    for (const report of reports) {
-      await writeFile(join(dir, 'reports', `${report.date}.html`), renderReport(report, { index: '../archive.html', base: '../../', homeHref: '../index.html', archiveHref: '../archive.html' }));
+    const sorted = [...reports].sort((a, b) => (a.date < b.date ? -1 : 1));
+    for (const report of sorted) {
+      const previous = sorted.filter((r) => r.date < report.date && r.commentary?.status === 'OK').at(-1) ?? null;
+      await writeFile(join(dir, 'reports', `${report.date}.html`), renderReport(report, { index: '../archive.html', base: '../../', homeHref: '../index.html', archiveHref: '../archive.html', previous }));
     }
     await writeFile(join(dir, 'archive.html'), renderIndex(reports, { base: '../', name: ticker.name }));
     const latest = [...reports].sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
@@ -397,9 +399,10 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const links = { index: 'archive.html', base: '../', homeHref: 'index.html', archiveHref: 'archive.html' };
     let page: DailyReport | null = null;
     if (live) {
-      const withAi = [...reports].filter((r) => r.commentary).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
+      const ai = [...reports].filter((r) => r.commentary?.status === 'OK').sort((a, b) => (a.date < b.date ? -1 : 1));
+      const withAi = ai.at(-1) ?? [...reports].filter((r) => r.commentary).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
       page = { ...live, ...(withAi?.commentary ? { commentary: withAi.commentary } : {}) };
-      await writeFile(join(dir, 'index.html'), renderReport(page, { ...links, live: true, commentaryFrom: withAi?.date ?? null }));
+      await writeFile(join(dir, 'index.html'), renderReport(page, { ...links, live: true, commentaryFrom: withAi?.date ?? null, previous: ai.length > 1 ? ai.at(-2)! : null }));
     } else if (latest) {
       page = latest;
       await writeFile(join(dir, 'index.html'), renderReport(latest, links));
