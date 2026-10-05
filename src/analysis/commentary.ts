@@ -42,8 +42,10 @@ export type DeskStance = 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'INSUFFICIENT_DATA'
 export interface DeskView { desk: Desk; stance: DeskStance; view: Claim }
 export interface AnalystView { analyst: AnalystId; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; confidence: number; target: number; rationale: Claim }
 export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; catalysts: string[]; invalidation: string[] }
-/** A debate turn (v4): the bull and bear sides answer each other; the moderator closes. */
-export interface DebateTurn { side: 'BULL' | 'BEAR' | 'MODERATOR'; claim: Claim }
+/** Who can speak in the debate: the committee's own members (analysts, desks) and the red team. */
+export type Speaker = AnalystId | Desk | 'RED_TEAM';
+/** A debate turn (v4): a committee member argues from its own stance, answering an earlier turn; the red team closes. */
+export interface DebateTurn { speaker: Speaker; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; replyTo?: number; claim: Claim }
 /** Where a short AI line sits: at the top of that report tab. */
 export type InsightKey = 'technical' | 'strategy' | 'flow' | 'fundamental' | 'news';
 
@@ -179,9 +181,11 @@ const InsightsSchema = z.object({
 }).partial().describe('탭마다 한 줄. 근거가 없는 탭은 비워 둡니다');
 
 const DebateSchema = z.array(z.object({
-  side: z.enum(['BULL', 'BEAR', 'MODERATOR']),
-  claim: ClaimSchema.describe('이 차례의 말 한두 문장. BULL·BEAR는 앞 차례 상대 주장을 직접 반박합니다'),
-})).describe('BULL, BEAR, BULL, BEAR 순서로 4번 주고받고 마지막에 MODERATOR 한 번 (총 5개)');
+  speaker: z.enum([...ANALYSTS.map((a) => a.id), 'MARKET', 'TECHNICAL', 'FLOW', 'FUNDAMENTAL', 'EVENT', 'RED_TEAM'] as unknown as [Speaker, ...Speaker[]]).describe('말하는 위원: 분석가 6명, 데스크 5곳, 또는 RED_TEAM'),
+  stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']).describe('이 위원의 입장. 위의 analysts·desks에 쓴 입장과 같아야 합니다'),
+  replyTo: z.number().optional().describe('반박하는 앞 차례의 번호(0부터). 첫 차례는 비웁니다'),
+  claim: ClaimSchema.describe('이 차례의 말 한두 문장. 두 번째 차례부터는 replyTo 차례의 주장을 직접 짚어 반박합니다'),
+})).describe('5~7차례. 입장이 다른 위원들이 번갈아 말하고, 마지막은 RED_TEAM');
 
 const WorstCaseSchema = z.object({
   narrative: ClaimSchema.describe('근거로 그릴 수 있는 가장 나쁜 전개 한두 문장'),
@@ -244,7 +248,7 @@ const system = (name: string) => `당신은 Gnomon Analytics의 리서치 위원
 - 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
 - 레드팀은 가장 우세한 의견에 맞서는 가장 강한 반론을 씁니다.
 - 마지막으로 강세(BULL)·기본(BASE)·약세(BEAR) 시나리오를 하나씩 쓰고, 각 시나리오의 촉매와 무효화 조건(가격 수준이나 사건)을 적습니다.
-- 토론(debate): 낙관론자(BULL)와 비관론자(BEAR)가 BULL→BEAR→BULL→BEAR 순서로 주고받습니다. 두 번째 차례부터는 바로 앞 상대 주장을 직접 짚어 반박합니다. 마지막에 진행자(MODERATOR)가 무엇이 합의됐고 무엇이 남았는지 정리합니다. 진행자는 승패를 정하지 않습니다.
+- 토론(debate): 새 인물을 만들지 않고 위의 분석가 6명과 데스크 5곳이 직접 토론합니다. 위에서 강세로 판단한 위원과 약세로 판단한 위원 가운데 근거가 가장 강한 위원들이 번갈아 말하고(5~7차례), 두 번째 차례부터는 replyTo로 반박할 차례를 가리키고 그 주장을 직접 짚습니다. 각 위원의 stance는 위 analysts·desks에 쓴 입장과 같아야 합니다. 마지막 차례는 RED_TEAM이 무엇이 합의됐고 무엇이 풀리지 않았는지 정리합니다. 승패는 정하지 않습니다. 입장이 한쪽으로만 모였으면 그 사실을 RED_TEAM이 말하고 가장 강한 반대 근거를 냅니다.
 - 최악의 경우(worstCase): 근거로 그릴 수 있는 가장 나쁜 전개와, 읽는 사람이 스스로 점검할 위험 관리 항목을 적습니다. 매수·매도·가격 지시가 아닌 점검 항목만 씁니다.
 - 탭별 한 줄(insights): 기술·전략·수급·펀더멘털·뉴스 탭 맨 위에 붙일 한 줄씩 씁니다.
 - 데스크 근거가 없으면 stance를 INSUFFICIENT_DATA로 둡니다.
@@ -337,7 +341,14 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const scenarios = (parsed.scenarios ?? []).flatMap((sc) => clean([sc.narrative]).map((narrative) => ({
       kind: sc.kind, narrative, catalysts: sc.catalysts.map((c) => c.trim()).filter(Boolean), invalidation: sc.invalidation.map((c) => c.trim()).filter(Boolean),
     })));
-    const debate = (parsed.debate ?? []).flatMap((t) => clean([t.claim]).map((claim) => ({ side: t.side, claim })));
+    // Turns keep their place so replyTo still points at the right one; an uncited turn drops out and replies to it lose the pointer.
+    const turns = (parsed.debate ?? []).map((t) => { const [claim] = clean([t.claim]); return claim ? { speaker: t.speaker, stance: t.stance, replyTo: t.replyTo, claim } : null; });
+    const kept = turns.flatMap((t, i) => (t ? [i] : []));
+    const debate: DebateTurn[] = turns.flatMap((t) => {
+      if (!t) return [];
+      const to = t.replyTo != null && Number.isInteger(t.replyTo) ? kept.indexOf(t.replyTo) : -1;
+      return [{ speaker: t.speaker, stance: t.stance, claim: t.claim, ...(to >= 0 ? { replyTo: to } : {}) }];
+    });
     const [worst] = parsed.worstCase ? clean([parsed.worstCase.narrative]) : [];
     const insights: Partial<Record<InsightKey, Claim>> = {};
     for (const [k, v] of Object.entries(parsed.insights ?? {}) as [InsightKey, Claim | undefined][]) { const [c] = v ? clean([v]) : []; if (c) insights[k] = c; }

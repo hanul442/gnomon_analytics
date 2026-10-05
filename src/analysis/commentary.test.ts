@@ -102,9 +102,10 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
         { analyst: 'fundamental', stance: 'BEARISH', confidence: 50, target: 0, rationale: { text: '가격 없음', evidenceIds: ['P1'] } },
       ],
       debate: [
-        { side: 'BULL', claim: { text: '추세 위', evidenceIds: ['T1'], kind: 'INFERENCE' } },
-        { side: 'BEAR', claim: { text: '근거 없는 반박', evidenceIds: ['Q9'] } },
-        { side: 'MODERATOR', claim: { text: '정리', evidenceIds: ['P1'] } },
+        { speaker: 'trend_momentum', stance: 'BULLISH', claim: { text: '추세 위', evidenceIds: ['T1'], kind: 'INFERENCE' } },
+        { speaker: 'FLOW', stance: 'BEARISH', replyTo: 0, claim: { text: '근거 없는 반박', evidenceIds: ['Q9'] } },
+        { speaker: 'fundamental', stance: 'BEARISH', replyTo: 0, claim: { text: '실적 대비 비싸요', evidenceIds: ['P1'] } },
+        { speaker: 'RED_TEAM', stance: 'NEUTRAL', replyTo: 1, claim: { text: '정리', evidenceIds: ['P1'] } },
       ],
       worstCase: { narrative: { text: '급락', evidenceIds: ['P1'] }, checks: ['무효화 가격 확인', ' '] },
       insights: { technical: { text: '지표가 강세 쪽', evidenceIds: ['T1'] }, flow: { text: '근거 없음', evidenceIds: ['ZZ'] } },
@@ -113,11 +114,12 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   });
   const c = await writeCommentary(report, { client, now: () => new Date(AT) });
   // v4: debate turns, the worst case and tab lines keep only cited claims.
-  assert.deepEqual(c.debate?.map((t) => t.side), ['BULL', 'MODERATOR']);
+  // Debaters are the committee's own members; a reply to a dropped turn loses its pointer.
+  assert.deepEqual(c.debate?.map((t) => [t.speaker, t.replyTo]), [['trend_momentum', undefined], ['fundamental', 0], ['RED_TEAM', undefined]]);
   assert.deepEqual(c.worstCase?.checks, ['무효화 가격 확인']);
   assert.deepEqual(Object.keys(c.insights ?? {}), ['technical']);
   const page = renderReport({ ...report, commentary: c }, { index: '../index.html' });
-  assert.ok(page.includes('id="debate"') && page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술'));
+  assert.ok(page.includes('id="debate"') && page.includes('추세·모멘텀 PM') && page.includes('↩ 추세·모멘텀 PM에게') && !page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술'));
   assert.deepEqual(c.desks?.map((d) => [d.desk, d.stance]), [['TECHNICAL', 'BULLISH']]);
   assert.deepEqual(c.redTeam?.unresolved, ['수급 해석']);
   assert.deepEqual(c.scenarios?.map((s) => s.kind), ['BULL', 'BASE']);
