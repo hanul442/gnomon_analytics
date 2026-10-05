@@ -49,10 +49,10 @@ function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseR
 }
 
 function pulseCard(p: MarketPulse | null): string {
-  if (!p) return `<section class="block"><div class="block-head"><h2>시장 온도</h2></div><div class="card"><p class="empty">전 종목 계산은 다음 장 마감 실행에서 나와요.</p></div></section>`;
+  if (!p) return `<section class="block" id="pulse"><div class="block-head"><h2>시장 온도</h2></div><div class="card"><p class="empty">전 종목 계산은 다음 장 마감 실행에서 나와요.</p></div></section>`;
   const pct = (n: number) => Math.round((n / p.counted) * 100);
   const lean = p.bull - p.bear, verdict = lean > p.counted * 0.1 ? '강세 종목이 많아요' : lean < -p.counted * 0.1 ? '약세 종목이 많아요' : '엇갈려요';
-  return `<section class="block"><div class="block-head"><h2>시장 온도</h2><a class="more-link" href="screener.html">${p.counted.toLocaleString('ko-KR')}종목 조건으로 걸러 보기 ›</a></div>
+  return `<section class="block" id="pulse"><div class="block-head"><h2>시장 온도</h2><a class="more-link" href="screener.html">${p.counted.toLocaleString('ko-KR')}종목 조건으로 걸러 보기 ›</a></div>
 <div class="card pulse"><div class="pulse-head"><b class="${lean > 0 ? 'up' : lean < 0 ? 'down' : ''}">${verdict}</b><span><span class="up">강세 ${pct(p.bull)}%</span> · 중립 ${pct(p.neutral)}% · <span class="down">약세 ${pct(p.bear)}%</span></span></div>
 <div class="pulse-bar" role="img" aria-label="${BUCKETS.map(([k, l]) => `${l} ${p.buckets[k]}종목`).join(', ')}">${BUCKETS.map(([k, l, c]) => (p.buckets[k] ? `<span style="flex:${p.buckets[k]};background:${c}" title="${l} ${p.buckets[k]}종목"></span>` : '')).join('')}</div>
 <div class="pulse-legend">${BUCKETS.map(([k, l, c]) => `<span><i style="background:${c}"></i>${l} <b>${p.buckets[k].toLocaleString('ko-KR')}</b></span>`).join('')}${p.buckets.WITHHELD ? `<span><i style="background:#fff;border:1px solid #c4cbc9"></i>보류 <b>${p.buckets.WITHHELD}</b></span>` : ''}</div>
@@ -139,13 +139,42 @@ export function renderHome(data: HomeData): string {
 <div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목명·코드·초성 (예: 삼성, ㅅㅅㅈㅈ)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div></div></section>
 ${indexStrip(data.indices, data.universe)}
-<div class="home-grid"><div class="home-main">${pulseCard(data.pulse)}${WATCH}${reportRows(sorted, data.selection)}${movers(data.universe, covered)}</div>
+<div class="home-grid"><div class="home-main">${FEED}${pulseCard(data.pulse)}${WATCH}${reportRows(sorted, data.selection)}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT });
+  return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT });
 }
 
+/** My feed (G-46): from the onboarding survey, kept in this browser. Leads with my stocks and puts first what I said I want to see. */
+const FEED = `<section class="block" id="feed" hidden><div class="card feed"><div class="feed-head"><div><div class="pl-k">내 피드</div><b id="feed-title">관심 종목과 투자 스타일에 맞춘 순서예요</b></div><a class="muted small" href="onboarding.html">설문 다시 하기</a></div><div id="feed-chips" class="feed-chips"></div></div></section>`;
+const FEED_SCRIPT = `<script>
+(function () {
+  var prefs = null; try { prefs = JSON.parse(localStorage.getItem('gnm-prefs') || 'null'); } catch (e) {}
+  var box = document.getElementById('feed'); if (!box || !prefs) return;
+  var main = box.parentNode, esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  // Sections in the order the answers ask for; my stocks always first.
+  var want = [].concat(prefs.interests || []), order = ['watch'];
+  if (want.some(function (w) { return /AI|공시/.test(w); })) order.push('reports');
+  if (want.some(function (w) { return /수급|기술/.test(w); })) order.push('movers');
+  if (want.some(function (w) { return /스크리너|실적/.test(w); })) order.push('pulse');
+  ['reports', 'pulse', 'movers'].forEach(function (k) { if (order.indexOf(k) < 0) order.push(k); });
+  var after = box;
+  order.forEach(function (id) { var el = document.getElementById(id); if (el && el.parentNode === main) { main.insertBefore(el, after.nextSibling); after = el; } });
+  // A screener preset that fits how long they hold.
+  var h = prefs.horizon || '', preset = /며칠/.test(h) ? ['hot', '거래 급증·급등'] : /몇 주/.test(h) ? ['rebound', '반등 후보'] : /몇 달/.test(h) ? ['value', '적정가 아래'] : /1년/.test(h) ? ['large', '대형주 강세'] : null;
+  var chips = [];
+  (prefs.tickers || []).slice(0, 6).forEach(function (t) { chips.push('<a class="chip-link" href="stock.html?c=' + esc(t[0]) + '">' + esc(t[1]) + '</a>'); });
+  if (preset) chips.push('<a class="chip-link alt" href="screener.html#' + preset[0] + '">스크리너: ' + preset[1] + '</a>');
+  (prefs.sectors || []).slice(0, 4).forEach(function (s) { chips.push('<span class="chip-link muted-chip">' + esc(s) + '</span>'); });
+  document.getElementById('feed-chips').innerHTML = chips.join('');
+  box.hidden = false;
+  if (location.hash === '#feed') box.scrollIntoView({ block: 'start' });
+})();
+</script>`;
+
 const HOME_STYLE = `<style>
+.feed{background:linear-gradient(135deg,#f3f7fd,#fff)}.feed-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.feed-head b{font-size:16px}.feed-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip-link{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:999px;padding:5px 11px;font-size:13px;text-decoration:none;background:#fff}.chip-link.alt{border-color:var(--navy);color:var(--navy);font-weight:700}.muted-chip{color:var(--muted);background:#f4f6f9}
 .home-hero{grid-template-columns:minmax(0,1fr)}.home-hero h1{font-size:30px}.home-hero .search-block{margin-top:14px;position:relative}
 .ix-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ix-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.ix-v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}.ix-c{font-weight:600;font-size:14px}
 .br-bar,.pulse-bar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:10px 0 6px}.br-bar .s-bull{background:#d1373d}.br-bar .s-neutral{background:#c4cbc9}.br-bar .s-bear{background:#2a62c9}.br-n{display:flex;justify-content:space-between;font-weight:700;font-size:14px}

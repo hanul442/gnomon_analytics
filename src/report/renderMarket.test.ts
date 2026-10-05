@@ -36,8 +36,9 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   assert.ok(page.includes('data-strategy="macd"') && page.includes('id="strat-info"') && page.includes('data-show-strategy'));
   // The parliament: every vote as a seat, with faction chips and seat details.
   assert.ok(page.includes('id="parliament"') && page.includes('data-pf="indicator"') && (page.match(/class="seat /g) ?? []).length >= 16);
-  // Chart tools: presets, an indicator sheet and a strategy sheet.
-  for (const s of ['data-preset="momentum"', 'id="ind-sheet"', 'id="strat-sheet"', 'id="active-pills"']) assert.ok(page.includes(s), s);
+  // Chart tools: indicators one by one (no presets), an indicator sheet and a strategy sheet.
+  assert.ok(!page.includes('data-preset="momentum"') && page.includes('id="ind-reset"'));
+  for (const s of ['id="ind-sheet"', 'id="strat-sheet"', 'id="active-pills"']) assert.ok(page.includes(s), s);
   // Chart v6: drawing tools, day/week/month and the index comparison (the benchmark series is embedded).
   assert.ok(page.includes('data-draw="fib"') && page.includes('data-tf="W"') && page.includes('data-compare') && page.includes('id="benchmarks"') && page.includes('window.GNMChart'));
   // UI layer: price in the header after scrolling, a bottom tab bar, glossary terms, the indicator names marked for it.

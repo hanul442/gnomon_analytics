@@ -107,6 +107,9 @@ const SCREENER_SCRIPT = `<script>
     });
   });
   form.addEventListener('input', draw); form.addEventListener('change', draw);
+  // screener.html#value opens with that preset (links from the home feed).
+  var want = document.querySelector('[data-preset="' + location.hash.slice(1).replace(/[^a-z]/g, '') + '"]');
+  if (location.hash && want && want.getAttribute('aria-pressed') !== 'true') want.click();
   fetch('screener.json').then(function (r) { return r.json(); }).then(function (d) { rows = d.rows || []; draw(); }).catch(function () { $('sc-body').innerHTML = '<tr><td colspan="7" class="empty">계산 결과를 불러오지 못했어요.</td></tr>'; });
 })();
 </script>`;

@@ -49,6 +49,9 @@ test('the first settled run picks the week: core and the largest company get the
   assert.ok(home.includes('이번 주 AI 리포트 3종목') && home.includes('href="222220/index.html"') && home.includes('data-kind="weekly"'));
   // The market dashboard: index quotes, temperature from every stock's computation, movers; pricing pages exist.
   assert.ok(home.includes('시장 온도') && home.includes('id="movers"') && home.includes('id="watch"'));
+  // Alpha (G-44~G-46): the feed slot, the chat on every page, a shorter menu and the account pages.
+  assert.ok(home.includes('id="feed"') && home.includes('class="chat-fab"') && !home.includes('>최신</a>') && !/top-links[^]*>모의투자</.test(home.split('</nav>')[0]!));
+  for (const page of ['login.html', 'onboarding.html', 'account.html', 'admin.html']) assert.ok((await readFile(join(root, 'site', page), 'utf8')).includes('<title>'), page);
   assert.ok((await readFile(join(root, 'site', 'pricing.html'), 'utf8')).includes('플러스') && (await readFile(join(root, 'site', 'checkout.html'), 'utf8')).includes('MOCK'));
   const scorecard = await readFile(join(root, 'site', 'scorecard.html'), 'utf8');
   assert.ok(scorecard.includes('예측 범위 적중') && scorecard.includes('AI 분석가 순위') && scorecard.includes('href="222220/index.html"'));

@@ -15,12 +15,12 @@ export const ALPHA_CSS = `
 .fb-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:18px;padding:10px 12px;border:1px dashed var(--line-strong);border-radius:12px;font-size:13px;color:var(--muted)}
 .fb-row button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 9px;cursor:pointer;font:inherit}.fb-row button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
 .fb-row form{display:flex;gap:6px;flex:1 1 100%}.fb-row input{flex:1;border:1px solid var(--line-strong);border-radius:8px;padding:6px 9px;font:inherit}
-.pulse{position:fixed;left:20px;bottom:20px;z-index:65;width:min(360px,calc(100vw - 28px));background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 44px rgba(15,27,45,.22);padding:14px}
-.pulse h3{margin:0 0 6px;font-size:15px}.pulse .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:3px;margin:6px 0 2px}.pulse .nps button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 0;font:inherit;font-size:12px;cursor:pointer}
-.pulse .nps button[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}.pulse .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
-.pulse textarea{width:100%;margin-top:8px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;min-height:54px}.pulse .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
-.pulse .row button{border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}.pulse .row .later{background:#eef1f5;color:var(--fg2)}.pulse .row .go{background:var(--navy);color:#fff}
-@media (max-width:820px){.pulse{left:14px;bottom:78px}}
+.wk-pulse{position:fixed;left:20px;bottom:20px;z-index:65;width:min(360px,calc(100vw - 28px));background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 44px rgba(15,27,45,.22);padding:14px}
+.wk-pulse h3{margin:0 0 6px;font-size:15px}.wk-pulse .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:3px;margin:6px 0 2px}.wk-pulse .nps button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 0;font:inherit;font-size:12px;cursor:pointer}
+.wk-pulse .nps button[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}.wk-pulse .ends{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.wk-pulse textarea{width:100%;margin-top:8px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;min-height:54px}.wk-pulse .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+.wk-pulse .row button{border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}.wk-pulse .row .later{background:#eef1f5;color:var(--fg2)}.wk-pulse .row .go{background:var(--navy);color:#fff}
+@media (max-width:820px){.wk-pulse{left:14px;bottom:78px}}
 `;
 
 export const ALPHA_SCRIPT = `<script>
@@ -58,6 +58,7 @@ export const ALPHA_SCRIPT = `<script>
       if (m) { a.href = base + 'account.html'; a.setAttribute('aria-label', '내 계정과 크레딧'); a.innerHTML = '<span>' + esc(m.user.planName) + '</span><i>' + m.credits.balance.toLocaleString('ko-KR') + ' 크레딧</i>'; }
       else { a.href = base + 'login.html'; a.setAttribute('aria-label', '로그인'); a.innerHTML = '<span>로그인</span>'; }
     });
+    document.querySelectorAll('[data-acct-tab]').forEach(function (a) { a.href = base + (m ? 'account.html' : 'login.html'); });
     var nav = document.querySelector('.top-links'), adm = document.getElementById('nav-admin');
     if (m && m.user.admin && nav && !adm) { var l = document.createElement('a'); l.id = 'nav-admin'; l.href = base + 'admin.html'; l.className = 'tl-hide'; l.textContent = '운영'; nav.insertBefore(l, nav.querySelector('.acct')); }
     // Locked sections point signed-out visitors to the alpha sign-in instead of the price list.
@@ -145,8 +146,8 @@ export const ALPHA_SCRIPT = `<script>
       document.body.insertBefore(bar, document.body.firstChild);
       bar.querySelector('button').addEventListener('click', function () { bar.remove(); try { sessionStorage.setItem('gnm-nudge', '1'); } catch (e) {} });
     }
-    if (m.survey.pulseDue && !document.querySelector('.pulse') && sessionStorage.getItem('gnm-pulse') !== 'later') {
-      var p = document.createElement('section'); p.className = 'pulse'; p.setAttribute('aria-label', '이번 주 설문');
+    if (m.survey.wk-pulseDue && !document.querySelector('.wk-pulse') && sessionStorage.getItem('gnm-pulse') !== 'later') {
+      var p = document.createElement('section'); p.className = 'wk-pulse'; p.setAttribute('aria-label', '이번 주 설문');
       var nps = ''; for (var i = 0; i <= 10; i += 1) nps += '<button type="button" data-n="' + i + '" aria-pressed="false">' + i + '</button>';
       p.innerHTML = '<h3>이번 주 그노몬, 어땠어요?</h3><div class="muted small">투자하는 친구에게 추천할 만한가요?</div><div class="nps">' + nps + '</div><div class="ends"><span>전혀 아님</span><span>꼭 추천</span></div><textarea maxlength="500" placeholder="이번 주 가장 아쉬웠던 점 한 가지"></textarea><textarea maxlength="500" placeholder="가장 좋았던 점 (선택)"></textarea><div class="row"><button type="button" class="later">나중에</button><button type="button" class="go">보내기</button></div>';
       document.body.appendChild(p);
