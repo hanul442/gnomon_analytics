@@ -1,5 +1,5 @@
 {
- "at": "2026-10-05T11:39:00.978Z",
+ "at": "2026-10-05T11:45:21.949Z",
  "selected": null,
  "universe": [
   {
@@ -227,9 +227,29 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-WLD",
+   "symbol": "KRW-BTC",
    "report": "WRITTEN",
    "failedSources": []
+  },
+  {
+   "symbol": "KRW-ETH",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-WLD",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "069500",
+   "report": "WRITTEN",
+   "failedSources": [
+    {
+     "source": "naver:m-stock",
+     "error": "NAVER_FINANCE_UNEXPECTED_RESPONSE"
+    }
+   ]
   }
  ],
  "failed": []
