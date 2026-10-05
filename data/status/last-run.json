@@ -1,5 +1,5 @@
 {
- "at": "2026-10-05T11:54:00.601Z",
+ "at": "2026-10-05T12:04:55.119Z",
  "selected": null,
  "universe": [
   {
@@ -38,52 +38,52 @@
  "stocks": [
   {
    "symbol": "000660",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "005930",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "009830",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "042700",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "327260",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "232140",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "490470",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "403870",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "043260",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "353200",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
@@ -213,17 +213,17 @@
   },
   {
    "symbol": "452190",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "003490",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "439090",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
