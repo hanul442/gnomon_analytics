@@ -39,11 +39,25 @@ export const PLANS: readonly Plan[] = [
     soon: ['전략 랩: 내 규칙으로 백테스트·검증 구간·과최적화 경고', '내 가상 포트폴리오와 예측 실패 원인 분석', '포트폴리오 리스크: 상관·집중·변동성·시나리오', '시점 재현: 과거 그날 알았던 것만으로 다시 보기', '데이터 내보내기(CSV)·웹훅'] },
 ];
 
+/**
+ * Closed alpha (G-44): invited accounts get Pro features and a monthly credit allowance; more credits
+ * are asked for in the app and granted by hand. Not sold, so it is not in PLANS.
+ */
+export const ALPHA = { key: 'alpha', name: '알파', rankAs: 'pro' as PlanKey, monthlyCredits: 200, maxRequest: 500 } as const;
+
+/** Models behind the chat (G-45). Each answer shows the model and the credits it used. */
+export const ASK_TIERS = [
+  { key: 'question', label: '빠른', model: 'claude-haiku-4-5', maxTokens: 1200, hint: '짧고 빠르게' },
+  { key: 'standard', label: '표준', model: 'claude-sonnet-5-5', maxTokens: 2000, hint: '근거를 꼼꼼히' },
+  { key: 'deep', label: '깊은', model: 'claude-opus-5-5', maxTokens: 3000, hint: '위원회 모델로 깊게' },
+] as const satisfies readonly { key: CreditAction; label: string; model: string; maxTokens: number; hint: string }[];
+export type AskTier = (typeof ASK_TIERS)[number]['key'];
+
 /** Watchlist size per plan. */
 export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 100, max: 1e9 };
 
 /** What a credit action costs (G-37). Credits are bought and used from Plus; upgrading a brief to a full report is Pro. */
-export const CREDIT_COST = { report: 80, brief: 30, upgrade: 50, invite: 25, idea: 20, deep: 15, question: 5 } as const;
+export const CREDIT_COST = { report: 80, brief: 30, upgrade: 50, invite: 25, idea: 20, deep: 15, standard: 10, question: 5 } as const;
 export type CreditAction = keyof typeof CREDIT_COST;
 export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail: string; min: Exclude<PlanKey, 'free'> }[] = [
   { key: 'report', label: '심층 리포트 요청', detail: '리포트가 없는 종목에 AI 위원회 전체 리포트를 한 번 써요', min: 'plus' },
@@ -52,7 +66,8 @@ export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail
   { key: 'invite', label: '전문가 AI 초청', detail: '고른 전문가가 이 종목 리포트 근거를 보고 의견·위험·지켜볼 것을 써요. 맥스는 매달 30회까지 크레딧 없이', min: 'pro' },
   { key: 'idea', label: '아이디어 검증 (출시 예정)', detail: '내 매매 아이디어를 레드팀이 근거로 반박하고 무효화 조건을 정리해요', min: 'pro' },
   { key: 'deep', label: 'AI 심층 질문', detail: '위원회 모델(Opus)이 리포트 근거 전체를 다시 보고 답해요', min: 'plus' },
-  { key: 'question', label: 'AI 빠른 질문', detail: '리포트 근거 안에서 빠르게 답해요', min: 'plus' },
+  { key: 'standard', label: 'AI 표준 질문', detail: '중간 모델(Sonnet)이 근거를 꼼꼼히 보고 답해요', min: 'plus' },
+  { key: 'question', label: 'AI 빠른 질문', detail: '작은 모델(Haiku)이 리포트 근거 안에서 빠르게 답해요', min: 'plus' },
 ];
 
 /**
@@ -95,7 +110,8 @@ export const CREDIT_PACKS: readonly CreditPack[] = [
 export const won = (v: number) => `${v.toLocaleString('ko-KR')}원`;
 
 /** Runs in <head> before paint so locked sections never flash open. */
-export const PLAN_BOOT = `<script>try{var a=JSON.parse(localStorage.getItem('gnm-account')||'{}');if(a.plan==='plus'||a.plan==='pro'||a.plan==='max')document.documentElement.setAttribute('data-plan',a.plan)}catch(e){}</script>`;
+/** With the alpha API, the plan comes from the signed-in account (cached by alpha.ts). */
+export const PLAN_BOOT = `<script>try{var p;if(document.querySelector('meta[name=gnm-api]')){var m=localStorage.getItem('gnm-session')&&JSON.parse(localStorage.getItem('gnm-me')||'null');p=m&&m.user&&m.user.rankAs}else p=(JSON.parse(localStorage.getItem('gnm-account')||'{}')||{}).plan;if(p==='plus'||p==='pro'||p==='max')document.documentElement.setAttribute('data-plan',p)}catch(e){}</script>`;
 
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
@@ -135,6 +151,8 @@ export const ACCOUNT_SCRIPT = `<script>
   var write = function (a) { var o = { plan: a.plan, credits: a.credits, grants: a.grants, claimed: a.claimed, log: a.log.slice(0, 200), requests: a.requests }; try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} paint(); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var toast = function (msg) { var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600); };
+  // With the alpha API, accounts and credits live on the server (alpha.ts takes over from here).
+  if (document.querySelector('meta[name=gnm-api]')) { window.GNM = { toast: toast }; return; }
   var paint = function () {
     var a = read();
     document.documentElement.setAttribute('data-plan', a.plan);

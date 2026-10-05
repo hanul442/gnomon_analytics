@@ -91,7 +91,7 @@ ${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>$
 const PRICING_SCRIPT = `<script>
 (function () {
   var G = window.GNM; if (!G) return;
-  var KIND = { report: '심층 리포트 요청', brief: '요약 리포트 요청', upgrade: '심층 업그레이드', idea: '아이디어 검증', question: 'AI 빠른 질문', deep: 'AI 심층 질문', topup: '충전', trial: '체험 크레딧', plan: '요금제' };
+  var KIND = { report: '심층 리포트 요청', brief: '요약 리포트 요청', upgrade: '심층 업그레이드', idea: '아이디어 검증', question: 'AI 빠른 질문', standard: 'AI 표준 질문', deep: 'AI 심층 질문', topup: '충전', trial: '체험 크레딧', plan: '요금제' };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var draw = function () {
     var a = G.read(), el = document.getElementById('log-body');

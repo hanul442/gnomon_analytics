@@ -42,8 +42,10 @@ export const ACTION_COST: Record<CreditAction, number> = {
   idea: callKrw('opus', 12_000, 3_000),
   // The committee model over the report's evidence plus the question.
   deep: callKrw('opus', 11_000, 2_000),
-  // Sonnet over the same evidence, short answer.
-  question: callKrw('sonnet', 11_000, 1_500),
+  // Sonnet over the same evidence.
+  standard: callKrw('sonnet', 11_000, 2_000),
+  // Haiku over the same evidence, short answer.
+  question: callKrw('haiku', 11_000, 1_500),
 };
 
 /** One stock covered by the full committee every week, KRW a month (Max). */
