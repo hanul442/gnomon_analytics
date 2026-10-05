@@ -1,5 +1,5 @@
 {
- "at": "2026-10-05T11:45:21.949Z",
+ "at": "2026-10-05T11:54:00.601Z",
  "selected": null,
  "universe": [
   {
@@ -38,52 +38,52 @@
  "stocks": [
   {
    "symbol": "000660",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "005930",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "009830",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "042700",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "327260",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "232140",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "490470",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "403870",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "043260",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "353200",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
@@ -213,27 +213,27 @@
   },
   {
    "symbol": "452190",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "003490",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "439090",
-   "report": "SKIPPED",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
    "symbol": "KRW-BTC",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "KRW-ETH",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
@@ -243,7 +243,7 @@
   },
   {
    "symbol": "069500",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": [
     {
      "source": "naver:m-stock",
