@@ -639,7 +639,7 @@ ${panel('flows', flowsTab)}
 ${panel('fundamentals', fundTab)}
 ${panel('ai', aiTab)}
 ${panel('news', newsTab)}
-<footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스). ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
+<footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
   return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT, archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
@@ -698,13 +698,15 @@ export const SEARCH_SCRIPT = `<script>
   var norm = function (s) { return s.toLowerCase().replace(/\\s+/g, ''); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var won = function (v) { var a = Math.abs(v); return (a >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: a >= 1 ? 2 : 4 })) + '원'; };
-  var MKT = { KOSPI: '코스피', KOSDAQ: '코스닥', ETF: 'ETF', COIN: '코인 · 업비트' };
+  var MKT = { KOSPI: '코스피', KOSDAQ: '코스닥', ETF: 'ETF', COIN: '코인 · 업비트', UPBIT: '코인 · 업비트' };
   var load = function () {
     if (items) return Promise.resolve(items);
     return fetch('search.json').then(function (r) { return r.json(); }).then(function (d) {
       items = d.items.map(function (x, i) { return { c: x[0], n: x[1], m: x[2], p: x[3], x: x[4], r: x[5], k: norm(x[1]), h: cho(norm(x[1])), e: '', i: i }; });
       // ETFs and coins come from their own lists; either may be missing.
+      var have = {}; items.forEach(function (it) { have[it.c] = 1; });
       var extra = function (url, kind) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { (d.rows || []).forEach(function (x) {
+        if (have[x[0]]) return;
         var sym = kind === 'COIN' ? x[0].replace('KRW-', '') : x[0];
         items.push({ c: x[0], n: x[1], m: kind, p: x[4], x: x[5], r: 0, k: norm(x[1]), h: cho(norm(x[1])), e: norm(sym + ' ' + (x[2] || '')), i: items.length });
       }); }).catch(function () {}); };
@@ -731,7 +733,7 @@ export const SEARCH_SCRIPT = `<script>
       var it = p[1], ch = it.x;
       var price = it.p == null ? '' : '<span class="sr-price"><b>' + won(it.p) + '</b>' + (ch == null ? '' : ' <span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span>';
       var right = it.r ? '<a class="sr-go" href="' + esc(it.c) + '/index.html">리포트 보기 ›</a>' : it.m === 'COIN' ? '<a class="sr-go" href="coin.html?m=' + esc(it.c) + '">차트 보기 ›</a>' : '<a class="sr-go sr-lock" href="stock.html?c=' + esc(it.c) + '">' + LOCK + '차트 보기 ›</a>';
-      return '<div class="row-item sr-row"><div class="ri-main"><b>' + esc(it.n) + '</b><div class="muted small">' + esc(it.m === 'COIN' ? it.c.replace('KRW-', '') : it.c) + ' · ' + (MKT[it.m] || it.m) + '</div></div>' + price + right + '</div>';
+      return '<div class="row-item sr-row"><div class="ri-main"><b>' + esc(it.n) + '</b><div class="muted small">' + esc(it.c.replace('KRW-', '')) + ' · ' + (MKT[it.m] || it.m) + '</div></div>' + price + right + '</div>';
     }).join('');
   };
   q.addEventListener('input', function () {
@@ -762,7 +764,7 @@ export function renderStockPage(coin = false): string {
   const forecast = `<section class="block"><div class="block-head"><h2>예측 가격 범위 (10~90%)</h2></div><div class="card"><div id="sp-fc"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div><p class="fine">최근 변동성으로 계산한 범위예요. 확률이나 목표가가 아니에요.</p></div></section>`;
   const body = `${priceBar({ name: '<span id="pb-name"></span>', symbol: '<span id="pb-code"></span>', price: '<span id="pb-price"></span>', change: '<span id="pb-change"></span>', tone: '', badge: '' })}<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span>AI 리포트 없음</span></div>
 <h1 id="sp-name" class="skel">종목 이름</h1><div class="hero-price" id="sp-price"></div><div class="hero-sub" id="sp-date"></div></div>
-${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산</b></div><p>업비트 원화 마켓 일봉으로 주식과 같은 지표 16개, 기간별 등락, 기술적 적정가를 계산해요. 코인 AI 리포트는 준비 중이에요.</p><p class="fine">코인은 24시간 거래돼서 일봉은 매일 09:00(KST)에 끊어요. 변동성이 커서 예측 범위가 넓어요.</p></div>' : `<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 다음 장 마감 뒤 리포트를 한 번 써 드려요. 크레딧 요청은 플러스부터예요.</p>
+${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산</b></div><p>업비트 원화 마켓 일봉으로 주식과 같은 지표 16개, 기간별 등락, 기술적 적정가를 계산해요. 코인 AI 리포트는 매일 거래대금 상위 코인 가운데 하나씩 써요.</p><p class="fine">코인은 24시간 거래돼서 일봉은 매일 09:00(KST)에 끊어요. 변동성이 커서 예측 범위가 넓어요.</p></div>' : `<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 다음 장 마감 뒤 리포트를 한 번 써 드려요. 크레딧 요청은 플러스부터예요.</p>
 <span class="req-btns"><button type="button" class="credit-btn ghost" data-spend="brief" id="sp-request-brief">요약 리포트 <small>${CREDIT_COST.brief}크레딧</small></button><button type="button" class="credit-btn" data-spend="report" id="sp-request-credit">심층 리포트 <small>${CREDIT_COST.report}크레딧</small></button></span>
 <p class="fine">남은 크레딧 <b data-credits>0</b>개 · <a href="pricing.html#credits">충전</a> · MOCK이라 실제 요청은 <a id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">GitHub 이슈</a>로 받아요.</p></div>`}</section>
 <section class="block"><div class="card sp-one"><div class="sp-one-head"><span class="pl-k">한 줄 요약</span><b id="sp-signal" class="sp-signal">계산 중</b></div><p class="headline skel" id="sp-line">이 종목의 계산 결과를 불러오는 중이에요.</p><div class="pl-tally" id="sp-tally" aria-hidden="true"></div><p class="muted small" id="sp-counts"></p></div></section>
@@ -790,6 +792,8 @@ const stockScript = (coin: boolean) => `<script>
   var toReport = function () { return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
   fetch((COIN ? 'c/' : 's/') + code + '.json').then(function (r) { if (r.status === 404 && !COIN) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     document.title = d.name + ' 차트 | Gnomon Analytics';
+    // ETFs and coins picked for a daily AI report (G-56) keep their chart page; point to the report.
+    fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { var rc = document.querySelector('.request-card'); if (r.ok && rc) rc.innerHTML = '<div class="lk-head"><b>AI 리포트가 있어요</b></div><p>매일 AI 리포트로 고른 적이 있어서 위원회 해설과 전체 대시보드가 있어요.</p><a class="btn-primary" href="' + code + '/index.html">AI 리포트 보기</a>'; }, function () {});
     $('sp-name').textContent = d.name; $('sp-code').textContent = d.symbol; $('sp-market').textContent = COIN ? '업비트 원화' + (d.warning ? ' · 유의 종목' : '') : (d.market === 'KOSDAQ' ? '코스닥' : '코스피') + (d.kind === 'etf' ? ' ETF' : '');
     var bars = d.bars.map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] }; });
     var last = bars[bars.length - 1], prev = bars[bars.length - 2];
@@ -846,10 +850,13 @@ const stockScript = (coin: boolean) => `<script>
 /** One covered stock on the front page. `report` is its live dashboard, or null when nothing was built yet. */
 export interface HomeEntry {
   symbol: string; name: string; href: string; report: DailyReport | null;
-  /** core: reported every day; weekly: this week's selection; request: asked for; past: picked in an earlier week (search only). */
-  group: 'core' | 'weekly' | 'request' | 'past';
+  /** core: reported every day; weekly: this week's selection; request: asked for; daily: a daily pick of the last 7 days; past: picked earlier (search only). */
+  group: 'core' | 'weekly' | 'request' | 'past' | 'daily';
   reasons?: string[];
   tier?: 'deep' | 'brief';
+  /** Daily picks (G-56): the day picked and what it is. */
+  pickDate?: string;
+  kind?: 'stock' | 'etf' | 'coin';
 }
 
 

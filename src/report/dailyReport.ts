@@ -42,6 +42,8 @@ export interface DailyReport {
   schema: typeof REPORT_SCHEMA;
   symbol: string;
   name: string;
+  /** ETF or coin (G-56); absent for a stock. */
+  kind?: 'etf' | 'coin';
   date: string;
   generatedAt: string;
   status: 'SESSION' | 'NO_SESSION';
@@ -134,6 +136,7 @@ function priceSection(history: readonly PriceBar[]): PriceSection {
 export function buildDailyReport(input: {
   symbol: string;
   name: string;
+  kind?: 'etf' | 'coin';
   /** KST date being reported, YYYY-MM-DD. */
   date: string;
   generatedAt: Date;
@@ -201,12 +204,13 @@ export function buildDailyReport(input: {
     parts.push(`${input.date}에는 거래가 없었고 가격 기록도 없어요`);
   }
   const important = filings.filter((f) => f.importance === 'HIGH').length;
-  parts.push(filings.length ? `새 공시 ${filings.length}건${important ? `(중요 ${important}건)` : ''}` : '새 공시 없음');
+  if (input.kind !== 'coin') parts.push(filings.length ? `새 공시 ${filings.length}건${important ? `(중요 ${important}건)` : ''}` : '새 공시 없음');
 
   const report: DailyReport = {
     schema: REPORT_SCHEMA,
     symbol: input.symbol,
     name: input.name,
+    ...(input.kind ? { kind: input.kind } : {}),
     date: input.date,
     generatedAt: input.generatedAt.toISOString(),
     status: session ? 'SESSION' : 'NO_SESSION',

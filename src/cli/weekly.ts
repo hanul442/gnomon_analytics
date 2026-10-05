@@ -57,14 +57,14 @@ export async function runSelection(input: {
   const selection = selectWeekly({
     date: input.date, generatedAt: input.now, universe: input.universe.length,
     eligibleCount: input.universe.filter((r) => eligible(r, params)).length, params,
-    core: input.core.map((t) => ({ symbol: t.symbol, name: t.name, market: t.market })), candidates,
+    core: input.core.flatMap((t) => (t.market === 'UPBIT' ? [] : [{ symbol: t.symbol, name: t.name, market: t.market }])), candidates,
   });
   await mkdir(dir(input.root), { recursive: true });
   await writeFile(join(dir(input.root), `${input.date}.json`), `${JSON.stringify(selection, null, 1)}\n`, { flag: 'wx' });
   return selection;
 }
 
-const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+export const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** A weekly pick as a Ticker: news matched by its name, compared with its market index only. */
 export function pickTicker(p: { symbol: string; name: string; market: 'KOSPI' | 'KOSDAQ' }, corpCodes: Readonly<Record<string, string>>): Ticker {

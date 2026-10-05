@@ -3,6 +3,8 @@ on:
   schedule:
     # 18:30 KST on weekdays (09:30 UTC). GitHub may start scheduled runs late.
     - cron: '30 9 * * 1-5'
+    # Weekends: the coin's daily AI report and the coin list (G-56); stock pages are rebuilt as they are.
+    - cron: '30 9 * * 0,6'
   workflow_dispatch:
 permissions:
   contents: write
