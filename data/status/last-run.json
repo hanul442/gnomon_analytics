@@ -1,5 +1,5 @@
 {
- "at": "2026-10-06T14:38:10.382Z",
+ "at": "2026-10-06T14:46:30.659Z",
  "selected": null,
  "universe": [
   {
@@ -33,7 +33,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 5057
+   "count": 350
   },
   {
    "source": "naver:themes",
@@ -264,12 +264,12 @@
    "failedSources": []
   },
   {
-   "symbol": "475830",
+   "symbol": "314930",
    "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "314930",
+   "symbol": "475830",
    "report": "EXISTS",
    "failedSources": []
   },
