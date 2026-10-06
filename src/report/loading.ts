@@ -1,5 +1,9 @@
 import { THINKING_ORB_JS } from './thinkingOrbBundle.js';
 export const LOADING_CSS = `
+.compact-input,.compact-heading,.compact-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.compact-heading{justify-content:space-between;margin-bottom:8px}.compact-input{flex-wrap:nowrap}.compact-input textarea{flex:1;min-width:0;resize:vertical}.compact-input .btn-primary{width:44px;min-width:44px;padding:8px;align-self:stretch}
+.db-join{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.jn-input{align-items:flex-end!important}.jn-q textarea{margin:0!important;min-height:44px;max-height:120px;resize:vertical}.jn-send,.jn-plus{height:44px!important;width:44px!important;flex:none;border-radius:12px!important;cursor:pointer}.jn-send{background:var(--navy);color:#fff;border:0;font-size:20px}.jn-cost{display:block;font-size:11px;margin:5px 0 0 52px}.v2-dialog label:has([name^="custom-"]){display:grid;gap:5px;margin:10px 0}.v2-dialog input[name^="custom-"],.v2-dialog select{font:inherit;width:100%;padding:9px;border:1px solid var(--line);border-radius:10px}.custom-expert-row{display:flex;gap:6px;align-items:center}.custom-expert-row .ex{flex:1}.custom-expert-row button{background:none;border:0;padding:10px}
+button,.btn-primary,.chip-toggle{line-height:1.35}.block-head{gap:8px;flex-wrap:wrap}.sc-actions,.pl-chips{gap:6px}.sc-actions button,.chip-toggle,.seg button{min-height:34px}.paper-link p,.cl-card>.card>.fine{display:none}.paper-link{gap:8px}.db-ask-link{font-size:18px}.db-full summary{cursor:pointer;font-size:13px;padding:10px 0;color:var(--accent-strong)}
+
 html,body{max-width:100%;overflow-x:clip}*,*::before,*::after{box-sizing:border-box}
 main,.panel,.card,.home-main,.home-rail,.ms-card,.chat,.db-join{min-width:0;max-width:100%}
 img,iframe,canvas{max-width:100%}.table-wrap{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
@@ -12,24 +16,25 @@ img,iframe,canvas{max-width:100%}.table-wrap{max-width:100%;overflow-x:auto;over
 `;
 export const LOADING_JS = THINKING_ORB_JS + `
 (function(){
+ var delayedOrbs=function(){document.querySelectorAll('.orbs-load canvas:not([data-delayed]),.msg.wait canvas:not([data-delayed]),.db-typing canvas:not([data-delayed])').forEach(function(c){c.dataset.delayed='1';c.style.visibility='hidden';setTimeout(function(){if(c.isConnected)c.style.visibility='visible';},300);});};
+ new MutationObserver(delayedOrbs).observe(document.body,{childList:true,subtree:true});delayedOrbs();
  var seq=0, network=0, badge=null, esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
  var delay=function(ms){return new Promise(function(r){setTimeout(r,Math.max(0,ms));});};
  var orb=function(state,size){return '<canvas data-orb="'+(state||'working')+'" data-size="'+(size||'64')+'" aria-hidden="true"></canvas>';};
  var begin=function(el,label,state){
-  if(!el)return {end:function(){return delay(2000);}};
-  var id=++seq, at=performance.now(), layer=document.createElement('div');layer.className='gnm-loading';layer.setAttribute('role','status');layer.style.justifyContent='flex-start';layer.style.paddingTop=Math.max(24,Math.min(Math.max(24,el.offsetHeight-130),innerHeight*.4-el.getBoundingClientRect().top))+'px';layer.innerHTML=orb(state,64)+'<span>'+esc(label||'불러오는 중이에요')+'</span>';
-  el.classList.add('gnm-busy');el.setAttribute('aria-busy','true');el.dataset.loading=String(id);el.appendChild(layer);
-  return {state:function(s,label){var c=layer.querySelector('canvas');if(c)c.dataset.orb=s;if(label)layer.querySelector('span').textContent=label;},end:function(){return delay(2000-(performance.now()-at)).then(function(){layer.remove();if(el.dataset.loading===String(id)){el.classList.remove('gnm-busy');el.removeAttribute('aria-busy');}});}};
+  var layer=null,timer=null,id=++seq,ended=false;
+  var show=function(){if(ended||!el)return;layer=document.createElement('div');layer.className='gnm-loading';layer.setAttribute('role','status');layer.innerHTML=orb(state,64)+'<span>'+esc(label||'불러오는 중이에요')+'</span>';el.classList.add('gnm-busy');el.setAttribute('aria-busy','true');el.dataset.loading=String(id);el.appendChild(layer);};
+  timer=setTimeout(show,300);
+  return {state:function(s,text){state=s;if(text)label=text;if(layer){layer.querySelector('canvas').dataset.orb=s;layer.querySelector('span').textContent=label;}},end:function(){ended=true;clearTimeout(timer);if(layer)layer.remove();if(el&&el.dataset.loading===String(id)){el.classList.remove('gnm-busy');el.removeAttribute('aria-busy');}return Promise.resolve();}};
  };
- window.GNM_loading={begin:begin,delay:delay,orb:orb,min:function(p){return Promise.all([Promise.resolve(p),delay(2000)]).then(function(a){return a[0];});}};
- var raw=window.fetch.bind(window);
+ window.GNM_loading={begin:begin,delay:delay,orb:orb,min:function(p){return Promise.resolve(p);}};
+ var raw=window.fetch.bind(window),pending=new Set(),badgeTimer=null;
+ var paint=function(){if(!pending.size||badge)return;badge=document.createElement('div');badge.className='gnm-network';badge.setAttribute('role','status');badge.innerHTML=orb('connecting',20)+'<span>불러오는 중이에요</span>';document.body.appendChild(badge);};
  window.fetch=function(input,init){
   var url=String(typeof input==='string'?input:input.url||input), background=/\\/(events|quotes|watchinfo|notifications\\/read)(?:[?\/]|$)/.test(url)||(init&&init.keepalive);
   if(background)return raw(input,init);
-  var at=performance.now();network++;
-  if(!badge){badge=document.createElement('div');badge.className='gnm-network';badge.setAttribute('role','status');badge.innerHTML=orb('connecting',20)+'<span>불러오는 중이에요</span>';document.body.appendChild(badge);}
-  return raw(input,Object.assign({signal:AbortSignal.timeout(120000)},init||{})).then(function(r){return delay(2000-(performance.now()-at)).then(function(){return r;});},function(e){return delay(2000-(performance.now()-at)).then(function(){throw e;});}).finally(function(){network--;if(!network&&badge){badge.remove();badge=null;}});
+  var token={};pending.add(token);if(!badgeTimer&&!badge)badgeTimer=setTimeout(function(){badgeTimer=null;paint();},300);
+  return raw(input,Object.assign({signal:AbortSignal.timeout(120000)},init||{})).finally(function(){pending.delete(token);if(!pending.size){clearTimeout(badgeTimer);badgeTimer=null;if(badge){badge.remove();badge=null;}}});
  };
- document.addEventListener('click',function(e){var chartButton=e.target.closest&&e.target.closest('[data-range],[data-period],[data-tf]');if(chartButton){var chart=document.getElementById('chart');if(chart){var loading=begin(chart,'차트를 준비하고 있어요','shaping');loading.end();}}var t=e.target.closest&&e.target.closest('[role=tab][aria-controls]');if(!t)return;var el=document.getElementById(t.getAttribute('aria-controls'));if(el){var b=begin(el,'화면을 준비하고 있어요','shaping');b.end();}},true);
- var main=document.getElementById('main');if(main){var boot=begin(main,'화면을 준비하고 있어요','shaping');boot.end();}
+
 })();`;

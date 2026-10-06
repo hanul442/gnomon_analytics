@@ -5,7 +5,7 @@ name: Deploy API
 on:
   push:
     branches: [main]
-    paths: ['src/worker/**', 'src/report/plans.ts', 'src/report/seal.ts', 'src/analysis/screenRules.ts', 'src/analysis/intraday.ts', 'src/sources/naverPrice.ts', 'src/sources/naverQuote.ts', 'src/report/events.ts', 'src/report/conclusion.ts', 'src/report/renderReportExtras.ts', 'src/report/renderMarket.ts', 'src/report/dailyReport.ts', 'src/analysis/commentary.ts', 'migrations/**', 'wrangler.toml', '.github/workflows/api.yml']
+    paths: ['src/worker/**', 'src/report/plans.ts', 'src/report/seal.ts', 'src/analysis/screenRules.ts', 'src/analysis/intraday.ts', 'src/sources/naverPrice.ts', 'src/sources/naverQuote.ts', 'src/report/events.ts', 'src/report/conclusion.ts', 'src/report/scenarioChart.ts', 'src/report/renderReportExtras.ts', 'src/report/renderMarket.ts', 'src/report/dailyReport.ts', 'src/analysis/commentary.ts', 'migrations/**', 'wrangler.toml', '.github/workflows/api.yml']
   workflow_dispatch:
 permissions:
   contents: read

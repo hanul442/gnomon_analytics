@@ -274,7 +274,7 @@ export function renderHome(data: HomeData): string {
   const asOf = data.pulse?.date ?? data.indices[0]?.date ?? '';
   const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
-<button type="button" class="flt-btn" aria-expanded="false" aria-controls="flt">⚙︎ 필터 설정하기 <small>시장·조건으로 자세히 찾기</small></button>
+<button type="button" class="flt-btn" aria-expanded="false" aria-controls="flt">⚙︎ 필터</button>
 <div class="card flt" id="flt" hidden><div class="flt-k">어디서 찾을까요?</div><div class="flt-row"><a href="screener.html">국내 주식</a><a href="screener.html#etf">ETF</a><a href="screener.html#coin">코인</a><a href="reports.html">AI 리포트 있는 종목</a></div>
 <div class="flt-k">이런 종목</div><div class="flt-row">${PRESETS.map((x) => `<a href="screener.html#${x.key}" title="${esc(x.hint)}">${esc(x.label)}</a>`).join('')}</div>
 <a class="flt-more" href="screener.html#build">⚙︎ 조건 직접 만들기 (지표·거래량·수급·적정가…)</a></div></div></section>
@@ -282,7 +282,7 @@ ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...
 ${indexStrip(data.indices, data.universe, data.pulse)}
 <p class="phase-note" id="phase-note"></p><div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${MY_SCREENS}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
-<div class="show-more"><button type="button" class="btn-ghost" id="show-all">다른 정보도 보기</button></div>
+<div class="show-more"><button type="button" class="btn-ghost" id="show-all">더 보기</button></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + FILTER_SCRIPT });
 }
@@ -356,7 +356,7 @@ const TODAY_SCRIPT = `<script>
 })();
 </script>`;
 
-/** Front page by view (G-63): the view's sections in its order, the rest behind "다른 정보도 보기". */
+/** Front page by view (G-63): the view's sections in its order, the rest behind "더 보기". */
 const PERSONA_HOME_SCRIPT = `<script>
 (function () {
   var ORDER = ${JSON.stringify(HOME_ORDER)}, main = document.querySelector('.home-main'), more = document.getElementById('show-all');
@@ -382,7 +382,7 @@ const PERSONA_HOME_SCRIPT = `<script>
       el.classList.toggle('ph-off', !!off); if (off) hidden += 1;
     });
     document.querySelector('.home-rail').classList.toggle('ph-off', !all && (p === 'beginner' || p === 'trader'));
-    if (more) { more.parentNode.hidden = all || !hidden; more.textContent = '다른 정보도 보기 (' + (hidden + ((p === 'beginner' || p === 'trader') ? 3 : 0)) + '개)'; }
+    if (more) { more.parentNode.hidden = all || !hidden; more.textContent = '더 보기 (' + (hidden + ((p === 'beginner' || p === 'trader') ? 3 : 0)) + '개)'; }
   };
   if (more) more.addEventListener('click', function () { document.documentElement.classList.add('show-all'); apply(); });
   window.addEventListener('gnm-persona', apply);

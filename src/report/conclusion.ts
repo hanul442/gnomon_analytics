@@ -1,3 +1,4 @@
+import {scenarioPlot} from './scenarioChart.js';
 // The conclusion card (docs/DESIGN.md §5.24, G-65): one look at where the stock stands. Two test prices
 // on a ladder with the current price between them, and what each crossing would mean with the
 // committee's odds: above the upper test → the bull scenario (a%), below the lower test → the bear
@@ -15,15 +16,14 @@ const zone = (z?: [number, number]) => (z ? `${won(z[0])} ~ ${won(z[1])}` : '');
 
 export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string } = {}): string {
   const p = report.price;
-  if (!p) return '';
+  if (!p) return `<section class="block cl-card"${opts.id?` id="${opts.id}"`:''}><div class="card"><div class="cl-k">${esc(opts.title??'지금 판단')}</div><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 가격 자료와 시나리오가 아직 준비되지 않았어요.</p></div></div></section>`;
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
   const sc = (k: 'BULL' | 'BASE' | 'BEAR') => c?.scenarios?.find((s) => s.kind === k);
   const bull = sc('BULL'), base = sc('BASE'), bear = sc('BEAR');
   const levels = report.market?.structure?.levels ?? [];
   const upper = bull?.trigger ?? levels.filter((l) => l.price > p.close).sort((a, b) => a.price - b.price)[0]?.price;
   const lower = bear?.trigger ?? levels.filter((l) => l.price < p.close).sort((a, b) => b.price - a.price)[0]?.price;
-  const anyOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
-  if (upper === undefined && lower === undefined && !anyOdds) return '';
+  const missing=![bull,base,bear].some(Boolean);
   const odds = (s: typeof bull) => (typeof s?.probability === 'number' ? `<b class="cl-p">${s.probability}%</b>` : '');
   const line = (c?.summary?.text ?? report.headline).split(/(?<=[.?!요])\s/)[0] ?? '';
   // G-70: the worst case belongs to the bear scenario: the far end of it, with the reader's own checks.
@@ -31,18 +31,18 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const worst = w ? `<div class="cl-worst"><b>최악의 경우</b><p>${esc(w.narrative.text)}</p>${w.checks.length ? `<ul>${w.checks.map((x) => `<li>☐ ${esc(x)}</li>`).join('')}</ul>` : ''}<small>매수·매도 지시가 아니라 위험을 점검하는 목록이에요.</small></div>` : '';
   // Each row opens its scenario (G-69): what would happen, what would set it off, when it would be wrong.
   const detail = (sc: typeof bull, label: string) => {
-    if (!sc) return '';
+    if (!sc) return missing?`<div class="cl-sc" hidden><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 ${label} 시나리오 미생성</b><button type="button" class="chip-toggle" data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}">리포트 생성</button></div></div></div>`:'';
     const locked = sc.narrative.text === LOCKED_TEXT;
-    return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>프로·맥스·알파 또는 개별 열기 권한으로 볼 수 있어요.</p><a href="#tab-ai">이용 권한 확인하기</a></div></div>` : `<p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>이게 나오면</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>${label}가 틀렸다고 볼 때</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${sc.zone ? `<p class="cl-sc-k"><b>20거래일 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}</div>`;
+    return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>프로·맥스·알파 또는 개별 열기 권한으로 볼 수 있어요.</p><a href="#tab-ai">이용 권한 확인하기</a></div></div>` : `${scenarioPlot(report,sc.kind)}<details><summary>조건·근거 보기</summary><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>이게 나오면</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>${label}가 틀렸다고 볼 때</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${!locked && sc.zone ? `<p class="cl-sc-k"><b>20거래일 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</details>'}</div>`;
   };
-  const row = (cls: string, sc: typeof bull, label: string, px: string, what: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc ? ' aria-expanded="false"' : ' disabled'}>${px}<div class="cl-what">${what} ${label} 시나리오 ${odds(sc)}${sc?.zone ? `<small>20거래일 가격대 ${zone(sc.zone)}</small>` : ''}</div>${sc ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
+  const row = (cls: string, sc: typeof bull, label: string, px: string, what: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc||missing ? ' aria-expanded="false"' : ' disabled'}>${px}<div class="cl-what">${what} ${label} 시나리오 ${odds(sc)}${sc?.zone && sc.narrative.text!==LOCKED_TEXT ? `<small>20거래일 가격대 ${zone(sc.zone)}</small>` : ''}</div>${sc||missing ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
   const rows = [
-    upper !== undefined || bull ? row('cl-up', bull, '강세', `<div class="cl-px"><span class="cl-arrow">▲</span><b>${upper !== undefined ? won(upper) : '위쪽'}</b><small>${upper !== undefined ? gap(upper, p.close) : ''}</small></div>`, `<b>${upper !== undefined ? '이 가격 위로 올라서면' : '오르는 쪽으로 가면'}</b>`) : '',
+    upper !== undefined || bull || missing ? row('cl-up', bull, '강세', `<div class="cl-px"><span class="cl-arrow">▲</span><b>${upper !== undefined ? won(upper) : '위쪽'}</b><small>${upper !== undefined ? gap(upper, p.close) : ''}</small></div>`, `<b>${upper !== undefined ? '이 가격 위로 올라서면' : '오르는 쪽으로 가면'}</b>`) : '',
     row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small>지금</small></div>`, `<b>${upper !== undefined && lower !== undefined ? '두 가격 사이에 머물면' : '지금 가격 근처에서는'}</b>`),
-    lower !== undefined || bear ? row('cl-down', bear, '약세', `<div class="cl-px"><span class="cl-arrow">▼</span><b>${lower !== undefined ? won(lower) : '아래쪽'}</b><small>${lower !== undefined ? gap(lower, p.close) : ''}</small></div>`, `<b>${lower !== undefined ? '이 가격 아래로 내려가면' : '내리는 쪽으로 가면'}</b>`) : '',
+    lower !== undefined || bear || missing ? row('cl-down', bear, '약세', `<div class="cl-px"><span class="cl-arrow">▼</span><b>${lower !== undefined ? won(lower) : '아래쪽'}</b><small>${lower !== undefined ? gap(lower, p.close) : ''}</small></div>`, `<b>${lower !== undefined ? '이 가격 아래로 내려가면' : '내리는 쪽으로 가면'}</b>`) : '',
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
-  const source = bull?.trigger !== undefined || bear?.trigger !== undefined ? 'AI 위원회가 고른 테스트 가격이에요' : '가까운 지지·저항을 테스트 가격으로 썼어요';
+  const source = missing?'시나리오 해석·예상 범위는 아직 생성되지 않았어요':bull?.trigger !== undefined || bear?.trigger !== undefined ? 'AI 위원회가 고른 테스트 가격이에요' : '가까운 지지·저항을 테스트 가격으로 썼어요';
   return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')}</div><h2 class="cl-line">${esc(line)}</h2>
 <div class="cl-ladder">${rows}</div>
 <p class="fine">${bull || bear || base ? '줄을 누르면 시나리오가 펼쳐져요. ' : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
@@ -86,7 +86,7 @@ export function voteSection(report: DailyReport): string {
   const order = { BULLISH: 0, NEUTRAL: 1, INSUFFICIENT_DATA: 2, BEARISH: 3 } as const;
   const rows = [...members].sort((a, b) => order[a.stance] - order[b.stance]).map((m) => `<li class="vt-m" data-member="${m.id}"><div class="vt-who"><b>${esc(m.who)}</b><span class="vt-s ${VOTE[m.stance][1]}">${VOTE[m.stance][0]}${m.conf != null ? ` · 확신 ${Math.round(m.conf <= 1 ? m.conf * 100 : m.conf)}%` : ''}</span></div><p>${esc(m.why)}</p></li>`).join('');
   return `<section class="block" id="vote"><div class="block-head"><h2>위원별 판단</h2><span class="muted">분석가 ${(c.analysts ?? []).length}명 · 데스크 ${(c.desks ?? []).length}곳</span></div><div class="card vt">
-<p class="vt-help pc-only-beginner">강세는 '오를 쪽', 약세는 '내릴 쪽', 중립은 '아직 어느 쪽도 아니다'로 본다는 뜻이에요. 확신은 그 판단을 얼마나 자신하는지예요.</p><p class="vt-help pc-not-all">내 보기 방식에 맞는 위원으로 위원회를 꾸렸어요. 토론도 이 위원들 말만 보여요. <a href="#" data-open-view>보기 방식 바꾸기</a></p>${viewSeats(members.map((m) => m.id))}<ul class="vt-list">${rows}</ul><button type="button" class="vt-more">다른 위원도 보기</button><p class="fine">분석가는 각자 맡은 방법(추세·평균회귀·수급·실적 등)으로, 데스크는 맡은 자료(시장·기술·수급·실적·공시뉴스)로 판단해요. 분석가의 판단은 20거래일 뒤 실제 가격으로 채점돼 성적표에 쌓여요.</p></div></section>`;
+<p class="vt-help pc-only-beginner">강세는 '오를 쪽', 약세는 '내릴 쪽', 중립은 '아직 어느 쪽도 아니다'로 본다는 뜻이에요. 확신은 그 판단을 얼마나 자신하는지예요.</p><p class="vt-help pc-not-all">내 보기 방식에 맞는 위원으로 위원회를 꾸렸어요. 토론도 이 위원들 말만 보여요. <a href="#" data-open-view>보기 방식 바꾸기</a></p>${viewSeats(members.map((m) => m.id))}<details><summary>위원별 근거</summary><ul class="vt-list">${rows}</ul></details><button type="button" class="vt-more">다른 위원도 보기</button><p class="fine">분석가는 각자 맡은 방법(추세·평균회귀·수급·실적 등)으로, 데스크는 맡은 자료(시장·기술·수급·실적·공시뉴스)로 판단해요. 분석가의 판단은 20거래일 뒤 실제 가격으로 채점돼 성적표에 쌓여요.</p></div></section>`;
 }
 
 /** Opens a conclusion row's scenario. */

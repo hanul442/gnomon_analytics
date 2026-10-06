@@ -1,3 +1,5 @@
+import {indicatorKey,INDICATOR_LINK_CSS,INDICATOR_LINK_JS} from './indicatorLinks.js';
+import {scenarioPanel,SCENARIO_CSS,SCENARIO_JS} from './scenarioChart.js';
 import { COIN_CHART_JS } from './coinChart.js';
 import { coinFlow } from './coinFlow.js';
 import { versionBanner, VERSION_CSS, VERSION_JS } from './releases.js';
@@ -32,7 +34,7 @@ export const FONT_DIR = 'assets/fonts';
 
 const escape = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const won = (value: number): string => `${Math.round(value).toLocaleString('ko-KR')}원`;
+const won = (value: number): string => `${(value>=100?Math.round(value):value).toLocaleString('ko-KR',{maximumFractionDigits:8})}원`;
 const pct = (value: number | null): string => (value === null ? '없음' : `${value > 0 ? '+' : ''}${value.toFixed(2)}%`);
 const tone = (value: number | null): string => (value === null || value === 0 ? '' : value > 0 ? 'up' : 'down');
 const IMPORTANCE_LABEL = { HIGH: '중요', MEDIUM: '보통', LOW: '참고' } as const;
@@ -389,7 +391,7 @@ function signalSection(report: DailyReport): string {
   const momentum = (report.momentum ?? []).map((m) => `<div class="mom"><div class="k">${escape(m.label)}</div>
 <div class="v ${m.trend === 'UP' ? 'up' : m.trend === 'DOWN' ? 'down' : ''}">${m.trend ? `${trendMark[m.trend]} ${trendWord[m.trend]}` : '판단 보류'}</div>
 <div class="k">${m.days}일 ${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}</div></div>`).join('');
-  const rows = t.votes.map((v) => `<tr><td class="term-cell">${escape(v.label)}</td><td class="num">${v.value === null ? '없음' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
+  const rows = t.votes.map((v) => `<tr><td class="term-cell">${indicatorKey(v.label)?`<button type="button" class="indicator-link" data-chart-indicator="${indicatorKey(v.label)}" title="차트에서 보기">${escape(v.label)} ↗</button>`:escape(v.label)}</td><td class="num">${v.value === null ? '없음' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
 <td>${v.vote ? `<span class="badge v-${v.vote}">${VOTE_LABEL[v.vote]}</span>` : '<span class="badge b-LOW">계산 불가</span>'}</td><td class="why">${escape(v.rule)}</td></tr>`).join('');
   return `<div class="grid-signal" id="signal"><div class="card signal"><div class="head"><h2>기술적 신호</h2><span class="sub" style="margin:0">${escape(t.sessionDate)} 종가 기준</span></div>
 ${gaugeSvg(t)}<div class="signal-label ${tone}">${escape(t.label)}</div>
@@ -580,6 +582,7 @@ const TAB_SCRIPT = `<script>
       show(next.getAttribute('aria-controls'), true);
     });
   });
+  window.GNM_showTab=function(key){var id='tab-'+key;if(show(id)){history.replaceState(null,'','#'+id);return true;}return false;};
   window.addEventListener('hashchange', route);
   route();
 })();
@@ -616,9 +619,9 @@ ${m ? marketStatusWarning(m) : ''}
 ${marketStrip(report)}
 <div class="home-lists">${latestLists(report)}</div>
 <details class="card more home-more"><summary>오늘의 요약 · 어제 대비 바뀐 점</summary><div class="grid-eq" style="margin-top:10px"><div><p class="headline">${escape(report.headline)}</p>${notes}</div><div>${changes}</div></div></details>`;
-  const chartTab = `${chart.html}<div style="margin-top:16px">${kpis(report)}</div>`;
+  const chartTab = `${chart.html}${scenarioPanel(report)}<div style="margin-top:16px">${kpis(report)}</div>`;
   // Free: the 16-indicator summary (public elsewhere too). Plus: our horizon gauges, fair value, forecasts and structure.
-  const technical = `${insightLine(report, 'technical', base)}${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
+  const technical = `${insightLine(report, 'technical', base)}<div class="active-pills" aria-label="기술 지표 차트 바로 보기">${[['fib','피보나치'],['bb','볼린저'],['rsi','RSI'],['macd','MACD'],['atr','ATR'],['levels','지지·저항']].map(([key,label])=>`<button type="button" class="pill" data-chart-indicator="${key}">${label} ↗</button>`).join('')}</div>${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
   // Free: the champion's name. Plus: the ranking. Pro: trades, curves, Monte Carlo and chart markers.
   const strategyTab = `${insightLine(report, 'strategy', base)}${m ? arenaHeadline(m.arena) : ''}${gate(m ? arenaRanking(m.arena) : '', { base, what: '전략 8개 순위표 · 지금 신호 · 검증 구간 수익' })}${gate(m ? arenaPanel(m.arena) : '<div class="card empty">이 리포트에는 전략 대결 기록이 없어요.</div>', { base, what: '매매 시점 · 수익 곡선 · 몬테카를로 · 거래 기록', need: 'pro' })}
 <section class="block"><div class="card paper-link"><div><b>모의투자 장부</b><p class="muted small">전략 챔피언과 AI 분석가를 따라 했다면 어땠는지, 리포트 종목 전체를 모아 따로 보여 줘요.</p></div><a class="btn-primary" href="${base}scorecard.html#paper">성적표에서 보기</a></div></section>`;
@@ -641,9 +644,9 @@ ${marketStrip(report)}
       ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}<section class="block join-wrap"><div class="card">${joinBox(report, base)}</div></section>${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
       : whySection(report);
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
-  const aiTab = report.commentary
+  const aiTab = report.commentary?.status === 'OK'
     ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion', title: '시나리오' }) + parliament(report, ctx.commentaryFrom ?? null, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(☰ 메뉴에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`) : ''}${aiBody}${sealedDeep ? `<section class="block join-wrap"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
-    : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매일 고른 종목과 요청된 종목에 리포트가 만들어져요. 궁금한 건 오른쪽 아래 <b>AI 질문</b>으로 물어보세요.</p></div>`;
+    : `${report.commentary?whySection(report):''}${conclusionCard(report,{id: 'conclusion',title: '시나리오'})}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 토론이 아직 생성되지 않았어요</b><button type="button" class="chip-toggle" data-create-report data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">리포트 생성</button></div></div>${joinBox(report,base)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const p = report.price;
@@ -665,7 +668,7 @@ ${panel('news', newsTab)}
 /** The paid part of a committee report (G-61), rendered from the full commentary and sealed into <symbol>/deep/<date>.txt. */
 export function renderDeep(report: DailyReport, ctx: { live: boolean; previous?: DailyReport | null }): string {
   const m = report.market;
-  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'conclusion', title: '시나리오' })}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
+  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'conclusion', title: '시나리오' })}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${scenarioPanel(report)}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
 }
 
 export const DEEP_UNLOCK_CREDITS = 10;
@@ -707,7 +710,7 @@ const DEEP_SCRIPT = `<script>
   var show = function (html) { slot.innerHTML = html;
     // The unlocked conclusion and vote (full scenarios and reasons) take the public ones' places.
     var sw = slot.querySelector('.deep-swap'); if (sw) { [].slice.call(sw.children).forEach(function (n) { var old = n.id && document.getElementById(n.id); if (old && old !== n) old.replaceWith(n); }); sw.remove(); }
-    var join=document.querySelector('.join-wrap'), debate=slot.querySelector('#debate');if(join&&debate)debate.after(join);slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); if (window.GNM_debateFilter) window.GNM_debateFilter(); if (window.GNM_debate) window.GNM_debate(); };
+    var join=document.querySelector('.join-wrap'), debate=slot.querySelector('#debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); if (window.GNM_debateFilter) window.GNM_debateFilter(); if (window.GNM_debate) window.GNM_debate(); };
   var say = function (t) { note.textContent = t; };
   if (!window.GNM || !GNM.api) { btn.textContent = '알파 서버 연결 뒤 열 수 있어요'; return; }
   (GNM.ready || Promise.resolve(null)).then(function (me) {
@@ -761,16 +764,11 @@ const DESK_NAME = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDA
  *  expert who answers it from this stock's evidence (Pro credits, Max monthly allowance). Replaces the
  *  separate "AI에게 직접 질문" and "전문가 AI 초청" boxes. */
 function joinBox(report: Pick<DailyReport, 'symbol' | 'name'>, base: string): string {
-  const ex = ['요즘 왜 이렇게 움직였어요?', '지금 가장 큰 위험 요인은?', '어느 가격을 지켜봐야 해요?'];
-  const who = [{ key: 'committee', name: '위원회 전체', focus: `지금 토론한 위원들이 답해요 · ${CREDIT_COST.standard}크레딧` }, ...EXPERTS];
-  return `<div class="db-join" id="join"><h3>이 토론에 질문하기 <span class="muted small">질문하거나 전문가를 불러 물어보세요</span></h3>
-<form class="invite join" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">
-<div class="jn-input"><label class="jn-q"><span class="muted small">무엇이 궁금한가요?</span><textarea name="q" rows="2" maxlength="300" placeholder="예: ${escape(ex[0]!)}"></textarea></label><button type="button" class="jn-plus" data-pick-expert aria-label="답변할 전문가 선택" title="전문가 선택">+</button></div>
-<div class="chat-sugg">${ex.map((q) => `<button type="button" data-fill="${escape(q)}">${escape(q)}</button>`).join('')}</div>
-<p class="muted small" data-selected-expert>위원회 전체에게 질문</p>
-<dialog class="v2-dialog"><header><b>누구에게 물을까요?</b><button type="button" class="dialog-x" data-close-expert aria-label="닫기">×</button></header><div class="ex-grid">${who.map((e, i) => `<label class="ex"><input type="radio" name="expert" value="${e.key}"${i ? '' : ' checked'}><span><b>${e.name}</b><small>${e.focus}</small></span></label>`).join('')}</div><p class="fine">초청 전문가는 ${CREDIT_COST.invite}크레딧 · 프로부터 이용할 수 있어요.</p></dialog>
-<div class="ask-row"><button type="submit" class="credit-btn">${CREDIT_COST.standard}크레딧 · 질문하기</button></div><div class="ask-out" hidden aria-live="polite"></div></form>
-<p class="fine">답은 토론 맨 아래에 바로 달려요. 위원회 전체는 ${CREDIT_COST.standard}크레딧, 초청 전문가는 ${CREDIT_COST.invite}크레딧(프로부터)이에요. 전문가는 지금까지의 토론을 읽고 그 관점에서 의견·위험·지켜볼 것을 답해요. <a href="${base}pricing.html">요금제 보기</a></p></div>`;
+  const who = [{ key: 'committee', name: '위원회 전체', focus: '지금 토론한 위원들이 답해요' }, ...EXPERTS];
+  return `<div class="db-join" id="join"><form class="invite join" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">
+<div class="jn-input"><button type="button" class="jn-plus" data-pick-expert aria-label="답변할 전문가 선택" title="전문가 선택">+</button><label class="jn-q"><textarea name="q" rows="1" maxlength="600" aria-label="토론에 질문" placeholder="토론에 질문하세요"></textarea></label><button type="submit" class="jn-send" aria-label="질문 전송" title="전송">➤</button></div>
+<small class="muted jn-cost" data-selected-expert>위원회 전체 · ${CREDIT_COST.standard}크레딧 / 질문</small>
+<dialog class="v2-dialog"><header><b>답변자 선택</b><button type="button" class="dialog-x" data-close-expert aria-label="닫기">×</button></header><div class="ex-grid">${who.map((e, i) => `<label class="ex"><input type="radio" name="expert" value="${e.key}"${i ? '' : ' checked'}><span><b>${e.name}</b><small>${e.focus}</small></span></label>`).join('')}</div><div data-custom-list></div><button type="button" class="chip-toggle" data-new-expert>+ 내 전문가</button><section data-expert-editor hidden><label>이름<input name="custom-name" maxlength="40" placeholder="예: 보수적인 반도체 전문가"></label><label>전문 분야·분석 관점<textarea name="custom-focus" maxlength="600" rows="3" placeholder="예: 설비투자와 현금흐름 중심으로 위험을 점검"></textarea></label><label>답변 스타일<select name="custom-style"><option>짧고 쉽게</option><option>숫자와 근거 중심</option><option>반대 근거와 위험 중심</option></select></label><div class="compact-actions"><button type="button" class="chip-toggle" data-save-expert>저장</button><button type="button" class="chip-toggle" data-cancel-expert>취소</button></div><small data-expert-error role="status"></small></section><p class="fine">전문가 질문 ${CREDIT_COST.invite}크레딧 · 프로부터</p></dialog><div class="ask-out" hidden aria-live="polite"></div></form></div>`;
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[], links: { base?: string; homeHref?: string; name?: string } = {}): string {
@@ -878,7 +876,7 @@ ${coin ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트�
   const techAt=body.indexOf('<section class="block"><div class="grid-eq">',split);
   const head=body.slice(0,split), chart=body.slice(split,techAt), technical=body.slice(techAt,ending);
   const missing=(label:string)=>`<section class="block" data-missing><h2>${label}</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 생성되지 않은 분석이에요</b><p>리포트를 생성하면 이 영역에서 확인할 수 있어요.</p><button type="button" class="btn-primary" data-create-report>심층 리포트 생성하기</button></div></div></section>`;
-  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}${missing('전략 대결 · 모의투자')}</section>${[{key:'ai',label:'AI 위원회'},{key:'flows',label:'수급'},{key:'fundamentals',label:'실적'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${missing(t.label)}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'},'')}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
+  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}<section class="card scenario-panel" id="chart-scenarios"><b>시나리오 전망</b><p class="muted small">리포트를 생성하면 예상 범위를 확인할 수 있어요.</p></section></section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}${missing('전략 대결 · 모의투자')}</section>${[{key:'ai',label:'AI 위원회'},{key:'flows',label:'수급'},{key:'fundamentals',label:'실적'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${missing(t.label)}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'},'')}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
   return shell('', coin ? '코인 차트 | Gnomon Analytics' : '종목 차트 | Gnomon Analytics', body, { tabs: TABS, bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(coin)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}` });
 }
 
@@ -896,6 +894,7 @@ const stockScript = (coin: boolean) => `<script>
   // Stocks with an AI report have their own page and no s/<code>.json: go there instead.
   var toReport = function () { if(new URLSearchParams(location.search).get('job')) return Promise.resolve(false);return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
   fetch((COIN ? 'c/' : 's/') + code + '.json').then(function (r) { if(r.status===404 && new URLSearchParams(location.search).get('job'))return fetch('research/'+code+'.json').then(function(rr){if(!rr.ok)throw new Error();return rr.json();}).then(function(x){return {name:x.name,symbol:x.symbol,market:x.kind||'주식',bars:(x.recentBars||[]).map(function(b){return [b.date,b.open,b.high,b.low,b.close,b.volume];})};}); if (r.status === 404 && !COIN) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
+    if(d.pageUrl && /^(?:[sc]\\/[0-9A-Z-]+\\.html|[0-9A-Z-]+\\/index\\.html)$/.test(d.pageUrl)){location.replace(d.pageUrl+location.search+location.hash);return;}
     document.title = d.name + ' 차트 | Gnomon Analytics';
     document.querySelectorAll('form.join').forEach(function(f){f.dataset.symbol=code;f.dataset.name=d.name;}); $('sp-star').setAttribute('data-star', code); if (window.GNM_starSync) GNM_starSync();
     // ETFs and coins picked for a daily AI report (G-56) keep their chart page; point to the report.
@@ -978,11 +977,11 @@ export interface HomeEntry {
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
 const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
-export const APP_CSS = `${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
+export const APP_CSS = `${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}`;
+export const UI_JS = `${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}`;
 const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).digest('hex').slice(0, 10);
 
 export async function writeAssets(siteDir: string): Promise<void> {

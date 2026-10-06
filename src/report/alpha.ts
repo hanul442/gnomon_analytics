@@ -157,16 +157,32 @@ export const ALPHA_SCRIPT = `<script>
   var md = function (t) { return esc(t).replace(/\\*\\*([^*]+)\\*\\*/g, '<b>$1</b>').split(/\\n{2,}/).map(function (p) { return '<p>' + p.replace(/\\n/g, '<br>') + '</p>'; }).join(''); };
   document.querySelectorAll('form.join').forEach(function (f) {
     var dlg=f.querySelector('dialog'), chooser=f.querySelector('[data-pick-expert]');
-    if(dlg && chooser){chooser.addEventListener('click',function(){dlg.showModal();});dlg.querySelector('[data-close-expert]').addEventListener('click',function(){dlg.close();});dlg.addEventListener('click',function(e){if(e.target===dlg)dlg.close();});dlg.querySelectorAll('input[name=expert]').forEach(function(radio){radio.addEventListener('change',function(){f.querySelector('[data-selected-expert]').textContent=radio.closest('label').querySelector('b').textContent+'에게 질문';var submit=f.querySelector('[type=submit]');submit.textContent=(radio.value==='committee'?G.me?.costs.standard||10:G.me?.costs.invite||40)+'크레딧 · 질문하기';dlg.close();});});}
+    var custom=[],selectedKey='committee';
+    var picked=function(){var r=f.querySelector('input[name=expert]:checked');return {key:r?r.value:'committee',name:r?r.closest('label').querySelector('b').textContent:'위원회 전체'};};
+    var costNote=function(){var p=picked(),cost=p.key==='committee'?(G.me?.costs.standard||10):(G.me?.costs.invite||40);f.querySelector('[data-selected-expert]').textContent=p.name+' · '+cost+'크레딧 / 질문';};
+    var bindChoices=function(){dlg.querySelectorAll('input[name=expert]').forEach(function(r){r.onchange=function(){selectedKey=r.value;costNote();dlg.close();};});};
+    var showCustom=function(){var host=dlg.querySelector('[data-custom-list]');host.innerHTML=custom.map(function(x){return '<div class="custom-expert-row"><label class="ex"><input type="radio" name="expert" value="custom:'+esc(x.id)+'"><span><b>'+esc(x.name)+'</b><small>'+esc(x.focus)+'</small></span></label><button type="button" data-delete-expert="'+esc(x.id)+'" aria-label="'+esc(x.name)+' 삭제">×</button></div>';}).join('');var selected=dlg.querySelector('input[value="'+selectedKey+'"]');if(selected)selected.checked=true;bindChoices();host.querySelectorAll('[data-delete-expert]').forEach(function(b){b.onclick=function(){b.disabled=true;G.call('DELETE','/experts/'+encodeURIComponent(b.dataset.deleteExpert)).then(function(r){if(r.error){toast(r.message);b.disabled=false;return;}custom=custom.filter(function(x){return x.id!==b.dataset.deleteExpert;});selectedKey='committee';f.querySelector('input[value=committee]').checked=true;showCustom();costNote();});};});};
+    if(dlg&&chooser){
+     bindChoices();chooser.onclick=function(){dlg.showModal();if(G.me)G.call('GET','/experts').then(function(r){if(!r.error){custom=r.items||[];showCustom();}});};
+     dlg.querySelector('[data-close-expert]').onclick=function(){dlg.close();};dlg.addEventListener('click',function(e){if(e.target===dlg)dlg.close();});
+     var editor=dlg.querySelector('[data-expert-editor]'),error=dlg.querySelector('[data-expert-error]');
+     var newExpert=dlg.querySelector('[data-new-expert]'),grid=dlg.querySelector('.ex-grid');dlg.insertBefore(newExpert,grid);newExpert.after(editor);editor.after(dlg.querySelector('[data-custom-list]'));
+     dlg.querySelector('[data-new-expert]').onclick=function(){editor.hidden=false;dlg.querySelector('[name=custom-name]').focus();};
+     dlg.querySelector('[data-cancel-expert]').onclick=function(){editor.hidden=true;};
+     dlg.querySelector('[data-save-expert]').onclick=function(){var b=this;b.disabled=true;error.textContent='';G.call('POST','/experts',{name:dlg.querySelector('[name=custom-name]').value,focus:dlg.querySelector('[name=custom-focus]').value,style:dlg.querySelector('[name=custom-style]').value}).then(function(r){b.disabled=false;if(r.error){error.textContent=r.message;return;}custom.push(r.expert);editor.hidden=true;showCustom();var rdo=dlg.querySelector('input[value="custom:'+r.expert.id+'"]');rdo.checked=true;selectedKey=rdo.value;costNote();dlg.close();}).catch(function(){b.disabled=false;error.textContent='연결을 확인해 주세요.';});};
+    }
+    var wrapper=f.closest('.join-wrap'),panel=f.closest('.panel'),debate=panel&&panel.querySelector('.card.debate');
+    if(wrapper&&debate){debate.appendChild(f.closest('.db-join'));wrapper.remove();}
+    costNote();
 
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var pick = f.querySelector('input[name=expert]:checked'), key = pick ? pick.value : 'committee', who = pick ? pick.closest('label').querySelector('b').textContent : 'AI 위원회';
-      var qa = f.querySelector('textarea'), q = qa ? qa.value.trim().slice(0, 600) : '';
+      var qa = f.querySelector('textarea[name=q]'), q = qa ? qa.value.trim().slice(0, 600) : '';
       if (q.length < 2) { toast('무엇이 궁금한지 적어 주세요.'); if (qa) qa.focus(); return; }
       if (!G.me) { location.href = base + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/')); return; }
       var panel=f.closest('.panel')||f.closest('.join-wrap')?.parentNode, debate=panel&&panel.querySelector('.card.debate');
-      var box = debate || f.closest('.card'), anchor = box.querySelector('.db-ev');
+      var box = debate || f.closest('.card') || f.parentNode, anchor = box.querySelector('.db-ev');
       if(!anchor){anchor=document.createElement('div');anchor.className='db-ev';box.appendChild(anchor);}
       var mine = document.createElement('div'); mine.className = 'db-turn db-bear db-guest db-me'; mine.innerHTML = '<div class="db-who"><b>나</b> · ' + esc(who) + '에게</div><div class="db-bubble">' + esc(q) + '</div>';
       var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-typing'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b> 생각하는 중…</div><div class="db-bubble"><span class="orbs"><i></i><i></i><i></i></span></div>';
@@ -180,7 +196,7 @@ export const ALPHA_SCRIPT = `<script>
         t.innerHTML = '<div class="db-who"><b>' + esc(r.speaker || who) + '</b> · ' + (key === 'committee' ? '위원회 답변' : '초청 전문가') + '</div><div class="db-bubble md">' + md(r.answer) + '</div><div class="db-cost muted small">' + r.credits + '크레딧 · 남은 ' + r.balance + '개</div>';
         anchor.parentNode.insertBefore(t, anchor); if (qa) qa.value = '';
         G.track('debate_ask', { expert: key }); G.refresh();
-      });
+      }).catch(function(){btn.disabled=false;wait.remove();toast('연결이 끊겼어요. 다시 확인해 주세요.');});
     });
   });
   // In-place feedback under each report tab (and once per other page).

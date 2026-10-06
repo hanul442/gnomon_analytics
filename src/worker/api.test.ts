@@ -412,3 +412,28 @@ test('chat SSE emits text deltas then the charged result, without waiting for a 
  assert.match(text,/event: delta/);assert.doesNotMatch(text,/event: done/);finish();
  while(true){const chunk=await reader.read();if(chunk.done)break;text+=new TextDecoder().decode(chunk.value);}assert.match(text,/event: done/);assert.match(text,/"credits":5/);
 });
+
+test('custom experts are account-owned, bounded, exported and used at the invite price',async()=>{
+ const calls:Record<string,any>[]=[];
+ const t=setup({ai:{create:async p=>{calls.push(p);return {content:[{type:'text',text:'근거를 확인하세요.'}],model:String(p.model),stop_reason:'end_turn',usage:{input_tokens:100,output_tokens:20}};}}});
+ const boss=await t.login('boss@example.com');
+ const u=await t.login('custom@example.com',(await t.call('POST','/admin/invites',{},boss.session)).body.code);
+ const other=await t.login('othercustom@example.com',(await t.call('POST','/admin/invites',{},boss.session)).body.code);
+ assert.equal((await t.call('POST','/experts',{name:'x',focus:'x'},u.session)).status,400);
+ assert.equal((await t.call('GET','/experts')).status,401);
+ assert.match((await handle(new Request('https://api.test/experts',{method:'OPTIONS',headers:{Origin:'https://hanul442.github.io'}}),t.env,t.deps)).headers.get('Access-Control-Allow-Methods')!,/DELETE/);
+ const made=await t.call('POST','/experts',{name:'현금흐름 전문가',focus:'현금흐름과 설비투자 위험을 검토',style:'숫자와 근거 중심'},u.session);
+ assert.equal(made.status,200);const id=made.body.expert.id;
+ assert.equal((await t.call('GET','/experts',undefined,other.session)).body.items.length,0);
+ assert.equal((await t.call('DELETE','/experts/'+id,undefined,other.session)).status,404);
+ assert.equal((await t.call('POST','/ask',{tier:'standard',question:'위험은 뭔가요?',expert:'custom:'+id},other.session)).body.error,'BAD_EXPERT');
+ const answer=await t.call('POST','/ask',{tier:'standard',question:'위험은 뭔가요?',expert:'custom:'+id,symbol:'KRW-BTC'},u.session);
+ assert.equal(answer.status,200);assert.equal(answer.body.credits,CREDIT_COST.invite);assert.equal(answer.body.speaker,'현금흐름 전문가');
+ assert.match(String(calls[0]!.system),/현금흐름과 설비투자/);assert.match(JSON.stringify(calls[0]!.messages),/KRW-BTC/);
+ assert.equal((await t.call('GET','/me/export',undefined,u.session)).body.experts[0].id,id);
+ for(let i=1;i<20;i++)assert.equal((await t.call('POST','/experts',{name:'전문가 '+i,focus:'거래량과 위험'},u.session)).status,200);
+ assert.equal((await t.call('POST','/experts',{name:'초과 전문가',focus:'거래량과 위험'},u.session)).body.error,'EXPERT_LIMIT');
+ assert.equal((await t.call('DELETE','/experts/'+id,undefined,u.session)).status,200);
+ assert.equal((await t.call('POST','/ask',{tier:'standard',question:'위험은?',expert:'custom:'+id},u.session)).body.error,'BAD_EXPERT');
+ await t.call('POST','/me/delete',{confirm:'삭제'},u.session);assert.equal((await t.env.DB.prepare('SELECT COUNT(*) AS n FROM custom_experts').first<{n:number}>())?.n,0);
+});

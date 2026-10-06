@@ -28,7 +28,7 @@ export const CHAT_CSS = `
 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tiers button{border:1px solid var(--line-strong);background:#fff;border-radius:10px;padding:6px 4px;font:inherit;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.3}.tiers button b{font-size:13px}.tiers button small{color:var(--muted)}
 .tiers button[aria-pressed=true]{border-color:var(--navy);background:var(--navy);color:#fff}.tiers button[aria-pressed=true] small{color:#c9d6ee}
 .chat-in{display:flex;gap:8px;align-items:flex-end}.chat-in textarea{flex:1;min-height:42px;max-height:120px;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;resize:none}
-.chat-send{border:0;border-radius:12px;background:var(--navy);color:#fff;font:inherit;font-weight:700;font-size:13px;padding:10px 12px;cursor:pointer;white-space:nowrap}.chat-send:disabled{opacity:.5;cursor:default}
+.chat-send{width:44px;min-width:44px;height:44px;border:0;border-radius:12px;background:var(--navy);color:#fff;font:inherit;font-weight:700;font-size:13px;padding:10px 12px;cursor:pointer;white-space:nowrap}.chat-send:disabled{opacity:.5;cursor:default}
 .chat-note{font-size:11px;color:var(--muted);text-align:center}
 .need{display:flex;flex-direction:column;gap:8px}.need form{display:flex;flex-direction:column;gap:6px}.need select,.need input{border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px}
 .need .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.need .plans a{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;padding:8px;text-decoration:none;color:inherit;font-size:12px;background:#fff}.need .plans a b{font-size:13px}
@@ -43,7 +43,7 @@ export const CHAT_HTML = `<button type="button" class="chat-fab" data-open-chat 
 <section class="chat" id="chat" role="dialog" aria-label="AI 질문" hidden><div class="chat-head"><b>AI 질문</b><span class="ctx" id="chat-ctx"></span><span class="bal"><span data-credits>0</span> 크레딧</span><button type="button" class="chat-x" aria-label="닫기">×</button></div>
 <div class="chat-log" id="chat-log" aria-live="polite"></div>
 <form class="chat-foot" id="chat-form"><div class="tiers" role="group" aria-label="모델">${TIERS.map((t, i) => `<button type="button" data-tier="${t.key}" aria-pressed="${i === 0}"><b>${t.label}</b><small>${MODEL_NAME[t.model]} · ${t.cost}크레딧</small></button>`).join('')}</div>
-<div class="chat-in"><textarea id="chat-q" rows="1" maxlength="1000" placeholder="궁금한 것을 물어보세요" aria-label="질문"></textarea><button type="submit" class="chat-send" id="chat-send">보내기</button></div>
+<div class="chat-in"><textarea id="chat-q" rows="1" maxlength="1000" placeholder="궁금한 것을 물어보세요" aria-label="질문"></textarea><button type="submit" class="chat-send" id="chat-send" aria-label="질문 전송" title="전송">➤</button></div>
 <div class="chat-note">근거를 설명할 뿐 투자 권유가 아니에요 · 답이 틀릴 수 있어요</div></form></section>`;
 
 export const CHAT_SCRIPT = `<script>
@@ -75,7 +75,7 @@ export const CHAT_SCRIPT = `<script>
   var history = function () { try { return JSON.parse(sessionStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } };
   var remember = function (h) { try { sessionStorage.setItem(HKEY, JSON.stringify(h.slice(-20))); } catch (e) {} };
   var cost = function () { return TIERS.filter(function (t) { return t.key === tier; })[0].cost; };
-  var label = function () { send.textContent = cost() + '크레딧 · 보내기'; };
+  var label = function () { send.textContent = '➤';send.title='전송 · '+cost()+'크레딧';send.setAttribute('aria-label','질문 전송 · '+cost()+'크레딧'); };
   var add = function (cls, html) { var d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; };
   var meta = function (m) {
     return '<div class="msg-meta"><span>' + esc(MODEL[m.model] || m.model) + '</span><span>' + m.credits + '크레딧 사용</span>' + (m.balance !== undefined ? '<span>남은 ' + m.balance + '</span>' : '') +
@@ -134,7 +134,7 @@ export const CHAT_SCRIPT = `<script>
     }
     busy = true; send.disabled = true; q.value = '';
     add('me', esc(text));
-    var wait = add('ai wait', '${ORBS} ' + esc(MODEL[t.model]) + '이 답을 쓰고 있어요');
+    var wait = add('ai wait', '${ORBS} 답변 준비 중');
     var h = history();
     var done = function (m) { wait.remove(); h.push(m); remember(h); var d = add('ai', md(m.a) + meta(m)); bindRate(d, m); busy = false; send.disabled = false; };
     if (!g) {
