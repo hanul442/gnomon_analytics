@@ -141,7 +141,7 @@ const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&
 /** Menu groups: [label, href]. Hrefs are relative to the site root. */
 export const MENU: readonly { title: string; items: readonly [string, string][] }[] = [
   // The bottom bar's four places sit on top as tiles; everything else is grouped below, once each.
-  { title: '찾아보기', items: [['필터로 종목 찾기', 'screener.html'], ['AI 리포트 모음', 'reports.html'], ['ETF', 'etfs.html'], ['코인', 'coins.html']] },
+  { title: '찾아보기', items: [['필터로 종목 찾기', 'screener.html'], ['테마별 종목', 'themes.html'], ['공시 레이더 (숨은 신호)', 'signals.html'], ['AI 리포트 모음', 'reports.html'], ['ETF', 'etfs.html'], ['코인', 'coins.html']] },
   { title: '알파 테스트', items: [['사용법', 'guide.html'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly']] },
   { title: '고객 지원', items: [['자주 묻는 질문 (FAQ)', 'faq.html'], ['1:1 문의 · Q&A', 'faq.html#ask'], ['HANUL 프로젝트 소개', 'hanul.html']] },
   { title: '계정', items: [['🔔 알림 설정', 'alerts.html'], ['요금제·크레딧', 'pricing.html'], ['이용약관·면책', 'terms.html']] },

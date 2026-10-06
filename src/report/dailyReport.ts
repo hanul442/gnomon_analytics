@@ -65,6 +65,8 @@ export interface DailyReport {
   news?: NewsSection;
   /** Horizon gauges, fair value, forecasts, flows, valuation, financials (docs/DESIGN.md §5). */
   market?: MarketSection;
+  /** What most readers miss (G-99): earnings surprises, dividends, buybacks, insider and 5% holder moves. */
+  edge?: import('../analysis/edge.js').EdgeSection;
   /** AI commentary for "왜?" (docs/DESIGN.md §4.4); written once with the report. */
   commentary?: Commentary;
   /** Daily bars up to and including `date`, oldest first, for the interactive chart. */

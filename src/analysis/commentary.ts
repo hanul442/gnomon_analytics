@@ -23,7 +23,7 @@ const MAX_NEWS = 30;
 
 export interface EvidenceItem {
   id: string;
-  kind: 'PRICE' | 'TECHNICAL' | 'FILING' | 'NEWS' | 'HORIZON' | 'VALUE' | 'FORECAST' | 'STRUCTURE' | 'FLOW' | 'FUNDAMENTAL' | 'MARKET' | 'ARENA';
+  kind: 'PRICE' | 'TECHNICAL' | 'FILING' | 'NEWS' | 'HORIZON' | 'VALUE' | 'FORECAST' | 'STRUCTURE' | 'FLOW' | 'FUNDAMENTAL' | 'MARKET' | 'ARENA' | 'EVENT';
   label: string;
   detail: string;
   url: string;
@@ -179,6 +179,10 @@ export function buildEvidence(report: DailyReport): EvidenceItem[] {
         detail: m.benchmarks.map((b) => `${b.name}: ${b.returns.map((x) => `${x.days}일 종목 ${pct(x.stock)} vs ${pct(x.benchmark)}`).join(', ')}`).join('; ') });
     }
   }
+  // G-99: the facts most readers miss (insider and 5% holder moves, surprises, buybacks, contracts, value surges).
+  (report.edge?.highlights ?? []).forEach((h, i) => {
+    items.push({ id: `E${i + 1}`, kind: 'EVENT', label: '놓치기 쉬운 정보', url: '#tab-news', detail: h.text });
+  });
   (report.recentFilings ?? report.filings).slice(0, MAX_FILINGS).forEach((f, i) => {
     items.push({ id: `F${i + 1}`, kind: 'FILING', label: f.title, url: f.url, detail: `${f.filedDate} 공시, 종류 ${f.category}, 중요도 ${f.importance}, 제출 ${f.filer}. ${f.why}` });
   });

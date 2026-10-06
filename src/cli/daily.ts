@@ -33,12 +33,17 @@ import { renderHome, renderReportsPage, type IndexQuote } from '../report/render
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
 import { MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
+import { renderSignalsPage, renderThemesPage, signalData, themeData } from '../report/renderThemes.js';
+import { fetchThemes, type Theme } from '../sources/naverTheme.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
 import { renderPaper, renderScorecard, renderTerms } from '../report/renderScorecard.js';
 import { renderScreener, screenerRows } from '../report/renderScreener.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE } from '../sources/opendart.js';
+import { fetchOwnership } from '../sources/dartOwnership.js';
+import { buildEdge, type EventFiling, type HolderReport, type InsiderReport } from '../analysis/edge.js';
+import { eventOf } from '../analysis/edge.js';
 import { appendNew, appendUnseen, asOf, readLog } from '../store/jsonlLog.js';
 import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { isRelevant } from '../analysis/news.js';
@@ -281,6 +286,16 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   // Filing risk flags for every listed company (G-49), shown next to screener results.
   const risk = await collectRiskFilings({ root, apiKey: options.apiKey, today: today.date, now: () => now, ...fetchOpt });
   universe.status.push({ source: 'opendart:risk-filings', ok: !risk.error, count: risk.fetched, ...(risk.error ? { error: risk.error } : {}) });
+  // G-99: theme membership changes slowly; refresh it weekly (a failed or thin fetch keeps the last list).
+  const themesPath = join(root, 'data', 'themes.json');
+  const storedThemes = JSON.parse(await readFile(themesPath, 'utf8').catch(() => 'null')) as { fetchedAt: string; themes: Theme[] } | null;
+  if (!storedThemes || now.getTime() - Date.parse(storedThemes.fetchedAt) > 6 * 86_400_000) {
+    try {
+      const got = await fetchThemes(fetchOpt);
+      if (got.themes.length >= 20) await writeFile(themesPath, `${JSON.stringify({ fetchedAt: now.toISOString(), themes: got.themes })}\n`);
+      universe.status.push({ source: 'naver:themes', ok: got.themes.length >= 20, count: got.themes.length, ...(got.themes.length >= 20 ? {} : { error: `TOO_FEW_THEMES:${got.themes.length}:failed=${got.failed}` }) });
+    } catch (e) { universe.status.push({ source: 'naver:themes', ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }); }
+  }
   const pulse = marketPulse([...calcs.values()]);
   // Requested ETFs and coins (G-56), named from the lists just computed: a deep committee until one
   // report has it, then dashboards only (the same as a requested stock). Unknown symbols are recorded.
@@ -385,6 +400,14 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
   const filings = ticker.dartCorpCode ? await fetchDartFilings({ apiKey: options.apiKey, corpCode: ticker.dartCorpCode, from: monthAgo.compact, to: today.compact, ...fetchOptions }) : [];
   const addedBars = await appendNew(pricePath, bars, priceKey);
   const addedFilings = await appendNew(filingPath, filings, filingKey);
+  // G-99: who inside the company and which 5% holders changed their stake (best effort, never fatal).
+  if (ticker.dartCorpCode && options.apiKey.trim() && !coin) {
+    const own = await fetchOwnership({ apiKey: options.apiKey, corpCode: ticker.dartCorpCode, symbol: SYMBOL, since: new Date(now.getTime() - 365 * 86_400_000).toISOString().slice(0, 10), ...fetchOptions }).catch(() => null);
+    if (own) {
+      await appendUnseen(join(root, 'data', 'insider', `${SYMBOL}.jsonl`), own.insider, (r) => `${r.receiptNo}:${r.reporter}`);
+      await appendUnseen(join(root, 'data', 'holders', `${SYMBOL}.jsonl`), own.holders, (r) => `${r.receiptNo}:${r.reporter}`);
+    }
+  }
   // News is best effort: a failed source is recorded and shown, never fatal.
   const newsPath = join(root, 'data', 'news', `${SYMBOL}.jsonl`);
   const { items: news, status: newsStatus } = await collectNews(ticker, options, fetchOptions);
@@ -509,6 +532,18 @@ export async function composeReport(
     paperEntries: (await readLog<PaperEntry>(join(root, 'data', 'paper', `${SYMBOL}.jsonl`))).filter((e) => e.recordedAt <= now.toISOString()),
     status: options.marketStatus ?? [],
   });
+  // G-99: earnings, dividends, buybacks, insider and 5% holder moves, contracts and value surges.
+  if (!ticker.kind) {
+    const known = (await readLog<EventFiling>(join(root, 'data', 'event-filings.jsonl'))).filter((e) => e.symbol === SYMBOL);
+    const own = asOf(await readLog<Disclosure>(filingPath), filingKey, now).flatMap((f) => { const r = eventOf(f.title); return r ? [{ symbol: SYMBOL, date: f.filedDate, title: f.title, receiptNo: f.receiptNo, key: r.key }] : []; });
+    const events = [...new Map([...known, ...own].map((e) => [e.receiptNo, e])).values()];
+    const financeLog = await readLog<FinancePeriod>(mp.finance);
+    built.edge = buildEdge({
+      date: today.date, close: built.price?.close ?? null, bars: daily, finance: asOf(financeLog, financeKey, now), financeLog: financeLog.filter((f) => f.retrievedAt <= now.toISOString()), events,
+      insider: (await readLog<InsiderReport>(join(root, 'data', 'insider', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString()),
+      holders: (await readLog<HolderReport>(join(root, 'data', 'holders', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString()),
+    });
+  }
   return built;
 }
 
@@ -665,6 +700,16 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     : (await readListedStocks(root)).map((r) => [r.symbol, r.name, r.market, null, null, covered.has(r.symbol) ? 1 : 0]);
   for (const t of tickers) if (!items.some((i) => i[0] === t.symbol)) items.push([t.symbol, t.name, t.market, null, null, 1]);
   await writeFile(join(siteDir, 'search.json'), JSON.stringify({ fields: ['symbol', 'name', 'market', 'close', 'changePct', 'report'], items }));
+  // G-99: themes (with today's numbers) and the market-wide signal radar.
+  const lite = (universe ?? []).map((r) => ({ symbol: r.symbol, name: r.name, close: r.close, changePct: r.changePct, tradingValue: r.tradingValue, marketCap: r.marketCap }));
+  const themeFile = JSON.parse(await readFile(join(root, 'data', 'themes.json'), 'utf8').catch(() => 'null')) as { themes: Theme[] } | null;
+  const td = themeData(themeFile?.themes ?? [], lite, dataDate ?? kstParts(new Date()).date);
+  await writeFile(join(siteDir, 'themes.json'), JSON.stringify(td.themes));
+  await writeFile(join(siteDir, 'theme-index.json'), JSON.stringify(td.index));
+  const eventLog = (await readFile(join(root, 'data', 'event-filings.jsonl'), 'utf8').catch(() => '')).split('\n').filter(Boolean).map((l) => JSON.parse(l) as EventFiling);
+  await writeFile(join(siteDir, 'signals.json'), JSON.stringify(signalData(eventLog, lite, kstParts(new Date()).date)));
+  await writeFile(join(siteDir, 'themes.html'), renderThemesPage());
+  await writeFile(join(siteDir, 'signals.html'), renderSignalsPage());
   // The chart library is served from the site itself, not a CDN.
   // "exports" hides the standalone build; package.json is exported, so locate it from there.
   const packageJson = createRequire(import.meta.url).resolve('lightweight-charts/package.json');
