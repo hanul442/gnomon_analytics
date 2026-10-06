@@ -2,7 +2,7 @@
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
 
-import { ALPHA, ASK_TIERS, CREDIT_ACTIONS, CREDIT_COST, type AskTier, type CreditAction } from '../report/plans.js';
+import { ALPHA, ASK_TIERS, CREDIT_ACTIONS, CREDIT_COST, EXPERTS, type AskTier, type CreditAction } from '../report/plans.js';
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, matches } from '../analysis/screenRules.js';
@@ -192,15 +192,21 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   const page = str(b.page, 6000);
   const history = (Array.isArray(b.history) ? b.history : []).slice(-3)
     .map((h) => ({ q: str((h as { q?: unknown })?.q, 1000), a: str((h as { a?: unknown })?.a, 2000) })).filter((h) => h.q && h.a);
-  const db = env.DB, cost = CREDIT_COST[tier!];
+  // G-80: a question in the debate. An invited expert answers in their own voice at the invite price
+  // (Pro); '위원회 전체' answers as the committee at the tier's price.
+  const expert = typeof b.expert === 'string' ? (b.expert === 'committee' ? { key: 'committee', name: 'AI 위원회', focus: '분석가 6명과 데스크 5곳의 토론 전체, 강세·약세 근거와 시나리오' } : EXPERTS.find((e) => e.key === b.expert)) : undefined;
+  if (typeof b.expert === 'string' && !expert) fail(400, 'BAD_EXPERT', '전문가를 다시 골라 주세요.');
+  const invited = !!expert && expert.key !== 'committee';
+  const db = env.DB, cost = invited ? CREDIT_COST.invite : CREDIT_COST[tier!];
   if (RANK[u.plan]! < RANK.plus!) fail(403, 'PLAN_REQUIRED', 'AI 질문은 플러스 요금제부터 쓸 수 있어요.');
+  if (invited && RANK[u.plan]! < RANK.pro!) fail(403, 'PLAN_REQUIRED', '전문가 초청은 프로 요금제부터 쓸 수 있어요.');
   const today = await db.prepare("SELECT COUNT(*) AS n FROM questions WHERE user_id = ? AND created_at >= ? AND status = 'OK'").bind(u.id, kstDayStart(now)).first<{ n: number }>();
   if ((today?.n ?? 0) >= Number(env.USER_DAILY_ASKS ?? 30)) fail(429, 'DAILY_LIMIT', '오늘 질문 한도를 다 썼어요. 내일 다시 물어봐 주세요.');
   const spent = await db.prepare('SELECT COALESCE(SUM(usd), 0) AS usd FROM questions WHERE created_at >= ?').bind(kstDayStart(now)).first<{ usd: number }>();
   if ((spent?.usd ?? 0) >= Number(env.AI_DAILY_USD ?? 5)) fail(503, 'AI_BUDGET', '오늘 AI 사용량이 전체 한도에 닿았어요. 내일 다시 열려요.');
   if (!deps.ai) fail(503, 'AI_UNAVAILABLE', 'AI 연결이 아직 설정되지 않았어요.');
   const ref = `ask:${crypto.randomUUID()}`;
-  if (!(await charge(db, u.id, cost, tier!, question.slice(0, 60), ref, now))) {
+  if (!(await charge(db, u.id, cost, invited ? 'invite' : tier!, `${expert ? `${expert.name} · ` : ''}${question.slice(0, 50)}`, ref, now))) {
     fail(402, 'NO_CREDITS', `크레딧이 모자라요. 이 질문에는 ${cost}크레딧이 필요해요.`, { cost, balance: await balanceOf(db, u.id) });
   }
   const model = ASK_TIERS.find((t) => t.key === tier)!.model;
@@ -208,7 +214,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   let res: Awaited<ReturnType<AskClient['create']>>;
   try {
     const siteData = symbol ? await fetchStock(env, deps, symbol) : '';
-    res = await deps.ai!.create(askParams({ tier: tier!, question, ...(symbol ? { symbol } : {}), siteData, page, history }));
+    res = await deps.ai!.create(askParams({ tier: tier!, question, ...(symbol ? { symbol } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) }));
   } catch {
     await refund('AI 응답 실패로 돌려드림');
     await db.prepare("INSERT INTO questions (user_id, symbol, tier, model, question, credits, status, created_at) VALUES (?, ?, ?, ?, ?, 0, 'FAILED', ?)").bind(u.id, symbol ?? null, tier, model, question, iso(now)).run();
@@ -222,7 +228,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(u.id, symbol ?? null, tier, res.model || model, question, answer, ok ? cost : 0,
     res.usage.input_tokens, res.usage.output_tokens, usd, ok ? 'OK' : 'REFUSED', iso(now)).first<{ id: number }>();
   if (!ok) fail(422, 'NO_ANSWER', '이 질문에는 답하지 않았어요. 크레딧은 돌려드렸어요.');
-  return { id: row?.id, answer, tier, model: res.model || model, credits: cost, balance: await balanceOf(db, u.id), usage: { input: res.usage.input_tokens, output: res.usage.output_tokens } };
+  return { id: row?.id, answer, tier, model: res.model || model, credits: cost, ...(expert ? { speaker: expert.name } : {}), balance: await balanceOf(db, u.id), usage: { input: res.usage.input_tokens, output: res.usage.output_tokens } };
 }
 
 async function adminOverview(env: Env, now: Date) {

@@ -109,12 +109,12 @@ export const VIEW_FOCUS: Record<string, readonly string[]> = {
   long: ['FUNDAMENTAL', 'EVENT', 'fundamental', 'event_catalyst', 'MARKET'],
 };
 const VIEW_LABEL: Record<string, string> = { beginner: '초보', trader: '단타', swing: '스윙', long: '장기' };
-export const VIEW_FOCUS_CSS = `.vt-help{font-size:13px;color:var(--fg2);background:#f5f8fd;border-radius:10px;padding:8px 11px;margin:0 0 10px}.vt-more,.db-more{display:none;margin:10px auto 0;border:1px dashed var(--line-strong);background:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:700;color:var(--accent-strong);cursor:pointer}
+export const VIEW_FOCUS_CSS = `.vt-help{font-size:13px;color:var(--fg2);background:#f5f8fd;border-radius:10px;padding:8px 11px;margin:0 0 10px}.vt-more{display:none;margin:10px auto 0;border:1px dashed var(--line-strong);background:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:700;color:var(--accent-strong);cursor:pointer}
 .pc-only-beginner{display:none}html[data-persona=beginner] .pc-only-beginner{display:block}html[data-persona=all] .pc-not-all{display:none}.vt-tally{display:none}html:not([data-persona]) .vt-t-all,html[data-persona=all] .vt-t-all,.vt.show-all-members .vt-t-all{display:block}.vt.show-all-members .vt-tally:not(.vt-t-all){display:none!important}${Object.keys(VIEW_FOCUS).map((v) => `html[data-persona=${v}] .vt-t-${v}`).join(',')}{display:block}.vt-seat{display:none;font-size:13px;font-weight:700;color:var(--accent-strong);margin:0 0 8px}
 ${Object.entries(VIEW_FOCUS).map(([v, ids]) => {
-    const not = ids.map((id) => `[data-member=${id}]`).join(','), notS = ids.map((id) => `[data-speaker=${id}]`).join(',');
+    const not = ids.map((id) => `[data-member=${id}]`).join(',');
     return `html[data-persona=${v}] .vt-seat-${v}{display:block}html[data-persona=${v}] .vt:not(.show-all-members) .vt-m:not(${not}){display:none}html[data-persona=${v}] .vt:not(.show-all-members) .vt-more{display:block}
-html[data-persona=${v}] .debate:not(.show-all-members) .db-turn:not(${notS}):not(.db-red):not(.db-typing){display:none}html[data-persona=${v}] .debate:not(.show-all-members) .db-more{display:block}`;
+`;
   }).join('\n')}`;
 
 /** The view's committee line, the '다른 위원도 보기' buttons' behaviour. */

@@ -274,7 +274,7 @@ export function renderHome(data: HomeData): string {
 <button type="button" class="flt-btn" aria-expanded="false" aria-controls="flt">⚙︎ 필터 설정하기 <small>시장·조건으로 자세히 찾기</small></button>
 <div class="card flt" id="flt" hidden><div class="flt-k">어디서 찾을까요?</div><div class="flt-row"><a href="screener.html">국내 주식</a><a href="screener.html#etf">ETF</a><a href="screener.html#coin">코인</a><a href="reports.html">AI 리포트 있는 종목</a></div>
 <div class="flt-k">이런 종목</div><div class="flt-row">${PRESETS.map((x) => `<a href="screener.html#${x.key}" title="${esc(x.hint)}">${esc(x.label)}</a>`).join('')}</div>
-<a class="flt-more" href="screener.html#build">조건 직접 만들기 (지표·거래량·수급·적정가…) ›</a></div></div></section>
+<a class="flt-more" href="screener.html#build">⚙︎ 조건 직접 만들기 (지표·거래량·수급·적정가…)</a></div></div></section>
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 ${indexStrip(data.indices, data.universe, data.pulse)}
 <div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${MY_SCREENS}${movers(data.universe, covered)}</div>
@@ -315,9 +315,23 @@ const FEED_SCRIPT = `<script>
 })();
 </script>`;
 
+/** G-81: the filters open as a pop-up over the home page (the detailed search in a frame), not a new page. */
 const FILTER_SCRIPT = `<script>
 (function () { var b = document.querySelector('.flt-btn'), p = document.getElementById('flt'); if (!b || !p) return;
-  b.addEventListener('click', function () { var o = p.hidden; p.hidden = !o; b.setAttribute('aria-expanded', String(o)); }); })();
+  b.addEventListener('click', function () { var o = p.hidden; p.hidden = !o; b.setAttribute('aria-expanded', String(o)); });
+  var pop = null;
+  var close = function () { if (pop) { pop.remove(); pop = null; document.documentElement.classList.remove('menu-open'); } };
+  p.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="screener.html"]'); if (!a) return;
+    e.preventDefault();
+    var h = a.getAttribute('href'), i = h.indexOf('#'), src = (i < 0 ? h : h.slice(0, i)) + '?embed=1' + (i < 0 ? '' : h.slice(i));
+    pop = document.createElement('div'); pop.className = 'flt-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); pop.setAttribute('aria-label', '필터로 찾기');
+    pop.innerHTML = '<div class="flt-sheet"><div class="flt-top"><b>필터로 찾기</b><button type="button" class="flt-x" aria-label="닫기">×</button></div><iframe title="필터로 찾기" src="' + src + '"></iframe></div>';
+    pop.addEventListener('click', function (ev) { if (ev.target === pop || (ev.target.classList && ev.target.classList.contains('flt-x'))) close(); });
+    document.body.appendChild(pop); document.documentElement.classList.add('menu-open');
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+})();
 </script>`;
 
 /** "오늘 볼 것" by view (G-67): sort by the view's score, keep four. */
@@ -359,14 +373,14 @@ const PERSONA_HOME_SCRIPT = `<script>
 })();
 </script>`;
 
-const HOME_STYLE = `<style>.flt-btn{display:flex;align-items:baseline;gap:8px;margin:8px 0 0;border:0;background:none;font:inherit;font-size:14px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 2px}.flt-btn small{font-weight:500;color:var(--muted)}.flt{margin-top:6px;padding:14px 16px}.flt-k{font-size:12.5px;font-weight:800;color:var(--muted);margin:2px 0 6px}.flt-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.flt-row a{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:700;text-decoration:none;color:var(--fg)}.flt-row a:hover{border-color:var(--accent);color:var(--accent-strong)}.flt-more{font-weight:800;font-size:14px}
+const HOME_STYLE = `<style>.flt-btn{display:flex;align-items:baseline;gap:8px;margin:8px 0 0;border:0;background:none;font:inherit;font-size:14px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 2px}.flt-btn small{font-weight:500;color:var(--muted)}.flt{margin-top:6px;padding:14px 16px}.flt-k{font-size:12.5px;font-weight:800;color:var(--muted);margin:2px 0 6px}.flt-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.flt-row a{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:700;text-decoration:none;color:var(--fg)}.flt-row a:hover{border-color:var(--accent);color:var(--accent-strong)}.flt-more{font-weight:800;font-size:14px}.flt-pop{position:fixed;inset:0;z-index:160;background:rgba(10,20,35,.5);display:grid;place-items:center;padding:20px}.flt-sheet{width:min(1080px,100%);height:min(88vh,900px);background:#fff;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}.flt-top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}.flt-top b{font-size:17px}.flt-x{border:0;background:none;font-size:28px;line-height:1;cursor:pointer;color:var(--muted)}.flt-sheet iframe{flex:1;border:0;width:100%}@media (max-width:820px){.flt-pop{padding:0;place-items:end stretch}.flt-sheet{height:92vh;border-radius:18px 18px 0 0}}
 .ms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.ms-card{padding:12px 14px}.ms-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}.ms-row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-size:14px}.ms-row:hover b{color:var(--accent-strong)}.ms-more{display:block;margin-top:6px;font-size:13px;font-weight:700}.ms-note{grid-column:1/-1}
 .pw{display:none}html[data-persona=beginner] .pw-beginner,html[data-persona=trader] .pw-trader,html[data-persona=swing] .pw-swing,html[data-persona=all] .pw-swing,html[data-persona=long] .pw-long,html:not([data-persona]) .pw-swing{display:inline}.tp[hidden]{display:none}.tp-lead{margin:-4px 0 10px;font-size:13px;color:var(--fg2)}.tp-lead a{font-weight:700;margin-left:6px}
 .tmp{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:7px}.tmp:hover{border-color:var(--accent)}.tmp-v{font-size:19px}.tmp .pulse-bar{height:12px}.tmp-n{display:flex;justify-content:space-between;font-size:13px;font-weight:700}
 .tp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.tp{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 44px 14px 16px}.tp:hover{border-color:var(--accent)}.tp .star{position:absolute;top:8px;right:6px}.tp-main{text-decoration:none;color:inherit;display:block}.tp-top{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.tp-why{font-size:12px;color:var(--accent-strong);font-weight:700}.tp-name{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.tp-name>b{font-size:17px}.tp-px{font-size:14px}.tp-line{margin:6px 0 0;font-size:14px;line-height:1.6;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.top-search{max-width:1180px;margin:14px auto 0;padding:0 24px}.top-search .search-box{background:#fff;border:2px solid var(--navy);box-shadow:0 6px 18px rgba(15,34,68,.08)}.top-search .search-box input{font-size:16px}
+.top-search{margin:14px 0 0;padding:0}.top-search .search-box{background:#fff;border:2px solid var(--navy);box-shadow:0 6px 18px rgba(15,34,68,.08)}.top-search .search-box input{font-size:16px}
 .home-mkt{margin-top:12px}.home-mkt .mkt-tabs{margin-top:0}.ph-off{display:none!important}.show-more{text-align:center;margin:18px 0 6px}.btn-ghost{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
-.pz-note .persona-bar{margin-left:auto}@media (max-width:820px){.top-search{padding:0 14px;margin-top:10px}.pz-note .persona-bar{margin-left:0}}
+.pz-note .persona-bar{margin-left:auto}@media (max-width:820px){.top-search{margin-top:10px}.pz-note .persona-bar{margin-left:0}}
 .pz-note{max-width:1180px;margin:10px auto 0;padding:0 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}.pz-note>span{flex:1;min-width:200px;background:#eef3fb;border-radius:12px;padding:9px 12px}.pz-note b{color:var(--accent-strong)}.pz-edit{font-weight:700;font-size:13px;text-decoration:none;border:1px solid var(--accent);color:var(--accent-strong);border-radius:999px;padding:7px 12px;background:#fff;white-space:nowrap}@media (max-width:820px){.pz-note{padding:0 14px}}
 .dl-day{font-size:12px;font-weight:700;color:var(--accent-strong);padding:10px 0 2px}.dl-old{border-top:1px solid var(--line);margin-top:4px;color:var(--muted)}.tier.t-k{background:#eef1f5;color:var(--fg2)}
 .mkt-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.mkt-tabs a{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line-strong);border-radius:12px;padding:9px 12px;background:#fff;text-decoration:none;color:var(--fg);font-weight:700;font-size:14px}.mkt-tabs a small{font-weight:500;font-size:11px;color:var(--muted)}.mkt-tabs a:hover{border-color:var(--accent)}

@@ -139,13 +139,29 @@ export const ALPHA_SCRIPT = `<script>
       if (sym) action(kind, sym, b.getAttribute('data-name') || sym);
     });
   });
-  document.querySelectorAll('form.invite').forEach(function (f) {
+  // G-80: asking in the debate. The committee or an invited expert answers right away, as a new turn
+  // at the bottom of the debate ('작성 중…' while it thinks). Experts cost the invite price (Pro).
+  var md = function (t) { return esc(t).replace(/\\*\\*([^*]+)\\*\\*/g, '<b>$1</b>').split(/\\n{2,}/).map(function (p) { return '<p>' + p.replace(/\\n/g, '<br>') + '</p>'; }).join(''); };
+  document.querySelectorAll('form.join').forEach(function (f) {
     f.addEventListener('submit', function (e) {
       e.preventDefault();
-      var pick = f.querySelector('input[name=expert]:checked'), who = pick ? pick.closest('label').querySelector('b').textContent : '전문가';
-      var qa = f.querySelector('textarea'), q = qa ? qa.value.trim().slice(0, 300) : '';
-      action('invite', f.getAttribute('data-symbol'), f.getAttribute('data-name'), who + (f.querySelector('input[name=standing]').checked ? ' (정기)' : '') + (q ? ' · ' + q : '')).then(function (ok) {
-        if (ok) { var out = f.querySelector('.ask-out'); out.hidden = false; out.innerHTML = '<p><b>' + esc(who) + '</b> 초청을 접수했어요' + (q ? ' (질문: ' + esc(q) + ')' : '') + '. 답과 의견은 운영자가 처리한 뒤 이 종목 리포트에 실려요.</p>'; }
+      var pick = f.querySelector('input[name=expert]:checked'), key = pick ? pick.value : 'committee', who = pick ? pick.closest('label').querySelector('b').textContent : 'AI 위원회';
+      var qa = f.querySelector('textarea'), q = qa ? qa.value.trim().slice(0, 600) : '';
+      if (q.length < 2) { toast('무엇이 궁금한지 적어 주세요.'); if (qa) qa.focus(); return; }
+      if (!G.me) { location.href = base + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/')); return; }
+      var box = f.closest('.card.debate') || f.closest('.card'), anchor = box.querySelector('.db-ev') || f.closest('.db-join') || f;
+      var mine = document.createElement('div'); mine.className = 'db-turn db-bear db-guest db-me'; mine.innerHTML = '<div class="db-who"><b>나</b> · ' + esc(who) + '에게</div><div class="db-bubble">' + esc(q) + '</div>';
+      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-typing'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b> 작성 중…</div><div class="db-bubble"><i></i><i></i><i></i></div>';
+      anchor.parentNode.insertBefore(mine, anchor); anchor.parentNode.insertBefore(wait, anchor); mine.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      var btn = f.querySelector('[type=submit]'); btn.disabled = true;
+      var said = [].map.call(box.querySelectorAll('.db-turn:not(.db-typing)'), function (t) { var w = t.querySelector('.db-who b'), x = t.querySelector('.db-bubble'); return (w ? w.textContent : '') + ': ' + (x ? x.textContent.replace(/\\s+/g, ' ').trim() : ''); }).join('\\n').slice(-5000);
+      G.call('POST', '/ask', { tier: 'standard', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said }).then(function (r) {
+        btn.disabled = false; wait.remove();
+        if (r.error) { mine.remove(); toast(r.message); if (r.error === 'NO_CREDITS' || r.error === 'PLAN_REQUIRED') location.href = base + 'pricing.html'; return; }
+        var t = document.createElement('div'); t.className = 'db-turn db-mid db-guest db-in';
+        t.innerHTML = '<div class="db-who"><b>' + esc(r.speaker || who) + '</b> · ' + (key === 'committee' ? '위원회 답변' : '초청 전문가') + '</div><div class="db-bubble md">' + md(r.answer) + '</div><div class="db-cost muted small">' + r.credits + '크레딧 · 남은 ' + r.balance + '개</div>';
+        anchor.parentNode.insertBefore(t, anchor); if (qa) qa.value = '';
+        G.track('debate_ask', { expert: key }); G.refresh();
       });
     });
   });

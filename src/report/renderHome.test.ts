@@ -17,3 +17,8 @@ test('home: no view bar or market tabs; temperature card; today picks carry a sc
   assert.ok(s('AAA', 'trader') > s('BBB', 'trader'), 'the big mover leads for traders');
   assert.ok(s('BBB', 'beginner') > s('AAA', 'beginner'), 'the ETF leads for beginners');
 });
+
+test('the shared scripts parse (a bad escape in a template once broke every page)', async () => {
+  const { APP_JS, UI_JS } = await import('./renderHtml.js');
+  for (const js of [APP_JS, UI_JS]) assert.doesNotThrow(() => new Function(js));
+});

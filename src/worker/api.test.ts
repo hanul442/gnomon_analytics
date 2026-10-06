@@ -317,3 +317,17 @@ test('live quotes come through the API, cached for a few seconds (G-62)', async 
   assert.equal((await t.call('GET', '/quote?s=000660')).body.cached, true);
   assert.equal(t.seen.filter((u) => u.includes('polling.finance')).length, calls);
 });
+
+test('an invited expert answers in the debate at the invite price (G-80)', async () => {
+  const calls: Record<string, any>[] = [];
+  const t = setup({ ai: { create: async (p) => { calls.push(p); return { content: [{ type: 'text', text: '**의견** 메모리 가격이 관건이에요.' }], model: String(p.model), stop_reason: 'end_turn', usage: { input_tokens: 1500, output_tokens: 200 } }; } } });
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('x@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  assert.equal((await t.call('POST', '/ask', { tier: 'standard', expert: 'nobody', question: '어때요?' }, u.session)).body.error, 'BAD_EXPERT');
+  const r = await t.call('POST', '/ask', { tier: 'standard', expert: 'semis', question: '업황은 어때요?', symbol: '000660', page: '이 종목 AI 위원회 토론:\n기술 데스크: 강세예요' }, u.session);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.deepEqual([r.body.credits, r.body.speaker], [CREDIT_COST.invite, '반도체 전문가']);
+  assert.match(String(calls[0]!.system), /반도체 전문가/);
+  const c = await t.call('POST', '/ask', { tier: 'standard', expert: 'committee', question: '결론만 다시요' }, u.session);
+  assert.deepEqual([c.body.credits, c.body.speaker], [CREDIT_COST.standard, 'AI 위원회']);
+});

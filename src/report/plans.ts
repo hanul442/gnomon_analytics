@@ -58,7 +58,7 @@ export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 10
 
 /** What a credit action costs (G-37). Credits are bought and used from Plus; upgrading a brief to a full report is Pro. */
 /** `unlock` (G-61): opening one sealed deep report, once per user and report. */
-export const CREDIT_COST = { report: 80, brief: 30, upgrade: 50, invite: 25, idea: 20, deep: 15, standard: 10, question: 5, unlock: 10 } as const;
+export const CREDIT_COST = { report: 80, brief: 30, upgrade: 50, invite: 40, idea: 20, deep: 15, standard: 10, question: 5, unlock: 10 } as const;
 export type CreditAction = keyof typeof CREDIT_COST;
 export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail: string; min: Exclude<PlanKey, 'free'> }[] = [
   { key: 'unlock', label: '심층 리포트 열기', detail: '이미 나온 AI 위원회 리포트의 토론·근거·시나리오 전개·최악의 경우를 열어요. 한 번 열면 계속 봐요', min: 'plus' },
@@ -157,7 +157,7 @@ export const ACCOUNT_SCRIPT = `<script>
   // G-66: the debate's one box. "위원회 전체" opens the chat with the question (and stops the invite
   // handlers, which run on the form itself); an expert goes on as an invitation carrying the question.
   document.addEventListener('submit', function (e) {
-    var f = e.target; if (!f.matches || !f.matches('form.join')) return;
+    var f = e.target; if (!f.matches || !f.matches('form.join') || document.querySelector('meta[name=gnm-api]')) return;
     var pick = f.querySelector('input[name=expert]:checked');
     if (pick && pick.value !== 'committee') return;
     e.preventDefault(); e.stopPropagation();
@@ -236,7 +236,7 @@ export const ACCOUNT_SCRIPT = `<script>
     var out = f.querySelector('.ask-out');
     f.addEventListener('submit', function (e) {
       e.preventDefault();
-      var a = read(), pick = f.querySelector('input[name=expert]:checked'), standing = f.querySelector('input[name=standing]').checked;
+      var a = read(), pick = f.querySelector('input[name=expert]:checked'), st = f.querySelector('input[name=standing]'), standing = !!(st && st.checked);
       var who = pick ? pick.closest('label').querySelector('b').textContent : '전문가', name = f.getAttribute('data-name'), qa = f.querySelector('textarea'), q = qa ? qa.value.trim() : '';
       var m = new Date().toISOString().slice(0, 7), raw = {}; try { raw = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (x) {}
       var used = raw.inviteMonth === m ? raw.invitesUsed || 0 : 0;
