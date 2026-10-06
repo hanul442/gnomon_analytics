@@ -7,6 +7,11 @@ export const JOBS_JS = `
  var store=function(id){try{localStorage.setItem('gnm-report-job',id);}catch(e){}};
  var dialog=null, timer=null;
  var paint=function(r){
+  if (!r.fragments || !r.fragments.ai) return false;
+  document.documentElement.dataset.reportJob='done';
+  document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent='AI 리포트가 준비됐어요';});
+  var request=document.querySelector('.request-card');if(request){var head=request.querySelector('.lk-head b'),description=request.querySelector('p');if(head)head.textContent='AI 리포트가 준비됐어요';if(description)description.textContent='AI 위원회 탭에서 생성된 리포트를 확인하세요.';}
+
   Object.keys(r.fragments||{}).forEach(function(key){
    if(key==='scenarios'){try{var list=JSON.parse(r.fragments[key]);if(window.GNM_scenarios)window.GNM_scenarios(list);}catch(e){}return;}
    var panel=document.getElementById('tab-'+key);if(!panel)return;
@@ -17,7 +22,7 @@ export const JOBS_JS = `
    panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});
   });
   var join=document.querySelector('#tab-ai .join-wrap'), debate=document.querySelector('#tab-ai #debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}
-  if(window.GNM_debateFilter)GNM_debateFilter();if(window.GNM_debate)GNM_debate();if(window.GNM_pastQA)GNM_pastQA();
+  if(window.GNM_debateFilter)GNM_debateFilter();if(window.GNM_debate)GNM_debate();if(window.GNM_pastQA)GNM_pastQA();return true;
  };
  var watch=function(id,show){
   if(timer)clearTimeout(timer);store(id);
@@ -25,6 +30,7 @@ export const JOBS_JS = `
   var poll=function(){G.call('GET','/reports/'+id).then(function(r){
    if(r.error&&typeof r.error==='string'&&!r.status){if(dialog)dialog.querySelector('[data-job-state]').textContent=r.message||'작업을 확인하지 못했어요';if(r.error==='NOT_FOUND'||r.error==='FORBIDDEN'||r.error==='UNAUTHORIZED')return;timer=setTimeout(poll,5000);return;}
    if(r.status==='done'){
+    if(!r.fragments || !r.fragments.ai){if(dialog)dialog.querySelector('.orbs-load').innerHTML='<b>완료된 리포트 본문을 불러오지 못했어요</b><p>크레딧을 다시 사용하지 말고 새로고침하거나 문의해 주세요.</p>';if(G.toast)G.toast('완료된 리포트 본문을 불러오지 못했어요. 새로고침하거나 문의해 주세요.','error');return;}
     var current=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||(document.querySelector('[data-symbol]')||{}).dataset?.symbol;
     if(current===r.symbol)paint(r);
     var href=(document.body.dataset.base||'')+(r.symbol.indexOf('KRW-')===0?'coin.html?m=':'stock.html?c=')+encodeURIComponent(r.symbol)+'&job='+id+'#tab-ai';
@@ -46,10 +52,10 @@ export const JOBS_JS = `
  G.showReport=watch;
  document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-create-report]');if(b){var symbol=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||b.dataset.symbol;G.startReport('report',symbol,b.dataset.name||symbol);}});
  (G.ready||Promise.resolve()).then(function(){
-  if(!G.me)return;var id=new URLSearchParams(location.search).get('job');
+  if(!G.me){document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent='로그인 후 AI 리포트 확인';});return;}var id=new URLSearchParams(location.search).get('job');
   if(id){watch(id,false);return;}
   var symbol=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||(document.querySelector('[data-symbol]')||{}).dataset?.symbol;
-  if(symbol)G.call('GET','/reports/latest/'+encodeURIComponent(symbol)).then(function(r){if(r.job)watch(r.job.id,r.job.status!=='done');});
+  if(symbol)G.call('GET','/reports/latest/'+encodeURIComponent(symbol)).then(function(r){if(r.job)watch(r.job.id,r.job.status!=='done');else document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent=r.error?'AI 리포트 조회 실패':'AI 리포트 없음';});});
   else{try{id=localStorage.getItem('gnm-report-job');}catch(e){}if(id)G.call('GET','/reports/'+id).then(function(r){if(['queued','running'].indexOf(r.status)>=0)watch(id,true);});}
  });
 })();`;
