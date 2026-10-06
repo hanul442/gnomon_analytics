@@ -119,7 +119,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   assert.deepEqual(c.worstCase?.checks, ['무효화 가격 확인']);
   assert.deepEqual(Object.keys(c.insights ?? {}), ['technical']);
   const page = renderReport({ ...report, commentary: c }, { index: '../index.html' });
-  assert.ok(page.includes('id="debate"') && page.includes('추세·모멘텀 PM') && page.includes('↩ 추세·모멘텀 PM에게') && !page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술') && page.includes('class="sc-prob"') && page.includes('53%'));
+  assert.ok(page.includes('id="debate"') && page.includes('추세·모멘텀 PM') && page.includes('class="db-quote"><b>추세·모멘텀 PM') && !page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술') && page.includes('class="sc-prob"') && page.includes('53%'));
   assert.deepEqual(c.desks?.map((d) => [d.desk, d.stance]), [['TECHNICAL', 'BULLISH']]);
   assert.deepEqual(c.redTeam?.unresolved, ['수급 해석']);
   assert.deepEqual(c.scenarios?.map((s) => s.kind), ['BULL', 'BASE']);
@@ -158,4 +158,14 @@ test('a brief keeps one point a side and one thing to watch (G-60)', async () =>
   const reply = { stop_reason: 'end_turn', model: 'claude-haiku-4-5', parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, bullish: many('강'), bearish: many('약'), uncertain: many('불'), watch: many('봐'), dataGaps: [] } };
   const c = await writeCommentary(report, { client: fakeClient(reply), now: () => new Date(AT), tier: 'brief' });
   assert.deepEqual([c.bullish.length, c.bearish.length, c.uncertain.length, c.watch.length], [1, 1, 1, 1]);
+});
+
+test('replyIndex: points back only, shifting a 1-based pointer down one', async () => {
+  const { replyIndex } = await import('./commentary.js');
+  assert.equal(replyIndex(0, 1), 0);
+  assert.equal(replyIndex(1, 1), 0); // counted from 1: "reply to turn 1" from turn index 1
+  assert.equal(replyIndex(3, 3), 2);
+  assert.equal(replyIndex(undefined, 2), undefined);
+  assert.equal(replyIndex(0, 0), undefined);
+  assert.equal(replyIndex(5, 2), undefined);
 });

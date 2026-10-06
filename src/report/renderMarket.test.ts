@@ -45,7 +45,7 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   // UI layer: price in the header after scrolling, a bottom tab bar, glossary terms, the indicator names marked for it.
   assert.ok(page.includes('id="price-bar"') && page.includes('class="bottom-nav"') && page.includes('assets/ui.js?v=') && UI_JS.includes('"몬테카를로"') && APP_CSS.includes('.chat-fab') && page.includes('class="term-cell"'));
   // Plans: details sit behind Plus gates; anyone can ask the AI with credits.
-  assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 3 && (page.match(/class="gate" data-need="pro"/g) ?? []).length >= 2 && page.includes('id="ask"') && page.includes('data-plan="free"'));
+  assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 3 && (page.match(/class="gate" data-need="pro"/g) ?? []).length >= 2 && page.includes('id="join"') && page.includes('data-plan="free"'));
   assert.ok(page.includes('class="card hs"'));
   assert.ok(page.includes('id="vlines"') && page.includes('id="ev-strip"') && page.includes('class="trade-log"'));
   // The front page is the live dashboard; the archive lists dated reports.

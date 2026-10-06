@@ -4,7 +4,7 @@
 
 import type { DailyReport } from './dailyReport.js';
 import { ANALYSTS } from '../analysis/analysts.js';
-import type { ClaimKind, Commentary, InsightKey } from '../analysis/commentary.js';
+import { replyIndex, type ClaimKind, type Commentary, type InsightKey } from '../analysis/commentary.js';
 
 const esc = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -81,10 +81,12 @@ export function debateSection(report: DailyReport): string {
   if (c?.status !== 'OK' || !c.debate?.length) return '';
   const turns = c.debate;
   return `<section class="block" id="debate"><div class="block-head"><h2>위원회 토론</h2><span class="muted">분석가·데스크가 자기 판단으로 서로 반박해요</span></div><div class="card debate">
-${turns.map((t) => {
+${turns.map((t, i) => {
     const red = t.speaker === 'RED_TEAM', side = red ? 'red' : SIDE[t.stance][1];
-    const to = t.replyTo != null ? turns[t.replyTo] : undefined;
-    return `<div class="db-turn db-${side}"><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? '' : ` · ${SIDE[t.stance][0]}`}${to ? ` <span class="db-to">↩ ${esc(SPEAKER[to.speaker] ?? to.speaker)}에게</span>` : ''}</div><div class="db-bubble">${kindChip(t.claim.kind)}${esc(t.claim.text)} <span class="db-ids">${t.claim.evidenceIds.map(esc).join(' ')}</span></div></div>`;
+    // Reports written before the fix may count from 1 (a turn answering itself); the red team sums up, it does not reply.
+    const at = red ? undefined : replyIndex(t.replyTo, i), to = at != null ? turns[at] : undefined;
+    const quote = to && to.speaker !== t.speaker ? `<div class="db-quote"><b>${esc(SPEAKER[to.speaker] ?? to.speaker)}</b>${esc(to.claim.text.length > 46 ? `${to.claim.text.slice(0, 46)}…` : to.claim.text)}</div>` : '';
+    return `<div class="db-turn db-${side}"><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} <span class="db-ids">${t.claim.evidenceIds.map(esc).join(' ')}</span></div></div>`;
   }).join('')}
 ${c.worstCase ? `<div class="worst"><h3>최악의 경우</h3><p>${kindChip(c.worstCase.narrative.kind)}${esc(c.worstCase.narrative.text)}</p>${c.worstCase.checks.length ? `<div class="pl-k">스스로 점검할 것</div><ul class="plain">${c.worstCase.checks.map((x) => `<li>☐ ${esc(x)}</li>`).join('')}</ul>` : ''}<p class="fine">매수·매도 지시가 아니라 위험을 점검하는 목록이에요.</p></div>` : ''}
 <p class="fine">말하는 위원은 위 표결의 분석가·데스크 그대로예요. 근거 ID는 아래 근거 목록의 번호예요. 레드팀은 승패를 정하지 않아요.</p></div></section>`;
@@ -100,6 +102,6 @@ export function insightLine(report: DailyReport, key: InsightKey, base: string):
 
 export const EXTRAS_CSS = `.card.debate{display:flex;flex-direction:column;gap:10px;background:#fff}.worst ul{list-style:none;padding-left:0}.db-turn{display:flex;flex-direction:column;max-width:82%}.db-bull{align-self:flex-start}.db-bear{align-self:flex-end;align-items:flex-end}.db-mid,.db-red{align-self:center;max-width:92%;align-items:center}.db-to{font-weight:500;color:var(--muted)}
 .db-who{font-size:11px;font-weight:700;color:var(--muted);margin:0 6px 3px}.db-bubble{border-radius:16px;padding:10px 13px;font-size:14px;line-height:1.6}.db-bull .db-bubble{background:#fde8e6;border-bottom-left-radius:4px}.db-bear .db-bubble{background:#e3ecfb;border-bottom-right-radius:4px}.db-mid .db-bubble{background:#f1f3f6}.db-red .db-bubble{background:#fff7e6;border:1px dashed #f1d9a6;text-align:center}
-.db-ids{font-size:11px;color:var(--muted)}.worst{margin-top:8px;border-top:1px solid var(--line);padding-top:10px}.worst h3{margin:0 0 4px;font-size:15px;color:#9b1c1c}
+.db-ids{font-size:11px;color:var(--muted)}.db-quote{border-left:3px solid rgba(15,23,42,.25);background:rgba(255,255,255,.55);border-radius:6px;padding:4px 8px;margin-bottom:6px;font-size:12px;color:#475569;line-height:1.45}.db-quote b{display:block;font-size:11px;color:#334155}.worst{margin-top:8px;border-top:1px solid var(--line);padding-top:10px}.worst h3{margin:0 0 4px;font-size:15px;color:#9b1c1c}
 .insight{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;background:linear-gradient(90deg,#eef3fb,#fff);border:1px solid #d7e2f3;border-radius:12px;padding:10px 13px;margin-bottom:14px;font-size:14px}.ins-k{font-size:11px;font-weight:800;color:#1d3a6e;background:#dfe8f6;border-radius:6px;padding:1px 6px}
 .ck{display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:0 5px;margin-right:4px;vertical-align:1px}.ck-FACT{background:#e7f5ec;color:#1d6b3a}.ck-INFERENCE{background:#e8eef7;color:#1d3a6e}.ck-ASSUMPTION{background:#fff3d6;color:#7a4a00}`;

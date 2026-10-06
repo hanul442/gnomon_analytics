@@ -408,7 +408,7 @@ route('POST', '/actions', async ({ req, env, now }) => {
   if (dup) fail(409, 'DUPLICATE', '이미 요청했어요.');
   const cost = CREDIT_COST[kind!], ref = `action:${crypto.randomUUID()}`;
   if (!(await charge(env.DB, u.id, cost, kind!, `${symbol} ${str(b.detail, 60)}`.trim(), ref, now))) fail(402, 'NO_CREDITS', `크레딧이 모자라요. ${cost}크레딧이 필요해요.`, { cost, balance: await balanceOf(env.DB, u.id) });
-  await env.DB.prepare('INSERT INTO action_requests (user_id, kind, symbol, detail, credits, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(u.id, kind, symbol, str(b.detail, 200), cost, iso(now)).run();
+  await env.DB.prepare('INSERT INTO action_requests (user_id, kind, symbol, detail, credits, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(u.id, kind, symbol, str(b.detail, 400), cost, iso(now)).run();
   return { ok: true, balance: await balanceOf(env.DB, u.id) };
 });
 

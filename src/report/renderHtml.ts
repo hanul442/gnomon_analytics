@@ -219,6 +219,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .lock{width:14px;height:14px;flex:none;vertical-align:-2px;margin-right:4px}html:not([data-plan=pro]):not([data-plan=max]) [data-ov="forecast"],html:not([data-plan=pro]):not([data-plan=max]) .strat-pick,html:not([data-plan=pro]):not([data-plan=max]) #strat-info{display:none!important}
 .dk-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.dk{display:inline-flex;gap:6px;font-size:13px;border-radius:8px;padding:4px 10px;background:#eef1f5}.dk b{font-weight:700}.dk-BULLISH{background:#fde8e6;color:#9f1d24}.dk-BEARISH{background:#e3ecfb;color:#1f4fa8}
 .ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:10px}.ex{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:9px 10px;cursor:pointer}.ex:has(input:checked){border-color:var(--navy);background:var(--accent-soft)}.ex span{display:flex;flex-direction:column}.ex small{color:var(--muted);font-size:12px}.ex input{accent-color:var(--navy);margin-top:3px}
+.jn-q{display:block}.jn-q textarea{width:100%;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:15px;margin-top:4px;resize:vertical}.join .chat-sugg{margin:8px 0 12px}.jn-k{font-weight:700;margin-bottom:6px}.jn-who{max-height:236px;overflow:auto}.join:has(input[value=committee]:checked) .jn-standing{display:none}
 .fresh{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:999px;padding:1px 9px;background:#e7f5ec;color:#1d6b3a}.fresh i{width:7px;height:7px;border-radius:50%;background:currentColor}.fresh.f-STALE{background:#eef1f5;color:#4a5566}.fresh.f-DEGRADED{background:#fff3d6;color:#7a4a00}.fresh.f-NOT_AVAILABLE{background:#fde8e6;color:#9f1d24}
 .paper-link{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.paper-link p{margin:2px 0 0}.paper-link .btn-primary{margin:0}
 .stock-hero{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}.request-card{background:var(--accent-soft);border:1px solid #cdd8ea;border-radius:16px;padding:18px}.request-card p{margin:6px 0;font-size:14px}
@@ -638,8 +639,8 @@ ${marketStrip(report)}
   const proExtras = sealedDeep ? '' : gate(weekDiffSection(report, ctx.previous ?? null) + decisionTrace(report, ctx.live), { base, what: '지난 리포트 대비 · 이 판단을 만든 입력', need: 'pro' });
   const aiTab = report.commentary
     // G-65: the conclusion card first, then the committee's reasons and debate; the seat tally after them.
-    ? `${upgrade}${fromNote}${conclusionCard(report, { id: 'conclusion' })}${aiBody}${committee}${proExtras}${inviteBox(report, base)}${askBox(report, base)}`
-    : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>${askBox(report, base)}`;
+    ? `${upgrade}${fromNote}${conclusionCard(report, { id: 'conclusion' })}${aiBody}${joinBox(report, base)}${committee}${proExtras}`
+    : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매일 고른 종목과 요청된 종목에 리포트가 만들어져요. 궁금한 건 오른쪽 아래 <b>AI 질문</b>으로 물어보세요.</p></div>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const p = report.price;
@@ -736,20 +737,20 @@ ${red ? `<div class="red-team" style="margin-top:12px"><h3>레드팀 한 줄</h3
 <p class="fine">위원별 근거·예측·시나리오는 프로부터 볼 수 있어요.</p></div></section>`;
 }
 
-/** Pro: invite an expert AI to this stock's committee with credits. Max: 30 a month included, and standing experts. */
-function inviteBox(report: DailyReport, base: string): string {
-  return `<section class="block" id="invite"><div class="block-head"><h2>전문가 AI 초청</h2><span class="muted">프로 ${CREDIT_COST.invite}크레딧 · 맥스 매달 30회 포함</span></div>
-<div class="card"><form class="invite" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}"><div class="ex-grid">${EXPERTS.map((e, i) => `<label class="ex"><input type="radio" name="expert" value="${e.key}"${i ? '' : ' checked'}><span><b>${e.name}</b><small>${e.focus}</small></span></label>`).join('')}</div>
-<div class="ask-row"><label class="muted small"><input type="checkbox" name="standing"> 맥스: 이 종목 주간 위원회에 고정으로 앉히기</label><button type="submit" class="credit-btn">초청하기</button></div><div class="ask-out" hidden aria-live="polite"></div></form>
-<p class="fine">초청한 전문가는 이 종목 리포트의 근거를 보고 의견·위험·지켜볼 것을 써요. MOCK이라 지금은 접수만 기록돼요. <a href="${base}pricing.html">요금제 보기</a></p></div></section>`;
-}
-
-/** Questions go to the chat (bottom right); this card opens it with the stock as context. */
-function askBox(report: DailyReport, _base: string): string {
-  const ex = ['요즘 왜 이렇게 움직였어요?', '지금 가장 큰 위험 요인은?', 'AI 위원회 결론을 쉽게 풀어 줘요'];
-  return `<section class="block" id="ask"><div class="block-head"><h2>AI에게 직접 질문</h2><span class="muted">빠른 ${CREDIT_COST.question} · 표준 ${CREDIT_COST.standard} · 깊은 ${CREDIT_COST.deep}크레딧</span></div>
-<div class="card"><p class="muted small" style="margin-top:0">${escape(report.name)}의 리포트와 지금 보는 화면을 근거로 답해요. 오른쪽 아래 <b>AI 질문</b> 버튼으로 어느 화면에서나 물어볼 수 있어요.</p>
-<div class="chat-sugg">${ex.map((q) => `<button type="button" data-open-chat data-ask="${escape(q)}">${escape(q)}</button>`).join('')}</div></div></section>`;
+/** G-66: one place to join the debate. Ask the committee (opens the chat with the question) or seat an
+ *  expert who answers it from this stock's evidence (Pro credits, Max monthly allowance). Replaces the
+ *  separate "AI에게 직접 질문" and "전문가 AI 초청" boxes. */
+function joinBox(report: DailyReport, base: string): string {
+  const ex = ['요즘 왜 이렇게 움직였어요?', '지금 가장 큰 위험 요인은?', '어느 가격을 지켜봐야 해요?'];
+  const who = [{ key: 'committee', name: '위원회 전체', focus: `지금 토론한 위원들이 답해요 · ${CREDIT_COST.question}크레딧부터` }, ...EXPERTS];
+  return `<section class="block" id="join"><div class="block-head"><h2>토론에 참여</h2><span class="muted">질문하거나 전문가를 불러 물어보세요</span></div>
+<div class="card"><form class="invite join" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">
+<label class="jn-q"><span class="muted small">무엇이 궁금한가요?</span><textarea name="q" rows="2" maxlength="300" placeholder="예: ${escape(ex[0]!)}"></textarea></label>
+<div class="chat-sugg">${ex.map((q) => `<button type="button" data-fill="${escape(q)}">${escape(q)}</button>`).join('')}</div>
+<div class="jn-k muted small">누구에게 물을까요?</div>
+<div class="ex-grid jn-who">${who.map((e, i) => `<label class="ex"><input type="radio" name="expert" value="${e.key}"${i ? '' : ' checked'}><span><b>${e.name}</b><small>${e.focus}</small></span></label>`).join('')}</div>
+<div class="ask-row"><label class="muted small jn-standing"><input type="checkbox" name="standing"> 맥스: 이 전문가를 이 종목 위원회에 고정</label><button type="submit" class="credit-btn">묻기</button></div><div class="ask-out" hidden aria-live="polite"></div></form>
+<p class="fine">위원회 전체는 바로 답해요. 전문가는 프로 ${CREDIT_COST.invite}크레딧(맥스는 매달 30회 포함)이고, 이 종목 리포트의 근거로 질문에 답하고 의견·위험·지켜볼 것을 써요. <a href="${base}pricing.html">요금제 보기</a></p></div></section>`;
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[], links: { base?: string; homeHref?: string; name?: string } = {}): string {

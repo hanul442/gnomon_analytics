@@ -143,8 +143,9 @@ export const ALPHA_SCRIPT = `<script>
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var pick = f.querySelector('input[name=expert]:checked'), who = pick ? pick.closest('label').querySelector('b').textContent : '전문가';
-      action('invite', f.getAttribute('data-symbol'), f.getAttribute('data-name'), who + (f.querySelector('input[name=standing]').checked ? ' (정기)' : '')).then(function (ok) {
-        if (ok) { var out = f.querySelector('.ask-out'); out.hidden = false; out.innerHTML = '<p><b>' + esc(who) + '</b> 초청을 접수했어요. 의견은 운영자가 처리한 뒤 이 종목 리포트에 실려요.</p>'; }
+      var qa = f.querySelector('textarea'), q = qa ? qa.value.trim().slice(0, 300) : '';
+      action('invite', f.getAttribute('data-symbol'), f.getAttribute('data-name'), who + (f.querySelector('input[name=standing]').checked ? ' (정기)' : '') + (q ? ' · ' + q : '')).then(function (ok) {
+        if (ok) { var out = f.querySelector('.ask-out'); out.hidden = false; out.innerHTML = '<p><b>' + esc(who) + '</b> 초청을 접수했어요' + (q ? ' (질문: ' + esc(q) + ')' : '') + '. 답과 의견은 운영자가 처리한 뒤 이 종목 리포트에 실려요.</p>'; }
       });
     });
   });

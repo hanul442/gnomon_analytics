@@ -154,6 +154,20 @@ export const ACCOUNT_SCRIPT = `<script>
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var toast = function (msg) { var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600); };
   // With the alpha API, accounts and credits live on the server (alpha.ts takes over from here).
+  // G-66: the debate's one box. "위원회 전체" opens the chat with the question (and stops the invite
+  // handlers, which run on the form itself); an expert goes on as an invitation carrying the question.
+  document.addEventListener('submit', function (e) {
+    var f = e.target; if (!f.matches || !f.matches('form.join')) return;
+    var pick = f.querySelector('input[name=expert]:checked');
+    if (pick && pick.value !== 'committee') return;
+    e.preventDefault(); e.stopPropagation();
+    var fab = document.querySelector('.chat-fab'), q = f.querySelector('textarea').value.trim();
+    if (fab) { fab.setAttribute('data-ask', q); fab.click(); fab.removeAttribute('data-ask'); }
+  }, true);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('form.join [data-fill]'); if (!b) return;
+    var t = b.closest('form').querySelector('textarea'); t.value = b.getAttribute('data-fill'); t.focus();
+  });
   if (document.querySelector('meta[name=gnm-api]')) { window.GNM = { toast: toast }; return; }
   var paint = function () {
     var a = read();
@@ -223,18 +237,18 @@ export const ACCOUNT_SCRIPT = `<script>
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var a = read(), pick = f.querySelector('input[name=expert]:checked'), standing = f.querySelector('input[name=standing]').checked;
-      var who = pick ? pick.closest('label').querySelector('b').textContent : '전문가', name = f.getAttribute('data-name');
+      var who = pick ? pick.closest('label').querySelector('b').textContent : '전문가', name = f.getAttribute('data-name'), qa = f.querySelector('textarea'), q = qa ? qa.value.trim() : '';
       var m = new Date().toISOString().slice(0, 7), raw = {}; try { raw = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (x) {}
       var used = raw.inviteMonth === m ? raw.invitesUsed || 0 : 0;
       if (standing && a.plan !== 'max') { toast('정기 초청은 맥스 요금제부터예요.'); return; }
       if (a.plan === 'max' && used < ${PLANS.find((p) => p.key === 'max')!.includedInvites}) {
         raw.inviteMonth = m; raw.invitesUsed = used + 1;
-        raw.log = [{ at: new Date().toISOString(), kind: 'invite', amount: 0, note: name + ' · ' + who + (standing ? ' (정기)' : '') + ' · 포함 ' + (used + 1) + '/30' }].concat(raw.log || []);
+        raw.log = [{ at: new Date().toISOString(), kind: 'invite', amount: 0, note: name + ' · ' + who + (standing ? ' (정기)' : '') + (q ? ' · ' + q : '') + ' · 포함 ' + (used + 1) + '/30' }].concat(raw.log || []);
         try { localStorage.setItem(KEY, JSON.stringify(raw)); } catch (x) {}
         paint();
-      } else if (!spend('invite', name + ' · ' + who)) return;
+      } else if (!spend('invite', name + ' · ' + who + (q ? ' · ' + q : ''))) return;
       out.hidden = false;
-      out.innerHTML = '<p><b>' + esc(who) + '</b>를 ' + esc(name) + ' 위원회에 초청했어요' + (standing ? ' (매주 고정)' : '') + '. MOCK이라 의견은 서버가 붙으면 다음 리포트에 실려요.</p>';
+      out.innerHTML = '<p><b>' + esc(who) + '</b>를 ' + esc(name) + ' 위원회에 초청했어요' + (standing ? ' (매주 고정)' : '') + (q ? '. 질문: ' + esc(q) : '') + '. MOCK이라 답과 의견은 서버가 붙으면 다음 리포트에 실려요.</p>';
     });
   });
   // AI questions (quick / deep). MOCK answer: the closest sentences from this page's evidence.

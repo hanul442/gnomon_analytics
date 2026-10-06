@@ -47,6 +47,13 @@ export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; ca
 /** Who can speak in the debate: the committee's own members (analysts, desks) and the red team. */
 export type Speaker = AnalystId | Desk | 'RED_TEAM';
 /** A debate turn (v4): a committee member argues from its own stance, answering an earlier turn; the red team closes. */
+/** Where a debate turn points: an earlier turn (0-based); a 1-based pointer (≥ own index) is shifted down one. */
+export function replyIndex(to: number | undefined, i: number): number | undefined {
+  if (to == null || !Number.isInteger(to)) return undefined;
+  const t = to >= i ? to - 1 : to;
+  return t >= 0 && t < i ? t : undefined;
+}
+
 export interface DebateTurn { speaker: Speaker; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; replyTo?: number; claim: Claim }
 /** Where a short AI line sits: at the top of that report tab. */
 export type InsightKey = 'technical' | 'strategy' | 'flow' | 'fundamental' | 'news';
@@ -215,7 +222,7 @@ const InsightsSchema = z.object({
 const DebateSchema = z.array(z.object({
   speaker: z.enum([...ANALYSTS.map((a) => a.id), 'MARKET', 'TECHNICAL', 'FLOW', 'FUNDAMENTAL', 'EVENT', 'RED_TEAM'] as unknown as [Speaker, ...Speaker[]]).describe('말하는 위원: 분석가 6명, 데스크 5곳, 또는 RED_TEAM'),
   stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']).describe('이 위원의 입장. 위의 analysts·desks에 쓴 입장과 같아야 합니다'),
-  replyTo: z.number().optional().describe('반박하는 앞 차례의 번호(0부터). 첫 차례는 비웁니다'),
+  replyTo: z.number().optional().describe('반박하는 앞 차례의 번호. 0부터 셉니다(첫 차례가 0, 바로 앞 차례에 답하면 자기 번호-1). 첫 차례와 RED_TEAM은 비웁니다'),
   claim: ClaimSchema.describe('이 차례의 말 한두 문장. 두 번째 차례부터는 replyTo 차례의 주장을 직접 짚어 반박합니다'),
 })).describe('5~7차례. 입장이 다른 위원들이 번갈아 말하고, 마지막은 RED_TEAM');
 
@@ -400,7 +407,8 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       ...(Number.isFinite(sc.zoneLow) && Number.isFinite(sc.zoneHigh) && sc.zoneLow > 0 && sc.zoneHigh >= sc.zoneLow ? { zone: [sc.zoneLow, sc.zoneHigh] as [number, number] } : {}),
     }))));
     // Turns keep their place so replyTo still points at the right one; an uncited turn drops out and replies to it lose the pointer.
-    const turns = (parsed.debate ?? []).map((t) => { const [claim] = clean([t.claim]); return claim ? { speaker: t.speaker, stance: t.stance, replyTo: t.replyTo, claim } : null; });
+    // A reply can only point back. Models sometimes count from 1, which makes a turn answer itself: shift those down one.
+    const turns = (parsed.debate ?? []).map((t, i) => { const [claim] = clean([t.claim]); return claim ? { speaker: t.speaker, stance: t.stance, replyTo: replyIndex(t.replyTo, i), claim } : null; });
     const kept = turns.flatMap((t, i) => (t ? [i] : []));
     const debate: DebateTurn[] = turns.flatMap((t) => {
       if (!t) return [];
