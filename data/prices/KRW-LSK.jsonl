@@ -998,3 +998,4 @@
 {"symbol":"KRW-LSK","date":"2026-10-04","open":370,"high":371,"low":353,"close":365,"volume":4024891.32328737,"source":"upbit:candles:days","retrievedAt":"2026-10-06T09:14:28.254Z"}
 {"symbol":"KRW-LSK","date":"2026-10-05","open":364,"high":373,"low":341,"close":344,"volume":3738754.26863965,"source":"upbit:candles:days","retrievedAt":"2026-10-06T09:14:28.254Z"}
 {"symbol":"KRW-LSK","date":"2026-10-06","open":346,"high":383,"low":345,"close":351,"volume":29851598.12649047,"source":"upbit:candles:days","retrievedAt":"2026-10-06T09:14:28.254Z"}
+{"symbol":"KRW-LSK","date":"2026-10-06","open":346,"high":383,"low":345,"close":351,"volume":29884947.15854272,"source":"upbit:candles:days","retrievedAt":"2026-10-06T09:20:57.698Z"}

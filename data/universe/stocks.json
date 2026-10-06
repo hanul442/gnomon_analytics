@@ -7335,11 +7335,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "092070",
-  "name": "디엔에프",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "092130",
   "name": "이크레더블",
   "market": "KOSDAQ"
@@ -12902,6 +12897,11 @@
  {
   "symbol": "445090",
   "name": "에이직랜드",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "445180",
+  "name": "퓨릿",
   "market": "KOSDAQ"
  },
  {

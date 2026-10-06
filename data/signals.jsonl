@@ -242,3 +242,6 @@
 {"date":"2026-10-06","preset":"value","symbol":"136410","market":"Q","close":3835,"method":"gnm-signal-v1"}
 {"date":"2026-10-06","preset":"rebound","symbol":"0082N0","market":"Q","close":13000,"method":"gnm-signal-v1"}
 {"date":"2026-10-06","preset":"rebound","symbol":"193250","market":"Q","close":1991,"method":"gnm-signal-v1"}
+{"date":"2026-10-06","preset":"bottomvol","symbol":"101930","market":"Q","close":6280,"method":"gnm-signal-v1"}
+{"date":"2026-10-06","preset":"bottomvol","symbol":"267980","market":"Q","close":35200,"method":"gnm-signal-v1"}
+{"date":"2026-10-06","preset":"volsurge","symbol":"192250","market":"Q","close":9440,"method":"gnm-signal-v1"}
