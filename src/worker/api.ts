@@ -1,3 +1,7 @@
+import { fetchUpbitMinutes } from '../sources/upbit.js';
+import { reportInput, inputHash, runReportJob, refundJob, reportFragments, type ReportQueue, type ReportJob } from './reports.js';
+import type { DailyReport } from '../report/dailyReport.js';
+import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
@@ -5,7 +9,7 @@
 import { ALPHA, ASK_TIERS, CREDIT_ACTIONS, CREDIT_COST, EXPERTS, type AskTier, type CreditAction } from '../report/plans.js';
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
 import type { D1 } from './db.js';
-import { cleanScreen, FIELD_INDEX, matches } from '../analysis/screenRules.js';
+import { cleanScreen, FIELD_INDEX, FIELDS, matches } from '../analysis/screenRules.js';
 import { intradaySignals, readIntraday } from '../analysis/intraday.js';
 import { deepPath, DEEP_DATE, DEEP_SYMBOL, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
@@ -28,8 +32,9 @@ export interface Env {
   USER_DAILY_ASKS?: string;
   /** G-61: the secret that opens sealed deep reports (GitHub secret GNM_DEEP_KEY). */
   DEEP_KEY?: string;
+  REPORT_QUEUE?: ReportQueue;
 }
-export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient }
+export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient; waitUntil?: (promise: Promise<unknown>) => void; generate?: (report: DailyReport, tier: CommentaryTier) => Promise<Commentary> }
 
 interface User { id: string; email: string; plan: string; role: string; created_at: string; disabled: number }
 
@@ -183,7 +188,7 @@ async function fetchStock(env: Env, deps: Deps, symbol: string): Promise<string>
   } catch { return ''; }
 }
 
-async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, now: Date) {
+async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, now: Date, onText?: (text: string) => void) {
   const tier = ASK_TIERS.find((t) => t.key === b.tier)?.key as AskTier | undefined;
   if (!tier) fail(400, 'BAD_TIER', '모델을 골라 주세요.');
   const question = str(b.question, 1000);
@@ -202,11 +207,22 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   if (invited && RANK[u.plan]! < RANK.pro!) fail(403, 'PLAN_REQUIRED', '전문가 초청은 프로 요금제부터 쓸 수 있어요.');
   const today = await db.prepare("SELECT COUNT(*) AS n FROM questions WHERE user_id = ? AND created_at >= ? AND status = 'OK'").bind(u.id, kstDayStart(now)).first<{ n: number }>();
   if ((today?.n ?? 0) >= Number(env.USER_DAILY_ASKS ?? 30)) fail(429, 'DAILY_LIMIT', '오늘 질문 한도를 다 썼어요. 내일 다시 물어봐 주세요.');
-  const spent = await db.prepare('SELECT COALESCE(SUM(usd), 0) AS usd FROM questions WHERE created_at >= ?').bind(kstDayStart(now)).first<{ usd: number }>();
-  if ((spent?.usd ?? 0) >= Number(env.AI_DAILY_USD ?? 5)) fail(503, 'AI_BUDGET', '오늘 AI 사용량이 전체 한도에 닿았어요. 내일 다시 열려요.');
   if (!deps.ai) fail(503, 'AI_UNAVAILABLE', 'AI 연결이 아직 설정되지 않았어요.');
-  const ref = `ask:${crypto.randomUUID()}`;
+  const ref = `ask:${crypto.randomUUID()}`, day=kstDayStart(now), reserve=tier==='deep'?.15:tier==='standard'?.07:.03;
+  // Reserve before calling AI so simultaneous requests share the same global budget.
+  await db.prepare("UPDATE ai_requests SET status='expired',reserved_usd=0 WHERE status='running' AND created_at<?").bind(iso(new Date(now.getTime()-15*60000))).run();
+  const reserved=await db.prepare(`INSERT INTO ai_requests(id,user_id,reserved_usd,created_at)
+    SELECT ?,?,?,? WHERE
+      (SELECT COALESCE(SUM(usd),0) FROM questions WHERE created_at>=?)
+      +(SELECT COALESCE(SUM(usd+reserved_usd),0) FROM report_jobs WHERE created_at>=?)
+      +(SELECT COALESCE(SUM(reserved_usd),0) FROM ai_requests WHERE status='running' AND created_at>=?)+?<=?
+      AND (SELECT COUNT(*) FROM questions WHERE user_id=? AND created_at>=? AND status='OK')
+      +(SELECT COUNT(*) FROM ai_requests WHERE user_id=? AND created_at>=? AND status='running')<?`)
+    .bind(ref,u.id,reserve,iso(now),day,day,day,reserve,Number(env.AI_DAILY_USD??5),u.id,day,u.id,day,Number(env.USER_DAILY_ASKS??30)).run();
+  if(!reserved.meta?.changes) fail(503,'AI_BUDGET','오늘 AI 사용량 또는 동시 질문 한도에 닿았어요. 잠시 후 다시 물어봐 주세요.');
+  const release=()=>db.prepare("UPDATE ai_requests SET status='done',reserved_usd=0 WHERE id=?").bind(ref).run();
   if (!(await charge(db, u.id, cost, invited ? 'invite' : tier!, `${expert ? `${expert.name} · ` : ''}${question.slice(0, 50)}`, ref, now))) {
+    await release();
     fail(402, 'NO_CREDITS', `크레딧이 모자라요. 이 질문에는 ${cost}크레딧이 필요해요.`, { cost, balance: await balanceOf(db, u.id) });
   }
   const model = ASK_TIERS.find((t) => t.key === tier)!.model;
@@ -214,10 +230,12 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   let res: Awaited<ReturnType<AskClient['create']>>;
   try {
     const siteData = symbol ? await fetchStock(env, deps, symbol) : '';
-    res = await deps.ai!.create(askParams({ tier: tier!, question, ...(symbol ? { symbol } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) }));
+    const params = askParams({ tier: tier!, question, ...(symbol ? { symbol } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) });
+    res = onText && deps.ai!.stream ? await deps.ai!.stream(params, onText) : await deps.ai!.create(params);
   } catch {
     await refund('AI 응답 실패로 돌려드림');
     await db.prepare("INSERT INTO questions (user_id, symbol, tier, model, question, credits, status, created_at) VALUES (?, ?, ?, ?, ?, 0, 'FAILED', ?)").bind(u.id, symbol ?? null, tier, model, question, iso(now)).run();
+    await release();
     return fail(502, 'AI_FAILED', 'AI가 답하지 못했어요. 크레딧은 돌려드렸어요.');
   }
   const usd = usdOf(model, res.usage.input_tokens, res.usage.output_tokens);
@@ -227,6 +245,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   const row = await db.prepare(`INSERT INTO questions (user_id, symbol, tier, model, question, answer, credits, input_tokens, output_tokens, usd, status, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(u.id, symbol ?? null, tier, res.model || model, question, answer, ok ? cost : 0,
     res.usage.input_tokens, res.usage.output_tokens, usd, ok ? 'OK' : 'REFUSED', iso(now)).first<{ id: number }>();
+  await release();
   if (!ok) fail(422, 'NO_ANSWER', '이 질문에는 답하지 않았어요. 크레딧은 돌려드렸어요.');
   return { id: row?.id, answer, tier, model: res.model || model, credits: cost, ...(expert ? { speaker: expert.name } : {}), balance: await balanceOf(db, u.id), usage: { input: res.usage.input_tokens, output: res.usage.output_tokens } };
 }
@@ -399,15 +418,15 @@ route('GET', '/me/ledger', async ({ req, env, now }) => {
 route('GET', '/me/export', async ({ req, env, now }) => {
   const u = await authed(req, env, now), db = env.DB;
   const all = (t: string) => db.prepare(`SELECT * FROM ${t} WHERE user_id = ?`).bind(u.id).all().then((r) => r.results);
-  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists'].map(all));
-  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist };
+  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs'].map(all));
+  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs };
 });
 
 route('POST', '/me/delete', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   if (b.confirm !== '삭제') fail(400, 'CONFIRM', "확인 문구 '삭제'를 적어 주세요.");
   const db = env.DB;
-  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
+  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
     db.prepare('DELETE FROM login_tokens WHERE email = ?').bind(u.email), db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)]);
   return { ok: true };
 });
@@ -444,6 +463,75 @@ route('POST', '/actions', async ({ req, env, now }) => {
   if (!(await charge(env.DB, u.id, cost, kind!, `${symbol} ${str(b.detail, 60)}`.trim(), ref, now))) fail(402, 'NO_CREDITS', `크레딧이 모자라요. ${cost}크레딧이 필요해요.`, { cost, balance: await balanceOf(env.DB, u.id) });
   await env.DB.prepare('INSERT INTO action_requests (user_id, kind, symbol, detail, credits, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(u.id, kind, symbol, str(b.detail, 400), cost, iso(now)).run();
   return { ok: true, balance: await balanceOf(env.DB, u.id) };
+});
+
+// On-demand report jobs are durable and start without GitHub approval or a Pages rebuild.
+const coinCandles=new Map<string,{at:number;pending:Promise<unknown>}>();
+route('GET','/candles/(KRW-[A-Z0-9]{1,15})/(1|5|15|60)',async({deps,params,now})=>{
+ const symbol=params[0]!,unit=Number(params[1]),key=symbol+':'+unit;
+ const old=coinCandles.get(key);if(old&&now.getTime()-old.at<30000)return old.pending;
+ if(coinCandles.size>=64)coinCandles.delete(coinCandles.keys().next().value!);
+ const pending=fetchUpbitMinutes(symbol,unit,deps.fetch).then(bars=>({symbol,unit,bars,retrievedAt:iso(now)})).catch(()=>{coinCandles.delete(key);return fail(502,'COIN_DATA','분봉을 가져오지 못했어요. 잠시 후 다시 선택해 주세요.');});
+ coinCandles.set(key,{at:now.getTime(),pending});return pending;
+});
+route('POST', '/reports', async ({ req, env, deps, now }) => {
+  const u = await authed(req, env, now), b = await body(req);
+  const symbol = str(b.symbol, 24), kind = ['report', 'brief', 'upgrade'].find(k => k === b.kind) as 'report' | 'brief' | 'upgrade' | undefined;
+  if (!kind || !DEEP_SYMBOL.test(symbol)) fail(400, 'BAD_ACTION', '종목과 리포트 종류를 확인해 주세요.');
+  const min = CREDIT_ACTIONS.find(a => a.key === kind)!.min;
+  if (RANK[u.plan]! < RANK[min]!) fail(403, 'PLAN_REQUIRED', '이 리포트는 지금 요금제에서 생성할 수 없어요.');
+  if (!env.REPORT_QUEUE || !deps.generate) fail(503, 'REPORT_UNAVAILABLE', '리포트 생성 연결을 준비 중이에요. 크레딧은 차감하지 않았어요.');
+  let input: DailyReport;
+  try { input = await reportInput(env.SITE_URL, symbol, deps); } catch (e) { return fail(422, 'NO_DATA', e instanceof Error ? e.message : '분석 데이터가 없어요.'); }
+  const hash = await inputHash(input), canonicalKind = kind === 'brief' ? 'brief' : 'report', db = env.DB;
+  const existing = await db.prepare("SELECT * FROM report_jobs WHERE user_id=? AND symbol=? AND kind=? AND input_hash=? AND status!='failed'").bind(u.id, symbol, canonicalKind, hash).first<ReportJob>();
+  if (existing) return { id: existing.id, status: existing.status, reused: true, balance: await balanceOf(db, u.id) };
+  const id = crypto.randomUUID(), cost = CREDIT_COST[kind!], reserve = canonicalKind === 'brief' ? .15 : .8, day = kstDayStart(now), cap = Number(env.AI_DAILY_USD ?? 5);
+  await db.batch([
+    db.prepare(`INSERT OR IGNORE INTO report_jobs(id,user_id,symbol,kind,input_hash,input_json,credits,reserved_usd,created_at,updated_at)
+      SELECT ?,?,?,?,?,?,?,?,?,? WHERE (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id=?)>=?
+      AND (SELECT COALESCE(SUM(usd + reserved_usd),0) FROM report_jobs WHERE created_at>=?)
+        + (SELECT COALESCE(SUM(usd),0) FROM questions WHERE created_at>=?)
+        + (SELECT COALESCE(SUM(reserved_usd),0) FROM ai_requests WHERE status='running' AND created_at>=?) + ? <= ?`)
+      .bind(id,u.id,symbol,canonicalKind,hash,JSON.stringify(input),cost,reserve,iso(now),iso(now),u.id,cost,day,day,day,reserve,cap),
+    db.prepare("INSERT OR IGNORE INTO ledger(user_id,delta,kind,note,ref,created_at) SELECT ?,?,?,?, ?,? WHERE EXISTS(SELECT 1 FROM report_jobs WHERE id=?)")
+      .bind(u.id,-cost,kind,symbol+' 즉시 리포트',`report:${id}`,iso(now),id),
+  ]);
+  const job = await db.prepare('SELECT * FROM report_jobs WHERE id=?').bind(id).first<ReportJob>();
+  if (!job) {
+    const duplicate = await db.prepare("SELECT id,status FROM report_jobs WHERE user_id=? AND symbol=? AND kind=? AND input_hash=? AND status!='failed'").bind(u.id,symbol,canonicalKind,hash).first();
+    if (duplicate) return { ...duplicate, reused: true, balance: await balanceOf(db,u.id) };
+    if (await balanceOf(db,u.id) < cost) fail(402,'NO_CREDITS',`${cost}크레딧이 필요해요.`);
+    fail(503,'AI_BUDGET','오늘 AI 예산 한도에 닿았어요. 크레딧은 차감하지 않았어요.');
+  }
+  try { await env.REPORT_QUEUE!.send({ id }); } catch { await refundJob(db,job!,'작업을 시작하지 못해 크레딧을 반환했어요.',now); fail(503,'QUEUE_FAILED','작업을 시작하지 못했어요. 크레딧은 반환했어요.'); }
+  return { id, status:'queued', balance:await balanceOf(db,u.id) };
+});
+route('GET', '/reports/latest/([^/]+)', async ({ req, env, now, params }) => {
+  const u=await authed(req,env,now), symbol=decodeURIComponent(params[0]!);
+  if (!DEEP_SYMBOL.test(symbol)) fail(400,'BAD_REPORT','종목코드를 확인해 주세요.');
+  const job=await env.DB.prepare("SELECT id,status,stage,error,kind,user_id FROM report_jobs WHERE symbol=? AND (user_id=? OR (status='done' AND ? >= 2)) ORDER BY created_at DESC LIMIT 1").bind(symbol,u.id,RANK[u.plan]??0).first();
+  return { job:job??null };
+});
+route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
+  const u=await authed(req,env,now), job=await env.DB.prepare('SELECT * FROM report_jobs WHERE id=?').bind(params[0]).first<ReportJob>();
+  if (!job || (job.user_id!==u.id && !(job.status==='done' && RANK[u.plan]! >= RANK.pro!))) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
+  if (['queued','running'].includes(job!.status) && Date.parse(job!.updated_at)<now.getTime()-15*60000) { await refundJob(env.DB,job!,'작업 시간이 초과되어 크레딧을 반환했어요.',now); job!.status='failed'; job!.stage='failed'; job!.error='작업 시간이 초과됐어요. 다시 요청해 주세요.'; }
+  const report=job!.status==='done' && job!.result_json ? JSON.parse(job!.result_json) as DailyReport:null;
+  return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(report?{generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report)}:{})};
+});
+route('POST', '/screens/compose', async ({req,env,deps,now}) => {
+  const u=await authed(req,env,now), b=await body(req), question=str(b.question,600), market=str(b.market,10)||'stock';
+  if(question.length<2 || !['stock','etf','coin'].includes(market)) fail(400,'BAD_SCREEN','원하는 조건과 시장을 입력해 주세요.');
+  const data=FIELDS.map(f=>({key:f.key,label:f.label,kind:f.kind,unit:f.unit,options:f.options}));
+  const prompt='다음 사용자 요청을 스크리너 조건으로 변환하세요. JSON만 출력하세요. 형식: {"name":"조건 이름","explanation":"제안 숫자와 한계를 설명","screen":{"match":"all 또는 any","rules":[{"f":"필드 key","op":">= 또는 <= 또는 = 또는 !=","v":0}],"maxRisk":2}}. 지원하지 않는 조건은 임의 대체하지 말고 {"unsupported":"이유"}로 답하세요. 종목 추천은 하지 마세요.\n사용자 요청: '+question;
+  const r=await ask(env,deps,u,{tier:'question',question:prompt,page:JSON.stringify({supportedFields:data,market,current:cleanScreen(b.screen)})},now) as {answer:string;id?:number;credits:number;balance:number};
+  let parsed:{name?:string;explanation?:string;unsupported?:string;screen?:unknown};
+  try{parsed=JSON.parse(r.answer.replace(/^```(?:json)?\s*|\s*```$/g,''));}catch{await credit(env.DB,u.id,r.credits,'refund','조건 형식 오류',`screen-refund:${r.id}`,now).run();fail(422,'BAD_SCREEN','조건을 해석하지 못해 크레딧을 반환했어요. 다시 설명해 주세요.');}
+  const screen=cleanScreen(parsed!.screen);
+  const allowed=market==='stock'?null:new Set(['close','chg','level','score','r5','r20','r120','fairGap','pos','vol1','tv','hi52','risk']);
+  if(!screen?.rules.length || (allowed && screen.rules.some(r=>!allowed.has(r.f)||r.f==='market'))){await credit(env.DB,u.id,r.credits,'refund','지원하지 않는 조건',`screen-refund:${r.id}`,now).run();fail(422,'UNSUPPORTED',str(parsed!.unsupported,300)||'이 시장의 데이터로 계산할 수 없는 조건이에요. 크레딧은 반환했어요.');}
+  return {name:str(parsed!.name,40)||'AI 조건',explanation:str(parsed!.explanation,1000),screen,credits:r.credits,balance:r.balance};
 });
 
 route('POST', '/ask', async ({ req, env, deps, now }) => ask(env, deps, await authed(req, env, now), await body(req), now));
@@ -577,9 +665,9 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
 // The site holds <symbol>/deep/<date>.txt, sealed with DEEP_KEY. Opening one costs credits once per user
 // and report; admins and whoever requested the stock's report open it free.
 async function deepAccess(db: D1, u: User, symbol: string, date: string): Promise<boolean> {
-  if (u.role === 'admin') return true;
+  if (u.role === 'admin' || RANK[u.plan]! >= RANK.pro!) return true;
   if (await db.prepare('SELECT 1 FROM unlocks WHERE user_id = ? AND symbol = ? AND date = ?').bind(u.id, symbol, date).first()) return true;
-  return !!(await db.prepare("SELECT 1 FROM action_requests WHERE user_id = ? AND symbol = ? AND kind IN ('report', 'upgrade') AND status != 'rejected' AND created_at <= ?").bind(u.id, symbol, `${date}T23:59:59Z`).first());
+  return !!(await db.prepare("SELECT 1 FROM action_requests WHERE user_id = ? AND symbol = ? AND kind IN ('report', 'upgrade') AND status = 'done' AND created_at <= ?").bind(u.id, symbol, `${date}T23:59:59Z`).first());
 }
 async function deepHtml(env: Env, deps: Deps, symbol: string, date: string): Promise<string> {
   if (!env.DEEP_KEY) fail(503, 'NOT_SEALED', '심층 리포트 열쇠가 아직 설정되지 않았어요.');
@@ -773,6 +861,20 @@ export async function handle(req: Request, env: Env, deps: Deps): Promise<Respon
   // The API's own address opened in a browser: send people to the site.
   if (path === '/' && req.method === 'GET') return Response.redirect(`${env.SITE_URL.replace(/\/$/, '')}/index.html`, 302);
   try {
+    if (path === '/ask/stream' && req.method === 'POST') {
+      const now=deps.now(), u=await authed(req,env,now), b=await body(req), enc=new TextEncoder();
+      let connected=true;
+      const stream=new ReadableStream<Uint8Array>({
+        start(controller){
+          const send=(event:string,value:unknown)=>{if(connected)try{controller.enqueue(enc.encode(`event: ${event}\ndata: ${JSON.stringify(value)}\n\n`));}catch{connected=false;}};
+          send('state',{stage:'working'});
+          const heartbeat=setInterval(()=>send('state',{stage:'working'}),15000);
+          const work=ask(env,deps,u,b,now,text=>send('delta',{text})).then(result=>send('done',result)).catch(e=>send('error',{error:e instanceof HttpError?e.code:'SERVER',message:e instanceof HttpError?e.message:'연결을 처리하지 못했어요.'})).finally(()=>{clearInterval(heartbeat);if(connected)try{controller.close();}catch{};});
+          deps.waitUntil?.(work);
+        },cancel(){connected=false;}
+      });
+      return new Response(stream,{headers:{...cors,'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-cache, no-transform'}});
+    }
     for (const [method, re, h] of routes) {
       const m = re.exec(path);
       if (m && method === req.method) return json(200, await h({ req, env, deps, now: deps.now(), params: m.slice(1) }), cors);

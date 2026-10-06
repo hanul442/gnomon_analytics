@@ -5,13 +5,17 @@
   "description": "Gnomon Analytics (GNM): evidence-first daily research reports",
   "type": "module",
   "scripts": {
+    "build:orbs": "node scripts/build-orbs.mjs",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test \"dist/**/*.test.js\"",
-    "daily": "node dist/cli/daily.js"
+    "daily": "node dist/cli/daily.js",
+    "test:ui": "npm run build && node scripts/check-ui.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.63.0",
     "typescript": "^5.9.0"
   },
   "engines": {

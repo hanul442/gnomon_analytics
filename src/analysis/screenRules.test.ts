@@ -24,10 +24,12 @@ test('presets are screens over the row columns', () => {
 });
 
 test('screens from outside are checked', () => {
-  assert.deepEqual(cleanScreen({ match: 'x', rules: [{ f: 'vol1', op: '>=', v: '3' }], maxRisk: 2 }), { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 3 }], maxRisk: 2 });
+  assert.deepEqual(cleanScreen({ match: 'all', rules: [{ f: 'vol1', op: '>=', v: '3' }], maxRisk: 2 }), { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 3 }], maxRisk: 2 });
   assert.equal(cleanScreen({ rules: [{ f: 'nope', op: '>=', v: 1 }] }), null);
   assert.equal(cleanScreen({ rules: [{ f: 'vol1', op: '>', v: 1 }] }), null);
   assert.equal(cleanScreen({ rules: [{ f: 'vol1', op: '>=', v: 'abc' }] }), null);
+  assert.equal(cleanScreen({ match:'x', rules:[] }), null);
+  assert.equal(cleanScreen({ match:'all', rules:[{f:'vol1',op:'>=',v:null}] }), null);
   // The matcher is self-contained, so the page can inline it.
   assert.ok(!/\bFIELDS\b|import/.test(matches.toString()));
 });

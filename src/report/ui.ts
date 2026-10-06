@@ -74,7 +74,8 @@ export const UI_CSS = `.deep-lock{display:flex;gap:14px;align-items:flex-start;b
 
 /** Compact bar with name, price, change and freshness; slides in once the hero scrolls away. */
 export function priceBar(opts: { name: string; symbol: string; price: string; change: string; tone: string; badge: string }): string {
-  return `<div class="price-bar" id="price-bar" aria-hidden="true"><b>${opts.name}</b><span class="pb-code">${opts.symbol}</span><span class="pb-price" data-live="${opts.symbol}" data-live-f="price">${opts.price}</span><span class="${opts.tone}" data-live="${opts.symbol}" data-live-f="arrowpct">${opts.change}</span>${opts.badge}</div>`;
+  const live = /^[0-9A-Z-]{1,24}$/.test(opts.symbol) ? ` data-live="${opts.symbol}"` : '';
+  return `<div class="price-bar" id="price-bar" aria-hidden="true"><b>${opts.name}</b><span class="pb-code">${opts.symbol}</span><span class="pb-price" ${live} data-live-f="price">${opts.price}</span><span class="${opts.tone}" ${live} data-live-f="arrowpct">${opts.change}</span>${opts.badge}</div>`;
 }
 
 export const UI_SCRIPT = `<script>
@@ -140,7 +141,7 @@ const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&
 export const MENU: readonly { title: string; items: readonly [string, string][] }[] = [
   // G-72: one entry per place. 찾기 holds search, the screener, ETFs and coins.
   { title: '둘러보기', items: [['홈', 'index.html#top'], ['관심 종목', 'index.html#watch'], ['AI 리포트 모음', 'reports.html'], ['성적표 (모의투자 포함)', 'scorecard.html']] },
-  { title: '알파 테스트', items: [['사용법', 'guide.html'], ['설문', 'survey.html?k=weekly'], ['맞춤 설문 수정', 'onboarding.html']] },
+  { title: '알파 테스트', items: [['사용법', 'guide.html'], ['업데이트 기록', 'updates.html'], ['설문', 'survey.html?k=weekly'], ['맞춤 설문 수정', 'onboarding.html']] },
   { title: '계정', items: [['내 계정', 'account.html'], ['요금제·크레딧', 'pricing.html'], ['이용약관·면책', 'terms.html']] },
 ];
 
@@ -235,7 +236,7 @@ export const TOUR_JS = `
         ['.menu-btn', '☰ 메뉴', '보기 방식을 바꾸거나 설문, 성적표, 내 계정으로 가요.'],
       ],
       report: [
-        ['.chips', '탭', '요약 · 차트·기술 · AI 위원회 · 수급 · 실적 · 뉴스·공시. 처음엔 요약만 봐도 충분해요.'],
+        ['.chips', '탭', '요약 · 차트 · 기술 · AI 위원회 · 수급 · 실적 · 뉴스·공시. 처음엔 요약만 봐도 충분해요.'],
         ['#home-conclusion', '지금 판단', '위아래 테스트 가격과 그때의 시나리오예요. 가격을 넘거나 깨면 어느 쪽으로 갈지, 확률과 함께 보여 줘요.'],
         ['#home-conclusion .cl-row', '줄을 눌러 보세요', '시나리오가 펼쳐져요. 무엇이 나오면 그렇게 되는지, 언제 틀렸다고 볼지가 나와요. 약세 줄 안에는 최악의 경우가 있어요.'],
         ['#t-ai', 'AI 위원회', '분석가 6명과 데스크 5곳의 표결, 서로 반박하는 토론, 근거 정리가 있어요. 토론에 직접 질문할 수도 있어요.'],
@@ -309,10 +310,8 @@ export const SURVEY_POP_JS = `
 export const POP_CSS = `.pop-wrap{position:fixed;inset:0;z-index:150;background:rgba(10,20,35,.45);display:grid;place-items:center;padding:16px;animation:pop-in .2s ease-out}.pop{width:min(380px,100%);background:#fff;border-radius:20px;padding:22px 20px 16px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}.pop-ic{font-size:40px}.pop b{display:block;font-size:18px;margin-top:6px}.pop p{font-size:14px;line-height:1.6;color:var(--fg2);margin:8px 0 14px}.pop-b{display:flex;gap:8px;justify-content:center}.pop-b button{flex:none;white-space:nowrap;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}.pop-b .btn-primary{flex:1;width:auto;margin:0;text-decoration:none;justify-content:center}@keyframes pop-in{from{opacity:0}to{opacity:1}}`;
 
 /** G-83: the loading mark — three soft orbs that breathe in turn, used wherever the page waits on data or AI. */
-export const ORBS_CSS = `.orbs{display:inline-flex;gap:5px;align-items:center;vertical-align:middle;margin-right:6px}.orbs i{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0,#9fb6dc 30%,#2a4f8f 75%);box-shadow:0 0 10px rgba(42,79,143,.45);animation:orb 1.2s ease-in-out infinite}.orbs i:nth-child(2){animation-delay:.18s;background:radial-gradient(circle at 35% 30%,#fff 0,#f0a0a3 30%,#b23a5a 75%);box-shadow:0 0 10px rgba(178,58,90,.4)}.orbs i:nth-child(3){animation-delay:.36s;background:radial-gradient(circle at 35% 30%,#fff 0,#9fe0d6 30%,#1c8c7d 75%);box-shadow:0 0 10px rgba(28,140,125,.4)}
-@keyframes orb{0%,100%{transform:translateY(0) scale(.8);opacity:.55}50%{transform:translateY(-5px) scale(1.1);opacity:1}}.orbs-load{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:28px 0;color:var(--muted);font-size:13.5px}.orbs-load .orbs i{width:16px;height:16px}
-@media (prefers-reduced-motion:reduce){.orbs i{animation:none}}`;
-export const ORBS = '<span class="orbs" aria-hidden="true"><i></i><i></i><i></i></span>';
+export const ORBS_CSS = `.orbs{display:inline-flex;align-items:center;vertical-align:middle;margin-right:6px;width:20px;height:20px;flex:none}.orbs canvas{width:20px;height:20px}.orbs-load{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:110px;padding:20px;color:var(--muted);font-size:13.5px}.orbs-load .orbs{width:64px;height:64px}.orbs-load canvas{width:64px;height:64px}`;
+export const ORBS = '<span class="orbs" aria-hidden="true"><canvas data-orb="working" width="40" height="40"></canvas></span>';
 
 export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:#1d6b3a;border-color:#bfe3cb;background:#effaf2}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(209,55,61,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(42,98,201,.22)}100%{background:transparent}}`;
 

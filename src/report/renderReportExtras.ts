@@ -132,7 +132,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
       typing.className = 'db-turn db-typing ' + (t.className.match(/db-(bull|bear|mid|red)/) || [''])[0];
       typing.innerHTML = '<div class="db-who"><b>' + (who ? who.textContent : '') + '</b> 작성 중…</div><div class="db-bubble"><span class="orbs"><i></i><i></i><i></i></span></div>';
       t.parentNode.insertBefore(typing, t);
-      timer = setTimeout(function () { typing.remove(); t.hidden = false; t.classList.add('db-in'); i += 1; timer = setTimeout(next, 450); }, Math.min(1800, 500 + (t.textContent || '').length * 9));
+      timer = setTimeout(function () { typing.remove(); t.hidden = false; t.classList.add('db-in'); i += 1; timer = setTimeout(next, 450); }, Math.max(2000, 500 + (t.textContent || '').length * 9));
     };
     next();
   };
@@ -161,10 +161,10 @@ export const DEBATE_FILTER_SCRIPT = `<script>
     var chips = box.querySelector('.db-chips'); if (!chips || !turns.length) return;
     var view = document.documentElement.getAttribute('data-persona') || 'swing', focus = FOCUS[view];
     var speakers = [], names = {};
-    turns.forEach(function (t) { var s = t.getAttribute('data-speaker'); if (s === 'RED_TEAM' || names[s]) return; names[s] = (t.querySelector('.db-who b') || {}).textContent || s; speakers.push(s); });
-    if (!pick) { pick = {}; speakers.forEach(function (s) { pick[s] = !focus || focus.indexOf(s) >= 0; }); if (!speakers.some(function (s) { return pick[s]; })) speakers.forEach(function (s) { pick[s] = true; }); }
+    turns.forEach(function (t) { var s = t.getAttribute('data-speaker'); if (names[s]) return; names[s] = (t.querySelector('.db-who b') || {}).textContent || s; speakers.push(s); });
+    if (!pick) { pick = {}; speakers.forEach(function (s) { pick[s] = true; }); if (!speakers.some(function (s) { return pick[s]; })) speakers.forEach(function (s) { pick[s] = true; }); }
     chips.innerHTML = '<span class="db-chips-k">발언자</span>' + speakers.map(function (s) { return '<button type="button" data-sp="' + s + '" aria-pressed="' + !!pick[s] + '">' + names[s] + '</button>'; }).join('') + '<button type="button" data-sp="*" class="db-all">모두</button>';
-    var on = turns.map(function (t) { var s = t.getAttribute('data-speaker'); return s === 'RED_TEAM' || !!pick[s]; }), ctx = turns.map(function () { return false; });
+    var on = turns.map(function (t) { var s = t.getAttribute('data-speaker'); return !!pick[s]; }), ctx = turns.map(function () { return false; });
     turns.forEach(function (t, i) { var r = t.getAttribute('data-reply'); if (on[i] && r != null && !on[Number(r)]) ctx[Number(r)] = true; });
     turns.forEach(function (t, i) { t.classList.toggle('db-off', !on[i] && !ctx[i]); t.classList.toggle('db-ctx', !on[i] && ctx[i]); });
   };

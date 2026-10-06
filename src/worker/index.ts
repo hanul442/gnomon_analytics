@@ -2,14 +2,17 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { handle, runAlerts, runIntraday, type Env } from './api.js';
+import { writeCommentary } from '../analysis/commentary.js';
+import { runReportJob } from './reports.js';
 import type { AskClient } from './ask.js';
 
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
-    const ai: AskClient | undefined = env.ANTHROPIC_API_KEY
-      ? { create: (params) => new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 1, timeout: 90_000 }).messages.create(params as never) as never }
-      : undefined;
-    return handle(req, env, { now: () => new Date(), fetch: (input, init) => fetch(input, init), ...(ai ? { ai } : {}) });
+  async fetch(req: Request, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<Response> {
+    return handle(req,env,dependencies(env,ctx));
+  },
+  async queue(batch: { messages: { body: {id:string}; ack():void; retry():void }[] }, env: Env): Promise<void> {
+    const deps=dependencies(env);
+    for(const message of batch.messages){try{await runReportJob(env.DB,message.body.id,deps);message.ack();}catch{message.retry();}}
   },
   /** Cron (wrangler.toml): screener alerts after the site's daily build. */
   async scheduled(event: { cron: string }, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<void> {
@@ -19,3 +22,12 @@ export default {
     ctx.waitUntil(job.then((r) => console.log(event.cron, JSON.stringify(r))));
   },
 };
+
+function dependencies(env: Env, ctx?: {waitUntil(p:Promise<unknown>):void}) {
+ const client=env.ANTHROPIC_API_KEY?new Anthropic({apiKey:env.ANTHROPIC_API_KEY,maxRetries:0,timeout:180000}):undefined;
+ const ai:AskClient|undefined=client?{
+  create:params=>client.messages.create(params as never) as never,
+  stream:async(params,onText)=>{const stream=client.messages.stream(params as never);stream.on('text',onText);return await stream.finalMessage() as never;}
+ }:undefined;
+ return {now:()=>new Date(),fetch:(input:RequestInfo|URL,init?:RequestInit)=>fetch(input,init),...(ai?{ai}:{}),...(client?{generate:(report:import('../report/dailyReport.js').DailyReport,tier:import('../analysis/commentary.js').CommentaryTier)=>writeCommentary(report,{client,tier})}:{}),...(ctx?{waitUntil:(p:Promise<unknown>)=>ctx.waitUntil(p)}:{})};
+}

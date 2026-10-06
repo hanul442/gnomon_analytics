@@ -51,3 +51,10 @@ test('upbit: long history pages back 200 days at a time with `to`', async () => 
   assert.deepEqual([bars[0]!.date, bars.at(-1)!.date], [all[0]!.candle_date_time_kst.slice(0, 10), all.at(-1)!.candle_date_time_kst.slice(0, 10)]);
   assert.equal((await fetchUpbitDaysLong('KRW-BTC', new Date(), 300, fake, 0)).length, 300);
 });
+
+test('minute candles preserve absolute UTC time, sort and deduplicate, rejecting invalid OHLCV', async()=>{
+ const {parseUpbitMinutes,fetchUpbitMinutes}=await import('./upbit.js');
+ const bar={market:'KRW-BTC',candle_date_time_utc:'2026-10-06T05:00:00',opening_price:100,high_price:110,low_price:90,trade_price:105,candle_acc_trade_volume:2};
+ const list=parseUpbitMinutes([bar,bar,{...bar,market:'KRW-ETH'},{...bar,opening_price:'bad'}],'KRW-BTC');assert.equal(list.length,1);assert.equal(list[0]!.time,Date.parse('2026-10-06T05:00:00Z')/1000);
+ await fetchUpbitMinutes('KRW-BTC',15,(async(url)=>{assert.match(String(url),/minutes\/15\?market=KRW-BTC&count=200/);return Response.json([bar]);}) as typeof fetch);
+});

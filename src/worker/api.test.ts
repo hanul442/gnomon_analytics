@@ -270,6 +270,8 @@ test('deep reports (G-61): locked until unlocked once with credits; requester an
   const boss = await t.login('boss@example.com');
   const u = await t.login('d@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
   const path = '/deep/000660/2026-10-02';
+  assert.equal((await t.call('GET',path,undefined,u.session)).status,200);
+  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='d@example.com'").run();
   const locked = await t.call('GET', path, undefined, u.session);
   assert.deepEqual([locked.status, locked.body.error, locked.body.cost, locked.body.balance], [402, 'LOCKED', CREDIT_COST.unlock, ALPHA.monthlyCredits]);
   // A report with no sealed file costs nothing.
@@ -290,6 +292,7 @@ test('deep reports (G-61): locked until unlocked once with credits; requester an
   const poor = await t.login('p@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
   const pid = (await t.call('GET', '/admin/overview', undefined, boss.session)).body.users.find((x: any) => x.email === 'p@example.com').id;
   await t.call('POST', '/admin/grant', { userId: pid, amount: -(ALPHA.monthlyCredits - 3) }, boss.session);
+  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE id=?").bind(pid).run();
   const broke = await t.call('POST', `${path}/unlock`, {}, poor.session);
   assert.deepEqual([broke.status, broke.body.error, broke.body.balance], [402, 'NO_CREDITS', 3]);
 });
@@ -330,4 +333,82 @@ test('an invited expert answers in the debate at the invite price (G-80)', async
   assert.match(String(calls[0]!.system), /반도체 전문가/);
   const c = await t.call('POST', '/ask', { tier: 'standard', expert: 'committee', question: '결론만 다시요' }, u.session);
   assert.deepEqual([c.body.credits, c.body.speaker], [CREDIT_COST.standard, 'AI 위원회']);
+});
+
+// Alpha v2: generation must be durable, charge once, and never expose another user's paid text.
+async function reportSetup() {
+  const t=setup();
+  const { buildDailyReport }=await import('../report/dailyReport.js');
+  const { skippedCommentary }=await import('../analysis/commentary.js');
+  const bars=Array.from({length:30},(_,i)=>({symbol:'000660',date:new Date(Date.UTC(2026,8,1+i)).toISOString().slice(0,10),open:100+i,high:105+i,low:95+i,close:102+i,volume:1000,source:'test',retrievedAt:'2026-10-05T00:00:00Z'}));
+  const report=buildDailyReport({symbol:'000660',name:'테스트',date:bars.at(-1)!.date,generatedAt:t.deps.now!(),bars,disclosures:[],sources:['test']});
+  const real=t.deps.fetch!;
+  t.deps.fetch=(async (url: RequestInfo|URL, init?:RequestInit)=>String(url).endsWith('/research/000660.json')?Response.json(report):real(url,init)) as typeof fetch;
+  const queued:string[]=[];
+  t.env.REPORT_QUEUE={send:async({id})=>{queued.push(id);}};
+  t.deps.generate=async()=>({...skippedCommentary(report,'test',new Date()),status:'OK',summary:{text:'비공개 분석 본문',evidenceIds:[],kind:'INFERENCE'},tier:'deep'});
+  const boss=await t.login('boss@example.com');
+  const user=await t.login('jobs@example.com',(await t.call('POST','/admin/invites',{},boss.session)).body.code);
+  return {...t,queued,boss,user,report};
+}
+
+test('on-demand reports charge once across concurrent retries; owner/pro read, Plus cannot; redelivery is idempotent',async()=>{
+ const t=await reportSetup();
+ const [a,b]=await Promise.all([t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session),t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session)]);
+ assert.equal(a.status,200);assert.equal(b.status,200);assert.equal(a.body.id,b.body.id);assert.equal(t.queued.length,1);
+ assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits-CREDIT_COST.report);
+ const {runReportJob}=await import('./reports.js');let runs=0;
+ const gen=t.deps.generate!;t.deps.generate=async(r,k)=>{runs++;return gen(r,k);};
+ await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});
+ await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});assert.equal(runs,1);
+ const done=await t.call('GET','/reports/'+a.body.id,undefined,t.user.session);
+ assert.equal(done.body.status,'done');assert.match(done.body.fragments.home,/비공개 분석 본문/);
+ const other=await t.login('other@example.com',(await t.call('POST','/admin/invites',{},t.boss.session)).body.code);
+ assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,200);
+ await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='other@example.com'").run();
+ const blocked=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(blocked.status,404);assert.doesNotMatch(JSON.stringify(blocked.body),/비공개 분석 본문/);
+ assert.equal((await t.call('GET','/reports/'+a.body.id)).status,401);
+ assert.equal((await t.call('GET','/me/export',undefined,t.user.session)).body.reportJobs.length,1);
+});
+
+test('queue failure and generation failure refund once; a failed report can be retried',async()=>{
+ const t=await reportSetup();t.env.REPORT_QUEUE={send:async()=>{throw Error('offline');}};
+ assert.equal((await t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session)).status,503);
+ assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits);
+ t.env.REPORT_QUEUE={send:async()=>{}};
+ const next=await t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session);assert.equal(next.status,200);
+ const {runReportJob}=await import('./reports.js');const deps={now:t.deps.now!,fetch:t.deps.fetch!,generate:async()=>{throw Error('AI failed');}};
+ await runReportJob(t.env.DB,next.body.id,deps);await runReportJob(t.env.DB,next.body.id,deps);
+ assert.equal((await t.call('GET','/reports/'+next.body.id,undefined,t.user.session)).body.status,'failed');
+ assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits);
+ assert.equal((await t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session)).status,200);
+});
+
+test('report budget rejects before charge and stale generation refunds',async()=>{
+ const t=await reportSetup();t.env.AI_DAILY_USD='0.1';
+ assert.equal((await t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session)).body.error,'AI_BUDGET');
+ assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits);
+ t.env.AI_DAILY_USD='5';const r=await t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session);
+ t.tick(16*60000);assert.equal((await t.call('GET','/reports/'+r.body.id,undefined,t.user.session)).body.status,'failed');
+ assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits);
+});
+
+test('AI screen composition validates fields, refunds unsupported output, and keeps an editable rule',async()=>{
+ let answer=JSON.stringify({name:'거래량',explanation:'오늘 평균 대비 3배',screen:{match:'all',rules:[{f:'vol1',op:'>=',v:3}]}});
+ const t=setup({ai:{create:async()=>({content:[{type:'text',text:answer}],model:'claude-haiku-4-5',stop_reason:'end_turn',usage:{input_tokens:100,output_tokens:100}})}});
+ const boss=await t.login('boss@example.com');const u=await t.login('screen@example.com',(await t.call('POST','/admin/invites',{},boss.session)).body.code);
+ const good=await t.call('POST','/screens/compose',{question:'거래량 터진 종목',market:'stock'},u.session);assert.equal(good.status,200);assert.deepEqual(good.body.screen.rules,[{f:'vol1',op:'>=',v:3}]);
+ const bal=good.body.balance;answer=JSON.stringify({screen:{match:'all',rules:[{f:'cap',op:'>=',v:100}]}});
+ const bad=await t.call('POST','/screens/compose',{question:'큰 코인',market:'coin'},u.session);assert.equal(bad.body.error,'UNSUPPORTED');assert.equal((await t.call('GET','/me',undefined,u.session)).body.credits.balance,bal);
+});
+
+test('chat SSE emits text deltas then the charged result, without waiting for a whole answer',async()=>{
+ let finish!:()=>void;const barrier=new Promise<void>(r=>{finish=r;});
+ const t=setup({ai:{create:async()=>{throw Error('stream expected');},stream:async(_p,onText)=>{onText('첫 문장');await barrier;onText(' 둘째');return {content:[{type:'text',text:'첫 문장 둘째'}],model:'claude-haiku-4-5',stop_reason:'end_turn',usage:{input_tokens:100,output_tokens:100}};}}});
+ const boss=await t.login('boss@example.com');
+ const response=await handle(new Request('https://api.test/ask/stream',{method:'POST',headers:{Origin:'https://hanul442.github.io','Content-Type':'application/json',Authorization:'Bearer '+boss.session},body:JSON.stringify({tier:'question',question:'설명해 줘'})}),t.env,t.deps);
+ assert.match(response.headers.get('Content-Type')!,/text\/event-stream/);const reader=response.body!.getReader();let text='';
+ while(!text.includes('첫 문장')){text+=new TextDecoder().decode((await reader.read()).value);}
+ assert.match(text,/event: delta/);assert.doesNotMatch(text,/event: done/);finish();
+ while(true){const chunk=await reader.read();if(chunk.done)break;text+=new TextDecoder().decode(chunk.value);}assert.match(text,/event: done/);assert.match(text,/"credits":5/);
 });
