@@ -15,7 +15,7 @@ import {CREDIT_COST} from '../dist/report/plans.js';
 const root=process.cwd(),origin='http://localhost:8765';
 process.env.GNM_API_URL=origin;
 await renderSite(root,await loadTickers(root+'/tickers.json'));
-const bars=Array.from({length:80},(_,i)=>({date:new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10),open:100+i,high:105+i,low:95+i,close:102+i,volume:1000+i*10}));
+const bars=Array.from({length:80},(_,i)=>({date:new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10),open:150+Math.sin(i*.35)*12+i*.2,high:155+Math.sin(i*.35)*12+i*.2,low:145+Math.sin(i*.35)*12+i*.2,close:152+Math.sin(i*.35)*12+i*.2,volume:1000+i*10}));
 for(const [dir,symbol,name,kind] of [['s','999999','UI 테스트','stock'],['c','KRW-BTC','비트코인','coin']]){
  await mkdir(root+'/site/'+dir,{recursive:true});await writeFile(root+'/site/'+dir+'/'+symbol+'.json',JSON.stringify({pageUrl:dir+'/'+symbol+'.html',symbol,name,kind,market:'KOSPI',bars:bars.map(b=>[b.date,b.open,b.high,b.low,b.close,b.volume]),calc:quickCalc(symbol,bars,new Date())}));
  await writeFile(root+'/site/'+dir+'/'+symbol+'.html',renderCalculationPage({symbol,name,...(kind==='coin'?{kind:'coin'}:{}),bars:bars.map(b=>({...b,symbol,source:'fixture',retrievedAt:new Date().toISOString()})),now:new Date()}));
@@ -52,7 +52,7 @@ try{
   await page.locator('h1').filter({hasText:'UI 테스트'}).waitFor();await page.locator('#main[aria-busy]').waitFor({state:'detached'});
   assert.equal(await page.locator('[role=tab][aria-controls]:visible').count(),7);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-  await page.locator('#t-technical').click();await page.locator('[data-chart-indicator=fib]').first().click();assert.equal(await page.locator('[data-ov=fib]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('#t-chart').getAttribute('aria-selected'),'true');await page.locator('#chart-context button').click();assert.equal(await page.locator('#t-technical').getAttribute('aria-selected'),'true');
+  await page.locator('#t-technical').click();await page.locator('[data-chart-indicator=fib]').first().click();assert.equal(await page.locator('[data-ov=fib]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('#t-chart').getAttribute('aria-selected'),'true');assert.ok(await page.locator('#overlays').evaluate(el=>JSON.parse(el.textContent).fib.length>0));if(width===375)await page.screenshot({path:'test-artifacts/indicator-chart.png'});await page.locator('#chart-context button').click();assert.equal(await page.locator('#t-technical').getAttribute('aria-selected'),'true');
   await page.locator('#t-ai').click();assert.equal(await page.locator('#tab-ai .gnm-loading').count(),0);
   await page.locator('#tab-ai .gnm-loading').waitFor({state:'detached'});
   await page.locator('#debate .db-join').waitFor();await page.locator('[data-pick-expert]').click();await page.locator('dialog[open]').waitFor();
