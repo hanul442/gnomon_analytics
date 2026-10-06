@@ -22,10 +22,11 @@ import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promi
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
-import { COMMENTARY_PROMPT_VERSION, skippedCommentary, writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
+import { COMMENTARY_PROMPT_VERSION, publicCommentary, skippedCommentary, writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
+import { deepPath, seal, unseal } from '../report/seal.js';
 import { AiBudget } from './aiBudget.js';
 import type Anthropic from '@anthropic-ai/sdk';
-import { CHART_ASSET, FONT_DIR, renderIndex, renderReport, renderStockPage, type HomeEntry, writeAssets } from '../report/renderHtml.js';
+import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderStockPage, type HomeEntry, type PageContext, writeAssets } from '../report/renderHtml.js';
 import { renderHome, type IndexQuote } from '../report/renderHome.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
@@ -54,6 +55,31 @@ import type { UniverseRow } from '../sources/naverList.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
 
 const KST_MS = 9 * 60 * 60_000;
+
+/**
+ * G-61: the secret that seals committee reports (env GNM_DEEP_KEY). Without it nothing is sealed and
+ * pages carry the whole commentary, as before.
+ */
+let DEEP_KEY = '';
+export const setDeepKey = (key: string | undefined) => { DEEP_KEY = (key ?? '').trim(); };
+
+/** A committee commentary as stored in the public repository: the public part plus the sealed whole. */
+async function storable(report: DailyReport): Promise<DailyReport> {
+  const c = report.commentary;
+  if (!DEEP_KEY || c?.status !== 'OK' || c.tier === 'brief' || c.sealed) return report;
+  return { ...report, commentary: { ...publicCommentary(c), sealed: await seal(JSON.stringify(c), DEEP_KEY) } };
+}
+
+/** Writes a report page; with the key, the page gets the public part and the paid part is sealed next to it. */
+async function writeReportPage(siteDir: string, path: string, report: DailyReport, links: Parameters<typeof renderReport>[1], deepDate: string | null): Promise<void> {
+  const c = report.commentary;
+  if (!DEEP_KEY || !deepDate || c?.status !== 'OK' || c.tier === 'brief' || c.sealed) { await writeFile(path, renderReport(report, links)); return; }
+  await writeFile(path, renderReport({ ...report, commentary: publicCommentary(c) }, { ...links, deep: { date: deepDate } }));
+  const file = join(siteDir, deepPath(report.symbol, deepDate));
+  await mkdir(dirname(file), { recursive: true });
+  const ctx: Pick<PageContext, 'live' | 'previous'> = { live: !!links.live, previous: links.previous ?? null };
+  await writeFile(file, await seal(renderDeep(report, ctx), DEEP_KEY));
+}
 const SETTLED_HOUR_KST = 18;
 const daysBetween = (from: string, to: string) => (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
 
@@ -416,7 +442,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
         }), paperKey);
       }
       await mkdir(reportDir, { recursive: true });
-      await writeFile(reportPath, `${JSON.stringify(built)}\n`, { flag: 'wx' });
+      await writeFile(reportPath, `${JSON.stringify(await storable(built))}\n`, { flag: 'wx' });
       report = 'WRITTEN';
     }
   }
@@ -483,7 +509,14 @@ export async function composeReport(
 async function loadReports(reportDir: string): Promise<DailyReport[]> {
   const files = (await readdir(reportDir).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f));
   const reports: DailyReport[] = [];
-  for (const file of files) reports.push(JSON.parse(await readFile(join(reportDir, file), 'utf8')) as DailyReport);
+  for (const file of files) {
+    const r = JSON.parse(await readFile(join(reportDir, file), 'utf8')) as DailyReport;
+    // With the key, a sealed commentary is opened again (the run needs it whole); without, the public part stays.
+    if (DEEP_KEY && r.commentary?.sealed) {
+      try { r.commentary = JSON.parse(await unseal(r.commentary.sealed, DEEP_KEY)); } catch { /* wrong key: keep the public part */ }
+    }
+    reports.push(r);
+  }
   return reports;
 }
 
@@ -516,7 +549,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const sorted = [...reports].sort((a, b) => (a.date < b.date ? -1 : 1));
     for (const report of sorted) {
       const previous = sorted.filter((r) => r.date < report.date && r.commentary?.status === 'OK').at(-1) ?? null;
-      await writeFile(join(dir, 'reports', `${report.date}.html`), renderReport(report, { index: '../archive.html', base: '../../', homeHref: '../index.html', archiveHref: '../archive.html', previous }));
+      await writeReportPage(siteDir, join(dir, 'reports', `${report.date}.html`), report, { index: '../archive.html', base: '../../', homeHref: '../index.html', archiveHref: '../archive.html', previous }, report.date);
     }
     await writeFile(join(dir, 'archive.html'), renderIndex(reports, { base: '../', name: ticker.name }));
     const latest = [...reports].sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
@@ -527,10 +560,10 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
       const ai = [...reports].filter((r) => r.commentary?.status === 'OK').sort((a, b) => (a.date < b.date ? -1 : 1));
       const withAi = ai.at(-1) ?? [...reports].filter((r) => r.commentary).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
       page = { ...live, ...(withAi?.commentary ? { commentary: withAi.commentary } : {}) };
-      await writeFile(join(dir, 'index.html'), renderReport(page, { ...links, live: true, commentaryFrom: withAi?.date ?? null, previous: ai.length > 1 ? ai.at(-2)! : null }));
+      await writeReportPage(siteDir, join(dir, 'index.html'), page, { ...links, live: true, commentaryFrom: withAi?.date ?? null, previous: ai.length > 1 ? ai.at(-2)! : null }, withAi?.date ?? null);
     } else if (latest) {
       page = latest;
-      await writeFile(join(dir, 'index.html'), renderReport(latest, links));
+      await writeReportPage(siteDir, join(dir, 'index.html'), latest, links, latest.date);
     } else {
       await writeFile(join(dir, 'index.html'), renderIndex(reports, { base: '../', name: ticker.name }));
     }
@@ -614,6 +647,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
 if (import.meta.url === `file://${process.argv[1]}`) {
   const rootFlag = process.argv.indexOf('--root');
   const root = rootFlag >= 0 ? process.argv[rootFlag + 1] ?? '.' : '.';
+  setDeepKey(process.env.GNM_DEEP_KEY);
   Promise.all([loadTickers(join(root, 'tickers.json')), loadRequests(join(root, 'requests.json'))])
     .then(([tickers, requests]) => runDaily({
       root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '', tickers, requests,

@@ -3,7 +3,8 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { runDaily } from './daily.js';
+import { runDaily, setDeepKey } from './daily.js';
+import { unseal } from '../report/seal.js';
 import { loadTickers } from '../config/tickers.js';
 import { DEFAULT_SELECTION } from '../analysis/selection.js';
 
@@ -84,7 +85,10 @@ test('a requested stock gets one deep committee report, then dashboards only', a
   await runDaily({ ...opts, now: new Date('2026-10-02T09:30:00Z') });
   assert.deepEqual(calls.sort(), ['SK하이닉스 (000660)', '조용한전자 (111110)']);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
-  assert.ok(home.includes('data-kind="request"') && home.includes('href="111110/index.html"'));
+  // Requested reports are kept off the front page (G-61) but have their page and are in search.
+  assert.ok(!home.includes('data-kind="request"'));
+  assert.match(await readFile(join(root, 'site', '111110', 'index.html'), 'utf8'), /조용한전자/);
+  assert.ok((JSON.parse(await readFile(join(root, 'site', 'search.json'), 'utf8')) as { items: unknown[][] }).items.some((x) => x[0] === '111110' && x[5] === 1));
   // Stocks without a report get chart data for the shared, locked stock page.
   const page = JSON.parse(await readFile(join(root, 'site', 's', '222220.json'), 'utf8')) as { name: string; bars: unknown[] };
   assert.deepEqual([page.name, page.bars.length], ['뛰는바이오', 80]);
@@ -158,4 +162,35 @@ test('the monthly AI budget: core stocks spend it first, the rest skip AI with t
   assert.equal(out.results.length, 3);
   const ledger = (await readFile(join(root, 'data', 'status', 'ai-usage.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as { symbol: string; usd: number; month: string });
   assert.deepEqual(ledger.map((l) => [l.symbol, l.usd, l.month]).sort(), [['000660', 0.12, '2026-10'], ['222220', 0.03, '2026-10']]);
+});
+
+test('sealed deep reports (G-61): the paid part is neither in the repository nor in the page, only sealed next to it', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
+  const anthropic = { beta: { messages: { parse: async (req: { model: string }) => ({ stop_reason: 'end_turn', model: req.model, parsed_output: {
+    summary: { text: '공개 결론', evidenceIds: ['P1'] }, bullish: [{ text: '공개 강세', evidenceIds: ['P1'] }, { text: '비밀강세둘', evidenceIds: ['P1'] }], bearish: [], uncertain: [], watch: [{ text: '비밀관찰', evidenceIds: ['P1'] }], dataGaps: [],
+    desks: [{ desk: 'TECHNICAL', stance: 'BULLISH', view: { text: '비밀데스크', evidenceIds: ['P1'] } }],
+    scenarios: [{ kind: 'BULL', narrative: { text: '비밀시나리오', evidenceIds: ['P1'] }, catalysts: ['비밀촉매'], invalidation: [], probability: 60 }, { kind: 'BEAR', narrative: { text: '비밀약세', evidenceIds: ['P1'] }, catalysts: [], invalidation: [], probability: 40 }],
+    analysts: [] } }) } } } as never;
+  setDeepKey('test-deep-key');
+  try {
+    const opts = { root, apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: { ...DEFAULT_SELECTION, size: 1, bigCaps: 0 }, dailyPicks: false };
+    await runDaily({ ...opts, now: new Date('2026-10-02T09:30:00Z') });
+    const secrets = /비밀데스크|비밀시나리오|비밀촉매|비밀강세둘|비밀관찰/;
+    const stored = await readFile(join(root, 'reports', '000660', '2026-10-02.json'), 'utf8');
+    assert.doesNotMatch(stored, secrets);
+    assert.match(stored, /"sealed":"/);
+    assert.match(stored, /공개 결론/);
+    for (const page of ['index.html', 'reports/2026-10-02.html']) {
+      const html = await readFile(join(root, 'site', '000660', page), 'utf8');
+      assert.doesNotMatch(html, secrets, page);
+      assert.ok(html.includes('id="deep-slot"') && html.includes('data-date="2026-10-02"') && html.includes('강세 60%'), page);
+    }
+    const deep = await unseal(await readFile(join(root, 'site', '000660', 'deep', '2026-10-02.txt'), 'utf8'), 'test-deep-key');
+    assert.match(deep, /비밀데스크/); assert.match(deep, /비밀시나리오/);
+    // The next run opens the sealed report again for the live page, and still leaks nothing.
+    await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
+    assert.doesNotMatch(await readFile(join(root, 'site', '000660', 'index.html'), 'utf8'), secrets);
+    assert.match(await unseal(await readFile(join(root, 'site', '000660', 'deep', '2026-10-02.txt'), 'utf8'), 'test-deep-key'), /비밀데스크/);
+  } finally { setDeepKey(''); }
 });

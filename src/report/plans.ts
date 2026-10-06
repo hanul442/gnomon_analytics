@@ -28,14 +28,14 @@ export interface Plan {
 export const PLANS: readonly Plan[] = [
   { key: 'free', name: '무료', price: 0, tagline: '한 줄 요약 (크레딧 없음)', monthlyCredits: 0, topUpBonus: 0, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
     adds: ['전 종목 검색과 1년 차트', '한 줄 요약과 지표 16개 판단', '외국인·기관 수급, 실적·밸류에이션', 'AI 위원회 표 분포', '뉴스·공시', '성적표 대표 숫자 · 전략 챔피언 이름', '관심 종목 5개'] },
-  { key: 'plus', name: '플러스', price: 14900, tagline: '계산 상세 + 요약 리포트', monthlyCredits: 0, topUpBonus: 0, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
+  { key: 'plus', name: '플러스', price: 14900, tagline: '계산 상세 + 요약 리포트', monthlyCredits: 100, topUpBonus: 0, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
     adds: ['기간별 신호 게이지(15분봉~월봉)', '기술적 적정가', '수급 흔적(매집·분산 분석)·가격 구조', '스크리너: 전 종목 조건 검색 전체', '차트 그리기 저장(10종목)', '요약 리포트 전체', '제한된 AI 위원회: 결론 · 데스크 5곳 입장 · 레드팀 한 줄', '전략 순위표 · 전략 챔피언 레이스', '성적표 요약표(기간별 적중·분석가 순위) · 모의투자 평균 성과', '크레딧 충전과 사용: 리포트 요청·AI 질문', '관심 종목 30개'],
     soon: [] },
-  { key: 'pro', name: '프로', price: 39000, tagline: 'AI 위원회 전체 + 전문가 초청', monthlyCredits: 300, topUpBonus: 10, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
+  { key: 'pro', name: '프로', price: 39000, tagline: 'AI 위원회 전체 + 전문가 초청', monthlyCredits: 400, topUpBonus: 10, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
     adds: ['AI 위원회 리포트 전체(위원별 근거·예측·레드팀·시나리오)', '전문가 AI 초청: 업종·투자 스타일 전문가를 골라 위원회에 앉혀요(크레딧)', '예측 가격 범위(5·20·60·120거래일)와 분석가 예상가', '전략 대결 전체(매매 시점·수익 곡선·몬테카를로·차트 표시)', '모의투자 종목별 장부·매매 내역', '성적표 종목별 상세·빗나간 예측 하나하나', '요약 리포트를 심층 리포트로 업그레이드', '매달 300크레딧', '충전할 때 크레딧 10% 더', '관심 종목 100개'],
     soon: ['내 매매 아이디어 검증: 레드팀이 근거로 반박', '스크리너 조건 백테스트(4년)', '공시 이벤트 스터디: 공시 뒤 N일 수익 분포', '외국인·기관 수급 랭킹', '공시·신호 변화 알림'] },
-  { key: 'max', name: '맥스', price: 99000, tagline: '내 종목 전담 위원회', monthlyCredits: 1000, topUpBonus: 20, weeklyCoverage: 10, includedInvites: 30, standingExperts: 5,
-    adds: ['관심 종목 10개를 매주 AI 위원회 전체로 자동 리포트', '모든 전문가 초청 매달 30회 포함(크레딧 없이)', '전문가 정기 초청: 내 종목 주간 위원회에 고정 전문가 5명', '매달 1,000크레딧', '충전할 때 크레딧 20% 더', '관심 종목 무제한'],
+  { key: 'max', name: '맥스', price: 99000, tagline: '내 종목 전담 위원회', monthlyCredits: 1200, topUpBonus: 20, weeklyCoverage: 10, includedInvites: 30, standingExperts: 5,
+    adds: ['관심 종목 10개를 매주 AI 위원회 전체로 자동 리포트', '모든 전문가 초청 매달 30회 포함(크레딧 없이)', '전문가 정기 초청: 내 종목 주간 위원회에 고정 전문가 5명', '매달 1,200크레딧', '충전할 때 크레딧 20% 더', '관심 종목 무제한'],
     soon: ['전략 랩: 내 규칙으로 백테스트·검증 구간·과최적화 경고', '내 가상 포트폴리오와 예측 실패 원인 분석', '포트폴리오 리스크: 상관·집중·변동성·시나리오', '시점 재현: 과거 그날 알았던 것만으로 다시 보기', '데이터 내보내기(CSV)·웹훅'] },
 ];
 
@@ -43,7 +43,7 @@ export const PLANS: readonly Plan[] = [
  * Closed alpha (G-44): invited accounts get Pro features and a monthly credit allowance; more credits
  * are asked for in the app and granted by hand. Not sold, so it is not in PLANS.
  */
-export const ALPHA = { key: 'alpha', name: '알파', rankAs: 'pro' as PlanKey, monthlyCredits: 200, maxRequest: 500 } as const;
+export const ALPHA = { key: 'alpha', name: '알파', rankAs: 'pro' as PlanKey, monthlyCredits: 400, maxRequest: 500 } as const;
 
 /** Models behind the chat (G-45). Each answer shows the model and the credits it used. */
 export const ASK_TIERS = [
@@ -57,9 +57,11 @@ export type AskTier = (typeof ASK_TIERS)[number]['key'];
 export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 100, max: 1e9 };
 
 /** What a credit action costs (G-37). Credits are bought and used from Plus; upgrading a brief to a full report is Pro. */
-export const CREDIT_COST = { report: 80, brief: 30, upgrade: 50, invite: 25, idea: 20, deep: 15, standard: 10, question: 5 } as const;
+/** `unlock` (G-61): opening one sealed deep report, once per user and report. */
+export const CREDIT_COST = { report: 80, brief: 30, upgrade: 50, invite: 25, idea: 20, deep: 15, standard: 10, question: 5, unlock: 10 } as const;
 export type CreditAction = keyof typeof CREDIT_COST;
 export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail: string; min: Exclude<PlanKey, 'free'> }[] = [
+  { key: 'unlock', label: '심층 리포트 열기', detail: '이미 나온 AI 위원회 리포트의 토론·근거·시나리오 전개·최악의 경우를 열어요. 한 번 열면 계속 봐요', min: 'plus' },
   { key: 'report', label: '심층 리포트 요청', detail: '리포트가 없는 종목에 AI 위원회 전체 리포트를 한 번 써요', min: 'plus' },
   { key: 'brief', label: '요약 리포트 요청', detail: '리포트가 없는 종목에 요약 리포트를 한 번 써요', min: 'plus' },
   { key: 'upgrade', label: '심층으로 업그레이드', detail: '요약 리포트만 있는 종목을 AI 위원회 전체 리포트로 다시 써요', min: 'pro' },

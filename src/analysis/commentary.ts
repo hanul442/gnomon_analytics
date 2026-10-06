@@ -83,6 +83,31 @@ export interface Commentary {
   dropped: number;
   evidence: EvidenceItem[];
   error?: string;
+  /** G-61: the full commentary, encrypted (src/report/seal.ts); the fields above are then the public part. */
+  sealed?: string;
+}
+
+export const LOCKED_TEXT = '심층 리포트를 열면 볼 수 있어요.';
+
+/**
+ * The public part of a committee commentary (G-61): the conclusion, each desk's and analyst's stance,
+ * analysts' targets (logged and scored in the open anyway), the red team's first sentence, scenario
+ * kinds and probabilities, one point a side and the tab one-liners. Reasons, the debate, scenario
+ * narratives, the worst case and the rest of the evidence lists are left for the sealed part.
+ * A brief, or a commentary that is not OK, is returned as it is.
+ */
+export function publicCommentary(c: Commentary): Commentary {
+  if (c.status !== 'OK' || c.tier === 'brief') return c;
+  const lock = (claim: Claim): Claim => ({ text: LOCKED_TEXT, evidenceIds: [], ...(claim.kind ? { kind: claim.kind } : {}) });
+  const { debate: _d, worstCase: _w, sealed: _s, ...rest } = c;
+  return {
+    ...rest,
+    bullish: c.bullish.slice(0, 1), bearish: c.bearish.slice(0, 1), uncertain: [], watch: [],
+    ...(c.desks ? { desks: c.desks.map((d) => ({ ...d, view: lock(d.view) })) } : {}),
+    ...(c.analysts ? { analysts: c.analysts.map((a) => ({ ...a, rationale: lock(a.rationale) })) } : {}),
+    ...(c.redTeam ? { redTeam: { counterargument: { ...c.redTeam.counterargument, text: c.redTeam.counterargument.text.split(/(?<=[.?!요])\s/)[0] ?? '' }, unresolved: [] } } : {}),
+    ...(c.scenarios ? { scenarios: c.scenarios.map((s) => ({ kind: s.kind, narrative: lock(s.narrative), catalysts: [], invalidation: [], ...(s.probability !== undefined ? { probability: s.probability } : {}) })) } : {}),
+  };
 }
 
 const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
