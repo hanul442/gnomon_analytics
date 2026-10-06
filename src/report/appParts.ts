@@ -482,6 +482,7 @@ window.addEventListener('DOMContentLoaded', function () {
   setRange(63);
   requestAnimationFrame(drawLines);
   window.GNMChart = { L: L, chart: chart, candle: candle, bars: bars, series: function () { return allSeries.slice(); } };
+  if(window.GNM_coinChartReady)window.GNM_coinChartReady();
 });
 `;
 
