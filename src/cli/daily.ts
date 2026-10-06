@@ -13,6 +13,7 @@ import { chooseDailyPicks, type DailyPick } from '../analysis/dailyPicks.js';
 import { fetchUpbitDays, fetchUpbitDaysLong, UPBIT_SOURCE } from '../sources/upbit.js';
 import { escapeRegex } from './weekly.js';
 import { renderCoins } from '../report/renderCoins.js';
+import { renderGuide, renderSurvey, validBanners } from '../report/alphaPages.js';
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
 import { SITE_CONFIG } from '../report/alpha.js';
@@ -553,6 +554,10 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   // Trial-credit promotions (G-38): edited by hand in promos.json, published as-is when valid.
   const promos = validPromos(JSON.parse(await readFile(join(root, 'promos.json'), 'utf8').catch(() => '[]')));
   await writeFile(join(siteDir, 'promos.json'), JSON.stringify(promos));
+  // Alpha guide and surveys (G-58); notices for the home banner are edited by hand in banners.json.
+  await writeFile(join(siteDir, 'guide.html'), renderGuide());
+  await writeFile(join(siteDir, 'survey.html'), renderSurvey());
+  const banners = validBanners(JSON.parse(await readFile(join(root, 'banners.json'), 'utf8').catch(() => '[]')), kstParts(new Date()).date);
   await writeFile(join(siteDir, 'checkout.html'), renderCheckout());
   // Screener rows over every stock's free computation (G-43), and the presets' track record (G-53).
   const rows = universe && extras.calcs ? screenerRows(universe, extras.calcs, new Set(home.map((e) => e.symbol)), extras.risk) : [];
@@ -573,6 +578,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     if (last) indices.push({ symbol, name, date: last.date, close: last.close, changePct: prev ? (last.close / prev.close - 1) * 100 : null, closes: bars.slice(-60).map((b) => b.close) });
   }
   await writeFile(join(siteDir, 'index.html'), renderHome({
+    banners,
     entries: home, universe, indices, pulse: extras.pulse ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
     selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,
   }));
