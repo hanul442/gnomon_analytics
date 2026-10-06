@@ -94,7 +94,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .hero-main,.key-points{position:relative}.eyebrow{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:600;color:var(--accent-strong)}
 .hero h1{font-family:var(--serif);font-weight:600;font-size:40px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.01em}
 .hero-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}.hero-price b{font-size:34px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.hero-price span{font-weight:600;font-variant-numeric:tabular-nums}
-.hero-sub{font-size:12px;color:var(--muted);margin-top:2px}.hero-line{margin:14px 0 0;color:var(--fg2);max-width:60ch}
+.hero-sub{font-size:12px;color:var(--muted);margin-top:2px}.hero-chart{display:block;margin:12px 0 2px;padding:8px 10px 6px;border:1px solid var(--line);border-radius:14px;background:#fff;text-decoration:none;color:inherit;max-width:520px}.hero-chart:hover{border-color:var(--accent)}.hero-chart svg{display:block;width:100%;height:72px}.hc-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px}.hc-go{font-weight:800;color:var(--accent-strong)}.hero-line{margin:14px 0 0;color:var(--fg2);max-width:60ch}
 .key-points{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
 .kp-title{font-family:var(--serif);font-weight:600;margin-bottom:6px}.key-points ul{list-style:none;margin:0;padding:0}
 .key-points li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}.key-points li:first-child{border-top:0}.key-points li span{color:var(--muted)}
@@ -909,6 +909,16 @@ const stockScript = (coin: boolean) => `<script>
       var ch = prev ? last.close - prev.close : 0, pc = prev ? (ch / prev.close) * 100 : 0;
       $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + (Math.abs(ch) >= 100 ? Math.round(Math.abs(ch)).toLocaleString('ko-KR') : Number(Math.abs(ch).toPrecision(3)).toLocaleString('ko-KR', { maximumFractionDigits: 8 })) + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : '');
       $('sp-date').textContent = last.time + (COIN ? ' 일봉 (09:00 KST 기준)' : ' 종가');
+      // G-103: the 3-month mini chart under the price; tapping it opens the chart tab.
+      var hp = bars.slice(-63);
+      if (hp.length >= 5 && !document.querySelector('.hero-chart')) {
+        var lo = Math.min.apply(null, hp.map(function (b) { return b.close; })), hi = Math.max.apply(null, hp.map(function (b) { return b.close; })), sp = hi - lo || 1;
+        var pts = hp.map(function (b, i) { return (i / (hp.length - 1) * 320).toFixed(1) + ',' + (68 - (b.close - lo) / sp * 62).toFixed(1); }).join(' ');
+        var g = (hp[hp.length - 1].close / hp[0].close - 1) * 100, col = g >= 0 ? '#d1373d' : '#2a62c9';
+        var hc = document.createElement('a'); hc.className = 'hero-chart'; hc.href = '#tab-chart'; hc.setAttribute('aria-label', '최근 3개월 차트, 눌러서 차트 탭 열기');
+        hc.innerHTML = '<svg viewBox="0 0 320 72" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,72 ' + pts + ' 320,72" fill="' + col + '" fill-opacity=".12"/><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><span class="hc-meta"><span>3개월 <b class="' + (g > 0 ? 'up' : g < 0 ? 'down' : '') + '">' + (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '') + g.toFixed(1) + '%</b> · 최고 ' + won(hi) + ' · 최저 ' + won(lo) + '</span><span class="hc-go">차트 크게 보기 ›</span></span>';
+        $('sp-date').after(hc);
+      }
       $('pb-name').textContent = d.name; $('pb-code').textContent = d.symbol; $('pb-price').textContent = won(last.close);
       $('pb-price').parentElement.setAttribute('data-live',code);$('pb-change').parentElement.setAttribute('data-live',code);
       $('pb-change').textContent = prev ? (pc > 0 ? '▲ +' : pc < 0 ? '▼ ' : '') + pc.toFixed(2) + '%' : ''; $('pb-change').className = ch > 0 ? 'up' : ch < 0 ? 'down' : '';

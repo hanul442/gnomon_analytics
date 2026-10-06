@@ -211,3 +211,19 @@ test('report wire schemas contain no optional properties; unsupported tabs use e
  assert.ok(BriefWireSchema.shape.insights.safeParse(Object.fromEntries(['technical','strategy','flow','fundamental','news'].map(k=>[k,blank]))).success);
  assert.equal(BriefWireSchema.shape.insights.safeParse({}).success,false);
 });
+
+test('deep reports ask for JSON in words (no grammar) and repair small slips before the strict check',async()=>{
+ const seen:any[]=[];
+ const claim=(t:string,kind='FACT')=>({text:t,evidenceIds:['P1'],kind});
+ const reply={summary:claim('요약'),desks:[{desk:'TECHNICAL',stance:'bullish',view:claim('기술','OPINION')},{desk:'NOPE',stance:'BULLISH',view:claim('x')}],redTeam:{counterargument:claim('반론'),unresolved:[]},
+  scenarios:[{kind:'BULL',narrative:claim('상승'),catalysts:['a'],invalidation:['b'],probability:'40',trigger:'1,900,000',zoneLow:1850000,zoneHigh:'2,000,000원'},{kind:'BASE',narrative:claim('기본'),catalysts:[],invalidation:[],probability:40,trigger:0,zoneLow:1800000,zoneHigh:1900000},{kind:'BEAR',narrative:claim('하락'),catalysts:[],invalidation:[],probability:20,trigger:1700000,zoneLow:1600000,zoneHigh:1700000}],
+  analysts:[],debate:[{speaker:'TECHNICAL',stance:'BULLISH',replyTo:-1,claim:claim('발언')}],worstCase:{narrative:claim('최악'),checks:['c']},insights:{technical:claim('한 줄')},bullish:[claim('강세')],dataGaps:[]};
+ const client={beta:{messages:{stream:(p:any)=>{seen.push(p);return {finalMessage:async()=>({stop_reason:'end_turn',model:COMMENTARY_MODEL,content:[{type:'text',text:'다음은 결과예요.\n```json\n'+JSON.stringify(reply)+'\n```'}],usage:{input_tokens:1,output_tokens:2}})};}}}} as unknown as Anthropic;
+ const c=await writeCommentary(report,{client});
+ assert.equal(c.status,'OK',c.error);
+ assert.equal(seen[0].output_config.format,undefined,'no constrained grammar for the deep schema');
+ assert.match(seen[0].system,/JSON 스키마/);
+ assert.deepEqual(c.desks?.map(d=>[d.desk,d.stance,d.view.kind]),[['TECHNICAL','BULLISH','INFERENCE']]);
+ assert.equal(c.scenarios?.find(x=>x.kind==='BULL')?.trigger,1900000);
+ assert.deepEqual(c.scenarios?.find(x=>x.kind==='BULL')?.zone,[1850000,2000000]);
+});

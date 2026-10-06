@@ -62,6 +62,17 @@ export function freshnessBadge(f: Freshness): string {
   return `<span class="fresh f-${f.state}" title="${esc(f.detail)}"><i aria-hidden="true"></i>${esc(f.label)}</span>`;
 }
 
+/** G-103: a small 3-month chart right under the price; tapping it opens the chart tab. */
+export function heroChart(report: DailyReport): string {
+  const pts = (report.recentCloses ?? []).slice(-63).filter((x) => Number.isFinite(x.close) && x.close > 0);
+  if (pts.length < 5) return '';
+  const w = 320, h = 72, lo = Math.min(...pts.map((x) => x.close)), hi = Math.max(...pts.map((x) => x.close)), span = hi - lo || 1;
+  const xy = pts.map((x, i) => [(i / (pts.length - 1)) * w, h - 4 - ((x.close - lo) / span) * (h - 10)] as const);
+  const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const chg = (pts.at(-1)!.close / pts[0]!.close - 1) * 100, color = chg >= 0 ? '#d1373d' : '#2a62c9';
+  return `<a class="hero-chart" href="#tab-chart" aria-label="최근 3개월 차트, 눌러서 차트 탭 열기"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".22"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><polygon points="0,${h} ${line} ${w},${h}" fill="url(#hc-g)"/><polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg><span class="hc-meta"><span>3개월 <b class="${chg > 0 ? 'up' : chg < 0 ? 'down' : ''}">${chg > 0 ? '▲ +' : chg < 0 ? '▼ ' : ''}${chg.toFixed(1)}%</b> · 최고 ${esc(won(hi))} · 최저 ${esc(won(lo))}</span><span class="hc-go">차트 크게 보기 ›</span></span></a>`;
+}
+
 export function hero(report: DailyReport, options: { live: boolean; asOf: string }): string {
   const p = report.price, m = report.market;
   const mid = m?.horizons.find((h) => h.key === 'MEDIUM')?.summary;
@@ -75,7 +86,7 @@ export function hero(report: DailyReport, options: { live: boolean; asOf: string
 <div class="hero-main"><div class="eyebrow"><span>${esc(report.kind === 'coin' ? report.symbol.replace('KRW-', '') : report.symbol)}</span>${report.kind ? `<span>${report.kind === 'etf' ? 'ETF' : '코인 · 업비트 원화'}</span>` : ''}${m?.benchmarks[0] ? `<span>${esc(m.benchmarks[0].name)}</span>` : ''}<span>${options.live ? `${esc(options.asOf)} 기준` : `${esc(report.date)} 리포트`}</span>${freshnessBadge(freshness(report))}</div>
 <div class="h1-row"><h1>${esc(report.name)}</h1>${starButton(report.symbol, report.name)}</div>
 ${p ? `<div class="hero-price"><b data-live="${esc(report.symbol)}" data-live-f="price">${esc(won(p.close))}</b><span class="live-tag" data-live="${esc(report.symbol)}" data-live-f="tag" hidden></span>${p.changePct === null ? '' : `<span class="${tone(p.changePct)}" data-live="${esc(report.symbol)}" data-live-f="full">${p.change! > 0 ? '▲' : p.change! < 0 ? '▼' : ''} ${esc(num(Math.abs(p.change!)))} (${esc(pct(p.changePct))})</span>`}</div>
-<div class="hero-sub">${esc(p.sessionDate ?? report.date)} ${report.kind === 'coin' ? '일봉 (09:00 KST 기준)' : '종가'}</div>` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
+<div class="hero-sub">${esc(p.sessionDate ?? report.date)} ${report.kind === 'coin' ? '일봉 (09:00 KST 기준)' : '종가'}</div>${heroChart(report)}` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
 <p class="hero-line">${esc(report.headline)}</p></div>
 ${points.length ? `<div class="key-points"><div class="kp-title">핵심 포인트</div><ul>${points.map(([k, v, t]) => `<li><span>${esc(k!)}</span><b class="${t}">${esc(v!)}</b></li>`).join('')}</ul></div>` : ''}
 </section>`;
