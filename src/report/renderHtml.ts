@@ -1,3 +1,4 @@
+import {contentMore,CONTENT_MORE_CSS} from './contentMore.js';
 import {indicatorKey,INDICATOR_LINK_CSS,INDICATOR_LINK_JS} from './indicatorLinks.js';
 import {scenarioPanel,SCENARIO_CSS,SCENARIO_JS} from './scenarioChart.js';
 import { COIN_CHART_JS } from './coinChart.js';
@@ -310,12 +311,13 @@ main{padding:14px 14px 48px}.hero{padding:22px 18px;border-radius:18px}.hero h1{
 footer{padding:0 16px 32px}}
 `;
 
-// G-71/G-79: six tabs; 기술 and 전략 live in the chart tab as parts (#tab-technical, #tab-strategy still work).
-type TabKey = 'home' | 'chart' | 'technical' | 'ai' | 'flows' | 'fundamentals' | 'news';
+// Keep chart, technical analysis and strategy in independent tabs.
+type TabKey = 'home' | 'chart' | 'technical' | 'strategy' | 'ai' | 'flows' | 'fundamentals' | 'news';
 export const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'home', label: '요약' },
   { key: 'chart', label: '차트' },
   { key: 'technical', label: '기술' },
+  { key: 'strategy', label: '전략' },
   { key: 'ai', label: 'AI 위원회' },
   { key: 'flows', label: '수급' },
   { key: 'fundamentals', label: '실적' },
@@ -449,11 +451,10 @@ function filingsTable(report: DailyReport): string {
   const recent = report.recentFilings ?? report.filings;
   const fresh = new Set(report.filings.map((f) => f.receiptNo));
   if (!recent.length) return '<p class="empty">최근 30일 동안 나온 공시가 없어요.</p>';
-  return `<div class="table-wrap"><table><thead><tr><th class="col-date">날짜</th><th>공시</th><th class="col-cat">종류</th><th>중요도</th><th class="col-filer">제출인</th></tr></thead><tbody>
-${recent.map((f) => `<tr><td class="col-date nowrap">${escape(f.filedDate)}</td>
+  const rows=recent.map((f) => `<tr><td class="col-date nowrap">${escape(f.filedDate)}</td>
 <td>${meta([escape(f.filedDate), escape(f.category)], 'meta m-date')}<a href="${escape(f.url)}" rel="noopener" target="_blank">${escape(f.title)}</a>${fresh.has(f.receiptNo) ? '<span class="badge b-new">새 공시</span>' : ''}<div class="why">${escape(f.why)}</div></td>
-<td class="col-cat nowrap">${escape(f.category)}</td><td><span class="badge b-${f.importance}">${IMPORTANCE_LABEL[f.importance]}</span></td><td class="col-filer nowrap">${escape(f.filer)}</td></tr>`).join('')}
-</tbody></table></div>`;
+<td class="col-cat nowrap">${escape(f.category)}</td><td><span class="badge b-${f.importance}">${IMPORTANCE_LABEL[f.importance]}</span></td><td class="col-filer nowrap">${escape(f.filer)}</td></tr>`);
+  return contentMore(rows,'공시',html=>`<div class="table-wrap"><table><thead><tr><th class="col-date">날짜</th><th>공시</th><th class="col-cat">종류</th><th>중요도</th><th class="col-filer">제출인</th></tr></thead><tbody>${html}</tbody></table></div>`);
 }
 
 const kstDate = (iso: string) => new Date(Date.parse(iso) + 9 * 3600_000).toISOString().slice(0, 10);
@@ -535,7 +536,7 @@ ${others.length ? `<details class="more"><summary>다른 기사 ${others.length}
   });
   const rows = rowsArr.join('');
   return `<div class="card" id="news" style="margin-top:16px"><div class="head"><h2>뉴스</h2><span class="sub" style="margin:0">최근 7일, 이야기 ${news.clusters.length}개</span></div>
-${warn}${rows ? (news.clusters.length > 8 ? `${rowsArr.slice(0, 8).join('')}<details class="more news-more"><summary>나머지 이야기 ${news.clusters.length - 8}개 더 보기</summary>${rowsArr.slice(8).join('')}</details>` : rows) : '<p class="empty">최근 7일 동안 관련 뉴스가 없어요.</p>'}
+${warn}${rows ? contentMore(rowsArr,'뉴스') : '<p class="empty">최근 7일 동안 관련 뉴스가 없어요.</p>'}
 <p class="fine">제목과 언론사, 링크만 모아요(본문은 저장하지 않아요). 비슷한 제목의 기사는 하나의 이야기로 묶고, 기사 수가 많다고 더 중요하게 보지 않아요. 수집: ${escape(statusLine)}</p></div>`;
 }
 
@@ -654,7 +655,8 @@ ${marketStrip(report)}
   const part = (key: string, label: string, html: string) => `<section class="data-part" id="tab-${key}"><h2 class="data-h">${label}</h2>${html}</section>`;
   const body = `${bar}${panel('home', home)}
 ${panel('chart', chartTab)}
-${panel('technical', `${technical}<details class="card more"><summary>전략 대결 · 모의투자</summary>${part('strategy', '전략', strategyTab)}</details>`)}
+${panel('technical', technical)}
+${panel('strategy', strategyTab)}
 ${panel('ai', aiTab)}
 ${panel('flows', flowsTab)}
 ${panel('fundamentals', fundTab)}
@@ -876,7 +878,7 @@ ${coin ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트�
   const techAt=body.indexOf('<section class="block"><div class="grid-eq">',split);
   const head=body.slice(0,split), chart=body.slice(split,techAt), technical=body.slice(techAt,ending);
   const missing=(label:string)=>`<section class="block" data-missing><h2>${label}</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 생성되지 않은 분석이에요</b><p>리포트를 생성하면 이 영역에서 확인할 수 있어요.</p><button type="button" class="btn-primary" data-create-report>심층 리포트 생성하기</button></div></div></section>`;
-  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}<section class="card scenario-panel" id="chart-scenarios"><b>시나리오 전망</b><p class="muted small">리포트를 생성하면 예상 범위를 확인할 수 있어요.</p></section></section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}${missing('전략 대결 · 모의투자')}</section>${[{key:'ai',label:'AI 위원회'},{key:'flows',label:'수급'},{key:'fundamentals',label:'실적'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${missing(t.label)}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'},'')}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
+  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}<section class="card scenario-panel" id="chart-scenarios"><b>시나리오 전망</b><p class="muted small">리포트를 생성하면 예상 범위를 확인할 수 있어요.</p></section></section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}</section><section class="panel" id="tab-strategy" role="tabpanel" aria-labelledby="t-strategy" hidden>${missing('전략 대결 · 모의투자')}</section>${[{key:'ai',label:'AI 위원회'},{key:'flows',label:'수급'},{key:'fundamentals',label:'실적'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${missing(t.label)}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'},'')}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
   return shell('', coin ? '코인 차트 | Gnomon Analytics' : '종목 차트 | Gnomon Analytics', body, { tabs: TABS, bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(coin)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}` });
 }
 
@@ -977,7 +979,7 @@ export interface HomeEntry {
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
 const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
-export const APP_CSS = `${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
+export const APP_CSS = `${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
