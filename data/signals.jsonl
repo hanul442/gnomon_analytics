@@ -240,3 +240,5 @@
 {"date":"2026-10-06","preset":"rebound","symbol":"462860","market":"Q","close":2945,"method":"gnm-signal-v1"}
 {"date":"2026-10-06","preset":"rebound","symbol":"001290","market":"P","close":4330,"method":"gnm-signal-v1"}
 {"date":"2026-10-06","preset":"value","symbol":"136410","market":"Q","close":3835,"method":"gnm-signal-v1"}
+{"date":"2026-10-06","preset":"rebound","symbol":"0082N0","market":"Q","close":13000,"method":"gnm-signal-v1"}
+{"date":"2026-10-06","preset":"rebound","symbol":"193250","market":"Q","close":1991,"method":"gnm-signal-v1"}

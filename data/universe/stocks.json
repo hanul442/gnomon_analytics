@@ -9545,6 +9545,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "205100",
+  "name": "엑셈",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "205470",
   "name": "휴마시스",
   "market": "KOSDAQ"
@@ -10057,11 +10062,6 @@
  {
   "symbol": "232830",
   "name": "아이티센피엔에스",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "234030",
-  "name": "싸이닉솔루션",
   "market": "KOSDAQ"
  },
  {
