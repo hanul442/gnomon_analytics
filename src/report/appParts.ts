@@ -218,7 +218,7 @@ ${strategies.length ? `<div class="sheet" id="strat-sheet" hidden><div class="sh
 ${strategies.map((st) => `<button type="button" class="opt" data-strategy="${esc(st.key)}" aria-pressed="false"><span class="opt-t"><b>${st.rank}위 ${esc(st.name)}</b><small><span class="${st.position ? 'up' : 'muted'}">${st.position ? '지금 보유 신호' : '지금 관망'}</span> · 검증 수익 <span class="${tone(st.oos)}">${(st.oos * 100).toFixed(1)}%</span> · 매매 ${st.trades.length}번</small></span><i class="radio" aria-hidden="true"></i></button>`).join('')}</div></div>
 ` : ''}
 <div class="chart-context" id="chart-context" hidden aria-live="polite"><p></p><button type="button" class="chip-toggle">기술로 돌아가기</button></div><div class="legend-line" id="legend"></div>
-<div class="chart-wrap"><div class="ev-strip" id="ev-strip" role="group" aria-label="공시·뉴스"></div><div class="chart-body"><div id="chart" style="height:520px">${bars.length < 2 ? '<p class="empty">차트를 그릴 가격 기록이 부족해요.</p>' : ''}</div><div class="vlines" id="vlines" aria-hidden="true"></div></div>
+<div class="chart-wrap"><div class="ev-strip" id="ev-strip" role="group" aria-label="공시·뉴스"></div><div class="chart-body"><div id="chart" style="height:520px">${bars.length < 2 ? '<p class="empty">차트를 그릴 가격 기록이 부족해요.</p>' : ''}</div><div class="vlines" id="vlines" aria-hidden="true"></div><div class="sc-boxes" id="sc-boxes" aria-hidden="true"></div></div>
 <div class="mark-pop" id="mark-pop" role="dialog" aria-label="공시·뉴스 내용" hidden></div></div>
 ${strategies.length ? '<div class="strat-info" id="strat-info" aria-live="polite" hidden></div>' : ''}
 <p class="fine">차트 위 아이콘을 누르면 그날의 공시(금색)·뉴스(청록, 중요도 보통 이상) 내용이 뜨고, 거기서 원문으로 갈 수 있어요. 점선은 날짜 위치 표시예요. 전략 매매 시점의 ▲매수·▼매도는 그 전략 규칙이 과거 일봉에서 신호를 낸 날의 종가예요(백테스트, 투자 권유 아님).</p></section>`;
@@ -313,26 +313,51 @@ window.addEventListener('DOMContentLoaded', function () {
   // ---- AI scenarios: a fan from today's close to each scenario's 20-session range ----
   var scen = JSON.parse((document.getElementById('scen') || {}).textContent || '[]') || [], scBuilt = [], scExtra = 0;
   var SC = { BULL: [UP, '강세'], BASE: ['#5b6b80', '기본'], BEAR: [DOWN, '약세'] };
-  var scPick = 'ALL';
+  // G-96: each scenario's 20-session range is a box from today to twenty sessions ahead, labelled with what it means.
+  // An invisible anchor series puts those future sessions on the time scale and keeps the boxes inside the price scale.
+  var scPick = 'ALL', scShown = [], scDays = [], boxes = document.getElementById('sc-boxes');
+  var compact = function (v) { return v >= 1e8 ? (v / 1e8).toFixed(1).replace(/\\.0$/, '') + '억' : v >= 1e5 ? Math.round(v / 1e4).toLocaleString('ko-KR') + '만' : v >= 100 ? Math.round(v).toLocaleString('ko-KR') : String(+v.toPrecision(4)); };
+  var drawBoxes = function () {
+    if (!boxes) return;
+    if (!scShown.length || !scDays.length) { boxes.innerHTML = ''; return; }
+    var h = chart.panes()[0].getHeight(), w = el.clientWidth - chart.priceScale('right').width(), ts = chart.timeScale();
+    // From today's candle to the right edge of the plot: the room set aside for 'twenty sessions from now'.
+    var x1 = ts.timeToCoordinate(bars[bars.length - 1].date), x2 = w - 4;
+    if (x1 == null || x2 - x1 < 8) { boxes.innerHTML = ''; return; }
+    x1 += 4;
+    var close = bars[bars.length - 1].close, lanes = scShown.length, lw = (x2 - x1) / lanes;
+    // Side by side, so each scenario reads on its own: 강세 | 기본 | 약세, each spanning the same twenty sessions.
+    boxes.innerHTML = scShown.map(function (x, li) {
+      var top = candle.priceToCoordinate(x.zone[1]), bot = candle.priceToCoordinate(x.zone[0]);
+      if (top == null || bot == null) return '';
+      top = Math.max(0, top); bot = Math.min(h, bot); if (bot - top < 18) { var c0 = (top + bot) / 2; top = c0 - 9; bot = c0 + 9; }
+      var mid = (x.zone[0] + x.zone[1]) / 2, g = (mid / close - 1) * 100;
+      var wide = lw >= 86, narrow = lw < 58, gs = g.toFixed(narrow ? 0 : 1), pct = (/^-?0(\\.0)?$/.test(gs) ? '0' : (g > 0 ? '+' : '') + gs) + '%';
+      // Narrow lanes (phones) keep the arrow and the distance; the names and ranges sit in the line above the chart.
+      var label = narrow ? '<b>' + (x.kind === 'BULL' ? '▲' : x.kind === 'BEAR' ? '▼' : '●') + '</b><span>' + pct + '</span>' : '<b>' + SC[x.kind][1] + (x.p != null && wide ? ' ' + x.p + '%' : '') + '</b><span>' + pct + '</span>' + (wide ? '<span>' + compact(x.zone[0]) + '~' + compact(x.zone[1]) + '</span>' : '');
+      return '<div class="sc-box sc-box-' + x.kind + '" style="left:' + Math.round(x1 + li * lw + 1) + 'px;width:' + Math.max(6, Math.round(lw - 3)) + 'px;top:' + Math.round(top) + 'px;height:' + Math.round(bot - top) + 'px"><i>' + label + '</i></div>';
+    }).join('');
+  };
   var drawScen = function (pick, keep) {
     if (!keep) scPick = pick;
     scBuilt.forEach(function (x) { chart.removeSeries(x); var i = allSeries.indexOf(x); if (i >= 0) allSeries.splice(i, 1); }); scBuilt = [];
-    // One point per future session, so the fan spans twenty sessions on the time scale instead of one.
-    var last = bars[bars.length - 1], days = [], d = last.date;
-    for (var h = 1; h <= 20; h++) { d = addDays(d, 1); days.push(d); }
-    scen.filter(function (x) { return pick === 'ALL' || x.kind === pick; }).forEach(function (x) {
-      var c = SC[x.kind][0], mid = (x.zone[0] + x.zone[1]) / 2, g = (mid / last.close - 1) * 100;
-      var add = function (v, o) { var s = chart.addSeries(L.LineSeries, Object.assign({ color: c, lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }, o || {})); s.setData([{ time: last.date, value: last.close }].concat(days.map(function (t, i) { return { time: t, value: last.close + (v - last.close) * (i + 1) / 20 }; }))); scBuilt.push(s); };
-      add(x.zone[0]); add(x.zone[1]);
-      add(mid, { lineWidth: 2, lineStyle: 0, lastValueVisible: true, title: SC[x.kind][1] + ' ' + (g > 0 ? '+' : '') + g.toFixed(1) + '%' });
-    });
-    scExtra = scBuilt.length ? 22 : 0;
+    var last = bars[bars.length - 1], d = last.date; scDays = [];
+    for (var h = 1; h <= 20; h++) { d = addDays(d, 1); scDays.push(d); }
+    scShown = scen.filter(function (x) { return pick === 'ALL' || x.kind === pick; });
+    if (scShown.length) {
+      var lo = Math.min.apply(null, scShown.map(function (x) { return x.zone[0]; })), hi = Math.max.apply(null, scShown.map(function (x) { return x.zone[1]; }));
+      var anchor = chart.addSeries(L.LineSeries, { color: 'rgba(0,0,0,0)', lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, autoscaleInfoProvider: function () { return { priceRange: { minValue: lo, maxValue: hi } }; } });
+      anchor.setData(scDays.map(function (t) { return { time: t, value: last.close }; }));
+      scBuilt.push(anchor);
+    }
+    scExtra = scShown.length ? 22 : 0;
+    requestAnimationFrame(drawBoxes);
   };
   var scBar = document.getElementById('sc-layer');
   var scButtons = function () {
     if (!scBar) return;
     scBar.hidden = !scen.length; if (!scen.length) { scBar.innerHTML = ''; return; }
-    scBar.innerHTML = '<span class="label">시나리오 전망</span><button type="button" data-sc="ALL" aria-pressed="true">모두</button>' + scen.map(function (x) { return '<button type="button" data-sc="' + x.kind + '" class="sc-' + x.kind + '" aria-pressed="false">' + SC[x.kind][1] + (x.p != null ? ' ' + x.p + '%' : '') + '</button>'; }).join('') + '<button type="button" data-sc="" aria-pressed="false">끄기</button><span class="sc-note">' + (scen.some(function (x) { return x.source === 'calc'; }) ? '변동성 계산 범위' : 'AI 위원회 · 20거래일') + '</span>';
+    scBar.innerHTML = '<span class="label">시나리오 전망</span><button type="button" data-sc="ALL" aria-pressed="true">모두</button>' + scen.map(function (x) { return '<button type="button" data-sc="' + x.kind + '" class="sc-' + x.kind + '" aria-pressed="false">' + SC[x.kind][1] + (x.p != null ? ' ' + x.p + '%' : '') + '</button>'; }).join('') + '<button type="button" data-sc="" aria-pressed="false">끄기</button><span class="sc-note">' + scen.map(function (x) { return '<span class="sc-' + x.kind + '">' + SC[x.kind][1] + ' ' + compact(x.zone[0]) + '~' + compact(x.zone[1]) + '</span>'; }).join(' · ') + ' · 20거래일 뒤 ' + (scen.some(function (x) { return x.source === 'calc'; }) ? '(변동성 계산)' : scen.some(function (x) { return x.source === 'analyst'; }) ? '(AI 분석가 목표가)' : '(AI 위원회)') + '</span>';
     scBar.querySelectorAll('[data-sc]').forEach(function (b) {
       b.addEventListener('click', function () {
         scBar.querySelectorAll('[data-sc]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
@@ -425,6 +450,7 @@ window.addEventListener('DOMContentLoaded', function () {
     pop.querySelector('.mp-head button').onclick = closePop;
   };
   var drawLines = function () {
+    drawBoxes();
     var h = chart.panes()[0].getHeight(), w = el.clientWidth - chart.priceScale('right').width();
     var lines = '', icons = '';
     var prevOpen = openIdx >= 0 && groups[openIdx] ? groups[openIdx].days[0].day : null;
@@ -510,6 +536,8 @@ window.addEventListener('DOMContentLoaded', function () {
     currentRange = n;
     var from = Math.max(0, bars.length - n);
     currentExtra = extra || 0;
+    // Room on the right for the scenario boxes: a fixed share of the visible candles, wider on phones.
+    if (scShown.length && currentExtra < 62) currentExtra = Math.max(currentExtra, 22, Math.round(Math.min(n, bars.length) * (mobile ? 0.9 : 0.4)));
     chart.timeScale().setVisibleLogicalRange({ from: from - 0.5, to: bars.length - 0.5 + currentExtra });
     var w = bars.slice(from), first = w[0].open, lastC = w[w.length - 1].close, hi = Math.max.apply(null, w.map(function (b) { return b.high; })), lo = Math.min.apply(null, w.map(function (b) { return b.low; }));
     var ch = (lastC / first - 1) * 100, label = document.querySelector('[data-range="' + n + '"]').textContent;
