@@ -114,7 +114,7 @@ export function parliament(report: DailyReport, from: string | null, opts: Parli
   const circles = seats.map((s, i) => {
     const p = pos[i]!;
     const x = (cx + p.x * R).toFixed(2), y = (cy - p.y * R).toFixed(2);
-    return `<circle class="seat s-${s.stance} f-${s.faction}" data-i="${i}" data-f="${s.faction}" cx="${x}" cy="${y}" r="${(p.r * R).toFixed(2)}" style="--i:${i}" tabindex="0" role="button" aria-label="${esc(`${FACTION_WORD[s.faction]} ${s.name}: ${STANCE_WORD[s.stance]}`)}"><title>${esc(`${s.name} · ${STANCE_WORD[s.stance]}`)}</title></circle>`;
+    return `<circle class="seat s-${s.stance} f-${s.faction}" data-i="${i}" data-f="${s.faction}" data-m="${esc(s.id.split(':')[1] ?? '')}" cx="${x}" cy="${y}" r="${(p.r * R).toFixed(2)}" style="--i:${i}" tabindex="0" role="button" aria-label="${esc(`${FACTION_WORD[s.faction]} ${s.name}: ${STANCE_WORD[s.stance]}`)}"><title>${esc(`${s.name} · ${STANCE_WORD[s.stance]}`)}</title></circle>`;
   }).join('');
   const factions = (['ai', 'desk', 'strategy', 'indicator'] as const).filter((f) => seats.some((s) => s.faction === f));
   const chips = `<button type="button" class="chip-toggle" data-pf="" aria-pressed="true">전체 ${seats.length}</button>${factions.map((f) => `<button type="button" class="chip-toggle" data-pf="${f}" aria-pressed="false">${FACTION_WORD[f]} ${seats.filter((s) => s.faction === f).length}</button>`).join('')}`;

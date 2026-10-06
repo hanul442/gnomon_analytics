@@ -4,6 +4,7 @@
 
 import type { DailyReport } from './dailyReport.js';
 import { ANALYSTS } from '../analysis/analysts.js';
+import { VIEW_FOCUS } from './conclusion.js';
 import { replyIndex, type ClaimKind, type Commentary, type InsightKey } from '../analysis/commentary.js';
 
 const esc = (value: string): string =>
@@ -82,15 +83,15 @@ export function debateSection(report: DailyReport, tail = ''): string {
   const turns = c.debate;
   const byId = new Map(c.evidence.map((e) => [e.id, e]));
   const evChips = (ids: readonly string[]) => `<span class="ev-row">${ids.map((id) => { const e = byId.get(id); return e ? `<button type="button" class="ev-chip" data-label="${esc(e.label)}" data-url="${esc(e.url.startsWith('http') ? e.url : '')}">${esc(id)}</button>` : ''; }).join('')}</span>`;
-  return `<section class="block" id="debate"><div class="block-head"><h2>위원회 토론</h2><button type="button" class="db-skip" hidden>전체 바로 보기</button></div><div class="card debate">
+  return `<section class="block" id="debate"><div class="block-head"><h2>위원회 토론</h2><span class="db-head-r"><a class="db-ask-link" href="#join">질문·전문가 초청 ↓</a><button type="button" class="db-skip" hidden>전체 바로 보기</button></span></div><div class="card debate"><div class="db-chips" role="group" aria-label="발언자 고르기"></div>
 ${turns.map((t, i) => {
     const red = t.speaker === 'RED_TEAM', side = red ? 'red' : SIDE[t.stance][1];
     // Reports written before the fix may count from 1 (a turn answering itself); the red team sums up, it does not reply.
     const at = red ? undefined : replyIndex(t.replyTo, i), to = at != null ? turns[at] : undefined;
     const quote = to && to.speaker !== t.speaker ? `<div class="db-quote"><b>${esc(SPEAKER[to.speaker] ?? to.speaker)}</b>${esc(to.claim.text.length > 46 ? `${to.claim.text.slice(0, 46)}…` : to.claim.text)}</div>` : '';
-    return `<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}</div></div>`;
+    return `<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"${at != null ? ` data-reply="${at}"` : ''}><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}</div></div>`;
   }).join('')}
-<button type="button" class="db-more">다른 위원 발언도 보기</button><p class="fine">말하는 위원은 위 표결의 분석가·데스크 그대로예요. 말 끝의 근거 번호를 누르면 그 근거가 펼쳐져요. 레드팀은 승패를 정하지 않아요.</p>${tail}</div></section>`;
+<p class="fine">말하는 위원은 위 표결의 분석가·데스크 그대로예요. 말 끝의 근거 번호를 누르면 그 근거가 펼쳐져요. 레드팀은 승패를 정하지 않아요.</p>${tail}</div></section>`;
 }
 
 /**
@@ -116,7 +117,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
 (function () {
   var play = function (box) {
     if (!box || box.getAttribute('data-played')) return; box.setAttribute('data-played', '1');
-    var turns = [].slice.call(box.querySelectorAll('.db-turn')).filter(function (t) { return t.offsetParent !== null; });
+    var turns = [].slice.call(box.querySelectorAll('.db-turn')).filter(function (t) { return !t.classList.contains('db-off'); });
     if (turns.length < 2 || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
     var sec = box.closest('section'), skip = sec && sec.querySelector('.db-skip'), done = false, timer = 0;
     turns.forEach(function (t) { t.hidden = true; });
@@ -129,7 +130,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
       if (i >= turns.length) return finish();
       var t = turns[i], who = t.querySelector('.db-who b');
       typing.className = 'db-turn db-typing ' + (t.className.match(/db-(bull|bear|mid|red)/) || [''])[0];
-      typing.innerHTML = '<div class="db-who"><b>' + (who ? who.textContent : '') + '</b> 작성 중…</div><div class="db-bubble"><i></i><i></i><i></i></div>';
+      typing.innerHTML = '<div class="db-who"><b>' + (who ? who.textContent : '') + '</b> 작성 중…</div><div class="db-bubble"><span class="orbs"><i></i><i></i><i></i></span></div>';
       t.parentNode.insertBefore(typing, t);
       timer = setTimeout(function () { typing.remove(); t.hidden = false; t.classList.add('db-in'); i += 1; timer = setTimeout(next, 450); }, Math.min(1800, 500 + (t.textContent || '').length * 9));
     };
@@ -144,6 +145,39 @@ export const DEBATE_PLAY_SCRIPT = `<script>
   };
   window.GNM_debate = watch;
   watch();
+})();
+</script>`;
+
+/**
+ * G-80: pick who speaks. Chips list every speaker; the reader's view committee starts on (everyone in
+ * '전체'). A shown turn that answers a hidden one brings that turn along, dimmed as context, so no
+ * reply hangs in the air. The red team always speaks.
+ */
+export const DEBATE_FILTER_SCRIPT = `<script>
+(function () {
+  var FOCUS = ${JSON.stringify(VIEW_FOCUS)}, pick = null;
+  var apply = function (box) {
+    var turns = [].slice.call(box.querySelectorAll('.db-turn:not(.db-typing):not(.db-guest)'));
+    var chips = box.querySelector('.db-chips'); if (!chips || !turns.length) return;
+    var view = document.documentElement.getAttribute('data-persona') || 'swing', focus = FOCUS[view];
+    var speakers = [], names = {};
+    turns.forEach(function (t) { var s = t.getAttribute('data-speaker'); if (s === 'RED_TEAM' || names[s]) return; names[s] = (t.querySelector('.db-who b') || {}).textContent || s; speakers.push(s); });
+    if (!pick) { pick = {}; speakers.forEach(function (s) { pick[s] = !focus || focus.indexOf(s) >= 0; }); if (!speakers.some(function (s) { return pick[s]; })) speakers.forEach(function (s) { pick[s] = true; }); }
+    chips.innerHTML = '<span class="db-chips-k">발언자</span>' + speakers.map(function (s) { return '<button type="button" data-sp="' + s + '" aria-pressed="' + !!pick[s] + '">' + names[s] + '</button>'; }).join('') + '<button type="button" data-sp="*" class="db-all">모두</button>';
+    var on = turns.map(function (t) { var s = t.getAttribute('data-speaker'); return s === 'RED_TEAM' || !!pick[s]; }), ctx = turns.map(function () { return false; });
+    turns.forEach(function (t, i) { var r = t.getAttribute('data-reply'); if (on[i] && r != null && !on[Number(r)]) ctx[Number(r)] = true; });
+    turns.forEach(function (t, i) { t.classList.toggle('db-off', !on[i] && !ctx[i]); t.classList.toggle('db-ctx', !on[i] && ctx[i]); });
+  };
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.db-chips [data-sp]'); if (!b) return;
+    var box = b.closest('.debate'), s = b.getAttribute('data-sp');
+    if (s === '*') Object.keys(pick).forEach(function (k) { pick[k] = true; }); else pick[s] = !pick[s];
+    apply(box);
+  });
+  var all = function () { [].forEach.call(document.querySelectorAll('.card.debate'), apply); };
+  window.addEventListener('gnm-persona', function () { pick = null; all(); });
+  window.GNM_debateFilter = all;
+  all();
 })();
 </script>`;
 
@@ -182,6 +216,7 @@ export function insightLine(report: DailyReport, key: InsightKey, base: string):
 }
 
 export const EXTRAS_CSS = `.card.debate{display:flex;flex-direction:column;gap:10px;background:#fff}.worst ul{list-style:none;padding-left:0}.db-turn{display:flex;flex-direction:column;max-width:82%}.db-bull{align-self:flex-start}.db-bear{align-self:flex-end;align-items:flex-end}.db-mid,.db-red{align-self:center;max-width:92%;align-items:center}.db-to{font-weight:500;color:var(--muted)}
+.db-head-r{display:flex;gap:8px;align-items:center}.db-ask-link{font-size:13px;font-weight:800;color:var(--accent-strong);text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:5px 11px;background:#fff}.db-chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:4px}.db-chips-k{font-size:12px;font-weight:800;color:var(--muted);margin-right:2px}.db-chips button{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted)}.db-chips button[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}.db-chips .db-all{border-style:dashed;color:var(--accent-strong)}.db-off{display:none!important}.db-ctx{opacity:.55}.db-ctx .db-who::after{content:' · 맥락';font-weight:600}.db-guest .db-bubble{background:#f3efff;border:1px solid #d9cdf7}.db-guest .db-who b{color:#5b3fb0}.db-guest .md p{margin:4px 0}
 .db-skip{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}.db-turn[hidden]{display:none}.db-in{animation:db-in .25s ease-out}@keyframes db-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}.db-typing .db-bubble{display:flex;gap:4px;padding:12px 14px}.db-typing i{width:7px;height:7px;border-radius:50%;background:#94a3b8;animation:db-dot 1s infinite}.db-typing i:nth-child(2){animation-delay:.15s}.db-typing i:nth-child(3){animation-delay:.3s}@keyframes db-dot{0%,80%,100%{opacity:.3;transform:none}40%{opacity:1;transform:translateY(-3px)}}.db-join{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.db-join h3{margin:0 0 8px;font-size:15px}
 .db-who{font-size:11px;font-weight:700;color:var(--muted);margin:0 6px 3px}.db-bubble{border-radius:16px;padding:10px 13px;font-size:14px;line-height:1.6}.db-bull .db-bubble{background:#fde8e6;border-bottom-left-radius:4px}.db-bear .db-bubble{background:#e3ecfb;border-bottom-right-radius:4px}.db-mid .db-bubble{background:#f1f3f6}.db-red .db-bubble{background:#fff7e6;border:1px dashed #f1d9a6;text-align:center}
 .ev-row{display:inline-flex;flex-wrap:wrap;gap:3px;margin-left:4px;vertical-align:1px}.ev-chip{border:1px solid rgba(15,23,42,.18);background:rgba(255,255,255,.7);border-radius:6px;font:inherit;font-size:11px;font-weight:700;color:#475569;padding:0 5px;cursor:pointer}.ev-chip[aria-expanded=true]{background:var(--navy);color:#fff;border-color:var(--navy)}.ev-pop{margin-top:6px;font-size:12.5px;line-height:1.5;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;color:var(--fg2)}.ev-pop a{font-weight:700}.ev-jump{border:0;background:none;color:var(--accent-strong);font:inherit;font-weight:700;cursor:pointer;padding:0;margin-left:4px}.db-ev{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}.db-ev>summary{cursor:pointer;font-weight:800;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}.db-ev>summary::-webkit-details-marker{display:none}.db-ev>summary::after{content:'열기 ▾';font-size:12.5px;font-weight:700;color:var(--accent-strong)}.db-ev[open]>summary::after{content:'닫기 ▴'}.db-ev .sum{font-size:14.5px;line-height:1.65;margin:10px 0}.ev-hit{background:#fff3c4;border-radius:6px;transition:background .3s}.db-ev .evid{list-style:none;padding:0;font-size:13px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px 12px}.db-ev .evid li{padding:2px 4px;overflow-wrap:anywhere}.issues ul{list-style:none;padding-left:0}.issues .plain li{margin:4px 0}.issues .pl-k{margin-top:4px}.is-open li::before{content:'⇄ ';color:var(--muted)}.db-quote{border-left:3px solid rgba(15,23,42,.25);background:rgba(255,255,255,.55);border-radius:6px;padding:4px 8px;margin-bottom:6px;font-size:12px;color:#475569;line-height:1.45}.db-quote b{display:block;font-size:11px;color:#334155}.worst{margin-top:8px;border-top:1px solid var(--line);padding-top:10px}.worst h3{margin:0 0 4px;font-size:15px;color:#9b1c1c}

@@ -43,7 +43,14 @@ export interface AskInput {
   siteData?: string;
   page?: string;
   history?: { q: string; a: string }[];
+  /** G-80: answer as a guest on the stock's committee debate (an invited expert, or the committee itself). */
+  persona?: { name: string; focus: string };
 }
+
+/** The voice for a debate answer: who is speaking and what they look at. */
+export const personaSystem = (p: { name: string; focus: string }) => `\n\n이번 답은 이 종목 AI 위원회 토론에 초청된 '${p.name}'로서 해요. 주로 보는 것: ${p.focus}.
+- <page>에 지금까지의 토론이 있으면 그 흐름을 이어받아, 누구의 어떤 말에 동의하거나 반박하는지 밝혀요.
+- 세 덩어리로 답해요: **의견**(이 관점에서 지금 어떻게 보이는지), **위험**(가장 큰 위험 하나나 둘), **지켜볼 것**(판단을 바꿀 신호). 모두 합쳐 600자 안쪽이에요.`;
 
 export function askParams(input: AskInput): Record<string, unknown> {
   const tier = ASK_TIERS.find((t) => t.key === input.tier)!;
@@ -55,7 +62,7 @@ export function askParams(input: AskInput): Record<string, unknown> {
   const messages: { role: 'user' | 'assistant'; content: string }[] = [];
   for (const h of input.history ?? []) messages.push({ role: 'user', content: h.q }, { role: 'assistant', content: h.a });
   messages.push({ role: 'user', content: `${ctx ? `${ctx}\n\n` : ''}질문: ${input.question}` });
-  const params: Record<string, unknown> = { model: tier.model, max_tokens: tier.maxTokens, system: ASK_SYSTEM, messages };
+  const params: Record<string, unknown> = { model: tier.model, max_tokens: tier.maxTokens, system: ASK_SYSTEM + (input.persona ? personaSystem(input.persona) : ''), messages };
   // The small model answers directly; the larger ones think as much as the question needs.
   if (tier.key !== 'question') {
     params.thinking = { type: 'adaptive' };

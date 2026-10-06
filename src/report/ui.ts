@@ -171,7 +171,7 @@ export const LIVE_JS = `
         var f = el.getAttribute('data-live-f'), t = q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : '';
         if (f === 'tag') { el.hidden = false; el.textContent = q.open ? '● 실시간' : '장 마감'; el.classList.toggle('on', !!q.open); return; }
         if (f === 'price') el.textContent = won(q.price);
-        else if (f === 'pct') el.textContent = sg(q.changePct);
+        else if (f === 'pct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
         else if (f === 'arrowpct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
         else if (f === 'full') el.textContent = (q.change > 0 ? '▲' : q.change < 0 ? '▼' : '') + ' ' + Math.abs(q.change).toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + ' (' + sg(q.changePct) + ')';
         if (f !== 'price') { el.classList.remove('up', 'down'); if (t) el.classList.add(t); }
@@ -308,6 +308,12 @@ export const SURVEY_POP_JS = `
 
 export const POP_CSS = `.pop-wrap{position:fixed;inset:0;z-index:150;background:rgba(10,20,35,.45);display:grid;place-items:center;padding:16px;animation:pop-in .2s ease-out}.pop{width:min(380px,100%);background:#fff;border-radius:20px;padding:22px 20px 16px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}.pop-ic{font-size:40px}.pop b{display:block;font-size:18px;margin-top:6px}.pop p{font-size:14px;line-height:1.6;color:var(--fg2);margin:8px 0 14px}.pop-b{display:flex;gap:8px;justify-content:center}.pop-b button{flex:none;white-space:nowrap;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}.pop-b .btn-primary{flex:1;width:auto;margin:0;text-decoration:none;justify-content:center}@keyframes pop-in{from{opacity:0}to{opacity:1}}`;
 
+/** G-83: the loading mark — three soft orbs that breathe in turn, used wherever the page waits on data or AI. */
+export const ORBS_CSS = `.orbs{display:inline-flex;gap:5px;align-items:center;vertical-align:middle;margin-right:6px}.orbs i{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0,#9fb6dc 30%,#2a4f8f 75%);box-shadow:0 0 10px rgba(42,79,143,.45);animation:orb 1.2s ease-in-out infinite}.orbs i:nth-child(2){animation-delay:.18s;background:radial-gradient(circle at 35% 30%,#fff 0,#f0a0a3 30%,#b23a5a 75%);box-shadow:0 0 10px rgba(178,58,90,.4)}.orbs i:nth-child(3){animation-delay:.36s;background:radial-gradient(circle at 35% 30%,#fff 0,#9fe0d6 30%,#1c8c7d 75%);box-shadow:0 0 10px rgba(28,140,125,.4)}
+@keyframes orb{0%,100%{transform:translateY(0) scale(.8);opacity:.55}50%{transform:translateY(-5px) scale(1.1);opacity:1}}.orbs-load{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:28px 0;color:var(--muted);font-size:13.5px}.orbs-load .orbs i{width:16px;height:16px}
+@media (prefers-reduced-motion:reduce){.orbs i{animation:none}}`;
+export const ORBS = '<span class="orbs" aria-hidden="true"><i></i><i></i><i></i></span>';
+
 export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:#1d6b3a;border-color:#bfe3cb;background:#effaf2}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(209,55,61,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(42,98,201,.22)}100%{background:transparent}}`;
 
 export const MENU_CSS = `.menu-btn{width:38px;height:38px;border:0;border-radius:10px;background:none;color:#fff;cursor:pointer;display:grid;place-items:center;margin-left:2px}.menu-btn svg{width:22px;height:22px}.menu-btn:hover{background:rgba(255,255,255,.1)}
@@ -333,11 +339,11 @@ export const MENU_JS = `
 
 
 /** The home banner's styles (markup and script in alphaPages.ts); here so the shared CSS has no import cycle. */
-export const BANNER_CSS = `.bn-slide[hidden]{display:none!important}.banner{position:relative;max-width:1180px;margin:14px auto 0;padding:0 24px}.bn-slide{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto 1fr;align-content:center;gap:8px 20px;border-radius:22px;padding:34px 36px 44px;text-decoration:none;color:#fff;min-height:236px;box-sizing:border-box}
+export const BANNER_CSS = `.bn-slide[hidden]{display:none!important}.banner{position:relative;margin:14px 0 0;padding:0}.bn-slide{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto auto 1fr;align-content:center;gap:8px 20px;border-radius:22px;padding:34px 36px 44px;text-decoration:none;color:#fff;min-height:236px;box-sizing:border-box}
 .bn-tag{grid-column:1;justify-self:start;font-size:11.5px;font-weight:800;background:rgba(255,255,255,.22);border-radius:6px;padding:3px 8px}.bn-slide b{grid-column:1;font-size:28px;line-height:1.3}.bn-text{grid-column:1;font-size:16px;opacity:.92;line-height:1.55;max-width:640px}
 .bn-cta{grid-column:1;justify-self:start;margin-top:6px;font:inherit;font-weight:800;font-size:14px;color:inherit;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:9px 16px;white-space:nowrap;cursor:pointer}.bn-cta:disabled{opacity:.7;cursor:default}
 .bn-art{grid-column:2;grid-row:1/5;align-self:center;font-size:76px;line-height:1;width:132px;height:132px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 10px rgba(255,255,255,.06)}
 .bn-navy{background:linear-gradient(120deg,#13294b,#2a4f8f)}.bn-teal{background:linear-gradient(120deg,#0d5e5a,#1c8c7d)}.bn-amber{background:linear-gradient(120deg,#8a4b06,#c47a12)}.bn-rose{background:linear-gradient(120deg,#7a1d38,#b23a5a)}
 .bn-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px}.bn-dots button{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.45);cursor:pointer}.bn-dots button[aria-pressed=true]{background:#fff;width:18px;border-radius:4px}
-@media (max-width:820px){.banner{padding:0 14px;margin-top:10px}.bn-slide{grid-template-columns:1fr 64px;padding:22px 18px 36px;min-height:210px;gap:6px 10px}.bn-art{width:64px;height:64px;font-size:36px;grid-row:1/3;align-self:start;box-shadow:none}.bn-slide b{font-size:21px}.bn-text{font-size:14.5px;grid-column:1/3}.bn-cta{grid-column:1/3}}`;
+@media (max-width:820px){.banner{margin-top:10px}.bn-slide{grid-template-columns:1fr 64px;padding:22px 18px 36px;min-height:210px;gap:6px 10px}.bn-art{width:64px;height:64px;font-size:36px;grid-row:1/3;align-self:start;box-shadow:none}.bn-slide b{font-size:21px}.bn-text{font-size:14.5px;grid-column:1/3}.bn-cta{grid-column:1/3}}`;
 

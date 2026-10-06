@@ -13,6 +13,7 @@ import { chooseDailyPicks, type DailyPick } from '../analysis/dailyPicks.js';
 import { fetchUpbitDays, fetchUpbitDaysLong, UPBIT_SOURCE } from '../sources/upbit.js';
 import { escapeRegex } from './weekly.js';
 import { renderCoinsRedirect } from '../report/renderCoins.js';
+import { watchInfo } from '../report/conclusion.js';
 import { renderGuide, renderSurvey, validBanners } from '../report/alphaPages.js';
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
@@ -622,6 +623,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,
   };
   await writeFile(join(siteDir, 'index.html'), renderHome(homeData));
+  // The watchlist's status line (G-85): test prices and what is new, per covered stock.
+  await writeFile(join(siteDir, 'watchinfo.json'), JSON.stringify(watchInfo(home)));
   await writeFile(join(siteDir, 'reports.html'), renderReportsPage(homeData));
   // Search index: every listed stock, with today's price when the list was fetched this run.
   const covered = new Set([...tickers, ...past].map((t) => t.symbol));
