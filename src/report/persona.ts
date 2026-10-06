@@ -4,6 +4,7 @@
 // be switched at the top of the page (gnm-persona). Everything is in the page; CSS decides what shows.
 
 import type { DailyReport } from './dailyReport.js';
+import { conclusionCard } from './conclusion.js';
 
 export type Persona = 'beginner' | 'trader' | 'swing' | 'long' | 'all';
 export const PERSONAS: readonly { key: Persona; label: string; question: string }[] = [
@@ -33,7 +34,7 @@ export const TAB_KEEP: Record<Exclude<Persona, 'all'>, string[]> = {
 };
 
 export const PERSONA_CSS = `${(Object.keys(TAB_KEEP) as Exclude<Persona, 'all'>[]).map((p) => `html[data-persona=${p}]:not(.show-all) .chips [role=tab]:not(${TAB_KEEP[p].map((t) => `#t-${t}`).join(',')})`).join(',')}{display:none}
-.pc{display:none}${(['beginner', 'trader', 'swing', 'long'] as const).map((p) => `html[data-persona=${p}] .pc-${p}`).join(',')},html[data-persona=all] .pc-swing{display:block}
+.pc{display:none}${(['beginner', 'trader', 'swing', 'long'] as const).map((p) => `html[data-persona=${p}] .pc-${p}`).join(',')},html[data-persona=all] .pc-swing{display:block}.pc-swing .cl-card{margin-top:0}
 .pc-wrap{margin:14px 0 4px}.pc-wrap .persona-bar{margin-bottom:10px}.pc{margin-bottom:14px}.pc .card{border:1px solid var(--accent);background:linear-gradient(180deg,#f5f8fd,#fff)}.pc-q{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.pc h2{font-size:19px;margin:0 0 10px;line-height:1.45}
 .pc-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.pc-rows>div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.pc-rows span{display:block;font-size:12px;color:var(--muted)}.pc-rows b{font-size:16px}.pc-rows small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
 html[data-persona=beginner]:not(.show-all) .pc-hide-beginner,html[data-persona=trader]:not(.show-all) .pc-hide-trader,html[data-persona=long]:not(.show-all) .pc-hide-long{display:none}
@@ -88,14 +89,8 @@ export function personaCards(report: DailyReport): string {
     + (above ? row('가까운 저항', won(above.price), `닿은 횟수 ${above.touches}번`) : '')
     + (m ? row('수급 흔적', FOOT[m.footprint.state] ?? '—') : '')
     + (st?.atr14 ? row('하루 평균 움직임', `${((st.atr14 / p.close) * 100).toFixed(1)}%`, 'ATR 14일') : ''));
-  // Swing: the conclusion, the odds and where the reading would change.
-  const probs = (['BULL', 'BASE', 'BEAR'] as const).map((k) => c?.scenarios?.find((s) => s.kind === k)?.probability);
-  const bar = probs.some((x) => typeof x === 'number') ? `<div class="sc-prob" style="margin-top:10px">${(['bull', 'base', 'bear'] as const).map((k, i) => ((probs[i] ?? 0) > 0 ? `<span class="sp-${k}" style="flex:${probs[i]}">${['강세', '기본', '약세'][i]} ${probs[i]}%</span>` : '')).join('')}</div>` : '';
-  const swing = card('swing', '지금 판단', line,
-    row('20일 등락', pct(mom(20) ?? p.return20dPct))
-    + (sig ? row('중기 신호', sig) : '')
-    + (below ? row('판단이 바뀔 수 있는 가격', won(below.price), '가까운 지지선 · 여기를 깨면 강세 해석이 약해져요') : '')
-    + (above ? row('넘어야 할 가격', won(above.price), '가까운 저항선') : ''), bar);
+  // Swing: the conclusion card (G-65): the two test prices and what each crossing would mean, with the odds.
+  const swing = `<div class="pc pc-swing">${conclusionCard(report, { title: '지금 판단' })}</div>`;
   // Long: value, earnings and what the street expects.
   const snap = m?.snapshot, q = m?.quarters.filter((x) => !x.isEstimate) ?? [];
   const op = (x: { metrics: Record<string, number | null> } | undefined) => x?.metrics['영업이익'] ?? null;

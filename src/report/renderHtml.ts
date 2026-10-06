@@ -16,6 +16,7 @@ import { analystScores, arenaHeadline, arenaPanel, arenaRanking, arenaTeaser } f
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 import { PERSONA_BAR, PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
+import { CONCLUSION_CSS, conclusionCard } from './conclusion.js';
 import { BANNER_CSS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { debateSection, decisionTrace, EXTRAS_CSS, insightLine, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
@@ -629,14 +630,15 @@ ${marketStrip(report)}
     ? gate(whySection(report), { base, what: '요약 리포트: 요약 · 강세와 약세 근거 · 지켜볼 것' })
     : sealedDeep
       // G-61: the conclusion and the odds are open; the rest is the paid deep report, fetched once unlocked.
-      ? `${committeeLite(report)}${scenarioTeaser(report)}${deepSlot(report.symbol, ctx.deep!.date)}`
+      ? `${committeeLite(report)}${deepSlot(report.symbol, ctx.deep!.date)}`
       : report.commentary?.status === 'OK'
       // Plus sees at least what a brief shows (conclusion, desk stances, the evidence lists); Pro adds the committee's structure.
       ? `${gate(committeeLite(report) + whySection(report, { only: 'claims' }), { base, what: '제한된 AI 위원회: 결론 · 데스크 입장 · 레드팀 한 줄 · 강세와 약세 근거' })}${gate(debateSection(report) + whySection(report, { committee: !!committee, only: 'structure' }) + (m ? analystScores(m.analystBoard) : ''), { base, what: '토론형 위원회 · 최악의 경우 · 위원별 근거 · 시나리오 · 분석가 순위', need: 'pro' })}`
       : whySection(report);
   const proExtras = sealedDeep ? '' : gate(weekDiffSection(report, ctx.previous ?? null) + decisionTrace(report, ctx.live), { base, what: '지난 리포트 대비 · 이 판단을 만든 입력', need: 'pro' });
   const aiTab = report.commentary
-    ? `${upgrade}${committee}${fromNote}${aiBody}${proExtras}${inviteBox(report, base)}${askBox(report, base)}`
+    // G-65: the conclusion card first, then the committee's reasons and debate; the seat tally after them.
+    ? `${upgrade}${fromNote}${conclusionCard(report, { id: 'conclusion' })}${aiBody}${committee}${proExtras}${inviteBox(report, base)}${askBox(report, base)}`
     : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>${askBox(report, base)}`;
   const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
@@ -660,14 +662,6 @@ ${panel('news', newsTab)}
 export function renderDeep(report: DailyReport, ctx: { live: boolean; previous?: DailyReport | null }): string {
   const m = report.market;
   return `<div class="deep-body">${whySection(report, { only: 'claims' })}${debateSection(report)}${whySection(report, { only: 'structure' })}${m ? analystScores(m.analystBoard) : ''}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
-}
-
-/** The scenario odds alone (the narratives are in the deep report). */
-function scenarioTeaser(report: DailyReport): string {
-  const sc = report.commentary?.scenarios ?? [];
-  const p = (['BULL', 'BASE', 'BEAR'] as const).map((k) => sc.find((x) => x.kind === k)?.probability);
-  if (!p.some((x) => typeof x === 'number')) return '';
-  return `<section class="block"><div class="block-head"><h2>시나리오 확률</h2><span class="muted">위원회 추정</span></div><div class="card"><div class="sc-prob">${(['bull', 'base', 'bear'] as const).map((k, i) => ((p[i] ?? 0) > 0 ? `<span class="sp-${k}" style="flex:${p[i]}">${['강세', '기본', '약세'][i]} ${p[i]}%</span>` : '')).join('')}</div><p class="fine">각 시나리오가 어떻게 전개되는지, 무엇이 나오면 틀린 것인지는 심층 리포트에 있어요. 확률은 추정이고 확신이 아니에요.</p></div></section>`;
 }
 
 export const DEEP_UNLOCK_CREDITS = 10;
@@ -945,7 +939,7 @@ export interface HomeEntry {
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
 const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
-export const APP_CSS = `${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
+export const APP_CSS = `${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */

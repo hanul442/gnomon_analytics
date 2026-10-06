@@ -122,7 +122,7 @@ test('a refresh request writes one new deep report in the current prompt, even o
   const refresh = [{ symbol: '000660', requestedAt: '2026-10-03', refresh: true }];
   await runDaily({ ...opts, requests: refresh, now: new Date('2026-10-03T09:30:00Z') });
   assert.deepEqual(calls, ['SK하이닉스 (000660)']);
-  assert.match(await readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'), /gnm-committee-v5/);
+  assert.match(await readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'), /gnm-committee-v6/);
   assert.match(await readFile(path, 'utf8'), /gnm-committee-v2/);
   // Once a current report exists, the request does nothing.
   calls.length = 0;
@@ -188,7 +188,7 @@ test('sealed deep reports (G-61): the paid part is neither in the repository nor
     for (const page of ['index.html', 'reports/2026-10-02.html']) {
       const html = await readFile(join(root, 'site', '000660', page), 'utf8');
       assert.doesNotMatch(html, secrets, page);
-      assert.ok(html.includes('id="deep-slot"') && html.includes('data-date="2026-10-02"') && html.includes('강세 60%'), page);
+      assert.ok(html.includes('id="deep-slot"') && html.includes('data-date="2026-10-02"') && html.includes('cl-card') && html.includes('60%</b>'), page);
     }
     const deep = await unseal(await readFile(join(root, 'site', '000660', 'deep', '2026-10-02.txt'), 'utf8'), 'test-deep-key');
     assert.match(deep, /비밀데스크/); assert.match(deep, /비밀시나리오/);
