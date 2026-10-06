@@ -680,6 +680,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "002025",
+  "name": "코오롱우",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "002030",
   "name": "아세아",
   "market": "KOSPI"
@@ -3590,6 +3595,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "024090",
+  "name": "디씨엠",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "024110",
   "name": "기업은행",
   "market": "KOSPI"
@@ -6480,6 +6490,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "072950",
+  "name": "빛샘전자",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "072990",
   "name": "에이치시티",
   "market": "KOSDAQ"
@@ -7340,11 +7355,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "092220",
-  "name": "KEC",
-  "market": "KOSPI"
- },
- {
   "symbol": "092230",
   "name": "KPX홀딩스",
   "market": "KOSPI"
@@ -7907,11 +7917,6 @@
  {
   "symbol": "104830",
   "name": "원익머트리얼즈",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "105330",
-  "name": "케이엔더블유",
   "market": "KOSDAQ"
  },
  {
