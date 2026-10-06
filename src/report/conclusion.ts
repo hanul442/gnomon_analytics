@@ -4,7 +4,6 @@ export { scenarioZone };
 // Never infer a scenario trigger from unrelated support/resistance levels.
 
 import type { DailyReport } from './dailyReport.js';
-import { ANALYSTS } from '../analysis/analysts.js';
 import { LOCKED_TEXT } from '../analysis/commentary.js';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -80,39 +79,6 @@ export const CONCLUSION_CSS = `.cl-card .card{border:1.5px solid var(--navy)}.cl
 .cl-what{font-size:15px}.cl-what small{display:block;font-size:12px;color:var(--muted);margin-top:2px}.cl-p{font-size:18px;margin-left:4px}.cl-up .cl-p{color:#c4262e}.cl-down .cl-p{color:#1f55b8}
 .vt-sum{display:flex;gap:14px;flex-wrap:wrap;font-size:15px}.vt-bar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:8px 0 12px}.vt-bar .s-bull{background:#d1373d}.vt-bar .s-neutral{background:#c4cbc9}.vt-bar .s-bear{background:#2a62c9}.vt-list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}.vt-m{border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}.vt-who{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.vt-who b{font-size:14px}.vt-s{font-size:12px;font-weight:700;white-space:nowrap}.vt-m p{margin:4px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg2);overflow-wrap:anywhere}
 @media (max-width:820px){.cl-row{grid-template-columns:1fr auto}.cl-row .cl-px{grid-column:1}.cl-row .cl-what{grid-column:1}.cl-row .cl-more{grid-column:2;grid-row:1/3}.cl-line{font-size:17px}}`;
-
-const DESK_NAME: Record<string, string> = { MARKET: '시장 데스크', TECHNICAL: '기술 데스크', FLOW: '수급 데스크', FUNDAMENTAL: '펀더멘털 데스크', EVENT: '공시·뉴스 데스크' };
-const ANALYST_NAME: Record<string, string> = Object.fromEntries(ANALYSTS.map((a) => [a.id, a.name]));
-const VOTE = { BULLISH: ['강세', 'up'], BEARISH: ['약세', 'down'], NEUTRAL: ['중립', ''], INSUFFICIENT_DATA: ['근거 부족', 'muted'] } as const;
-
-/**
- * The committee's vote (G-69), under the conclusion: the split as one bar, then every member with its
- * stance and the one line behind it. This replaces the per-desk opinion block and the seat chart.
- */
-/** The vote's split, for everyone ('전체') and for each view's own committee (CSS shows the reader's). */
-function tallies(members: readonly { id: string; stance: string }[]): string {
-  const one = (ms: readonly { stance: string }[], cls: string) => {
-    const n = (k: string) => ms.filter((m) => m.stance === k).length;
-    return `<div class="vt-tally ${cls}"><div class="vt-sum"><b class="up">강세 ${n('BULLISH')}</b><b>중립 ${n('NEUTRAL')}</b>${n('INSUFFICIENT_DATA') ? `<b class="muted">근거 부족 ${n('INSUFFICIENT_DATA')}</b>` : ''}<b class="down">약세 ${n('BEARISH')}</b></div>
-<div class="vt-bar" aria-hidden="true"><span class="s-bull" style="flex:${n('BULLISH')}"></span><span class="s-neutral" style="flex:${n('NEUTRAL') + n('INSUFFICIENT_DATA')}"></span><span class="s-bear" style="flex:${n('BEARISH')}"></span></div></div>`;
-  };
-  return one(members, 'vt-t-all') + Object.entries(VIEW_FOCUS).map(([v, ids]) => one(members.filter((m) => ids.includes(m.id)), `vt-t-${v}`)).join('');
-}
-
-export function voteSection(report: DailyReport): string {
-  const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
-  if (!c) return '';
-  const members = [
-    ...(c.analysts ?? []).map((a) => ({ id: a.analyst as string, who: ANALYST_NAME[a.analyst] ?? a.analyst, role: '분석가', stance: a.stance as keyof typeof VOTE, why: a.rationale.text, conf: a.confidence })),
-    ...(c.desks ?? []).map((d) => ({ id: d.desk as string, who: DESK_NAME[d.desk] ?? d.desk, role: '데스크', stance: d.stance as keyof typeof VOTE, why: d.view.text, conf: null as number | null })),
-  ];
-  if (!members.length) return '';
-  const n = (k: string) => members.filter((m) => m.stance === k).length;
-  const order = { BULLISH: 0, NEUTRAL: 1, INSUFFICIENT_DATA: 2, BEARISH: 3 } as const;
-  const rows = [...members].sort((a, b) => order[a.stance] - order[b.stance]).map((m) => `<li class="vt-m" data-member="${m.id}"><div class="vt-who"><b>${esc(m.who)}</b><span class="vt-s ${VOTE[m.stance][1]}">${VOTE[m.stance][0]}${m.conf != null ? ` · 확신 ${Math.round(m.conf <= 1 ? m.conf * 100 : m.conf)}%` : ''}</span></div><p>${esc(m.why)}</p></li>`).join('');
-  return `<section class="block" id="vote"><div class="block-head"><h2>위원별 판단</h2><span class="muted">분석가 ${(c.analysts ?? []).length}명 · 데스크 ${(c.desks ?? []).length}곳</span></div><div class="card vt">
-<p class="vt-help pc-only-beginner">강세는 '오를 쪽', 약세는 '내릴 쪽', 중립은 '아직 어느 쪽도 아니다'로 본다는 뜻이에요. 확신은 그 판단을 얼마나 자신하는지예요.</p><p class="vt-help pc-not-all">내 보기 방식에 맞는 위원으로 위원회를 꾸렸어요. 토론도 이 위원들 말만 보여요. <a href="#" data-open-view>보기 방식 바꾸기</a></p>${viewSeats(members.map((m) => m.id))}<details><summary>위원별 근거</summary><ul class="vt-list">${rows}</ul></details><button type="button" class="vt-more">다른 위원도 보기</button><p class="fine">분석가는 각자 맡은 방법(추세·평균회귀·수급·실적 등)으로, 데스크는 맡은 자료(시장·기술·수급·실적·공시뉴스)로 판단해요. 분석가의 판단은 20거래일 뒤 실제 가격으로 채점돼 성적표에 쌓여요.</p></div></section>`;
-}
 
 /** Opens a conclusion row's scenario. */
 export const CONCLUSION_JS = `
