@@ -3475,6 +3475,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "0218L0",
+  "name": "네오뷰",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "0220W0",
   "name": "한화머시너리앤서비스홀딩스",
   "market": "KOSPI"
@@ -4850,11 +4855,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "042370",
-  "name": "비츠로테크",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "042420",
   "name": "네오위즈홀딩스",
   "market": "KOSDAQ"
@@ -5998,6 +5998,11 @@
   "symbol": "064850",
   "name": "에프앤가이드",
   "market": "KOSDAQ"
+ },
+ {
+  "symbol": "064960",
+  "name": "SNT모티브",
+  "market": "KOSPI"
  },
  {
   "symbol": "064960",
@@ -7463,11 +7468,6 @@
   "symbol": "094480",
   "name": "갤럭시아머니트리",
   "market": "KOSDAQ"
- },
- {
-  "symbol": "094800",
-  "name": "맵스리얼티",
-  "market": "KOSPI"
  },
  {
   "symbol": "094800",
@@ -10020,11 +10020,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "228670",
-  "name": "레이",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "228760",
   "name": "지노믹트리",
   "market": "KOSDAQ"
@@ -10577,6 +10572,11 @@
  {
   "symbol": "265520",
   "name": "AP시스템",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "265560",
+  "name": "영화테크",
   "market": "KOSDAQ"
  },
  {
@@ -11557,11 +11557,6 @@
  {
   "symbol": "332290",
   "name": "누보",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "332370",
-  "name": "아이디피",
   "market": "KOSDAQ"
  },
  {
@@ -13027,6 +13022,11 @@
  {
   "symbol": "452400",
   "name": "이닉스",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "452430",
+  "name": "사피엔반도체",
   "market": "KOSDAQ"
  },
  {
