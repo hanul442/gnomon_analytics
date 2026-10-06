@@ -8,8 +8,8 @@ import {renderSite} from '../dist/cli/daily.js';
 import {loadTickers} from '../dist/config/tickers.js';
 import {quickCalc} from '../dist/analysis/quickCalc.js';
 import {CREDIT_COST} from '../dist/report/plans.js';
-const root=process.cwd(),origin='http://127.0.0.1:8765';
-process.env.GNM_API_URL=origin+'/api';
+const root=process.cwd(),origin='http://localhost:8765';
+process.env.GNM_API_URL=origin;
 await renderSite(root,await loadTickers(root+'/tickers.json'));
 const bars=Array.from({length:80},(_,i)=>({date:new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10),open:100+i,high:105+i,low:95+i,close:102+i,volume:1000+i*10}));
 for(const [dir,symbol,name,kind] of [['s','999999','UI 테스트','stock'],['c','KRW-BTC','비트코인','coin']]){
@@ -28,15 +28,15 @@ const api=async(path,req,res)=>{
  if(path==='/api/reports/latest/999999')return res.end(JSON.stringify({job:null}));
  return res.end(JSON.stringify({items:[],rows:[]}));
 };
-const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(url.pathname.startsWith('/api/'))return api(url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
-await new Promise(r=>server.listen(8765,'127.0.0.1',r));
+const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
+await new Promise(r=>server.listen(8765,'localhost',r));
 let browser;const errors=[];
 try{
  browser=await chromium.launch();const context=await browser.newContext();
  await context.addInitScript(()=>localStorage.setItem('gnm-session','fixture-only'));
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  await mkdir('test-artifacts',{recursive:true});
- for(const width of [375,390,768,1280]){
+ for(const width of [375,390,768,1280]){console.log('Checking viewport',width);
   await page.setViewportSize({width,height:850});await page.goto(origin+'/stock.html?c=999999');
   await page.locator('#sp-name').filter({hasText:'UI 테스트'}).waitFor();await page.locator('#main[aria-busy]').waitFor({state:'detached'});
   assert.equal(await page.locator('[role=tab][aria-controls]').count(),7);
@@ -54,4 +54,4 @@ try{
  await page.locator('[data-open-chat]').first().click();await page.locator('#chat-q').fill('테스트 질문');await page.locator('#chat-send').click();await page.locator('#chat-log canvas[data-orb]').waitFor();await page.locator('#chat-log').filter({hasText:'테스트 답변'}).waitFor();
  await page.screenshot({path:'test-artifacts/chat.png'});
  assert.deepEqual(errors,[]);console.log('Browser checks passed: four widths, seven tabs, expert dialog, coin minute/day, volume flow, AI conditions, Thinking Orbs chat.');
-}finally{await browser?.close();await new Promise(r=>server.close(r));}
+}catch(e){console.error('Page errors:',errors);if(browser){const page=browser.contexts()[0]?.pages().at(-1);await page?.screenshot({path:'test-artifacts/failure.png'});}throw e;}finally{await browser?.close();await new Promise(r=>server.close(r));}

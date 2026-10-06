@@ -25,10 +25,13 @@ function loop(t: number) {
       const ctx = c.getContext('2d'); if (!ctx) continue;
       const state = (c.dataset.orb || 'working') as OrbState;
       const preset = resolvePreset(state in { working:1, searching:1, solving:1, listening:1, connecting:1, weaving:1, composing:1, breathing:1, shaping:1 } ? state : 'working', size);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, size, size);
       const dark = !!c.closest('[data-theme="dark"], .dark');
-      if (!reduced.matches || !c.dataset.static) MODE_DRAWS[preset.mode](ctx, size, reduced.matches ? .6 : t / 1000 * preset.speed, dark, preset.opts);
-      c.dataset.static = '1';
+      const frame = state + ':' + size + ':' + dark;
+      if (!reduced.matches || c.dataset.static !== frame) {
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, size, size);
+        MODE_DRAWS[preset.mode](ctx, size, reduced.matches ? .6 : t / 1000 * preset.speed, dark, preset.opts);
+        c.dataset.static = frame;
+      }
     }
   }
   requestAnimationFrame(loop);
