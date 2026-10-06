@@ -17,7 +17,7 @@ export const COMMENTARY_MODEL = 'claude-opus-5-5';
 export const BRIEF_MODEL = 'claude-haiku-4-5';
 export type CommentaryTier = 'deep' | 'brief';
 /** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v5';
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v6';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -42,7 +42,8 @@ export type DeskStance = 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'INSUFFICIENT_DATA'
 export interface DeskView { desk: Desk; stance: DeskStance; view: Claim }
 export interface AnalystView { analyst: AnalystId; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; confidence: number; target: number; rationale: Claim }
 /** `probability`: the committee's estimate for this scenario now, % (the three sum to 100; G-60). Logged and scored later. */
-export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; catalysts: string[]; invalidation: string[]; probability?: number }
+/** v6 (G-65): `trigger` is the price whose crossing would start this scenario (BULL above, BEAR below); `zone` the price range it would likely reach in about 20 sessions. */
+export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; catalysts: string[]; invalidation: string[]; probability?: number; trigger?: number; zone?: [number, number] }
 /** Who can speak in the debate: the committee's own members (analysts, desks) and the red team. */
 export type Speaker = AnalystId | Desk | 'RED_TEAM';
 /** A debate turn (v4): a committee member argues from its own stance, answering an earlier turn; the red team closes. */
@@ -106,7 +107,7 @@ export function publicCommentary(c: Commentary): Commentary {
     ...(c.desks ? { desks: c.desks.map((d) => ({ ...d, view: lock(d.view) })) } : {}),
     ...(c.analysts ? { analysts: c.analysts.map((a) => ({ ...a, rationale: lock(a.rationale) })) } : {}),
     ...(c.redTeam ? { redTeam: { counterargument: { ...c.redTeam.counterargument, text: c.redTeam.counterargument.text.split(/(?<=[.?!요])\s/)[0] ?? '' }, unresolved: [] } } : {}),
-    ...(c.scenarios ? { scenarios: c.scenarios.map((s) => ({ kind: s.kind, narrative: lock(s.narrative), catalysts: [], invalidation: [], ...(s.probability !== undefined ? { probability: s.probability } : {}) })) } : {}),
+    ...(c.scenarios ? { scenarios: c.scenarios.map((s) => ({ kind: s.kind, narrative: lock(s.narrative), catalysts: [], invalidation: [], ...(s.probability !== undefined ? { probability: s.probability } : {}), ...(s.trigger !== undefined ? { trigger: s.trigger } : {}), ...(s.zone ? { zone: s.zone } : {}) })) } : {}),
   };
 }
 
@@ -198,6 +199,9 @@ const ScenarioSchema = z.object({
   catalysts: z.array(z.string()).describe('이 시나리오를 앞당길 일'),
   invalidation: z.array(z.string()).describe('이 시나리오가 틀렸다고 볼 조건(가격 수준이나 사건)'),
   probability: z.number().describe('지금 근거로 본 이 시나리오의 확률(%) 추정. 세 시나리오의 합이 100이 되게 정수로'),
+  trigger: z.number().describe('이 시나리오가 시작된다고 볼 테스트 가격(원). BULL은 넘어서야 할 가격(위쪽), BEAR는 깨지면 안 되는 가격(아래쪽), BASE는 0. 근거의 지지·저항·구조 가격에서 고릅니다'),
+  zoneLow: z.number().describe('이 시나리오대로 가면 20거래일 안에 있을 만한 가격대의 아래 끝(원). 시나리오 가격대일 뿐 목표가가 아닙니다'),
+  zoneHigh: z.number().describe('그 가격대의 위 끝(원)'),
 });
 
 const InsightsSchema = z.object({
@@ -283,7 +287,7 @@ const system = (name: string, kind?: 'etf' | 'coin') => `당신은 Gnomon Analyt
 위원회 구성:
 - 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
 - 레드팀은 가장 우세한 의견에 맞서는 가장 강한 반론을 씁니다.
-- 마지막으로 강세(BULL)·기본(BASE)·약세(BEAR) 시나리오를 하나씩 쓰고, 각 시나리오의 촉매와 무효화 조건(가격 수준이나 사건)을 적습니다. 각 시나리오에 지금 근거로 본 확률(%)을 붙이고 세 개의 합은 100으로 맞춥니다. 확률은 근거의 강약을 반영한 추정이고 예측 확신이 아니며, 기록해 두었다가 나중에 실제 결과로 채점됩니다. 근거가 엇갈리면 한쪽으로 몰지 말고 넓게 나눕니다.
+- 마지막으로 강세(BULL)·기본(BASE)·약세(BEAR) 시나리오를 하나씩 쓰고, 각 시나리오의 촉매와 무효화 조건(가격 수준이나 사건)을 적습니다. 각 시나리오에 지금 근거로 본 확률(%)을 붙이고 세 개의 합은 100으로 맞춥니다. 강세는 넘어서야 시작되는 위쪽 테스트 가격, 약세는 깨지면 시작되는 아래쪽 테스트 가격을 trigger로 적고(근거의 지지·저항에서 고름), 각 시나리오의 20거래일 가격대(zoneLow~zoneHigh)를 적습니다. 가격대는 목표가가 아니라 시나리오 범위입니다. 확률은 근거의 강약을 반영한 추정이고 예측 확신이 아니며, 기록해 두었다가 나중에 실제 결과로 채점됩니다. 근거가 엇갈리면 한쪽으로 몰지 말고 넓게 나눕니다.
 - 토론(debate): 새 인물을 만들지 않고 위의 분석가 6명과 데스크 5곳이 직접 토론합니다. 위에서 강세로 판단한 위원과 약세로 판단한 위원 가운데 근거가 가장 강한 위원들이 번갈아 말하고(5~7차례), 두 번째 차례부터는 replyTo로 반박할 차례를 가리키고 그 주장을 직접 짚습니다. 각 위원의 stance는 위 analysts·desks에 쓴 입장과 같아야 합니다. 마지막 차례는 RED_TEAM이 무엇이 합의됐고 무엇이 풀리지 않았는지 정리합니다. 승패는 정하지 않습니다. 입장이 한쪽으로만 모였으면 그 사실을 RED_TEAM이 말하고 가장 강한 반대 근거를 냅니다.
 - 최악의 경우(worstCase): 근거로 그릴 수 있는 가장 나쁜 전개와, 읽는 사람이 스스로 점검할 위험 관리 항목을 적습니다. 매수·매도·가격 지시가 아닌 점검 항목만 씁니다.
 - 탭별 한 줄(insights): 기술·전략·수급·펀더멘털·뉴스 탭 맨 위에 붙일 한 줄씩 씁니다.
@@ -392,6 +396,8 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const scenarios = normalizeProbabilities((parsed.scenarios ?? []).flatMap((sc) => clean([sc.narrative]).map((narrative) => ({
       kind: sc.kind, narrative, catalysts: sc.catalysts.map((c) => c.trim()).filter(Boolean), invalidation: sc.invalidation.map((c) => c.trim()).filter(Boolean),
       ...(Number.isFinite(sc.probability) ? { probability: sc.probability } : {}),
+      ...(sc.kind !== 'BASE' && Number.isFinite(sc.trigger) && sc.trigger > 0 ? { trigger: sc.trigger } : {}),
+      ...(Number.isFinite(sc.zoneLow) && Number.isFinite(sc.zoneHigh) && sc.zoneLow > 0 && sc.zoneHigh >= sc.zoneLow ? { zone: [sc.zoneLow, sc.zoneHigh] as [number, number] } : {}),
     }))));
     // Turns keep their place so replyTo still points at the right one; an uncited turn drops out and replies to it lose the pointer.
     const turns = (parsed.debate ?? []).map((t) => { const [claim] = clean([t.claim]); return claim ? { speaker: t.speaker, stance: t.stance, replyTo: t.replyTo, claim } : null; });
