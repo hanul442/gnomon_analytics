@@ -210,6 +210,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "000590",
+  "name": "CS홀딩스",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "000640",
   "name": "동아쏘시오홀딩스",
   "market": "KOSPI"
@@ -2422,11 +2427,6 @@
  {
   "symbol": "010240",
   "name": "흥국",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "010280",
-  "name": "아이티센엔텍",
   "market": "KOSDAQ"
  },
  {
@@ -4935,11 +4935,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "043590",
-  "name": "웰킵스하이텍",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "043610",
   "name": "KT지니뮤직",
   "market": "KOSDAQ"
@@ -6973,11 +6968,6 @@
   "symbol": "084870",
   "name": "TBH글로벌",
   "market": "KOSPI"
- },
- {
-  "symbol": "084990",
-  "name": "헬릭스미스",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "085310",
@@ -9460,6 +9450,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "200230",
+  "name": "텔콘RF제약",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "200350",
   "name": "아티스트스튜디오",
   "market": "KOSDAQ"
@@ -10550,6 +10545,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "264450",
+  "name": "유비쿼스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "264660",
   "name": "씨앤지하이테크",
   "market": "KOSDAQ"
@@ -11142,6 +11142,11 @@
  {
   "symbol": "303030",
   "name": "지니틱스",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "303360",
+  "name": "프로티아",
   "market": "KOSDAQ"
  },
  {
