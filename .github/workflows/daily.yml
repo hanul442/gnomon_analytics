@@ -1,5 +1,8 @@
 name: Daily report
 on:
+  push:
+    branches: [main]
+    paths: ['src/report/**', 'src/cli/**', 'vendor/thinking-orbs/**', '.github/workflows/daily.yml']
   schedule:
     # 18:30 KST on weekdays (09:30 UTC). GitHub may start scheduled runs late.
     - cron: '30 9 * * 1-5'
