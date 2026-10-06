@@ -21,7 +21,11 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const upper = bull?.trigger ?? levels.filter((l) => l.price > p.close).sort((a, b) => a.price - b.price)[0]?.price;
   const lower = bear?.trigger ?? levels.filter((l) => l.price < p.close).sort((a, b) => b.price - a.price)[0]?.price;
   const anyOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
-  if (upper === undefined && lower === undefined && !anyOdds) return '';
+  // The committee's vote in one line (G-68): it replaces the seat chart on the AI tab.
+  const votes = [...(c?.analysts ?? []), ...(c?.desks ?? [])].map((v) => v.stance);
+  const n = (k: string) => votes.filter((v) => v === k).length;
+  const tally = votes.length ? `<div class="cl-tally">위원 ${votes.length}명 · <b class="up">강세 ${n('BULLISH')}</b> · <b class="down">약세 ${n('BEARISH')}</b> · 중립 ${n('NEUTRAL')}${n('INSUFFICIENT_DATA') ? ` · 근거 부족 ${n('INSUFFICIENT_DATA')}` : ''}</div>` : '';
+  if (upper === undefined && lower === undefined && !anyOdds && !votes.length) return '';
   const odds = (s: typeof bull) => (typeof s?.probability === 'number' ? `<b class="cl-p">${s.probability}%</b>` : '');
   const line = (c?.summary?.text ?? report.headline).split(/(?<=[.?!요])\s/)[0] ?? '';
   const rows = [
@@ -31,12 +35,12 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
   const source = bull?.trigger !== undefined || bear?.trigger !== undefined ? 'AI 위원회가 고른 테스트 가격이에요' : '가까운 지지·저항을 테스트 가격으로 썼어요';
-  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')}</div><h2 class="cl-line">${esc(line)}</h2>
+  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')}</div><h2 class="cl-line">${esc(line)}</h2>${tally}
 <div class="cl-ladder">${rows}</div>
 <p class="fine">${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
 }
 
-export const CONCLUSION_CSS = `.cl-card .card{border:1.5px solid var(--navy)}.cl-k{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.cl-line{font-size:19px;line-height:1.5;margin:0 0 14px}
+export const CONCLUSION_CSS = `.cl-card .card{border:1.5px solid var(--navy)}.cl-k{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.cl-line{font-size:19px;line-height:1.5;margin:0 0 8px}.cl-tally{font-size:13px;color:var(--fg2);margin:0 0 14px}
 .cl-ladder{position:relative;display:flex;flex-direction:column;gap:8px;padding-left:4px}.cl-ladder::before{content:'';position:absolute;left:15px;top:14px;bottom:14px;width:2px;background:linear-gradient(#d1373d,#7b8798,#2a62c9);opacity:.35}
 .cl-row{position:relative;display:grid;grid-template-columns:minmax(150px,auto) 1fr;gap:6px 16px;align-items:center;border-radius:14px;padding:12px 14px}.cl-up{background:#fdf0f0}.cl-now{background:#f2f4f7}.cl-down{background:#eef3fc}
 .cl-px{display:flex;align-items:baseline;gap:6px}.cl-arrow{font-size:13px;width:18px;text-align:center}.cl-up .cl-arrow{color:#d1373d}.cl-down .cl-arrow{color:#2a62c9}.cl-now .cl-arrow{color:#475569}.cl-px b{font-size:17px}.cl-px small{font-size:12px;color:var(--muted)}

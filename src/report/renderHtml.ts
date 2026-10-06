@@ -18,7 +18,7 @@ import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from 
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
 import { CONCLUSION_CSS, conclusionCard } from './conclusion.js';
 import { BANNER_CSS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
-import { debateSection, decisionTrace, EXTRAS_CSS, insightLine, kindChip, weekDiffSection } from './renderReportExtras.js';
+import { debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
@@ -616,30 +616,24 @@ ${marketStrip(report)}
   // Investor flows and fundamentals are public data: free. Our footprint reading is Plus.
   const flowsTab = insightLine(report, 'flow', base) + (m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>');
   const fundTab = insightLine(report, 'fundamental', base) + (m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>');
-  const committee = report.commentary?.status === 'OK' ? parliament(report, ctx.commentaryFrom ?? null, {
-    id: 'parliament-ai', title: 'AI 위원회 표결', factions: ['ai', 'desk'], link: null, roster: true,
-    note: '위원은 AI 분석가 6명과 데스크 5곳이에요. 좌석이나 이름을 누르면 판단·확신도·20거래일 뒤 예상가·근거·지난 성적이 나와요.',
-  }) : '';
   const summary = report.commentary?.status === 'OK' ? report.commentary.summary?.text : undefined;
   const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>요약 리포트예요</b><p class="muted small">AI 위원회 전체(데스크 5곳·분석가 6명·레드팀·시나리오)로 다시 쓰려면 심층 리포트로 업그레이드하세요. 프로부터 쓸 수 있어요.</p></div><button type="button" class="credit-btn" data-spend="upgrade" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">심층으로 업그레이드 <small>${CREDIT_COST.upgrade}크레딧</small></button></div></section>` : '';
-  // Free: the tally only. Plus: a limited committee (conclusion, desk stances, one line of red team). Pro: everything, plus expert invitations.
   const fromNote = ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : '';
   const isBrief = report.commentary?.status === 'OK' && report.commentary.tier === 'brief';
   // Brief reports: the brief itself is Plus. Committee reports: limited committee Plus, the rest Pro.
   const sealedDeep = !!ctx.deep && report.commentary?.status === 'OK' && !isBrief;
+  // G-68: one conclusion (the card, with the vote), then the debate with its evidence inline, then what it
+  // left open, then the reader's turn. No second conclusion, no separate evidence list, no seat chart.
   const aiBody = isBrief
     ? gate(whySection(report), { base, what: '요약 리포트: 요약 · 강세와 약세 근거 · 지켜볼 것' })
     : sealedDeep
-      // G-61: the conclusion and the odds are open; the rest is the paid deep report, fetched once unlocked.
-      ? `${committeeLite(report)}${deepSlot(report.symbol, ctx.deep!.date)}`
+      ? deepSlot(report.symbol, ctx.deep!.date)
       : report.commentary?.status === 'OK'
-      // Plus sees at least what a brief shows (conclusion, desk stances, the evidence lists); Pro adds the committee's structure.
-      ? `${gate(committeeLite(report) + whySection(report, { only: 'claims' }), { base, what: '제한된 AI 위원회: 결론 · 데스크 입장 · 레드팀 한 줄 · 강세와 약세 근거' })}${gate(debateSection(report) + whySection(report, { committee: !!committee, only: 'structure' }) + (m ? analystScores(m.analystBoard) : ''), { base, what: '토론형 위원회 · 최악의 경우 · 위원별 근거 · 시나리오 · 분석가 순위', need: 'pro' })}`
+      ? `${gate(debateSection(report) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
       : whySection(report);
-  const proExtras = sealedDeep ? '' : gate(weekDiffSection(report, ctx.previous ?? null) + decisionTrace(report, ctx.live), { base, what: '지난 리포트 대비 · 이 판단을 만든 입력', need: 'pro' });
+  const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary
-    // G-65: the conclusion card first, then the committee's reasons and debate; the seat tally after them.
-    ? `${upgrade}${fromNote}${conclusionCard(report, { id: 'conclusion' })}${aiBody}${joinBox(report, base)}${committee}${proExtras}`
+    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion' }) : ''}${aiBody}${report.commentary.status === 'OK' ? joinBox(report, base) : ''}${record}`
     : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매일 고른 종목과 요청된 종목에 리포트가 만들어져요. 궁금한 건 오른쪽 아래 <b>AI 질문</b>으로 물어보세요.</p></div>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
@@ -656,17 +650,23 @@ ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
-  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
 
 /** The paid part of a committee report (G-61), rendered from the full commentary and sealed into <symbol>/deep/<date>.txt. */
 export function renderDeep(report: DailyReport, ctx: { live: boolean; previous?: DailyReport | null }): string {
   const m = report.market;
-  return `<div class="deep-body">${whySection(report, { only: 'claims' })}${debateSection(report)}${whySection(report, { only: 'structure' })}${m ? analystScores(m.analystBoard) : ''}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
+  return `<div class="deep-body">${debateSection(report) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
 }
 
 export const DEEP_UNLOCK_CREDITS = 10;
 const DEEP_WHAT = '위원회 토론 · 위원별 근거 · 시나리오 전개와 무효화 조건 · 최악의 경우 · 강세·약세 근거 전체 · 분석가 순위 · 지난 리포트 대비';
+/** G-68: the paper trail, last and small: what changed since the last report, and the inputs behind this one. */
+function recordSection(report: DailyReport, ctx: { previous?: DailyReport | null; live: boolean }, base: string): string {
+  const body = weekDiffSection(report, ctx.previous ?? null) + decisionTrace(report, ctx.live);
+  return body ? `<div class="ai-record">${gate(body, { base, what: '기록: 지난 리포트 대비 · 이 판단을 만든 입력', need: 'pro' })}</div>` : '';
+}
+
 function deepSlot(symbol: string, date: string): string {
   return `<section class="block deep-slot" id="deep-slot" data-symbol="${escape(symbol)}" data-date="${escape(date)}"><div class="card deep-lock"><div class="dl-ic" aria-hidden="true">🔒</div><div><b>심층 리포트</b><p class="muted small">${DEEP_WHAT}</p><div class="dl-row"><button type="button" class="btn-primary" id="deep-open" disabled>불러오는 중…</button><span class="muted small" id="deep-note"></span></div></div></div></section>`;
 }
@@ -725,17 +725,6 @@ window.GNM_fold();
 const STANCE_WORD = { BULLISH: '강세', BEARISH: '약세', NEUTRAL: '중립', INSUFFICIENT_DATA: '근거 부족' } as const;
 const DESK_NAME = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDAMENTAL: '펀더멘털', EVENT: '공시·뉴스' } as const;
 
-/** Plus: the committee's conclusion, each desk's stance (no reasons) and the red team's first sentence. */
-function committeeLite(report: DailyReport): string {
-  const c = report.commentary;
-  if (c?.status !== 'OK') return '';
-  const desks = (c.desks ?? []).map((d) => `<span class="dk dk-${d.stance}"><b>${DESK_NAME[d.desk]}</b>${STANCE_WORD[d.stance]}</span>`).join('');
-  const red = c.redTeam?.counterargument.text.split(/(?<=요\.)\s/)[0];
-  return `<section class="block"><div class="block-head"><h2>AI 위원회 결론</h2><span class="muted">${c.tier === 'brief' ? '요약 리포트' : '위원회 리포트'}</span></div><div class="card ai-one">
-${c.summary ? `<p class="headline">${escape(c.summary.text)}</p>` : ''}${desks ? `<div class="pl-k">데스크 입장</div><div class="dk-row">${desks}</div>` : ''}
-${red ? `<div class="red-team" style="margin-top:12px"><h3>레드팀 한 줄</h3><p>${escape(red)}</p></div>` : ''}
-<p class="fine">위원별 근거·예측·시나리오는 프로부터 볼 수 있어요.</p></div></section>`;
-}
 
 /** G-66: one place to join the debate. Ask the committee (opens the chat with the question) or seat an
  *  expert who answers it from this stock's evidence (Pro credits, Max monthly allowance). Replaces the

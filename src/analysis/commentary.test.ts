@@ -77,7 +77,7 @@ test('the page shows claims with evidence chips, or why there is no commentary',
   assert.ok(html.includes('강세 이유'));
   // With desk votes, the AI tab opens with a parliament of the committee.
   const voted = { ...ok, commentary: { ...ok.commentary, desks: [{ desk: 'TECHNICAL', stance: 'BULLISH', view: { text: '추세 위', evidenceIds: ['P1'] } }] } } as typeof ok;
-  assert.ok(!html.includes('id="parliament-ai"') && renderReport(voted, { index: '../index.html' }).includes('id="parliament-ai"'));
+  assert.ok(!html.includes('class="cl-tally"') && renderReport(voted, { index: '../index.html' }).includes('class="cl-tally"'));
   const failed = { ...report, commentary: await writeCommentary(report, {}) };
   assert.match(renderReport(failed, { index: '../index.html' }), /AI 해설이 없어요: API 키가 설정되지 않았어요/);
 });
@@ -119,7 +119,8 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   assert.deepEqual(c.worstCase?.checks, ['무효화 가격 확인']);
   assert.deepEqual(Object.keys(c.insights ?? {}), ['technical']);
   const page = renderReport({ ...report, commentary: c }, { index: '../index.html' });
-  assert.ok(page.includes('id="debate"') && page.includes('추세·모멘텀 PM') && page.includes('class="db-quote"><b>추세·모멘텀 PM') && !page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술') && page.includes('class="sc-prob"') && page.includes('53%'));
+  for (const x of ['id="debate"', '추세·모멘텀 PM', 'class="db-quote"><b>추세·모멘텀 PM', '최악의 경우', 'AI 한 줄 · 기술', 'class="block cl-card', '53%', 'id="issues"']) assert.ok(page.includes(x), x);
+  assert.ok(page.includes('id="debate"') && page.includes('추세·모멘텀 PM') && page.includes('class="db-quote"><b>추세·모멘텀 PM') && !page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술') && page.includes('class="block cl-card') && page.includes('53%') && page.includes('id="issues"') && !page.includes('id="parliament-ai"'));
   assert.deepEqual(c.desks?.map((d) => [d.desk, d.stance]), [['TECHNICAL', 'BULLISH']]);
   assert.deepEqual(c.redTeam?.unresolved, ['수급 해석']);
   assert.deepEqual(c.scenarios?.map((s) => s.kind), ['BULL', 'BASE']);
