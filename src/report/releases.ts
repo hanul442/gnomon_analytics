@@ -1,6 +1,7 @@
 /** Retrospective grouping of merged functionality, not historical Git tags. */
-export const VERSION = '2.1.1';
+export const VERSION = '2.1.2';
 export const RELEASES = [
+ ['2.1.2','2026-10-06','시나리오 조건·근거를 바로 표시하고 미니 차트의 숫자 크기·가격 라벨 간격·현재 가격과 범례를 개선했습니다.'],
  ['2.1.1','2026-10-06','기술과 전략 탭 분리, 기존 시나리오 설명 속 가격도 미니 차트에 표시, 스트리밍 답변 중 Thinking Orbs 유지, 전체 토론 항상 표시, 뉴스·공시 5건 이후 더 보기.'],
  ['2.1.0','2026-10-06','리포트 유무와 관계없이 동일한 분석 화면, 피보나치·RSI 등 지표에서 차트로 바로 이동, 시나리오 미니 차트와 차트 탭 비교, 토론 안의 질문 입력·전송 아이콘·작은 비용 안내, 계정에 저장하는 맞춤 전문가, 간결한 AI 조건 버튼, 즉시 화면 표시와 실제 대기 시에만 Thinking Orbs.'],
  ['2.0.0','2026-10-06','요청 즉시 리포트 생성과 채팅 스트리밍, Thinking Orbs 공통 로딩(최소 2초), AI 검색 조건 만들기, 전문가 선택 팝업, 리포트 권한·모자이크, 모바일 화면 안정화, 차트·기술 탭 분리, 코인 분봉과 거래량·매집/분산, 토론 입력 옆 + 전문가 선택.'],
@@ -16,6 +17,6 @@ export const RELEASES = [
  ['0.1.0','2026-10-04','차트·기술 지표·뉴스와 AI 해설 확장.'],
  ['0.0.0','2026-10-03','SK하이닉스 일일 리포트로 시작한 알파 기본판.'],
 ] as const;
-export const versionBanner = (base:string) => `<aside class="version-banner" data-version="${VERSION}"><div><b>Alpha v${VERSION}</b><p>기술·전략 분리 · 미니 차트 수정 · 전체 토론</p><a href="${base}guide.html">새 사용법</a> · <a href="${base}updates.html">릴리스 노트</a></div><button type="button" data-dismiss-version aria-label="이 버전 안내 닫기">×</button></aside>`;
+export const versionBanner = (base:string) => `<aside class="version-banner" data-version="${VERSION}"><div><b>Alpha v${VERSION}</b><p>더 읽기 쉬운 시나리오 차트 · 조건과 근거 바로 보기</p><a href="${base}guide.html">새 사용법</a> · <a href="${base}updates.html">릴리스 노트</a></div><button type="button" data-dismiss-version aria-label="이 버전 안내 닫기">×</button></aside>`;
 export const VERSION_CSS = `.version-banner[hidden]{display:none}.version-banner{display:flex;justify-content:space-between;gap:12px;padding:14px 18px;margin:12px 0 18px;background:#eef3fb;border:1px solid #ccd9ee;border-radius:14px;font-size:13px}.version-banner p{margin:4px 0}.version-banner button{border:0;background:none;font-size:22px;align-self:start;cursor:pointer}`;
 export const VERSION_JS = `(function(){var b=document.querySelector('[data-version]');if(!b)return;var key='gnm-version-dismissed-'+b.dataset.version;try{b.hidden=localStorage.getItem(key)==='1';}catch(e){}b.querySelector('[data-dismiss-version]').onclick=function(){b.hidden=true;try{localStorage.setItem(key,'1');}catch(e){}};})();`;
