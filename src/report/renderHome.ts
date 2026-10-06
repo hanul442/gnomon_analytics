@@ -12,6 +12,7 @@ import { sparkline } from './appParts.js';
 import { SEARCH_SCRIPT, shell, type HomeEntry } from './renderHtml.js';
 import { gate } from './plans.js';
 import { ALPHA_BANNERS, BANNER_JS, bannerHtml, type Banner } from './alphaPages.js';
+import { HOME_ORDER, PERSONA_BAR } from './persona.js';
 
 const esc = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -156,16 +157,17 @@ export function renderHome(data: HomeData): string {
   const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
   const covered = new Set(data.entries.map((e) => e.symbol));
   const asOf = data.pulse?.date ?? data.indices[0]?.date ?? '';
-  const body = `${HOME_STYLE}${bannerHtml([...(data.banners ?? []), ...ALPHA_BANNERS])}<div class="pz-note" id="pz-note" hidden><span id="pz-text"></span><a class="pz-edit" href="onboarding.html">설문 수정하기</a></div><section class="hero home-hero" id="top"><div class="hero-main"><div class="eyebrow"><span>오늘 시장</span>${asOf ? `<span>${esc(asOf)} 기준</span>` : ''}</div><h1>지금 무엇을 봐야 할까요</h1>
-<p class="hero-line">전 종목의 기술 신호를 매일 계산하고, 매일 주식·ETF·코인 AI 리포트를 써요. 예측은 기록해 두고 나중에 채점해요.</p>
-<div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
-<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div>
-<nav class="mkt-tabs" aria-label="시장"><a href="screener.html">국내 주식<small>스크리너</small></a><a href="etfs.html">ETF<small>국내 상장 전체</small></a><a href="coins.html">코인<small>업비트 원화</small></a></nav></div></section>
+  const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
+<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div></section>
+${bannerHtml([...(data.banners ?? []), ...ALPHA_BANNERS])}
+<div class="pz-note" id="pz-note"><span id="pz-text">어떤 투자자인지에 맞춰 화면을 바꿔 보세요.</span>${PERSONA_BAR}<a class="pz-edit" href="onboarding.html">설문 수정하기</a></div>
+<section class="block home-mkt"><nav class="mkt-tabs" aria-label="시장"><a href="screener.html">국내 주식<small>스크리너</small></a><a href="etfs.html">ETF<small>국내 상장 전체</small></a><a href="coins.html">코인<small>업비트 원화</small></a></nav></section>
 ${indexStrip(data.indices, data.universe)}
 <div class="home-grid"><div class="home-main">${FEED}${pulseCard(data.pulse)}${WATCH}${dailyRows(daily)}${reportRows(sorted, data.selection)}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
+<div class="show-more"><button type="button" class="btn-ghost" id="show-all">다른 정보도 보기</button></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
+  return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT });
 }
 
 /** My feed (G-46): from the onboarding survey, kept in this browser. Leads with my stocks and puts first what I said I want to see. */
@@ -199,7 +201,34 @@ const FEED_SCRIPT = `<script>
 })();
 </script>`;
 
-const HOME_STYLE = `<style>.pz-note{max-width:1180px;margin:10px auto 0;padding:0 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}.pz-note>span{flex:1;min-width:200px;background:#eef3fb;border-radius:12px;padding:9px 12px}.pz-note b{color:var(--accent-strong)}.pz-edit{font-weight:700;font-size:13px;text-decoration:none;border:1px solid var(--accent);color:var(--accent-strong);border-radius:999px;padding:7px 12px;background:#fff;white-space:nowrap}@media (max-width:820px){.pz-note{padding:0 14px}}
+/** Front page by view (G-63): the view's sections in its order, the rest behind "다른 정보도 보기". */
+const PERSONA_HOME_SCRIPT = `<script>
+(function () {
+  var ORDER = ${JSON.stringify(HOME_ORDER)}, main = document.querySelector('.home-main'), more = document.getElementById('show-all');
+  if (!main) return;
+  var ALL = ['feed', 'watch', 'daily', 'reports', 'pulse', 'movers'];
+  var apply = function () {
+    var p = document.documentElement.getAttribute('data-persona') || 'swing', keep = ORDER[p], all = !keep || document.documentElement.classList.contains('show-all');
+    var hidden = 0, after = null;
+    (keep || ALL).concat(ALL.filter(function (k) { return !keep || keep.indexOf(k) < 0; })).forEach(function (id) {
+      var el = document.getElementById(id); if (!el || el.parentNode !== main) return;
+      main.insertBefore(el, after ? after.nextSibling : main.firstChild); after = el;
+      var off = !all && keep && keep.indexOf(id) < 0 && id !== 'feed';
+      el.classList.toggle('ph-off', !!off); if (off) hidden += 1;
+    });
+    document.querySelector('.home-rail').classList.toggle('ph-off', !all && (p === 'beginner' || p === 'trader'));
+    if (more) { more.parentNode.hidden = all || !hidden; more.textContent = '다른 정보도 보기 (' + (hidden + ((p === 'beginner' || p === 'trader') ? 3 : 0)) + '개)'; }
+  };
+  if (more) more.addEventListener('click', function () { document.documentElement.classList.add('show-all'); apply(); });
+  window.addEventListener('gnm-persona', apply);
+  apply();
+})();
+</script>`;
+
+const HOME_STYLE = `<style>.top-search{max-width:1180px;margin:14px auto 0;padding:0 24px}.top-search .search-box{background:#fff;border:2px solid var(--navy);box-shadow:0 6px 18px rgba(15,34,68,.08)}.top-search .search-box input{font-size:16px}
+.home-mkt{margin-top:12px}.home-mkt .mkt-tabs{margin-top:0}.ph-off{display:none!important}.show-more{text-align:center;margin:18px 0 6px}.btn-ghost{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
+.pz-note .persona-bar{margin-left:auto}@media (max-width:820px){.top-search{padding:0 14px;margin-top:10px}.pz-note .persona-bar{margin-left:0}}
+.pz-note{max-width:1180px;margin:10px auto 0;padding:0 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}.pz-note>span{flex:1;min-width:200px;background:#eef3fb;border-radius:12px;padding:9px 12px}.pz-note b{color:var(--accent-strong)}.pz-edit{font-weight:700;font-size:13px;text-decoration:none;border:1px solid var(--accent);color:var(--accent-strong);border-radius:999px;padding:7px 12px;background:#fff;white-space:nowrap}@media (max-width:820px){.pz-note{padding:0 14px}}
 .dl-day{font-size:12px;font-weight:700;color:var(--accent-strong);padding:10px 0 2px}.dl-old{border-top:1px solid var(--line);margin-top:4px;color:var(--muted)}.tier.t-k{background:#eef1f5;color:var(--fg2)}
 .mkt-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.mkt-tabs a{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line-strong);border-radius:12px;padding:9px 12px;background:#fff;text-decoration:none;color:var(--fg);font-weight:700;font-size:14px}.mkt-tabs a small{font-weight:500;font-size:11px;color:var(--muted)}.mkt-tabs a:hover{border-color:var(--accent)}
 
