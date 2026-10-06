@@ -514,6 +514,9 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
     // With the key, a sealed commentary is opened again (the run needs it whole); without, the public part stays.
     if (DEEP_KEY && r.commentary?.sealed) {
       try { r.commentary = JSON.parse(await unseal(r.commentary.sealed, DEEP_KEY)); } catch { /* wrong key: keep the public part */ }
+    } else if (DEEP_KEY && r.commentary?.status === 'OK' && r.commentary.tier !== 'brief') {
+      // Written before the key existed: seal it in place so the repo keeps only the public part.
+      await writeFile(join(reportDir, file), `${JSON.stringify(await storable(r))}\n`);
     }
     reports.push(r);
   }

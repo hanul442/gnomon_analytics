@@ -1,3 +1,4 @@
+import { PERSONA_BAR } from './persona.js';
 // Shared UI layer (docs/DESIGN.md §4.5, G-41): design tokens, a sticky price bar for stock pages,
 // a glossary ("?" next to financial terms), loading skeletons and the active page in the header.
 // Everything here is presentation; it never changes what a page says.
@@ -150,7 +151,7 @@ const MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M
 export function menuHtml(base: string, archiveHref?: string): { button: string; drawer: string } {
   return {
     button: `<button type="button" class="menu-btn" aria-label="전체 메뉴" aria-expanded="false" aria-controls="side-menu">${MENU_ICON}</button>`,
-    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체 메뉴</b><button type="button" class="sm-close" aria-label="닫기">×</button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
+    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체 메뉴</b><button type="button" class="sm-close" aria-label="닫기">×</button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div class="sm-group sm-view" id="sm-view"><div class="sm-title">내 보기 방식</div>${PERSONA_BAR}<p class="sm-hint">고르면 홈의 '오늘 볼 것'과 종목 화면이 바뀌어요.</p><a href="${base}onboarding.html">설문 다시 하기</a></div><div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
   };
 }
 
@@ -158,7 +159,7 @@ export const MENU_CSS = `.menu-btn{width:38px;height:38px;border:0;border-radius
 .menu-scrim{position:fixed;inset:0;background:rgba(10,20,35,.42);z-index:90}.side-menu{position:fixed;top:0;right:0;bottom:0;width:min(300px,86vw);background:#fff;z-index:91;overflow-y:auto;padding:14px 16px 24px;box-shadow:-12px 0 32px rgba(10,20,35,.18);animation:sm-in .18s ease-out}
 @keyframes sm-in{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}.sm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.sm-head b{font-size:17px}.sm-close{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);width:38px;height:38px}
 .sm-group{border-top:1px solid var(--line);padding:10px 0 6px}.sm-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:2px}.side-menu a{display:block;padding:10px 6px;border-radius:10px;text-decoration:none;color:var(--fg);font-weight:600;font-size:15px}.side-menu a:hover,.side-menu a[aria-current=page]{background:#eef3fb;color:var(--accent-strong)}.sm-foot{font-size:12px;color:var(--muted);margin-top:12px}
-html.menu-open{overflow:hidden}`;
+html.menu-open{overflow:hidden}.sm-view .persona-bar{margin:6px 0 4px}.sm-view .persona-bar .lbl{display:none}.sm-hint{font-size:12px;color:var(--muted);margin:4px 2px}`;
 
 export const MENU_JS = `
   // The ☰ menu: opens the drawer, closes on the scrim, the × button, Escape or a link.
@@ -177,9 +178,9 @@ export const MENU_JS = `
 
 
 /** The home banner's styles (markup and script in alphaPages.ts); here so the shared CSS has no import cycle. */
-export const BANNER_CSS = `.bn-slide[hidden]{display:none!important}.banner{position:relative;max-width:1180px;margin:14px auto 0;padding:0 24px}.bn-slide{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px 14px;border-radius:18px;padding:24px 26px 32px;text-decoration:none;color:#fff;min-height:132px}
-.bn-slide b{font-size:21px;line-height:1.35}.bn-text{grid-column:2/3;font-size:14.5px;opacity:.9;line-height:1.55}.bn-cta{grid-row:1/3;grid-column:3;font-weight:700;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:7px 12px;white-space:nowrap}.bn-tag{grid-row:1/3;font-size:11px;font-weight:800;background:rgba(255,255,255,.2);border-radius:6px;padding:2px 6px}
+export const BANNER_CSS = `.bn-slide[hidden]{display:none!important}.banner{position:relative;max-width:1180px;margin:14px auto 0;padding:0 24px}.bn-slide{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px 14px;border-radius:18px;padding:30px 32px 40px;text-decoration:none;color:#fff;min-height:188px}
+.bn-slide b{font-size:25px;line-height:1.35}.bn-text{grid-column:2/3;font-size:15.5px;opacity:.9;line-height:1.55}.bn-cta{grid-row:1/3;grid-column:3;font-weight:700;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:7px 12px;white-space:nowrap}.bn-tag{grid-row:1/3;font-size:11px;font-weight:800;background:rgba(255,255,255,.2);border-radius:6px;padding:2px 6px}
 .bn-navy{background:linear-gradient(120deg,#13294b,#2a4f8f)}.bn-teal{background:linear-gradient(120deg,#0d5e5a,#1c8c7d)}.bn-amber{background:linear-gradient(120deg,#8a4b06,#c47a12)}.bn-rose{background:linear-gradient(120deg,#7a1d38,#b23a5a)}
 .bn-dots{position:absolute;left:0;right:0;bottom:7px;display:flex;justify-content:center;gap:6px}.bn-dots button{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.45);cursor:pointer}.bn-dots button[aria-pressed=true]{background:#fff;width:18px;border-radius:4px}
-@media (max-width:820px){.banner{padding:0 14px;margin-top:10px}.bn-slide{grid-template-columns:auto 1fr;padding:18px 16px 28px;min-height:150px}.bn-cta{grid-row:auto;grid-column:2;justify-self:start;padding:5px 10px}.bn-tag{grid-row:1}.bn-slide b{font-size:18px}}`;
+@media (max-width:820px){.banner{padding:0 14px;margin-top:10px}.bn-slide{grid-template-columns:auto 1fr;padding:22px 18px 32px;min-height:172px}.bn-cta{grid-row:auto;grid-column:2;justify-self:start;padding:5px 10px}.bn-tag{grid-row:1}.bn-slide b{font-size:20px}}`;
 

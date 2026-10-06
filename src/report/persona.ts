@@ -20,10 +20,10 @@ export const PERSONA_BOOT = `<script>(function(){var p='';try{p=localStorage.get
 
 /** Home sections each view shows, in order; the rest wait behind "다른 정보도 보기". */
 export const HOME_ORDER: Record<Exclude<Persona, 'all'>, string[]> = {
-  beginner: ['watch', 'today', 'pulse'],
-  trader: ['watch', 'today', 'movers', 'pulse'],
-  swing: ['watch', 'today', 'pulse'],
-  long: ['watch', 'today', 'pulse'],
+  beginner: ['watch', 'today'],
+  trader: ['watch', 'today', 'movers'],
+  swing: ['watch', 'today'],
+  long: ['watch', 'today'],
 };
 /** Report tabs each view keeps (the rest come back with "전체 보기"). */
 export const TAB_KEEP: Record<Exclude<Persona, 'all'>, string[]> = {
@@ -46,6 +46,8 @@ export const PERSONA_BAR = `<div class="persona-bar" role="group" aria-label="�
 /** The switch's behaviour; pages listen for the gnm-persona event to re-arrange. */
 export const PERSONA_JS = `
   document.addEventListener('click', function (e) {
+    var o = e.target.closest && e.target.closest('[data-open-view]');
+    if (o) { e.preventDefault(); var m = document.querySelector('.menu-btn'); if (m) { m.click(); var g = document.getElementById('sm-view'); if (g) g.scrollIntoView({ block: 'nearest' }); } return; }
     var b = e.target.closest && e.target.closest('.persona-bar [data-persona]'); if (!b) return;
     var p = b.getAttribute('data-persona');
     try { localStorage.setItem('gnm-persona', p); } catch (x) {}

@@ -15,7 +15,7 @@ import { councilCard, DART_SCRIPT, freshness, freshnessBadge, hero, latestLists,
 import { analystScores, arenaHeadline, arenaPanel, arenaRanking, arenaTeaser } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
-import { PERSONA_BAR, PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
+import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
 import { CONCLUSION_CSS, conclusionCard } from './conclusion.js';
 import { BANNER_CSS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { debateSection, decisionTrace, EXTRAS_CSS, insightLine, kindChip, weekDiffSection } from './renderReportExtras.js';
@@ -599,7 +599,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}
 ${m ? marketStatusWarning(m) : ''}
-<div class="pc-wrap">${PERSONA_BAR}${personaCards(report)}</div>
+<div class="pc-wrap">${personaCards(report)}</div>
 <div class="pc-hide-beginner pc-hide-trader">${parliament(report, ctx.commentaryFrom ?? null) || councilCard(report.commentary, ctx.commentaryFrom ?? null)}</div>
 ${m ? gate(`<section class="block"><div class="block-head"><h2>기간별 기술 신호</h2><a href="#tab-technical" class="more-link">게이지로 보기 ›</a></div>${horizonStrip(m.horizons)}</section>
 <section class="block"><div class="block-head"><h2>기술적 적정가</h2><a href="#tab-technical" class="more-link">자세히 보기 ›</a></div>${valueCard(m, false)}</section>`, { base, what: '기간별 신호 · 기술적 적정가' }) : ''}
