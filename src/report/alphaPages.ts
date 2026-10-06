@@ -2,21 +2,28 @@
 // the top of the home page (how-to guide, mid-term and weekly surveys, notices from banners.json), the
 // guide page and the two longer surveys. The menu itself lives in ui.ts (every page). Answers go to the API's /survey (kinds "midterm" and "weekly").
 
+import type { CreditEvent } from './events.js';
 import { shell } from './renderHtml.js';
 export { BANNER_CSS } from './ui.js';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** A notice or ad in the home banner (banners.json, edited by hand like promos.json). */
-export interface Banner { title: string; text?: string; href?: string; cta?: string; tone?: 'navy' | 'teal' | 'amber' | 'rose'; until?: string }
+export type BannerKind = 'notice' | 'event' | 'guide' | 'survey' | 'ad';
+export interface Banner { title: string; text?: string; href?: string; cta?: string; tone?: 'navy' | 'teal' | 'amber' | 'rose'; until?: string; kind?: BannerKind; event?: string; credits?: number }
+const KIND_TAG: Record<BannerKind, [string, string]> = { notice: ['공지', '📣'], event: ['이벤트', '🎁'], guide: ['사용법', '🧭'], survey: ['설문', '📝'], ad: ['광고', '🏷️'] };
 
 /** Always on during the alpha: the guide and the two surveys. */
 export const ALPHA_BANNERS: readonly Banner[] = [
-  { title: '그노몬 사용법 3분 정리', text: '홈, 리포트 탭, AI 위원회, 스크리너, 관심 종목까지 한 번에 봐요.', href: 'guide.html', cta: '사용법 보기', tone: 'navy' },
-  { title: '알파 중간 설문 (약 5분)', text: '지금까지 써 보신 소감을 들려주세요. 다음 개선 순서를 정하는 데 써요.', href: 'survey.html?k=midterm', cta: '중간 설문 하기', tone: 'teal' },
-  { title: '이번 주 설문 (1분)', text: '이번 주에 가장 좋았던 것과 불편했던 것 하나씩만 알려 주세요.', href: 'survey.html?k=weekly', cta: '주간 설문 하기', tone: 'amber' },
+  { kind: 'guide', title: '처음이면 1분 둘러보기', text: '실제 화면 위에서 결론 카드, 시나리오, 위원회 토론을 차례로 짚어 드려요.', href: 'guide.html', cta: '사용법 보기', tone: 'navy' },
+  { kind: 'survey', title: '맞춤 설문 (약 7분)', text: '투자 경험·스타일·궁금한 것을 알려 주시면 홈과 리포트가 그에 맞게 바뀌어요.', href: 'onboarding.html', cta: '설문 하기', tone: 'teal' },
+  { kind: 'survey', title: '이번 주 설문 (1분)', text: '이번 주에 가장 좋았던 것과 불편했던 것 하나씩만 알려 주세요.', href: 'survey.html?k=weekly', cta: '주간 설문 하기', tone: 'amber' },
+  { kind: 'ad', title: '프로 요금제 2주 무료 체험', text: '위원회 토론 전체, 남은 쟁점, 전문가 초청까지. 알파 기간 광고 자리 시험용 가상 광고예요.', href: 'pricing.html', cta: '요금제 보기', tone: 'navy' },
+  { kind: 'ad', title: '여기에 광고가 들어갈 수 있어요', text: '증권·핀테크 파트너 광고 자리예요. 지금은 시험용 가상 광고이고, 실제 상품이 아니에요.', cta: '광고 문의 (준비 중)', tone: 'rose' },
 ];
 
+/** Credit events become banners with a 받기 button (G-73). */
+export const eventBanners = (events: readonly CreditEvent[]): Banner[] => events.map((e) => ({ kind: 'event', title: `${e.title} · ${e.credits}크레딧`, text: e.text, cta: '받기', tone: 'amber', event: e.id, credits: e.credits }));
 export function validBanners(list: unknown, today: string): Banner[] {
   if (!Array.isArray(list)) return [];
   const TONES = ['navy', 'teal', 'amber', 'rose'];
@@ -31,7 +38,12 @@ export function validBanners(list: unknown, today: string): Banner[] {
 /** The rotating banner at the top of the home page: notices first, then the alpha guide and surveys. */
 export function bannerHtml(list: readonly Banner[]): string {
   if (!list.length) return '';
-  const slide = (b: Banner, i: number) => `<a class="bn-slide bn-${b.tone ?? 'navy'}" ${b.href ? `href="${esc(b.href)}"` : 'role="group"'} data-i="${i}"${i ? ' hidden' : ''} aria-roledescription="배너" aria-label="${i + 1} / ${list.length}"><span class="bn-tag">${i < list.length - ALPHA_BANNERS.length ? '공지' : '알파'}</span><b>${esc(b.title)}</b>${b.text ? `<span class="bn-text">${esc(b.text)}</span>` : ''}${b.cta ? `<span class="bn-cta">${esc(b.cta)} ›</span>` : ''}</a>`;
+  const slide = (b: Banner, i: number) => {
+    const [tag, art] = KIND_TAG[b.kind ?? 'notice'];
+    const inner = `<span class="bn-tag">${tag}</span><b>${esc(b.title)}</b>${b.text ? `<span class="bn-text">${esc(b.text)}</span>` : ''}${b.cta ? (b.event ? `<button type="button" class="bn-cta" data-claim="${esc(b.event)}" data-ev-credits="${b.credits ?? 0}">${esc(b.cta)} ›</button>` : `<span class="bn-cta">${esc(b.cta)} ›</span>`) : ''}<span class="bn-art" aria-hidden="true">${art}</span>`;
+    const attrs = `class="bn-slide bn-${b.tone ?? 'navy'} bn-k-${b.kind ?? 'notice'}" data-i="${i}"${i ? ' hidden' : ''} aria-roledescription="배너" aria-label="${i + 1} / ${list.length}"`;
+    return b.href && !b.event ? `<a ${attrs} href="${esc(b.href)}">${inner}</a>` : `<div ${attrs} role="group">${inner}</div>`;
+  };
   return `<section class="banner" id="banner" aria-label="공지와 이벤트">${list.map(slide).join('')}${list.length > 1 ? `<div class="bn-dots">${list.map((_, i) => `<button type="button" data-go="${i}" aria-label="${i + 1}번째 배너" aria-pressed="${i === 0}"></button>`).join('')}</div>` : ''}</section>`;
 }
 
@@ -40,6 +52,21 @@ export const BANNER_JS = `<script>
 (function () {
   var box = document.getElementById('banner'); if (!box) return;
   var slides = box.querySelectorAll('.bn-slide'), dots = box.querySelectorAll('[data-go]'), at = 0, timer = 0;
+  // Credit events: the API grants them once per account; without the API, this browser's mock account.
+  box.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-claim]'); if (!b) return;
+    e.preventDefault(); var id = b.getAttribute('data-claim'), G = window.GNM || {};
+    var done = function (m) { b.disabled = true; b.textContent = '받았어요 ✓'; if (G.toast) G.toast(m); else alert(m); };
+    if (G.api) {
+      if (!G.me) { location.href = 'login.html?next=' + encodeURIComponent(location.pathname); return; }
+      G.call('POST', '/events/claim', { id: id }).then(function (r) { if (r.error) { if (r.error === 'ALREADY') done(r.message); else if (G.toast) G.toast(r.message); return; } done(r.credits + '크레딧을 받았어요. 남은 크레딧 ' + r.balance + '개'); if (G.refresh) G.refresh(); });
+    } else if (G.read && G.write) {
+      var a = G.read(); if (a.claimed.indexOf(id) >= 0) return done('이미 받은 이벤트예요.');
+      var n = Number(b.getAttribute('data-ev-credits')) || 50;
+      a.claimed.push(id); a.grants.push({ id: id, left: n, to: '2099-12-31' }); a.log.unshift({ at: new Date().toISOString(), kind: 'trial', amount: n, note: '이벤트 ' + id }); G.write(a); if (G.paint) G.paint();
+      done(n + '크레딧을 받았어요 (MOCK)');
+    }
+  });
   if (slides.length < 2) return;
   var show = function (i) { at = (i + slides.length) % slides.length; slides.forEach(function (s, k) { s.hidden = k !== at; }); dots.forEach(function (d, k) { d.setAttribute('aria-pressed', String(k === at)); }); };
   var start = function () { clearInterval(timer); timer = setInterval(function () { show(at + 1); }, 5000); };

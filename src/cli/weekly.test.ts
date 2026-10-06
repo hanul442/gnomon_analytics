@@ -191,10 +191,10 @@ test('sealed deep reports (G-61): the paid part is neither in the repository nor
       assert.ok(html.includes('id="deep-slot"') && html.includes('data-date="2026-10-02"') && html.includes('cl-card') && html.includes('60%</b>'), page);
     }
     const deep = await unseal(await readFile(join(root, 'site', '000660', 'deep', '2026-10-02.txt'), 'utf8'), 'test-deep-key');
-    assert.match(deep, /비밀데스크/); assert.match(deep, /비밀시나리오/);
+    assert.match(deep, /비밀시나리오/);
     // The next run opens the sealed report again for the live page, and still leaks nothing.
     await runDaily({ ...opts, now: new Date('2026-10-05T09:30:00Z') });
     assert.doesNotMatch(await readFile(join(root, 'site', '000660', 'index.html'), 'utf8'), secrets);
-    assert.match(await unseal(await readFile(join(root, 'site', '000660', 'deep', '2026-10-02.txt'), 'utf8'), 'test-deep-key'), /비밀데스크/);
+    assert.match(await unseal(await readFile(join(root, 'site', '000660', 'deep', '2026-10-02.txt'), 'utf8'), 'test-deep-key'), /비밀시나리오/);
   } finally { setDeepKey(''); }
 });

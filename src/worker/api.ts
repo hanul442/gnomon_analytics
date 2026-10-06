@@ -8,6 +8,8 @@ import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, matches } from '../analysis/screenRules.js';
 import { intradaySignals, readIntraday } from '../analysis/intraday.js';
 import { deepPath, DEEP_DATE, DEEP_SYMBOL, unseal } from '../report/seal.js';
+import { openEvents } from '../report/events.js';
+import { parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
 import { parseNaverMinuteChart } from '../sources/naverPrice.js';
 
 export interface Env {
@@ -251,6 +253,22 @@ const route = (method: string, path: string, h: Handler) => routes.push([method,
 
 route('GET', '/health', async () => ({ ok: true }));
 
+// G-62: live prices for stocks and ETFs, from Naver's polling feed (the browser cannot call it across
+// origins). Public, at most 40 codes a call, answers cached for 8 seconds per code set in this isolate.
+const quoteCache = new Map<string, { at: number; quotes: Quote[] }>();
+route('GET', '/quote', async ({ req, deps, now }) => {
+  const codes = [...new Set((new URL(req.url).searchParams.get('s') ?? '').split(',').map((x) => x.trim().toUpperCase()).filter((x) => /^[0-9A-Z]{6}$/.test(x)))].slice(0, 40).sort();
+  if (!codes.length) fail(400, 'NO_CODES', '종목 코드를 6자리로 보내 주세요.');
+  const key = codes.join(','), hit = quoteCache.get(key);
+  if (hit && now.getTime() - hit.at < 8000) return { quotes: hit.quotes, cached: true };
+  const r = await deps.fetch(quoteUrl(codes), { signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).catch(() => null);
+  if (!r || !r.ok) fail(502, 'UPSTREAM', '실시간 시세를 가져오지 못했어요.');
+  const quotes = parseNaverQuotes(await r!.json().catch(() => null));
+  if (quoteCache.size > 500) quoteCache.clear();
+  quoteCache.set(key, { at: now.getTime(), quotes });
+  return { quotes };
+});
+
 route('POST', '/auth/start', async ({ req, env, deps, now }) => {
   const b = await body(req), email = normEmail(b.email), db = env.DB;
   if (!email) fail(400, 'BAD_EMAIL', '이메일 주소를 확인해 주세요.');
@@ -388,6 +406,16 @@ route('POST', '/me/delete', async ({ req, env, now }) => {
   return { ok: true };
 });
 
+// G-73: claim a running credit event, once per account (the ledger's unique ref keeps it to one).
+route('POST', '/events/claim', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req), id = str(b.id, 60);
+  const ev = openEvents(kst(now).slice(0, 10)).find((e) => e.id === id);
+  if (!ev) fail(404, 'NO_EVENT', '지금 진행 중인 이벤트가 아니에요.');
+  const r = await credit(env.DB, u.id, ev!.credits, 'grant', `${ev!.title} ${ev!.credits}크레딧`, `event:${ev!.id}`, now).run();
+  if (!r.meta?.changes) fail(409, 'ALREADY', '이미 받은 이벤트예요.');
+  return { ok: true, credits: ev!.credits, balance: await balanceOf(env.DB, u.id) };
+});
+
 route('POST', '/credits/request', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req), amount = int(b.amount), reason = str(b.reason, 500);
   if (!(amount >= 10 && amount <= ALPHA.maxRequest)) fail(400, 'BAD_AMOUNT', `10~${ALPHA.maxRequest}크레딧 사이로 요청해 주세요.`);
@@ -408,7 +436,7 @@ route('POST', '/actions', async ({ req, env, now }) => {
   if (dup) fail(409, 'DUPLICATE', '이미 요청했어요.');
   const cost = CREDIT_COST[kind!], ref = `action:${crypto.randomUUID()}`;
   if (!(await charge(env.DB, u.id, cost, kind!, `${symbol} ${str(b.detail, 60)}`.trim(), ref, now))) fail(402, 'NO_CREDITS', `크레딧이 모자라요. ${cost}크레딧이 필요해요.`, { cost, balance: await balanceOf(env.DB, u.id) });
-  await env.DB.prepare('INSERT INTO action_requests (user_id, kind, symbol, detail, credits, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(u.id, kind, symbol, str(b.detail, 200), cost, iso(now)).run();
+  await env.DB.prepare('INSERT INTO action_requests (user_id, kind, symbol, detail, credits, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(u.id, kind, symbol, str(b.detail, 400), cost, iso(now)).run();
   return { ok: true, balance: await balanceOf(env.DB, u.id) };
 });
 

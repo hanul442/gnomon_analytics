@@ -11,8 +11,9 @@ import { LEVEL_LABEL } from '../analysis/technicals.js';
 import { sparkline } from './appParts.js';
 import { SEARCH_SCRIPT, shell, type HomeEntry } from './renderHtml.js';
 import { gate } from './plans.js';
-import { ALPHA_BANNERS, BANNER_JS, bannerHtml, type Banner } from './alphaPages.js';
-import { HOME_ORDER, PERSONA_BAR } from './persona.js';
+import { ALPHA_BANNERS, BANNER_JS, bannerHtml, eventBanners, type Banner } from './alphaPages.js';
+import { openEvents } from './events.js';
+import { HOME_ORDER } from './persona.js';
 
 const esc = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -30,6 +31,8 @@ export interface HomeData {
   pulse: MarketPulse | null;
   calcs?: ReadonlyMap<string, StockCalc>;
   indices: readonly IndexQuote[];
+  /** KST date of the run (credit events in the banner). */
+  today?: string;
   /** Notices from banners.json, shown before the alpha guide and surveys. */
   banners?: readonly Banner[];
 }
@@ -43,24 +46,30 @@ const BUCKETS: readonly [PulseBucket, string, string][] = [
   ['SLIGHTLY_BEARISH', LEVEL_LABEL.SLIGHTLY_BEARISH, '#8fb3ec'], ['BEARISH', LEVEL_LABEL.BEARISH, '#3b7be0'], ['STRONG_BEARISH', LEVEL_LABEL.STRONG_BEARISH, '#1d4fa3'],
 ];
 
-function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null): string {
-  const common = (universe ?? []).filter((r) => r.kind === 'stock' && r.changePct !== null);
-  const up = common.filter((r) => r.changePct! > 0).length, down = common.filter((r) => r.changePct! < 0).length, flat = common.length - up - down;
+function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null, pulse: MarketPulse | null): string {
   const cards = indices.map((i) => `<div class="card ix"><div class="ix-top"><div><div class="pl-k">${esc(i.name)}</div><div class="ix-v">${i.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</div><div class="${tone(i.changePct)} ix-c">${arrow(i.changePct)} ${signed(i.changePct)}</div></div>${sparkline(i.closes, `${i.name} 최근 60거래일`, 110, 40)}</div><div class="muted small">${esc(i.date)} 종가</div></div>`).join('');
-  const breadth = common.length ? `<div class="card ix"><div class="pl-k">오른 종목 · 내린 종목</div><div class="br-bar" aria-hidden="true"><span class="s-bull" style="flex:${up}"></span><span class="s-neutral" style="flex:${flat}"></span><span class="s-bear" style="flex:${down}"></span></div>
-<div class="br-n"><span class="up">▲ ${up.toLocaleString('ko-KR')}</span><span class="muted">보합 ${flat.toLocaleString('ko-KR')}</span><span class="down">▼ ${down.toLocaleString('ko-KR')}</span></div><div class="muted small">코스피·코스닥 보통주 ${common.length.toLocaleString('ko-KR')}종목</div></div>` : '';
-  return cards || breadth ? `<section class="block ix-row">${cards}${breadth}</section>` : '';
+  const temp = tempCard(pulse, universe);
+  return cards || temp ? `<section class="block ix-row">${cards}${temp}</section>` : '';
 }
 
-function pulseCard(p: MarketPulse | null): string {
-  if (!p) return `<section class="block" id="pulse"><div class="block-head"><h2>시장 온도</h2></div><div class="card"><p class="empty">전 종목 계산은 다음 장 마감 실행에서 나와요.</p></div></section>`;
+/**
+ * Market temperature (home, G-67): in the third index slot instead of a bare up/down count. One verdict,
+ * the 7-step signal bar over every stock, and today's up/down count as the small print.
+ */
+function tempCard(p: MarketPulse | null, universe: readonly UniverseRow[] | null): string {
+  const common = (universe ?? []).filter((r) => r.kind === 'stock' && r.changePct !== null);
+  const up = common.filter((r) => r.changePct! > 0).length, down = common.filter((r) => r.changePct! < 0).length, flat = common.length - up - down;
+  if (!p && !common.length) return '';
+  const today = common.length ? `오늘 <span class="up">▲${up.toLocaleString('ko-KR')}</span> · <span class="down">▼${down.toLocaleString('ko-KR')}</span> · 보합 ${flat.toLocaleString('ko-KR')}` : '';
+  if (!p) {
+    const word = up > down * 1.3 ? '오른 종목이 많아요' : down > up * 1.3 ? '내린 종목이 많아요' : '오른 종목과 내린 종목이 비슷해요';
+    return `<a class="card ix tmp" href="screener.html"><div class="pl-k">시장 온도</div><b class="tmp-v">${word}</b><div class="br-bar" aria-hidden="true"><span class="s-bull" style="flex:${up}"></span><span class="s-neutral" style="flex:${flat}"></span><span class="s-bear" style="flex:${down}"></span></div><div class="muted small">${today}</div></a>`;
+  }
   const pct = (n: number) => Math.round((n / p.counted) * 100);
-  const lean = p.bull - p.bear, verdict = lean > p.counted * 0.1 ? '강세 종목이 많아요' : lean < -p.counted * 0.1 ? '약세 종목이 많아요' : '엇갈려요';
-  return `<section class="block" id="pulse"><div class="block-head"><h2>시장 온도</h2><a class="more-link" href="screener.html">${p.counted.toLocaleString('ko-KR')}종목 조건으로 걸러 보기 ›</a></div>
-<div class="card pulse"><div class="pulse-head"><b class="${lean > 0 ? 'up' : lean < 0 ? 'down' : ''}">${verdict}</b><span><span class="up">강세 ${pct(p.bull)}%</span> · 중립 ${pct(p.neutral)}% · <span class="down">약세 ${pct(p.bear)}%</span></span></div>
+  const lean = p.bull - p.bear, verdict = lean > p.counted * 0.1 ? '강세 종목이 많아요' : lean < -p.counted * 0.1 ? '약세 종목이 많아요' : '강세·약세가 엇갈려요';
+  return `<a class="card ix tmp" href="screener.html"><div class="pl-k">시장 온도 <span class="muted">· ${p.counted.toLocaleString('ko-KR')}종목 기술 신호</span></div><b class="tmp-v ${lean > 0 ? 'up' : lean < 0 ? 'down' : ''}">${verdict}</b>
 <div class="pulse-bar" role="img" aria-label="${BUCKETS.map(([k, l]) => `${l} ${p.buckets[k]}종목`).join(', ')}">${BUCKETS.map(([k, l, c]) => (p.buckets[k] ? `<span style="flex:${p.buckets[k]};background:${c}" title="${l} ${p.buckets[k]}종목"></span>` : '')).join('')}</div>
-<div class="pulse-legend">${BUCKETS.map(([k, l, c]) => `<span><i style="background:${c}"></i>${l} <b>${p.buckets[k].toLocaleString('ko-KR')}</b></span>`).join('')}${p.buckets.WITHHELD ? `<span><i style="background:#fff;border:1px solid #c4cbc9"></i>보류 <b>${p.buckets.WITHHELD}</b></span>` : ''}</div>
-${p.up20 !== null ? `<p class="muted small">20거래일 전보다 오른 종목은 ${Math.round(p.up20 * 100)}%예요. 지표 16개를 종목마다 계산해 모은 값이고, 오를 확률이 아니에요.</p>` : ''}</div></section>`;
+<div class="tmp-n"><span class="up">강세 ${pct(p.bull)}%</span><span class="muted">중립 ${pct(p.neutral)}%</span><span class="down">약세 ${pct(p.bear)}%</span></div><div class="muted small">${today}</div></a>`;
 }
 
 const GROUP = { core: '위원회 전체', weekly: '요약', request: '요청', past: '', daily: '' } as const;
@@ -100,24 +109,68 @@ function reportRows(entries: readonly HomeEntry[], selection: HomeData['selectio
 <p class="muted small">위원회 전체는 대표 종목과 시가총액 상위 종목, 요약은 시가총액·거래대금·공시·움직임으로 고른 종목이에요. 신호는 중기(일봉) 기술 신호예요.</p></section>`;
 }
 
+type View = 'beginner' | 'trader' | 'swing' | 'long';
+const VIEW_LEAD: Record<View, string> = {
+  beginner: '처음 보기 좋은 대표 종목과 ETF부터',
+  trader: '오늘 많이 움직이고 거래가 붙은 종목부터',
+  swing: '테스트 가격에 가까워 판단이 필요한 종목부터',
+  long: '적정 범위 아래이거나 실적을 볼 만한 종목부터',
+};
+
+/** How much each view would want this pick today, and the one line that says why (G-67). */
+function viewFit(e: HomeEntry): Record<View, { score: number; why: string }> {
+  const r = e.report, p = r?.price, kind = e.kind ?? 'stock', deep = e.tier === 'deep' || e.group === 'core';
+  const base = e.reasons?.[0] ?? (e.group === 'core' ? '대표 종목 · 매주 위원회 리포트' : '이번 주 위원회 리포트');
+  const move = Math.abs(p?.changePct ?? 0), vol = p?.volumeRatio20 ?? null;
+  const c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
+  const lv = r?.market?.structure?.levels ?? [];
+  const up = c?.scenarios?.find((x) => x.kind === 'BULL')?.trigger ?? lv.filter((l) => p && l.price > p.close).sort((a, b) => a.price - b.price)[0]?.price;
+  const dn = c?.scenarios?.find((x) => x.kind === 'BEAR')?.trigger ?? lv.filter((l) => p && l.price < p.close).sort((a, b) => b.price - a.price)[0]?.price;
+  const gapTo = (t?: number) => (p && t ? t / p.close - 1 : null);
+  const gu = gapTo(up), gd = gapTo(dn);
+  const near = gu === null && gd === null ? null : gd === null || (gu !== null && Math.abs(gu) <= Math.abs(gd)) ? { t: up!, g: gu!, w: '위쪽' } : { t: dn!, g: gd!, w: '아래쪽' };
+  const fv = r?.market?.fairValue, per = r?.market?.snapshot?.per;
+  return {
+    beginner: {
+      score: (e.group === 'core' ? 3 : 0) + (kind === 'etf' ? 2.5 : 0) + (deep ? 1 : 0) - (kind === 'coin' ? 2 : 0) - move / 4,
+      why: kind === 'etf' ? '여러 종목을 묶은 ETF라 한 종목보다 덜 출렁여요' : e.group === 'core' ? '많이 보는 대표 종목이에요' : base,
+    },
+    trader: {
+      score: move + (vol ?? 1) * 1.5 + (kind === 'coin' ? 0.5 : 0),
+      why: p ? `오늘 ${signed(p.changePct)}${vol != null ? ` · 거래량 평소 ${vol.toFixed(1)}배` : ''}` : base,
+    },
+    swing: {
+      score: (near ? Math.max(0, 10 - Math.abs(near.g) * 100) : 0) + (deep ? 2 : 0),
+      why: near ? `${near.w} 테스트 가격 ${won(near.t)}까지 ${near.g > 0 ? '+' : ''}${(near.g * 100).toFixed(1)}%` : base,
+    },
+    long: {
+      score: (kind === 'stock' ? 2 : kind === 'etf' ? 1 : -3) + (fv?.position === 'BELOW' ? 4 : fv?.position === 'INSIDE' ? 1 : 0) + (per != null ? 1 : 0) + (deep ? 1 : 0),
+      why: fv ? `적정 범위 ${fv.position === 'BELOW' ? '아래' : fv.position === 'ABOVE' ? '위' : '안'}${per != null ? ` · PER ${per.toFixed(1)}배` : ''}` : base,
+    },
+  };
+}
+
 /**
- * "오늘 볼 것" (G-64): instead of listing every report, the few worth a look today: the latest daily
- * picks (committee reports first), topped up with this week's committee reports. Each says why.
+ * "오늘 볼 것" (G-64, G-67): the few reports worth a look today, picked for the reader's view. Every
+ * candidate is on the page with a score and a reason per view; the page shows the view's top four.
  */
 function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): string {
   const last = [...new Set(daily.map((e) => e.pickDate ?? ''))].sort().at(-1);
   const deepFirst = (a: HomeEntry, b: HomeEntry) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1);
-  const picks = [...daily.filter((e) => e.pickDate === last).sort(deepFirst), ...weekly.filter((e) => e.tier === 'deep' || e.group === 'core')].slice(0, 5);
+  const seen = new Set<string>();
+  const picks = [...daily.filter((e) => e.pickDate === last).sort(deepFirst), ...weekly].filter((e) => e.report && !seen.has(e.symbol) && seen.add(e.symbol)).slice(0, 16);
   if (!picks.length) return '';
+  const views = Object.keys(VIEW_LEAD) as View[];
   const card = (e: HomeEntry) => {
     const r = e.report, p = r?.price, c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
-    const why = e.reasons?.[0] ?? (e.group === 'core' ? '대표 종목 · 매주 위원회 리포트' : '이번 주 위원회 리포트');
-    return `<div class="tp"><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}<span class="tp-why">${esc(why)}</span></div>
-<div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b>${won(p.close)}</b> <span class="${tone(p.changePct)}">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
+    const fit = viewFit(e);
+    return `<div class="tp" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' || e.group === 'core' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
+<div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 것</h2><a class="more-link" href="reports.html">AI 리포트 모음 ›</a></div>
-<div class="tp-grid">${picks.map(card).join('')}</div><p class="muted small">AI가 오늘 고른 종목과 이번 주 위원회 리포트예요. 고른 이유를 한 줄로 붙였어요. 투자 권유가 아니에요.</p></section>`;
+<p class="tp-lead">${views.map((v) => `<span class="pw pw-${v}">${VIEW_LEAD[v]}</span>`).join('')} <a href="#" data-open-view>보기 방식 바꾸기</a></p>
+<div class="tp-grid" id="tp-grid">${picks.map(card).join('')}</div><p class="muted small">오늘 고른 종목과 이번 주 위원회 리포트 가운데, 내 보기 방식에 맞는 순서로 네 개를 골랐어요. 투자 권유가 아니에요.</p></section>`;
 }
 
 /** Every daily pick of the last week and this week's reports, off the front page (G-64). */
@@ -189,15 +242,13 @@ export function renderHome(data: HomeData): string {
   const asOf = data.pulse?.date ?? data.indices[0]?.date ?? '';
   const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div></section>
-${bannerHtml([...(data.banners ?? []), ...ALPHA_BANNERS])}
-<div class="pz-note" id="pz-note"><span id="pz-text">어떤 투자자인지에 맞춰 화면을 바꿔 보세요.</span>${PERSONA_BAR}<a class="pz-edit" href="onboarding.html">설문 수정하기</a></div>
-<section class="block home-mkt"><nav class="mkt-tabs" aria-label="시장"><a href="screener.html">국내 주식<small>스크리너</small></a><a href="etfs.html">ETF<small>국내 상장 전체</small></a><a href="coins.html">코인<small>업비트 원화</small></a></nav></section>
-${indexStrip(data.indices, data.universe)}
-<div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${pulseCard(data.pulse)}${movers(data.universe, covered)}</div>
+${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
+${indexStrip(data.indices, data.universe, data.pulse)}
+<div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <div class="show-more"><button type="button" class="btn-ghost" id="show-all">다른 정보도 보기</button></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT });
+  return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT });
 }
 
 /** My feed (G-46): from the onboarding survey, kept in this browser. Leads with my stocks and puts first what I said I want to see. */
@@ -231,6 +282,21 @@ const FEED_SCRIPT = `<script>
 })();
 </script>`;
 
+/** "오늘 볼 것" by view (G-67): sort by the view's score, keep four. */
+const TODAY_SCRIPT = `<script>
+(function () {
+  var grid = document.getElementById('tp-grid'); if (!grid) return;
+  var apply = function () {
+    var p = document.documentElement.getAttribute('data-persona') || 'swing'; if (p === 'all') p = 'swing';
+    var cards = [].slice.call(grid.children);
+    cards.sort(function (a, b) { return Number(b.getAttribute('data-s-' + p)) - Number(a.getAttribute('data-s-' + p)); });
+    cards.forEach(function (c, i) { grid.appendChild(c); c.hidden = i >= 4; });
+  };
+  window.addEventListener('gnm-persona', apply);
+  apply();
+})();
+</script>`;
+
 /** Front page by view (G-63): the view's sections in its order, the rest behind "다른 정보도 보기". */
 const PERSONA_HOME_SCRIPT = `<script>
 (function () {
@@ -255,7 +321,9 @@ const PERSONA_HOME_SCRIPT = `<script>
 })();
 </script>`;
 
-const HOME_STYLE = `<style>.tp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.tp{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 44px 14px 16px}.tp:hover{border-color:var(--accent)}.tp .star{position:absolute;top:8px;right:6px}.tp-main{text-decoration:none;color:inherit;display:block}.tp-top{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.tp-why{font-size:12px;color:var(--accent-strong);font-weight:700}.tp-name{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.tp-name>b{font-size:17px}.tp-px{font-size:14px}.tp-line{margin:6px 0 0;font-size:14px;line-height:1.6;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+const HOME_STYLE = `<style>.pw{display:none}html[data-persona=beginner] .pw-beginner,html[data-persona=trader] .pw-trader,html[data-persona=swing] .pw-swing,html[data-persona=all] .pw-swing,html[data-persona=long] .pw-long,html:not([data-persona]) .pw-swing{display:inline}.tp[hidden]{display:none}.tp-lead{margin:-4px 0 10px;font-size:13px;color:var(--fg2)}.tp-lead a{font-weight:700;margin-left:6px}
+.tmp{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:7px}.tmp:hover{border-color:var(--accent)}.tmp-v{font-size:19px}.tmp .pulse-bar{height:12px}.tmp-n{display:flex;justify-content:space-between;font-size:13px;font-weight:700}
+.tp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.tp{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 44px 14px 16px}.tp:hover{border-color:var(--accent)}.tp .star{position:absolute;top:8px;right:6px}.tp-main{text-decoration:none;color:inherit;display:block}.tp-top{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.tp-why{font-size:12px;color:var(--accent-strong);font-weight:700}.tp-name{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.tp-name>b{font-size:17px}.tp-px{font-size:14px}.tp-line{margin:6px 0 0;font-size:14px;line-height:1.6;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .top-search{max-width:1180px;margin:14px auto 0;padding:0 24px}.top-search .search-box{background:#fff;border:2px solid var(--navy);box-shadow:0 6px 18px rgba(15,34,68,.08)}.top-search .search-box input{font-size:16px}
 .home-mkt{margin-top:12px}.home-mkt .mkt-tabs{margin-top:0}.ph-off{display:none!important}.show-more{text-align:center;margin:18px 0 6px}.btn-ghost{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
 .pz-note .persona-bar{margin-left:auto}@media (max-width:820px){.top-search{padding:0 14px;margin-top:10px}.pz-note .persona-bar{margin-left:0}}
@@ -302,8 +370,8 @@ const HOME_SCRIPT = `<script>
       box.innerHTML = w.map(function (sym) {
         var it = (items || []).find(function (x) { return x[0] === sym; }) || [sym, sym, '', null, null, 0];
         var ch = it[4], coin = sym.indexOf('KRW-') === 0, href = it[5] ? sym + '/index.html' : coin ? 'coin.html?m=' + sym : 'stock.html?c=' + sym;
-        var p = it[3], price = p == null ? '' : '<b>' + (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원</b> ';
-        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b> <span class="muted small">' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : sym + (it[2] === 'ETF' ? ' · ETF' : '')) + '</span></a><span>' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
+        var p = it[3], price = p == null ? '' : '<b data-live="' + esc(sym) + '" data-live-f="price">' + (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원</b> ';
+        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b> <span class="muted small">' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : sym + (it[2] === 'ETF' ? ' · ETF' : '')) + '</span></a><span>' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
       }).join('');
     };
     show();

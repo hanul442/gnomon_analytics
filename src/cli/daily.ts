@@ -12,7 +12,7 @@ import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
 import { chooseDailyPicks, type DailyPick } from '../analysis/dailyPicks.js';
 import { fetchUpbitDays, fetchUpbitDaysLong, UPBIT_SOURCE } from '../sources/upbit.js';
 import { escapeRegex } from './weekly.js';
-import { renderCoins } from '../report/renderCoins.js';
+import { renderCoinsRedirect } from '../report/renderCoins.js';
 import { renderGuide, renderSurvey, validBanners } from '../report/alphaPages.js';
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
@@ -514,6 +514,9 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
     // With the key, a sealed commentary is opened again (the run needs it whole); without, the public part stays.
     if (DEEP_KEY && r.commentary?.sealed) {
       try { r.commentary = JSON.parse(await unseal(r.commentary.sealed, DEEP_KEY)); } catch { /* wrong key: keep the public part */ }
+    } else if (DEEP_KEY && r.commentary?.status === 'OK' && r.commentary.tier !== 'brief') {
+      // Written before the key existed: seal it in place so the repo keeps only the public part.
+      await writeFile(join(reportDir, file), `${JSON.stringify(await storable(r))}\n`);
     }
     reports.push(r);
   }
@@ -576,8 +579,9 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'stock.html'), renderStockPage());
   // Coins (G-54): the same chart page over site/c/, and the list.
   await writeFile(join(siteDir, 'coin.html'), renderStockPage(true));
-  await writeFile(join(siteDir, 'coins.html'), renderCoins());
-  await writeFile(join(siteDir, 'etfs.html'), renderCoins('etf'));
+  // G-72: ETFs and coins are tabs of 찾기 now; the old addresses forward there.
+  await writeFile(join(siteDir, 'coins.html'), renderCoinsRedirect('coin'));
+  await writeFile(join(siteDir, 'etfs.html'), renderCoinsRedirect('etf'));
   // Closed alpha pages (G-44); they need the API address to do anything.
   await writeFile(join(siteDir, 'login.html'), renderLogin());
   await writeFile(join(siteDir, 'onboarding.html'), renderOnboarding());
