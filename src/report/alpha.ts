@@ -160,7 +160,7 @@ export const ALPHA_SCRIPT = `<script>
     var dlg=f.querySelector('dialog'), chooser=f.querySelector('[data-pick-expert]');
     var custom=[],selectedKey='committee';
     var picked=function(){var r=f.querySelector('input[name=expert]:checked');return {key:r?r.value:'committee',name:r?r.closest('label').querySelector('b').textContent:'위원회 전체'};};
-    var costNote=function(){var p=picked(),cost=p.key==='committee'?(G.me?.costs.standard||10):(G.me?.costs.invite||40);f.querySelector('[data-selected-expert]').textContent=p.name+' · '+cost+'크레딧 / 질문';};
+    var costNote=function(){var p=picked(),cost=p.key==='committee'?(G.me?.costs?.standard||10):(G.me?.costs?.invite||40);f.querySelector('[data-selected-expert]').textContent=p.name+' · '+cost+'크레딧 / 질문';};
     var bindChoices=function(){dlg.querySelectorAll('input[name=expert]').forEach(function(r){r.onchange=function(){selectedKey=r.value;costNote();dlg.close();};});};
     var showCustom=function(){var host=dlg.querySelector('[data-custom-list]');host.innerHTML=custom.map(function(x){return '<div class="custom-expert-row"><label class="ex"><input type="radio" name="expert" value="custom:'+esc(x.id)+'"><span><b>'+esc(x.name)+'</b><small>'+esc(x.focus)+'</small></span></label><button type="button" data-delete-expert="'+esc(x.id)+'" aria-label="'+esc(x.name)+' 삭제">×</button></div>';}).join('');var selected=dlg.querySelector('input[value="'+selectedKey+'"]');if(selected)selected.checked=true;bindChoices();host.querySelectorAll('[data-delete-expert]').forEach(function(b){b.onclick=function(){b.disabled=true;G.call('DELETE','/experts/'+encodeURIComponent(b.dataset.deleteExpert)).then(function(r){if(r.error){toast(r.message);b.disabled=false;return;}custom=custom.filter(function(x){return x.id!==b.dataset.deleteExpert;});selectedKey='committee';f.querySelector('input[value=committee]').checked=true;showCustom();costNote();});};});};
     if(dlg&&chooser){
@@ -175,6 +175,21 @@ export const ALPHA_SCRIPT = `<script>
     var wrapper=f.closest('.join-wrap'),panel=f.closest('.panel'),debate=panel&&panel.querySelector('.card.debate');
     if(wrapper&&debate){debate.appendChild(f.closest('.db-join'));wrapper.remove();}
     costNote();
+    // G-93: my questions and their answers stay in this browser, per stock, and come back on the next visit.
+    var SKEY='gnm-debate:'+(f.getAttribute('data-symbol')||location.pathname);
+    var saved=function(){try{return JSON.parse(localStorage.getItem(SKEY)||'[]');}catch(e){return [];}};
+    var keep=function(x){var all=saved();all.push(x);try{localStorage.setItem(SKEY,JSON.stringify(all.slice(-20)));}catch(e){}};
+    var spot=function(){var p=f.closest('.panel')||(f.closest('.join-wrap')||{}).parentNode,d=p&&p.querySelector('.card.debate'),box=d||f.closest('.card')||f.parentNode,a=box.querySelector('.db-ev');if(!a){a=document.createElement('div');a.className='db-ev';box.appendChild(a);}return a;};
+    var mineTurn=function(q,who){var d=document.createElement('div');d.className='db-turn db-bear db-guest db-me';d.innerHTML='<div class="db-who"><b>나</b> · '+esc(who)+'에게</div><div class="db-bubble">'+esc(q)+'</div>';return d;};
+    var answerTurn=function(x){var d=document.createElement('div');d.className='db-turn db-mid db-guest db-answer';d.innerHTML='<div class="db-who"><b>'+esc(x.speaker)+'</b> · '+(x.key==='committee'?'위원회 답변':'초청 전문가')+'</div><div class="db-bubble md">'+md(x.a)+'</div><div class="db-cost muted small">'+(x.at?esc(x.at)+' · ':'')+x.credits+'크레딧</div>';return d;};
+    // Drawn again whenever the debate is rebuilt (a report made on request replaces it).
+    var renderPast=function(){
+     document.querySelectorAll('[data-past]').forEach(function(n){n.remove();});
+     var past=saved();if(!past.length)return;
+     var a0=spot(),head=document.createElement('div');head.className='db-past';head.setAttribute('data-past','');head.textContent='내가 한 질문 '+past.length+'개 · 이 기기에 저장돼요';a0.parentNode.insertBefore(head,a0);
+     past.forEach(function(x){var m=mineTurn(x.q,x.who),t=answerTurn(x);m.setAttribute('data-past','');t.setAttribute('data-past','');a0.parentNode.insertBefore(m,a0);a0.parentNode.insertBefore(t,a0);});
+    };
+    renderPast();window.GNM_pastQA=renderPast;
 
     f.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -183,19 +198,19 @@ export const ALPHA_SCRIPT = `<script>
       if (q.length < 2) { toast('무엇이 궁금한지 적어 주세요.'); if (qa) qa.focus(); return; }
       if (!G.me) { location.href = base + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/')); return; }
       var panel=f.closest('.panel')||f.closest('.join-wrap')?.parentNode, debate=panel&&panel.querySelector('.card.debate');
-      var box = debate || f.closest('.card') || f.parentNode, anchor = box.querySelector('.db-ev');
-      if(!anchor){anchor=document.createElement('div');anchor.className='db-ev';box.appendChild(anchor);}
-      var mine = document.createElement('div'); mine.className = 'db-turn db-bear db-guest db-me'; mine.innerHTML = '<div class="db-who"><b>나</b> · ' + esc(who) + '에게</div><div class="db-bubble">' + esc(q) + '</div>';
-      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-typing'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b> 답변 작성 중</div><div class="db-bubble"><div class="chat-progress">${ORBS}<span>생각하는 중…</span></div><div class="stream-answer"></div></div>';wait.setAttribute('aria-busy','true');
+      var box = debate || f.closest('.card') || f.parentNode, anchor = spot();
+      var mine = mineTurn(q, who);
+      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-wait'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b></div><div class="db-bubble"><div class="chat-progress">${ORBS}<span>질문을 읽고 생각하는 중</span></div><div class="stream-answer"></div></div>';wait.setAttribute('aria-busy','true');wait.setAttribute('aria-live','polite');
       anchor.parentNode.insertBefore(mine, anchor); anchor.parentNode.insertBefore(wait, anchor);
+      wait.scrollIntoView({ block: 'center', behavior: 'smooth' });
       var btn = f.querySelector('[type=submit]'); btn.disabled = true;
-      var said = [].map.call(box.querySelectorAll('.db-turn:not(.db-typing)'), function (t) { var w = t.querySelector('.db-who b'), x = t.querySelector('.db-bubble'); return (w ? w.textContent : '') + ': ' + (x ? x.textContent.replace(/\\s+/g, ' ').trim() : ''); }).join('\\n').slice(-5000);
-      G.askStream({ tier: 'standard', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.stream-answer').textContent=text;wait.querySelector('.chat-progress span:not(.orbs)').textContent='답변 작성 중';wait.querySelector('canvas').dataset.orb='composing';}).then(function (r) {
+      var said = [].map.call(box.querySelectorAll('.db-turn:not(.db-typing):not(.db-wait)'), function (t) { var w = t.querySelector('.db-who b'), x = t.querySelector('.db-bubble'); return (w ? w.textContent : '') + ': ' + (x ? x.textContent.replace(/\\s+/g, ' ').trim() : ''); }).join('\\n').slice(-5000);
+      G.askStream({ tier: 'standard', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.stream-answer').textContent=text;wait.querySelector('.chat-progress span:not(.orbs)').textContent='답변 쓰는 중';wait.querySelector('canvas').dataset.orb='composing';}).then(function (r) {
         btn.disabled = false; wait.remove();
         if (r.error) { mine.remove(); toast(r.message); if (r.error === 'NO_CREDITS' || r.error === 'PLAN_REQUIRED') location.href = base + 'pricing.html'; return; }
-        var t = document.createElement('div'); t.className = 'db-turn db-mid db-guest db-in';
-        t.innerHTML = '<div class="db-who"><b>' + esc(r.speaker || who) + '</b> · ' + (key === 'committee' ? '위원회 답변' : '초청 전문가') + '</div><div class="db-bubble md">' + md(r.answer) + '</div><div class="db-cost muted small">' + r.credits + '크레딧 · 남은 ' + r.balance + '개</div>';
-        anchor.parentNode.insertBefore(t, anchor); if (qa) qa.value = '';
+        var x = { q: q, who: who, key: key, speaker: r.speaker || who, a: r.answer, credits: r.credits, at: new Date().toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) };
+        var t = answerTurn(x); t.classList.add('db-in'); t.querySelector('.db-cost').textContent = r.credits + '크레딧 · 남은 ' + r.balance + '개';
+        anchor.parentNode.insertBefore(t, anchor); if (qa) qa.value = ''; keep(x); mine.setAttribute('data-past', ''); t.setAttribute('data-past', ''); if (!document.querySelector('.db-past')) renderPast();
         G.track('debate_ask', { expert: key }); G.refresh();
       }).catch(function(){btn.disabled=false;wait.remove();toast('연결이 끊겼어요. 다시 확인해 주세요.');});
     });

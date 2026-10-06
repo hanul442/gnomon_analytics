@@ -22,5 +22,5 @@ export function renderHanul(): string {
 <div class="hanul-grid">${PROJECTS.map((p) => `<article class="hanul-project"><span class="hanul-category">${p.category}</span><h3>${p.name}</h3><p>${p.text}</p></article>`).join('')}</div></section>
 <p class="hanul-note">이 페이지는 HANUL 가상 기업 광고에 연결된 개인 프로젝트 소개입니다.</p>
 <a class="hanul-return" href="index.html">Gnomon Analytics 홈</a></div>`;
-  return shell('', 'HANUL | 프로젝트 소개', body, { chat: false, noFeedback: true, bottomNav: false });
+  return shell('', 'HANUL | 프로젝트 소개', body, { chat: false, noFeedback: true, bottomNav: false, ads: false });
 }

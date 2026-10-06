@@ -115,10 +115,12 @@ ${watch.length ? `<div class="pl-k">이게 나오면 판단이 바뀌어요</div
  */
 export const DEBATE_PLAY_SCRIPT = `<script>
 (function(){
+ // G-92: about 2 s of "생각하는 중", the turn, then about 2 s before the next speaker.
+ var THINK=2000;
  var play=function(box){
   if(!box||box.dataset.played)return;box.dataset.played='1';
   var turns=Array.prototype.slice.call(box.querySelectorAll('.db-turn:not(.db-guest):not(.db-typing)'));
-  if(!turns.length||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  if(!turns.length)return;
   var skip=box.closest('#debate')&&box.closest('#debate').querySelector('.db-skip'),clock=null,hint=null,index=0,stopped=false;
   var finish=function(){stopped=true;clearTimeout(clock);if(hint)hint.remove();turns.forEach(function(t){t.hidden=false;});box.removeAttribute('aria-busy');if(skip)skip.hidden=true;};
   box.GNM_finishReplay=finish;box.setAttribute('aria-busy','true');turns.forEach(function(t){t.hidden=true;});
@@ -126,10 +128,11 @@ export const DEBATE_PLAY_SCRIPT = `<script>
   var next=function(){
    if(stopped)return;if(index>=turns.length){finish();return;}
    var turn=turns[index],who=turn.querySelector('.db-who b');
-   hint=document.createElement('div');hint.className='db-play-wait chat-progress';hint.innerHTML='<span class="orbs" aria-hidden="true"><canvas data-orb="working" width="40" height="40"></canvas></span><span></span>';
-   hint.querySelector('span:not(.orbs)').textContent='토론 재생 · '+(who?who.textContent:'위원')+' 생각하는 중';
+   // The speaker 'types' on their own side of the chat before the turn appears.
+   hint=document.createElement('div');hint.className=turn.className.replace(/\bdb-(reveal|in)\b/g,'')+' db-typing db-think';hint.setAttribute('aria-hidden','true');hint.innerHTML='<div class="db-who"><b></b> 생각하는 중</div><div class="db-bubble"><i></i><i></i><i></i></div>';
+   hint.querySelector('b').textContent=who?who.textContent:'위원';
    turn.before(hint);
-   clock=setTimeout(function(){if(stopped)return;hint.remove();turn.hidden=false;turn.classList.add('db-reveal');index++;clock=setTimeout(next,180);},650);
+   clock=setTimeout(function(){if(stopped)return;hint.remove();turn.hidden=false;turn.classList.add('db-reveal');if(turn.getBoundingClientRect().bottom>innerHeight)turn.scrollIntoView({block:'nearest',behavior:'smooth'});index++;clock=setTimeout(next,THINK);},THINK);
   };next();
  };
  var watch=function(){document.querySelectorAll('.card.debate:not([data-played])').forEach(function(box){
@@ -190,7 +193,7 @@ export function insightLine(report: DailyReport, key: InsightKey, base: string):
   return `<div class="insight need-plus"><span class="ins-k">AI 한 줄 · ${INSIGHT_TAB[key]}</span>${kindChip(line.kind)}${esc(line.text)}</div><div class="insight only-free"><span class="ins-k">AI 한 줄</span><span class="muted">탭마다 AI 한 줄 코멘트는 <a href="${base}pricing.html">플러스</a>부터 보여요.</span></div>`;
 }
 
-export const EXTRAS_CSS = `.db-turn[hidden]{display:none!important}.db-play-wait{display:flex;align-items:center;gap:7px;padding:12px 4px;font-size:12px;color:var(--muted)}.db-reveal{animation:db-appear .22s ease-out}@keyframes db-appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.db-reveal{animation:none}}.card.debate{display:flex;flex-direction:column;gap:10px;background:#fff}.worst ul{list-style:none;padding-left:0}.db-turn{display:flex;flex-direction:column;max-width:82%}.db-bull{align-self:flex-start}.db-bear{align-self:flex-end;align-items:flex-end}.db-mid,.db-red{align-self:center;max-width:92%;align-items:center}.db-to{font-weight:500;color:var(--muted)}
+export const EXTRAS_CSS = `.db-think{opacity:.9}.db-wait,.db-answer{align-self:flex-start;max-width:88%}.db-wait .db-bubble{display:block;min-width:220px;background:#fff;border:1.5px dashed var(--line-strong)}.db-wait .chat-progress{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--fg2)}.db-wait .orbs canvas{width:26px;height:26px}.db-wait .stream-answer:not(:empty){margin-top:8px;white-space:pre-wrap;font-size:14px;line-height:1.6;color:var(--fg)}.db-answer .db-bubble{background:#f3efff;border:1px solid #d9cdf7}.db-past{align-self:center;font-size:12px;font-weight:700;color:var(--muted);padding:8px 0 2px}.db-turn[hidden]{display:none!important}.db-play-wait{display:flex;align-items:center;gap:7px;padding:12px 4px;font-size:12px;color:var(--muted)}.db-reveal{animation:db-appear .22s ease-out}@keyframes db-appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.db-reveal{animation:none}}.card.debate{display:flex;flex-direction:column;gap:10px;background:#fff}.worst ul{list-style:none;padding-left:0}.db-turn{display:flex;flex-direction:column;max-width:82%}.db-bull{align-self:flex-start}.db-bear{align-self:flex-end;align-items:flex-end}.db-mid,.db-red{align-self:center;max-width:92%;align-items:center}.db-to{font-weight:500;color:var(--muted)}
 .db-head-r{display:flex;gap:8px;align-items:center}.db-ask-link{font-size:13px;font-weight:800;color:var(--accent-strong);text-decoration:none;border:1px solid var(--accent);border-radius:999px;padding:5px 11px;background:#fff}.db-chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:4px}.db-chips-k{font-size:12px;font-weight:800;color:var(--muted);margin-right:2px}.db-chips button{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--muted)}.db-chips button[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}.db-chips .db-all{border-style:dashed;color:var(--accent-strong)}.db-off{display:none!important}.db-ctx{opacity:.55}.db-ctx .db-who::after{content:' · 맥락';font-weight:600}.db-guest .db-bubble{background:#f3efff;border:1px solid #d9cdf7}.db-guest .db-who b{color:#5b3fb0}.db-guest .md p{margin:4px 0}
 .db-skip{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}.db-turn[hidden]{display:none}.db-in{animation:db-in .25s ease-out}@keyframes db-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}.db-typing .db-bubble{display:flex;gap:4px;padding:12px 14px}.db-typing i{width:7px;height:7px;border-radius:50%;background:#94a3b8;animation:db-dot 1s infinite}.db-typing i:nth-child(2){animation-delay:.15s}.db-typing i:nth-child(3){animation-delay:.3s}@keyframes db-dot{0%,80%,100%{opacity:.3;transform:none}40%{opacity:1;transform:translateY(-3px)}}.db-join{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.db-join h3{margin:0 0 8px;font-size:15px}
 .db-who{font-size:11px;font-weight:700;color:var(--muted);margin:0 6px 3px}.db-bubble{border-radius:16px;padding:10px 13px;font-size:14px;line-height:1.6}.db-bull .db-bubble{background:#fde8e6;border-bottom-left-radius:4px}.db-bear .db-bubble{background:#e3ecfb;border-bottom-right-radius:4px}.db-mid .db-bubble{background:#f1f3f6}.db-red .db-bubble{background:#fff7e6;border:1px dashed #f1d9a6;text-align:center}

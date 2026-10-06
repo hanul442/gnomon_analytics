@@ -72,8 +72,8 @@ export const CHAT_SCRIPT = `<script>
     var hero = document.querySelector('.hero');
     return ((hero ? hero.innerText + '\\n' : '') + (open ? open.innerText : '')).replace(/\\n{3,}/g, '\\n\\n').slice(0, 6000);
   };
-  var history = function () { try { return JSON.parse(sessionStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } };
-  var remember = function (h) { try { sessionStorage.setItem(HKEY, JSON.stringify(h.slice(-20))); } catch (e) {} };
+  var history = function () { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } };
+  var remember = function (h) { try { localStorage.setItem(HKEY, JSON.stringify(h.slice(-20))); } catch (e) {} };
   var cost = function () { return TIERS.filter(function (t) { return t.key === tier; })[0].cost; };
   var label = function () { send.textContent = '➤';send.title='전송 · '+cost()+'크레딧';send.setAttribute('aria-label','질문 전송 · '+cost()+'크레딧'); };
   var add = function (cls, html) { var d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; };

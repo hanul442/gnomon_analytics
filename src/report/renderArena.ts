@@ -31,6 +31,14 @@ function equitySpark(values: readonly number[], label: string): string {
 const CROWN = '<svg viewBox="0 0 24 24" aria-hidden="true" class="crown"><path d="M3 18h18l-1.5-9-4.5 4-3-7-3 7-4.5-4z" fill="currentColor"/></svg>';
 const signalBadge = (r: StrategyResult) => (r.key === 'hold' ? '<span class="badge b-LOW">기준선</span>' : r.position ? '<span class="badge v-BULLISH">보유 신호</span>' : '<span class="badge b-LOW">관망</span>');
 
+/** G-91: each strategy's current bull/bear stance, shown in its race row (no separate gauge card). */
+function stancePill(r: StrategyResult): string {
+  if (r.key === 'hold') return '';
+  const v = r.score;
+  const [cls, label] = v === null ? ['st-none', '판단 보류'] : v >= 0.3 ? ['st-bull', '▲ 강세'] : v <= -0.3 ? ['st-bear', '▼ 약세'] : ['st-mid', '● 중립'];
+  return `<span class="race-stance ${cls}" title="현재 신호 점수 ${v === null ? '없음' : v.toFixed(2)}">${label}</span>`;
+}
+
 function rankMark(r: StrategyResult): string {
   return r.rank <= 3 && r.qualified ? `<span class="rank r${r.rank}">${CROWN}<b>${r.rank}</b></span>` : `<span class="rank"><b>${r.rank}</b></span>`;
 }
@@ -56,19 +64,14 @@ ${equitySpark(r.equity, `${r.name} 누적 수익 곡선`)}
 <div class="race-num rn-total"><b class="${tone(r.totalReturn)}">${pct(r.totalReturn)}</b><span class="muted small">전체</span></div>
 <div class="race-num"><b class="${tone(r.oosReturn)}">${pct(r.oosReturn)}</b><span class="muted small">검증</span></div>
 <div class="race-num rn-sharpe"><b>${sh(r.oosSharpe)}</b><span class="muted small">샤프</span></div>
-<div class="race-sig">${signalBadge(r)}${r.key === 'hold' ? '' : `<a href="#tab-chart" class="see-chart" data-show-strategy="${esc(r.key)}">매매 시점 보기 ›</a>`}</div></div>`).join('');
+<div class="race-sig">${stancePill(r)}${signalBadge(r)}${r.key === 'hold' ? '' : `<a href="#tab-chart" class="see-chart" data-show-strategy="${esc(r.key)}">매매 시점 보기 ›</a>`}</div>${r.key === 'hold' ? '' : `<div class="race-why">${r.position && r.target !== null ? `<b>목표 ${won(r.target)}</b> · ` : ''}${esc(r.trigger)}</div>`}</div>`).join('');
   const tradeTables = a.results.filter((r) => r.key !== 'hold' && r.tradeLog.length).map((r) => `<details class="trade-log"><summary>${r.rank}위 ${esc(r.name)} 매매 기록 ${r.trades}회</summary><div class="table-wrap"><table class="compact"><thead><tr><th>매수일</th><th class="num">매수가</th><th>매도일</th><th class="num">매도가</th><th class="num">수익</th></tr></thead><tbody>${[...r.tradeLog].reverse().map((t) => `<tr><td>${esc(t.entry)}</td><td class="num">${won(t.entryPrice)}</td><td>${t.exit ? esc(t.exit) : '<b>보유 중</b>'}</td><td class="num">${t.exitPrice === null ? '' : won(t.exitPrice)}</td><td class="num ${tone(t.ret)}">${pct(t.ret)}</td></tr>`).join('')}</tbody></table></div></details>`).join('');
-  const gauges = a.results.filter((r) => r.key !== 'hold').map((r) => `<div class="hz"><div class="hz-top"><b>${esc(r.name)}</b><span>${r.rank}위</span></div>${miniGauge(r.score, `${r.name} 현재 신호`)}
-<div class="hz-label ${sigTone(r.score)}">${r.score === null ? '판단 보류' : r.score >= 0.3 ? '강세' : r.score <= -0.3 ? '약세' : '중립'}</div>
-<div class="hz-meta"><span>${r.position ? '보유 신호' : '관망'}</span>${r.position && r.target !== null ? `<span>목표 ${won(r.target)}</span>` : ''}</div>
-<div class="muted small trig">${esc(r.trigger)}</div></div>`).join('');
   const ledger = a.results.map((r) => `<tr><td class="nowrap">${r.rank}. ${esc(r.name)}</td><td class="num ${tone(r.totalReturn)}">${pct(r.totalReturn)}</td><td class="num">${r.cagr === null ? '없음' : pct(r.cagr)}</td><td class="num">${sh(r.sharpe)}</td><td class="num down">${pct(r.maxDrawdown)}</td>
 <td class="num">${r.trades}회</td><td class="num">${r.winRate === null ? '없음' : `${Math.round(r.winRate * 100)}%`}</td><td class="num">${Math.round(r.exposure * 100)}%</td>
 <td class="num ${tone(r.oosReturn)}">${pct(r.oosReturn)}</td><td class="num">${r.monteCarlo ? `${pct(r.monteCarlo.p05, 0)} / ${pct(r.monteCarlo.p50, 0)} / ${pct(r.monteCarlo.p95, 0)}` : '없음'}</td></tr>`).join('');
   return `<section class="block" id="arena"><div class="block-head"><h2>전략 대결</h2><span class="muted small">${esc(a.from)} ~ ${esc(a.sessionDate)}, 일봉 ${a.bars}개</span></div>
 ${championCard(a)}
-<div class="card race" style="margin-top:14px"><div class="head"><h2>챔피언 레이스</h2><span class="sub small">검증 구간(${esc(a.oosFrom)}~) 샤프 순</span></div>${rows}</div>
-<div class="card" style="margin-top:14px"><div class="head"><h2>전략별 현재 신호</h2></div><div class="hz-row arena-gauges">${gauges}</div></div>
+<div class="card race" style="margin-top:14px"><div class="head"><h2>챔피언 레이스</h2><span class="sub small">검증 구간(${esc(a.oosFrom)}~) 샤프 순 · 지금 강세/약세</span></div>${rows}</div>
 <div class="card" style="margin-top:14px"><div class="head"><h2>전략별 매매 기록</h2><span class="sub small">신호가 난 날의 종가 기준, 최근 순</span></div>${tradeTables || '<p class="empty">매매 기록이 없어요.</p>'}</div>
 <details class="card more" style="margin-top:14px"><summary>실험 기록 (전략별 성적표)</summary><div class="table-wrap"><table class="compact"><thead><tr><th>전략</th><th class="num">전체 수익</th><th class="num">연환산</th><th class="num">샤프</th><th class="num">최대 낙폭</th><th class="num">거래</th><th class="num">승률</th><th class="num">보유 비중</th><th class="num">검증 수익</th><th class="num">몬테카를로 5/50/95%</th></tr></thead><tbody>${ledger}</tbody></table></div></details>
 <p class="fine">BOT의 전략 규칙을 이 종목의 과거 일봉에 그대로 적용해 본 결과예요. 신호가 난 날의 다음 날부터 수익을 계산하고(미리 보기 없음), 왕복 거래 비용 ${(a.cost * 100).toFixed(2)}%를 빼요. 순위는 뒤쪽 30% 검증 구간의 샤프 비율로 매기고, 거래가 2번 미만이면 챔피언이 될 수 없어요. 몬테카를로는 실제 거래 수익을 무작위로 다시 뽑아 2,000번 돌린 결과예요. 과거 성적이 앞날을 보장하지 않고, 투자 권유가 아니에요.</p></section>`;
@@ -86,7 +89,7 @@ export function arenaTeaser(a: ArenaResult | null): string {
 /** Free: the champion's name only. */
 export function arenaHeadline(a: ArenaResult | null): string {
   const champ = a?.results.find((r) => r.key === a.championKey);
-  return `<section class="block"><div class="card paper-link"><div><div class="pl-k">이 종목의 전략 챔피언</div><b style="font-size:18px">${champ ? esc(champ.name) : '아직 없어요'}</b><p class="muted small">전략 8개를 4년 동안 백테스트해 검증 구간 성과로 순위를 매겨요. 순위표는 플러스, 매매 시점·몬테카를로는 프로부터 볼 수 있어요.</p></div></div></section>`;
+  return `<section class="block arena-head"><div class="card paper-link"><div><div class="pl-k">이 종목의 전략 챔피언</div><b style="font-size:18px">${champ ? esc(champ.name) : '아직 없어요'}</b><p class="muted small">전략 8개를 4년 동안 백테스트해 검증 구간 성과로 순위를 매겨요. 순위표는 플러스, 매매 시점·몬테카를로는 프로부터 볼 수 있어요.</p></div></div></section>`;
 }
 
 /** Plus: every strategy's rank, current signal and out-of-sample return, without trades or curves. */

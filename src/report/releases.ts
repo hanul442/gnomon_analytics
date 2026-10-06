@@ -1,6 +1,7 @@
 /** Retrospective grouping of merged functionality, not historical Git tags. */
-export const VERSION = '2.1.4';
+export const VERSION = '2.2.0';
 export const RELEASES = [
+ ['2.2.0','2026-10-06','☰ 메뉴에 홈·관심·성적표·내 계정 바로가기와 FAQ·1:1 문의를 넣고, 홈을 뺀 모든 화면 위에 작은 광고 띠를 붙였습니다. 시나리오는 돌파 가격 대신 20거래일 예상 가격대(%)로 보여 주고 차트 안의 레이어로 옮겼습니다. 전략별 강세·약세를 챔피언 레이스 안에 표시하고 게이지 카드를 없앴습니다. 토론은 2초 생각 → 발언 → 2초 쉼으로 재생하고, 토론에서 한 질문과 답은 다시 들어와도 보입니다. 전문가 답변 대기 표시, 필터 메뉴 구성, 즉시 리포트 생성의 시간 초과를 고쳤습니다.'],
  ['2.1.4','2026-10-06','시나리오를 확정적인 가격 돌파·이탈 표현 대신 가정으로 표시하고 성립 근거·촉매와 무효화 조건을 구분했습니다. 지지·저항을 임의의 시나리오 기준으로 사용하지 않고 모바일 운영 표를 카드 형태로 표시합니다. 전략 중복 순위표를 제거하고 업데이트 배너는 홈에만 표시하며 토론 순차 재생을 복구했습니다.'],
  ['2.1.3','2026-10-06','기술 탭 상단 지표 버튼을 제거하고 지표 본문에서 선택한 지표만 차트에 표시합니다. 돌아가면 이전 지표와 화면 위치를 복원하며 개인 기본 설정을 유지합니다.'],
  ['2.1.2','2026-10-06','시나리오 조건·근거를 바로 표시하고 미니 차트의 숫자 크기·가격 라벨 간격·현재 가격과 범례를 개선했습니다.'],
@@ -19,6 +20,6 @@ export const RELEASES = [
  ['0.1.0','2026-10-04','차트·기술 지표·뉴스와 AI 해설 확장.'],
  ['0.0.0','2026-10-03','SK하이닉스 일일 리포트로 시작한 알파 기본판.'],
 ] as const;
-export const versionBanner = (base:string) => `<aside class="version-banner" data-version="${VERSION}"><div><b>Alpha v${VERSION}</b><p>시나리오 조건 구분 · 모바일 운영 화면 · 토론 재생</p><a href="${base}guide.html">새 사용법</a> · <a href="${base}updates.html">릴리스 노트</a></div><button type="button" data-dismiss-version aria-label="이 버전 안내 닫기">×</button></aside>`;
+export const versionBanner = (base:string) => `<aside class="version-banner" data-version="${VERSION}"><div><b>Alpha v${VERSION}</b><p>차트 속 시나리오 · FAQ·문의 · 전략별 강세/약세 · 토론 2초 템포</p><a href="${base}guide.html">새 사용법</a> · <a href="${base}updates.html">릴리스 노트</a></div><button type="button" data-dismiss-version aria-label="이 버전 안내 닫기">×</button></aside>`;
 export const VERSION_CSS = `.version-banner[hidden]{display:none}.version-banner{display:flex;justify-content:space-between;gap:12px;padding:14px 18px;margin:12px 0 18px;background:#eef3fb;border:1px solid #ccd9ee;border-radius:14px;font-size:13px}.version-banner p{margin:4px 0}.version-banner button{border:0;background:none;font-size:22px;align-self:start;cursor:pointer}`;
 export const VERSION_JS = `(function(){var b=document.querySelector('[data-version]');if(!b)return;var key='gnm-version-dismissed-'+b.dataset.version;try{b.hidden=localStorage.getItem(key)==='1';}catch(e){}b.querySelector('[data-dismiss-version]').onclick=function(){b.hidden=true;try{localStorage.setItem(key,'1');}catch(e){}};})();`;

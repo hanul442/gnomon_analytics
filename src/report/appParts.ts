@@ -5,6 +5,7 @@
 
 import { CHART_V6_JS, chartToolbar } from './chartTools.js';
 import { starButton } from './ui.js';
+import { scenarioLayer } from './scenarioChart.js';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { Commentary } from '../analysis/commentary.js';
 
@@ -194,6 +195,9 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
   const strategies = (report.market?.arena?.results ?? []).filter((x) => x.key !== 'hold').map((x) => ({ key: x.key, name: x.name, rank: x.rank, position: x.position, trigger: x.trigger, oos: x.oosReturn, trades: x.tradeLog ?? [] }));
   const last = bars.at(-1), prev = bars.at(-2);
   const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
+  // G-90: the scenarios live on the chart as a layer (where each would take the price in ~20 sessions), not in a separate card.
+  const scen = scenarioLayer(report);
+  const scBar = '<div class="sc-layer" id="sc-layer" role="group" aria-label="차트 위 시나리오 전망" hidden></div>';
   const opt = (group: string, key: string, label: string, on: boolean, desc = DESC[key] ?? '') => `<button type="button" class="opt" data-${group}="${key}" aria-pressed="${on}"><span class="opt-t"><b>${esc(label)}</b>${desc ? `<small>${esc(desc)}</small>` : ''}</span><i class="tog" aria-hidden="true"></i></button>`;
   const html = `<section class="card chart-card" id="chart-card" data-symbol="${esc(report.symbol)}">
 <div class="chart-head"><div><div class="muted small">현재가 (${esc(last?.date ?? '')} 종가)</div>
@@ -202,7 +206,7 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
 <div class="seg" role="group" aria-label="기간">${RANGES.map(([label, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 63}">${label}</button>`).join('')}</div></div>
 <div class="chart-tools"><div class="preset-row" role="group" aria-label="지표"><span class="label">지표</span><button type="button" class="tool-btn" data-open="ind-sheet" aria-haspopup="dialog">${GEAR}지표 고르기</button><button type="button" class="chip-toggle" id="ind-reset" title="내 보기 방식의 기본 지표로 되돌려요">내 보기 기본</button></div>
 ${strategies.length ? `<button type="button" class="strat-pick" data-open="strat-sheet" aria-haspopup="dialog"><span class="label">전략 매매 시점</span><b id="strat-current">끄기</b><span class="caret" aria-hidden="true">▾</span></button>` : ''}</div>
-<div class="active-pills" id="active-pills" aria-label="켜진 지표"></div>
+<div class="active-pills" id="active-pills" aria-label="켜진 지표"></div>${scBar}
 ${chartToolbar(!!report.market?.benchmarks.some((b) => b.series?.length))}
 <div class="sheet" id="ind-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="ind-sheet-t"><div class="sheet-head"><b id="ind-sheet-t">지표 고르기</b><button type="button" class="sheet-done" data-close>완료</button></div>
 <p class="muted small" style="margin:0 0 6px">켜고 끈 지표는 이 기기에 저장돼서 다른 종목에서도 그대로 보여요.</p><div class="opt-group"><div class="opt-k">가격 위에 겹치기</div>${OVERLAYS.map(([k, l, on]) => opt('ov', k, l, on)).join('')}</div>
@@ -221,6 +225,7 @@ ${strategies.length ? '<div class="strat-info" id="strat-info" aria-live="polite
   const script = `<script type="application/json" id="bars">${json(bars)}</script>
 <script type="application/json" id="marks">${json(chartMarks(report))}</script>
 <script type="application/json" id="overlays">${json(overlays)}</script>
+<script type="application/json" id="scen">${json(scen)}</script>
 <script type="application/json" id="strategies">${json(strategies)}</script>
 <script type="application/json" id="benchmarks">${json((report.market?.benchmarks ?? []).filter((b) => b.series?.length).map((b) => ({ name: b.name, series: b.series })))}</script>
 <script src="${base}${chartAsset}" defer></script>
@@ -305,6 +310,44 @@ window.addEventListener('DOMContentLoaded', function () {
     });
   };
 
+  // ---- AI scenarios: a fan from today's close to each scenario's 20-session range ----
+  var scen = JSON.parse((document.getElementById('scen') || {}).textContent || '[]') || [], scBuilt = [], scExtra = 0;
+  var SC = { BULL: [UP, '강세'], BASE: ['#5b6b80', '기본'], BEAR: [DOWN, '약세'] };
+  var scPick = 'ALL';
+  var drawScen = function (pick, keep) {
+    if (!keep) scPick = pick;
+    scBuilt.forEach(function (x) { chart.removeSeries(x); var i = allSeries.indexOf(x); if (i >= 0) allSeries.splice(i, 1); }); scBuilt = [];
+    // One point per future session, so the fan spans twenty sessions on the time scale instead of one.
+    var last = bars[bars.length - 1], days = [], d = last.date;
+    for (var h = 1; h <= 20; h++) { d = addDays(d, 1); days.push(d); }
+    scen.filter(function (x) { return pick === 'ALL' || x.kind === pick; }).forEach(function (x) {
+      var c = SC[x.kind][0], mid = (x.zone[0] + x.zone[1]) / 2, g = (mid / last.close - 1) * 100;
+      var add = function (v, o) { var s = chart.addSeries(L.LineSeries, Object.assign({ color: c, lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }, o || {})); s.setData([{ time: last.date, value: last.close }].concat(days.map(function (t, i) { return { time: t, value: last.close + (v - last.close) * (i + 1) / 20 }; }))); scBuilt.push(s); };
+      add(x.zone[0]); add(x.zone[1]);
+      add(mid, { lineWidth: 2, lineStyle: 0, lastValueVisible: true, title: SC[x.kind][1] + ' ' + (g > 0 ? '+' : '') + g.toFixed(1) + '%' });
+    });
+    scExtra = scBuilt.length ? 22 : 0;
+  };
+  var scBar = document.getElementById('sc-layer');
+  var scButtons = function () {
+    if (!scBar) return;
+    scBar.hidden = !scen.length; if (!scen.length) { scBar.innerHTML = ''; return; }
+    scBar.innerHTML = '<span class="label">시나리오 전망</span><button type="button" data-sc="ALL" aria-pressed="true">모두</button>' + scen.map(function (x) { return '<button type="button" data-sc="' + x.kind + '" class="sc-' + x.kind + '" aria-pressed="false">' + SC[x.kind][1] + (x.p != null ? ' ' + x.p + '%' : '') + '</button>'; }).join('') + '<button type="button" data-sc="" aria-pressed="false">끄기</button><span class="sc-note">' + (scen.some(function (x) { return x.source === 'calc'; }) ? '변동성 계산 범위' : 'AI 위원회 · 20거래일') + '</span>';
+    scBar.querySelectorAll('[data-sc]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        scBar.querySelectorAll('[data-sc]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        drawScen(b.getAttribute('data-sc'));
+        var fc = document.querySelector('[data-ov="forecast"]');
+        setRange(currentRange, Math.max(fc && fc.getAttribute('aria-pressed') === 'true' ? 62 : 0, scExtra));
+      });
+    });
+  };
+  scButtons();
+  // A report made on request brings its scenarios after the page loaded.
+  // Intraday candles (coins) use their own time scale: the daily fan steps aside and comes back with the daily view.
+  window.GNM_scenarioPause = function (off) { drawScen(off ? '' : scPick, true); };
+  window.GNM_scenarios = function (list) { scen = list || []; scButtons(); drawScen('ALL'); setRange(currentRange, scExtra); };
+
   // ---- panes (below the price) ----
   var paneMakers = {
     volume: function (p) { var s = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false }, p); s.setData(bars.map(function (b, i) { return { time: b.date, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(42,98,201,.45)' : 'rgba(209,55,61,.45)' }; })); return [s]; },
@@ -350,7 +393,7 @@ window.addEventListener('DOMContentLoaded', function () {
   };
   document.querySelectorAll('[data-ov]').forEach(function (b) {
     if (b.getAttribute('aria-pressed') === 'true') setOverlay(b.getAttribute('data-ov'), true);
-    b.addEventListener('click', function () { var on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); setOverlay(b.getAttribute('data-ov'), on); if (b.getAttribute('data-ov') === 'forecast') setRange(currentRange, on ? 62 : 0); });
+    b.addEventListener('click', function () { var on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); setOverlay(b.getAttribute('data-ov'), on); if (b.getAttribute('data-ov') === 'forecast') setRange(currentRange, on ? 62 : scExtra); });
   });
   document.querySelectorAll('[data-pane]').forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); rebuildPanes(); }); });
   rebuildPanes();
@@ -476,10 +519,11 @@ window.addEventListener('DOMContentLoaded', function () {
     b.addEventListener('click', function () {
       document.querySelectorAll('[data-range]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
       var fc = document.querySelector('[data-ov="forecast"]');
-      setRange(Number(b.getAttribute('data-range')), fc && fc.getAttribute('aria-pressed') === 'true' ? 62 : 0);
+      setRange(Number(b.getAttribute('data-range')), Math.max(fc && fc.getAttribute('aria-pressed') === 'true' ? 62 : 0, scExtra));
     });
   });
-  setRange(63);
+  if (scen.length) drawScen('ALL');
+  setRange(63, scExtra);
   requestAnimationFrame(drawLines);
   window.GNMChart = { L: L, chart: chart, candle: candle, bars: bars, series: function () { return allSeries.slice(); } };
   if(window.GNM_coinChartReady)window.GNM_coinChartReady();

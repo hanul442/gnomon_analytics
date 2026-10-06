@@ -21,7 +21,7 @@ export const ALPHA_BANNERS: readonly Banner[] = [
   { kind: 'survey', title: '맞춤 설문 (약 7분)', text: '투자 경험·스타일·궁금한 것을 알려 주시면 홈과 리포트가 그에 맞게 바뀌어요.', href: 'onboarding.html', cta: '설문 하기', tone: 'teal' },
   { kind: 'survey', title: '이번 주 설문 (1분)', text: '이번 주에 가장 좋았던 것과 불편했던 것 하나씩만 알려 주세요.', href: 'survey.html?k=weekly', cta: '주간 설문 하기', tone: 'amber' },
   { kind: 'ad', title: '프로 요금제 2주 무료 체험', text: '위원회 토론 전체, 남은 쟁점, 전문가 초청까지. 알파 기간 광고 자리 시험용 가상 광고예요.', href: 'pricing.html', cta: '요금제 보기', tone: 'navy' },
-  { kind: 'ad', title: '509OP 육군 부사관 지원', text: '상황간부 · 영상간부 | 상황을 판단하고, 경계를 이어가는 당신의 다음 커리어.', cta: '육군 간부 혜택 보기', tone: 'teal', benefits: ['급여·수당: 계급과 복무 조건에 따른 급여 및 각종 수당', '주거 지원: 자격과 배정 여건에 따른 간부 숙소·관사 등', '교육·성장: 직무 교육 및 자기계발 기회', '군 복지: 이용 자격에 따른 군 복지시설 이용', '장기 경력: 장기복무 선발 시 군 전문 경력 개발'] },
+  { kind: 'ad', title: '509OP 육군 부사관 지원', text: '상황간부 · 영상간부 | 상황을 판단하고, 경계를 이어가는 당신의 다음 커리어.', href: '509op.html', cta: '육군 간부 혜택 보기', tone: 'teal' },
   { kind: 'ad', title: '여기에 광고가 들어갈 수 있어요', text: '증권·핀테크 파트너 광고 자리예요. 지금은 시험용 가상 광고이고, 실제 상품이 아니에요.', cta: '광고 문의 (준비 중)', tone: 'rose' },
 ];
 
@@ -43,7 +43,7 @@ export function bannerHtml(list: readonly Banner[]): string {
   if (!list.length) return '';
   const slide = (b: Banner, i: number) => {
     const [tag, art] = KIND_TAG[b.kind ?? 'notice'];
-    const inner = `<span class="bn-tag">${tag}${b.benefits || b.brand ? ' · MOCK AD' : ''}</span>${b.brand ? '<img class="bn-logo" src="assets/hanul-logo.jpg" alt="HANUL by Hanseo Kim" width="1536" height="512">' : ''}<b>${esc(b.title)}</b>${b.text ? `<span class="bn-text">${esc(b.text)}</span>` : ''}${b.cta && !b.benefits ? (b.event ? `<button type="button" class="bn-cta" data-claim="${esc(b.event)}" data-ev-credits="${b.credits ?? 0}">${esc(b.cta)} ›</button>` : `<span class="bn-cta">${esc(b.cta)} ›</span>`) : ''}${b.brand ? '' : `<span class="bn-art" aria-hidden="true">${art}</span>`}${b.benefits ? `<details class="bn-benefits"><summary class="bn-cta">${esc(b.cta ?? '혜택 보기')}</summary><ul>${b.benefits.map((benefit) => `<li>${esc(benefit)}</li>`).join('')}</ul><p>실제 모집 공고가 아닌 예시 광고입니다. 혜택은 선발·복무 조건에 따라 달라지며, 지원 접수나 외부 페이지 연결은 제공하지 않습니다.</p></details>` : ''}`;
+    const inner = `<span class="bn-tag">${tag}${b.benefits || b.kind === 'ad' ? ' · MOCK AD' : ''}</span>${b.brand ? '<img class="bn-logo" src="assets/hanul-logo.jpg" alt="HANUL by Hanseo Kim" width="1536" height="512">' : ''}<b>${esc(b.title)}</b>${b.text ? `<span class="bn-text">${esc(b.text)}</span>` : ''}${b.cta && !b.benefits ? (b.event ? `<button type="button" class="bn-cta" data-claim="${esc(b.event)}" data-ev-credits="${b.credits ?? 0}">${esc(b.cta)} ›</button>` : `<span class="bn-cta">${esc(b.cta)} ›</span>`) : ''}${b.brand ? '' : `<span class="bn-art" aria-hidden="true">${art}</span>`}${b.benefits ? `<details class="bn-benefits"><summary class="bn-cta">${esc(b.cta ?? '혜택 보기')}</summary><ul>${b.benefits.map((benefit) => `<li>${esc(benefit)}</li>`).join('')}</ul><p>실제 모집 공고가 아닌 예시 광고입니다. 혜택은 선발·복무 조건에 따라 달라지며, 지원 접수나 외부 페이지 연결은 제공하지 않습니다.</p></details>` : ''}`;
     const attrs = `class="bn-slide bn-${b.tone ?? 'navy'} bn-k-${b.kind ?? 'notice'}${b.brand ? ' bn-hanul' : ''}" data-i="${i}"${i ? ' hidden' : ''} aria-roledescription="배너" aria-label="${i + 1} / ${list.length}"`;
     return b.href && !b.event ? `<a ${attrs} href="${esc(b.href)}">${inner}</a>` : `<div ${attrs} role="group">${inner}</div>`;
   };
