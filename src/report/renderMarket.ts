@@ -15,6 +15,15 @@ const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const pct = (v: number | null, digits = 1) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`);
 const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 /** Shares in 만주 / 억주 so flow numbers stay readable. */
+/** Net buying in KRW, short: +12.3억 / -1,234억 / +4,500만. */
+function krw(v: number | null | undefined): string {
+  if (v === null || v === undefined) return '없음';
+  const sign = v > 0 ? '+' : v < 0 ? '-' : '', a = Math.abs(v);
+  return a >= 1e10 ? `${sign}${Math.round(a / 1e8).toLocaleString('ko-KR')}억` : a >= 1e8 ? `${sign}${(a / 1e8).toFixed(1)}억` : a >= 1e4 ? `${sign}${Math.round(a / 1e4).toLocaleString('ko-KR')}만` : `${sign}${a}`;
+}
+/** Amount first (estimated), shares underneath. */
+const both = (value: number | null | undefined, n: number | null) => (value === null || value === undefined ? shares(n) : `${krw(value)}<small class="sub-sh">${shares(n)}</small>`);
+
 function shares(v: number | null): string {
   if (v === null) return '없음';
   const sign = v > 0 ? '+' : v < 0 ? '-' : '';
@@ -146,10 +155,14 @@ ${levels ? `<div class="table-wrap"><table class="compact"><thead><tr><th>구분
 function flowChart(flow: FlowSection): string {
   const days = flow.days;
   if (days.length < 2) return '';
-  const keys = [['foreign', 'foreignNet', '외국인'], ['institution', 'institutionNet', '기관'], ['individual', 'individualNet', '개인']] as const;
+  // In KRW when every day has a close (net shares × close), else in shares.
+  const money = days.every((d) => d.foreignValue != null || d.foreignNet == null);
+  const keys = money
+    ? ([['foreign', 'foreignValue', '외국인'], ['institution', 'institutionValue', '기관'], ['individual', 'individualValue', '개인']] as const)
+    : ([['foreign', 'foreignNet', '외국인'], ['institution', 'institutionNet', '기관'], ['individual', 'individualNet', '개인']] as const);
   const cum = keys.map(([key, field, label]) => {
     let acc = 0;
-    return { key, label, values: days.map((d) => (acc += d[field] ?? 0)) };
+    return { key, label, values: days.map((d) => (acc += (d[field] as number | null | undefined) ?? 0)) };
   });
   const all = cum.flatMap((c) => c.values).concat(0);
   const lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
@@ -161,7 +174,7 @@ function flowChart(flow: FlowSection): string {
   order.forEach((idx, k) => { if (k && labelY[idx]! - labelY[order[k - 1]!]! < 14) labelY[idx] = labelY[order[k - 1]!]! + 14; });
   const lines = cum.map((c, ci) => `<polyline fill="none" stroke="${FLOW_COLORS[c.key]}" stroke-width="2" points="${c.values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}"/>
 <text x="${(x(days.length - 1) + 6).toFixed(1)}" y="${labelY[ci]!.toFixed(1)}" class="flow-label">${c.label}</text>`).join('');
-  const hits = days.map((d, i) => `<rect x="${(x(i) - (W - padL - padR) / days.length / 2).toFixed(1)}" y="${padT}" width="${((W - padL - padR) / days.length).toFixed(1)}" height="${H - padT - padB}" class="hit"><title>${esc(d.date)}  외국인 ${shares(d.foreignNet)}, 기관 ${shares(d.institutionNet)}, 개인 ${shares(d.individualNet)}${d.foreignHoldRatio !== null ? `, 외국인 보유율 ${d.foreignHoldRatio.toFixed(2)}%` : ''}</title></rect>`).join('');
+  const hits = days.map((d, i) => `<rect x="${(x(i) - (W - padL - padR) / days.length / 2).toFixed(1)}" y="${padT}" width="${((W - padL - padR) / days.length).toFixed(1)}" height="${H - padT - padB}" class="hit"><title>${esc(d.date)}  외국인 ${krw(d.foreignValue)} (${shares(d.foreignNet)}), 기관 ${krw(d.institutionValue)} (${shares(d.institutionNet)}), 개인 ${krw(d.individualValue)} (${shares(d.individualNet)})${d.foreignHoldRatio !== null ? `, 외국인 보유율 ${d.foreignHoldRatio.toFixed(2)}%` : ''}</title></rect>`).join('');
   return `<svg viewBox="0 0 ${W} ${H}" class="flow-chart" role="img" aria-label="최근 ${days.length}거래일 투자자별 누적 순매수">
 <line x1="${padL}" x2="${W - padR}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" class="zero"/>
 ${lines}
@@ -175,12 +188,12 @@ const FOOTPRINT = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 
 export function flowsPanel(flow: FlowSection | null, fp: Footprint, lockFootprint: (html: string) => string = (h) => h): string {
   if (!flow) return '<div class="card"><div class="head"><h2>투자자별 수급</h2></div><p class="empty">수급 기록이 아직 없어요.</p></div>';
   const legend = (['foreign', 'institution', 'individual'] as const).map((k) => `<span><i style="background:${FLOW_COLORS[k]}"></i>${{ foreign: '외국인', institution: '기관', individual: '개인' }[k]}</span>`).join('');
-  const sums = flow.sums.map((s) => `<tr><td>최근 ${s.days}거래일</td><td class="num ${tone(s.foreign)}">${shares(s.foreign)}</td><td class="num ${tone(s.institution)}">${shares(s.institution)}</td><td class="num ${tone(s.individual)}">${shares(s.individual)}</td></tr>`).join('');
-  const recent = [...flow.days].reverse().slice(0, 10).map((d) => `<tr><td class="nowrap">${esc(d.date)}</td><td class="num ${tone(d.foreignNet)}">${shares(d.foreignNet)}</td><td class="num ${tone(d.institutionNet)}">${shares(d.institutionNet)}</td><td class="num ${tone(d.individualNet)}">${shares(d.individualNet)}</td><td class="num">${d.foreignHoldRatio === null ? '없음' : `${d.foreignHoldRatio.toFixed(2)}%`}</td></tr>`).join('');
+  const sums = flow.sums.map((s) => `<tr><td>최근 ${s.days}거래일</td><td class="num ${tone(s.foreign)}">${both(s.foreignValue, s.foreign)}</td><td class="num ${tone(s.institution)}">${both(s.institutionValue, s.institution)}</td><td class="num ${tone(s.individual)}">${both(s.individualValue, s.individual)}</td></tr>`).join('');
+  const recent = [...flow.days].reverse().slice(0, 10).map((d) => `<tr><td class="nowrap">${esc(d.date)}</td><td class="num ${tone(d.foreignNet)}">${both(d.foreignValue, d.foreignNet)}</td><td class="num ${tone(d.institutionNet)}">${both(d.institutionValue, d.institutionNet)}</td><td class="num ${tone(d.individualNet)}">${both(d.individualValue, d.individualNet)}</td><td class="num">${d.foreignHoldRatio === null ? '없음' : `${d.foreignHoldRatio.toFixed(2)}%`}</td></tr>`).join('');
   const fpTone = fp.state === 'ACCUMULATION_LIKE' ? 'up' : fp.state === 'DISTRIBUTION_LIKE' ? 'down' : '';
   return `<div class="grid2 tight">
 <div class="card"><div class="head"><h2>누적 순매수</h2><div class="legend-inline">${legend}</div></div>${flowChart(flow)}
-<p class="fine">${flow.days.length}거래일 동안 투자자별 순매수(주)를 더해 간 선이에요. 선 위에 올리면 그날 숫자가 보여요.</p></div>
+<p class="fine">${flow.days.length}거래일 동안 투자자별 순매수 금액(순매수 주식 수 × 그날 종가, 추정)을 더해 간 선이에요. 선 위에 올리면 그날 숫자가 보여요.</p></div>
 ${lockFootprint(`<div class="card"><div class="head"><h2>수급 흔적</h2></div>
 <div class="signal-label ${fpTone}" style="text-align:left">${FOOTPRINT[fp.state]}</div><div class="tally">점수 ${fp.score > 0 ? '+' : ''}${fp.score} (−100 분산 ~ +100 매집)</div>
 <ul class="plain">${fp.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>

@@ -44,7 +44,7 @@ const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4
 /** A watchlist star; the shared script (UI_SCRIPT) toggles it. `symbol` may be empty and set later by a page script. */
 export const starButton = (symbol: string, label: string, id = '') => `<button type="button" class="star"${id ? ` id="${id}"` : ''} data-star="${symbol.replace(/"/g, '')}" aria-pressed="false" aria-label="${label.replace(/[<>"&]/g, '')} 관심 종목">${STAR_SVG}</button>`;
 
-export const UI_CSS = `.h1-row{display:flex;align-items:center;gap:6px}.h1-row h1{margin:0}
+export const UI_CSS = `.sub-sh{display:block;font-size:11px;color:var(--muted);font-weight:400}.h1-row{display:flex;align-items:center;gap:6px}.h1-row h1{margin:0}
 .star{width:36px;height:36px;border:0;background:none;cursor:pointer;color:#b8c0cc;display:grid;place-items:center;padding:0}.star svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}.star[aria-pressed=true]{color:#e8a20c}.star[aria-pressed=true] svg{fill:currentColor}
 
 :root{--fs-xs:12px;--fs-sm:13px;--fs-base:15px;--fs-md:17px;--fs-lg:20px;--fs-xl:26px;--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;--r-sm:8px;--r-md:12px;--r-lg:16px}

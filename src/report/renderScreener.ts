@@ -10,10 +10,12 @@ import { shell } from './renderHtml.js';
 
 /**
  * One row per stock: [code, name, market, cap(억), close, change%, level, score×100, r5, r20, r120, fairGap%, position, covered,
- * vol1×, vol5×, vwapGap%, obv%, flow, tradingValue(억), hi52Gap%, risk level (0–3), risk labels].
+ * vol1×, vol5×, vwapGap%, obv%, flow, tradingValue(억), hi52Gap%, risk level (0–3), risk labels,
+ * lo52Gap%, tradingValue surge×, A/D%, spike10× (G-59)].
  */
 export type ScreenerRow = [string, string, 'P' | 'Q', number | null, number, number | null, string, number | null, number | null, number | null, number | null, number | null, 'A' | 'I' | 'B' | null, 0 | 1,
-  number | null, number | null, number | null, number | null, 'A' | 'D' | null, number | null, number | null, number, string];
+  number | null, number | null, number | null, number | null, 'A' | 'D' | null, number | null, number | null, number, string,
+  number | null, number | null, number | null, number | null];
 
 export function screenerRows(universe: readonly UniverseRow[], calcs: ReadonlyMap<string, StockCalc>, covered: ReadonlySet<string>, risk: ReadonlyMap<string, RiskFlag> = new Map()): ScreenerRow[] {
   const r1 = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10) / 10);
@@ -24,7 +26,8 @@ export function screenerRows(universe: readonly UniverseRow[], calcs: ReadonlyMa
       c.signal.level ?? 'WITHHELD', c.signal.score == null ? null : Math.round(c.signal.score * 100), mv(5), mv(20), mv(120),
       c.fair ? r1(c.fair.gapPct) : null, c.fair ? (c.fair.position === 'ABOVE' ? 'A' : c.fair.position === 'BELOW' ? 'B' : 'I') : null, covered.has(u.symbol) ? 1 : 0,
       vol ? r1(vol.ratio1) : null, vol ? r1(vol.ratio5) : null, vol ? r1(vol.vwapGapPct) : null, vol ? Math.round(vol.obvPct) : null, vol?.flow === 'ACCUM' ? 'A' : vol?.flow === 'DIST' ? 'D' : null,
-      u.tradingValue == null ? null : Math.round(u.tradingValue / 1e8), r1(c.hi52GapPct), rk?.level ?? 0, rk ? rk.labels.join('·') : ''];
+      u.tradingValue == null ? null : Math.round(u.tradingValue / 1e8), r1(c.hi52GapPct), rk?.level ?? 0, rk ? rk.labels.join('·') : '',
+      r1(c.lo52GapPct), vol?.tvRatio1 == null ? null : r1(vol.tvRatio1), vol?.adPct == null ? null : Math.round(vol.adPct), vol?.spike10 == null ? null : r1(vol.spike10)];
   });
 }
 
@@ -35,12 +38,12 @@ export function renderScreener(): string {
 <section class="block"><div class="card sc-form" id="sc-form">
 <div class="sc-top"><b>조건</b><label class="sc-inline">조건을<select name="match"><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></label>
 <label class="sc-inline"><input type="checkbox" name="norisk" checked> 공시 위험 2단계 이상 빼기</label>
-<label class="sc-inline">정렬<select name="sort"><option value="score">신호 점수 높은 순</option><option value="vol1">거래량 급증 큰 순</option><option value="r20">20거래일 등락 큰 순</option><option value="r20a">20거래일 등락 작은 순</option><option value="cap">시가총액 큰 순</option><option value="tv">거래대금 큰 순</option><option value="gap">적정가보다 많이 아래 순</option></select></label></div>
+<label class="sc-inline">정렬<select name="sort"><option value="score">신호 점수 높은 순</option><option value="vol1">거래량 급증 큰 순</option><option value="r20">20거래일 등락 큰 순</option><option value="r20a">20거래일 등락 작은 순</option><option value="cap">시가총액 큰 순</option><option value="tv">거래대금 큰 순</option><option value="tvr">거래대금 급증 큰 순</option><option value="spike10">최근 10일 거래량 폭발 큰 순</option><option value="ad">매집 강도(A/D) 큰 순</option><option value="gap">적정가보다 많이 아래 순</option></select></label></div>
 <div class="rules" id="rules"></div>
 <div class="sc-actions"><button type="button" class="chip-toggle" id="add-rule">+ 조건 추가</button><button type="button" class="chip-toggle" id="save-screen">이 조건 저장</button><span class="muted small" id="sc-desc"></span></div>
 <div class="saved" id="saved" hidden><div class="pl-k">저장한 조건</div><div id="saved-list" class="saved-list"></div><p class="muted small" id="alert-note" hidden>🔔를 켜면 매일 장 마감 뒤 새로 걸린 종목을 알림으로 보내 드려요. 플러스는 3개, 프로·알파는 20개까지예요.</p></div>
 <p class="muted small only-free" style="margin:8px 0 0">무료는 '강세 신호 상위'와 결과 5개까지예요. 조건 빌더, 저장, 알림, 전체 결과는 플러스부터예요.</p></div></section>
-<section class="block"><div class="card list"><div class="table-wrap"><table class="compact sc-table"><thead><tr><th>종목</th><th class="num">종가</th><th class="num">오늘</th><th>기술 신호</th><th class="num">거래량</th><th class="num">20거래일</th><th class="num">적정가 대비</th><th class="num">시가총액</th></tr></thead><tbody id="sc-body"><tr><td colspan="8" class="empty">불러오는 중이에요.</td></tr></tbody></table></div>
+<section class="block"><div class="card list"><div class="table-wrap"><table class="compact sc-table"><thead><tr><th>종목</th><th class="num">종가</th><th class="num">오늘</th><th>기술 신호</th><th class="num">거래량·거래대금</th><th class="num">20거래일</th><th class="num">적정가 대비</th><th class="num">시가총액</th></tr></thead><tbody id="sc-body"><tr><td colspan="8" class="empty">불러오는 중이에요.</td></tr></tbody></table></div>
 <div class="sc-more only-free" id="sc-more" hidden><p>결과가 <b id="sc-total"></b>개 더 있어요. 전체 결과와 직접 조건은 플러스부터 볼 수 있어요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></div></section>
 <style>.sc-top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}.sc-top b{font-size:15px}.sc-inline{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--fg2)}
 .sc-form select,.sc-form input:not([type=checkbox]){font:inherit;font-size:14px;color:var(--fg);border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:#fff;min-width:0}
@@ -102,7 +105,7 @@ const SCREENER_SCRIPT = `<script>
     var sc = free() ? PRESETS.top : current();
     var out = rows.filter(function (r) { return matches(r, sc, IDX); });
     var key = free() ? 'score' : el('sort').value;
-    var by = { score: function (r) { return -(r[7] == null ? -999 : r[7]); }, vol1: function (r) { return -(r[14] == null ? -1 : r[14]); }, r20: function (r) { return -(r[9] == null ? -999 : r[9]); }, r20a: function (r) { return r[9] == null ? 999 : r[9]; }, cap: function (r) { return -(r[3] || 0); }, tv: function (r) { return -(r[19] || 0); }, gap: function (r) { return r[11] == null ? 999 : r[11]; } }[key];
+    var by = { score: function (r) { return -(r[7] == null ? -999 : r[7]); }, vol1: function (r) { return -(r[14] == null ? -1 : r[14]); }, r20: function (r) { return -(r[9] == null ? -999 : r[9]); }, r20a: function (r) { return r[9] == null ? 999 : r[9]; }, cap: function (r) { return -(r[3] || 0); }, tv: function (r) { return -(r[19] || 0); }, gap: function (r) { return r[11] == null ? 999 : r[11]; }, tvr: function (r) { return -(r[24] == null ? -1 : r[24]); }, spike10: function (r) { return -(r[26] == null ? -1 : r[26]); }, ad: function (r) { return -(r[25] == null ? -999 : r[25]); } }[key];
     out.sort(function (a, b) { return by(a) - by(b); });
     var shown = free() ? out.slice(0, 5) : out.slice(0, 200);
     $('sc-count').textContent = rows.length.toLocaleString('ko-KR') + '종목 중 ' + out.length.toLocaleString('ko-KR') + '개';
@@ -111,7 +114,7 @@ const SCREENER_SCRIPT = `<script>
       var href = r[13] ? r[0] + '/index.html' : 'stock.html?c=' + r[0];
       var risk = r[21] ? '<span class="risk r' + r[21] + '" title="최근 30일 공시: ' + esc(r[22]) + '">⚠ ' + esc(r[22].split('·')[0]) + (r[22].indexOf('·') > 0 ? ' 외' : '') + '</span>' : '';
       var flow = r[18] === 'A' ? ' <span class="fl-a">매집</span>' : r[18] === 'D' ? ' <span class="fl-d">분산</span>' : '';
-      return '<tr><td><a href="' + href + '"><b>' + esc(r[1]) + '</b></a>' + risk + '<div class="muted small">' + r[0] + ' · ' + (r[2] === 'P' ? '코스피' : '코스닥') + '</div></td><td class="num">' + Math.round(r[4]).toLocaleString('ko-KR') + '</td><td class="num ' + tone(r[5]) + '">' + pct(r[5]) + '</td><td><span class="sig ' + (BULL.indexOf(r[6]) >= 0 ? 'up' : BEAR.indexOf(r[6]) >= 0 ? 'down' : '') + '">' + LEVEL[r[6]] + '</span></td><td class="num">' + (r[14] == null ? '—' : r[14].toFixed(1) + '배') + flow + '</td><td class="num ' + tone(r[9]) + '">' + pct(r[9]) + '</td><td class="num">' + pct(r[11]) + '</td><td class="num">' + (r[3] == null ? '—' : r[3] >= 10000 ? (r[3] / 10000).toFixed(1) + '조' : r[3].toLocaleString('ko-KR') + '억') + '</td></tr>';
+      return '<tr><td><a href="' + href + '"><b>' + esc(r[1]) + '</b></a>' + risk + '<div class="muted small">' + r[0] + ' · ' + (r[2] === 'P' ? '코스피' : '코스닥') + '</div></td><td class="num">' + Math.round(r[4]).toLocaleString('ko-KR') + '</td><td class="num ' + tone(r[5]) + '">' + pct(r[5]) + '</td><td><span class="sig ' + (BULL.indexOf(r[6]) >= 0 ? 'up' : BEAR.indexOf(r[6]) >= 0 ? 'down' : '') + '">' + LEVEL[r[6]] + '</span></td><td class="num">' + (r[14] == null ? '—' : r[14].toFixed(1) + '배') + flow + (r[19] == null ? '' : '<small class="sub-sh">' + r[19].toLocaleString('ko-KR') + '억' + (r[24] == null ? '' : ' · ' + r[24].toFixed(1) + '배') + '</small>') + '</td><td class="num ' + tone(r[9]) + '">' + pct(r[9]) + '</td><td class="num">' + pct(r[11]) + '</td><td class="num">' + (r[3] == null ? '—' : r[3] >= 10000 ? (r[3] / 10000).toFixed(1) + '조' : r[3].toLocaleString('ko-KR') + '억') + '</td></tr>';
     }).join('') : '<tr><td colspan="8" class="empty">조건에 맞는 종목이 없어요.</td></tr>';
     var more = $('sc-more'); more.hidden = !(free() && out.length > 5); $('sc-total').textContent = (out.length - 5).toLocaleString('ko-KR');
   };
@@ -120,6 +123,8 @@ const SCREENER_SCRIPT = `<script>
       if (free() && i > 0) { if (window.GNM) window.GNM.toast('다른 빠른 조건은 플러스부터 쓸 수 있어요.'); return; }
       document.querySelectorAll('[data-preset]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
       preset = b.getAttribute('data-preset'); load(PRESETS[preset]); preset = b.getAttribute('data-preset');
+      var SORT_FOR = { bottomvol: 'spike10', volsurge: 'vol1', accum: 'ad' };
+      if (SORT_FOR[preset] && !free()) { el('sort').value = SORT_FOR[preset]; draw(); }
       document.querySelectorAll('[data-preset]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
     });
   });

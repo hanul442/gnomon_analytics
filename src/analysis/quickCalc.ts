@@ -23,6 +23,8 @@ export interface StockCalc {
   volume?: VolumeRead | null;
   /** Close against the highest high of the last year, % (0 at a new high). */
   hi52GapPct?: number | null;
+  /** Close against the lowest low of the last year, % (0 at a new low). */
+  lo52GapPct?: number | null;
   /** The free one-line summary. */
   line: string;
 }
@@ -38,6 +40,13 @@ export interface VolumeRead {
   obvPct: number;
   /** ACCUM: OBV rising while the price went nowhere or down; DIST: the reverse. */
   flow: 'ACCUM' | 'DIST' | null;
+  /** Last session's trading value (close × volume) ÷ the 20 sessions before it. */
+  tvRatio1?: number;
+  /** Chaikin accumulation/distribution over 20 sessions: Σ(close location × volume) ÷ Σvolume, −100…100.
+   *  Positive when closes sit near the day's high on heavy days (buying into the close). */
+  adPct?: number;
+  /** The largest single-day volume of the last 10 sessions ÷ the 20 sessions before that day. */
+  spike10?: number;
 }
 
 /** Volume factors (G-48): surges, VWAP position, OBV trend and its divergence from price. */
@@ -53,7 +62,13 @@ export function volumeRead(bars: readonly DailyBar[]): VolumeRead | null {
   for (let i = n - 20; i < n; i += 1) { const d = bars[i]!.close - bars[i - 1]!.close; obv += d > 0 ? bars[i]!.volume : d < 0 ? -bars[i]!.volume : 0; }
   const obvPct = vol > 0 ? (obv / vol) * 100 : 0, priceChg = (last.close / bars[n - 21]!.close - 1) * 100;
   const flow = obvPct >= 20 && priceChg <= 3 ? 'ACCUM' : obvPct <= -20 && priceChg >= -3 ? 'DIST' : null;
-  return { ratio1: last.volume / base1, ratio5: last5 / base5, vwapGapPct: (last.close / vwap - 1) * 100, obvPct, flow };
+  const value = (b: DailyBar) => b.close * b.volume;
+  const baseValue = bars.slice(n - 21, n - 1).reduce((s, b) => s + value(b), 0) / 20;
+  const ad = w.reduce((s, b) => s + (b.high > b.low ? ((b.close - b.low) - (b.high - b.close)) / (b.high - b.low) : 0) * b.volume, 0);
+  let spike10 = 0;
+  for (let i = Math.max(21, n - 10); i < n; i += 1) { const base = avg(bars.slice(i - 20, i)); if (base > 0) spike10 = Math.max(spike10, bars[i]!.volume / base); }
+  return { ratio1: last.volume / base1, ratio5: last5 / base5, vwapGapPct: (last.close / vwap - 1) * 100, obvPct, flow,
+    tvRatio1: baseValue > 0 ? value(last) / baseValue : 0, adPct: vol > 0 ? (ad / vol) * 100 : 0, spike10 };
 }
 
 const signed = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
@@ -71,6 +86,7 @@ export function quickCalc(symbol: string, bars: readonly DailyBar[], now: Date):
   const volume = volumeRead(sorted);
   const year = sorted.slice(-250), hi = Math.max(...year.map((b) => b.high));
   const hi52GapPct = hi > 0 ? (lastBar.close / hi - 1) * 100 : null;
+  const lo = Math.min(...year.map((b) => b.low)), lo52GapPct = lo > 0 ? (lastBar.close / lo - 1) * 100 : null;
   const signal = { label: t.label, level: t.level, score: t.score, bull: t.counts.bullish, neutral: t.counts.neutral, bear: t.counts.bearish, abstain: t.counts.abstained };
   const mid = moves.find((m) => m.days === 20);
   const parts = [
@@ -80,7 +96,7 @@ export function quickCalc(symbol: string, bars: readonly DailyBar[], now: Date):
   ].filter(Boolean);
   return {
     method: QUICK_METHOD, date: lastBar.date, close: lastBar.close, signal,
-    votes: t.votes.map((v) => [v.label, v.vote]), moves, fair, forecasts, volume, hi52GapPct, line: parts.join(' · '),
+    votes: t.votes.map((v) => [v.label, v.vote]), moves, fair, forecasts, volume, hi52GapPct, lo52GapPct, line: parts.join(' · '),
   };
 }
 

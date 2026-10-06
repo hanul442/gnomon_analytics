@@ -12,11 +12,12 @@ import { forecastRanges, scoreForecasts, technicalFairValue, type ForecastScore,
 import type { FinancePeriod, IntradaySession, InvestorFlow, PriceBar, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from './dailyReport.js';
 
-export interface FlowDay { date: string; foreignNet: number | null; institutionNet: number | null; individualNet: number | null; foreignHoldRatio: number | null }
+/** Net shares per investor group; *Value is the same in KRW, estimated as net shares × that day's close. */
+export interface FlowDay { date: string; foreignNet: number | null; institutionNet: number | null; individualNet: number | null; foreignHoldRatio: number | null; foreignValue?: number | null; institutionValue?: number | null; individualValue?: number | null }
 export interface FlowSection {
   days: FlowDay[];
-  /** Net shares summed over the last 5 and 20 trading days. */
-  sums: { days: 5 | 20; foreign: number | null; institution: number | null; individual: number | null }[];
+  /** Net shares (and their estimated KRW value) summed over the last 5 and 20 trading days. */
+  sums: { days: 5 | 20; foreign: number | null; institution: number | null; individual: number | null; foreignValue?: number | null; institutionValue?: number | null; individualValue?: number | null }[];
   /** Foreign holding ratio change over 20 trading days, percentage points. */
   holdRatioChange20: number | null;
 }
@@ -71,7 +72,10 @@ function sum(values: readonly (number | null)[]): number | null {
 
 export function buildFlowSection(flows: readonly InvestorFlow[], date: string): FlowSection | null {
   const days = [...flows].filter((f) => f.date <= date).sort((a, b) => (a.date < b.date ? -1 : 1))
-    .map(({ date: d, foreignNet, institutionNet, individualNet, foreignHoldRatio }) => ({ date: d, foreignNet, institutionNet, individualNet, foreignHoldRatio }));
+    .map(({ date: d, foreignNet, institutionNet, individualNet, foreignHoldRatio, close }) => {
+      const krw = (n: number | null) => (n === null || !close ? null : Math.round(n * close));
+      return { date: d, foreignNet, institutionNet, individualNet, foreignHoldRatio, foreignValue: krw(foreignNet), institutionValue: krw(institutionNet), individualValue: krw(individualNet) };
+    });
   if (!days.length) return null;
   const sums = ([5, 20] as const).map((n) => {
     const w = days.length >= n ? days.slice(-n) : null;
@@ -80,6 +84,9 @@ export function buildFlowSection(flows: readonly InvestorFlow[], date: string): 
       foreign: w ? sum(w.map((d) => d.foreignNet)) : null,
       institution: w ? sum(w.map((d) => d.institutionNet)) : null,
       individual: w ? sum(w.map((d) => d.individualNet)) : null,
+      foreignValue: w ? sum(w.map((d) => d.foreignValue ?? null)) : null,
+      institutionValue: w ? sum(w.map((d) => d.institutionValue ?? null)) : null,
+      individualValue: w ? sum(w.map((d) => d.individualValue ?? null)) : null,
     };
   });
   const now = days.at(-1)!.foreignHoldRatio, then = days.length > 20 ? days[days.length - 21]!.foreignHoldRatio : null;
