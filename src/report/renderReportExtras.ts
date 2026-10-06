@@ -83,14 +83,14 @@ export function debateSection(report: DailyReport, tail = ''): string {
   const turns = c.debate;
   const byId = new Map(c.evidence.map((e) => [e.id, e]));
   const evChips = (ids: readonly string[]) => `<span class="ev-row">${ids.map((id) => { const e = byId.get(id); return e ? `<button type="button" class="ev-chip" data-label="${esc(e.label)}" data-url="${esc(e.url.startsWith('http') ? e.url : '')}">${esc(id)}</button>` : ''; }).join('')}</span>`;
-  return `<section class="block" id="debate"><div class="block-head"><h2>위원회 토론</h2><span class="db-head-r"><a class="db-ask-link" href="#join">질문·전문가 초청 ↓</a><button type="button" class="db-skip" hidden>전체 바로 보기</button></span></div><div class="card debate"><div class="db-chips" role="group" aria-label="발언자 고르기"></div>
+  return `<section class="block" id="debate"><div class="block-head"><h2>위원회 토론</h2><span class="db-head-r"><a class="db-ask-link" href="#join" aria-label="토론 질문 입력창으로 이동">↗</a><button type="button" class="db-skip" hidden>전체 바로 보기</button></span></div><div class="card debate"><div class="db-chips" role="group" aria-label="발언자 고르기"></div>
 ${turns.map((t, i) => {
     const red = t.speaker === 'RED_TEAM', side = red ? 'red' : SIDE[t.stance][1];
     // Reports written before the fix may count from 1 (a turn answering itself); the red team sums up, it does not reply.
     const at = red ? undefined : replyIndex(t.replyTo, i), to = at != null ? turns[at] : undefined;
     const quote = to && to.speaker !== t.speaker ? `<div class="db-quote"><b>${esc(SPEAKER[to.speaker] ?? to.speaker)}</b>${esc(to.claim.text.length > 46 ? `${to.claim.text.slice(0, 46)}…` : to.claim.text)}</div>` : '';
-    return `<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"${at != null ? ` data-reply="${at}"` : ''}><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}</div></div>`;
-  }).join('')}
+    return `${i===3?'<details class="db-full"><summary>전체 토론 보기</summary>':''}<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"${at != null ? ` data-reply="${at}"` : ''}><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}</div></div>`;
+  }).join('')}${turns.length>3?'</details>':''}
 <p class="fine">말하는 위원은 위 표결의 분석가·데스크 그대로예요. 말 끝의 근거 번호를 누르면 그 근거가 펼쳐져요. 레드팀은 승패를 정하지 않아요.</p>${tail}</div></section>`;
 }
 
@@ -118,23 +118,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
   var play = function (box) {
     if (!box || box.getAttribute('data-played')) return; box.setAttribute('data-played', '1');
     var turns = [].slice.call(box.querySelectorAll('.db-turn')).filter(function (t) { return !t.classList.contains('db-off'); });
-    if (turns.length < 2 || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
-    var sec = box.closest('section'), skip = sec && sec.querySelector('.db-skip'), done = false, timer = 0;
-    turns.forEach(function (t) { t.hidden = true; });
-    var typing = document.createElement('div'); typing.className = 'db-turn db-typing';
-    var finish = function () { done = true; clearTimeout(timer); typing.remove(); turns.forEach(function (t) { t.hidden = false; }); if (skip) skip.hidden = true; };
-    if (skip) { skip.hidden = false; skip.onclick = finish; }
-    var i = 0;
-    var next = function () {
-      if (done) return;
-      if (i >= turns.length) return finish();
-      var t = turns[i], who = t.querySelector('.db-who b');
-      typing.className = 'db-turn db-typing ' + (t.className.match(/db-(bull|bear|mid|red)/) || [''])[0];
-      typing.innerHTML = '<div class="db-who"><b>' + (who ? who.textContent : '') + '</b> 작성 중…</div><div class="db-bubble"><span class="orbs"><i></i><i></i><i></i></span></div>';
-      t.parentNode.insertBefore(typing, t);
-      timer = setTimeout(function () { typing.remove(); t.hidden = false; t.classList.add('db-in'); i += 1; timer = setTimeout(next, 450); }, Math.max(2000, 500 + (t.textContent || '').length * 9));
-    };
-    next();
+    turns.forEach(function(t){t.hidden=false;});
   };
   var watch = function () {
     var box = document.querySelector('.card.debate:not([data-played])'); if (!box) return;

@@ -183,7 +183,7 @@ async function me(env: Env, u: User, now: Date) {
 
 async function fetchStock(env: Env, deps: Deps, symbol: string): Promise<string> {
   try {
-    const r = await deps.fetch(`${env.SITE_URL.replace(/\/$/, '')}/s/${symbol}.json`, { signal: AbortSignal.timeout(4000) });
+    const r = await deps.fetch(`${env.SITE_URL.replace(/\/$/, '')}/${symbol.startsWith('KRW-')?'c':'s'}/${symbol}.json`, { signal: AbortSignal.timeout(4000) });
     return r.ok ? summarizeStock(await r.json()) : '';
   } catch { return ''; }
 }
@@ -193,13 +193,17 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   if (!tier) fail(400, 'BAD_TIER', '모델을 골라 주세요.');
   const question = str(b.question, 1000);
   if (question.length < 2) fail(400, 'EMPTY', '질문을 적어 주세요.');
-  const symbol = typeof b.symbol === 'string' && /^\d{6}$/.test(b.symbol) ? b.symbol : undefined;
+  const symbol = typeof b.symbol === 'string' && /^(?:\d{6}|KRW-[A-Z0-9]{1,15})$/.test(b.symbol) ? b.symbol : undefined;
   const page = str(b.page, 6000);
   const history = (Array.isArray(b.history) ? b.history : []).slice(-3)
     .map((h) => ({ q: str((h as { q?: unknown })?.q, 1000), a: str((h as { a?: unknown })?.a, 2000) })).filter((h) => h.q && h.a);
   // G-80: a question in the debate. An invited expert answers in their own voice at the invite price
   // (Pro); '위원회 전체' answers as the committee at the tier's price.
-  const expert = typeof b.expert === 'string' ? (b.expert === 'committee' ? { key: 'committee', name: 'AI 위원회', focus: '분석가 6명과 데스크 5곳의 토론 전체, 강세·약세 근거와 시나리오' } : EXPERTS.find((e) => e.key === b.expert)) : undefined;
+  let expert = typeof b.expert === 'string' ? (b.expert === 'committee' ? { key: 'committee', name: 'AI 위원회', focus: '분석가 6명과 데스크 5곳의 토론 전체, 강세·약세 근거와 시나리오' } : EXPERTS.find((e) => e.key === b.expert)) : undefined;
+  if (typeof b.expert === 'string' && b.expert.startsWith('custom:')) {
+    const x=await env.DB.prepare('SELECT id,name,focus,style FROM custom_experts WHERE id=? AND user_id=?').bind(b.expert.slice(7),u.id).first<{id:string;name:string;focus:string;style:string}>();
+    if(x)expert={key:`custom:${x.id}`,name:x.name,focus:`${x.focus} · 답변 스타일: ${x.style}`};
+  }
   if (typeof b.expert === 'string' && !expert) fail(400, 'BAD_EXPERT', '전문가를 다시 골라 주세요.');
   const invited = !!expert && expert.key !== 'committee';
   const db = env.DB, cost = invited ? CREDIT_COST.invite : CREDIT_COST[tier!];
@@ -418,20 +422,34 @@ route('GET', '/me/ledger', async ({ req, env, now }) => {
 route('GET', '/me/export', async ({ req, env, now }) => {
   const u = await authed(req, env, now), db = env.DB;
   const all = (t: string) => db.prepare(`SELECT * FROM ${t} WHERE user_id = ?`).bind(u.id).all().then((r) => r.results);
-  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs'].map(all));
-  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs };
+  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'custom_experts'].map(all));
+  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts };
 });
 
 route('POST', '/me/delete', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   if (b.confirm !== '삭제') fail(400, 'CONFIRM', "확인 문구 '삭제'를 적어 주세요.");
   const db = env.DB;
-  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
+  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'custom_experts', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
     db.prepare('DELETE FROM login_tokens WHERE email = ?').bind(u.email), db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)]);
   return { ok: true };
 });
 
 // G-73: claim a running credit event, once per account (the ledger's unique ref keeps it to one).
+route('GET','/experts',async({req,env,now})=>{
+ const u=await authed(req,env,now);return {items:(await env.DB.prepare('SELECT id,name,focus,style FROM custom_experts WHERE user_id=? ORDER BY created_at').bind(u.id).all()).results};
+});
+route('POST','/experts',async({req,env,now})=>{
+ const u=await authed(req,env,now),b=await body(req),name=str(b.name,40),focus=str(b.focus,600),style=str(b.style,80);
+ if(name.length<2||focus.length<4)fail(400,'BAD_EXPERT','이름과 분석 관점을 적어 주세요.');
+ const id=crypto.randomUUID();
+ const r=await env.DB.prepare('INSERT INTO custom_experts(id,user_id,name,focus,style,created_at) SELECT ?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM custom_experts WHERE user_id=?)<20').bind(id,u.id,name,focus,style,iso(now),u.id).run();
+ if(!r.meta?.changes)fail(400,'EXPERT_LIMIT','내 전문가는 20명까지 저장할 수 있어요.');return {expert:{id,name,focus,style}};
+});
+route('DELETE','/experts/([a-f0-9-]{36})',async({req,env,now,params})=>{
+ const u=await authed(req,env,now);const r=await env.DB.prepare('DELETE FROM custom_experts WHERE id=? AND user_id=?').bind(params[0],u.id).run();if(!r.meta?.changes)fail(404,'NOT_FOUND','전문가를 찾지 못했어요.');return {ok:true};
+});
+
 route('POST', '/events/claim', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req), id = str(b.id, 60);
   const ev = openEvents(kst(now).slice(0, 10)).find((e) => e.id === id);

@@ -43,7 +43,7 @@ export const CHAT_HTML = `<button type="button" class="chat-fab" data-open-chat 
 <section class="chat" id="chat" role="dialog" aria-label="AI 질문" hidden><div class="chat-head"><b>AI 질문</b><span class="ctx" id="chat-ctx"></span><span class="bal"><span data-credits>0</span> 크레딧</span><button type="button" class="chat-x" aria-label="닫기">×</button></div>
 <div class="chat-log" id="chat-log" aria-live="polite"></div>
 <form class="chat-foot" id="chat-form"><div class="tiers" role="group" aria-label="모델">${TIERS.map((t, i) => `<button type="button" data-tier="${t.key}" aria-pressed="${i === 0}"><b>${t.label}</b><small>${MODEL_NAME[t.model]} · ${t.cost}크레딧</small></button>`).join('')}</div>
-<div class="chat-in"><textarea id="chat-q" rows="1" maxlength="1000" placeholder="궁금한 것을 물어보세요" aria-label="질문"></textarea><button type="submit" class="chat-send" id="chat-send">보내기</button></div>
+<div class="chat-in"><textarea id="chat-q" rows="1" maxlength="1000" placeholder="궁금한 것을 물어보세요" aria-label="질문"></textarea><button type="submit" class="chat-send" id="chat-send" aria-label="질문 전송" title="전송">➤</button></div>
 <div class="chat-note">근거를 설명할 뿐 투자 권유가 아니에요 · 답이 틀릴 수 있어요</div></form></section>`;
 
 export const CHAT_SCRIPT = `<script>
@@ -134,7 +134,7 @@ export const CHAT_SCRIPT = `<script>
     }
     busy = true; send.disabled = true; q.value = '';
     add('me', esc(text));
-    var wait = add('ai wait', '${ORBS} ' + esc(MODEL[t.model]) + '이 답을 쓰고 있어요');
+    var wait = add('ai wait', '${ORBS} 답변 준비 중');
     var h = history();
     var done = function (m) { wait.remove(); h.push(m); remember(h); var d = add('ai', md(m.a) + meta(m)); bindRate(d, m); busy = false; send.disabled = false; };
     if (!g) {

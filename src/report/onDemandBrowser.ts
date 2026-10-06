@@ -8,13 +8,15 @@ export const JOBS_JS = `
  var dialog=null, timer=null;
  var paint=function(r){
   Object.keys(r.fragments||{}).forEach(function(key){
+   if(key==='scenarios'){var old=document.getElementById('chart-scenarios');if(old)old.outerHTML=r.fragments[key];return;}
    var panel=document.getElementById('tab-'+key);if(!panel)return;
+   var composer=key==='ai'?panel.querySelector('.db-join'):null;if(composer)composer.remove();
    var target=panel.querySelector('[data-generated]');
-   if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var join=panel.querySelector('.join-wrap');panel.innerHTML='';panel.appendChild(target);if(join)panel.appendChild(join);}else panel.prepend(target);}
-   target.innerHTML=r.fragments[key];
+   if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){panel.innerHTML='';panel.appendChild(target);}else panel.prepend(target);}
+   target.innerHTML=r.fragments[key];if(composer)(panel.querySelector('.card.debate')||target).appendChild(composer);
    panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});
   });
-  var join=document.querySelector('#tab-ai .join-wrap'), debate=document.querySelector('#tab-ai #debate');if(join&&debate)debate.after(join);
+  var join=document.querySelector('#tab-ai .join-wrap'), debate=document.querySelector('#tab-ai #debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}
   if(window.GNM_debateFilter)GNM_debateFilter();if(window.GNM_debate)GNM_debate();
  };
  var watch=function(id,show){

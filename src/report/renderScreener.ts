@@ -41,16 +41,16 @@ export function renderScreener(): string {
 <nav class="find-tabs" role="tablist" aria-label="시장"><button type="button" role="tab" data-find="stock" aria-selected="true">주식 <span id="sc-count" class="muted"></span></button><button type="button" role="tab" data-find="etf" aria-selected="false">ETF</button><button type="button" role="tab" data-find="coin" aria-selected="false">코인</button><a href="reports.html">AI 리포트</a></nav></section>
 <div id="find-stock"><p class="muted small" id="sc-kind-note" hidden style="margin:6px 0 0">ETF·코인도 주식과 같은 조건으로 걸러요. 시가총액·외국인 수급·공시 항목은 없어서 그 조건은 빼고 봐요. 코인의 '유의 종목'은 공시 위험 2단계로 쳐요.</p>
 <section class="block"><div class="pl-chips sc-presets" role="group" aria-label="빠른 조건">${PRESETS.map((p, i) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${i === 0}" title="${p.hint}">${p.label}${i ? ' <span class="lockmark">플러스</span>' : ''}</button>`).join('')}</div></section>
-<section class="block" id="ai-build"><div class="card"><h2>AI로 조건 만들기</h2><p class="muted small">원하는 종목의 특징을 말해 주세요. 제안한 기준을 확인한 뒤 검색에 적용할 수 있어요.</p><textarea id="ai-screen-q" maxlength="600" rows="2" placeholder="예: 거래량이 터졌는데 아직 많이 안 오른 코스닥 종목" style="width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px"></textarea><button type="button" class="btn-primary" id="ai-screen-send">${CREDIT_COST.question}크레딧 · AI에게 조건 만들기</button><div id="ai-screen-out" aria-live="polite"></div></div></section>
+<section class="block" id="ai-build"><div class="card"><div class="compact-heading"><b>AI 조건</b><small class="muted">제안 확인 후 적용</small></div><div class="compact-input"><textarea id="ai-screen-q" maxlength="600" rows="1" aria-label="원하는 종목 조건" placeholder="예: 거래량이 터졌는데 아직 많이 안 오른 코스닥 종목" style="width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px"></textarea><button type="button" class="btn-primary" id="ai-screen-send" aria-label="AI 조건 생성" title="AI 조건 생성">✦</button></div><small class="muted">${CREDIT_COST.question}크레딧 / 생성</small><div id="ai-screen-out" aria-live="polite"></div></div></section>
 <section class="block" id="build"><div class="card sc-form" id="sc-form">
 <div class="sc-top"><b>조건</b><label class="sc-inline">조건을<select name="match"><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></label>
 <label class="sc-inline"><input type="checkbox" name="norisk" checked> 공시 위험 2단계 이상 빼기</label>
 <label class="sc-inline">정렬<select name="sort"><option value="score">신호 점수 높은 순</option><option value="vol1">거래량 급증 큰 순</option><option value="r20">20거래일 등락 큰 순</option><option value="r20a">20거래일 등락 작은 순</option><option value="cap">시가총액 큰 순</option><option value="tv">거래대금 큰 순</option><option value="tvr">거래대금 급증 큰 순</option><option value="spike10">최근 10일 거래량 폭발 큰 순</option><option value="ad">매집 강도(A/D) 큰 순</option><option value="gap">적정가보다 많이 아래 순</option></select></label></div>
 <div class="rules" id="rules"></div>
-<div class="sc-actions"><button type="button" class="chip-toggle" id="add-rule">+ 조건 추가</button><button type="button" class="chip-toggle" id="save-screen">이 조건 저장</button><span class="muted small" id="sc-desc"></span></div>
+<div class="sc-actions"><button type="button" class="chip-toggle" id="add-rule">+ 조건</button><button type="button" class="chip-toggle" id="save-screen">저장</button><span class="muted small" id="sc-desc"></span></div>
 <div class="saved" id="saved" hidden><div class="pl-k">저장한 조건</div><div id="saved-list" class="saved-list"></div><p class="muted small" id="alert-note" hidden>🔔를 켜면 매일 장 마감 뒤 새로 걸린 종목을 알림으로 보내 드려요. 플러스는 3개, 프로·알파는 20개까지예요.</p></div>
 <p class="muted small only-free" style="margin:8px 0 0">무료는 '강세 신호 상위'와 결과 5개까지예요. 조건 빌더, 저장, 알림, 전체 결과는 플러스부터예요.</p></div></section>
-<section class="block"><div class="card list"><div class="table-wrap"><table class="compact sc-table"><thead><tr><th>종목</th><th class="num">종가</th><th class="num">오늘</th><th>기술 신호</th><th class="num">거래량·거래대금</th><th class="num">20거래일</th><th class="num">적정가 대비</th><th class="num">시가총액</th></tr></thead><tbody id="sc-body"><tr><td colspan="8"><div class="orbs-load">${ORBS}<span>조건에 맞는 종목을 찾는 중이에요</span></div></td></tr></tbody></table></div>
+<section class="block"><div class="card list"><div class="table-wrap"><table class="compact sc-table"><thead><tr><th>종목</th><th class="num">종가</th><th class="num">오늘</th><th>기술 신호</th><th class="num">거래량·거래대금</th><th class="num">20거래일</th><th class="num">적정가 대비</th><th class="num">시가총액</th></tr></thead><tbody id="sc-body"><tr><td colspan="8"><div class="orbs-load">${ORBS}<span>종목 조회 중</span></div></td></tr></tbody></table></div>
 <div class="sc-more only-free" id="sc-more" hidden><p>결과가 <b id="sc-total"></b>개 더 있어요. 전체 결과와 직접 조건은 플러스부터 볼 수 있어요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></div></section>
 <style>.sc-top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}.sc-top b{font-size:15px}.sc-inline{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--fg2)}
 .sc-form select,.sc-form input:not([type=checkbox]){font:inherit;font-size:14px;color:var(--fg);border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:#fff;min-width:0}
@@ -126,12 +126,7 @@ const SCREENER_SCRIPT = `<script>
     el('match').value = sc.match || 'all'; el('norisk').checked = !!sc.maxRisk; draw();
   };
   var changed = function () { preset = ''; document.querySelectorAll('[data-preset]').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); }); draw(); };
-  var drawTimer=null, drawTicket=0;
-  var draw = function () {
-    var ticket=++drawTicket;if(drawTimer)clearTimeout(drawTimer);
-    $('sc-body').innerHTML='<tr><td colspan="8"><div class="orbs-load">${ORBS}<span>조건에 맞는 종목을 찾는 중이에요</span></div></td></tr>';
-    drawTimer=setTimeout(function(){if(ticket===drawTicket)drawNow();},2000);
-  };
+  var draw = function () { drawNow(); };
   var drawNow = function () {
     var sc = free() ? PRESETS.top : current();
     var out = rows.filter(function (r) { return matches(r, sc, IDX); });
@@ -197,7 +192,7 @@ const SCREENER_SCRIPT = `<script>
     GNM.call('POST','/screens/compose',{question:q,market:currentMarket,screen:current()}).then(function(r){
       button.disabled=false;
       if(r.error){out.textContent=r.message||'조건을 만들지 못했어요. 다시 요청해 주세요.';return;}
-      out.innerHTML='<h3>'+esc(r.name)+'</h3><p>'+esc(r.explanation)+'</p><p class="muted small">'+r.screen.rules.length+'개 조건 · AI가 제안한 기준입니다. 적용 후 아래 조건에서 수정할 수 있어요.</p><button type="button" class="btn-primary" data-apply-ai>이 조건으로 검색</button>';
+      out.innerHTML='<h3>'+esc(r.name)+'</h3><p>'+esc(r.explanation)+'</p><p class="muted small">'+r.screen.rules.length+'개 조건 · AI가 제안한 기준입니다. 적용 후 아래 조건에서 수정할 수 있어요.</p><button type="button" class="btn-primary" data-apply-ai>적용</button>';
       out.querySelector('[data-apply-ai]').onclick=function(){load(r.screen);$('ai-screen-q').placeholder='예: 결과가 너무 많아요. 거래대금이 큰 것만 남겨 줘요';};
       if(GNM.refresh)GNM.refresh();
     }).catch(function(){button.disabled=false;out.textContent='연결이 끊겼어요. 다시 요청해 주세요.';});
