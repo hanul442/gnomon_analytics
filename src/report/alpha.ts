@@ -202,7 +202,7 @@ export const ALPHA_SCRIPT = `<script>
       var panel=f.closest('.panel')||f.closest('.join-wrap')?.parentNode, debate=panel&&panel.querySelector('.card.debate');
       var box = debate || f.closest('.card') || f.parentNode, anchor = spot();
       var mine = mineTurn(q, who);
-      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-wait'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b></div><div class="db-bubble"><div class="chat-progress">${ORBS}<span>질문을 읽고 생각하는 중</span></div><div class="stream-answer"></div></div>';wait.setAttribute('aria-busy','true');wait.setAttribute('aria-live','polite');
+      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-wait'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b></div><div class="db-bubble"><div class="chat-progress">${ORBS.replace('data-orb=', 'data-size="64" data-orb=')}<span>질문을 읽고 생각하는 중</span></div><div class="stream-answer"></div></div>';wait.setAttribute('aria-busy','true');wait.setAttribute('aria-live','polite');
       anchor.parentNode.insertBefore(mine, anchor); anchor.parentNode.insertBefore(wait, anchor);
       wait.scrollIntoView({ block: 'center', behavior: 'smooth' });
       var btn = f.querySelector('[type=submit]'); btn.disabled = true;

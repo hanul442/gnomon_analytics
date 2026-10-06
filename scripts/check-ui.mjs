@@ -118,6 +118,16 @@ try{
  await page.goto(origin+'/alerts.html');await page.locator('#al-body').waitFor();await page.locator('#al-prices .al-item').first().waitFor();
  assert.equal(await page.locator('[data-pref=screen]').isChecked(),false);assert.equal(await page.locator('[data-screen="1"]').isChecked(),true);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/alerts.png',fullPage:true});
+ // Waiting indicators must render pixels on mobile, not merely leave an empty canvas in the DOM.
+ for (const width of [375,390]) {
+  await page.setViewportSize({width,height:850});await page.goto(origin+'/screener.html');
+  await page.locator('[data-open-chat]').first().click();await page.locator('#chat-q').fill('모바일 로딩 검증');await page.locator('#chat-send').click();
+  await page.waitForFunction(()=>{const c=document.querySelector('#chat-log .msg.wait canvas');return c&&getComputedStyle(c).visibility==='visible'&&c.getBoundingClientRect().width>=36&&c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0);});
+  await page.screenshot({path:'test-artifacts/mobile-chat-orbs-'+width+'.png'});await page.locator('#chat-log .msg.wait').waitFor({state:'detached'});
+  await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(origin+'/debate-fixture.html');
+  await page.waitForFunction(()=>{const c=document.querySelector('.db-typing canvas');return c&&getComputedStyle(c).visibility==='visible'&&c.getBoundingClientRect().width>=36&&c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0);});
+  await page.screenshot({path:'test-artifacts/mobile-debate-orbs-'+width+'.png'});await page.locator('.db-skip').click();
+ }
  // Forced tours traverse hidden report panels and restore the original tab on exit.
  for (const width of [375,1280]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+'/s/999999.html?tour=1');await page.locator('.tr-tip').waitFor();
