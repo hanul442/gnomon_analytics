@@ -2845,11 +2845,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "013720",
-  "name": "청보",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "013810",
   "name": "스페코",
   "market": "KOSDAQ"
@@ -4632,6 +4627,11 @@
  {
   "symbol": "038870",
   "name": "에코심플렉스",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "038880",
+  "name": "아이에이",
   "market": "KOSDAQ"
  },
  {
@@ -7463,6 +7463,11 @@
   "symbol": "094480",
   "name": "갤럭시아머니트리",
   "market": "KOSDAQ"
+ },
+ {
+  "symbol": "094800",
+  "name": "맵스리얼티",
+  "market": "KOSPI"
  },
  {
   "symbol": "094800",
@@ -10575,11 +10580,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "265560",
-  "name": "영화테크",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "265740",
   "name": "엔에프씨",
   "market": "KOSDAQ"
@@ -11557,6 +11557,11 @@
  {
   "symbol": "332290",
   "name": "누보",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "332370",
+  "name": "아이디피",
   "market": "KOSDAQ"
  },
  {

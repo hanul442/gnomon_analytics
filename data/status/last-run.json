@@ -1,27 +1,27 @@
 {
- "at": "2026-10-06T03:02:53.652Z",
+ "at": "2026-10-06T03:15:18.943Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2768
+   "count": 2769
   },
   {
    "source": "naver:m-stock:etf",
    "ok": true,
-   "count": 1171
+   "count": 1170
   },
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2703,
+   "count": 2704,
    "error": "27 failed "
   },
   {
    "source": "naver:fchart:day:etf",
    "ok": true,
-   "count": 1170,
+   "count": 1169,
    "error": "1 failed "
   },
   {
