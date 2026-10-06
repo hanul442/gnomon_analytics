@@ -16,8 +16,8 @@ import { analystScores, arenaHeadline, arenaPanel, arenaRanking, arenaTeaser } f
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
-import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, voteSection } from './conclusion.js';
-import { BANNER_CSS, LIVE_CSS, LIVE_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
+import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, SEATS_JS, VIEW_FOCUS_CSS, voteSection } from './conclusion.js';
+import { BANNER_CSS, LIVE_CSS, LIVE_JS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 
@@ -951,11 +951,11 @@ export interface HomeEntry {
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
 const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
-export const APP_CSS = `${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
+export const APP_CSS = `${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${LIVE_JS}`;
+export const UI_JS = `${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}`;
 const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).digest('hex').slice(0, 10);
 
 export async function writeAssets(siteDir: string): Promise<void> {

@@ -593,6 +593,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'promos.json'), JSON.stringify(promos));
   // Alpha guide and surveys (G-58); notices for the home banner are edited by hand in banners.json.
   await writeFile(join(siteDir, 'guide.html'), renderGuide());
+  // Guide screenshots (G-74) live in docs/guide and are published next to the page.
+  await cp(join(root, 'docs', 'guide'), join(siteDir, 'guide'), { recursive: true }).catch(() => {});
   await writeFile(join(siteDir, 'survey.html'), renderSurvey());
   const banners = validBanners(JSON.parse(await readFile(join(root, 'banners.json'), 'utf8').catch(() => '[]')), kstParts(new Date()).date);
   await writeFile(join(siteDir, 'checkout.html'), renderCheckout());

@@ -64,21 +64,30 @@ const VOTE = { BULLISH: ['강세', 'up'], BEARISH: ['약세', 'down'], NEUTRAL: 
  * The committee's vote (G-69), under the conclusion: the split as one bar, then every member with its
  * stance and the one line behind it. This replaces the per-desk opinion block and the seat chart.
  */
+/** The vote's split, for everyone ('전체') and for each view's own committee (CSS shows the reader's). */
+function tallies(members: readonly { id: string; stance: string }[]): string {
+  const one = (ms: readonly { stance: string }[], cls: string) => {
+    const n = (k: string) => ms.filter((m) => m.stance === k).length;
+    return `<div class="vt-tally ${cls}"><div class="vt-sum"><b class="up">강세 ${n('BULLISH')}</b><b>중립 ${n('NEUTRAL')}</b>${n('INSUFFICIENT_DATA') ? `<b class="muted">근거 부족 ${n('INSUFFICIENT_DATA')}</b>` : ''}<b class="down">약세 ${n('BEARISH')}</b></div>
+<div class="vt-bar" aria-hidden="true"><span class="s-bull" style="flex:${n('BULLISH')}"></span><span class="s-neutral" style="flex:${n('NEUTRAL') + n('INSUFFICIENT_DATA')}"></span><span class="s-bear" style="flex:${n('BEARISH')}"></span></div></div>`;
+  };
+  return one(members, 'vt-t-all') + Object.entries(VIEW_FOCUS).map(([v, ids]) => one(members.filter((m) => ids.includes(m.id)), `vt-t-${v}`)).join('');
+}
+
 export function voteSection(report: DailyReport): string {
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
   if (!c) return '';
   const members = [
-    ...(c.analysts ?? []).map((a) => ({ who: ANALYST_NAME[a.analyst] ?? a.analyst, role: '분석가', stance: a.stance as keyof typeof VOTE, why: a.rationale.text, conf: a.confidence })),
-    ...(c.desks ?? []).map((d) => ({ who: DESK_NAME[d.desk] ?? d.desk, role: '데스크', stance: d.stance as keyof typeof VOTE, why: d.view.text, conf: null as number | null })),
+    ...(c.analysts ?? []).map((a) => ({ id: a.analyst as string, who: ANALYST_NAME[a.analyst] ?? a.analyst, role: '분석가', stance: a.stance as keyof typeof VOTE, why: a.rationale.text, conf: a.confidence })),
+    ...(c.desks ?? []).map((d) => ({ id: d.desk as string, who: DESK_NAME[d.desk] ?? d.desk, role: '데스크', stance: d.stance as keyof typeof VOTE, why: d.view.text, conf: null as number | null })),
   ];
   if (!members.length) return '';
   const n = (k: string) => members.filter((m) => m.stance === k).length;
   const order = { BULLISH: 0, NEUTRAL: 1, INSUFFICIENT_DATA: 2, BEARISH: 3 } as const;
-  const rows = [...members].sort((a, b) => order[a.stance] - order[b.stance]).map((m) => `<li class="vt-m"><div class="vt-who"><b>${esc(m.who)}</b><span class="vt-s ${VOTE[m.stance][1]}">${VOTE[m.stance][0]}${m.conf != null ? ` · 확신 ${Math.round(m.conf <= 1 ? m.conf * 100 : m.conf)}%` : ''}</span></div><p>${esc(m.why)}</p></li>`).join('');
+  const rows = [...members].sort((a, b) => order[a.stance] - order[b.stance]).map((m) => `<li class="vt-m" data-member="${m.id}"><div class="vt-who"><b>${esc(m.who)}</b><span class="vt-s ${VOTE[m.stance][1]}">${VOTE[m.stance][0]}${m.conf != null ? ` · 확신 ${Math.round(m.conf <= 1 ? m.conf * 100 : m.conf)}%` : ''}</span></div><p>${esc(m.why)}</p></li>`).join('');
   return `<section class="block" id="vote"><div class="block-head"><h2>위원회 표결</h2><span class="muted">분석가 ${(c.analysts ?? []).length}명 · 데스크 ${(c.desks ?? []).length}곳</span></div><div class="card vt">
-<div class="vt-sum"><b class="up">강세 ${n('BULLISH')}</b><b>중립 ${n('NEUTRAL')}</b>${n('INSUFFICIENT_DATA') ? `<b class="muted">근거 부족 ${n('INSUFFICIENT_DATA')}</b>` : ''}<b class="down">약세 ${n('BEARISH')}</b></div>
-<div class="vt-bar" aria-hidden="true"><span class="s-bull" style="flex:${n('BULLISH')}"></span><span class="s-neutral" style="flex:${n('NEUTRAL') + n('INSUFFICIENT_DATA')}"></span><span class="s-bear" style="flex:${n('BEARISH')}"></span></div>
-<ul class="vt-list">${rows}</ul><p class="fine">분석가는 각자 맡은 방법(추세·평균회귀·수급·실적 등)으로, 데스크는 맡은 자료(시장·기술·수급·실적·공시뉴스)로 판단해요. 분석가의 판단은 20거래일 뒤 실제 가격으로 채점돼 성적표에 쌓여요.</p></div></section>`;
+${tallies(members)}
+<p class="vt-help pc-only-beginner">강세는 '오를 쪽', 약세는 '내릴 쪽', 중립은 '아직 어느 쪽도 아니다'로 본다는 뜻이에요. 확신은 그 판단을 얼마나 자신하는지예요.</p><p class="vt-help pc-not-all">내 보기 방식에 맞는 위원으로 위원회를 꾸렸어요. 토론도 이 위원들 말만 보여요. <a href="#" data-open-view>보기 방식 바꾸기</a></p>${viewSeats(members.map((m) => m.id))}<ul class="vt-list">${rows}</ul><button type="button" class="vt-more">다른 위원도 보기</button><p class="fine">분석가는 각자 맡은 방법(추세·평균회귀·수급·실적 등)으로, 데스크는 맡은 자료(시장·기술·수급·실적·공시뉴스)로 판단해요. 분석가의 판단은 20거래일 뒤 실제 가격으로 채점돼 성적표에 쌓여요.</p></div></section>`;
 }
 
 /** Opens a conclusion row's scenario. */
@@ -87,4 +96,35 @@ export const CONCLUSION_JS = `
     var b = e.target.closest && e.target.closest('.cl-row[aria-expanded]'); if (!b) return;
     var open = b.getAttribute('aria-expanded') !== 'true', d = b.nextElementSibling;
     b.setAttribute('aria-expanded', String(open)); if (d) d.hidden = !open;
+  });`;
+
+/**
+ * G-76: each view seats its own committee: the members its question needs (단타: 기술·수급·추세·평균회귀·
+ * 거래량, 장기: 실적·이벤트·시장…). Only they show in the vote and the debate; the others wait behind
+ * '다른 위원도 보기'. The red team always speaks. '전체' shows everyone.
+ */
+export const VIEW_FOCUS: Record<string, readonly string[]> = {
+  beginner: ['MARKET', 'TECHNICAL', 'FUNDAMENTAL', 'EVENT'],
+  trader: ['TECHNICAL', 'FLOW', 'trend_momentum', 'mean_reversion', 'volume_flow'],
+  swing: ['TECHNICAL', 'MARKET', 'wave_structure', 'trend_momentum', 'volume_flow'],
+  long: ['FUNDAMENTAL', 'EVENT', 'fundamental', 'event_catalyst', 'MARKET'],
+};
+const VIEW_LABEL: Record<string, string> = { beginner: '초보', trader: '단타', swing: '스윙', long: '장기' };
+export const VIEW_FOCUS_CSS = `.vt-help{font-size:13px;color:var(--fg2);background:#f5f8fd;border-radius:10px;padding:8px 11px;margin:0 0 10px}.vt-more,.db-more{display:none;margin:10px auto 0;border:1px dashed var(--line-strong);background:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:700;color:var(--accent-strong);cursor:pointer}
+.pc-only-beginner{display:none}html[data-persona=beginner] .pc-only-beginner{display:block}html[data-persona=all] .pc-not-all{display:none}.vt-tally{display:none}html:not([data-persona]) .vt-t-all,html[data-persona=all] .vt-t-all,.vt.show-all-members .vt-t-all{display:block}.vt.show-all-members .vt-tally:not(.vt-t-all){display:none!important}${Object.keys(VIEW_FOCUS).map((v) => `html[data-persona=${v}] .vt-t-${v}`).join(',')}{display:block}.vt-seat{display:none;font-size:13px;font-weight:700;color:var(--accent-strong);margin:0 0 8px}
+${Object.entries(VIEW_FOCUS).map(([v, ids]) => {
+    const not = ids.map((id) => `[data-member=${id}]`).join(','), notS = ids.map((id) => `[data-speaker=${id}]`).join(',');
+    return `html[data-persona=${v}] .vt-seat-${v}{display:block}html[data-persona=${v}] .vt:not(.show-all-members) .vt-m:not(${not}){display:none}html[data-persona=${v}] .vt:not(.show-all-members) .vt-more{display:block}
+html[data-persona=${v}] .debate:not(.show-all-members) .db-turn:not(${notS}):not(.db-red):not(.db-typing){display:none}html[data-persona=${v}] .debate:not(.show-all-members) .db-more{display:block}`;
+  }).join('\n')}`;
+
+/** The view's committee line, the '다른 위원도 보기' buttons' behaviour. */
+export const viewSeats = (members: readonly string[]) => Object.entries(VIEW_FOCUS).map(([v, ids]) => {
+  const n = members.filter((m) => ids.includes(m)).length;
+  return `<p class="vt-seat vt-seat-${v}">${VIEW_LABEL[v]} 위원회 · ${n}명 (전체 ${members.length}명 중)</p>`;
+}).join('');
+export const SEATS_JS = `
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.vt-more, .db-more'); if (!b) return;
+    var box = b.closest('.vt, .debate'); box.classList.add('show-all-members'); b.remove();
   });`;

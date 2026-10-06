@@ -91,28 +91,42 @@ const SECTORS = ['반도체', '2차전지·소재', '바이오·헬스케어', '
 
 /** Onboarding survey: who is using this, and what their front page should lead with (G-46). */
 export const ONBOARDING_QUESTIONS = [
-  { key: 'experience', title: '주식 투자는 얼마나 하셨어요?', type: 'one', options: ['처음이거나 1년 미만', '1~3년', '3~10년', '10년 이상', '업으로 해요'] },
+  { key: 'experience', section: '1. 나의 투자', title: '주식 투자는 얼마나 하셨어요?', type: 'one', options: ['처음이거나 1년 미만', '1~3년', '3~10년', '10년 이상', '업으로 해요'] },
   { key: 'horizon', title: '보통 얼마나 들고 가세요?', type: 'one', options: ['며칠 안(단기 매매)', '몇 주', '몇 달', '1년 이상'] },
-  { key: 'sectors', title: '관심 있는 업종을 골라 주세요', note: '여러 개 골라도 돼요', type: 'many', options: SECTORS },
+  { key: 'style', title: '내 투자 스타일에 가까운 것은?', note: '여러 개 골라도 돼요', type: 'many', options: ['저평가 가치주', '성장주', '추세·모멘텀', '배당', '지수·ETF 위주', '테마·이슈', '단타·스캘핑', '아직 정하지 않았어요'] },
+  { key: 'assets', title: '투자하는 자산은?', note: '여러 개 골라도 돼요', type: 'many', options: ['국내 주식', '해외 주식', '국내 ETF', '해외 ETF', '코인', '채권·예금성', '아직 투자 전'] },
+  { key: 'size', title: '투자 금액은 어느 정도예요?', note: '답하고 싶지 않으면 마지막을 골라 주세요', type: 'one', options: ['500만 원 미만', '500만~3천만 원', '3천만~1억 원', '1억 원 이상', '답하지 않을게요'] },
+  { key: 'freq', title: '얼마나 자주 사고파세요?', type: 'one', options: ['거의 매일', '일주일에 몇 번', '한 달에 몇 번', '몇 달에 한 번', '거의 안 팔고 모아요'] },
+  { key: 'when', title: '시장을 주로 보는 때는?', note: '여러 개 골라도 돼요', type: 'many', options: ['장 시작 전', '장중 틈틈이', '점심시간', '장 마감 뒤 저녁', '주말에 몰아서'] },
+  { key: 'decide', section: '2. 판단하는 방식', title: '매매 결정은 주로 어떻게 하세요?', type: 'one', options: ['직접 분석해요', '리포트·뉴스를 참고해요', '유튜브·커뮤니티를 참고해요', '지인·전문가 추천을 따라요', '아직 잘 모르겠어요'] },
+  { key: 'risk', title: '한 종목이 얼마나 빠지면 견디기 어려우세요?', type: 'one', options: ['-5%면 불안해요', '-10% 정도', '-20% 정도', '-30% 넘어도 기다려요', '생각해 본 적 없어요'] },
+  { key: 'stop', title: '손절이나 익절 규칙이 있나요?', type: 'one', options: ['정해 두고 지켜요', '정해 두지만 잘 못 지켜요', '그때그때 판단해요', '없어요'] },
+  { key: 'hard', title: '투자에서 가장 어려운 것은?', note: '최대 3개', type: 'many', options: ['살 종목 고르기', '사는 타이밍', '파는 타이밍', '뉴스·공시 해석', '재무제표 읽기', '차트 읽기', '감정 조절', '정보가 너무 많아요'] },
+  { key: 'sources', title: '정보는 주로 어디서 얻으세요?', note: '여러 개 골라도 돼요', type: 'many', options: ['증권사 앱', '네이버 증권·종목토론', '증권사 리포트', '유튜브', '텔레그램·카카오 리딩방', '경제 뉴스', '지인', 'AI 챗봇'] },
+  { key: 'trustAi', title: 'AI가 쓴 투자 해설을 얼마나 믿을 것 같아요?', type: 'one', options: ['거의 안 믿어요', '참고만 해요', '근거가 있으면 믿어요', '꽤 믿어요'] },
+  { key: 'sectors', section: '3. 관심사', title: '관심 있는 업종을 골라 주세요', note: '여러 개 골라도 돼요', type: 'many', options: SECTORS },
   { key: 'tickers', title: '갖고 있거나 지켜보는 종목이 있나요?', note: '최대 10개 · 관심 종목에 바로 담아 드려요', type: 'tickers', options: [] },
   { key: 'interests', title: '그노몬에서 주로 보고 싶은 것은?', note: '여러 개 골라도 돼요', type: 'many', options: ['AI 해설·위원회', '기술적 신호·차트', '외국인·기관 수급', '실적·밸류에이션', '공시·뉴스', '전략·백테스트', '모의투자·성적표', '조건 검색(스크리너)'] },
-  { key: 'decide', title: '매매 결정은 주로 어떻게 하세요?', type: 'one', options: ['직접 분석해요', '리포트·뉴스를 참고해요', '유튜브·커뮤니티를 참고해요', '지인·전문가 추천을 따라요', '아직 잘 모르겠어요'] },
+  { key: 'alerts', title: '받고 싶은 알림은?', note: '여러 개 골라도 돼요', type: 'many', options: ['관심 종목 급등락', '관심 종목 공시', '테스트 가격 돌파·이탈', '조건 검색에 새로 걸린 종목', '매일 아침 요약', '알림은 싫어요'] },
+  { key: 'explain', section: '4. 그노몬에 바라는 것', title: '설명은 어느 수준이 좋아요?', type: 'one', options: ['아주 쉬운 말로', '보통', '전문 용어 그대로'] },
+  { key: 'length', title: '종목 리포트는 어느 정도 길이가 좋아요?', type: 'one', options: ['결론 한 줄', '결론과 이유 세 줄', '근거까지 자세히', '데이터 전부'] },
   { key: 'tools', title: '지금 쓰는 도구는?', note: '여러 개 골라도 돼요', type: 'many', options: ['증권사 앱(MTS·HTS)', '네이버·다음 증권', '증권사 리포트', '유료 리딩방·구독', 'TradingView 같은 해외 도구', '엑셀·직접 만든 도구', '없어요'] },
   { key: 'pay', title: '이런 서비스에 한 달에 얼마까지 낼 수 있어요?', type: 'one', options: ['무료만 써요', '1만 원 안쪽', '1~3만 원', '3~5만 원', '5~10만 원', '10만 원 넘게도'] },
+  { key: 'worry', title: '이런 서비스를 쓸 때 걱정되는 점은?', type: 'text', options: [] },
   { key: 'wish', title: '그노몬에 가장 바라는 것 하나', type: 'text', options: [] },
   { key: 'interview', title: '20분 화상 인터뷰에 참여해 주실 수 있나요?', note: '참여하면 크레딧 200개를 드려요', type: 'one', options: ['네, 좋아요', '아니요'] },
 ] as const;
 
 export function renderOnboarding(): string {
   const q = ONBOARDING_QUESTIONS.map((x, i) => {
-    const head = `<h3>${i + 1}. ${x.title}</h3>${'note' in x ? `<div class="muted">${x.note}</div>` : ''}`;
+    const head = `${'section' in x ? `<h2 class="sv-sec">${x.section}</h2>` : ''}<h3>${i + 1}. ${x.title}</h3>${'note' in x ? `<div class="muted">${x.note}</div>` : ''}`;
     if (x.type === 'text') return `<div class="q" data-q="${x.key}">${head}<div class="fld"><textarea name="${x.key}" maxlength="500" rows="3" placeholder="예: 내 종목에 공시가 나오면 무슨 뜻인지 바로 알려 주면 좋겠어요"></textarea></div></div>`;
     if (x.type === 'tickers') return `<div class="q" data-q="${x.key}">${head}<div class="fld"><input id="tk-in" placeholder="종목 이름이나 코드" autocomplete="off"></div><div class="sugg" id="tk-sugg" hidden></div><div class="picked" id="tk-picked"></div></div>`;
     return `<div class="q" data-q="${x.key}">${head}<div class="opts">${x.options.map((o) => `<label><input type="${x.type === 'one' ? 'radio' : 'checkbox'}" name="${x.key}" value="${o}">${o}</label>`).join('')}</div></div>`;
   }).join('');
-  const body = `${PAGE_CSS}<section class="card form-card" style="max-width:720px"><div class="eyebrow"><span>1분 설문</span></div><h1>나에게 맞는 그노몬 만들기</h1>
-<p class="muted">답에 따라 홈 화면에서 먼저 보여 줄 것과 관심 종목이 정해져요. 언제든 계정 페이지에서 다시 할 수 있어요. 답은 서비스 개선에만 써요.</p>${NO_API}
-<div class="stepbar" aria-hidden="true"><i id="prog"></i></div><form id="survey">${q}<button class="btn-primary" type="submit">완료하고 내 홈 보기</button><div id="out" aria-live="polite"></div></form></section>`;
+  const body = `${PAGE_CSS}<section class="card form-card" style="max-width:720px"><div class="eyebrow"><span>맞춤 설문</span><span>약 7분 · ${ONBOARDING_QUESTIONS.length}문항</span></div><h1>나에게 맞는 그노몬 만들기</h1>
+<p class="muted">네 부분(나의 투자 · 판단하는 방식 · 관심사 · 바라는 것)으로 나눠 물어요. 답에 따라 보기 방식, 홈의 '오늘 볼 것', 관심 종목, 설명 수준이 정해져요. 모르는 건 건너뛰어도 되고, 언제든 ☰ 메뉴에서 다시 할 수 있어요. 답은 서비스 개선에만 써요.</p>${NO_API}
+<div class="stepbar" aria-hidden="true" style="position:sticky;top:64px;z-index:3"><i id="prog"></i></div><style>.sv-sec{font-size:18px;margin:26px 0 4px;padding-top:14px;border-top:2px solid var(--navy);color:var(--accent-strong)}</style><form id="survey">${q}<button class="btn-primary" type="submit">완료하고 내 홈 보기</button><div id="out" aria-live="polite"></div></form></section>`;
   const script = `<script>
 (function () {
   var form = document.getElementById('survey'), picked = [], QS = ${JSON.stringify(ONBOARDING_QUESTIONS.map((x) => ({ key: x.key, type: x.type })))};

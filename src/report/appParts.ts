@@ -200,7 +200,7 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
 <div class="cur-price"><b>${last ? esc(won(last.close)) : '없음'}</b>${last && prev ? `<span class="${tone(last.close - prev.close)}">${last.close >= prev.close ? '▲' : '▼'} ${esc(num(Math.abs(last.close - prev.close)))} (${esc(pct((last.close / prev.close - 1) * 100))})</span>` : ''}</div>
 <div class="period-stat" id="period-stat" aria-live="polite"></div></div>
 <div class="seg" role="group" aria-label="기간">${RANGES.map(([label, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 63}">${label}</button>`).join('')}</div></div>
-<div class="chart-tools"><div class="preset-row" role="group" aria-label="지표"><span class="label">지표</span><button type="button" class="tool-btn" data-open="ind-sheet" aria-haspopup="dialog">${GEAR}지표 고르기</button><button type="button" class="chip-toggle" id="ind-reset" title="이동평균 20·60과 거래량으로 되돌려요">기본으로</button></div>
+<div class="chart-tools"><div class="preset-row" role="group" aria-label="지표"><span class="label">지표</span><button type="button" class="tool-btn" data-open="ind-sheet" aria-haspopup="dialog">${GEAR}지표 고르기</button><button type="button" class="chip-toggle" id="ind-reset" title="내 보기 방식의 기본 지표로 되돌려요">내 보기 기본</button></div>
 ${strategies.length ? `<button type="button" class="strat-pick" data-open="strat-sheet" aria-haspopup="dialog"><span class="label">전략 매매 시점</span><b id="strat-current">끄기</b><span class="caret" aria-hidden="true">▾</span></button>` : ''}</div>
 <div class="active-pills" id="active-pills" aria-label="켜진 지표"></div>
 ${chartToolbar(!!report.market?.benchmarks.some((b) => b.series?.length))}
@@ -509,10 +509,21 @@ const TOOLS_JS = `
     restoring = false; renderPills();
   };
   opts().forEach(function (b) { b.addEventListener('click', function () { if (!restoring) setTimeout(function () { save(); renderPills(); }, 0); }); });
+  // G-76: each view (☰ 메뉴 > 내 보기 방식) has its own starting indicators. A reader's own picks are kept
+  // for that view; switching the view loads the new view's set.
+  var VIEW = { beginner: { ov: ['ma20', 'ma60'], pane: ['volume'] }, trader: { ov: ['ma5', 'ma20', 'levels', 'spikes'], pane: ['volume', 'value', 'rsi'] }, swing: { ov: ['ma20', 'ma60', 'levels'], pane: ['volume', 'rsi', 'macd'] }, long: { ov: ['ma60', 'ma120', 'fair'], pane: ['volume', 'ad'] } };
+  var view = function () { return document.documentElement.getAttribute('data-persona') || 'swing'; };
+  var preset = function () { return VIEW[view()] || DEFAULT; };
+  var keep = function () { try { localStorage.setItem(KEY + '-view', view()); } catch (e) {} };
   var reset = document.getElementById('ind-reset');
-  if (reset) reset.addEventListener('click', function () { apply(DEFAULT); save(); });
+  if (reset) reset.addEventListener('click', function () { apply(preset()); save(); keep(); });
+  opts().forEach(function (b) { b.addEventListener('click', function () { if (!restoring) keep(); }); });
+  window.addEventListener('gnm-persona', function () { apply(preset()); save(); keep(); });
   // Restore after the chart is built (its DOMContentLoaded handler runs first).
-  window.addEventListener('DOMContentLoaded', function () { setTimeout(function () { var st = null; try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {} if (st && st.ov && st.pane) apply(st); }, 0); });
+  window.addEventListener('DOMContentLoaded', function () { setTimeout(function () {
+    var st = null, v = null; try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); v = localStorage.getItem(KEY + '-view'); } catch (e) {}
+    if (st && st.ov && st.pane && v === view()) apply(st); else apply(preset());
+  }, 0); });
   if (pills) pills.addEventListener('click', function (e) {
     var t = e.target.closest('[data-pill]'); if (!t) return;
     var kv = t.getAttribute('data-pill').split(':'), b = document.querySelector('#ind-sheet [' + kv[0] + '="' + kv[1] + '"]');
