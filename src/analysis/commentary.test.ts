@@ -120,7 +120,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   assert.deepEqual(Object.keys(c.insights ?? {}), ['technical']);
   const page = renderReport({ ...report, commentary: c }, { index: '../index.html' });
   for (const x of ['id="debate"', '추세·모멘텀 PM', 'class="db-quote"><b>추세·모멘텀 PM', '최악의 경우', 'AI 한 줄 · 기술', 'class="block cl-card', '53%', 'id="issues"']) assert.ok(page.includes(x), x);
-  assert.ok(page.includes('id="debate"') && page.includes('추세·모멘텀 PM') && page.includes('class="db-quote"><b>추세·모멘텀 PM') && !page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술') && page.includes('class="block cl-card') && page.includes('53%') && page.includes('id="issues"') && !page.includes('id="parliament-ai"'));
+  assert.ok(page.includes('id="debate"') && page.includes('추세·모멘텀 PM') && page.includes('class="db-quote"><b>추세·모멘텀 PM') && !page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술') && page.includes('class="block cl-card') && page.includes('53%') && page.includes('id="issues"') && page.includes('id="parliament-ai"'));
   assert.deepEqual(c.desks?.map((d) => [d.desk, d.stance]), [['TECHNICAL', 'BULLISH']]);
   assert.deepEqual(c.redTeam?.unresolved, ['수급 해석']);
   assert.deepEqual(c.scenarios?.map((s) => s.kind), ['BULL', 'BASE']);

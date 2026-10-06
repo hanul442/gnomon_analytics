@@ -322,12 +322,12 @@ export function shell(base: string, title: string, body: string, options: { tabs
   const menu = menuHtml(base, options.archiveHref);
   return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffffff"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${PERSONA_BOOT}
-<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.css?v=${ASSET_VERSION}"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
+<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.${ASSET_VERSION}.css"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
 <nav class="top-links" aria-label="사이트"><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a>${menu.button}</nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>${menu.drawer}
-<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.js?v=${ASSET_VERSION}"></script>${options.scripts ?? ''}<script src="${base}assets/ui.js?v=${ASSET_VERSION}"></script></body></html>`;
+<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
@@ -636,7 +636,7 @@ ${marketStrip(report)}
       : whySection(report);
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary
-    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion', title: '시나리오' }) + voteSection(report) : ''}${aiBody}${sealedDeep ? `<section class="block"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
+    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion', title: '시나리오' }) + parliament(report, ctx.commentaryFrom ?? null, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석을 누르면 그 위원의 판단과 근거가 나와요. 아래는 내 보기 방식에 맞춰 꾸린 위원회예요.' }) + voteSection(report) : ''}${aiBody}${sealedDeep ? `<section class="block"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
     : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매일 고른 종목과 요청된 종목에 리포트가 만들어져요. 궁금한 건 오른쪽 아래 <b>AI 질문</b>으로 물어보세요.</p></div>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
@@ -967,5 +967,11 @@ const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).dige
 
 export async function writeAssets(siteDir: string): Promise<void> {
   await mkdir(join(siteDir, 'assets'), { recursive: true });
-  await Promise.all([writeFile(join(siteDir, 'assets', 'app.css'), APP_CSS), writeFile(join(siteDir, 'assets', 'app.js'), APP_JS), writeFile(join(siteDir, 'assets', 'ui.js'), UI_JS)]);
+  // Versioned file names (G-79): the Pages CDN can keep serving an old app.css for a while when only a
+  // query string changes, so each build's assets get their own names. The plain names stay for old pages.
+  const v = ASSET_VERSION;
+  await Promise.all([
+    writeFile(join(siteDir, 'assets', `app.${v}.css`), APP_CSS), writeFile(join(siteDir, 'assets', `app.${v}.js`), APP_JS), writeFile(join(siteDir, 'assets', `ui.${v}.js`), UI_JS),
+    writeFile(join(siteDir, 'assets', 'app.css'), APP_CSS), writeFile(join(siteDir, 'assets', 'app.js'), APP_JS), writeFile(join(siteDir, 'assets', 'ui.js'), UI_JS),
+  ]);
 }

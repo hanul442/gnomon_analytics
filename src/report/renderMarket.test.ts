@@ -45,7 +45,7 @@ test('report pages have six tabs with gauges, fair value, forecasts, flows and f
   // Chart v6: drawing tools, day/week/month and the index comparison (the benchmark series is embedded).
   assert.ok(page.includes('data-draw="fib"') && page.includes('data-tf="W"') && page.includes('data-compare') && page.includes('id="benchmarks"') && page.includes('window.GNMChart'));
   // UI layer: price in the header after scrolling, a bottom tab bar, glossary terms, the indicator names marked for it.
-  assert.ok(page.includes('id="price-bar"') && page.includes('class="bottom-nav"') && page.includes('assets/ui.js?v=') && UI_JS.includes('"몬테카를로"') && APP_CSS.includes('.chat-fab') && page.includes('class="term-cell"'));
+  assert.ok(page.includes('id="price-bar"') && page.includes('class="bottom-nav"') && /assets\/ui\.[0-9a-f]{10}\.js/.test(page) && UI_JS.includes('"몬테카를로"') && APP_CSS.includes('.chat-fab') && page.includes('class="term-cell"'));
   // Plans: details sit behind Plus gates; anyone can ask the AI with credits.
   assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 2, 'plus gates');
   assert.ok((page.match(/class="gate" data-need="pro"/g) ?? []).length >= 2, 'pro gates');

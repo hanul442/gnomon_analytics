@@ -138,7 +138,8 @@ export const DEBATE_PLAY_SCRIPT = `<script>
   var watch = function () {
     var box = document.querySelector('.card.debate:not([data-played])'); if (!box) return;
     if (!('IntersectionObserver' in window)) return;
-    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting && e.target.offsetHeight) { io.disconnect(); play(e.target); } }); }, { threshold: 0.15 });
+    // Start only when the debate's top has come up to the middle of the screen, so the reader sees it play.
+    var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting && e.target.offsetHeight) { io.disconnect(); play(e.target); } }); }, { threshold: 0, rootMargin: '0px 0px -55% 0px' });
     io.observe(box);
   };
   window.GNM_debate = watch;
