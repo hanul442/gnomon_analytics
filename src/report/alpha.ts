@@ -166,6 +166,7 @@ export const ALPHA_SCRIPT = `<script>
      bindChoices();chooser.onclick=function(){dlg.showModal();if(G.me)G.call('GET','/experts').then(function(r){if(!r.error){custom=r.items||[];showCustom();}});};
      dlg.querySelector('[data-close-expert]').onclick=function(){dlg.close();};dlg.addEventListener('click',function(e){if(e.target===dlg)dlg.close();});
      var editor=dlg.querySelector('[data-expert-editor]'),error=dlg.querySelector('[data-expert-error]');
+     var newExpert=dlg.querySelector('[data-new-expert]'),grid=dlg.querySelector('.ex-grid');dlg.insertBefore(newExpert,grid);newExpert.after(editor);editor.after(dlg.querySelector('[data-custom-list']));
      dlg.querySelector('[data-new-expert]').onclick=function(){editor.hidden=false;dlg.querySelector('[name=custom-name]').focus();};
      dlg.querySelector('[data-cancel-expert]').onclick=function(){editor.hidden=true;};
      dlg.querySelector('[data-save-expert]').onclick=function(){var b=this;b.disabled=true;error.textContent='';G.call('POST','/experts',{name:dlg.querySelector('[name=custom-name]').value,focus:dlg.querySelector('[name=custom-focus]').value,style:dlg.querySelector('[name=custom-style]').value}).then(function(r){b.disabled=false;if(r.error){error.textContent=r.message;return;}custom.push(r.expert);editor.hidden=true;showCustom();var rdo=dlg.querySelector('input[value="custom:'+r.expert.id+'"]');rdo.checked=true;selectedKey=rdo.value;costNote();dlg.close();}).catch(function(){b.disabled=false;error.textContent='연결을 확인해 주세요.';});};
