@@ -126,3 +126,54 @@ export const UI_SCRIPT = `<script>
   window.addEventListener('scroll', close, { passive: true });
 })();
 </script>`;
+
+// The ☰ menu (docs/DESIGN.md §5.20, G-58): every page, all sections in one drawer.
+const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+/** Menu groups: [label, href]. Hrefs are relative to the site root. */
+export const MENU: readonly { title: string; items: readonly [string, string][] }[] = [
+  { title: '둘러보기', items: [['홈', 'index.html#top'], ['종목 검색', 'index.html#search'], ['매일 AI 리포트', 'index.html#daily'], ['관심 종목', 'index.html#watch']] },
+  { title: '시장', items: [['스크리너 (조건 검색)', 'screener.html'], ['ETF', 'etfs.html'], ['코인', 'coins.html']] },
+  { title: '기록', items: [['성적표', 'scorecard.html'], ['모의투자', 'paper.html']] },
+  { title: '알파 테스트', items: [['사용법', 'guide.html'], ['중간 설문', 'survey.html?k=midterm'], ['주간 설문', 'survey.html?k=weekly'], ['맞춤 설문 수정', 'onboarding.html']] },
+  { title: '계정', items: [['내 계정', 'account.html'], ['요금제·크레딧', 'pricing.html'], ['로그인', 'login.html'], ['이용약관·면책', 'terms.html']] },
+];
+
+const MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+
+/** The ☰ button for the top bar and the drawer it opens (assets/ui.js toggles it). */
+export function menuHtml(base: string): { button: string; drawer: string } {
+  return {
+    button: `<button type="button" class="menu-btn" aria-label="전체 메뉴" aria-expanded="false" aria-controls="side-menu">${MENU_ICON}</button>`,
+    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체 메뉴</b><button type="button" class="sm-close" aria-label="닫기">×</button></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
+  };
+}
+
+export const MENU_CSS = `.menu-btn{width:38px;height:38px;border:0;border-radius:10px;background:none;color:#fff;cursor:pointer;display:grid;place-items:center;margin-left:2px}.menu-btn svg{width:22px;height:22px}.menu-btn:hover{background:rgba(255,255,255,.1)}
+.menu-scrim{position:fixed;inset:0;background:rgba(10,20,35,.42);z-index:90}.side-menu{position:fixed;top:0;right:0;bottom:0;width:min(300px,86vw);background:#fff;z-index:91;overflow-y:auto;padding:14px 16px 24px;box-shadow:-12px 0 32px rgba(10,20,35,.18);animation:sm-in .18s ease-out}
+@keyframes sm-in{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}.sm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.sm-head b{font-size:17px}.sm-close{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);width:38px;height:38px}
+.sm-group{border-top:1px solid var(--line);padding:10px 0 6px}.sm-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:2px}.side-menu a{display:block;padding:10px 6px;border-radius:10px;text-decoration:none;color:var(--fg);font-weight:600;font-size:15px}.side-menu a:hover,.side-menu a[aria-current=page]{background:#eef3fb;color:var(--accent-strong)}.sm-foot{font-size:12px;color:var(--muted);margin-top:12px}
+html.menu-open{overflow:hidden}`;
+
+export const MENU_JS = `
+  // The ☰ menu: opens the drawer, closes on the scrim, the × button, Escape or a link.
+  (function () {
+    var btn = document.querySelector('.menu-btn'), nav = document.getElementById('side-menu'), scrim = document.querySelector('.menu-scrim');
+    if (!btn || !nav) return;
+    var here = location.pathname.split('/').pop() || 'index.html';
+    nav.querySelectorAll('a').forEach(function (a) { if (a.getAttribute('href').split('/').pop().split('#')[0] === here && here !== 'index.html') a.setAttribute('aria-current', 'page'); });
+    var set = function (open) { nav.hidden = !open; scrim.hidden = !open; btn.setAttribute('aria-expanded', String(open)); document.documentElement.classList.toggle('menu-open', open); if (open) nav.querySelector('a').focus(); };
+    btn.addEventListener('click', function () { set(nav.hidden); });
+    scrim.addEventListener('click', function () { set(false); });
+    nav.querySelector('.sm-close').addEventListener('click', function () { set(false); });
+    nav.addEventListener('click', function (e) { if (e.target.closest('a')) set(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !nav.hidden) { set(false); btn.focus(); } });
+  })();`;
+
+
+/** The home banner's styles (markup and script in alphaPages.ts); here so the shared CSS has no import cycle. */
+export const BANNER_CSS = `.bn-slide[hidden]{display:none!important}.banner{position:relative;max-width:1180px;margin:14px auto 0;padding:0 24px}.bn-slide{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 12px;border-radius:16px;padding:14px 18px 22px;text-decoration:none;color:#fff;min-height:68px}
+.bn-slide b{font-size:16px}.bn-text{grid-column:2/3;font-size:13px;opacity:.88}.bn-cta{grid-row:1/3;grid-column:3;font-weight:700;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:7px 12px;white-space:nowrap}.bn-tag{grid-row:1/3;font-size:11px;font-weight:800;background:rgba(255,255,255,.2);border-radius:6px;padding:2px 6px}
+.bn-navy{background:linear-gradient(120deg,#13294b,#2a4f8f)}.bn-teal{background:linear-gradient(120deg,#0d5e5a,#1c8c7d)}.bn-amber{background:linear-gradient(120deg,#8a4b06,#c47a12)}.bn-rose{background:linear-gradient(120deg,#7a1d38,#b23a5a)}
+.bn-dots{position:absolute;left:0;right:0;bottom:7px;display:flex;justify-content:center;gap:6px}.bn-dots button{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.45);cursor:pointer}.bn-dots button[aria-pressed=true]{background:#fff;width:18px;border-radius:4px}
+@media (max-width:820px){.banner{padding:0 14px;margin-top:10px}.bn-slide{grid-template-columns:auto 1fr;padding:12px 14px 22px}.bn-cta{grid-row:auto;grid-column:2;justify-self:start;padding:5px 10px}.bn-tag{grid-row:1}.bn-slide b{font-size:15px}}`;
+

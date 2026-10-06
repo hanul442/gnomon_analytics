@@ -280,10 +280,10 @@ export function renderAdmin(): string {
         })) + '</div>';
     },
     voice: function () {
-      var pulses = D.pulses.map(function (p) { var a = {}; try { a = JSON.parse(p.answers); } catch (e) {} return '<tr><td>' + when(p.created_at) + '</td><td>' + esc(p.email) + '</td><td class="num">' + esc(a.nps) + '</td><td>' + esc(a.worst) + '</td><td>' + esc(a.best) + '</td></tr>'; });
+      var pulses = D.pulses.map(function (p) { var a = {}; try { a = JSON.parse(p.answers); } catch (e) {} var K = { pulse: '팝업', weekly: '주간', midterm: '중간' }; return '<tr><td>' + when(p.created_at) + '</td><td>' + (K[p.kind] || '') + '</td><td>' + esc(p.email) + '</td><td class="num">' + esc(a.nps) + '</td><td>' + esc([a.worst, a.hard, a.bug].filter(Boolean).join(' / ')) + '</td><td>' + esc([a.best, a.want].filter(Boolean).join(' / ')) + '</td></tr>'; });
       var fb = D.feedback.map(function (f) { return '<tr><td>' + when(f.created_at) + '</td><td>' + esc(f.email) + '</td><td>' + esc(f.target) + '<br><small class="muted">' + esc(f.page) + '</small></td><td>' + (f.rating === 1 ? '👍' : f.rating === -1 ? '👎' : '') + '</td><td>' + esc(f.text) + '</td></tr>'; });
       var dist = function (key) { var c = {}; D.users.forEach(function (u) { var s = null; try { s = JSON.parse(u.onboarding || 'null'); } catch (e) {} if (!s) return; [].concat(s[key] || []).forEach(function (v) { if (v) c[v] = (c[v] || 0) + 1; }); }); var max = Math.max.apply(null, Object.values(c).concat([1])); return '<div class="bars">' + Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }).map(function (k) { return '<div><span>' + esc(k) + '</span><i style="width:' + (c[k] / max * 100) + '%"></i><span class="num">' + c[k] + '</span></div>'; }).join('') + '</div>'; };
-      return '<h3>주간 설문 (NPS)</h3>' + table(['때', '사용자', '점수', '아쉬운 점', '좋은 점'], pulses) + '<h3 style="margin-top:18px">화면 피드백</h3>' + table(['때', '사용자', '화면', '평가', '의견'], fb) +
+      return '<h3>설문 (주간·중간, NPS)</h3>' + table(['때', '종류', '사용자', '점수', '아쉬운 점·헷갈린 점·오류', '좋은 점·바라는 기능'], pulses) + '<h3 style="margin-top:18px">화면 피드백</h3>' + table(['때', '사용자', '화면', '평가', '의견'], fb) +
         '<h3 style="margin-top:18px">가입 설문 분포</h3><div class="grid-eq">' + [['experience', '경험'], ['horizon', '보유 기간'], ['interests', '보고 싶은 것'], ['sectors', '업종'], ['pay', '지불 의향'], ['tools', '쓰는 도구']].map(function (k) { return '<div><div class="pl-k">' + k[1] + '</div>' + dist(k[0]) + '</div>'; }).join('') + '</div>';
     },
     asks: function () {

@@ -234,7 +234,7 @@ async function adminOverview(env: Env, now: Date) {
     q(`SELECT a.*, u.email FROM action_requests a JOIN users u ON u.id = a.user_id ORDER BY (a.status = 'pending') DESC, a.id DESC LIMIT 100`),
     q('SELECT * FROM invites ORDER BY created_at DESC'),
     q('SELECT f.*, u.email FROM feedback f JOIN users u ON u.id = f.user_id ORDER BY f.id DESC LIMIT 200'),
-    q("SELECT s.answers, s.created_at, u.email FROM surveys s JOIN users u ON u.id = s.user_id WHERE s.kind = 'pulse' ORDER BY s.id DESC LIMIT 200"),
+    q("SELECT s.kind, s.answers, s.created_at, u.email FROM surveys s JOIN users u ON u.id = s.user_id WHERE s.kind IN ('pulse', 'weekly', 'midterm') ORDER BY s.id DESC LIMIT 300"),
     q('SELECT name, COUNT(*) AS n, COUNT(DISTINCT user_id) AS users FROM events WHERE created_at >= ? GROUP BY name ORDER BY n DESC', week),
     q('SELECT x.id, x.symbol, x.tier, x.model, x.question, x.credits, x.usd, x.status, x.rating, x.created_at, u.email FROM questions x JOIN users u ON u.id = x.user_id ORDER BY x.id DESC LIMIT 100'),
     db.prepare('SELECT COALESCE(SUM(CASE WHEN created_at >= ? THEN usd END), 0) AS today, COALESCE(SUM(usd), 0) AS month FROM questions WHERE created_at >= ?').bind(kstDayStart(now), month).first<{ today: number; month: number }>(),
@@ -420,7 +420,7 @@ route('POST', '/ask/(\\d+)/rate', async ({ req, env, now, params }) => {
 
 route('POST', '/survey', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
-  if (b.kind !== 'onboarding' && b.kind !== 'pulse') fail(400, 'BAD_SURVEY', '설문 종류가 맞지 않아요.');
+  if (!['onboarding', 'pulse', 'midterm', 'weekly'].includes(String(b.kind))) fail(400, 'BAD_SURVEY', '설문 종류가 맞지 않아요.');
   const answers = JSON.stringify(b.answers ?? {});
   if (answers.length > 6000 || typeof b.answers !== 'object') fail(400, 'BAD_SURVEY', '응답이 너무 길어요.');
   await env.DB.prepare('INSERT INTO surveys (user_id, kind, answers, created_at) VALUES (?, ?, ?, ?)').bind(u.id, b.kind, answers, iso(now)).run();
