@@ -235,6 +235,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "000700",
+  "name": "유수홀딩스",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "000720",
   "name": "현대건설",
   "market": "KOSPI"
@@ -1028,11 +1033,6 @@
   "symbol": "003380",
   "name": "하림지주",
   "market": "KOSDAQ"
- },
- {
-  "symbol": "003460",
-  "name": "유화증권",
-  "market": "KOSPI"
  },
  {
   "symbol": "003460",
@@ -2013,11 +2013,6 @@
   "symbol": "007700",
   "name": "F&F홀딩스",
   "market": "KOSPI"
- },
- {
-  "symbol": "007720",
-  "name": "소노스퀘어",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "007720",
@@ -3833,11 +3828,6 @@
   "symbol": "027830",
   "name": "대성창투",
   "market": "KOSDAQ"
- },
- {
-  "symbol": "027970",
-  "name": "한국제지",
-  "market": "KOSPI"
  },
  {
   "symbol": "027970",
@@ -6037,6 +6027,11 @@
  {
   "symbol": "065350",
   "name": "신성델타테크",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "065370",
+  "name": "위세아이텍",
   "market": "KOSDAQ"
  },
  {
@@ -10623,6 +10618,11 @@
   "symbol": "267790",
   "name": "배럴",
   "market": "KOSDAQ"
+ },
+ {
+  "symbol": "267850",
+  "name": "아시아나IDT",
+  "market": "KOSPI"
  },
  {
   "symbol": "267980",
