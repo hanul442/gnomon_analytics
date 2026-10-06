@@ -28,7 +28,7 @@ export const CHAT_CSS = `
 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tiers button{border:1px solid var(--line-strong);background:#fff;border-radius:10px;padding:6px 4px;font:inherit;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.3}.tiers button b{font-size:13px}.tiers button small{color:var(--muted)}
 .tiers button[aria-pressed=true]{border-color:var(--navy);background:var(--navy);color:#fff}.tiers button[aria-pressed=true] small{color:#c9d6ee}
 .chat-in{display:flex;gap:8px;align-items:flex-end}.chat-in textarea{flex:1;min-height:42px;max-height:120px;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;resize:none}
-.chat-send{border:0;border-radius:12px;background:var(--navy);color:#fff;font:inherit;font-weight:700;font-size:13px;padding:10px 12px;cursor:pointer;white-space:nowrap}.chat-send:disabled{opacity:.5;cursor:default}
+.chat-send{width:44px;min-width:44px;height:44px;border:0;border-radius:12px;background:var(--navy);color:#fff;font:inherit;font-weight:700;font-size:13px;padding:10px 12px;cursor:pointer;white-space:nowrap}.chat-send:disabled{opacity:.5;cursor:default}
 .chat-note{font-size:11px;color:var(--muted);text-align:center}
 .need{display:flex;flex-direction:column;gap:8px}.need form{display:flex;flex-direction:column;gap:6px}.need select,.need input{border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px}
 .need .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.need .plans a{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;padding:8px;text-decoration:none;color:inherit;font-size:12px;background:#fff}.need .plans a b{font-size:13px}
@@ -75,7 +75,7 @@ export const CHAT_SCRIPT = `<script>
   var history = function () { try { return JSON.parse(sessionStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } };
   var remember = function (h) { try { sessionStorage.setItem(HKEY, JSON.stringify(h.slice(-20))); } catch (e) {} };
   var cost = function () { return TIERS.filter(function (t) { return t.key === tier; })[0].cost; };
-  var label = function () { send.textContent = cost() + '크레딧 · 보내기'; };
+  var label = function () { send.textContent = '➤';send.title='전송 · '+cost()+'크레딧';send.setAttribute('aria-label','질문 전송 · '+cost()+'크레딧'); };
   var add = function (cls, html) { var d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; };
   var meta = function (m) {
     return '<div class="msg-meta"><span>' + esc(MODEL[m.model] || m.model) + '</span><span>' + m.credits + '크레딧 사용</span>' + (m.balance !== undefined ? '<span>남은 ' + m.balance + '</span>' : '') +

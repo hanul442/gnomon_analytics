@@ -192,7 +192,7 @@ const SCREENER_SCRIPT = `<script>
     GNM.call('POST','/screens/compose',{question:q,market:currentMarket,screen:current()}).then(function(r){
       button.disabled=false;
       if(r.error){out.textContent=r.message||'조건을 만들지 못했어요. 다시 요청해 주세요.';return;}
-      out.innerHTML='<h3>'+esc(r.name)+'</h3><p>'+esc(r.explanation)+'</p><p class="muted small">'+r.screen.rules.length+'개 조건 · AI가 제안한 기준입니다. 적용 후 아래 조건에서 수정할 수 있어요.</p><button type="button" class="btn-primary" data-apply-ai>적용</button>';
+      out.innerHTML='<div class="compact-heading"><b>'+esc(r.name)+' <small class="muted">'+r.screen.rules.length+'개 조건</small></b><button type="button" class="chip-toggle" data-apply-ai>적용</button></div><details><summary>제안 설명</summary><p>'+esc(r.explanation)+'</p><small>적용 후 조건을 수정할 수 있어요.</small></details>';
       out.querySelector('[data-apply-ai]').onclick=function(){load(r.screen);$('ai-screen-q').placeholder='예: 결과가 너무 많아요. 거래대금이 큰 것만 남겨 줘요';};
       if(GNM.refresh)GNM.refresh();
     }).catch(function(){button.disabled=false;out.textContent='연결이 끊겼어요. 다시 요청해 주세요.';});
