@@ -482,9 +482,11 @@ function whySection(report: DailyReport, opts: { committee?: boolean; only?: 'cl
   const desks = c.desks?.length ? `<h3 class="why-h">데스크별 의견</h3><div class="desk-grid">${c.desks.map((d) => `<div class="why-col"><div class="desk-top"><b>${DESK[d.desk]}</b><span class="${STANCE[d.stance][1]}">${STANCE[d.stance][0]}</span></div><p>${kindChip(d.view.kind)}${escape(d.view.text)} <span class="chips-inline">${chips(d.view.evidenceIds)}</span></p></div>`).join('')}</div>` : '';
   const red = c.redTeam ? `<div class="red-team"><h3>레드팀 반론</h3><p>${kindChip(c.redTeam.counterargument.kind)}${escape(c.redTeam.counterargument.text)} <span class="chips-inline">${chips(c.redTeam.counterargument.evidenceIds)}</span></p>${c.redTeam.unresolved.length ? `<p class="why">풀리지 않은 이견: ${c.redTeam.unresolved.map(escape).join(', ')}</p>` : ''}</div>` : '';
   const SC = { BULL: ['강세 시나리오', 'bull'], BASE: ['기본 시나리오', 'unc'], BEAR: ['약세 시나리오', 'bear'] } as const;
-  const scenarios = c.scenarios?.length ? `<h3 class="why-h">시나리오</h3><div class="why-grid">${(['BULL', 'BASE', 'BEAR'] as const).map((k) => {
+  const probs = (['BULL', 'BASE', 'BEAR'] as const).map((k) => c.scenarios?.find((x) => x.kind === k)?.probability);
+  const probBar = probs.some((p) => typeof p === 'number') ? `<div class="sc-prob" role="img" aria-label="시나리오 확률 ${(['강세', '기본', '약세'] as const).map((n, i) => (typeof probs[i] === 'number' ? `${n} ${probs[i]}%` : '')).filter(Boolean).join(' ')}">${(['bull', 'base', 'bear'] as const).map((k, i) => ((probs[i] ?? 0) > 0 ? `<span class="sp-${k}" style="flex:${probs[i]}">${probs[i]}%</span>` : '')).join('')}</div><p class="fine">지금 근거로 본 위원회의 확률 추정이에요. 예측 확신이 아니고, 기록해 두었다가 실제 결과로 채점해요.</p>` : '';
+  const scenarios = c.scenarios?.length ? `<h3 class="why-h">시나리오</h3>${probBar}<div class="why-grid">${(['BULL', 'BASE', 'BEAR'] as const).map((k, i) => {
     const sc = c.scenarios!.find((x) => x.kind === k);
-    return `<div class="why-col ${SC[k][1]}"><h3>${SC[k][0]}</h3>${sc ? `<p>${escape(sc.narrative.text)} <span class="chips-inline">${chips(sc.narrative.evidenceIds)}</span></p>
+    return `<div class="why-col ${SC[k][1]}"><h3>${SC[k][0]}${typeof probs[i] === 'number' ? ` <span class="sc-pct">${probs[i]}%</span>` : ''}</h3>${sc ? `<p>${escape(sc.narrative.text)} <span class="chips-inline">${chips(sc.narrative.evidenceIds)}</span></p>
 ${sc.catalysts.length ? `<p class="why"><b>촉매</b> ${sc.catalysts.map(escape).join(', ')}</p>` : ''}${sc.invalidation.length ? `<p class="why"><b>무효화 조건</b> ${sc.invalidation.map(escape).join(', ')}</p>` : ''}` : '<p class="empty">근거가 있는 시나리오를 쓰지 못했어요.</p>'}</div>`;
   }).join('')}</div>` : '';
   const legend = c.evidence.map((e) => `<li><b>${escape(e.id)}</b> ${e.url.startsWith('http') ? `<a href="${escape(e.url)}" rel="noopener" target="_blank">${escape(e.label)}</a>` : escape(e.label)}</li>`).join('');
@@ -643,8 +645,36 @@ ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
-  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT, archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT, archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
+
+/**
+ * The AI committee tab as folded cards (G-60): each card or block with a heading collapses to its
+ * heading and a one-line preview; tap to open. The tally and the conclusion stay open.
+ */
+const AI_FOLD_SCRIPT = `<script>
+(function () {
+  var tab = document.getElementById('tab-ai'); if (!tab) return;
+  var heads = tab.querySelectorAll('.card > .head, section.block > .block-head, .card > h2, .card > h3:first-child');
+  var seen = [], n = 0;
+  heads.forEach(function (h) {
+    var box = h.parentNode;
+    if (seen.some(function (x) { return x.contains(box); }) || box.closest('.gate-cta')) return;
+    seen.push(box); n += 1;
+    var open = n <= 2 || box.id === 'parliament-ai' || box.querySelector('#parliament-ai');
+    var first = box.querySelector(':scope > :not(.head):not(.block-head):not(h2):not(h3) p, :scope > :not(.head):not(.block-head) li, :scope > p');
+    var text = first ? first.textContent.replace(/\\s+/g, ' ').trim() : '';
+    var pv = document.createElement('span'); pv.className = 'fold-pv'; pv.textContent = text.length > 64 ? text.slice(0, 64) + '…' : text;
+    var ic = document.createElement('span'); ic.className = 'fold-ic'; ic.setAttribute('aria-hidden', 'true');
+    h.classList.add('fold-head'); h.setAttribute('role', 'button'); h.setAttribute('tabindex', '0'); h.setAttribute('aria-expanded', String(!!open));
+    h.appendChild(pv); h.appendChild(ic);
+    box.classList.add('fold'); if (!open) box.classList.add('folded');
+    var flip = function (e) { if (e.target.closest('a, button:not(.fold-head)')) return; var f = box.classList.toggle('folded'); h.setAttribute('aria-expanded', String(!f)); };
+    h.addEventListener('click', flip);
+    h.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(e); } });
+  });
+})();
+</script>`;
 
 const STANCE_WORD = { BULLISH: '강세', BEARISH: '약세', NEUTRAL: '중립', INSUFFICIENT_DATA: '근거 부족' } as const;
 const DESK_NAME = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDAMENTAL: '펀더멘털', EVENT: '공시·뉴스' } as const;

@@ -17,7 +17,7 @@ export const COMMENTARY_MODEL = 'claude-opus-5-5';
 export const BRIEF_MODEL = 'claude-haiku-4-5';
 export type CommentaryTier = 'deep' | 'brief';
 /** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v4';
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v5';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -41,7 +41,8 @@ export type Desk = 'MARKET' | 'TECHNICAL' | 'FLOW' | 'FUNDAMENTAL' | 'EVENT';
 export type DeskStance = 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'INSUFFICIENT_DATA';
 export interface DeskView { desk: Desk; stance: DeskStance; view: Claim }
 export interface AnalystView { analyst: AnalystId; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; confidence: number; target: number; rationale: Claim }
-export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; catalysts: string[]; invalidation: string[] }
+/** `probability`: the committee's estimate for this scenario now, % (the three sum to 100; G-60). Logged and scored later. */
+export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; catalysts: string[]; invalidation: string[]; probability?: number }
 /** Who can speak in the debate: the committee's own members (analysts, desks) and the red team. */
 export type Speaker = AnalystId | Desk | 'RED_TEAM';
 /** A debate turn (v4): a committee member argues from its own stance, answering an earlier turn; the red team closes. */
@@ -171,6 +172,7 @@ const ScenarioSchema = z.object({
   narrative: ClaimSchema.describe('이 시나리오가 어떻게 전개되는지 한두 문장'),
   catalysts: z.array(z.string()).describe('이 시나리오를 앞당길 일'),
   invalidation: z.array(z.string()).describe('이 시나리오가 틀렸다고 볼 조건(가격 수준이나 사건)'),
+  probability: z.number().describe('지금 근거로 본 이 시나리오의 확률(%) 추정. 세 시나리오의 합이 100이 되게 정수로'),
 });
 
 const InsightsSchema = z.object({
@@ -236,10 +238,13 @@ export const kindRule = (kind?: 'etf' | 'coin') => !kind ? '' : kind === 'etf'
 
 const briefSystem = (name: string, kind?: 'etf' | 'coin') => `당신은 Gnomon Analytics의 리서치 요약 담당이에요. ${name} 주간 리포트의 짧은 AI 요약을 씁니다.
 
-- summary: 이번 주 무슨 일이 있었고 왜 중요한지 2~3문장.
-- bullish·bearish: 강세·약세 쪽 근거 각각 최대 3개. uncertain은 해석이 갈리는 점 최대 2개.
-- watch: 무엇이 나오면 판단이 바뀌는지 최대 3개.
-- insights: 기술·전략·수급·펀더멘털·뉴스 탭 맨 위에 붙일 한 줄씩. 근거가 없는 탭은 비웁니다.
+진짜 요약이에요. 30초 안에 읽히게 짧게 씁니다.
+- summary: 지금 이 종목에서 가장 중요한 한 가지와 그 이유, 2문장 이내(120자 안쪽).
+- bullish·bearish: 강세·약세 근거 각각 가장 강한 1개만. 한 문장(60자 안쪽).
+- uncertain: 꼭 필요할 때만 1개, 아니면 빈 배열.
+- watch: 판단이 바뀔 조건 1개(무효화 가격이나 사건).
+- insights: 탭 맨 위 한 줄씩, 각 40자 안쪽. 근거가 없는 탭은 비웁니다.
+- 전체를 300자 안쪽으로 맞춥니다.
 
 규칙:
 - 제공된 근거 목록에 있는 내용만 쓰고, 모든 주장에 근거 ID(P1, T1, F1, N1 …)를 답니다. 목록에 없는 사실·숫자·전망은 쓰지 않습니다.
@@ -253,7 +258,7 @@ const system = (name: string, kind?: 'etf' | 'coin') => `당신은 Gnomon Analyt
 위원회 구성:
 - 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
 - 레드팀은 가장 우세한 의견에 맞서는 가장 강한 반론을 씁니다.
-- 마지막으로 강세(BULL)·기본(BASE)·약세(BEAR) 시나리오를 하나씩 쓰고, 각 시나리오의 촉매와 무효화 조건(가격 수준이나 사건)을 적습니다.
+- 마지막으로 강세(BULL)·기본(BASE)·약세(BEAR) 시나리오를 하나씩 쓰고, 각 시나리오의 촉매와 무효화 조건(가격 수준이나 사건)을 적습니다. 각 시나리오에 지금 근거로 본 확률(%)을 붙이고 세 개의 합은 100으로 맞춥니다. 확률은 근거의 강약을 반영한 추정이고 예측 확신이 아니며, 기록해 두었다가 나중에 실제 결과로 채점됩니다. 근거가 엇갈리면 한쪽으로 몰지 말고 넓게 나눕니다.
 - 토론(debate): 새 인물을 만들지 않고 위의 분석가 6명과 데스크 5곳이 직접 토론합니다. 위에서 강세로 판단한 위원과 약세로 판단한 위원 가운데 근거가 가장 강한 위원들이 번갈아 말하고(5~7차례), 두 번째 차례부터는 replyTo로 반박할 차례를 가리키고 그 주장을 직접 짚습니다. 각 위원의 stance는 위 analysts·desks에 쓴 입장과 같아야 합니다. 마지막 차례는 RED_TEAM이 무엇이 합의됐고 무엇이 풀리지 않았는지 정리합니다. 승패는 정하지 않습니다. 입장이 한쪽으로만 모였으면 그 사실을 RED_TEAM이 말하고 가장 강한 반대 근거를 냅니다.
 - 최악의 경우(worstCase): 근거로 그릴 수 있는 가장 나쁜 전개와, 읽는 사람이 스스로 점검할 위험 관리 항목을 적습니다. 매수·매도·가격 지시가 아닌 점검 항목만 씁니다.
 - 탭별 한 줄(insights): 기술·전략·수급·펀더멘털·뉴스 탭 맨 위에 붙일 한 줄씩 씁니다.
@@ -282,6 +287,20 @@ export function sanitizeClaims(claims: readonly Claim[], known: ReadonlySet<stri
     kept.push({ text, evidenceIds: ids, ...(claim.kind ? { kind: claim.kind } : {}) });
   }
   return { kept, dropped };
+}
+
+/**
+ * Scenario probabilities as whole percents summing to 100 (largest remainder). Left out when any
+ * kept scenario lacks one or they add up to nothing.
+ */
+export function normalizeProbabilities<T extends { probability?: number }>(xs: T[]): T[] {
+  const ps = xs.map((x) => (Number.isFinite(x.probability) ? Math.max(0, x.probability!) : NaN));
+  const total = ps.reduce((a, b) => a + b, 0);
+  if (!xs.length || ps.some((p) => Number.isNaN(p)) || !(total > 0)) return xs.map(({ probability: _p, ...rest }) => rest as T);
+  const raw = ps.map((p) => (p / total) * 100), floor = raw.map(Math.floor);
+  let left = 100 - floor.reduce((a, b) => a + b, 0);
+  raw.map((r, i) => [r - floor[i]!, i] as const).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { floor[i]! += 1; left -= 1; } });
+  return xs.map((x, i) => ({ ...x, probability: floor[i]! }));
 }
 
 /** A commentary that was not written, with the reason (e.g. the monthly AI budget). */
@@ -345,9 +364,10 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const analysts = (parsed.analysts ?? []).flatMap((a) => (Number.isFinite(a.target) && a.target > 0 ? clean([a.rationale]).map((rationale) => ({
       analyst: a.analyst, stance: a.stance, confidence: Math.max(0, Math.min(100, Math.round(a.confidence))), target: a.target, rationale,
     })) : []));
-    const scenarios = (parsed.scenarios ?? []).flatMap((sc) => clean([sc.narrative]).map((narrative) => ({
+    const scenarios = normalizeProbabilities((parsed.scenarios ?? []).flatMap((sc) => clean([sc.narrative]).map((narrative) => ({
       kind: sc.kind, narrative, catalysts: sc.catalysts.map((c) => c.trim()).filter(Boolean), invalidation: sc.invalidation.map((c) => c.trim()).filter(Boolean),
-    })));
+      ...(Number.isFinite(sc.probability) ? { probability: sc.probability } : {}),
+    }))));
     // Turns keep their place so replyTo still points at the right one; an uncited turn drops out and replies to it lose the pointer.
     const turns = (parsed.debate ?? []).map((t) => { const [claim] = clean([t.claim]); return claim ? { speaker: t.speaker, stance: t.stance, replyTo: t.replyTo, claim } : null; });
     const kept = turns.flatMap((t, i) => (t ? [i] : []));
@@ -367,7 +387,10 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       servedBy: response.model, tier,
       ...(response.usage ? { usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens } } : {}),
       ...(summary ? { summary } : {}),
-      bullish: clean(parsed.bullish), bearish: clean(parsed.bearish), uncertain: clean(parsed.uncertain), watch: clean(parsed.watch),
+      // A brief stays a brief (G-60): the strongest point on each side and one thing to watch.
+      ...(tier === 'brief'
+        ? { bullish: clean(parsed.bullish).slice(0, 1), bearish: clean(parsed.bearish).slice(0, 1), uncertain: clean(parsed.uncertain).slice(0, 1), watch: clean(parsed.watch).slice(0, 1) }
+        : { bullish: clean(parsed.bullish), bearish: clean(parsed.bearish), uncertain: clean(parsed.uncertain), watch: clean(parsed.watch) }),
       dataGaps: parsed.dataGaps.map((g) => g.trim()).filter(Boolean),
       desks, scenarios, analysts,
       ...(counter ? { redTeam: { counterargument: counter, unresolved: (parsed.redTeam?.unresolved ?? []).map((u) => u.trim()).filter(Boolean) } } : {}),
