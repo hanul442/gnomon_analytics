@@ -3100,11 +3100,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "016600",
-  "name": "큐캐피탈",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "016610",
   "name": "DB증권",
   "market": "KOSPI"
@@ -3278,6 +3273,11 @@
   "symbol": "018620",
   "name": "우진비앤지",
   "market": "KOSDAQ"
+ },
+ {
+  "symbol": "018670",
+  "name": "SK가스",
+  "market": "KOSPI"
  },
  {
   "symbol": "018680",
@@ -4110,6 +4110,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "033170",
+  "name": "시그네틱스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "033200",
   "name": "모아텍",
   "market": "KOSDAQ"
@@ -4137,11 +4142,6 @@
  {
   "symbol": "033290",
   "name": "로젠",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "033310",
-  "name": "엠투엔",
   "market": "KOSDAQ"
  },
  {
@@ -4508,6 +4508,11 @@
   "symbol": "037270",
   "name": "YG PLUS",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "037330",
+  "name": "인지디스플레",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "037330",
@@ -5410,6 +5415,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "052460",
+  "name": "아이크래프트",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "052600",
   "name": "한네트",
   "market": "KOSDAQ"
@@ -6257,11 +6267,6 @@
  {
   "symbol": "067900",
   "name": "와이엔텍",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "067920",
-  "name": "이글루",
   "market": "KOSDAQ"
  },
  {
@@ -7798,6 +7803,11 @@
   "symbol": "101530",
   "name": "해태제과식품",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "101670",
+  "name": "하이드로리튬",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "101680",
@@ -9455,11 +9465,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "200230",
-  "name": "텔콘RF제약",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "200350",
   "name": "아티스트스튜디오",
   "market": "KOSDAQ"
@@ -10530,6 +10535,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "263800",
+  "name": "데이타솔루션",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "263810",
   "name": "상신전자",
   "market": "KOSDAQ"
@@ -11205,11 +11215,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "307870",
-  "name": "비투엔",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "307930",
   "name": "컴퍼니케이",
   "market": "KOSDAQ"
@@ -11842,6 +11847,11 @@
  {
   "symbol": "352910",
   "name": "오비고",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "352940",
+  "name": "인바이오",
   "market": "KOSDAQ"
  },
  {
@@ -13718,11 +13728,6 @@
   "symbol": "499790",
   "name": "GS피앤엘",
   "market": "KOSPI"
- },
- {
-  "symbol": "900070",
-  "name": "글로벌에스엠",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "900070",
