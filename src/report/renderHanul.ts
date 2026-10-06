@@ -10,6 +10,7 @@ const PROJECTS = [
 /** An internal destination for the HANUL mock corporate ad. */
 export function renderHanul(): string {
   const body = `<style>
+.version-banner{display:none}
 .hanul{max-width:1040px;margin:18px auto 32px}.hanul-intro{background:#000;color:#fff;border-radius:22px;padding:40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:36px;align-items:center}.hanul-intro img{width:100%;height:auto;display:block}.hanul-label{font-size:14px;letter-spacing:.12em;color:#c5c5c5}.hanul h1{font-family:inherit;font-size:clamp(26px,3vw,36px);line-height:1.4;margin:16px 0}.hanul-intro p{font-size:16px;line-height:1.8;color:#d1d1d1;margin:0}.hanul-credit{display:block;margin-top:18px;font-size:14px;color:#bcbcbc}.hanul-heading{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin:32px 0 16px}.hanul-heading h2{font-size:24px;margin:0}.hanul-heading a,.hanul-return{font-size:16px;text-decoration:underline;text-underline-offset:4px}.hanul-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.hanul-project{padding:26px;border:1px solid var(--line);border-radius:18px;background:var(--card,#fff)}.hanul-category{font-size:14px;color:var(--muted)}.hanul-project h3{font-family:inherit;font-size:23px;line-height:1.4;margin:10px 0 12px;overflow-wrap:anywhere}.hanul-project p{font-size:16px;line-height:1.85;margin:0;color:var(--fg2)}.hanul-note{font-size:14px;line-height:1.8;color:var(--muted);margin:24px 0 16px}.hanul-return{display:inline-block;padding:10px 0}.hanul .hanul-intro,.hanul-project{min-width:0}
 @media(max-width:820px){.hanul-intro{grid-template-columns:minmax(0,1fr);padding:26px 22px;gap:20px}.hanul-intro img{max-width:360px}.hanul-grid{grid-template-columns:minmax(0,1fr)}.hanul-project{padding:22px}.hanul-heading{margin-top:26px}.hanul h1{font-size:26px}}
 </style><div class="hanul">
@@ -19,7 +20,7 @@ export function renderHanul(): string {
 </section>
 <section aria-labelledby="hanul-projects"><div class="hanul-heading"><h2 id="hanul-projects">만들고 연구하는 것들</h2><a href="index.html">그노몬으로 돌아가기</a></div>
 <div class="hanul-grid">${PROJECTS.map((p) => `<article class="hanul-project"><span class="hanul-category">${p.category}</span><h3>${p.name}</h3><p>${p.text}</p></article>`).join('')}</div></section>
-<p class="hanul-note">이 페이지는 HANUL 가상 기업 광고에 연결된 개인 프로젝트 소개입니다. 각 프로젝트의 목표와 방향을 설명하며, 출시나 투자 성과를 보장하지 않습니다.</p>
+<p class="hanul-note">이 페이지는 HANUL 가상 기업 광고에 연결된 개인 프로젝트 소개입니다.</p>
 <a class="hanul-return" href="index.html">Gnomon Analytics 홈</a></div>`;
-  return shell('', 'HANUL | 프로젝트 소개', body, { chat: false, noFeedback: true });
+  return shell('', 'HANUL | 프로젝트 소개', body, { chat: false, noFeedback: true, bottomNav: false });
 }
