@@ -1,4 +1,5 @@
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
+import { notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
 import { fetchUpbitMinutes } from '../sources/upbit.js';
 import { reportInput, inputHash, runReportJob, refundJob, reportFragments, type ReportQueue, type ReportJob } from './reports.js';
@@ -591,12 +592,12 @@ route('POST', '/events', async ({ req, env, now }) => {
 });
 
 // ---- saved screens and alerts (G-50) ----
-const ALERT_LIMIT: Record<string, number> = { free: 0, plus: 3, pro: 20, max: 20, alpha: 20 };
+
 
 route('GET', '/screens', async ({ req, env, now }) => {
   const u = await authed(req, env, now);
   const rows = (await env.DB.prepare('SELECT id, name, screen, alert, last_date, created_at FROM screens WHERE user_id = ? ORDER BY id').bind(u.id).all<{ id: number; name: string; screen: string; alert: number; last_date: string | null; created_at: string }>()).results;
-  return { screens: rows.map((r) => ({ id: r.id, name: r.name, screen: JSON.parse(r.screen), alert: !!r.alert, lastDate: r.last_date })), alertLimit: ALERT_LIMIT[u.plan] ?? 0 };
+  return { screens: rows.map((r) => ({ id: r.id, name: r.name, screen: JSON.parse(r.screen), alert: !!r.alert, lastDate: r.last_date })), alertLimit: notifyLimit(u.plan).screenAlerts };
 });
 
 route('POST', '/screens', async ({ req, env, now }) => {
@@ -614,7 +615,7 @@ route('POST', '/screens/(\\d+)', async ({ req, env, now, params }) => {
   const u = await authed(req, env, now), b = await body(req), id = Number(params[0]);
   if (b.alert === true) {
     const on = await env.DB.prepare('SELECT COUNT(*) AS n FROM screens WHERE user_id = ? AND alert = 1 AND id != ?').bind(u.id, id).first<{ n: number }>();
-    const limit = ALERT_LIMIT[u.plan] ?? 0;
+    const limit = notifyLimit(u.plan).screenAlerts;
     if ((on?.n ?? 0) >= limit) fail(403, 'ALERT_LIMIT', limit ? `알림은 ${limit}개 조건까지 켤 수 있어요.` : '알림은 플러스부터 쓸 수 있어요.');
   }
   // Turning alerts on starts from today's matches, so the first message lists only what is new afterwards.
@@ -648,6 +649,7 @@ route('POST', '/push/subscribe', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req), keys = (b.keys ?? {}) as Record<string, unknown>;
   const endpoint = str(b.endpoint, 1000), p256dh = str(keys.p256dh, 200), auth = str(keys.auth, 100);
   if (!/^https:\/\//.test(endpoint) || !/^[A-Za-z0-9_-]{80,100}$/.test(p256dh) || !/^[A-Za-z0-9_-]{16,32}$/.test(auth)) fail(400, 'BAD_SUBSCRIPTION', '알림 구독 정보가 맞지 않아요.');
+  if (!notifyLimit(u.plan).push) fail(403, 'PLAN_REQUIRED', '휴대폰 알림은 플러스부터 받을 수 있어요. 무료는 🔔 알림함으로 받아요.');
   const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM push_subs WHERE user_id = ?').bind(u.id).first<{ n: number }>();
   if ((n?.n ?? 0) >= 10) await env.DB.prepare('DELETE FROM push_subs WHERE endpoint = (SELECT endpoint FROM push_subs WHERE user_id = ? ORDER BY created_at LIMIT 1)').bind(u.id).run();
   await env.DB.prepare('INSERT INTO push_subs (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth').bind(endpoint, u.id, p256dh, auth, iso(now)).run();
@@ -670,7 +672,7 @@ route('GET', '/notify/prefs', async ({ req, env, now }) => {
   const u = await authed(req, env, now);
   const devices = (await env.DB.prepare('SELECT COUNT(*) AS n FROM push_subs WHERE user_id = ?').bind(u.id).first<{ n: number }>())?.n ?? 0;
   const screens = (await env.DB.prepare('SELECT id, name, alert FROM screens WHERE user_id = ? ORDER BY id DESC').bind(u.id).all()).results;
-  return { prefs: await prefsOf(env.DB, u.id), devices, screens };
+  return { prefs: await prefsOf(env.DB, u.id), devices, screens, limits: notifyLimit(u.plan), plan: u.plan };
 });
 
 route('POST', '/notify/prefs', async ({ req, env, now }) => {
@@ -690,7 +692,8 @@ route('POST', '/alerts/price', async ({ req, env, now }) => {
   const symbol = str(b.symbol, 20).toUpperCase(), op = b.op === '<=' ? '<=' : b.op === '>=' ? '>=' : '', price = typeof b.price === 'number' ? b.price : NaN;
   if (!/^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/.test(symbol) || !op || !(price > 0) || price > 1e12) fail(400, 'BAD_ALERT', '종목과 가격, 이상/이하를 확인해 주세요.');
   const open = (await env.DB.prepare('SELECT COUNT(*) AS n FROM price_alerts WHERE user_id = ? AND fired_at IS NULL').bind(u.id).first<{ n: number }>())?.n ?? 0;
-  if (open >= 30) fail(400, 'TOO_MANY_ALERTS', '가격 알림은 30개까지 걸 수 있어요. 지난 알림을 지워 주세요.');
+  const cap = notifyLimit(u.plan).priceAlerts;
+  if (open >= cap) fail(403, 'ALERT_LIMIT', `지금 요금제는 가격 알림을 ${cap}개까지 걸 수 있어요. 지난 알림을 지우거나 요금제를 올려 주세요.`, { limit: cap });
   const row = await env.DB.prepare('INSERT INTO price_alerts (user_id, symbol, name, op, price, note, created_at) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id').bind(u.id, symbol, str(b.name, 40), op, price, str(b.note, 60), iso(now)).first<{ id: number }>();
   return { id: row?.id };
 });

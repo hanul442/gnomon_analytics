@@ -4,6 +4,7 @@
 import type { D1 } from './db.js';
 import { pushTo } from './push.js';
 import { quoteUrl, parseNaverQuotes } from '../sources/naverQuote.js';
+import { notifyLimit } from '../report/plans.js';
 
 export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'test';
 export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; push: boolean }
@@ -28,8 +29,11 @@ const iso = (d: Date) => d.toISOString();
 export async function notifyUser(ctx: Ctx, userId: string, kind: NotifyKind, note: { title: string; body: string; link: string }): Promise<boolean> {
   const prefs = await prefsOf(ctx.db, userId), key = PREF_OF[kind];
   if (key && !prefs[key]) return false;
+  // G-98: the plan decides what reaches the phone; 🔔 always gets what the plan allows at all.
+  const plan = (await ctx.db.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first<{ plan: string }>())?.plan ?? 'free', lim = notifyLimit(plan);
+  if ((kind === 'watchReport' && !lim.watchReport) || (kind === 'intraday' && !lim.intraday)) return false;
   await ctx.db.prepare('INSERT INTO notifications (user_id, kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(userId, kind, note.title, note.body, note.link, iso(ctx.now)).run();
-  if (prefs.push) await pushTo(ctx.db, ctx.fetch, userId, { ...note, link: `${ctx.site.replace(/\/$/, '')}/${note.link}`, tag: kind }, ctx.site, ctx.now).catch(() => 0);
+  if (prefs.push && lim.push) await pushTo(ctx.db, ctx.fetch, userId, { ...note, link: `${ctx.site.replace(/\/$/, '')}/${note.link}`, tag: kind }, ctx.site, ctx.now).catch(() => 0);
   return true;
 }
 
@@ -59,11 +63,11 @@ export async function runDailyNotify(ctx: Ctx): Promise<{ date: string | null; s
   } catch { /* names are a nicety */ }
   const nm = (s: string) => names.get(s) ?? s;
   const list = (xs: string[]) => xs.slice(0, 3).map(nm).join(', ') + (xs.length > 3 ? ` 외 ${xs.length - 3}개` : '');
-  const users = (await ctx.db.prepare('SELECT u.id, w.symbols FROM users u LEFT JOIN watchlists w ON w.user_id = u.id WHERE u.disabled = 0').all<{ id: string; symbols: string | null }>()).results;
+  const users = (await ctx.db.prepare('SELECT u.id, u.plan, w.symbols FROM users u LEFT JOIN watchlists w ON w.user_id = u.id WHERE u.disabled = 0').all<{ id: string; plan: string; symbols: string | null }>()).results;
   let sent = 0;
   for (const u of users) {
     if (!(await once(ctx.db, `daily:${u.id}:${date}`, ctx.now))) continue;
-    const watch = new Set<string>(u.symbols ? JSON.parse(u.symbols) as string[] : []), mine = today.filter((s) => watch.has(s));
+    const watch = new Set<string>(u.symbols && notifyLimit(u.plan).watchReport ? JSON.parse(u.symbols) as string[] : []), mine = today.filter((s) => watch.has(s));
     const ok = mine.length
       ? await notifyUser(ctx, u.id, 'watchReport', { title: `관심 종목 새 리포트 · ${list(mine)}`, body: `${date} 장 마감 기준 리포트가 나왔어요.`, link: reportLink(mine[0]!) })
       : await notifyUser(ctx, u.id, 'daily', { title: `오늘 리포트 ${today.length}개가 나왔어요`, body: `${list(today)} · ${date} 장 마감 기준`, link: 'reports.html' });

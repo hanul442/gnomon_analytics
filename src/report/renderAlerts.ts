@@ -20,6 +20,7 @@ export function renderAlerts(): string {
 .sw{position:relative;width:46px;height:28px;flex:none}.sw input{opacity:0;width:0;height:0;position:absolute}.sw i{position:absolute;inset:0;border-radius:999px;background:#cbd3df;transition:.15s}.sw i::after{content:'';position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}.sw input:checked+i{background:var(--navy)}.sw input:checked+i::after{transform:translateX(18px)}.sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
 .al-list .al-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.al-list .al-item:first-child{border-top:0}.al-item a{font-weight:700}.al-item small{display:block;color:var(--muted);font-size:12px}.al-item button{font:inherit;font-size:12.5px;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:5px 10px;cursor:pointer}.al-done{opacity:.6}
 .al-add{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.al-add input,.al-add select{font:inherit;padding:10px;border:1px solid var(--line-strong);border-radius:10px;min-width:0}.al-add .wide{grid-column:1/-1}.al-add button{grid-column:1/-1;font:inherit;font-weight:800;border:0;border-radius:12px;padding:11px;background:var(--navy);color:#fff;cursor:pointer}.al-sugg{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}.al-sugg button{grid-column:auto;background:#eef3fb;color:var(--fg);font-weight:700;font-size:13px;padding:6px 10px;border-radius:999px}
+.al-plan{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13.5px}.al-plan b{font-size:15px}.al-plan span{color:var(--fg2)}.al-plan a{font-weight:800;margin-left:auto}.al-lock{opacity:.55}.al-lock small::after{content:' · 플러스부터';font-weight:700;color:var(--accent-strong)}
 .al-msg{font-size:13px;color:var(--muted);min-height:1.4em;margin:6px 0 0}.al-login{text-align:center}
 </style><div class="al">
 <section class="card"><div class="pl-k">알림</div><h1>알림 설정</h1><p class="muted">새 리포트, 스크리너 조건, 내가 건 가격, 요청한 리포트를 🔔과 휴대폰으로 알려 드려요.</p></section>
@@ -28,6 +29,7 @@ export function renderAlerts(): string {
 <section class="card"><div class="al-push"><div><h2>휴대폰 알림</h2><span class="al-state" id="al-state">확인 중…</span></div><div class="al-btns"><button type="button" id="al-on">이 기기에서 켜기</button><button type="button" class="ghost" id="al-test" hidden>테스트 알림</button><button type="button" class="ghost" id="al-off" hidden>끄기</button></div></div>
 <p class="al-msg" id="al-push-msg" role="status"></p>
 <p class="al-help" id="al-help"><b>안드로이드</b> 크롬·삼성 인터넷은 바로 켜져요. <b>Brave</b>는 설정 → 개인정보 보호 → 'Google 서비스를 푸시 메시지에 사용'을 켜야 와요.<br><b>아이폰</b>은 Safari에서 공유 → '홈 화면에 추가'를 한 뒤, 홈 화면의 그노몬 아이콘으로 열어서 켜 주세요(iOS 16.4 이상).</p></section>
+<section class="card al-plan" id="al-plan" hidden></section>
 <section class="card"><h2>받을 알림</h2>${PREFS.map(([k, t, d]) => `<label class="al-row"><span><b>${t}</b><small>${d}</small></span><span class="sw"><input type="checkbox" data-pref="${k}" checked><i></i></span></label>`).join('')}<p class="al-msg" id="al-pref-msg" role="status"></p></section>
 <section class="card"><h2>스크리너 조건 알림</h2><div class="al-list" id="al-screens"><p class="muted small">불러오는 중…</p></div><p class="al-help">조건은 <a href="screener.html">필터로 종목 찾기</a>에서 저장해요. 매일 장 마감 뒤 새로 걸린 종목을 알려요.</p></section>
 <section class="card"><h2>가격 알림</h2><div class="al-list" id="al-prices"><p class="muted small">불러오는 중…</p></div>
@@ -40,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var won = function (v) { return v >= 100 ? Math.round(v).toLocaleString('ko-KR') + '원' : Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + '원'; };
   var href = function (s) { return s.indexOf('KRW-') === 0 ? 'coin.html?m=' + s : 'stock.html?c=' + s; };
   var paintPush = function () {
-    if (!G.push) return;
+    if (!G.push || G.pushLocked) return;
     if (!G.push.supported) { $('al-state').textContent = G.push.ios && !G.push.standalone ? '아이폰은 홈 화면에 추가한 뒤 켤 수 있어요' : '이 브라우저는 휴대폰 알림을 지원하지 않아요'; $('al-on').hidden = true; return; }
     G.push.state().then(function (s) { $('al-state').textContent = s.on ? '이 기기로 받고 있어요' : s.permission === 'denied' ? '알림이 차단돼 있어요 (브라우저 사이트 설정에서 허용)' : '꺼져 있어요'; $('al-state').className = 'al-state' + (s.on ? ' on' : ''); $('al-on').hidden = s.on; $('al-off').hidden = !s.on; $('al-test').hidden = !s.on; });
   };
@@ -56,6 +58,12 @@ document.addEventListener('DOMContentLoaded', function () {
     $('al-body').hidden = false; paintPush(); loadPrices();
     G.call('GET', '/notify/prefs').then(function (r) {
       if (r.error) return;
+      var L = r.limits || {}, planName = { free: '무료', plus: '플러스', pro: '프로', max: '맥스', alpha: '알파' }[r.plan] || r.plan;
+      $('al-plan').hidden = false;
+      $('al-plan').innerHTML = '<b>' + esc(planName) + ' 요금제 알림</b><span>휴대폰 ' + (L.push ? '✓' : '—') + '</span><span>가격 알림 ' + L.priceAlerts + '개</span><span>스크리너 ' + (L.screenAlerts || '—') + (L.screenAlerts ? '개' : '') + '</span><span>장중 급변 ' + (L.intraday ? '✓' : '—') + '</span>' + (r.plan === 'free' || r.plan === 'plus' ? '<a href="pricing.html">요금제별 알림 비교 ›</a>' : '');
+      if (!L.push) { G.pushLocked = true; $('al-on').hidden = true; $('al-state').textContent = '휴대폰 알림은 플러스부터예요. 지금은 🔔 알림함으로 받아요.'; }
+      if (!L.watchReport) { var w = document.querySelector('[data-pref=watchReport]'); w.disabled = true; w.checked = false; w.closest('.al-row').classList.add('al-lock'); }
+      if (!L.intraday) { var pr = document.querySelector('[data-pref=price]'); pr.closest('.al-row').querySelector('small').textContent = '내가 건 가격에 닿으면 (장중 급변 알림은 프로부터)'; }
       document.querySelectorAll('[data-pref]').forEach(function (i) { i.checked = r.prefs[i.getAttribute('data-pref')] !== false; i.onchange = function () { var p = {}; p[i.getAttribute('data-pref')] = i.checked; G.call('POST', '/notify/prefs', { prefs: p }).then(function (x) { $('al-pref-msg').textContent = x.error ? x.message : '저장했어요.'; }); }; });
       var sc = r.screens || [];
       $('al-screens').innerHTML = sc.length ? sc.map(function (s) { return '<label class="al-row"><span><b>' + esc(s.name) + '</b></span><span class="sw"><input type="checkbox" data-screen="' + s.id + '"' + (s.alert ? ' checked' : '') + '><i></i></span></label>'; }).join('') : '<p class="muted small">저장한 조건이 없어요.</p>';

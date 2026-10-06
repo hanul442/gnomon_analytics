@@ -92,3 +92,15 @@ test('price alerts fire once when crossed; stocks only in the session, coins any
   const night = { ...ctx, now: new Date('2026-10-06T13:00:00Z') };
   assert.equal((await runPriceAlerts(night)).fired, 0, 'no stock quotes after the close');
 });
+
+test('plans: free hears the day in 🔔 only (no phone, no watched-stock note); paid plans get both', async () => {
+  const { db, sent, ctx } = await world();
+  await db.prepare("UPDATE users SET plan = 'free' WHERE id = 'u1'").run();
+  await db.prepare('INSERT INTO push_subs (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?)').bind('https://push.test/ok', 'u1', 'x', 'y', ctx.now.toISOString()).run();
+  await db.prepare('INSERT INTO watchlists (user_id, symbols, updated_at) VALUES (?, ?, ?)').bind('u1', JSON.stringify(['000660']), ctx.now.toISOString()).run();
+  await runDailyNotify(ctx);
+  const n = await db.prepare("SELECT kind FROM notifications WHERE user_id = 'u1'").all<{ kind: string }>();
+  assert.deepEqual(n.results.map((x) => x.kind), ['daily'], 'the day, not the watched-stock note');
+  assert.equal(sent.filter((s) => s.url.startsWith('https://push.test/')).length, 0, 'no phone push on free');
+  assert.equal(await notifyUser(ctx, 'u1', 'intraday', { title: 't', body: '', link: '' }), false, 'intraday is Pro');
+});
