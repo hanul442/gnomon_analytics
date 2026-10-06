@@ -6425,11 +6425,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "071280",
-  "name": "로체시스템즈",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "071320",
   "name": "지역난방공사",
   "market": "KOSPI"
@@ -8137,6 +8132,11 @@
  {
   "symbol": "114810",
   "name": "한솔아이원스",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "114840",
+  "name": "아이패밀리에스씨",
   "market": "KOSDAQ"
  },
  {
