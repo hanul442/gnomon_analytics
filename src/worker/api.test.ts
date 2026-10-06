@@ -369,7 +369,7 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, P
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});assert.equal(runs,1);
  const done=await t.call('GET','/reports/'+a.body.id,undefined,t.user.session);
- assert.equal(done.body.status,'done');assert.match(done.body.fragments.home,/비공개 분석 본문/);assert.match(done.body.fragments.ai,/class="[^"]*parliament/,'the committee seats come with a generated report');
+ assert.equal(done.body.status,'done');assert.match(done.body.fragments.home,/비공개 분석 본문/);assert.match(done.body.fragments.ai,/class="[^"]*parliament/,'the committee seats come with a generated report');assert.doesNotMatch(done.body.fragments.ai,/위원별 판단/,'one committee section: the seats carry each member\'s view');
  const other=await t.login('other@example.com',(await t.call('POST','/admin/invites',{},t.boss.session)).body.code);
  assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,200);
  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='other@example.com'").run();
