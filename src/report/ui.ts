@@ -139,7 +139,7 @@ const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&
 /** Menu groups: [label, href]. Hrefs are relative to the site root. */
 export const MENU: readonly { title: string; items: readonly [string, string][] }[] = [
   // G-72: one entry per place. 찾기 holds search, the screener, ETFs and coins.
-  { title: '둘러보기', items: [['홈', 'index.html#top'], ['찾기 (종목·ETF·코인)', 'screener.html'], ['관심 종목', 'index.html#watch'], ['AI 리포트 모음', 'reports.html'], ['성적표 (모의투자 포함)', 'scorecard.html']] },
+  { title: '둘러보기', items: [['홈', 'index.html#top'], ['관심 종목', 'index.html#watch'], ['AI 리포트 모음', 'reports.html'], ['성적표 (모의투자 포함)', 'scorecard.html']] },
   { title: '알파 테스트', items: [['사용법', 'guide.html'], ['설문', 'survey.html?k=weekly'], ['맞춤 설문 수정', 'onboarding.html']] },
   { title: '계정', items: [['내 계정', 'account.html'], ['요금제·크레딧', 'pricing.html'], ['이용약관·면책', 'terms.html']] },
 ];
@@ -227,7 +227,7 @@ export const TOUR_JS = `
   (function () {
     var STEPS = {
       home: [
-        ['#top', '검색', '종목·ETF·코인을 이름, 코드, 초성(ㅅㅅㅈㅈ)으로 찾아요. 하단의 찾기에서는 조건으로 걸러 볼 수도 있어요.'],
+        ['#top', '검색', '종목·ETF·코인을 이름, 코드, 초성(ㅅㅅㅈㅈ)으로 찾아요. 아래 필터 설정하기로 시장과 조건을 골라 자세히 찾을 수 있어요.'],
         ['#banner', '배너', '공지, 크레딧 이벤트, 설문, 사용법이 돌아가며 나와요. 이벤트의 받기를 누르면 크레딧이 바로 들어와요.'],
         ['.ix-row', '시장 한눈에', '코스피·코스닥과 시장 온도예요. 시장 온도는 전 종목의 기술 신호를 모은 거예요.'],
         ['#watch', '관심 종목', '어디서든 ☆를 누르면 여기에 모여요. 가격은 장중에 실시간으로 바뀌어요.'],

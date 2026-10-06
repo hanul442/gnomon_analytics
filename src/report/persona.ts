@@ -19,10 +19,10 @@ export const PERSONA_BOOT = `<script>(function(){var p='';try{p=localStorage.get
 
 /** Home sections each view shows, in order; the rest wait behind "다른 정보도 보기". */
 export const HOME_ORDER: Record<Exclude<Persona, 'all'>, string[]> = {
-  beginner: ['watch', 'today'],
-  trader: ['watch', 'today', 'movers'],
-  swing: ['watch', 'today'],
-  long: ['watch', 'today'],
+  beginner: ['watch', 'today', 'myscreens', 'movers'],
+  trader: ['watch', 'today', 'movers', 'myscreens'],
+  swing: ['watch', 'today', 'myscreens', 'movers'],
+  long: ['watch', 'today', 'myscreens', 'movers'],
 };
 /** Report tabs each view keeps (the rest come back with "전체 보기"). */
 export const TAB_KEEP: Record<Exclude<Persona, 'all'>, string[]> = {
