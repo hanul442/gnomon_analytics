@@ -1,3 +1,12 @@
+/** Lightweight Charts uses numeric minute times and BusinessDay objects for daily series. */
+export function formatCoinTime(t:unknown):string {
+ let ms:number;
+ if(typeof t==='number')ms=t*1000+9*3600000;
+ else if(typeof t==='string')ms=Date.parse(t+'T00:00:00Z');
+ else if(t&&typeof t==='object'&&'year' in t&&'month' in t&&'day' in t){const d=t as {year:number;month:number;day:number};ms=Date.UTC(d.year,d.month-1,d.day);}
+ else return '';
+ return Number.isFinite(ms)?new Date(ms).toISOString().slice(5,16).replace('T',' '):'';
+}
 export const COIN_CHART_JS = `
 (function(){
  var ticket=0, mounted=null,extra=null,saved=[],daily=null;
@@ -18,13 +27,13 @@ export const COIN_CHART_JS = `
     if(extra)extra.applyOptions({visible:true});G.candle.setData(r.bars.map(function(x){return {time:x.time,open:x.open,high:x.high,low:x.low,close:x.close};}));
     if(!extra){extra=G.chart.addSeries(G.L.HistogramSeries,{priceFormat:{type:'volume'},priceScaleId:'coin-v',priceLineVisible:false,lastValueVisible:false});extra.priceScale().applyOptions({scaleMargins:{top:.82,bottom:0}});}
     extra.setData(r.bars.map(function(x){return {time:x.time,value:x.volume,color:x.close>=x.open?'#d1373d66':'#2a62c966'};}));
-    var time=function(t){return new Date(Number(t)*1000+9*3600000).toISOString().slice(5,16).replace('T',' ');};
-    G.chart.applyOptions({timeScale:{timeVisible:true,secondsVisible:false,tickMarkFormatter:time},localization:{timeFormatter:time}});G.chart.timeScale().fitContent();
+    var time=(${formatCoinTime.toString()});
+    G.chart.applyOptions({timeScale:{timeVisible:true,secondsVisible:false,tickMarkFormatter:time},localization:{timeFormatter:time}});G.chart.timeScale().setVisibleRange({from:r.bars[0].time,to:r.bars[r.bars.length-1].time});
     controls.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});note.textContent='업비트 '+u+'분봉 · KST · 최근 '+r.bars.length+'개 · 체결 없는 구간은 비어 있어요.';
    }).catch(function(e){if(id===ticket)note.textContent=e.message||'분봉 연결을 확인해 주세요. 다시 선택하면 재시도합니다.';}).finally(function(){layer.end();});
   });
   // Daily/weekly/monthly and period controls leave minute mode before their normal handlers run.
-  document.addEventListener('click',function(e){if(e.target.closest('[data-tf],[data-range]')&&saved.length){ticket++;restore();note.textContent='일봉 데이터 기준';controls.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.coinTf==='D'));});}},true);
+  document.addEventListener('click',function(e){if(e.target.closest('[data-tf],[data-range]')){ticket++;if(saved.length)restore();note.textContent='일봉 데이터 기준';controls.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.coinTf==='D'));});}},true);
  };
  window.GNM_coinChartReady=ready;document.addEventListener('DOMContentLoaded',ready);ready();
 })();`;
