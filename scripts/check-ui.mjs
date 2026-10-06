@@ -50,7 +50,7 @@ try{
  for(const width of [375,390,768,1280]){console.log('Checking viewport',width);
   await page.setViewportSize({width,height:850});await page.goto(origin+'/stock.html?c=999999');
   await page.locator('h1').filter({hasText:'UI 테스트'}).waitFor();await page.locator('#main[aria-busy]').waitFor({state:'detached'});
-  assert.equal(await page.locator('[role=tab][aria-controls]:visible').count(),7);
+  assert.equal(await page.locator('[role=tab][aria-controls]:visible').count(),8);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.locator('#t-technical').click();await page.locator('[data-chart-indicator=fib]').first().click();assert.equal(await page.locator('[data-ov=fib]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('#t-chart').getAttribute('aria-selected'),'true');assert.ok(await page.locator('#overlays').evaluate(el=>JSON.parse(el.textContent).fib.length>0));if(width===375)await page.screenshot({path:'test-artifacts/indicator-chart.png'});await page.locator('#chart-context button').click();assert.equal(await page.locator('#t-technical').getAttribute('aria-selected'),'true');
   await page.locator('#t-ai').click();assert.equal(await page.locator('#tab-ai .gnm-loading').count(),0);
