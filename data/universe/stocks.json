@@ -465,6 +465,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "001380",
+  "name": "SG글로벌",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "001390",
   "name": "KG케미칼",
   "market": "KOSPI"
@@ -5230,11 +5235,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "049630",
-  "name": "재영솔루텍",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "049720",
   "name": "고려신용정보",
   "market": "KOSDAQ"
@@ -7322,6 +7322,11 @@
  {
   "symbol": "092040",
   "name": "아미코젠",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "092070",
+  "name": "디엔에프",
   "market": "KOSDAQ"
  },
  {

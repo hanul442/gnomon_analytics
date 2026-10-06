@@ -1,27 +1,27 @@
 {
- "at": "2026-10-06T10:15:36.537Z",
+ "at": "2026-10-06T10:22:20.193Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2767
+   "count": 2768
   },
   {
    "source": "naver:m-stock:etf",
    "ok": true,
-   "count": 1172
+   "count": 1171
   },
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2697,
+   "count": 2698,
    "error": "27 failed "
   },
   {
    "source": "naver:fchart:day:etf",
    "ok": true,
-   "count": 1171,
+   "count": 1170,
    "error": "1 failed "
   },
   {
@@ -252,6 +252,11 @@
    ]
   },
   {
+   "symbol": "000020",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "314930",
    "report": "EXISTS",
    "failedSources": []
@@ -267,7 +272,7 @@
    "failedSources": []
   },
   {
-   "symbol": "000020",
+   "symbol": "00104K",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -280,11 +285,6 @@
      "error": "NAVER_FINANCE_UNEXPECTED_RESPONSE"
     }
    ]
-  },
-  {
-   "symbol": "00104K",
-   "report": "EXISTS",
-   "failedSources": []
   },
   {
    "symbol": "KRW-LSK",
