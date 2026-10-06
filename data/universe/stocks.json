@@ -235,6 +235,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "000700",
+  "name": "유수홀딩스",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "000720",
   "name": "현대건설",
   "market": "KOSPI"
@@ -457,11 +462,6 @@
  {
   "symbol": "001360",
   "name": "삼성제약",
-  "market": "KOSPI"
- },
- {
-  "symbol": "001380",
-  "name": "SG글로벌",
   "market": "KOSPI"
  },
  {

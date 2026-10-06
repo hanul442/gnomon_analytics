@@ -245,3 +245,4 @@
 {"date":"2026-10-06","preset":"bottomvol","symbol":"101930","market":"Q","close":6280,"method":"gnm-signal-v1"}
 {"date":"2026-10-06","preset":"bottomvol","symbol":"267980","market":"Q","close":35200,"method":"gnm-signal-v1"}
 {"date":"2026-10-06","preset":"volsurge","symbol":"192250","market":"Q","close":9440,"method":"gnm-signal-v1"}
+{"date":"2026-10-06","preset":"breakout","symbol":"003160","market":"P","close":42600,"method":"gnm-signal-v1"}

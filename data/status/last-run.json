@@ -1,5 +1,5 @@
 {
- "at": "2026-10-06T10:07:57.846Z",
+ "at": "2026-10-06T10:15:36.537Z",
  "selected": null,
  "universe": [
   {
@@ -252,6 +252,11 @@
    ]
   },
   {
+   "symbol": "314930",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "001520",
    "report": "EXISTS",
    "failedSources": []
@@ -262,17 +267,7 @@
    "failedSources": []
   },
   {
-   "symbol": "314930",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
    "symbol": "000020",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "00104K",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -285,6 +280,11 @@
      "error": "NAVER_FINANCE_UNEXPECTED_RESPONSE"
     }
    ]
+  },
+  {
+   "symbol": "00104K",
+   "report": "EXISTS",
+   "failedSources": []
   },
   {
    "symbol": "KRW-LSK",
