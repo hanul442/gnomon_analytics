@@ -1,0 +1,31 @@
+name: Diagnose API
+# Read-only look at recent on-demand report jobs (symbol, kind, status, stage, error, times).
+# No user ids, emails or inputs are printed: this repository's logs are public.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm i --no-save wrangler@4
+      - name: Recent report jobs
+        run: |
+          id=$(npx wrangler d1 list --json | node -e "const l=JSON.parse(require('fs').readFileSync(0,'utf8'));process.stdout.write((l.find(x=>x.name==='gnm')||{}).uuid||'')")
+          sed -i "s/^database_id = .*/database_id = \"$id\"/" wrangler.toml
+          npx wrangler d1 execute gnm --remote --json --command "SELECT symbol, kind, status, stage, substr(error,1,200) AS error, substr(error_detail,1,300) AS detail, round(usd,4) AS usd, created_at, updated_at FROM report_jobs ORDER BY created_at DESC LIMIT 20" | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));for(const row of r[0].results)console.log(JSON.stringify(row))"
+          npx wrangler d1 execute gnm --remote --json --command "SELECT status, COUNT(*) AS n FROM report_jobs GROUP BY status" | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify(r[0].results))"
+          echo "--- plans by role (counts only)"
+          npx wrangler d1 execute gnm --remote --json --command "SELECT role, plan, disabled, COUNT(*) AS n FROM users GROUP BY role, plan, disabled" | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));for(const row of r[0].results)console.log(JSON.stringify(row))"
+          echo "--- push subscriptions and price alerts (counts only)"
+          npx wrangler d1 execute gnm --remote --json --command "SELECT (SELECT COUNT(*) FROM push_subs) AS subs, (SELECT COUNT(*) FROM price_alerts) AS alerts, (SELECT COUNT(*) FROM notifications WHERE created_at >= datetime('now','-1 day')) AS notes_24h" | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify(r[0].results))"

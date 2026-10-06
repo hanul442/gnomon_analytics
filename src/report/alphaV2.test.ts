@@ -56,7 +56,7 @@ test('scenario cards distinguish assumptions and invalidation without inferring 
  const {conclusionCard}=await import('./conclusion.js');
  const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-10-06',generatedAt:new Date(),bars:Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000})),disclosures:[],sources:[]});
  report.commentary={status:'OK',scenarios:[{kind:'BULL',narrative:{text:'상승 가정'},catalysts:['거래량 동반 상승'],invalidation:['지지 이탈']}]} as any;
- const html=conclusionCard(report);assert.match(html,/성립 근거·촉매/);assert.match(html,/무효화 조건 · 가정 재검토/);assert.doesNotMatch(html,/가격 기준 미지정/);assert.match(html,/가격 조건은 근거에서 확인/);assert.doesNotMatch(html,/이 가격 위로|이 가격 아래로|두 가격 사이|지지·저항을 테스트 가격/);
+ const html=conclusionCard(report);assert.match(html,/성립 근거·촉매/);assert.match(html,/무효화 조건 · 가정 재검토/);assert.doesNotMatch(html,/가격 기준 미지정/);assert.match(html,/가격 자료가 아직 없어요/);assert.doesNotMatch(html,/이 가격 위로|이 가격 아래로|두 가격 사이|지지·저항을 테스트 가격/);
 });
 
 test('report failures preserve actionable categories without exposing provider details',async()=>{

@@ -160,6 +160,7 @@ export interface DailyRunResult {
 
 export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; dailyPicks?: boolean }): Promise<DailyRunResult> {
   const { root, now } = options;
+  await configureSite(root);
   const today = kstParts(now);
   const fetchOpt = options.fetch ? { fetch: options.fetch } : {};
   // Every listed stock, for search and the weekly selection (best effort).
@@ -533,11 +534,19 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  * dashboard (live when this run built one, else its latest dated report),
  * <symbol>/archive.html its dated reports and <symbol>/reports/<date>.html each one.
  */
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[] } = {}): Promise<void> {
-  const siteDir = join(root, 'site');
-  // The alpha API address (G-44): GNM_API_URL wins over gnm.config.json; empty keeps the browser-only MOCK.
+/**
+ * The alpha API address (G-44): GNM_API_URL wins over gnm.config.json; empty keeps the browser-only MOCK.
+ * Set before any page is written: stock, ETF and coin pages are written early in the run, and a page
+ * without the address falls back to the mock account and shows a signed-in alpha user as 무료.
+ */
+export async function configureSite(root: string): Promise<void> {
   const config = JSON.parse(await readFile(join(root, 'gnm.config.json'), 'utf8').catch(() => '{}')) as { apiUrl?: string };
   SITE_CONFIG.apiUrl = process.env.GNM_API_URL ?? config.apiUrl ?? '';
+}
+
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[] } = {}): Promise<void> {
+  const siteDir = join(root, 'site');
+  await configureSite(root);
   const home: HomeEntry[] = [];
   // Stocks picked in earlier weeks keep their pages (latest dated report), off the front page.
   const reportDirs = (await readdir(join(root, 'reports'), { withFileTypes: true }).catch(() => [])).filter((d) => d.isDirectory() && /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/.test(d.name)).map((d) => d.name);

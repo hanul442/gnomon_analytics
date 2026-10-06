@@ -117,7 +117,8 @@ ${watch.length ? `<div class="pl-k">이게 나오면 판단이 바뀌어요</div
 export const DEBATE_PLAY_SCRIPT = `<script>
 (function(){
  // G-92: about 2 s of "생각하는 중", the turn, then about 2 s before the next speaker.
- var THINK=2000;
+ // Thinking Orbs for 1 s before each turn, then a 2 s pause to read it.
+ var THINK=1000,GAP=2000;
  var play=function(box){
   if(!box||box.dataset.played)return;box.dataset.played='1';
   var turns=Array.prototype.slice.call(box.querySelectorAll('.db-turn:not(.db-guest):not(.db-typing)'));
@@ -133,7 +134,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
    hint=document.createElement('div');hint.className=turn.className.replace(/\bdb-(reveal|in)\b/g,'')+' db-typing db-think';hint.setAttribute('aria-hidden','true');hint.innerHTML='<div class="db-who"><b></b> 생각하는 중</div><div class="db-bubble"><div class="chat-progress">${ORBS.replace('data-orb=', 'data-size="64" data-orb=')}<span>생각하는 중</span></div></div>';
    hint.querySelector('b').textContent=who?who.textContent:'위원';
    turn.before(hint);
-   clock=setTimeout(function(){if(stopped)return;hint.remove();turn.hidden=false;turn.classList.add('db-reveal');if(turn.getBoundingClientRect().bottom>innerHeight)turn.scrollIntoView({block:'nearest',behavior:'smooth'});index++;clock=setTimeout(next,THINK);},THINK);
+   clock=setTimeout(function(){if(stopped)return;hint.remove();turn.hidden=false;turn.classList.add('db-reveal');if(turn.getBoundingClientRect().bottom>innerHeight)turn.scrollIntoView({block:'nearest',behavior:'smooth'});index++;clock=setTimeout(next,GAP);},THINK);
   };next();
  };
  var watch=function(){document.querySelectorAll('.card.debate:not([data-played])').forEach(function(box){

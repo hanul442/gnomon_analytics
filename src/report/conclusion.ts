@@ -49,7 +49,15 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const px = (k: 'BULL' | 'BEAR', arrow: string) => {
     const conditionPrice = scenarioCondition(report, k);
     const z = scenarioZone(report, k);
-    const condition = conditionPrice ? `<b>${won(conditionPrice.price)}</b><small>${k === 'BULL' ? '이 가격을 넘으면 강세 전개 검토' : '이 가격 아래로 이탈하면 약세 전개 검토'}${conditionPrice.source === 'base-exit' ? ' · 기본 시나리오 이탈 조건' : ''}</small>` : `<b>${k === 'BULL' ? '강세' : '약세'} 조건</b><small>가격 조건은 근거에서 확인</small>`;
+    // Always a big number (G-100): the condition price when the committee gave one; else the far end of the 20-session
+    // range on this scenario's side of today's close (a bull target below the close is skipped), else the volatility range.
+    const up = k === 'BULL', onSide = (v: number) => (up ? v > p.close : v < p.close);
+    const f20 = report.market?.forecasts?.find((f) => f.horizon === 20);
+    const edge = z && onSide(up ? z.zone[1] : z.zone[0]) ? { v: up ? z.zone[1] : z.zone[0], src: z.source === 'analyst' ? 'AI 분석가 목표가' : z.source === 'calc' ? '변동성 계산' : 'AI 위원회 예상' }
+      : f20 && onSide(up ? f20.p90 : f20.p10) ? { v: up ? f20.p90 : f20.p10, src: '변동성 계산' } : null;
+    const condition = conditionPrice ? `<b>${won(conditionPrice.price)}</b><small>${up ? '이 가격을 넘으면 강세 전개 검토' : '이 가격 아래로 이탈하면 약세 전개 검토'}${conditionPrice.source === 'base-exit' ? ' · 기본 시나리오 이탈 조건' : ''}</small>`
+      : edge ? `<b>${won(edge.v)}</b><small>${up ? '강세면 20거래일 안 상단' : '약세면 20거래일 안 하단'} · ${gap(edge.v, p.close)} · ${edge.src}</small>`
+      : `<b>${up ? '강세' : '약세'} 조건</b><small>가격 자료가 아직 없어요</small>`;
     const range = z ? `<small class="cl-range">${z.source === 'analyst' ? 'AI 분석가 목표가 범위' : z.source === 'calc' ? '20거래일 변동성 참고 범위' : '20거래일 예상 범위'} ${zone(z.zone)}${z.source === 'ai' ? ` · 분석 종가 대비 ${gap((z.zone[0]+z.zone[1])/2,p.close)}` : ''}</small>` : '';
     return `<div class="cl-px"><span class="cl-arrow">${arrow}</span>${condition}${range}</div>`;
   };

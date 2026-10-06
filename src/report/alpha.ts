@@ -23,6 +23,7 @@ export const ALPHA_CSS = `
 .wk-pulse .row button{border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}.wk-pulse .row .later{background:#eef1f5;color:var(--fg2)}.wk-pulse .row .go{background:var(--navy);color:#fff}
 @media (max-width:820px){.wk-pulse{left:14px;bottom:78px}}
 .bell-btn{position:relative;border:1px solid rgba(255,255,255,.28);background:none;color:#fff;border-radius:999px;width:32px;height:30px;cursor:pointer;font-size:14px}.bell-btn i{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#e5484d;color:#fff;font:700 10px/16px inherit;font-style:normal;padding:0 4px}
+.bell-btn.push-on::after{content:'';position:absolute;left:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid var(--navy)}.bell-push{margin:2px 0 8px;padding:10px;border-radius:12px;background:#eef3fb;font-size:13px;display:flex;flex-direction:column;gap:6px}.bell-push.on{flex-direction:row;justify-content:space-between;align-items:center;background:#ecfdf3;color:#166534;font-weight:700}.bell-push button{font:inherit;font-weight:800;border-radius:10px;cursor:pointer}.bell-allow{border:0;background:var(--navy);color:#fff;padding:11px;font-size:14.5px}.bell-push.on button{border:1px solid #86efac;background:#fff;padding:5px 10px;font-size:12.5px;color:#166534}.bell-push small{color:var(--muted)}.home-alerts{display:block;margin:-4px 0 10px;padding:9px 12px;border-radius:12px;background:#fff7e6;border:1px solid #f4dca6;font-size:13.5px;text-decoration:none;color:var(--fg)}.home-alerts.on{background:#ecfdf3;border-color:#bbf7d0}
 .bell-pop{position:absolute;right:16px;top:58px;z-index:70;width:min(360px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:#fff;color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(15,27,45,.22);padding:8px}
 .bell-pop a{display:block;padding:9px 10px;border-radius:10px;text-decoration:none;color:inherit}.bell-pop a:hover{background:var(--accent-soft)}.bell-pop a.unread b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5484d;margin-right:6px;vertical-align:1px}.bell-pop small{display:block;color:var(--muted)}
 `;
@@ -85,6 +86,17 @@ export const ALPHA_SCRIPT = `<script>
     if (!get(SK)) { G.me = null; paint(); return Promise.resolve(null); }
     return G.call('GET', '/me').then(function (r) { if (!r.error && r.user && r.credits) { G.me = r; set(MK, JSON.stringify(r)); paint(); } return G.me; });
   };
+  // G-101: on home, a line under 관심 종목 says what this account will hear about, so turning alerts on is visible.
+  var paintHomeAlerts = function () {
+    var watch = document.getElementById('watch'); if (!watch || !G.me) return;
+    var line = document.getElementById('home-alerts');
+    if (!line) { line = document.createElement('a'); line.id = 'home-alerts'; line.className = 'home-alerts'; line.href = base + 'alerts.html'; var head = watch.querySelector('.block-head'); (head || watch).after(line); }
+    Promise.all([G.push && G.push.supported ? G.push.state() : Promise.resolve({ on: false }), G.call('GET', '/alerts/price')]).then(function (x) {
+      var open = (x[1].items || []).filter(function (a) { return !a.fired_at; }).length;
+      line.className = 'home-alerts' + (x[0].on ? ' on' : '');
+      line.innerHTML = (x[0].on ? '🔔 <b>휴대폰 알림 켜짐</b>' : '🔕 <b>휴대폰 알림 꺼짐</b> · 눌러서 켜기') + ' · 가격 알림 ' + open + '개 걸림 ›';
+    });
+  };
   // Notifications (screener alerts): a bell next to the account badge.
   var bell = function () {
     var nav = document.querySelector('.top-links'), acct = nav && nav.querySelector('.acct');
@@ -95,11 +107,26 @@ export const ALPHA_SCRIPT = `<script>
     G.call('GET', '/notifications').then(function (r) {
       if (r.error) return;
       if (r.unread) b.insertAdjacentHTML('beforeend', '<i>' + r.unread + '</i>');
+      if (G.push && G.push.supported) G.push.state().then(function (st) { if (st.on) b.classList.add('push-on'); });
       b.addEventListener('click', function () {
         if (pop) { pop.remove(); pop = null; return; }
         pop = document.createElement('div'); pop.className = 'bell-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '알림');
         pop.innerHTML = r.items.length ? r.items.map(function (n) { return '<a class="' + (n.read_at ? '' : 'unread') + '" href="' + base + esc(n.link || '') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small></a>'; }).join('') : '<p class="muted small" style="padding:10px">알림이 없어요. 새 리포트, 스크리너 조건, 가격 알림, 요청한 리포트가 여기와 휴대폰으로 와요.</p>';
-        pop.insertAdjacentHTML('beforeend', '<a class="bell-set" href="' + base + 'alerts.html"><b>⚙︎ 알림 설정 · 휴대폰 알림 켜기</b></a>');
+        pop.insertAdjacentHTML('beforeend', '<a class="bell-set" href="' + base + 'alerts.html"><b>⚙︎ 알림 설정</b></a>');
+        // G-101: the phone switch comes first — one tap asks the browser, the result shows right there.
+        pop.insertAdjacentHTML('afterbegin', '<div class="bell-push" hidden></div>');
+        var bp = pop.querySelector('.bell-push'), paintPush = function () {
+          if (!G.push || !G.push.supported) { bp.hidden = false; bp.innerHTML = '<span>' + (G.push && G.push.ios && !G.push.standalone ? '아이폰은 공유 → 홈 화면에 추가 후 그 아이콘으로 열면 휴대폰 알림을 켤 수 있어요.' : '이 브라우저는 휴대폰 알림을 지원하지 않아요. 🔔 알림함으로 받아요.') + '</span>'; return; }
+          G.push.state().then(function (st) {
+            bp.hidden = false;
+            if (st.on) { bp.className = 'bell-push on'; bp.innerHTML = '<span>✓ 이 기기로 휴대폰 알림을 받고 있어요</span><button type="button" data-push-test>테스트</button>'; bp.querySelector('[data-push-test]').onclick = function () { G.call('POST', '/push/test').then(function (x) { toast(x.error ? x.message : '테스트 알림을 보냈어요.'); }); }; return; }
+            bp.className = 'bell-push';
+            bp.innerHTML = st.permission === 'denied' ? '<span>알림이 차단돼 있어요. 브라우저 주소창의 사이트 설정에서 알림을 허용해 주세요.</span>' : '<button type="button" class="bell-allow" data-push-on>📲 휴대폰 알림 허용하기</button><small>새 리포트·가격 도달·요청한 리포트를 바로 알려 드려요</small>';
+            var on = bp.querySelector('[data-push-on]');
+            if (on) on.onclick = function () { on.disabled = true; on.textContent = '허용 창을 확인해 주세요…'; G.push.on().then(function () { toast('휴대폰 알림을 켰어요.'); G.call('POST', '/push/test'); paintPush(); paintHomeAlerts(); }).catch(function (e) { toast(e.message || '켜지 못했어요.'); paintPush(); }); };
+          });
+        };
+        paintPush();
         document.querySelector('.topbar').appendChild(pop);
         if (r.unread) { G.call('POST', '/notifications/read'); var i = b.querySelector('i'); if (i) i.remove(); r.unread = 0; }
         G.track('bell_open', {});
@@ -267,6 +294,6 @@ export const ALPHA_SCRIPT = `<script>
     }
   };
   paint();
-  G.ready = G.refresh().then(function () { feedback(); nudges(); bell(); watchSync(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return G.me; });
+  G.ready = G.refresh().then(function () { feedback(); nudges(); bell(); watchSync(); paintHomeAlerts(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return G.me; });
 })();
 </script>`;

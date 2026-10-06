@@ -123,3 +123,20 @@ test('analyst calls from the AI committee are logged once with the report', asyn
   assert.deepEqual(paper.map((p) => [p.follower, p.date, p.close]), [['hold', '2026-10-02', 318500], ['analyst:trend_momentum', '2026-10-02', 318500]]);
   assert.equal(paper[1]!.position, 1);
 });
+
+test('the API address is set before any page is written (stock and coin pages come early in the run)', async () => {
+  const { SITE_CONFIG } = await import('../report/alpha.js');
+  const { renderCalculationPage } = await import('../report/calculationPage.js');
+  const { writeFile } = await import('node:fs/promises');
+  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  await writeFile(join(root, 'gnm.config.json'), JSON.stringify({ apiUrl: 'https://api.example.test' }));
+  const before = process.env.GNM_API_URL; delete process.env.GNM_API_URL;
+  SITE_CONFIG.apiUrl = '';
+  let atFirstFetch: string | null = null;
+  const watching = (async (url: string | URL | Request, init?: RequestInit) => { atFirstFetch ??= SITE_CONFIG.apiUrl; return fakeFetch(url as string, init); }) as typeof fetch;
+  try {
+    await runDaily({ root, now: new Date('2026-10-02T05:00:00Z'), apiKey: 'k', fetch: watching, naver, tickers });
+    assert.equal(atFirstFetch, 'https://api.example.test', 'configured before the first page-producing fetch');
+    assert.match(renderCalculationPage({ symbol: '005930', name: '삼성전자', bars: [], now: new Date() }), /<meta name="gnm-api" content="https:\/\/api\.example\.test">/);
+  } finally { if (before !== undefined) process.env.GNM_API_URL = before; SITE_CONFIG.apiUrl = ''; }
+});

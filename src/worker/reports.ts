@@ -71,13 +71,14 @@ export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void
   const usage=commentary.usage;
   const usd=usage?usdOf(commentary.servedBy||commentary.model,usage.inputTokens,usage.outputTokens):0;
   await db.prepare('UPDATE report_jobs SET usd=? WHERE id=?').bind(usd,id).run();
-  if(commentary.status!=='OK'||!commentary.summary)throw new Error(reportFailureMessage(commentary.error));
+  // The raw cause goes to error_detail for diagnosis (never returned to users); users get the classified message.
+  if(commentary.status!=='OK'||!commentary.summary){await db.prepare('UPDATE report_jobs SET error_detail=? WHERE id=?').bind((commentary.error??'UNKNOWN').replace(/sk-[A-Za-z0-9_-]+/g,'[key]').slice(0,300),id).run().catch(()=>undefined);throw new Error(reportFailureMessage(commentary.error));}
   report.commentary=commentary;report.generatedAt=deps.now().toISOString();
   await db.prepare("UPDATE report_jobs SET stage='composing',updated_at=? WHERE id=?").bind(deps.now().toISOString(),id).run();
   await db.prepare("UPDATE report_jobs SET status='done',stage='done',result_json=?,reserved_usd=0,updated_at=? WHERE id=? AND status='running'").bind(JSON.stringify(report),deps.now().toISOString(),id).run();
   // G-97: the requester hears when it is ready (🔔 and phone), even after closing the page.
   if(deps.site)await notifyUser({db,fetch:deps.fetch,site:deps.site,now:deps.now()},job.user_id,'request',{title:`요청한 ${report.name} 리포트가 완성됐어요`,body:'눌러서 바로 보세요. AI 위원회 탭에 시나리오와 토론이 있어요.',link:`${job.symbol.startsWith('KRW-')?'coin.html?m=':'stock.html?c='}${encodeURIComponent(job.symbol)}&job=${job.id}#tab-ai`}).catch(()=>false);
- }catch(e){const reason=e instanceof Error?e.message:'리포트를 만들지 못했어요.';await refundJob(db,job,reason,deps.now());
+ }catch(e){const reason=e instanceof Error?e.message:'리포트를 만들지 못했어요.';if(!(e instanceof Error&&/\[[A-Z_]+\]$/.test(e.message)))await db.prepare('UPDATE report_jobs SET error_detail=? WHERE id=?').bind(String(e instanceof Error?e.stack??e.message:e).slice(0,300),id).run().catch(()=>undefined);await refundJob(db,job,reason,deps.now());
   if(deps.site)await notifyUser({db,fetch:deps.fetch,site:deps.site,now:deps.now()},job.user_id,'request',{title:`${job.symbol} 리포트를 만들지 못했어요`,body:reason,link:`${job.symbol.startsWith('KRW-')?'coin.html?m=':'stock.html?c='}${encodeURIComponent(job.symbol)}`}).catch(()=>false);}
 }
 export function reportFragments(report:DailyReport){
