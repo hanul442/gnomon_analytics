@@ -139,7 +139,7 @@ const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&
 /** Menu groups: [label, href]. Hrefs are relative to the site root. */
 export const MENU: readonly { title: string; items: readonly [string, string][] }[] = [
   // G-72: one entry per place. 찾기 holds search, the screener, ETFs and coins.
-  { title: '둘러보기', items: [['홈', 'index.html#top'], ['찾기 (종목·ETF·코인)', 'screener.html'], ['관심 종목', 'index.html#watch'], ['AI 리포트 모음', 'reports.html'], ['성적표', 'scorecard.html'], ['모의투자', 'paper.html']] },
+  { title: '둘러보기', items: [['홈', 'index.html#top'], ['찾기 (종목·ETF·코인)', 'screener.html'], ['관심 종목', 'index.html#watch'], ['AI 리포트 모음', 'reports.html'], ['성적표 (모의투자 포함)', 'scorecard.html']] },
   { title: '알파 테스트', items: [['사용법', 'guide.html'], ['설문', 'survey.html?k=weekly'], ['맞춤 설문 수정', 'onboarding.html']] },
   { title: '계정', items: [['내 계정', 'account.html'], ['요금제·크레딧', 'pricing.html'], ['이용약관·면책', 'terms.html']] },
 ];
