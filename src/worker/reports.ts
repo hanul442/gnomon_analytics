@@ -1,4 +1,5 @@
 import {scenarioLayer} from '../report/scenarioChart.js';
+import {notifyUser} from './notify.js';
 import {coinFlow} from '../report/coinFlow.js';
 import type { D1 } from './db.js';
 import type { DailyReport } from '../report/dailyReport.js';
@@ -14,7 +15,7 @@ export interface ReportJob {
  status:string; stage:string; credits:number; reserved_usd:number; usd:number;
  result_json:string|null; error:string|null; created_at:string; updated_at:string;
 }
-export interface ReportDeps { now:()=>Date; fetch:typeof fetch; generate?:(report:DailyReport,tier:CommentaryTier)=>Promise<Commentary> }
+export interface ReportDeps { now:()=>Date; fetch:typeof fetch; generate?:(report:DailyReport,tier:CommentaryTier)=>Promise<Commentary>; site?:string }
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export async function reportInput(site:string,symbol:string,deps:ReportDeps):Promise<DailyReport>{
  const base=site.replace(/\/$/,'');
@@ -74,7 +75,10 @@ export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void
   report.commentary=commentary;report.generatedAt=deps.now().toISOString();
   await db.prepare("UPDATE report_jobs SET stage='composing',updated_at=? WHERE id=?").bind(deps.now().toISOString(),id).run();
   await db.prepare("UPDATE report_jobs SET status='done',stage='done',result_json=?,reserved_usd=0,updated_at=? WHERE id=? AND status='running'").bind(JSON.stringify(report),deps.now().toISOString(),id).run();
- }catch(e){await refundJob(db,job,e instanceof Error?e.message:'리포트를 만들지 못했어요.',deps.now());}
+  // G-97: the requester hears when it is ready (🔔 and phone), even after closing the page.
+  if(deps.site)await notifyUser({db,fetch:deps.fetch,site:deps.site,now:deps.now()},job.user_id,'request',{title:`요청한 ${report.name} 리포트가 완성됐어요`,body:'눌러서 바로 보세요. AI 위원회 탭에 시나리오와 토론이 있어요.',link:`${job.symbol.startsWith('KRW-')?'coin.html?m=':'stock.html?c='}${encodeURIComponent(job.symbol)}&job=${job.id}#tab-ai`}).catch(()=>false);
+ }catch(e){const reason=e instanceof Error?e.message:'리포트를 만들지 못했어요.';await refundJob(db,job,reason,deps.now());
+  if(deps.site)await notifyUser({db,fetch:deps.fetch,site:deps.site,now:deps.now()},job.user_id,'request',{title:`${job.symbol} 리포트를 만들지 못했어요`,body:reason,link:`${job.symbol.startsWith('KRW-')?'coin.html?m=':'stock.html?c='}${encodeURIComponent(job.symbol)}`}).catch(()=>false);}
 }
 export function reportFragments(report:DailyReport){
  const c=report.commentary!;
