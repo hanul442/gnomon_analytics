@@ -1,0 +1,4 @@
+{"symbol":"096770","receiptNo":"20251027000329","date":"2025-10-27","reporter":"SK","shares":88096217,"delta":-14503,"ratio":52.11,"ratioDelta":-0.01,"reason":"특별관계자 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"096770","receiptNo":"20260401003691","date":"2026-04-01","reporter":"국민연금공단","shares":10193076,"delta":1734341,"ratio":6.03,"ratioDelta":1.03,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"096770","receiptNo":"20260511000518","date":"2026-05-11","reporter":"미래에셋증권","shares":8271406,"delta":-1806065,"ratio":4.89,"ratioDelta":-1.07,"reason":"장내매매에 따른 보유비율 1% 이상 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"096770","receiptNo":"20261002000399","date":"2026-10-02","reporter":"국민연금공단","shares":12074145,"delta":1881069,"ratio":7.14,"ratioDelta":1.11,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}

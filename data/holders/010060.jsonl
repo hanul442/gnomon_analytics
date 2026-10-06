@@ -1,0 +1,3 @@
+{"symbol":"010060","receiptNo":"20260102000215","date":"2026-01-02","reporter":"국민연금공단","shares":2204352,"delta":215107,"ratio":11.72,"ratioDelta":1.15,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"010060","receiptNo":"20260401004028","date":"2026-04-01","reporter":"국민연금공단","shares":2385981,"delta":181629,"ratio":12.78,"ratioDelta":1.06,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"010060","receiptNo":"20260529000101","date":"2026-05-29","reporter":"이화영","shares":5537822,"delta":-175238,"ratio":29.66,"ratioDelta":-0.7,"reason":"1. 특수관계자 장내매도\n2. 특수관계자 해소\n3. 주식 담보 계약 추가","retrievedAt":"2026-10-06T14:38:10.382Z"}

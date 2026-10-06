@@ -1,0 +1,4 @@
+{"symbol":"003490","receiptNo":"20251210000396","date":"2025-12-10","reporter":"한진칼","shares":111922025,"delta":-14439489,"ratio":30.4,"ratioDelta":-3.92,"reason":"- 보고자의 교환사채 상환에 따른 특별관계자의 보유주식등의 감소\n- 보고자의 보유 주식등에 관한 계약 변경\n- 특별관계자 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"003490","receiptNo":"20260102000187","date":"2026-01-02","reporter":"국민연금공단","shares":25801836,"delta":-7390982,"ratio":7.01,"ratioDelta":-2,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"003490","receiptNo":"20260701000250","date":"2026-07-01","reporter":"국민연금공단","shares":29815551,"delta":4013715,"ratio":8.1,"ratioDelta":1.09,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"003490","receiptNo":"20261002000476","date":"2026-10-02","reporter":"국민연금공단","shares":33583853,"delta":3768302,"ratio":9.12,"ratioDelta":1.02,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}

@@ -1,0 +1,11 @@
+{"symbol":"452190","receiptNo":"20251103000175","date":"2025-11-03","reporter":"조영훈","position":"상무","isExec":true,"isMajor":false,"shares":255000,"delta":-30000,"ratio":1.09,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20251113001047","date":"2025-11-13","reporter":"장주환","position":"상무","isExec":true,"isMajor":false,"shares":255000,"delta":-40000,"ratio":1.09,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20251211000189","date":"2025-12-11","reporter":"최병규","position":"부사장","isExec":true,"isMajor":false,"shares":669500,"delta":-70000,"ratio":2.86,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20260313001354","date":"2026-03-13","reporter":"최병규","position":"부사장","isExec":true,"isMajor":false,"shares":669500,"delta":0,"ratio":2.8,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20260316000060","date":"2026-03-16","reporter":"장주환","position":"상무","isExec":true,"isMajor":false,"shares":255000,"delta":0,"ratio":1.07,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20260313001396","date":"2026-03-16","reporter":"조영훈","position":"상무","isExec":true,"isMajor":false,"shares":255000,"delta":0,"ratio":1.07,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20260316000069","date":"2026-03-16","reporter":"최상국","position":"이사","isExec":true,"isMajor":false,"shares":108100,"delta":0,"ratio":0.45,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20260316000080","date":"2026-03-16","reporter":"정명진","position":"이사","isExec":true,"isMajor":false,"shares":108100,"delta":0,"ratio":0.45,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20260914000250","date":"2026-09-14","reporter":"장주환","position":"상무","isExec":true,"isMajor":false,"shares":195000,"delta":-60000,"ratio":0.82,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20260914000264","date":"2026-09-14","reporter":"정명진","position":"이사","isExec":true,"isMajor":false,"shares":41100,"delta":-67000,"ratio":0.17,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"452190","receiptNo":"20260914000307","date":"2026-09-14","reporter":"최상국","position":"이사","isExec":true,"isMajor":false,"shares":41100,"delta":-67000,"ratio":0.17,"retrievedAt":"2026-10-06T14:38:10.382Z"}

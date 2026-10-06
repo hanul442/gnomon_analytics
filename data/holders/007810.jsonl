@@ -1,0 +1,7 @@
+{"symbol":"007810","receiptNo":"20260102000136","date":"2026-01-02","reporter":"국민연금공단","shares":1383155,"delta":58326,"ratio":5.05,"ratioDelta":0.21,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"007810","receiptNo":"20260305001043","date":"2026-03-05","reporter":"영풍","shares":14568433,"delta":457675,"ratio":52.53,"ratioDelta":0.97,"reason":"- 특별관계자의 장내매수에 따른 보유수량 및 비율 변동\n- 발행회사의 합병신주 발행에 따른 보유수량 및 비율 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"007810","receiptNo":"20260401004384","date":"2026-04-01","reporter":"국민연금공단","shares":1530882,"delta":147727,"ratio":6.38,"ratioDelta":1.33,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"007810","receiptNo":"20260611000551","date":"2026-06-11","reporter":"미래에셋자산운용","shares":1256367,"delta":67556,"ratio":5.24,"ratioDelta":0.28,"reason":"신규","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"007810","receiptNo":"20260701000377","date":"2026-07-01","reporter":"국민연금공단","shares":2320112,"delta":789230,"ratio":9.67,"ratioDelta":3.29,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"007810","receiptNo":"20260701000636","date":"2026-07-01","reporter":"미래에셋자산운용","shares":1141607,"delta":-114760,"ratio":4.76,"ratioDelta":-0.48,"reason":"지분율 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"007810","receiptNo":"20261002000405","date":"2026-10-02","reporter":"국민연금공단","shares":1570739,"delta":-749373,"ratio":6.55,"ratioDelta":-3.12,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
