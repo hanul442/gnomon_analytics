@@ -137,7 +137,7 @@ export const UI_SCRIPT = `<script>
 const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 /** Menu groups: [label, href]. Hrefs are relative to the site root. */
 export const MENU: readonly { title: string; items: readonly [string, string][] }[] = [
-  { title: '둘러보기', items: [['홈', 'index.html#top'], ['종목 검색', 'index.html#search'], ['매일 AI 리포트', 'index.html#daily'], ['관심 종목', 'index.html#watch']] },
+  { title: '둘러보기', items: [['홈', 'index.html#top'], ['종목 검색', 'index.html#search'], ['AI 리포트 모음', 'reports.html'], ['관심 종목', 'index.html#watch']] },
   { title: '시장', items: [['스크리너 (조건 검색)', 'screener.html'], ['ETF', 'etfs.html'], ['코인', 'coins.html']] },
   { title: '기록', items: [['성적표', 'scorecard.html'], ['모의투자', 'paper.html']] },
   { title: '알파 테스트', items: [['사용법', 'guide.html'], ['중간 설문', 'survey.html?k=midterm'], ['주간 설문', 'survey.html?k=weekly'], ['맞춤 설문 수정', 'onboarding.html']] },

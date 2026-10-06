@@ -47,7 +47,10 @@ test('the first settled run picks the week: core and the largest company get the
   const report = JSON.parse(await readFile(join(root, 'reports', '222220', '2026-10-02.json'), 'utf8')) as { commentary: { tier: string; usage: unknown } };
   assert.deepEqual([report.commentary.tier, report.commentary.usage], ['brief', { inputTokens: 100, outputTokens: 50 }]);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
-  assert.ok(home.includes('이번 주 AI 리포트 3종목') && home.includes('href="222220/index.html"') && home.includes('data-kind="weekly"'));
+  // The report lists live on reports.html (G-64); the front page shows a few picks.
+  const list = await readFile(join(root, 'site', 'reports.html'), 'utf8');
+  assert.ok(list.includes('이번 주 AI 리포트 3종목') && list.includes('href="222220/index.html"') && list.includes('data-kind="weekly"'));
+  assert.ok(home.includes('id="today"') && !home.includes('id="reports"'));
   // The market dashboard: index quotes, temperature from every stock's computation, movers; pricing pages exist.
   assert.ok(home.includes('시장 온도') && home.includes('id="movers"') && home.includes('id="watch"'));
   // Alpha (G-44~G-46): the feed slot, the chat on every page, a shorter menu and the account pages.
@@ -141,7 +144,8 @@ test('daily picks (G-56): drawn once a day from the screener, reported once, sho
   assert.equal(picks[0]!.tier, 'deep');
   assert.equal(calls.length, picks.length);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
-  assert.ok(home.includes('id="daily"') && home.includes(`href="${picks[0]!.symbol}/index.html"`));
+  assert.ok(home.includes('id="today"') && home.includes(`href="${picks[0]!.symbol}/index.html"`));
+  assert.ok((await readFile(join(root, 'site', 'reports.html'), 'utf8')).includes('id="daily"'));
   // A re-run the same day draws nothing new and calls no model.
   calls.length = 0;
   await runDaily({ ...opts, now: new Date('2026-10-05T11:00:00Z') });

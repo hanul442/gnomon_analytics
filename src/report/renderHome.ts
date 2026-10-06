@@ -100,6 +100,36 @@ function reportRows(entries: readonly HomeEntry[], selection: HomeData['selectio
 <p class="muted small">위원회 전체는 대표 종목과 시가총액 상위 종목, 요약은 시가총액·거래대금·공시·움직임으로 고른 종목이에요. 신호는 중기(일봉) 기술 신호예요.</p></section>`;
 }
 
+/**
+ * "오늘 볼 것" (G-64): instead of listing every report, the few worth a look today: the latest daily
+ * picks (committee reports first), topped up with this week's committee reports. Each says why.
+ */
+function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): string {
+  const last = [...new Set(daily.map((e) => e.pickDate ?? ''))].sort().at(-1);
+  const deepFirst = (a: HomeEntry, b: HomeEntry) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1);
+  const picks = [...daily.filter((e) => e.pickDate === last).sort(deepFirst), ...weekly.filter((e) => e.tier === 'deep' || e.group === 'core')].slice(0, 5);
+  if (!picks.length) return '';
+  const card = (e: HomeEntry) => {
+    const r = e.report, p = r?.price, c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
+    const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
+    const why = e.reasons?.[0] ?? (e.group === 'core' ? '대표 종목 · 매주 위원회 리포트' : '이번 주 위원회 리포트');
+    return `<div class="tp"><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}<span class="tp-why">${esc(why)}</span></div>
+<div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b>${won(p.close)}</b> <span class="${tone(p.changePct)}">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
+  };
+  return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 것</h2><a class="more-link" href="reports.html">AI 리포트 모음 ›</a></div>
+<div class="tp-grid">${picks.map(card).join('')}</div><p class="muted small">AI가 오늘 고른 종목과 이번 주 위원회 리포트예요. 고른 이유를 한 줄로 붙였어요. 투자 권유가 아니에요.</p></section>`;
+}
+
+/** Every daily pick of the last week and this week's reports, off the front page (G-64). */
+export function renderReportsPage(data: HomeData): string {
+  const entries = data.entries.filter((e) => e.group !== 'past' && e.group !== 'daily' && e.group !== 'request');
+  const daily = data.entries.filter((e) => e.group === 'daily');
+  const order = { core: 0, weekly: 1, request: 2, past: 3, daily: 4 } as const;
+  const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
+  const body = `${HOME_STYLE}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>AI 리포트 모음</span></div><h1>최근 AI 리포트</h1><p class="hero-line">매일 고른 종목과 이번 주 리포트를 모았어요. 다른 종목은 검색에서 찾을 수 있어요.</p></div></section>${dailyRows(daily)}${reportRows(sorted, data.selection)}`;
+  return shell('', 'AI 리포트 모음 | Gnomon Analytics', body, { scripts: HOME_SCRIPT });
+}
+
 function movers(universe: readonly UniverseRow[] | null, covered: ReadonlySet<string>): string {
   if (!universe?.length) return '';
   const ok = universe.filter((r) => r.kind === 'stock' && /0$/.test(r.symbol) && !/스팩/.test(r.name) && r.close !== null && r.changePct !== null && (r.marketCap ?? 0) >= 1e11);
@@ -163,7 +193,7 @@ ${bannerHtml([...(data.banners ?? []), ...ALPHA_BANNERS])}
 <div class="pz-note" id="pz-note"><span id="pz-text">어떤 투자자인지에 맞춰 화면을 바꿔 보세요.</span>${PERSONA_BAR}<a class="pz-edit" href="onboarding.html">설문 수정하기</a></div>
 <section class="block home-mkt"><nav class="mkt-tabs" aria-label="시장"><a href="screener.html">국내 주식<small>스크리너</small></a><a href="etfs.html">ETF<small>국내 상장 전체</small></a><a href="coins.html">코인<small>업비트 원화</small></a></nav></section>
 ${indexStrip(data.indices, data.universe)}
-<div class="home-grid"><div class="home-main">${FEED}${pulseCard(data.pulse)}${WATCH}${dailyRows(daily)}${reportRows(sorted, data.selection)}${movers(data.universe, covered)}</div>
+<div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${pulseCard(data.pulse)}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <div class="show-more"><button type="button" class="btn-ghost" id="show-all">다른 정보도 보기</button></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
@@ -206,7 +236,7 @@ const PERSONA_HOME_SCRIPT = `<script>
 (function () {
   var ORDER = ${JSON.stringify(HOME_ORDER)}, main = document.querySelector('.home-main'), more = document.getElementById('show-all');
   if (!main) return;
-  var ALL = ['feed', 'watch', 'daily', 'reports', 'pulse', 'movers'];
+  var ALL = ['feed', 'watch', 'today', 'pulse', 'movers'];
   var apply = function () {
     var p = document.documentElement.getAttribute('data-persona') || 'swing', keep = ORDER[p], all = !keep || document.documentElement.classList.contains('show-all');
     var hidden = 0, after = null;
@@ -225,7 +255,8 @@ const PERSONA_HOME_SCRIPT = `<script>
 })();
 </script>`;
 
-const HOME_STYLE = `<style>.top-search{max-width:1180px;margin:14px auto 0;padding:0 24px}.top-search .search-box{background:#fff;border:2px solid var(--navy);box-shadow:0 6px 18px rgba(15,34,68,.08)}.top-search .search-box input{font-size:16px}
+const HOME_STYLE = `<style>.tp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.tp{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 44px 14px 16px}.tp:hover{border-color:var(--accent)}.tp .star{position:absolute;top:8px;right:6px}.tp-main{text-decoration:none;color:inherit;display:block}.tp-top{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.tp-why{font-size:12px;color:var(--accent-strong);font-weight:700}.tp-name{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.tp-name>b{font-size:17px}.tp-px{font-size:14px}.tp-line{margin:6px 0 0;font-size:14px;line-height:1.6;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.top-search{max-width:1180px;margin:14px auto 0;padding:0 24px}.top-search .search-box{background:#fff;border:2px solid var(--navy);box-shadow:0 6px 18px rgba(15,34,68,.08)}.top-search .search-box input{font-size:16px}
 .home-mkt{margin-top:12px}.home-mkt .mkt-tabs{margin-top:0}.ph-off{display:none!important}.show-more{text-align:center;margin:18px 0 6px}.btn-ghost{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
 .pz-note .persona-bar{margin-left:auto}@media (max-width:820px){.top-search{padding:0 14px;margin-top:10px}.pz-note .persona-bar{margin-left:0}}
 .pz-note{max-width:1180px;margin:10px auto 0;padding:0 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--fg2)}.pz-note>span{flex:1;min-width:200px;background:#eef3fb;border-radius:12px;padding:9px 12px}.pz-note b{color:var(--accent-strong)}.pz-edit{font-weight:700;font-size:13px;text-decoration:none;border:1px solid var(--accent);color:var(--accent-strong);border-radius:999px;padding:7px 12px;background:#fff;white-space:nowrap}@media (max-width:820px){.pz-note{padding:0 14px}}

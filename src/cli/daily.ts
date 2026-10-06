@@ -27,7 +27,7 @@ import { deepPath, seal, unseal } from '../report/seal.js';
 import { AiBudget } from './aiBudget.js';
 import type Anthropic from '@anthropic-ai/sdk';
 import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderStockPage, type HomeEntry, type PageContext, writeAssets } from '../report/renderHtml.js';
-import { renderHome, type IndexQuote } from '../report/renderHome.js';
+import { renderHome, renderReportsPage, type IndexQuote } from '../report/renderHome.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
 import { renderPaper, renderScorecard, renderTerms } from '../report/renderScorecard.js';
@@ -610,11 +610,13 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const last = bars.at(-1), prev = bars.at(-2);
     if (last) indices.push({ symbol, name, date: last.date, close: last.close, changePct: prev ? (last.close / prev.close - 1) * 100 : null, closes: bars.slice(-60).map((b) => b.close) });
   }
-  await writeFile(join(siteDir, 'index.html'), renderHome({
+  const homeData = {
     banners,
     entries: home, universe, indices, pulse: extras.pulse ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
     selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,
-  }));
+  };
+  await writeFile(join(siteDir, 'index.html'), renderHome(homeData));
+  await writeFile(join(siteDir, 'reports.html'), renderReportsPage(homeData));
   // Search index: every listed stock, with today's price when the list was fetched this run.
   const covered = new Set([...tickers, ...past].map((t) => t.symbol));
   const items = universe
