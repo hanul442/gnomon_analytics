@@ -17,7 +17,8 @@ export const JOBS_JS = `
    var panel=document.getElementById('tab-'+key);if(!panel)return;
    var composer=key==='ai'?panel.querySelector('.db-join'):null;if(composer)composer.remove();
    var target=panel.querySelector('[data-generated]');
-   if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var title=panel.querySelector('.panel-title');panel.innerHTML='';if(title)panel.appendChild(title);panel.appendChild(target);}else panel.prepend(target);}
+   if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var title=panel.querySelector('.panel-title');panel.innerHTML='';if(title)panel.appendChild(title);panel.appendChild(target);}else if(key==='home'){var heroEl=panel.querySelector('.hero');while(heroEl&&heroEl.parentElement&&heroEl.parentElement!==panel)heroEl=heroEl.parentElement;if(heroEl&&heroEl.parentElement===panel)heroEl.after(target);else panel.prepend(target);}else panel.prepend(target);}
+   if(key==='home'){var stale=panel.querySelector('#home-conclusion');if(stale&&!target.contains(stale))stale.remove();}
    target.innerHTML=r.fragments[key];if(composer)(panel.querySelector('.card.debate')||target).appendChild(composer);
    panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});
   });
