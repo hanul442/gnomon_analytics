@@ -28,6 +28,7 @@ const legacyReport=structuredClone(scenarioReport);delete legacyReport.commentar
 let customExperts=[];
 const api=async(path,req,res)=>{
  res.setHeader('Content-Type','application/json');
+ if(path==='/api/admin/overview')return res.end(JSON.stringify({users:[],creditRequests:[],actions:[{id:'fixture-action',created_at:'2026-10-06T08:00:00Z',email:'long-mobile-test@example.test',kind:'report',symbol:'005500',detail:'모바일에서 확인할 리포트 요청 내용',credits:100,status:'pending'}],invites:[],pulses:[],feedback:[],questions:[],events:[],spend:{today:0,month:0,dailyCap:5}}));
  if(path==='/api/me')return res.end(JSON.stringify({user:{email:'fixture@example.test',rankAs:'pro',plan:'alpha',planName:'알파'},credits:{balance:400},costs:CREDIT_COST,survey:{onboarding:true,pulseDue:false}}));
  if(path==='/api/experts'){if(req.method==='POST'){let body='';for await(const x of req)body+=x;const expert={...JSON.parse(body),id:'00000000-0000-4000-8000-000000000001'};customExperts.push(expert);return res.end(JSON.stringify({expert}));}return res.end(JSON.stringify({items:customExperts}));}
  if(path==='/api/screens')return res.end(JSON.stringify({rows:[]}));
@@ -40,7 +41,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/reports/fixture-done')return res.end(JSON.stringify({status:'done',symbol:'999999',fragments:{scenarios:scenarioPanel(scenarioReport),ai:'<section id="debate"><div class="card debate"><div class="db-chips"></div><div class="db-turn" data-speaker="MARKET"><div class="db-who"><b>시장 데스크</b></div><div class="db-bubble">테스트 토론</div></div><details class="db-ev"><summary>근거</summary></details></div></section>'}}));
  return res.end(JSON.stringify({items:[],rows:[]}));
 };
-const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist|experts)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
+const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist|experts|admin)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(8765,'localhost',r));
 let browser;const errors=[];
 try{
@@ -74,6 +75,12 @@ try{
  await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="15"]').waitFor();
  await page.locator('[data-coin-tf="15"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'최근 20개'}).waitFor();await page.waitForFunction(()=>{var r=GNMChart.chart.timeScale().getVisibleRange();return r&&r.from>=1791262800;});
  await page.locator('[data-coin-tf="D"]').click();await page.locator('#t-flows').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
+ for(const width of [375,390,768,1280]){
+  await page.setViewportSize({width,height:850});await page.goto(origin+'/admin.html');await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  for(const selector of ['td[data-label="사용자"]','td[data-label="내용"]','[data-act=fixture-action] button[data-s=done]','[data-act=fixture-action] button[data-s=rejected]']){const box=await page.locator(selector).boundingBox();assert.ok(box&&box.x>=0&&box.x+box.width<=width,'admin field clipped: '+selector);}
+  await page.screenshot({path:`test-artifacts/admin-${width}.png`});
+ }
  await page.goto(origin+'/screener.html');await page.locator('#ai-screen-q').fill('거래량이 터진 종목');await page.locator('#ai-screen-send').click();await page.locator('[data-apply-ai]').waitFor();await page.locator('[data-apply-ai]').click();await page.locator('#sc-body .orbs-load').waitFor({state:'detached'});assert.equal(await page.locator('[data-k=f]').first().inputValue(),'vol1');
  await page.locator('[data-open-chat]').first().click();assert.equal(await page.locator('#chat-send').innerText(),'➤');await page.locator('#chat-q').fill('테스트 질문');await page.locator('#chat-send').click();await page.locator('#chat-log canvas[data-orb]').waitFor();await page.locator('#chat-log .stream-answer').filter({hasText:'테스트 답변'}).waitFor();assert.ok(await page.locator('#chat-log .msg.wait canvas[data-orb]').isVisible());await page.locator('#chat-log .msg.wait').waitFor({state:'detached'});
  await page.screenshot({path:'test-artifacts/chat.png'});
