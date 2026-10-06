@@ -278,6 +278,36 @@ export const TOUR_JS = `
 
 export const TOUR_CSS = `.tr-hole{position:fixed;z-index:200;border-radius:14px;box-shadow:0 0 0 9999px rgba(10,20,35,.6);pointer-events:none;transition:all .2s}.tr-tip{position:fixed;z-index:201;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 28px));background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 14px 36px rgba(0,0,0,.25)}.tr-tip b{font-size:16px}.tr-tip p{margin:6px 0 10px;font-size:14px;line-height:1.6;color:var(--fg2)}.tr-n{font-size:11.5px;font-weight:700;color:var(--accent-strong)}.tr-b{display:flex;gap:6px;justify-content:flex-end}.tr-b button{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.tr-b [data-t=x]{margin-right:auto;border:0;color:var(--muted)}.tr-b .tr-next{background:var(--navy);color:#fff;border-color:var(--navy)}`;
 
+/**
+ * Survey pop-up (G-75): on home and report pages, once the tour is out of the way. No custom survey yet →
+ * ask for the 7-minute one (again three days after "나중에"). Friday to Sunday → this week's 1-minute
+ * survey, once per week. Never on the survey pages themselves.
+ */
+export const SURVEY_POP_JS = `
+  (function () {
+    if (!document.getElementById('today') && !document.getElementById('tab-ai')) return;
+    var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
+    var now = Date.now(), k = new Date(now + 9 * 3600e3), day = k.getUTCDay();
+    var week = k.getUTCFullYear() + '-' + Math.ceil(((k - Date.UTC(k.getUTCFullYear(), 0, 1)) / 864e5 + new Date(Date.UTC(k.getUTCFullYear(), 0, 1)).getUTCDay() + 1) / 7);
+    var pick = null;
+    if (!get('gnm-prefs') && Number(get('gnm-pop-onb') || 0) < now) pick = { key: 'gnm-pop-onb', later: now + 3 * 864e5, icon: '📝', title: '7분 맞춤 설문으로 내 화면 만들기', text: '투자 경험과 스타일을 알려 주시면 보기 방식, 오늘 볼 것, 설명 수준이 나에게 맞춰져요.', href: 'onboarding.html', cta: '설문 하기' };
+    else if ((day === 5 || day === 6 || day === 0) && get('gnm-pop-week') !== week) pick = { key: 'gnm-pop-week', later: week, icon: '🗓️', title: '이번 주 설문 (1분)', text: '이번 주에 좋았던 것과 불편했던 것 하나씩만 알려 주세요. 다음 주 개선 순서를 정해요.', href: 'survey.html?k=weekly', cta: '1분 설문 하기' };
+    if (!pick) return;
+    var base = document.body.getAttribute('data-base') || '';
+    var open = function () {
+      if (document.querySelector('.tr-tip') || document.querySelector('.side-menu:not([hidden])')) return setTimeout(open, 4000);
+      var d = document.createElement('div'); d.className = 'pop-wrap'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', pick.title);
+      d.innerHTML = '<div class="pop"><div class="pop-ic" aria-hidden="true">' + pick.icon + '</div><b>' + pick.title + '</b><p>' + pick.text + '</p><div class="pop-b"><button type="button" data-p="later">나중에</button><a class="btn-primary" href="' + base + pick.href + '">' + pick.cta + ' ›</a></div></div>';
+      var close = function () { set(pick.key, String(pick.later)); d.remove(); };
+      d.addEventListener('click', function (e) { if (e.target === d || (e.target.getAttribute && e.target.getAttribute('data-p') === 'later')) close(); });
+      d.querySelector('a').addEventListener('click', function () { set(pick.key, String(pick.later)); });
+      document.body.appendChild(d);
+    };
+    setTimeout(open, 6000);
+  })();`;
+
+export const POP_CSS = `.pop-wrap{position:fixed;inset:0;z-index:150;background:rgba(10,20,35,.45);display:grid;place-items:center;padding:16px;animation:pop-in .2s ease-out}.pop{width:min(380px,100%);background:#fff;border-radius:20px;padding:22px 20px 16px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}.pop-ic{font-size:40px}.pop b{display:block;font-size:18px;margin-top:6px}.pop p{font-size:14px;line-height:1.6;color:var(--fg2);margin:8px 0 14px}.pop-b{display:flex;gap:8px;justify-content:center}.pop-b button{flex:none;white-space:nowrap;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}.pop-b .btn-primary{flex:1;width:auto;margin:0;text-decoration:none;justify-content:center}@keyframes pop-in{from{opacity:0}to{opacity:1}}`;
+
 export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:#1d6b3a;border-color:#bfe3cb;background:#effaf2}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(209,55,61,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(42,98,201,.22)}100%{background:transparent}}`;
 
 export const MENU_CSS = `.menu-btn{width:38px;height:38px;border:0;border-radius:10px;background:none;color:#fff;cursor:pointer;display:grid;place-items:center;margin-left:2px}.menu-btn svg{width:22px;height:22px}.menu-btn:hover{background:rgba(255,255,255,.1)}

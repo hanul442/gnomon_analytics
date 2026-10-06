@@ -453,7 +453,7 @@ route('POST', '/survey', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   if (!['onboarding', 'pulse', 'midterm', 'weekly'].includes(String(b.kind))) fail(400, 'BAD_SURVEY', '설문 종류가 맞지 않아요.');
   const answers = JSON.stringify(b.answers ?? {});
-  if (answers.length > 6000 || typeof b.answers !== 'object') fail(400, 'BAD_SURVEY', '응답이 너무 길어요.');
+  if (answers.length > 12000 || typeof b.answers !== 'object') fail(400, 'BAD_SURVEY', '응답이 너무 길어요.');
   await env.DB.prepare('INSERT INTO surveys (user_id, kind, answers, created_at) VALUES (?, ?, ?, ?)').bind(u.id, b.kind, answers, iso(now)).run();
   return { ok: true };
 });
