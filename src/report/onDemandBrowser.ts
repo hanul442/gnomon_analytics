@@ -12,7 +12,7 @@ export const JOBS_JS = `
    var panel=document.getElementById('tab-'+key);if(!panel)return;
    var composer=key==='ai'?panel.querySelector('.db-join'):null;if(composer)composer.remove();
    var target=panel.querySelector('[data-generated]');
-   if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){panel.innerHTML='';panel.appendChild(target);}else panel.prepend(target);}
+   if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var title=panel.querySelector('.panel-title');panel.innerHTML='';if(title)panel.appendChild(title);panel.appendChild(target);}else panel.prepend(target);}
    target.innerHTML=r.fragments[key];if(composer)(panel.querySelector('.card.debate')||target).appendChild(composer);
    panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});
   });

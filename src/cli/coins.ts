@@ -9,6 +9,7 @@ import { quickCalc, type StockCalc } from '../analysis/quickCalc.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import { fetchUpbitDays, fetchUpbitMarkets, fetchUpbitTickers } from '../sources/upbit.js';
+import { renderCalculationPage } from '../report/calculationPage.js';
 import { compactCalc } from './stockPages.js';
 
 /** [market, name, english, warning, close, change24h%, level, score×100, r5, r20, r120, vol1×, value24h(억), fairGap%, position, hi52Gap%]. */
@@ -59,8 +60,9 @@ export async function writeCoinPages(siteDir: string, options: { now: () => Date
         const bars = await fetchUpbitDays(m.market, now, fetcher);
         if (bars.length < 2) return;
         const calc = quickCalc(m.market, bars, now), t = tickers.get(m.market), last = bars.at(-1)!, prev = bars.at(-2)!;
-        await writeFile(join(dir, `${m.market}.json`), JSON.stringify({ symbol: m.market, name: m.name, english: m.english, market: 'UPBIT', warning: m.warning,
+        await writeFile(join(dir, `${m.market}.json`), JSON.stringify({ pageUrl: `c/${m.market}.html`, symbol: m.market, name: m.name, english: m.english, market: 'UPBIT', warning: m.warning,
           bars: bars.map((b) => [b.date, b.open, b.high, b.low, b.close, b.volume]), calc: calc ? coinCalc(calc) : null }));
+        await writeFile(join(dir, `${m.market}.html`),renderCalculationPage({symbol:m.market,name:m.name,kind:'coin',bars,now}));
         const mv = (d: number) => { const v = calc?.moves.find((x) => x.days === d)?.pct; return v == null ? null : Math.round(v * 10) / 10; };
         const r1 = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10) / 10);
         rows.push([m.market, m.name, m.english, m.warning ? 1 : 0, sig(last.close), r1(t ? t.changePct : (last.close / prev.close - 1) * 100),

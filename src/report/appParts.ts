@@ -10,7 +10,7 @@ import type { Commentary } from '../analysis/commentary.js';
 
 const esc = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
+const won = (v: number) => `${(v>=100?Math.round(v):v).toLocaleString('ko-KR',{maximumFractionDigits:8})}원`;
 const num = (v: number, digits = 0) => v.toLocaleString('ko-KR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const pct = (v: number | null, digits = 2) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`);
 const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
@@ -213,7 +213,7 @@ ${strategies.length ? `<div class="sheet" id="strat-sheet" hidden><div class="sh
 <button type="button" class="opt" data-strategy="" aria-pressed="true"><span class="opt-t"><b>끄기</b><small>매매 시점을 표시하지 않아요</small></span><i class="radio" aria-hidden="true"></i></button>
 ${strategies.map((st) => `<button type="button" class="opt" data-strategy="${esc(st.key)}" aria-pressed="false"><span class="opt-t"><b>${st.rank}위 ${esc(st.name)}</b><small><span class="${st.position ? 'up' : 'muted'}">${st.position ? '지금 보유 신호' : '지금 관망'}</span> · 검증 수익 <span class="${tone(st.oos)}">${(st.oos * 100).toFixed(1)}%</span> · 매매 ${st.trades.length}번</small></span><i class="radio" aria-hidden="true"></i></button>`).join('')}</div></div>
 ` : ''}
-<div class="legend-line" id="legend"></div>
+<div class="chart-context" id="chart-context" hidden aria-live="polite"><p></p><button type="button" class="chip-toggle">기술로 돌아가기</button></div><div class="legend-line" id="legend"></div>
 <div class="chart-wrap"><div class="ev-strip" id="ev-strip" role="group" aria-label="공시·뉴스"></div><div class="chart-body"><div id="chart" style="height:520px">${bars.length < 2 ? '<p class="empty">차트를 그릴 가격 기록이 부족해요.</p>' : ''}</div><div class="vlines" id="vlines" aria-hidden="true"></div></div>
 <div class="mark-pop" id="mark-pop" role="dialog" aria-label="공시·뉴스 내용" hidden></div></div>
 ${strategies.length ? '<div class="strat-info" id="strat-info" aria-live="polite" hidden></div>' : ''}

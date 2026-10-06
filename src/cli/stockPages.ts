@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { fetchNaverDailyBars } from '../sources/naverPrice.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
+import { renderCalculationPage } from '../report/calculationPage.js';
 import { pool } from './weekly.js';
 import { quickCalc, type StockCalc } from '../analysis/quickCalc.js';
 
@@ -28,13 +29,17 @@ export async function writeStockPages(
   await pool(todo, options.concurrency ?? 8, async (r) => {
     try {
       const bars = await fetchNaverDailyBars(r.symbol, STOCK_PAGE_BARS, { now: options.now, ...(options.fetch ? { fetch: options.fetch } : {}) });
-      if (!bars.length) return;
+
       const calc = quickCalc(r.symbol, bars, options.now());
       if (calc) calcs.set(r.symbol, calc);
-      const body = { symbol: r.symbol, name: r.name, market: r.market, kind: r.kind, marketCap: r.marketCap, bars: bars.map((b) => [b.date, b.open, b.high, b.low, b.close, b.volume]), calc: calc ? compactCalc(calc) : null };
+      const body = { pageUrl: `s/${r.symbol}.html`, symbol: r.symbol, name: r.name, market: r.market, kind: r.kind, marketCap: r.marketCap, bars: bars.map((b) => [b.date, b.open, b.high, b.low, b.close, b.volume]), calc: calc ? compactCalc(calc) : null };
       await writeFile(join(dir, `${r.symbol}.json`), JSON.stringify(body));
-      ok += 1;
+      await writeFile(join(dir, `${r.symbol}.html`), renderCalculationPage({symbol:r.symbol,name:r.name,...(r.kind==='etf'?{kind:'etf' as const}:{}),bars,now:options.now()}));
+      if(bars.length) ok += 1;
     } catch (error) {
+      // Keep the same screen even when this stock's price provider is unavailable.
+      await writeFile(join(dir, `${r.symbol}.html`),renderCalculationPage({symbol:r.symbol,name:r.name,...(r.kind==='etf'?{kind:'etf' as const}:{}),bars:[],now:options.now()}));
+      await writeFile(join(dir, `${r.symbol}.json`),JSON.stringify({pageUrl:`s/${r.symbol}.html`,symbol:r.symbol,name:r.name,market:r.market,bars:[],calc:null}));
       if (errors.length < 3) errors.push(`${r.symbol}:${error instanceof Error ? error.message.slice(0, 60) : 'UNKNOWN'}`);
     }
   });

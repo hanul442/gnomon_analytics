@@ -7,6 +7,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>
 export function scenarioPlot(report: DailyReport, kind: keyof typeof names): string {
  const c=report.commentary?.status==='OK'?report.commentary:undefined;
  const s=c?.scenarios?.find(x=>x.kind===kind);
+ if(!c)return '<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p class="muted small">🔒 시나리오가 아직 생성되지 않았어요. 리포트 생성 후 이 차트에서 확인할 수 있어요.</p></div>';
  if(!s||s.narrative.text===LOCKED_TEXT)return '<p class="muted small">🔒 심층 리포트 열람 권한이 필요해요.</p>';
  const z=s.zone;
  if(!z||!z.every(x=>Number.isFinite(x)&&x>0)||z[0]>z[1])return '<p class="muted small">이 시나리오의 예측 가격 범위가 없어요.</p>';

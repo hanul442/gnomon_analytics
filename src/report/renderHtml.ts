@@ -1,3 +1,4 @@
+import {indicatorKey,INDICATOR_LINK_CSS,INDICATOR_LINK_JS} from './indicatorLinks.js';
 import {scenarioPanel,SCENARIO_CSS,SCENARIO_JS} from './scenarioChart.js';
 import { COIN_CHART_JS } from './coinChart.js';
 import { coinFlow } from './coinFlow.js';
@@ -33,7 +34,7 @@ export const FONT_DIR = 'assets/fonts';
 
 const escape = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const won = (value: number): string => `${Math.round(value).toLocaleString('ko-KR')}원`;
+const won = (value: number): string => `${(value>=100?Math.round(value):value).toLocaleString('ko-KR',{maximumFractionDigits:8})}원`;
 const pct = (value: number | null): string => (value === null ? '없음' : `${value > 0 ? '+' : ''}${value.toFixed(2)}%`);
 const tone = (value: number | null): string => (value === null || value === 0 ? '' : value > 0 ? 'up' : 'down');
 const IMPORTANCE_LABEL = { HIGH: '중요', MEDIUM: '보통', LOW: '참고' } as const;
@@ -390,7 +391,7 @@ function signalSection(report: DailyReport): string {
   const momentum = (report.momentum ?? []).map((m) => `<div class="mom"><div class="k">${escape(m.label)}</div>
 <div class="v ${m.trend === 'UP' ? 'up' : m.trend === 'DOWN' ? 'down' : ''}">${m.trend ? `${trendMark[m.trend]} ${trendWord[m.trend]}` : '판단 보류'}</div>
 <div class="k">${m.days}일 ${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}</div></div>`).join('');
-  const rows = t.votes.map((v) => `<tr><td class="term-cell">${escape(v.label)}</td><td class="num">${v.value === null ? '없음' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
+  const rows = t.votes.map((v) => `<tr><td class="term-cell">${indicatorKey(v.label)?`<button type="button" class="indicator-link" data-chart-indicator="${indicatorKey(v.label)}" title="차트에서 보기">${escape(v.label)} ↗</button>`:escape(v.label)}</td><td class="num">${v.value === null ? '없음' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
 <td>${v.vote ? `<span class="badge v-${v.vote}">${VOTE_LABEL[v.vote]}</span>` : '<span class="badge b-LOW">계산 불가</span>'}</td><td class="why">${escape(v.rule)}</td></tr>`).join('');
   return `<div class="grid-signal" id="signal"><div class="card signal"><div class="head"><h2>기술적 신호</h2><span class="sub" style="margin:0">${escape(t.sessionDate)} 종가 기준</span></div>
 ${gaugeSvg(t)}<div class="signal-label ${tone}">${escape(t.label)}</div>
@@ -619,7 +620,7 @@ ${marketStrip(report)}
 <details class="card more home-more"><summary>오늘의 요약 · 어제 대비 바뀐 점</summary><div class="grid-eq" style="margin-top:10px"><div><p class="headline">${escape(report.headline)}</p>${notes}</div><div>${changes}</div></div></details>`;
   const chartTab = `${chart.html}${scenarioPanel(report)}<div style="margin-top:16px">${kpis(report)}</div>`;
   // Free: the 16-indicator summary (public elsewhere too). Plus: our horizon gauges, fair value, forecasts and structure.
-  const technical = `${insightLine(report, 'technical', base)}${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
+  const technical = `${insightLine(report, 'technical', base)}<div class="active-pills" aria-label="기술 지표 차트 바로 보기">${[['fib','피보나치'],['bb','볼린저'],['rsi','RSI'],['macd','MACD'],['atr','ATR'],['levels','지지·저항']].map(([key,label])=>`<button type="button" class="pill" data-chart-indicator="${key}">${label} ↗</button>`).join('')}</div>${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
   // Free: the champion's name. Plus: the ranking. Pro: trades, curves, Monte Carlo and chart markers.
   const strategyTab = `${insightLine(report, 'strategy', base)}${m ? arenaHeadline(m.arena) : ''}${gate(m ? arenaRanking(m.arena) : '', { base, what: '전략 8개 순위표 · 지금 신호 · 검증 구간 수익' })}${gate(m ? arenaPanel(m.arena) : '<div class="card empty">이 리포트에는 전략 대결 기록이 없어요.</div>', { base, what: '매매 시점 · 수익 곡선 · 몬테카를로 · 거래 기록', need: 'pro' })}
 <section class="block"><div class="card paper-link"><div><b>모의투자 장부</b><p class="muted small">전략 챔피언과 AI 분석가를 따라 했다면 어땠는지, 리포트 종목 전체를 모아 따로 보여 줘요.</p></div><a class="btn-primary" href="${base}scorecard.html#paper">성적표에서 보기</a></div></section>`;
@@ -644,7 +645,7 @@ ${marketStrip(report)}
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary
     ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion', title: '시나리오' }) + parliament(report, ctx.commentaryFrom ?? null, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(☰ 메뉴에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`) : ''}${aiBody}${sealedDeep ? `<section class="block join-wrap"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
-    : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매일 고른 종목과 요청된 종목에 리포트가 만들어져요. 궁금한 건 오른쪽 아래 <b>AI 질문</b>으로 물어보세요.</p></div>`;
+    : `${conclusionCard(report,{id: 'conclusion',title: '시나리오'})}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 토론이 아직 생성되지 않았어요</b><button type="button" class="chip-toggle" data-create-report data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">리포트 생성</button></div></div>${joinBox(report,base)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const p = report.price;
@@ -892,6 +893,7 @@ const stockScript = (coin: boolean) => `<script>
   // Stocks with an AI report have their own page and no s/<code>.json: go there instead.
   var toReport = function () { if(new URLSearchParams(location.search).get('job')) return Promise.resolve(false);return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
   fetch((COIN ? 'c/' : 's/') + code + '.json').then(function (r) { if(r.status===404 && new URLSearchParams(location.search).get('job'))return fetch('research/'+code+'.json').then(function(rr){if(!rr.ok)throw new Error();return rr.json();}).then(function(x){return {name:x.name,symbol:x.symbol,market:x.kind||'주식',bars:(x.recentBars||[]).map(function(b){return [b.date,b.open,b.high,b.low,b.close,b.volume];})};}); if (r.status === 404 && !COIN) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
+    if(d.pageUrl && /^(?:[sc]\\/[0-9A-Z-]+\\.html|[0-9A-Z-]+\\/index\\.html)$/.test(d.pageUrl)){location.replace(d.pageUrl+location.search+location.hash);return;}
     document.title = d.name + ' 차트 | Gnomon Analytics';
     document.querySelectorAll('form.join').forEach(function(f){f.dataset.symbol=code;f.dataset.name=d.name;}); $('sp-star').setAttribute('data-star', code); if (window.GNM_starSync) GNM_starSync();
     // ETFs and coins picked for a daily AI report (G-56) keep their chart page; point to the report.
@@ -974,11 +976,11 @@ export interface HomeEntry {
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
 const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
-export const APP_CSS = `${SCENARIO_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
+export const APP_CSS = `${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}`;
+export const UI_JS = `${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}`;
 const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).digest('hex').slice(0, 10);
 
 export async function writeAssets(siteDir: string): Promise<void> {

@@ -1,3 +1,4 @@
+import {indicatorKey} from './indicatorLinks.js';
 // Dashboard panels for the market section (docs/DESIGN.md §5): horizon gauges,
 // fair value and forecasts, structure, investor flows, fundamentals.
 // Small charts are server-drawn SVG with a <title> per mark for hover; the
@@ -11,7 +12,7 @@ import type { FlowSection, MarketSection } from './marketSection.js';
 
 const esc = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
+const won = (v: number) => `${(v>=100?Math.round(v):v).toLocaleString('ko-KR',{maximumFractionDigits:8})}원`;
 const pct = (v: number | null, digits = 1) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`);
 const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 /** Shares in 만주 / 억주 so flow numbers stay readable. */
@@ -142,9 +143,9 @@ export function structureCard(s: StructureSnapshot | null, weekly: StructureSnap
 <div><span class="label">일봉 구조</span><b class="${s.bias === 'BULLISH' ? 'up' : s.bias === 'BEARISH' ? 'down' : ''}">${BIAS[s.bias]}</b></div>
 <div><span class="label">주봉 구조</span><b class="${weekly?.bias === 'BULLISH' ? 'up' : weekly?.bias === 'BEARISH' ? 'down' : ''}">${weekly ? BIAS[weekly.bias] : '없음'}</b></div>
 <div><span class="label">최근 스윙 범위 안 위치</span><b>${s.zone ? `${ZONE[s.zone.label]} (${Math.round(s.zone.percentile * 100)}%)` : '없음'}</b></div>
-<div><span class="label">피보나치</span><b>${fib && fib.zone && fib.retracement !== null ? `${FIB[fib.zone]} ${(fib.retracement * 100).toFixed(1)}%` : '해당 없음'}</b></div>
-<div><span class="label">볼린저 위치 (%B)</span><b>${s.bollinger ? `${Math.round(s.bollinger.percentB * 100)}%` : '없음'}</b></div>
-<div><span class="label">하루 평균 변동폭 (ATR14)</span><b>${s.atr14 ? `${won(s.atr14)} (${((s.atr14 / s.close) * 100).toFixed(1)}%)` : '없음'}</b></div>
+<div><button type="button" class="indicator-link" data-chart-indicator="fib" title="차트에서 보기"><span class="label">피보나치 ↗</span><b>${fib && fib.zone && fib.retracement !== null ? `${FIB[fib.zone]} ${(fib.retracement * 100).toFixed(1)}%` : '해당 없음'}</b></button></div>
+<div><button type="button" class="indicator-link" data-chart-indicator="bb" title="차트에서 보기"><span class="label">볼린저 위치 (%B) ↗</span><b>${s.bollinger ? `${Math.round(s.bollinger.percentB * 100)}%` : '없음'}</b></button></div>
+<div><button type="button" class="indicator-link" data-chart-indicator="atr" title="차트에서 보기"><span class="label">하루 평균 변동폭 (ATR14) ↗</span><b>${s.atr14 ? `${won(s.atr14)} (${((s.atr14 / s.close) * 100).toFixed(1)}%)` : '없음'}</b></button></div>
 </div>
 <p class="reason">${breakText}</p>
 ${levels ? `<div class="table-wrap"><table class="compact"><thead><tr><th>구분</th><th class="num">가격</th><th class="num">현재가 대비</th><th class="num">닿은 횟수</th></tr></thead><tbody>${levels}</tbody></table></div>` : ''}
@@ -186,7 +187,7 @@ const FOOTPRINT = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 
 
 /** `lockFootprint` wraps our footprint reading (Plus); the investor flows themselves are public data and stay free. */
 export function flowsPanel(flow: FlowSection | null, fp: Footprint, lockFootprint: (html: string) => string = (h) => h): string {
-  if (!flow) return '<div class="card"><div class="head"><h2>투자자별 수급</h2></div><p class="empty">수급 기록이 아직 없어요.</p></div>';
+  if (!flow) return `<div class="grid2 tight"><div class="card"><div class="head"><h2>누적 순매수</h2></div><div class="v2-mask" aria-label="수급 자료 없음"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>아직 수급 자료를 받지 못했어요.</p></div></div><div class="card"><div class="head"><h2>수급 흔적</h2></div><p class="empty">🔒 투자자별 수급 자료가 필요해요.</p></div></div><div class="card" style="margin-top:16px"><h2>기간별 순매수 합계</h2><p class="empty">자료가 준비되면 이 위치에 표시돼요.</p></div>`;
   const legend = (['foreign', 'institution', 'individual'] as const).map((k) => `<span><i style="background:${FLOW_COLORS[k]}"></i>${{ foreign: '외국인', institution: '기관', individual: '개인' }[k]}</span>`).join('');
   const sums = flow.sums.map((s) => `<tr><td>최근 ${s.days}거래일</td><td class="num ${tone(s.foreign)}">${both(s.foreignValue, s.foreign)}</td><td class="num ${tone(s.institution)}">${both(s.institutionValue, s.institution)}</td><td class="num ${tone(s.individual)}">${both(s.individualValue, s.individual)}</td></tr>`).join('');
   const recent = [...flow.days].reverse().slice(0, 10).map((d) => `<tr><td class="nowrap">${esc(d.date)}</td><td class="num ${tone(d.foreignNet)}">${both(d.foreignValue, d.foreignNet)}</td><td class="num ${tone(d.institutionNet)}">${both(d.institutionValue, d.institutionNet)}</td><td class="num ${tone(d.individualNet)}">${both(d.individualValue, d.individualNet)}</td><td class="num">${d.foreignHoldRatio === null ? '없음' : `${d.foreignHoldRatio.toFixed(2)}%`}</td></tr>`).join('');
@@ -234,7 +235,7 @@ ${kpi('PER (최근 4분기)', x(s.per, '배'), s.eps === null ? '' : `EPS ${won(
 ${kpi('추정 PER', x(s.estimatedPer, '배'), s.estimatedEps === null ? '' : `추정 EPS ${won(s.estimatedEps)}`)}
 ${kpi('PBR', x(s.pbr, '배'), s.bps === null ? '' : `BPS ${won(s.bps)}`)}
 ${kpi('증권가 평균 목표가', cons?.targetPriceMean ? won(cons.targetPriceMean) : '없음', cons ? `${cons.date} 기준, 현재가 대비 ${pct(upside)}` : '')}
-</div>` : '<p class="empty">밸류에이션 기록이 아직 없어요.</p>';
+</div>` : `<div class="kpis">${['PER (최근 4분기)','PBR','증권가 평균 목표가'].map(label=>kpi(label,'—','자료 미수집')).join('')}</div>`;
   const q = market.quarters;
   const qRows = q.map((p) => `<tr><td class="nowrap">${p.period.slice(0, 4)}.${p.period.slice(4)}${p.isEstimate ? ' <span class="badge b-LOW">추정</span>' : ''}</td>
 <td class="num">${fmt(p.metrics['매출액'])}</td><td class="num">${fmt(p.metrics['영업이익'])}</td><td class="num">${p.metrics['영업이익률'] == null ? '없음' : `${p.metrics['영업이익률']!.toFixed(1)}%`}</td><td class="num">${fmt(p.metrics['당기순이익'])}</td></tr>`).join('');
