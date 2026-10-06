@@ -277,7 +277,7 @@ table.compact td,table.compact th{padding:7px 8px}.table-wrap{overflow-x:auto;ma
 .legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;width:100%;font-size:13px;color:var(--muted)}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
 .why-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}.why-col{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .why-col h3,.why-h{font-size:14px;margin:0 0 6px}.why-h{margin-top:16px}.bull h3{color:var(--up)}.bear h3{color:var(--down)}.unc h3{color:var(--muted)}
-ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.chips-inline{white-space:normal}.chips-inline .chip{white-space:nowrap}.desk-grid .why-col,.why-col{min-width:0;overflow-wrap:anywhere}
+ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.data-nav{position:sticky;top:calc(var(--bar-h,0px) + 104px);z-index:4;display:flex;gap:6px;overflow-x:auto;background:var(--bg);padding:8px 0;margin-bottom:6px}.data-nav a{flex:none;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 13px;font-size:13.5px;font-weight:700;text-decoration:none;color:var(--fg)}.data-part{scroll-margin-top:170px;margin-bottom:26px}.data-h{font-size:20px;margin:14px 0 8px;padding-left:10px;border-left:4px solid var(--navy)}.chips-inline{white-space:normal}.chips-inline .chip{white-space:nowrap}.desk-grid .why-col,.why-col{min-width:0;overflow-wrap:anywhere}
 .chip{display:inline-block;font-size:11px;font-weight:600;color:var(--accent-strong);background:var(--accent-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none}.chip:hover{background:var(--accent);color:#fff}
 .evid li{font-size:13px}.desk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.desk-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}.desk-grid p,.why-grid p{margin:4px 0;font-size:14px}
 .red-team{margin-top:12px;border-left:4px solid #d1373d;background:#fdf3f2;border-radius:0 12px 12px 0;padding:10px 14px}.red-team h3{font-size:14px;margin:0 0 4px;color:#9f1d24}.red-team p{margin:4px 0}
@@ -303,17 +303,15 @@ main{padding:14px 14px 48px}.hero{padding:22px 18px;border-radius:18px}.hero h1{
 footer{padding:0 16px 32px}}
 `;
 
-type TabKey = 'home' | 'chart' | 'technical' | 'strategy' | 'flows' | 'fundamentals' | 'ai' | 'news';
+// G-71: four tabs. The old tab names stay as anchors inside them (#tab-technical opens 자료 at 기술).
+type TabKey = 'home' | 'chart' | 'ai' | 'data';
 const TABS: readonly { key: TabKey; label: string }[] = [
-  { key: 'home', label: '홈' },
+  { key: 'home', label: '요약' },
   { key: 'chart', label: '차트' },
-  { key: 'technical', label: '기술 분석' },
-  { key: 'strategy', label: '전략' },
-  { key: 'flows', label: '수급' },
-  { key: 'fundamentals', label: '펀더멘털' },
   { key: 'ai', label: 'AI 위원회' },
-  { key: 'news', label: '뉴스·공시' },
+  { key: 'data', label: '자료' },
 ];
+const DATA_PARTS = [['technical', '기술'], ['flows', '수급'], ['fundamentals', '실적'], ['news', '뉴스·공시']] as const;
 
 export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean }): string {
   const cur = (k: string) => (options.active === k ? ' aria-current="page"' : '');
@@ -550,6 +548,13 @@ const TAB_SCRIPT = `<script>
     window.dispatchEvent(new Event('resize'));
     return true;
   }
+  // Links to a part of a tab (자료 > 기술): open the tab, then scroll to the part.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#tab-"]'); if (!a) return;
+    var el = document.getElementById(a.getAttribute('href').slice(1)); if (!el || el.getAttribute('role') === 'tabpanel') return;
+    var panel = el.closest('[role=tabpanel]'); if (!panel) return;
+    e.preventDefault(); show(panel.id); el.scrollIntoView({ block: 'start' }); history.replaceState(null, '', a.getAttribute('href'));
+  });
   function route() {
     var id = (location.hash || '#tab-home').slice(1);
     // A tab hash would otherwise scroll past the hero; start the tab from the top.
@@ -600,11 +605,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
-<div class="pc-hide-beginner pc-hide-trader">${parliament(report, ctx.commentaryFrom ?? null) || councilCard(report.commentary, ctx.commentaryFrom ?? null)}</div>
-${m ? gate(`<section class="block"><div class="block-head"><h2>기간별 기술 신호</h2><a href="#tab-technical" class="more-link">게이지로 보기 ›</a></div>${horizonStrip(m.horizons)}</section>
-<section class="block"><div class="block-head"><h2>기술적 적정가</h2><a href="#tab-technical" class="more-link">자세히 보기 ›</a></div>${valueCard(m, false)}</section>`, { base, what: '기간별 신호 · 기술적 적정가' }) : ''}
 ${marketStrip(report)}
-<div class="pc-hide-beginner pc-hide-long">${m ? gate(arenaTeaser(m.arena), { base, what: '전략 챔피언 레이스와 지금 신호' }) : ''}</div>
 <div class="home-lists">${latestLists(report)}</div>
 <details class="card more home-more"><summary>오늘의 요약 · 어제 대비 바뀐 점</summary><div class="grid-eq" style="margin-top:10px"><div><p class="headline">${escape(report.headline)}</p>${notes}</div><div>${changes}</div></div></details>`;
   const chartTab = `${chart.html}<div style="margin-top:16px">${kpis(report)}</div>`;
@@ -639,14 +640,12 @@ ${marketStrip(report)}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const p = report.price;
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
+  const part = (key: string, label: string, html: string) => `<section class="data-part" id="tab-${key}"><h2 class="data-h">${label}</h2>${html}</section>`;
+  const dataTab = `<nav class="data-nav" aria-label="자료 바로 가기">${DATA_PARTS.map(([k, l]) => `<a href="#tab-${k}">${l}</a>`).join('')}</nav>${part('technical', '기술', technical)}${part('flows', '수급', flowsTab)}${part('fundamentals', '실적', fundTab)}${part('news', '뉴스·공시', newsTab)}`;
   const body = `${bar}${panel('home', home)}
-${panel('chart', chartTab)}
-${panel('technical', technical)}
-${panel('strategy', strategyTab)}
-${panel('flows', flowsTab)}
-${panel('fundamentals', fundTab)}
+${panel('chart', `${chartTab}<section class="data-part" id="tab-strategy"><h2 class="data-h">전략</h2>${strategyTab}</section>`)}
 ${panel('ai', aiTab)}
-${panel('news', newsTab)}
+${panel('data', dataTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;

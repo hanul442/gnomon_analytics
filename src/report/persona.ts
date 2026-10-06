@@ -4,7 +4,6 @@
 // be switched at the top of the page (gnm-persona). Everything is in the page; CSS decides what shows.
 
 import type { DailyReport } from './dailyReport.js';
-import { conclusionCard } from './conclusion.js';
 
 export type Persona = 'beginner' | 'trader' | 'swing' | 'long' | 'all';
 export const PERSONAS: readonly { key: Persona; label: string; question: string }[] = [
@@ -27,14 +26,14 @@ export const HOME_ORDER: Record<Exclude<Persona, 'all'>, string[]> = {
 };
 /** Report tabs each view keeps (the rest come back with "전체 보기"). */
 export const TAB_KEEP: Record<Exclude<Persona, 'all'>, string[]> = {
-  beginner: ['home', 'chart', 'ai', 'news'],
-  trader: ['home', 'chart', 'technical', 'flows', 'ai', 'news'],
-  swing: ['home', 'chart', 'technical', 'ai', 'flows', 'news'],
-  long: ['home', 'chart', 'fundamentals', 'ai', 'flows', 'news'],
+  beginner: ['home', 'chart', 'ai', 'data'],
+  trader: ['home', 'chart', 'ai', 'data'],
+  swing: ['home', 'chart', 'ai', 'data'],
+  long: ['home', 'chart', 'ai', 'data'],
 };
 
 export const PERSONA_CSS = `${(Object.keys(TAB_KEEP) as Exclude<Persona, 'all'>[]).map((p) => `html[data-persona=${p}]:not(.show-all) .chips [role=tab]:not(${TAB_KEEP[p].map((t) => `#t-${t}`).join(',')})`).join(',')}{display:none}
-.pc{display:none}${(['beginner', 'trader', 'swing', 'long'] as const).map((p) => `html[data-persona=${p}] .pc-${p}`).join(',')},html[data-persona=all] .pc-swing{display:block}.pc-swing .cl-card{margin-top:0}
+.pc{display:none}${(['beginner', 'trader', 'swing', 'long'] as const).map((p) => `html[data-persona=${p}] .pc-${p}`).join(',')},html[data-persona=all] .pc-swing{display:block}
 .pc-wrap{margin:14px 0 4px}.pc-wrap .persona-bar{margin-bottom:10px}.pc{margin-bottom:14px}.pc .card{border:1px solid var(--accent);background:linear-gradient(180deg,#f5f8fd,#fff)}.pc-q{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.pc h2{font-size:19px;margin:0 0 10px;line-height:1.45}
 .pc-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.pc-rows>div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.pc-rows span{display:block;font-size:12px;color:var(--muted)}.pc-rows b{font-size:16px}.pc-rows small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
 html[data-persona=beginner]:not(.show-all) .pc-hide-beginner,html[data-persona=trader]:not(.show-all) .pc-hide-trader,html[data-persona=long]:not(.show-all) .pc-hide-long{display:none}
@@ -92,7 +91,12 @@ export function personaCards(report: DailyReport): string {
     + (m ? row('수급 흔적', FOOT[m.footprint.state] ?? '—') : '')
     + (st?.atr14 ? row('하루 평균 움직임', `${((st.atr14 / p.close) * 100).toFixed(1)}%`, 'ATR 14일') : ''));
   // Swing: the conclusion card (G-65): the two test prices and what each crossing would mean, with the odds.
-  const swing = `<div class="pc pc-swing">${conclusionCard(report, { title: '지금 판단' })}</div>`;
+  // Swing: the scenarios' odds in one line; the scenarios themselves are on the AI tab (G-71).
+  const odds = (['BULL', 'BASE', 'BEAR'] as const).map((k) => c?.scenarios?.find((x) => x.kind === k)?.probability);
+  const swing = card('swing', '지금 판단', line,
+    (odds.some((x) => typeof x === 'number') ? row('강세 시나리오', `${odds[0] ?? '—'}%`) + row('기본 시나리오', `${odds[1] ?? '—'}%`) + row('약세 시나리오', `${odds[2] ?? '—'}%`) : '')
+    + (above ? row('위쪽 테스트', won(above.price)) : '') + (below ? row('아래쪽 테스트', won(below.price)) : ''),
+    '<p style="margin:10px 0 0"><a class="more-link" href="#tab-ai">AI 위원회에서 시나리오 펼쳐 보기 ›</a></p>');
   // Long: value, earnings and what the street expects.
   const snap = m?.snapshot, q = m?.quarters.filter((x) => !x.isEstimate) ?? [];
   const op = (x: { metrics: Record<string, number | null> } | undefined) => x?.metrics['영업이익'] ?? null;

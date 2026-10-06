@@ -21,12 +21,14 @@ const fakeFetch = (async (url: string | URL | Request) => {
   return new Response('<rss><channel></channel></rss>');
 }) as typeof fetch;
 
-test('report pages have eight tabs with gauges, fair value, forecasts, flows and fundamentals; the front page is live', async () => {
+test('report pages have four tabs with gauges, fair value, forecasts, flows and fundamentals; the front page is live', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gnm-'));
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, tickers });
   const page = await readFile(join(root, 'site', '000660', 'reports', '2026-10-02.html'), 'utf8');
-  for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-strategy', 'tab-flows', 'tab-fundamentals', 'tab-ai', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
+  // G-71: four tabs; the old tab names live on as parts of them.
+  for (const id of ['tab-home', 'tab-chart', 'tab-ai', 'tab-data']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
+  for (const id of ['tab-technical', 'tab-strategy', 'tab-flows', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`class="data-part" id="${id}"`));
   // Horizon gauges on the home and technical tabs, plus one per strategy in the arena.
   assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 10);
   assert.ok(page.includes('전략 대결') && page.includes('챔피언 레이스'));
@@ -36,7 +38,7 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   // Strategy chips put buy/sell points on the chart; filings and news are dashed vertical lines.
   assert.ok(page.includes('data-strategy="macd"') && page.includes('id="strat-info"') && page.includes('data-show-strategy'));
   // The parliament: every vote as a seat, with faction chips and seat details.
-  assert.ok(page.includes('id="parliament"') && page.includes('data-pf="indicator"') && (page.match(/class="seat /g) ?? []).length >= 16);
+  assert.ok(!page.includes('id="parliament"'), 'the seat chart gives way to the vote (G-69, G-71)');
   // Chart tools: indicators one by one (no presets), an indicator sheet and a strategy sheet.
   assert.ok(!page.includes('data-preset="momentum"') && page.includes('id="ind-reset"'));
   for (const s of ['id="ind-sheet"', 'id="strat-sheet"', 'id="active-pills"']) assert.ok(page.includes(s), s);
@@ -48,7 +50,7 @@ test('report pages have eight tabs with gauges, fair value, forecasts, flows and
   assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 2, 'plus gates');
   assert.ok((page.match(/class="gate" data-need="pro"/g) ?? []).length >= 2, 'pro gates');
   assert.ok(page.includes('data-plan="free"'), 'free plan');
-  assert.ok(page.includes('class="card hs"'));
+  assert.ok(!page.includes('class="card hs"'), 'the horizon strip lives on the 자료 tab only (G-71)');
   assert.ok(page.includes('id="vlines"') && page.includes('id="ev-strip"') && page.includes('class="trade-log"'));
   // The front page is the live dashboard; the archive lists dated reports.
   const front = await readFile(join(root, 'site', '000660', 'index.html'), 'utf8');
