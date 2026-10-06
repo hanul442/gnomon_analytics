@@ -29,7 +29,9 @@ import { tabBar, BANNER_CSS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 import { adStrip, AD_CSS, AD_JS } from './ads.js';
+import { edgeCard, edgeEvents, edgeFlows, edgeFundamentals, EDGE_CSS } from './renderEdge.js';
 import { ALERTS_CSS, PRICE_ALERT_JS, PUSH_JS } from './pushParts.js';
+import { THEME_CHIPS_CSS, THEME_CHIPS_JS } from './themeChips.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 /** Pretendard web font, also served from our own site. */
@@ -615,7 +617,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const changes = report.changes?.length ? `<ul class="plain">${report.changes.map((c) => `<li>${escape(c)}</li>`).join('')}</ul>` : '<p class="empty">비교할 이전 리포트가 없어요.</p>';
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   // G-71: the conclusion (scenarios that open on tap) heads the summary tab, above everything else.
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 ${marketStrip(report)}
@@ -628,8 +630,8 @@ ${marketStrip(report)}
   const strategyTab = `${insightLine(report, 'strategy', base)}${m ? arenaHeadline(m.arena) : ''}${gate(m ? arenaPanel(m.arena) : '<div class="card empty">이 리포트에는 전략 대결 기록이 없어요.</div>', { base, what: '매매 시점 · 수익 곡선 · 몬테카를로 · 거래 기록', need: 'pro' })}
 <section class="block"><div class="card paper-link"><div><b>모의투자 장부</b><p class="muted small">전략 챔피언과 AI 분석가를 따라 했다면 어땠는지, 리포트 종목 전체를 모아 따로 보여 줘요.</p></div><a class="btn-primary" href="${base}scorecard.html#paper">성적표에서 보기</a></div></section>`;
   // Investor flows and fundamentals are public data: free. Our footprint reading is Plus.
-  const flowsTab = insightLine(report, 'flow', base) + (report.kind==='coin' ? coinFlow(report) : m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>');
-  const fundTab = insightLine(report, 'fundamental', base) + (m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>');
+  const flowsTab = insightLine(report, 'flow', base) + (report.kind==='coin' ? coinFlow(report) : m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>') + edgeFlows(report);
+  const fundTab = insightLine(report, 'fundamental', base) + (m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>') + edgeFundamentals(report);
   const summary = report.commentary?.status === 'OK' ? report.commentary.summary?.text : undefined;
   const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>요약 리포트예요</b><p class="muted small">AI 위원회 전체(데스크 5곳·분석가 6명·레드팀·시나리오)로 다시 쓰려면 심층 리포트로 업그레이드하세요. 프로부터 쓸 수 있어요.</p></div><button type="button" class="credit-btn" data-spend="upgrade" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">심층으로 업그레이드 <small>${CREDIT_COST.upgrade}크레딧</small></button></div></section>` : '';
   const fromNote = ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : '';
@@ -649,7 +651,7 @@ ${marketStrip(report)}
   const aiTab = report.commentary?.status === 'OK'
     ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion', title: '시나리오' }) + parliament(report, ctx.commentaryFrom ?? null, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(☰ 메뉴에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`) : ''}${aiBody}${sealedDeep ? `<section class="block join-wrap"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
     : `${report.commentary?whySection(report):''}${conclusionCard(report,{id: 'conclusion',title: '시나리오'})}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 토론이 아직 생성되지 않았어요</b><button type="button" class="chip-toggle" data-create-report data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">리포트 생성</button></div></div>${joinBox(report,base)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
-  const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
+  const newsTab = `${insightLine(report, 'news', base)}${edgeEvents(report)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const p = report.price;
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
@@ -990,11 +992,11 @@ export interface HomeEntry {
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
 const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
-export const APP_CSS = `${ALERTS_CSS}${AD_CSS}${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
+export const APP_CSS = `${THEME_CHIPS_CSS}${EDGE_CSS}${ALERTS_CSS}${AD_CSS}${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}`;
+export const UI_JS = `${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}`;
 const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).digest('hex').slice(0, 10);
 
 export async function writeAssets(siteDir: string): Promise<void> {
