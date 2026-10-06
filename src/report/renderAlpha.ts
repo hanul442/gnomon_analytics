@@ -27,20 +27,39 @@ const PAGE_CSS = `<style>
 const NO_API = `<div class="msg-err" data-no-api hidden>알파 서버가 아직 연결되지 않았어요. 연결되면 이 페이지에서 로그인할 수 있어요.</div><script>if(!document.querySelector('meta[name=gnm-api]'))document.querySelectorAll('[data-no-api]').forEach(function(e){e.hidden=false})</script>`;
 
 export function renderLogin(): string {
-  const body = `${PAGE_CSS}<section class="card form-card"><div class="eyebrow"><span>클로즈드 알파</span></div><h1>그노몬 로그인</h1>
-<p class="muted">이메일로 로그인 링크를 보내 드려요. 비밀번호는 없어요.</p>${NO_API}
+  const body = `${PAGE_CSS}<style>.seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#eef1f5;border-radius:12px;padding:4px;margin:12px 0 4px}.seg2 button{border:0;background:none;border-radius:9px;padding:9px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer}.seg2 button[aria-selected=true]{background:#fff;color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.08)}.form-card input{font-size:16px}.alt{margin-top:14px;font-size:13px}</style>
+<section class="card form-card"><div class="eyebrow"><span>클로즈드 알파</span></div><h1>그노몬 로그인</h1>${NO_API}
 <div id="verifying" class="msg-ok" hidden>로그인하고 있어요…</div>
-<form id="login"><div class="fld"><label for="email">이메일</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
-<div class="fld" id="invite-fld"><label for="invite">초대 코드 <small>(처음 가입할 때만)</small></label><input id="invite" autocomplete="off" placeholder="GNM-XXXXXX" style="text-transform:uppercase"></div>
-<label class="chk"><input type="checkbox" id="terms"> <span><a href="terms.html" target="_blank">이용 약관과 면책</a>을 읽었고, 그노몬의 정보가 투자 권유가 아니며 투자 판단과 결과의 책임이 나에게 있다는 데 동의해요. (처음 가입할 때만)</span></label>
-<button class="btn-primary" type="submit">로그인 링크 받기</button><div id="out" aria-live="polite"></div></form></section>`;
+<div class="seg2" role="tablist"><button type="button" role="tab" data-mode="login" aria-selected="true">로그인</button><button type="button" role="tab" data-mode="signup" aria-selected="false">처음이에요 (초대 코드)</button></div>
+<form id="login" autocomplete="on"><div class="fld"><label for="email">이메일</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
+<div class="fld"><label for="pw">비밀번호</label><input id="pw" type="password" autocomplete="current-password" required minlength="8" maxlength="72"><small class="muted" data-only="signup" hidden>8자 이상, 영문과 숫자를 함께 넣어 주세요.</small></div>
+<div class="fld" data-only="signup" hidden><label for="pw2">비밀번호 확인</label><input id="pw2" type="password" autocomplete="new-password" maxlength="72"></div>
+<div class="fld" data-only="signup" hidden><label for="invite">초대 코드</label><input id="invite" autocomplete="off" placeholder="GNM-XXXXXX" style="text-transform:uppercase"></div>
+<label class="chk" data-only="signup" hidden><input type="checkbox" id="terms"> <span><a href="terms.html" target="_blank">이용 약관과 면책</a>을 읽었고, 그노몬의 정보가 투자 권유가 아니며 투자 판단과 결과의 책임이 나에게 있다는 데 동의해요.</span></label>
+<button class="btn-primary" type="submit" id="go">로그인</button><div id="out" aria-live="polite"></div></form>
+<p class="alt muted">비밀번호를 아직 안 정했거나 잊었다면 운영자에게 로그인 링크를 받아 들어온 뒤, <b>내 계정</b>에서 비밀번호를 정할 수 있어요.</p></section>`;
   const script = `<script>
 (function () {
-  var out = document.getElementById('out'), form = document.getElementById('login'), qs = new URLSearchParams(location.search);
+  var out = document.getElementById('out'), form = document.getElementById('login'), qs = new URLSearchParams(location.search), mode = 'login';
   var show = function (cls, text) { out.innerHTML = '<div class="' + cls + '"></div>'; out.firstChild.textContent = text; };
-  if (qs.get('invite')) document.getElementById('invite').value = qs.get('invite');
+  var setMode = function (m) {
+    mode = m; out.innerHTML = '';
+    document.querySelectorAll('[data-mode]').forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-mode') === m)); });
+    document.querySelectorAll('[data-only=signup]').forEach(function (el) { el.hidden = m !== 'signup'; });
+    document.getElementById('pw').setAttribute('autocomplete', m === 'signup' ? 'new-password' : 'current-password');
+    document.getElementById('go').textContent = m === 'signup' ? '가입하고 시작하기' : '로그인';
+  };
+  document.querySelectorAll('[data-mode]').forEach(function (b) { b.addEventListener('click', function () { setMode(b.getAttribute('data-mode')); }); });
+  if (qs.get('invite')) { document.getElementById('invite').value = qs.get('invite'); setMode('signup'); }
   if (qs.get('return')) try { sessionStorage.setItem('gnm-return', qs.get('return')); } catch (e) {}
-  if (!window.GNM || !GNM.api) { form.querySelector('button').disabled = true; return; }
+  if (!window.GNM || !GNM.api) { form.querySelector('button[type=submit]').disabled = true; return; }
+  var done = function (r) {
+    var me = Object.assign({}, r); delete me.session; delete me._status;
+    GNM.signIn(r.session, me);
+    var back = ''; try { back = sessionStorage.getItem('gnm-return') || ''; sessionStorage.removeItem('gnm-return'); } catch (e) {}
+    location.replace(!me.survey.onboarding ? 'onboarding.html' : /^[\\w\\/.-]+(\\?[\\w=&%-]*)?$/.test(back) ? back : 'index.html');
+  };
+  // A one-time login link (sent by the operator) still works.
   var token = (/[#&]t=([\\w-]+)/.exec(location.hash) || [])[1];
   if (token) {
     history.replaceState(null, '', location.pathname);
@@ -48,22 +67,20 @@ export function renderLogin(): string {
     GNM.call('POST', '/auth/verify', { token: token }).then(function (r) {
       document.getElementById('verifying').hidden = true;
       if (r.error) { form.hidden = false; show('msg-err', r.message); return; }
-      var me = Object.assign({}, r); delete me.session; delete me._status;
-      GNM.signIn(r.session, me);
-      var back = ''; try { back = sessionStorage.getItem('gnm-return') || ''; sessionStorage.removeItem('gnm-return'); } catch (e) {}
-      location.replace(!me.survey.onboarding ? 'onboarding.html' : /^[\\w\\/.-]+(\\?[\\w=&%-]*)?$/.test(back) ? back : 'index.html');
+      done(r);
     });
     return;
   }
   (GNM.ready || Promise.resolve()).then(function (me) { if (me) show('msg-ok', me.user.email + '로 로그인돼 있어요. 다른 이메일로 바꾸려면 계정 페이지에서 로그아웃해 주세요.'); });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var btn = form.querySelector('button'); btn.disabled = true;
-    GNM.call('POST', '/auth/start', { email: document.getElementById('email').value, invite: document.getElementById('invite').value.trim() || undefined, terms: document.getElementById('terms').checked }).then(function (r) {
-      btn.disabled = false;
-      if (r.error) { show('msg-err', r.message); return; }
-      show('msg-ok', '메일을 보냈어요. 20분 안에 메일의 로그인 버튼을 눌러 주세요. 스팸함도 확인해 주세요.');
-    });
+    var email = document.getElementById('email').value, pw = document.getElementById('pw').value;
+    if (mode === 'signup' && pw !== document.getElementById('pw2').value) { show('msg-err', '비밀번호 확인이 맞지 않아요.'); return; }
+    var btn = document.getElementById('go'); btn.disabled = true;
+    var req = mode === 'signup'
+      ? GNM.call('POST', '/auth/signup', { email: email, password: pw, invite: document.getElementById('invite').value.trim(), terms: document.getElementById('terms').checked })
+      : GNM.call('POST', '/auth/login', { email: email, password: pw });
+    req.then(function (r) { btn.disabled = false; if (r.error) { show('msg-err', r.message); return; } done(r); });
   });
 })();
 </script>`;
@@ -159,6 +176,9 @@ export function renderAccount(): string {
 <div class="fld" style="margin:0;flex:1;min-width:220px"><label for="req-why">어디에 쓰실지</label><input id="req-why" maxlength="300" placeholder="예: 반도체 종목 심층 리포트 비교" required></div><button class="credit-btn" type="submit">요청하기</button></form>
 <div id="req-list" style="margin-top:12px"></div></div></section>
 <section class="block"><div class="block-head"><h2>크레딧 내역</h2></div><div class="card adm"><table><thead><tr><th>때</th><th>내용</th><th class="num">크레딧</th></tr></thead><tbody id="ledger"><tr><td colspan="3" class="muted">불러오는 중…</td></tr></tbody></table></div></section>
+<section class="block"><div class="block-head"><h2>비밀번호</h2><span class="muted" id="pw-state"></span></div><div class="card">
+<form id="pwf" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><div class="fld" style="margin:0" id="pw-cur-f"><label for="pw-cur">지금 비밀번호</label><input id="pw-cur" type="password" autocomplete="current-password"></div><div class="fld" style="margin:0"><label for="pw-new">새 비밀번호</label><input id="pw-new" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></div><button class="credit-btn" type="submit">저장</button></form>
+<p class="muted small" style="margin:8px 0 0">8자 이상, 영문과 숫자를 함께 넣어 주세요. 정해 두면 다음부터 이메일과 비밀번호로 로그인해요.</p><div id="pw-out" aria-live="polite"></div></div></section>
 <section class="block"><div class="block-head"><h2>설정</h2></div><div class="card" style="display:flex;gap:8px;flex-wrap:wrap">
 <a class="credit-btn ghost" href="onboarding.html">설문 다시 하기</a><button class="credit-btn ghost" type="button" id="export">내 데이터 내려받기</button><button class="credit-btn ghost" type="button" id="logout">로그아웃</button><button class="credit-btn ghost" type="button" id="delete" style="color:#9b1c1c;border-color:#9b1c1c">계정 삭제</button></div></section>`;
   const script = `<script>
@@ -173,6 +193,8 @@ export function renderAccount(): string {
       document.getElementById('acc-email').textContent = me.user.email;
       document.getElementById('acc-line').textContent = me.user.planName + ' 요금제 · ' + new Date(me.user.createdAt).toLocaleDateString('ko-KR') + ' 가입 · 알파 동안 프로 기능을 모두 써요';
       document.getElementById('acc-asks').textContent = me.asks.today + ' / ' + me.asks.limit;
+      document.getElementById('pw-state').textContent = me.user.hasPassword ? '설정돼 있어요' : '아직 없어요 · 정해 두면 링크 없이 로그인해요';
+      document.getElementById('pw-cur-f').hidden = !me.user.hasPassword;
       document.getElementById('req-list').innerHTML = me.requests.length ? '<div class="adm"><table><thead><tr><th>요청</th><th>사유</th><th>상태</th></tr></thead><tbody>' + me.requests.map(function (r) { return '<tr><td>' + r.amount + (r.granted ? ' → ' + r.granted : '') + '</td><td>' + esc(r.reason) + (r.admin_note ? '<br><small class="muted">운영자: ' + esc(r.admin_note) + '</small>' : '') + '</td><td><span class="pill ' + r.status + '">' + STATUS[r.status] + '</span></td></tr>'; }).join('') + '</tbody></table></div>' : '';
     });
     GNM.call('GET', '/me/ledger').then(function (r) {
@@ -181,6 +203,14 @@ export function renderAccount(): string {
     });
   };
   load();
+  document.getElementById('pwf').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var o = document.getElementById('pw-out');
+    GNM.call('POST', '/me/password', { password: document.getElementById('pw-new').value, current: document.getElementById('pw-cur').value || undefined }).then(function (r) {
+      o.innerHTML = '<div class="' + (r.error ? 'msg-err' : 'msg-ok') + '"></div>'; o.firstChild.textContent = r.error ? r.message : '비밀번호를 저장했어요.';
+      if (!r.error) { document.getElementById('pw-new').value = ''; document.getElementById('pw-cur').value = ''; load(); }
+    });
+  });
   document.getElementById('req').addEventListener('submit', function (e) {
     e.preventDefault();
     GNM.call('POST', '/credits/request', { amount: Number(document.getElementById('req-amt').value), reason: document.getElementById('req-why').value }).then(function (r) { GNM.toast(r.error ? r.message : '요청했어요. 승인되면 바로 쓸 수 있어요.'); if (!r.error) { document.getElementById('req-why').value = ''; load(); } });

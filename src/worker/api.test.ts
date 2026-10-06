@@ -222,3 +222,39 @@ test('intraday: Pro-level watchers hear once when volume runs ahead of its usual
   t.tick(10 * 3600_000);
   assert.deepEqual(await runIntraday(t.env, t.deps), { symbols: 0, alerts: 0 });
 });
+
+test('passwords (G-57): sign up once with an invite, then email + password; lockout; set and change', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const code = (await t.call('POST', '/admin/invites', { credits: 50 }, boss.session)).body.code;
+  // Sign-up needs a sound password, the terms and a live invite.
+  assert.equal((await t.call('POST', '/auth/signup', { email: 'p@example.com', password: 'short', invite: code, terms: true })).body.error, 'BAD_PASSWORD');
+  assert.equal((await t.call('POST', '/auth/signup', { email: 'p@example.com', password: 'abcdefgh', invite: code, terms: true })).body.error, 'BAD_PASSWORD');
+  assert.equal((await t.call('POST', '/auth/signup', { email: 'p@example.com', password: 'abcd1234', terms: true })).body.error, 'INVITE_REQUIRED');
+  assert.equal((await t.call('POST', '/auth/signup', { email: 'p@example.com', password: 'abcd1234', invite: code })).body.error, 'TERMS_REQUIRED');
+  const up = await t.call('POST', '/auth/signup', { email: 'P@example.com', password: 'abcd1234', invite: code.toLowerCase(), terms: true });
+  assert.ok(up.body.session && up.body.user.hasPassword && up.body.credits.balance >= 50, JSON.stringify(up.body));
+  // The invite is used up, and the same email cannot sign up again.
+  assert.equal((await t.call('POST', '/auth/signup', { email: 'q@example.com', password: 'abcd1234', invite: code, terms: true })).body.error, 'INVITE_INVALID');
+  assert.equal((await t.call('POST', '/auth/signup', { email: 'p@example.com', password: 'abcd1234', invite: code, terms: true })).body.error, 'ALREADY_JOINED');
+  // Login: right password works; a wrong one fails the same way as an unknown email.
+  const ok = await t.call('POST', '/auth/login', { email: 'p@example.com', password: 'abcd1234' });
+  assert.ok(ok.body.session && ok.body.user.email === 'p@example.com');
+  assert.equal((await t.call('GET', '/me', undefined, ok.body.session)).body.user.email, 'p@example.com');
+  const bad = await t.call('POST', '/auth/login', { email: 'p@example.com', password: 'wrong1234' });
+  assert.deepEqual([bad.status, bad.body.error], [401, 'LOGIN_FAILED']);
+  assert.equal((await t.call('POST', '/auth/login', { email: 'nobody@example.com', password: 'abcd1234' })).body.error, 'LOGIN_FAILED');
+  // Eight failures in 15 minutes lock the email, even for the right password; it opens again later.
+  for (let i = 0; i < 7; i++) await t.call('POST', '/auth/login', { email: 'p@example.com', password: 'nope12345' });
+  assert.equal((await t.call('POST', '/auth/login', { email: 'p@example.com', password: 'abcd1234' })).body.error, 'TOO_MANY');
+  t.tick(16 * 60_000);
+  assert.ok((await t.call('POST', '/auth/login', { email: 'p@example.com', password: 'abcd1234' })).body.session);
+  // A magic-link account has no password until it sets one; changing one needs the current password.
+  const link = await t.login('l@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  assert.equal((await t.call('GET', '/me', undefined, link.session)).body.user.hasPassword, false);
+  assert.equal((await t.call('POST', '/auth/login', { email: 'l@example.com', password: 'abcd1234' })).body.error, 'LOGIN_FAILED');
+  assert.equal((await t.call('POST', '/me/password', { password: 'first1234' }, link.session)).body.ok, true);
+  assert.equal((await t.call('POST', '/me/password', { password: 'second1234' }, link.session)).body.error, 'BAD_CURRENT');
+  assert.equal((await t.call('POST', '/me/password', { password: 'second1234', current: 'first1234' }, link.session)).body.ok, true);
+  assert.ok((await t.call('POST', '/auth/login', { email: 'l@example.com', password: 'second1234' })).body.session);
+});
