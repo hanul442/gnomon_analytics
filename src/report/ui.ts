@@ -274,7 +274,7 @@ export const TOUR_JS = `
     var steps = STEPS[kind].filter(function (s) { var el = document.querySelector(s[0]); return el && (s[3] || el.getClientRects().length); });
     if (!steps.length) return;
     var i = 0, hole, tip, focusBefore = document.activeElement, originalTab = document.querySelector('.chips [aria-selected=true]');
-    var end = function () { try { localStorage.setItem(key, '1'); } catch (e) {} if (hole) hole.remove(); if (tip) tip.remove(); window.removeEventListener('resize', place); window.removeEventListener('scroll', place); window.removeEventListener('keydown', escapeTour); if (originalTab) originalTab.click(); if (focusBefore && focusBefore.isConnected) focusBefore.focus({preventScroll:true}); };
+    var end = function () { try { localStorage.setItem(key, '1'); } catch (e) {} if (hole) hole.remove(); if (tip) tip.remove(); window.removeEventListener('resize', place); window.removeEventListener('scroll', place); window.removeEventListener('keydown', escapeTour); if (originalTab) { if (window.GNM_showTab) window.GNM_showTab(originalTab.getAttribute('aria-controls').replace('tab-','')); else originalTab.click(); } if (focusBefore && focusBefore.isConnected) focusBefore.focus({preventScroll:true}); };
     var escapeTour = function(e){if(e.key === 'Escape') end();};
     var place = function () {
       var el = document.querySelector(steps[i][0]); if (!el) return;
@@ -284,7 +284,7 @@ export const TOUR_JS = `
       tip.style.top = (below ? Math.min(r.bottom + 14, innerHeight - 190) : Math.max(r.top - 14 - tip.offsetHeight, 10)) + 'px';
     };
     var show = function () {
-      var s = steps[i]; if (s[3]) { var tab = document.getElementById('t-' + s[3]); if (tab) tab.click(); } var el = document.querySelector(s[0]);
+      var s = steps[i]; if (s[3]) { if (window.GNM_showTab) window.GNM_showTab(s[3]); else { var tab = document.getElementById('t-' + s[3]); if (tab) tab.click(); } } var el = document.querySelector(s[0]);
       el.scrollIntoView({ block: 'center' });
       tip.innerHTML = '<div class="tr-n">' + (i + 1) + ' / ' + steps.length + '</div><b>' + s[1] + '</b><p>' + s[2] + '</p><div class="tr-b"><button type="button" data-t="x">그만 보기</button>' + (i ? '<button type="button" data-t="p">이전</button>' : '') + '<button type="button" data-t="n" class="tr-next">' + (i === steps.length - 1 ? '끝' : '다음') + '</button></div>';
       tip.querySelector('[data-t=n]').focus({preventScroll:true}); setTimeout(place, 60);
