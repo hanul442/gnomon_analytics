@@ -1,5 +1,5 @@
 {
- "at": "2026-10-06T09:20:57.698Z",
+ "at": "2026-10-06T10:00:52.840Z",
  "selected": null,
  "universe": [
   {
@@ -32,7 +32,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 203
+   "count": 204
   }
  ],
  "stocks": [
@@ -252,12 +252,7 @@
    ]
   },
   {
-   "symbol": "475830",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "001520",
+   "symbol": "314930",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -267,7 +262,12 @@
    "failedSources": []
   },
   {
-   "symbol": "314930",
+   "symbol": "475830",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "001520",
    "report": "EXISTS",
    "failedSources": []
   },
