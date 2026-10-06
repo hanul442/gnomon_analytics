@@ -6495,11 +6495,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "072950",
-  "name": "빛샘전자",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "072990",
   "name": "에이치시티",
   "market": "KOSDAQ"
@@ -7185,6 +7180,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "089590",
+  "name": "제주항공",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "089600",
   "name": "KT나스미디어",
   "market": "KOSDAQ"
@@ -7463,11 +7463,6 @@
   "symbol": "094480",
   "name": "갤럭시아머니트리",
   "market": "KOSDAQ"
- },
- {
-  "symbol": "094800",
-  "name": "맵스리얼티",
-  "market": "KOSPI"
  },
  {
   "symbol": "094820",
@@ -8140,6 +8135,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "114840",
+  "name": "아이패밀리에스씨",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "115160",
   "name": "휴맥스",
   "market": "KOSDAQ"
@@ -8238,11 +8238,6 @@
   "symbol": "119850",
   "name": "지엔씨에너지",
   "market": "KOSDAQ"
- },
- {
-  "symbol": "120030",
-  "name": "조선선재",
-  "market": "KOSPI"
  },
  {
   "symbol": "120030",
