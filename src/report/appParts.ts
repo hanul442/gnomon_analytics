@@ -509,6 +509,16 @@ const TOOLS_JS = `
     opts().forEach(function (b) { var k = b.hasAttribute('data-ov') ? 'ov' : 'pane', v = b.getAttribute('data-' + k); if (on(b) !== ((want[k] || []).indexOf(v) >= 0)) b.click(); });
     restoring = false; renderPills();
   };
+  var focused = null;
+  window.GNM_indicators = {
+    focus: function (key) {
+      if (!focused) { focused = { ov: [], pane: [], strategy: (document.querySelector('[data-strategy][aria-pressed=true]') || {}).dataset?.strategy || '', compare: document.querySelector('[data-compare]')?.getAttribute('aria-pressed') === 'true' }; opts().filter(on).forEach(function (b) { focused[b.hasAttribute('data-ov') ? 'ov' : 'pane'].push(b.getAttribute(b.hasAttribute('data-ov') ? 'data-ov' : 'data-pane')); }); }
+      var chosen = opts().find(function (b) { return b.getAttribute('data-ov') === key || b.getAttribute('data-pane') === key; });
+      var compare=document.querySelector('[data-compare]');if(compare&&compare.getAttribute('aria-pressed')==='true')compare.click();var strategy=document.querySelector('[data-strategy=""]');if(strategy)strategy.click();
+      if (chosen) apply({ ov: chosen.hasAttribute('data-ov') ? [key] : [], pane: chosen.hasAttribute('data-pane') ? [key] : [] });
+    },
+    restore: function () { if (focused) { apply(focused); var strategy=Array.prototype.slice.call(document.querySelectorAll('[data-strategy]')).find(function(b){return b.getAttribute('data-strategy')===focused.strategy;});if(strategy)strategy.click();var compare=document.querySelector('[data-compare]');if(compare&&(compare.getAttribute('aria-pressed')==='true')!==focused.compare)compare.click(); } focused = null; }
+  };
   opts().forEach(function (b) { b.addEventListener('click', function () { if (!restoring) setTimeout(function () { save(); renderPills(); }, 0); }); });
   // G-76: each view (☰ 메뉴 > 내 보기 방식) has its own starting indicators. A reader's own picks are kept
   // for that view; switching the view loads the new view's set.
