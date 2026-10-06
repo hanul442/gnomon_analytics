@@ -303,15 +303,16 @@ main{padding:14px 14px 48px}.hero{padding:22px 18px;border-radius:18px}.hero h1{
 footer{padding:0 16px 32px}}
 `;
 
-// G-71: four tabs. The old tab names stay as anchors inside them (#tab-technical opens 자료 at 기술).
-type TabKey = 'home' | 'chart' | 'ai' | 'data';
+// G-71/G-79: six tabs; 기술 and 전략 live in the chart tab as parts (#tab-technical, #tab-strategy still work).
+type TabKey = 'home' | 'chart' | 'ai' | 'flows' | 'fundamentals' | 'news';
 const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'home', label: '요약' },
-  { key: 'chart', label: '차트' },
+  { key: 'chart', label: '차트·기술' },
   { key: 'ai', label: 'AI 위원회' },
-  { key: 'data', label: '자료' },
+  { key: 'flows', label: '수급' },
+  { key: 'fundamentals', label: '실적' },
+  { key: 'news', label: '뉴스·공시' },
 ];
-const DATA_PARTS = [['technical', '기술'], ['flows', '수급'], ['fundamentals', '실적'], ['news', '뉴스·공시']] as const;
 
 export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean }): string {
   const cur = (k: string) => (options.active === k ? ' aria-current="page"' : '');
@@ -603,7 +604,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const changes = report.changes?.length ? `<ul class="plain">${report.changes.map((c) => `<li>${escape(c)}</li>`).join('')}</ul>` : '<p class="empty">비교할 이전 리포트가 없어요.</p>';
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   // G-71: the conclusion (scenarios that open on tap) heads the summary tab, above everything else.
-  const home = `${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 ${marketStrip(report)}
@@ -642,11 +643,12 @@ ${marketStrip(report)}
   const p = report.price;
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
   const part = (key: string, label: string, html: string) => `<section class="data-part" id="tab-${key}"><h2 class="data-h">${label}</h2>${html}</section>`;
-  const dataTab = `<nav class="data-nav" aria-label="자료 바로 가기">${DATA_PARTS.map(([k, l]) => `<a href="#tab-${k}">${l}</a>`).join('')}</nav>${part('technical', '기술', technical)}${part('flows', '수급', flowsTab)}${part('fundamentals', '실적', fundTab)}${part('news', '뉴스·공시', newsTab)}`;
   const body = `${bar}${panel('home', home)}
-${panel('chart', `${chartTab}<section class="data-part" id="tab-strategy"><h2 class="data-h">전략</h2>${strategyTab}</section>`)}
+${panel('chart', `<nav class="data-nav" aria-label="차트 탭 바로 가기"><a href="#tab-chart-top">차트</a><a href="#tab-technical">기술 신호</a><a href="#tab-strategy">전략</a></nav><div id="tab-chart-top"></div>${chartTab}${part('technical', '기술 신호', technical)}${part('strategy', '전략', strategyTab)}`)}
 ${panel('ai', aiTab)}
-${panel('data', dataTab)}
+${panel('flows', flowsTab)}
+${panel('fundamentals', fundTab)}
+${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
@@ -859,7 +861,7 @@ ${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산
 <section class="block"><div class="card chart-card"><div class="chart-head"><div><div class="muted small">최근 1년 일봉</div><div class="period-stat" id="period-stat" aria-live="polite"></div></div>
 <div class="seg" role="group" aria-label="기간">${[['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250]].map(([l, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 126}">${l}</button>`).join('')}</div></div>
 <div id="chart" style="height:420px"><p class="empty" id="sp-empty" hidden>차트 데이터를 불러오지 못했어요. 상장 종목 코드가 맞는지 확인해 주세요.</p></div>
-<p class="fine">이동평균 20(주황)·60(보라)과 거래량이에요.</p></div></section>
+<p class="fine" id="sp-ma-note">이동평균 20·60과 거래량이에요.</p></div></section>
 ${open}${gate(detail, { base: '', what: '기술적 적정가' })}${gate(forecast, { base: '', what: '예측 가격 범위', need: 'pro' })}
 ${coin ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트가 생기면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>`}
 <footer id="sources" style="padding:24px 0 0"><p>${coin ? '데이터: 업비트 원화 마켓 일봉(09:00 KST 기준). 매일 저녁 갱신해요. 가상자산은 원금 손실 위험이 커요.' : '데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
@@ -917,7 +919,12 @@ const stockScript = (coin: boolean) => `<script>
     var candle = chart.addSeries(L.CandlestickSeries, { upColor: '#d1373d', downColor: '#2a62c9', borderVisible: false, wickUpColor: '#d1373d', wickDownColor: '#2a62c9' });
     candle.setData(bars);
     var ma = function (n) { var out = [], s = 0; for (var i = 0; i < bars.length; i++) { s += bars[i].close; if (i >= n) s -= bars[i - n].close; if (i >= n - 1) out.push({ time: bars[i].time, value: s / n }); } return out; };
-    [[20, '#e8890c'], [60, '#7a4fb3']].forEach(function (m) { chart.addSeries(L.LineSeries, { color: m[1], lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }).setData(ma(m[0])); });
+    // G-76: the moving averages follow the reader's view (☰ 메뉴 > 내 보기 방식).
+    var VIEW_MA = { beginner: [20, 60], trader: [5, 20], swing: [20, 60], long: [60, 120], all: [20, 60, 120] }, MA_COLOR = { 5: '#d1373d', 20: '#e8890c', 60: '#7a4fb3', 120: '#2a62c9' };
+    var mas = VIEW_MA[document.documentElement.getAttribute('data-persona') || 'swing'] || [20, 60];
+    mas.forEach(function (n) { chart.addSeries(L.LineSeries, { color: MA_COLOR[n], lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }).setData(ma(n)); });
+    window.addEventListener('gnm-persona', function () { location.reload(); });
+    var note = document.getElementById('sp-ma-note'); if (note) note.textContent = '이동평균 ' + mas.join('·') + '과 거래량이에요. 내 보기 방식에 맞춘 지표예요(☰ 메뉴에서 바꿀 수 있어요).';
     var vol = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceScaleId: 'v', priceLineVisible: false, lastValueVisible: false });
     vol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
     vol.setData(bars.map(function (b, i) { return { time: b.time, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(42,98,201,.35)' : 'rgba(209,55,61,.35)' }; }));

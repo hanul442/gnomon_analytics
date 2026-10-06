@@ -38,7 +38,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const row = (cls: string, sc: typeof bull, label: string, px: string, what: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc ? ' aria-expanded="false"' : ' disabled'}>${px}<div class="cl-what">${what} ${label} 시나리오 ${odds(sc)}${sc?.zone ? `<small>20거래일 가격대 ${zone(sc.zone)}</small>` : ''}</div>${sc ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
   const rows = [
     upper !== undefined || bull ? row('cl-up', bull, '강세', `<div class="cl-px"><span class="cl-arrow">▲</span><b>${upper !== undefined ? won(upper) : '위쪽'}</b><small>${upper !== undefined ? gap(upper, p.close) : ''}</small></div>`, `<b>${upper !== undefined ? '이 가격 위로 올라서면' : '오르는 쪽으로 가면'}</b>`) : '',
-    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b>${won(p.close)}</b><small>지금</small></div>`, `<b>${upper !== undefined && lower !== undefined ? '두 가격 사이에 머물면' : '지금 가격 근처에서는'}</b>`),
+    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small>지금</small></div>`, `<b>${upper !== undefined && lower !== undefined ? '두 가격 사이에 머물면' : '지금 가격 근처에서는'}</b>`),
     lower !== undefined || bear ? row('cl-down', bear, '약세', `<div class="cl-px"><span class="cl-arrow">▼</span><b>${lower !== undefined ? won(lower) : '아래쪽'}</b><small>${lower !== undefined ? gap(lower, p.close) : ''}</small></div>`, `<b>${lower !== undefined ? '이 가격 아래로 내려가면' : '내리는 쪽으로 가면'}</b>`) : '',
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
