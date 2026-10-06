@@ -3280,11 +3280,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "018670",
-  "name": "SK가스",
-  "market": "KOSPI"
- },
- {
   "symbol": "018680",
   "name": "서울제약",
   "market": "KOSDAQ"
@@ -6425,6 +6420,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "071280",
+  "name": "로체시스템즈",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "071320",
   "name": "지역난방공사",
   "market": "KOSPI"
@@ -7800,11 +7800,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "101670",
-  "name": "하이드로리튬",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "101680",
   "name": "한국정밀기계",
   "market": "KOSDAQ"
@@ -8132,11 +8127,6 @@
  {
   "symbol": "114810",
   "name": "한솔아이원스",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "114840",
-  "name": "아이패밀리에스씨",
   "market": "KOSDAQ"
  },
  {
@@ -8865,6 +8855,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "149950",
+  "name": "아바텍",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "149980",
   "name": "하이로닉",
   "market": "KOSDAQ"
@@ -9452,6 +9447,11 @@
  {
   "symbol": "200130",
   "name": "콜마비앤에이치",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "200230",
+  "name": "텔콘RF제약",
   "market": "KOSDAQ"
  },
  {
@@ -10542,11 +10542,6 @@
  {
   "symbol": "263920",
   "name": "휴엠앤씨",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "264450",
-  "name": "유비쿼스",
   "market": "KOSDAQ"
  },
  {
@@ -11847,11 +11842,6 @@
  {
   "symbol": "352910",
   "name": "오비고",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "352940",
-  "name": "인바이오",
   "market": "KOSDAQ"
  },
  {
@@ -13728,6 +13718,11 @@
   "symbol": "499790",
   "name": "GS피앤엘",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "900070",
+  "name": "글로벌에스엠",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "900070",
