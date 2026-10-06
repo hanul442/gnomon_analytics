@@ -267,6 +267,17 @@ export const BriefSchema = z.object({
   insights: InsightsSchema,
 });
 
+/** Required wire fields avoid exponential optional-field grammar expansion. Local validation stays compatible with older reports. */
+export const WireInsightsSchema = InsightsSchema.required();
+export const CommentaryWireSchema = CommentarySchema.extend({
+  insights: WireInsightsSchema.describe('모든 탭의 필드를 반환. 근거가 없는 탭은 text를 빈 문자열, evidenceIds를 빈 배열, kind를 INFERENCE로 반환'),
+  debate: z.array(DebateSchema.element.extend({
+    replyTo: z.number().describe('반박하는 앞 차례 번호. 답장 대상이 없는 첫 차례와 RED_TEAM은 -1'),
+  })),
+});
+export const BriefWireSchema = BriefSchema.extend({ insights: WireInsightsSchema.describe('근거가 없는 탭도 빈 text·evidenceIds와 INFERENCE kind로 반환') });
+
+
 /** Extra rules for an ETF or a coin (G-56); a stock's prompt is unchanged. */
 export const kindRule = (kind?: 'etf' | 'coin') => !kind ? '' : kind === 'etf'
   ? '\n- 이 종목은 ETF예요. 개별 기업의 실적·공시·증권가 목표가 근거는 없고, 기초지수 구성·괴리율·총보수 정보도 받지 않았어요. 가격·거래량·기술·수급·뉴스 근거로만 판단하고, 없는 정보는 dataGaps에 적습니다. FUNDAMENTAL 데스크는 근거가 없으면 INSUFFICIENT_DATA로 둡니다.'
@@ -379,12 +390,12 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
         model, max_tokens: 16000,
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
-        output_config: { effort: 'medium', format: betaZodOutputFormat(CommentarySchema) },
+        output_config: { effort: 'medium', format: betaZodOutputFormat(CommentaryWireSchema) },
         system: system(report.name, report.kind), messages: [user],
       })
       : await call({
         model, max_tokens: 6000,
-        output_config: { format: betaZodOutputFormat(BriefSchema) },
+        output_config: { format: betaZodOutputFormat(BriefWireSchema) },
         system: briefSystem(report.name, report.kind), messages: [user],
       });
     const failed=(reason:string):Commentary=>({...empty('FAILED',now,evidence,reason),model,servedBy:response.model,tier,...(response.usage?{usage:{inputTokens:response.usage.input_tokens,outputTokens:response.usage.output_tokens}}:{})});
