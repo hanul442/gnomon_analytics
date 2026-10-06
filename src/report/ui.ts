@@ -94,7 +94,8 @@ export const UI_SCRIPT = `<script>
     if (i >= 0) w.splice(i, 1);
     else if (w.length >= (LIMIT[plan] || 5)) { if (window.GNM && GNM.toast) GNM.toast('관심 종목은 ' + (LIMIT[plan] || 5) + '개까지예요. 요금제를 올리면 더 담을 수 있어요.'); return; }
     else w.unshift(sym);
-    try { localStorage.setItem(WK, JSON.stringify(w)); localStorage.setItem('gnm-watch-at', String(Date.now())); } catch (x) {}
+    try { localStorage.setItem(WK, JSON.stringify(w)); localStorage.setItem('gnm-watch-at', String(Date.now())); } catch (x) {if(window.GNM)GNM.toast('관심 목록을 저장하지 못했어요.','error');return;}
+    if(window.GNM)GNM.toast(i>=0?'관심 목록에서 뺐어요.':'관심 목록에 담았어요.','success');
     syncStars();
     window.dispatchEvent(new Event('gnm-watch'));
   });

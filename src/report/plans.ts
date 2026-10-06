@@ -150,7 +150,7 @@ html[data-plan=free] .need-plus{display:none}html:not([data-plan=free]) .only-fr
 .credit-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:12px;background:var(--navy);color:#fff;font:inherit;font-weight:700;padding:11px 16px;cursor:pointer}.credit-btn:hover{background:#1d3a6e}.credit-btn small{font-weight:600;opacity:.75}
 .ask{display:flex;flex-direction:column;gap:8px}.ask textarea{width:100%;min-height:76px;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}.ask-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .ask-btns{display:flex;gap:8px;flex-wrap:wrap}.credit-btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy)}.credit-btn.ghost:hover{background:var(--accent-soft)}
-.ask-out{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;font-size:14px}.ask-out li{margin:6px 0}.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:80;background:#0f1b2d;color:#fff;border-radius:12px;padding:10px 16px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.ask-out{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;font-size:14px}.ask-out li{margin:6px 0}.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;background:#0f1b2d;color:#fff;border-radius:14px;padding:10px 12px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:toast-in .2s ease-out}.toast span{overflow-wrap:anywhere}.toast svg{width:24px;height:24px;flex:none;color:#86efac}.toast-check{stroke-dasharray:24;animation:toast-check .3s ease-out}.toast button{border:0;background:none;color:inherit;min-width:36px;min-height:36px;cursor:pointer;font-size:20px}.toast[data-kind=error]{background:#842029}@keyframes toast-in{from{opacity:0;translate:0 8px}}@keyframes toast-check{from{stroke-dashoffset:24}}@media(prefers-reduced-motion:reduce){.toast,.toast-check{animation:none}}
 @media (max-width:820px){html[data-plan=free] .gate>.gate-cta,html[data-plan=plus] .gate[data-need=pro]>.gate-cta{flex-wrap:wrap;top:80px}.gate-cta .btn-primary{width:100%}.acct i{display:none}}
 `;
 
@@ -166,7 +166,14 @@ export const ACCOUNT_SCRIPT = `<script>
   };
   var write = function (a) { var o = { plan: a.plan, credits: a.credits, grants: a.grants, claimed: a.claimed, log: a.log.slice(0, 200), requests: a.requests }; try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} paint(); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var toast = function (msg) { var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600); };
+  var toast = function (msg, kind) {
+    document.querySelectorAll('.toast').forEach(function(t){t.remove();});
+    var t=document.createElement('div');t.className='toast';t.dataset.kind=kind||'info';t.setAttribute('role',kind==='error'?'alert':'status');
+    if(kind==='success')t.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor"/><path class="toast-check" d="m6 12 4 4 8-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var label=document.createElement('span');label.textContent=msg;t.appendChild(label);
+    var close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','알림 닫기');close.onclick=function(){t.remove();};t.appendChild(close);
+    document.body.appendChild(t);setTimeout(function(){t.remove();},kind==='error'?5000:3200);
+  };
   // With the alpha API, accounts and credits live on the server (alpha.ts takes over from here).
   // G-66: the debate's one box. "위원회 전체" opens the chat with the question (and stops the invite
   // handlers, which run on the form itself); an expert goes on as an invitation carrying the question.
