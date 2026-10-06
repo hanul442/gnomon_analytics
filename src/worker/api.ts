@@ -45,6 +45,28 @@ async function sha256(text: string): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
+// Passwords (G-57): PBKDF2-SHA256 at 100,000 rounds (the most Workers allow), a random salt per user.
+const PBKDF2_ROUNDS = 100_000, LOCK_MIN = 15, LOCK_FAILS = 8;
+export async function hashPassword(password: string, salt = b64url(crypto.getRandomValues(new Uint8Array(16))), rounds = PBKDF2_ROUNDS): Promise<string> {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations: rounds }, key, 256);
+  return `pbkdf2$${rounds}$${salt}$${b64url(new Uint8Array(bits))}`;
+}
+async function passwordMatches(password: string, stored: string): Promise<boolean> {
+  const [kind, rounds, salt] = stored.split('$');
+  if (kind !== 'pbkdf2' || !salt || !Number(rounds)) return false;
+  const again = await hashPassword(password, salt, Number(rounds));
+  let diff = again.length ^ stored.length;
+  for (let i = 0; i < Math.min(again.length, stored.length); i++) diff |= again.charCodeAt(i) ^ stored.charCodeAt(i);
+  return diff === 0;
+}
+/** 8–72 characters with a letter and a digit. */
+const passwordProblem = (v: unknown): string => {
+  if (typeof v !== 'string' || v.length < 8 || v.length > 72) return '비밀번호는 8자 이상 72자 이하로 정해 주세요.';
+  if (!/[A-Za-z]/.test(v) || !/\d/.test(v)) return '비밀번호에 영문과 숫자를 함께 넣어 주세요.';
+  return '';
+};
+
 export function inviteCode(): string {
   const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return `GNM-${[...crypto.getRandomValues(new Uint8Array(6))].map((b) => A[b % A.length]).join('')}`;
@@ -140,7 +162,7 @@ async function me(env: Env, u: User, now: Date) {
   ]);
   const days = (now.getTime() - Date.parse(u.created_at)) / 86_400_000;
   return {
-    user: { email: u.email, plan: u.plan, planName: u.plan === 'alpha' ? ALPHA.name : u.plan, rankAs: u.plan === 'alpha' ? ALPHA.rankAs : u.plan, admin: u.role === 'admin', createdAt: u.created_at },
+    user: { hasPassword: !!(await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>())?.password_hash, email: u.email, plan: u.plan, planName: u.plan === 'alpha' ? ALPHA.name : u.plan, rankAs: u.plan === 'alpha' ? ALPHA.rankAs : u.plan, admin: u.role === 'admin', createdAt: u.created_at },
     credits: { balance, monthly: u.plan === 'alpha' ? ALPHA.monthlyCredits : 0, maxRequest: ALPHA.maxRequest },
     survey: { onboarding: onboarding ? JSON.parse(onboarding.answers) : null, pulseDue: days >= 3 && (!lastPulse || now.getTime() - Date.parse(lastPulse.created_at) >= 7 * 86_400_000) },
     requests: requests.results,
@@ -270,11 +292,68 @@ route('POST', '/auth/verify', async ({ req, env, now }) => {
     u = { id, email: row!.email, plan: 'alpha', role: isAdmin ? 'admin' : 'user', created_at: iso(now), disabled: 0 };
   }
   if (u.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
-  const session = randomToken();
-  await db.prepare('INSERT INTO sessions (hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
-    .bind(await sha256(session), u.id, iso(now), iso(new Date(now.getTime() + SESSION_DAYS * 86_400_000))).run();
   if (isAdmin) u.role = 'admin';
+  return startSession(env, u, now);
+});
+
+async function startSession(env: Env, u: User, now: Date) {
+  const session = randomToken();
+  await env.DB.prepare('INSERT INTO sessions (hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
+    .bind(await sha256(session), u.id, iso(now), iso(new Date(now.getTime() + SESSION_DAYS * 86_400_000))).run();
   return { session, ...(await me(env, u, now)) };
+}
+
+// Sign-up with an invite code, email and password (G-57): the invite is used once, then email + password.
+route('POST', '/auth/signup', async ({ req, env, now }) => {
+  const b = await body(req), email = normEmail(b.email), db = env.DB, isAdmin = adminList(env).includes(email);
+  if (!email) fail(400, 'BAD_EMAIL', '이메일 주소를 확인해 주세요.');
+  const problem = passwordProblem(b.password);
+  if (problem) fail(400, 'BAD_PASSWORD', problem);
+  if (await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) fail(409, 'ALREADY_JOINED', '이미 가입한 이메일이에요. 로그인해 주세요. 비밀번호를 정하지 않았다면 관리자에게 로그인 링크를 받아 계정 페이지에서 정할 수 있어요.');
+  if (b.terms !== true) fail(400, 'TERMS_REQUIRED', '이용 약관과 투자 유의 사항에 동의해 주세요.');
+  const code = str(b.invite, 40).toUpperCase();
+  if (!code && !isAdmin) fail(403, 'INVITE_REQUIRED', '처음 가입할 때는 초대 코드가 필요해요.');
+  if (code) {
+    const took = await db.prepare('UPDATE invites SET uses = uses + 1 WHERE code = ? AND uses < max_uses AND (expires_at IS NULL OR expires_at > ?)').bind(code, iso(now)).run();
+    if ((took.meta?.changes ?? 0) !== 1) fail(403, 'INVITE_INVALID', '초대 코드가 맞지 않거나 다 쓰였어요.');
+  }
+  const id = crypto.randomUUID(), role = isAdmin ? 'admin' : 'user';
+  await db.prepare('INSERT INTO users (id, email, plan, role, invite_code, created_at, terms_at, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, email, 'alpha', role, code || null, iso(now), iso(now), await hashPassword(b.password as string)).run();
+  if (code) {
+    const inv = await db.prepare('SELECT credits FROM invites WHERE code = ?').bind(code).first<{ credits: number }>();
+    if (inv?.credits) await credit(db, id, inv.credits, 'grant', `초대 코드 ${code} 가입 크레딧`, `invite:${code}`, now).run();
+  }
+  return startSession(env, { id, email, plan: 'alpha', role, created_at: iso(now), disabled: 0 }, now);
+});
+
+route('POST', '/auth/login', async ({ req, env, now }) => {
+  const b = await body(req), email = normEmail(b.email), db = env.DB;
+  if (!email || typeof b.password !== 'string') fail(400, 'LOGIN_FAILED', '이메일과 비밀번호를 입력해 주세요.');
+  const since = iso(new Date(now.getTime() - LOCK_MIN * 60_000));
+  const fails = await db.prepare('SELECT COUNT(*) AS n FROM login_attempts WHERE email = ? AND at >= ?').bind(email, since).first<{ n: number }>();
+  if ((fails?.n ?? 0) >= LOCK_FAILS) fail(429, 'TOO_MANY', `비밀번호를 여러 번 틀렸어요. ${LOCK_MIN}분 뒤 다시 해 주세요.`);
+  const row = await db.prepare('SELECT id, email, plan, role, created_at, disabled, password_hash FROM users WHERE email = ?').bind(email).first<User & { password_hash: string | null }>();
+  if (!row?.password_hash || !(await passwordMatches(b.password as string, row.password_hash))) {
+    await db.prepare('INSERT INTO login_attempts (email, at) VALUES (?, ?)').bind(email, iso(now)).run();
+    fail(401, 'LOGIN_FAILED', '이메일 또는 비밀번호가 맞지 않아요.');
+  }
+  if (row!.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
+  await db.prepare('DELETE FROM login_attempts WHERE email = ? OR at < ?').bind(email, since).run();
+  const { password_hash: _drop, ...u } = row!;
+  if (adminList(env).includes(u.email)) u.role = 'admin';
+  return startSession(env, u, now);
+});
+
+/** Set or change the password; changing one needs the current password. */
+route('POST', '/me/password', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req), db = env.DB;
+  const problem = passwordProblem(b.password);
+  if (problem) fail(400, 'BAD_PASSWORD', problem);
+  const cur = await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>();
+  if (cur?.password_hash && !(typeof b.current === 'string' && await passwordMatches(b.current, cur.password_hash))) fail(403, 'BAD_CURRENT', '지금 비밀번호가 맞지 않아요.');
+  await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(await hashPassword(b.password as string), u.id).run();
+  return { ok: true };
 });
 
 route('POST', '/auth/logout', async ({ req, env }) => {
