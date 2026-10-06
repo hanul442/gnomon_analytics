@@ -138,11 +138,10 @@ export const UI_SCRIPT = `<script>
 const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 /** Menu groups: [label, href]. Hrefs are relative to the site root. */
 export const MENU: readonly { title: string; items: readonly [string, string][] }[] = [
-  { title: '둘러보기', items: [['홈', 'index.html#top'], ['종목 검색', 'index.html#search'], ['AI 리포트 모음', 'reports.html'], ['관심 종목', 'index.html#watch']] },
-  { title: '시장', items: [['스크리너 (조건 검색)', 'screener.html'], ['ETF', 'etfs.html'], ['코인', 'coins.html']] },
-  { title: '기록', items: [['성적표', 'scorecard.html'], ['모의투자', 'paper.html']] },
-  { title: '알파 테스트', items: [['사용법', 'guide.html'], ['중간 설문', 'survey.html?k=midterm'], ['주간 설문', 'survey.html?k=weekly'], ['맞춤 설문 수정', 'onboarding.html']] },
-  { title: '계정', items: [['내 계정', 'account.html'], ['요금제·크레딧', 'pricing.html'], ['로그인', 'login.html'], ['이용약관·면책', 'terms.html']] },
+  // G-72: one entry per place. 찾기 holds search, the screener, ETFs and coins.
+  { title: '둘러보기', items: [['홈', 'index.html#top'], ['찾기 (종목·ETF·코인)', 'screener.html'], ['관심 종목', 'index.html#watch'], ['AI 리포트 모음', 'reports.html'], ['성적표', 'scorecard.html'], ['모의투자', 'paper.html']] },
+  { title: '알파 테스트', items: [['사용법', 'guide.html'], ['설문', 'survey.html?k=weekly'], ['맞춤 설문 수정', 'onboarding.html']] },
+  { title: '계정', items: [['내 계정', 'account.html'], ['요금제·크레딧', 'pricing.html'], ['이용약관·면책', 'terms.html']] },
 ];
 
 const MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';

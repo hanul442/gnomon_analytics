@@ -6,7 +6,8 @@ import type { StockCalc } from '../analysis/quickCalc.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
 import { FIELD_INDEX, FIELDS, matches, PRESETS } from '../analysis/screenRules.js';
-import { shell } from './renderHtml.js';
+import { SEARCH_SCRIPT, shell } from './renderHtml.js';
+import { coinsBlock, FIND_CN_SCRIPT } from './renderCoins.js';
 
 /**
  * One row per stock: [code, name, market, cap(억), close, change%, level, score×100, r5, r20, r120, fairGap%, position, covered,
@@ -32,9 +33,12 @@ export function screenerRows(universe: readonly UniverseRow[], calcs: ReadonlyMa
 }
 
 export function renderScreener(): string {
-  const body = `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>스크리너</span><span id="sc-count"></span></div><h1>전 종목을 조건으로 걸러 보세요</h1>
-<p class="hero-line">매일 장 마감 뒤 코스피·코스닥 전 종목의 지표 16개, 거래량, 기간별 등락, 기술적 적정가, 최근 30일 공시 위험을 계산해요. 그 값으로 조건 검색을 해요.</p></div></section>
-<section class="block"><div class="pl-chips sc-presets" role="group" aria-label="빠른 조건">${PRESETS.map((p, i) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${i === 0}" title="${p.hint}">${p.label}${i ? ' <span class="lockmark">플러스</span>' : ''}</button>`).join('')}</div></section>
+  // G-72: 찾기 — one place to find anything: search across stocks, ETFs and coins, then browse each
+  // market with conditions. The ETF and coin pages became tabs here.
+  const body = `<section class="find-head" id="top"><h1>찾기</h1><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 이름이나 코드 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="검색" aria-controls="search-results"></label>
+<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div>
+<nav class="find-tabs" role="tablist" aria-label="시장"><button type="button" role="tab" data-find="stock" aria-selected="true">주식 <span id="sc-count" class="muted"></span></button><button type="button" role="tab" data-find="etf" aria-selected="false">ETF</button><button type="button" role="tab" data-find="coin" aria-selected="false">코인</button><a href="reports.html">AI 리포트</a></nav></section>
+<div id="find-stock"><section class="block"><div class="pl-chips sc-presets" role="group" aria-label="빠른 조건">${PRESETS.map((p, i) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${i === 0}" title="${p.hint}">${p.label}${i ? ' <span class="lockmark">플러스</span>' : ''}</button>`).join('')}</div></section>
 <section class="block"><div class="card sc-form" id="sc-form">
 <div class="sc-top"><b>조건</b><label class="sc-inline">조건을<select name="match"><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></label>
 <label class="sc-inline"><input type="checkbox" name="norisk" checked> 공시 위험 2단계 이상 빼기</label>
@@ -54,9 +58,27 @@ html[data-plan=free] .rules,html[data-plan=free] .sc-actions,html[data-plan=free
 html[data-plan=free] .sc-table th:nth-child(7),html[data-plan=free] .sc-table td:nth-child(7){display:none}.sc-table td a{text-decoration:none}.sc-more{text-align:center;padding:14px 0 6px;border-top:1px solid var(--line)}.sc-more .btn-primary{display:inline-flex}
 .risk{display:inline-block;margin-left:4px;font-size:11px;font-weight:700;border-radius:6px;padding:0 5px;background:#fff3d6;color:#7a4a00}.risk.r3{background:#fde8e8;color:#9b1c1c}.risk.r1{background:#eef1f5;color:var(--fg2)}.fl-a{color:#1d6b3a;font-size:11px;font-weight:700}.fl-d{color:#9b1c1c;font-size:11px;font-weight:700}
 @media (max-width:820px){.rule{grid-template-columns:minmax(0,1fr) 80px minmax(0,1fr) 28px}.sc-table th:nth-child(3),.sc-table td:nth-child(3),.sc-table th:nth-child(8),.sc-table td:nth-child(8){display:none}}</style>
+</div>${coinsBlock()}
+<style>.find-head{max-width:1180px;margin:14px auto 0;padding:0 24px}.find-head h1{font-size:24px;margin:4px 0 12px}.find-head .search-box{background:#fff;border:2px solid var(--navy)}.find-tabs{display:flex;gap:6px;margin:14px 0 4px;overflow-x:auto}.find-tabs>*{flex:none;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:8px 16px;font:inherit;font-size:14.5px;font-weight:700;cursor:pointer;text-decoration:none;color:var(--fg)}.find-tabs [aria-selected=true]{background:var(--navy);color:#fff;border-color:var(--navy)}.find-tabs [aria-selected=true] .muted{color:#c9d3e3}.find-tabs a{color:var(--accent-strong)}#find-stock .sc-presets{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#find-stock .sc-presets>*{flex:none}@media (max-width:820px){.find-head{padding:0 14px}}</style>
 <footer id="sources" style="padding:24px 0 0"><p>계산 결과이고, 투자 권유가 아니에요. 기술 신호는 오를 확률이 아니에요. 공시 위험은 제목으로 분류한 경고라 원문을 꼭 확인해 주세요.</p></footer>`;
-  return shell('', '스크리너 | Gnomon Analytics', body, { active: 'screener', scripts: SCREENER_SCRIPT });
+  return shell('', '찾기 | Gnomon Analytics', body, { active: 'screener', scripts: SCREENER_SCRIPT + SEARCH_SCRIPT + FIND_CN_SCRIPT + FIND_TABS_SCRIPT });
 }
+
+/** 찾기 tabs: 주식 is the screener; ETF and 코인 share one list. #etf / #coin open those tabs. */
+const FIND_TABS_SCRIPT = `<script>
+(function () {
+  var tabs = [].slice.call(document.querySelectorAll('[data-find]'));
+  var pick = function (k) {
+    tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t.getAttribute('data-find') === k)); });
+    document.getElementById('find-stock').hidden = k !== 'stock';
+    document.getElementById('find-cn').hidden = k === 'stock';
+    if (k !== 'stock' && window.GNM_cnKind) window.GNM_cnKind(k);
+  };
+  tabs.forEach(function (t) { t.addEventListener('click', function () { var k = t.getAttribute('data-find'); pick(k); history.replaceState(null, '', k === 'stock' ? location.pathname : '#' + k); }); });
+  var h = location.hash.slice(1); if (h === 'etf' || h === 'coin') pick(h);
+})();
+</script>`;
+
 
 const SCREENER_SCRIPT = `<script>
 (function () {

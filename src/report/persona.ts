@@ -91,12 +91,8 @@ export function personaCards(report: DailyReport): string {
     + (m ? row('수급 흔적', FOOT[m.footprint.state] ?? '—') : '')
     + (st?.atr14 ? row('하루 평균 움직임', `${((st.atr14 / p.close) * 100).toFixed(1)}%`, 'ATR 14일') : ''));
   // Swing: the conclusion card (G-65): the two test prices and what each crossing would mean, with the odds.
-  // Swing: the scenarios' odds in one line; the scenarios themselves are on the AI tab (G-71).
-  const odds = (['BULL', 'BASE', 'BEAR'] as const).map((k) => c?.scenarios?.find((x) => x.kind === k)?.probability);
-  const swing = card('swing', '지금 판단', line,
-    (odds.some((x) => typeof x === 'number') ? row('강세 시나리오', `${odds[0] ?? '—'}%`) + row('기본 시나리오', `${odds[1] ?? '—'}%`) + row('약세 시나리오', `${odds[2] ?? '—'}%`) : '')
-    + (above ? row('위쪽 테스트', won(above.price)) : '') + (below ? row('아래쪽 테스트', won(below.price)) : ''),
-    '<p style="margin:10px 0 0"><a class="more-link" href="#tab-ai">AI 위원회에서 시나리오 펼쳐 보기 ›</a></p>');
+  // Swing: no card of its own; the conclusion card heads the page (G-71).
+  const swing = '';
   // Long: value, earnings and what the street expects.
   const snap = m?.snapshot, q = m?.quarters.filter((x) => !x.isEstimate) ?? [];
   const op = (x: { metrics: Record<string, number | null> } | undefined) => x?.metrics['영업이익'] ?? null;
