@@ -58,3 +58,13 @@ test('scenario cards distinguish assumptions and invalidation without inferring 
  report.commentary={status:'OK',scenarios:[{kind:'BULL',narrative:{text:'상승 가정'},catalysts:['거래량 동반 상승'],invalidation:['지지 이탈']}]} as any;
  const html=conclusionCard(report);assert.match(html,/성립 근거·촉매/);assert.match(html,/무효화 조건 · 가정 재검토/);assert.match(html,/가격 기준 미지정/);assert.doesNotMatch(html,/이 가격 위로|이 가격 아래로|두 가격 사이|지지·저항을 테스트 가격/);
 });
+
+test('report failures preserve actionable categories without exposing provider details',async()=>{
+ const {reportFailureMessage}=await import('../worker/reports.js');
+ assert.match(reportFailureMessage('API_529:provider request details'),/AI_BUSY/);
+ assert.match(reportFailureMessage('Request timed out'),/AI_TIMEOUT/);
+ assert.match(reportFailureMessage('MAX_TOKENS'),/MAX_TOKENS/);
+ assert.match(reportFailureMessage('UNPARSEABLE_OUTPUT'),/INVALID_OUTPUT/);
+ assert.match(reportFailureMessage('API_401:sensitive server details'),/AI_CONFIGURATION/);
+ assert.doesNotMatch(reportFailureMessage('API_401:sensitive server details'),/sensitive server details/);
+});
