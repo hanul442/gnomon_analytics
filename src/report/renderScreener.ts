@@ -159,30 +159,36 @@ const SCREENER_SCRIPT = `<script>
   form.addEventListener('change', function (e) { if (e.target.name === 'sort') draw(); });
   // Saved screens: on the server with the alpha API (and alerts), otherwise in this browser.
   var api = function () { return window.GNM && GNM.api && GNM.me ? GNM : null; };
+  var notify = function(msg,kind){if(window.GNM)GNM.toast(msg,kind||'success');};
   var local = function () { try { return JSON.parse(localStorage.getItem(SKEY) || '[]'); } catch (e) { return []; } };
   var drawSaved = function (list) {
     $('saved').hidden = !list.length; $('alert-note').hidden = !api();
     $('saved-list').innerHTML = list.map(function (x, i) { return '<span data-i="' + i + '"><button type="button" class="ld">' + esc(x.name) + '</button>' + (api() ? '<button type="button" class="bell" aria-pressed="' + !!x.alert + '" aria-label="알림">🔔</button>' : '') + '<button type="button" class="del" aria-label="삭제">×</button></span>'; }).join('');
     $('saved-list').querySelectorAll('[data-i]').forEach(function (el) {
       var x = list[Number(el.getAttribute('data-i'))];
-      el.querySelector('.ld').addEventListener('click', function () { load(x.screen); });
+      el.querySelector('.ld').addEventListener('click', function () { load(x.screen); notify('저장한 조건을 적용했어요.'); });
       el.querySelector('.del').addEventListener('click', function () {
         if (!confirm("'" + x.name + "' 조건을 지울까요?")) return;
-        if (api()) GNM.call('POST', '/screens/' + x.id + '/delete').then(refreshSaved); else { var l = local(); l.splice(Number(el.getAttribute('data-i')), 1); localStorage.setItem(SKEY, JSON.stringify(l)); refreshSaved(); }
+        var button=this;button.disabled=true;
+        var done=function(){notify('조건을 삭제했어요.');refreshSaved();};
+        if(api())GNM.call('POST','/screens/'+x.id+'/delete').then(function(r){if(r.error){notify(r.message,'error');return;}done();}).catch(function(){notify('삭제하지 못했어요. 다시 시도해 주세요.','error');}).finally(function(){button.disabled=false;});
+        else{var l=local();l.splice(Number(el.getAttribute('data-i')),1);try{localStorage.setItem(SKEY,JSON.stringify(l));done();}catch(e){notify('브라우저에 저장하지 못했어요.','error');}button.disabled=false;}
       });
       var bell = el.querySelector('.bell');
-      if (bell) bell.addEventListener('click', function () { GNM.call('POST', '/screens/' + x.id, { alert: !x.alert }).then(function (r) { if (r.error) GNM.toast(r.message); else GNM.toast(!x.alert ? '매일 장 마감 뒤 새로 걸린 종목을 알려 드릴게요.' : '알림을 껐어요.'); refreshSaved(); }); });
+      if (bell) bell.addEventListener('click', function () { GNM.call('POST', '/screens/' + x.id, { alert: !x.alert }).then(function (r) { if (r.error) GNM.toast(r.message); else GNM.toast(!x.alert ? '매일 장 마감 뒤 새로 걸린 종목을 알려 드릴게요.' : '알림을 껐어요.', 'success'); refreshSaved(); }); });
     });
   };
   var refreshSaved = function () {
-    if (api()) GNM.call('GET', '/screens').then(function (r) { drawSaved(r.screens || []); });
+    if (api()) GNM.call('GET', '/screens').then(function (r) { if(r.error){notify(r.message,'error');return;}drawSaved(r.screens || []); }).catch(function(){notify('저장한 조건을 불러오지 못했어요.','error');});
     else drawSaved(local());
   };
   $('save-screen').addEventListener('click', function () {
     var sc = current(); if (!sc.rules.length) { if (window.GNM) GNM.toast('조건을 하나 이상 넣어 주세요.'); return; }
     var name = prompt('조건 이름', preset ? document.querySelector('[data-preset="' + preset + '"]').textContent.replace('플러스', '').trim() : '내 조건'); if (!name) return;
-    if (api()) GNM.call('POST', '/screens', { name: name, screen: sc }).then(function (r) { if (r.error) GNM.toast(r.message); refreshSaved(); });
-    else { var l = local(); l.push({ name: name.slice(0, 40), screen: sc }); try { localStorage.setItem(SKEY, JSON.stringify(l.slice(-20))); } catch (e) {} refreshSaved(); }
+    var button=this;button.disabled=true;var busy=window.GNM_loading?GNM_loading.begin(form,'조건 저장 중','working'):null;
+    var end=function(){button.disabled=false;if(busy)busy.end();};
+    if(api())GNM.call('POST','/screens',{name:name,screen:sc}).then(function(r){if(r.error){notify(r.message,'error');return;}notify('조건을 저장했어요.');refreshSaved();}).catch(function(){notify('저장하지 못했어요. 다시 시도해 주세요.','error');}).finally(end);
+    else{var l=local();l.push({name:name.slice(0,40),screen:sc});try{localStorage.setItem(SKEY,JSON.stringify(l.slice(-20)));notify('이 브라우저에 조건을 저장했어요.');refreshSaved();}catch(e){notify('브라우저에 저장하지 못했어요.','error');}end();}
   });
   $('ai-screen-send').addEventListener('click',function(){
     var q=$('ai-screen-q').value.trim(), out=$('ai-screen-out'), button=this;
@@ -193,7 +199,7 @@ const SCREENER_SCRIPT = `<script>
       button.disabled=false;
       if(r.error){out.textContent=r.message||'조건을 만들지 못했어요. 다시 요청해 주세요.';return;}
       out.innerHTML='<div class="compact-heading"><b>'+esc(r.name)+' <small class="muted">'+r.screen.rules.length+'개 조건</small></b><button type="button" class="chip-toggle" data-apply-ai>적용</button></div><details><summary>제안 설명</summary><p>'+esc(r.explanation)+'</p><small>적용 후 조건을 수정할 수 있어요.</small></details>';
-      out.querySelector('[data-apply-ai]').onclick=function(){load(r.screen);$('ai-screen-q').placeholder='예: 결과가 너무 많아요. 거래대금이 큰 것만 남겨 줘요';};
+      out.querySelector('[data-apply-ai]').onclick=function(){load(r.screen);notify('AI 조건을 적용했어요.');$('ai-screen-q').placeholder='예: 결과가 너무 많아요. 거래대금이 큰 것만 남겨 줘요';};
       if(GNM.refresh)GNM.refresh();
     }).catch(function(){button.disabled=false;out.textContent='연결이 끊겼어요. 다시 요청해 주세요.';});
   });
