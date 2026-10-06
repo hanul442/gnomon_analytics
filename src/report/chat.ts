@@ -32,7 +32,7 @@ export const CHAT_CSS = `
 .need{display:flex;flex-direction:column;gap:8px}.need form{display:flex;flex-direction:column;gap:6px}.need select,.need input{border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px}
 .need .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.need .plans a{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;padding:8px;text-decoration:none;color:inherit;font-size:12px;background:#fff}.need .plans a b{font-size:13px}
 .need .btn-primary{margin:0;padding:8px 12px;font-size:13px}
-@media (max-width:820px){.chat-fab{bottom:78px;right:14px;padding:12px}.chat-fab span{display:none}.chat{right:0;left:0;top:0;bottom:auto;width:100vw;height:100dvh;border-radius:0;border:0}.chat-in textarea{font-size:16px}.chat-head{padding:10px 12px}
+@media (max-width:820px){.chat-fab{bottom:78px;right:14px;padding:12px}.chat-fab span{display:none}.chat{right:0;left:0;top:auto;bottom:0;width:100vw;height:78dvh;border-radius:20px 20px 0 0;border:0;box-shadow:0 -12px 40px rgba(15,27,45,.3)}.chat.kb{border-radius:0}.chat-scrim{position:fixed;inset:0;z-index:74;background:rgba(10,20,35,.45)}.chat-in textarea{font-size:16px}.chat-head{padding:10px 12px}
 .chat.kb .chat-note,.chat.kb .chat-sugg{display:none}.chat.kb .tiers button{flex-direction:row;gap:4px;justify-content:center;padding:5px 4px}.chat.kb .tiers button small{display:none}.chat.kb .chat-foot{padding:8px 10px;gap:6px}}
 html.chat-open,html.chat-open body{overflow:hidden}
 @media print{.chat-fab,.chat{display:none!important}}
@@ -166,18 +166,23 @@ export const CHAT_SCRIPT = `<script>
   var vv = window.visualViewport, phone = function () { return window.matchMedia('(max-width: 820px)').matches; };
   var fit = function () {
     if (box.hidden || !phone() || !vv) { box.style.height = ''; box.style.top = ''; box.classList.remove('kb'); return; }
-    box.style.height = vv.height + 'px'; box.style.top = vv.offsetTop + 'px';
-    box.classList.toggle('kb', vv.height < window.innerHeight * 0.78);
+    // G-86: a bottom sheet (about three quarters of the screen) until the keyboard opens; then it takes
+    // the whole visible area above the keyboard.
+    var kb = vv.height < window.innerHeight * 0.78, h = kb ? vv.height : Math.min(vv.height * 0.78, 640);
+    box.style.height = h + 'px'; box.style.top = (vv.offsetTop + vv.height - h) + 'px';
+    box.classList.toggle('kb', kb);
     var log = box.querySelector('.chat-log'); if (log) log.scrollTop = log.scrollHeight;
   };
   if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
-  var shut = function () { box.hidden = true; document.documentElement.classList.remove('chat-open'); fit(); };
+  var scrim = null;
+  var shut = function () { box.hidden = true; document.documentElement.classList.remove('chat-open'); if (scrim) { scrim.remove(); scrim = null; } fit(); };
   var open = function (preset) {
     box.hidden = false; render(); label();
-    if (phone()) document.documentElement.classList.add('chat-open');
+    if (phone()) { document.documentElement.classList.add('chat-open'); if (!scrim) { scrim = document.createElement('div'); scrim.className = 'chat-scrim'; scrim.addEventListener('click', shut); box.parentNode.insertBefore(scrim, box); } }
     fit();
     if (preset) q.value = preset;
-    q.focus();
+    // On phones the keyboard would cover the sheet at once; it opens when the reader taps the box.
+    if (!phone()) q.focus();
     if (window.GNM && GNM.track) GNM.track('chat_open', { symbol: symbol() });
   };
   document.querySelectorAll('[data-open-chat]').forEach(function (b) { b.addEventListener('click', function () { open(b.getAttribute('data-ask') || ''); }); });

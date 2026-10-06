@@ -50,7 +50,7 @@ const BUCKETS: readonly [PulseBucket, string, string][] = [
 ];
 
 function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null, pulse: MarketPulse | null): string {
-  const cards = indices.map((i) => `<div class="card ix"><div class="ix-top"><div><div class="pl-k">${esc(i.name)}</div><div class="ix-v">${i.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</div><div class="${tone(i.changePct)} ix-c">${arrow(i.changePct)} ${signed(i.changePct)}</div></div>${sparkline(i.closes, `${i.name} 최근 60거래일`, 110, 40)}</div><div class="muted small">${esc(i.date)} 종가</div></div>`).join('');
+  const cards = indices.map((i) => `<div class="card ix"><div class="ix-top"><div><div class="pl-k">${esc(i.name)}</div><div class="ix-v">${i.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</div><div class="${tone(i.changePct)} ix-c">${signed(i.changePct)}</div></div>${sparkline(i.closes, `${i.name} 최근 60거래일`, 110, 40)}</div><div class="muted small">${esc(i.date)} 종가</div></div>`).join('');
   const temp = tempCard(pulse, universe);
   return cards || temp ? `<section class="block ix-row">${cards}${temp}</section>` : '';
 }
@@ -168,7 +168,7 @@ function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): 
     const r = e.report, p = r?.price, c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
     const fit = viewFit(e);
-    return `<div class="tp" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' || e.group === 'core' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
+    return `<div class="tp" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' || e.group === 'core' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
 <div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 것</h2><a class="more-link" href="reports.html">AI 리포트 모음 ›</a></div>
@@ -227,7 +227,7 @@ function filings(entries: readonly HomeEntry[]): string {
   }
   list.sort((a, b) => (a.filedDate < b.filedDate ? 1 : -1));
   const top = list.slice(0, 8);
-  return `<section class="block"><div class="block-head"><h2>주요 공시</h2><span class="muted">리포트 종목 · 최근</span></div><div class="card list">${top.length ? top.map((f) => `<div class="fl"><span class="muted small">${esc(f.filedDate.slice(5))}</span><div><a href="${esc(f.href)}#tab-news"><b>${esc(f.name)}</b></a><div class="small">${esc(f.title)}</div></div></div>`).join('') : '<p class="empty">최근 주요 공시가 없어요.</p>'}</div></section>`;
+  return `<section class="block" id="home-filings"><div class="block-head"><h2>주요 공시</h2><span class="muted">리포트 종목 · 최근</span></div><div class="card list">${top.length ? top.map((f) => `<div class="fl"><span class="muted small">${esc(f.filedDate.slice(5))}</span><div><a href="${esc(f.href)}#tab-news"><b>${esc(f.name)}</b></a><div class="small">${esc(f.title)}</div></div></div>`).join('') : '<p class="empty">최근 주요 공시가 없어요.</p>'}</div></section>`;
 }
 
 const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class="pl-k">지금 요금제 <b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧</div>
@@ -252,7 +252,7 @@ const MY_SCREENS_SCRIPT = `<script>
       var hit = rows.filter(function (r) { return matches(r, x.screen, IDX); }).sort(function (a, b) { return (b[score] || 0) - (a[score] || 0); });
       var top = hit.slice(0, 4).map(function (r) {
         var c = r[IDX.chg], href = r[13] ? r[0] + '/index.html' : 'stock.html?c=' + r[0];
-        return '<a class="ms-row" href="' + href + '"><b>' + esc(r[1]) + '</b><span><span data-live="' + r[0] + '" data-live-f="price">' + won(r[IDX.close]) + '</span> <span class="' + (c > 0 ? 'up' : c < 0 ? 'down' : '') + '" data-live="' + r[0] + '" data-live-f="pct">' + (c > 0 ? '+' : '') + Number(c).toFixed(2) + '%</span></span></a>';
+        return '<a class="ms-row" href="' + href + '"><b>' + esc(r[1]) + '</b><span><span data-live="' + r[0] + '" data-live-f="price">' + won(r[IDX.close]) + '</span> <span class="' + (c > 0 ? 'up' : c < 0 ? 'down' : '') + '" data-live="' + r[0] + '" data-live-f="pct">' + (c > 0 ? '▲ +' : c < 0 ? '▼ ' : '') + Number(c).toFixed(2) + '%</span></span></a>';
       }).join('');
       return '<div class="card ms-card"><div class="ms-head"><b>' + esc(x.name) + '</b><span class="muted small">' + hit.length + '종목</span></div>' + (top || '<p class="muted small">오늘은 걸린 종목이 없어요.</p>') + '<a class="ms-more" href="screener.html' + (x.key ? '#' + x.key : '#build') + '">전체 보기 ›</a></div>';
     }).join('') + (mine ? '' : '<p class="muted small ms-note">스크리너에서 조건을 저장하면 여기에 매일 걸린 종목이 떠요. 지금은 기본 조건(강세 신호 상위)이에요.</p>');
@@ -279,7 +279,7 @@ export function renderHome(data: HomeData): string {
 <a class="flt-more" href="screener.html#build">⚙︎ 조건 직접 만들기 (지표·거래량·수급·적정가…)</a></div></div></section>
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 ${indexStrip(data.indices, data.universe, data.pulse)}
-<div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${MY_SCREENS}${movers(data.universe, covered)}</div>
+<p class="phase-note" id="phase-note"></p><div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${MY_SCREENS}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <div class="show-more"><button type="button" class="btn-ghost" id="show-all">다른 정보도 보기</button></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
@@ -343,7 +343,11 @@ const TODAY_SCRIPT = `<script>
   var apply = function () {
     var p = document.documentElement.getAttribute('data-persona') || 'swing'; if (p === 'all') p = 'swing';
     var cards = [].slice.call(grid.children);
-    cards.sort(function (a, b) { return Number(b.getAttribute('data-s-' + p)) - Number(a.getAttribute('data-s-' + p)); });
+    // G-85: stocks the reader holds or watches (survey, ☆) come first, marked as theirs.
+    var mine = {}; try { (JSON.parse(localStorage.getItem('gnm-watch') || '[]') || []).forEach(function (x) { mine[x] = 1; }); ((JSON.parse(localStorage.getItem('gnm-prefs') || '{}') || {}).tickers || []).forEach(function (t) { mine[t[0]] = 2; }); } catch (e) {}
+    var sc = function (c) { return Number(c.getAttribute('data-s-' + p)) + (mine[c.getAttribute('data-sym')] ? 1000 : 0); };
+    cards.forEach(function (c) { var t = c.querySelector('.tp-top'), had = c.querySelector('.t-mine'); if (mine[c.getAttribute('data-sym')] && !had && t) t.insertAdjacentHTML('afterbegin', '<span class="tier t-mine">' + (mine[c.getAttribute('data-sym')] === 2 ? '내 보유' : '내 관심') + '</span>'); });
+    cards.sort(function (a, b) { return sc(b) - sc(a); });
     cards.forEach(function (c, i) { grid.appendChild(c); c.hidden = i >= 4; });
   };
   window.addEventListener('gnm-persona', apply);
@@ -360,7 +364,17 @@ const PERSONA_HOME_SCRIPT = `<script>
   var apply = function () {
     var p = document.documentElement.getAttribute('data-persona') || 'swing', keep = ORDER[p], all = !keep || document.documentElement.classList.contains('show-all');
     var hidden = 0, after = null;
-    (keep || ALL).concat(ALL.filter(function (k) { return !keep || keep.indexOf(k) < 0; })).forEach(function (id) {
+    // G-85: the hour reorders the page. Before the open: what came out overnight first; during the
+    // session: what is moving and my screens; after the close: today's AI picks.
+    var k = new Date(Date.now() + 9 * 3600e3), m = k.getUTCHours() * 60 + k.getUTCMinutes(), wd = k.getUTCDay() > 0 && k.getUTCDay() < 6;
+    var phase = !wd ? 'off' : m < 540 ? 'pre' : m <= 930 ? 'open' : 'after';
+    var seq = (keep || ALL).slice();
+    if (phase === 'open') ['myscreens', 'movers'].reverse().forEach(function (id) { var i = seq.indexOf(id); if (i >= 0) { seq.splice(i, 1); seq.splice(Math.min(seq.indexOf('watch') + 1, seq.length), 0, id); } });
+    var note = document.getElementById('phase-note');
+    if (note) note.innerHTML = { pre: '<b>장 시작 전</b> · 밤사이 나온 공시와 오늘 볼 종목부터 보여 드려요', open: '<b>장중</b> · 지금 많이 움직이는 종목과 내 조건에 걸린 종목부터 보여 드려요', after: '<b>장 마감 뒤</b> · 오늘 나온 AI 리포트와 내일 볼 종목부터 보여 드려요', off: '<b>휴장일</b> · 이번 주 리포트와 내 조건을 정리해 보세요' }[phase];
+    var fl = document.getElementById('home-filings'), rail = document.querySelector('.home-rail');
+    if (fl) { if (phase === 'pre') { var w = document.getElementById('watch'); if (w && w.parentNode === main) main.insertBefore(fl, w.nextSibling); fl.classList.add('fl-main'); } else if (rail && fl.parentNode !== rail) { rail.appendChild(fl); fl.classList.remove('fl-main'); } }
+    seq.concat(ALL.filter(function (k) { return seq.indexOf(k) < 0; })).forEach(function (id) {
       var el = document.getElementById(id); if (!el || el.parentNode !== main) return;
       main.insertBefore(el, after ? after.nextSibling : main.firstChild); after = el;
       var off = !all && keep && keep.indexOf(id) < 0 && id !== 'feed';
@@ -375,7 +389,10 @@ const PERSONA_HOME_SCRIPT = `<script>
 })();
 </script>`;
 
-const HOME_STYLE = `<style>.flt-btn{display:flex;align-items:baseline;gap:8px;margin:8px 0 0;border:0;background:none;font:inherit;font-size:14px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 2px}.flt-btn small{font-weight:500;color:var(--muted)}.flt{margin-top:6px;padding:14px 16px}.flt-k{font-size:12.5px;font-weight:800;color:var(--muted);margin:2px 0 6px}.flt-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.flt-row a{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:700;text-decoration:none;color:var(--fg)}.flt-row a:hover{border-color:var(--accent);color:var(--accent-strong)}.flt-more{font-weight:800;font-size:14px}.flt-pop{position:fixed;inset:0;z-index:160;background:rgba(10,20,35,.5);display:grid;place-items:center;padding:20px}.flt-sheet{width:min(1080px,100%);height:min(88vh,900px);background:#fff;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}.flt-top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}.flt-top b{font-size:17px}.flt-x{border:0;background:none;font-size:28px;line-height:1;cursor:pointer;color:var(--muted)}.flt-sheet iframe{flex:1;border:0;width:100%}@media (max-width:820px){.flt-pop{padding:0;place-items:end stretch}.flt-sheet{height:92vh;border-radius:18px 18px 0 0}}
+const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;font-weight:600;margin-top:2px}.wl-new{color:#7a4a00;background:#fff3d6;border-radius:6px;padding:0 6px}
+.tier.t-mine{background:#fff3d6;color:#7a4a00}.fl-main{margin-top:6px}
+.phase-note{margin:14px 0 0;font-size:13px;color:var(--fg2);background:#f5f8fd;border:1px solid var(--line);border-radius:12px;padding:8px 12px}.phase-note:empty{display:none}.phase-note b{color:var(--accent-strong)}
+.flt-btn{display:flex;align-items:baseline;gap:8px;margin:8px 0 0;border:0;background:none;font:inherit;font-size:14px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 2px}.flt-btn small{font-weight:500;color:var(--muted)}.flt{margin-top:6px;padding:14px 16px}.flt-k{font-size:12.5px;font-weight:800;color:var(--muted);margin:2px 0 6px}.flt-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.flt-row a{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:700;text-decoration:none;color:var(--fg)}.flt-row a:hover{border-color:var(--accent);color:var(--accent-strong)}.flt-more{font-weight:800;font-size:14px}.flt-pop{position:fixed;inset:0;z-index:160;background:rgba(10,20,35,.5);display:grid;place-items:center;padding:20px}.flt-sheet{width:min(1080px,100%);height:min(88vh,900px);background:#fff;border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}.flt-top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}.flt-top b{font-size:17px}.flt-x{border:0;background:none;font-size:28px;line-height:1;cursor:pointer;color:var(--muted)}.flt-sheet iframe{flex:1;border:0;width:100%}@media (max-width:820px){.flt-pop{padding:0;place-items:end stretch}.flt-sheet{height:92vh;border-radius:18px 18px 0 0}}
 .ms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.ms-card{padding:12px 14px}.ms-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}.ms-row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-size:14px}.ms-row:hover b{color:var(--accent-strong)}.ms-more{display:block;margin-top:6px;font-size:13px;font-weight:700}.ms-note{grid-column:1/-1}
 .pw{display:none}html[data-persona=beginner] .pw-beginner,html[data-persona=trader] .pw-trader,html[data-persona=swing] .pw-swing,html[data-persona=all] .pw-swing,html[data-persona=long] .pw-long,html:not([data-persona]) .pw-swing{display:inline}.tp[hidden]{display:none}.tp-lead{margin:-4px 0 10px;font-size:13px;color:var(--fg2)}.tp-lead a{font-weight:700;margin-left:6px}
 .tmp{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:7px}.tmp:hover{border-color:var(--accent)}.tmp-v{font-size:19px}.tmp .pulse-bar{height:12px}.tmp-n{display:flex;justify-content:space-between;font-size:13px;font-weight:700}
@@ -417,7 +434,8 @@ const HOME_SCRIPT = `<script>
   // The alpha layer keeps the list on the server too (intraday alerts); it listens for this event.
   var write = function (w) { try { localStorage.setItem(KEY, JSON.stringify(w)); localStorage.setItem('gnm-watch-at', String(Date.now())); } catch (e) {} window.dispatchEvent(new Event('gnm-watch')); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var items = null;
+  var items = null, info = null;
+  fetch('watchinfo.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { info = d; drawWatch(); }).catch(function () {});
   var drawWatch = function () {
     var w = read(), box = document.getElementById('watch-list'); if (!box) return;
     document.querySelectorAll('[data-star]').forEach(function (b) { b.setAttribute('aria-pressed', String(w.indexOf(b.getAttribute('data-star')) >= 0)); });
@@ -427,7 +445,12 @@ const HOME_SCRIPT = `<script>
         var it = (items || []).find(function (x) { return x[0] === sym; }) || [sym, sym, '', null, null, 0];
         var ch = it[4], coin = sym.indexOf('KRW-') === 0, href = it[5] ? sym + '/index.html' : coin ? 'coin.html?m=' + sym : 'stock.html?c=' + sym;
         var p = it[3], price = p == null ? '' : '<b data-live="' + esc(sym) + '" data-live-f="price">' + (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원</b> ';
-        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b> <span class="muted small">' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : sym + (it[2] === 'ETF' ? ' · ETF' : '')) + '</span></a><span>' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
+        var wi = info && info[sym], st = '';
+        if (wi) {
+          var near = [wi.up ? ['▲', wi.up] : null, wi.dn ? ['▼', wi.dn] : null].filter(Boolean).map(function (x) { return [x[0], x[1], (x[1] / (p || wi.c) - 1) * 100]; }).sort(function (a, b) { return Math.abs(a[2]) - Math.abs(b[2]); })[0];
+          st = '<div class="wl-st">' + (near ? '<span class="' + (near[0] === '▲' ? 'up' : 'down') + '">' + near[0] + ' 테스트 ' + Math.round(near[1]).toLocaleString('ko-KR') + '원까지 ' + (near[2] > 0 ? '+' : '') + near[2].toFixed(1) + '%</span>' : '') + (wi.f ? '<span class="wl-new">새 공시 ' + wi.f + '</span>' : '') + (wi.n ? '<span class="wl-new">새 뉴스 ' + wi.n + '</span>' : '') + '</div>';
+        }
+        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b> <span class="muted small">' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : sym + (it[2] === 'ETF' ? ' · ETF' : '')) + '</span>' + st + '</a><span>' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
       }).join('');
     };
     show();

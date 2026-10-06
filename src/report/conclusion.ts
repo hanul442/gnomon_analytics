@@ -110,10 +110,11 @@ export const VIEW_FOCUS: Record<string, readonly string[]> = {
 };
 const VIEW_LABEL: Record<string, string> = { beginner: '초보', trader: '단타', swing: '스윙', long: '장기' };
 export const VIEW_FOCUS_CSS = `.vt-help{font-size:13px;color:var(--fg2);background:#f5f8fd;border-radius:10px;padding:8px 11px;margin:0 0 10px}.vt-more{display:none;margin:10px auto 0;border:1px dashed var(--line-strong);background:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:700;color:var(--accent-strong);cursor:pointer}
-.pc-only-beginner{display:none}html[data-persona=beginner] .pc-only-beginner{display:block}html[data-persona=all] .pc-not-all{display:none}.vt-tally{display:none}html:not([data-persona]) .vt-t-all,html[data-persona=all] .vt-t-all,.vt.show-all-members .vt-t-all{display:block}.vt.show-all-members .vt-tally:not(.vt-t-all){display:none!important}${Object.keys(VIEW_FOCUS).map((v) => `html[data-persona=${v}] .vt-t-${v}`).join(',')}{display:block}.vt-seat{display:none;font-size:13px;font-weight:700;color:var(--accent-strong);margin:0 0 8px}
+.pc-only-beginner{display:none}html[data-persona=beginner] .pc-only-beginner{display:block}html[data-persona=all] .pc-not-all{display:none}.vt-tally{display:none}html:not([data-persona]) .vt-t-all,html[data-persona=all] .vt-t-all,.vt.show-all-members .vt-t-all{display:block}.vt.show-all-members .vt-tally:not(.vt-t-all){display:none!important}${Object.keys(VIEW_FOCUS).map((v) => `html[data-persona=${v}] .vt-t-${v}`).join(',')}{display:block}.pl-view{display:none;font-size:13px;font-weight:700;color:var(--accent-strong);margin:2px 0 6px}.vt-seat{display:none;font-size:13px;font-weight:700;color:var(--accent-strong);margin:0 0 8px}
 ${Object.entries(VIEW_FOCUS).map(([v, ids]) => {
     const not = ids.map((id) => `[data-member=${id}]`).join(',');
-    return `html[data-persona=${v}] .vt-seat-${v}{display:block}html[data-persona=${v}] .vt:not(.show-all-members) .vt-m:not(${not}){display:none}html[data-persona=${v}] .vt:not(.show-all-members) .vt-more{display:block}
+    const seatsOn = ids.map((id) => `[data-m=${id}]`).join(',');
+    return `html[data-persona=${v}] #parliament-ai .seat:not(${seatsOn}){opacity:.25}html[data-persona=${v}] #parliament-ai .pl-view-${v}{display:block}html[data-persona=${v}] .vt-seat-${v}{display:block}html[data-persona=${v}] .vt:not(.show-all-members) .vt-m:not(${not}){display:none}html[data-persona=${v}] .vt:not(.show-all-members) .vt-more{display:block}
 `;
   }).join('\n')}`;
 
@@ -127,3 +128,31 @@ export const SEATS_JS = `
     var b = e.target.closest && e.target.closest('.vt-more, .db-more'); if (!b) return;
     var box = b.closest('.vt, .debate'); box.classList.add('show-all-members'); b.remove();
   });`;
+
+/** The parliament's line for the reader's view committee (G-85): which seats are lit, and why. */
+export const parliamentViewNote = (report: DailyReport): string => {
+  const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
+  const members = [...(c?.analysts ?? []).map((a) => a.analyst as string), ...(c?.desks ?? []).map((d) => d.desk as string)];
+  if (!members.length) return '';
+  return Object.entries(VIEW_FOCUS).map(([v, ids]) => `<p class="pl-view pl-view-${v}">${VIEW_LABEL[v]} 위원회 ${members.filter((m) => ids.includes(m)).length}명을 진하게 표시했어요 · 좌석을 누르면 그 위원의 판단과 근거가 나와요</p>`).join('');
+};
+
+/** The two test prices (G-65): the scenarios' triggers, else the nearest structure levels around the close. */
+export function testPrices(report: DailyReport): { up?: number; dn?: number } {
+  const p = report.price; if (!p) return {};
+  const c = report.commentary?.status === 'OK' ? report.commentary : undefined, lv = report.market?.structure?.levels ?? [];
+  const up = c?.scenarios?.find((s) => s.kind === 'BULL')?.trigger ?? lv.filter((l) => l.price > p.close).sort((a, b) => a.price - b.price)[0]?.price;
+  const dn = c?.scenarios?.find((s) => s.kind === 'BEAR')?.trigger ?? lv.filter((l) => l.price < p.close).sort((a, b) => b.price - a.price)[0]?.price;
+  return { ...(up !== undefined ? { up } : {}), ...(dn !== undefined ? { dn } : {}) };
+}
+
+/** G-85: what the watchlist shows per covered stock: the test prices and what is new since the last report. */
+export function watchInfo(entries: readonly { symbol: string; report: DailyReport | null }[]): Record<string, { c: number; up?: number; dn?: number; f: number; n: number; d: string }> {
+  const out: Record<string, { c: number; up?: number; dn?: number; f: number; n: number; d: string }> = {};
+  for (const e of entries) {
+    const r = e.report; if (!r?.price) continue;
+    const since = new Date(Date.parse(r.date) - 3 * 86_400_000).toISOString().slice(0, 10);
+    out[e.symbol] = { c: r.price.close, ...testPrices(r), f: (r.recentFilings ?? []).filter((x) => x.filedDate >= since).length, n: r.news?.newIds.length ?? 0, d: r.date };
+  }
+  return out;
+}
