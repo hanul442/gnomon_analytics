@@ -74,7 +74,8 @@ export const UI_CSS = `.deep-lock{display:flex;gap:14px;align-items:flex-start;b
 
 /** Compact bar with name, price, change and freshness; slides in once the hero scrolls away. */
 export function priceBar(opts: { name: string; symbol: string; price: string; change: string; tone: string; badge: string }): string {
-  return `<div class="price-bar" id="price-bar" aria-hidden="true"><b>${opts.name}</b><span class="pb-code">${opts.symbol}</span><span class="pb-price" data-live="${opts.symbol}" data-live-f="price">${opts.price}</span><span class="${opts.tone}" data-live="${opts.symbol}" data-live-f="arrowpct">${opts.change}</span>${opts.badge}</div>`;
+  const live = /^[0-9A-Z-]{1,24}$/.test(opts.symbol) ? ` data-live="${opts.symbol}"` : '';
+  return `<div class="price-bar" id="price-bar" aria-hidden="true"><b>${opts.name}</b><span class="pb-code">${opts.symbol}</span><span class="pb-price" ${live} data-live-f="price">${opts.price}</span><span class="${opts.tone}" ${live} data-live-f="arrowpct">${opts.change}</span>${opts.badge}</div>`;
 }
 
 export const UI_SCRIPT = `<script>
@@ -235,7 +236,7 @@ export const TOUR_JS = `
         ['.menu-btn', '☰ 메뉴', '보기 방식을 바꾸거나 설문, 성적표, 내 계정으로 가요.'],
       ],
       report: [
-        ['.chips', '탭', '요약 · 차트·기술 · AI 위원회 · 수급 · 실적 · 뉴스·공시. 처음엔 요약만 봐도 충분해요.'],
+        ['.chips', '탭', '요약 · 차트 · 기술 · AI 위원회 · 수급 · 실적 · 뉴스·공시. 처음엔 요약만 봐도 충분해요.'],
         ['#home-conclusion', '지금 판단', '위아래 테스트 가격과 그때의 시나리오예요. 가격을 넘거나 깨면 어느 쪽으로 갈지, 확률과 함께 보여 줘요.'],
         ['#home-conclusion .cl-row', '줄을 눌러 보세요', '시나리오가 펼쳐져요. 무엇이 나오면 그렇게 되는지, 언제 틀렸다고 볼지가 나와요. 약세 줄 안에는 최악의 경우가 있어요.'],
         ['#t-ai', 'AI 위원회', '분석가 6명과 데스크 5곳의 표결, 서로 반박하는 토론, 근거 정리가 있어요. 토론에 직접 질문할 수도 있어요.'],

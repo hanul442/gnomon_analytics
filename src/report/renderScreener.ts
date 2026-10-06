@@ -1,3 +1,4 @@
+import {CREDIT_COST} from './plans.js';
 // Screener (docs/DESIGN.md §5.12, G-43): every listed stock's free daily computation, filterable in the
 // browser. Free: one preset and the top five rows. Plus: every condition and every row. Pro (coming):
 // back-testing a condition. Data: site/screener.json, rebuilt every run.
@@ -40,7 +41,7 @@ export function renderScreener(): string {
 <nav class="find-tabs" role="tablist" aria-label="시장"><button type="button" role="tab" data-find="stock" aria-selected="true">주식 <span id="sc-count" class="muted"></span></button><button type="button" role="tab" data-find="etf" aria-selected="false">ETF</button><button type="button" role="tab" data-find="coin" aria-selected="false">코인</button><a href="reports.html">AI 리포트</a></nav></section>
 <div id="find-stock"><p class="muted small" id="sc-kind-note" hidden style="margin:6px 0 0">ETF·코인도 주식과 같은 조건으로 걸러요. 시가총액·외국인 수급·공시 항목은 없어서 그 조건은 빼고 봐요. 코인의 '유의 종목'은 공시 위험 2단계로 쳐요.</p>
 <section class="block"><div class="pl-chips sc-presets" role="group" aria-label="빠른 조건">${PRESETS.map((p, i) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${i === 0}" title="${p.hint}">${p.label}${i ? ' <span class="lockmark">플러스</span>' : ''}</button>`).join('')}</div></section>
-<section class="block" id="ai-build"><div class="card"><h2>AI로 조건 만들기</h2><p class="muted small">원하는 종목의 특징을 말해 주세요. 제안한 기준을 확인한 뒤 검색에 적용할 수 있어요.</p><textarea id="ai-screen-q" maxlength="600" rows="2" placeholder="예: 거래량이 터졌는데 아직 많이 안 오른 코스닥 종목" style="width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px"></textarea><button type="button" class="btn-primary" id="ai-screen-send">AI에게 조건 만들기</button><div id="ai-screen-out" aria-live="polite"></div></div></section>
+<section class="block" id="ai-build"><div class="card"><h2>AI로 조건 만들기</h2><p class="muted small">원하는 종목의 특징을 말해 주세요. 제안한 기준을 확인한 뒤 검색에 적용할 수 있어요.</p><textarea id="ai-screen-q" maxlength="600" rows="2" placeholder="예: 거래량이 터졌는데 아직 많이 안 오른 코스닥 종목" style="width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px"></textarea><button type="button" class="btn-primary" id="ai-screen-send">${CREDIT_COST.question}크레딧 · AI에게 조건 만들기</button><div id="ai-screen-out" aria-live="polite"></div></div></section>
 <section class="block" id="build"><div class="card sc-form" id="sc-form">
 <div class="sc-top"><b>조건</b><label class="sc-inline">조건을<select name="match"><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></label>
 <label class="sc-inline"><input type="checkbox" name="norisk" checked> 공시 위험 2단계 이상 빼기</label>

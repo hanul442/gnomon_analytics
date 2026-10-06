@@ -768,7 +768,7 @@ function joinBox(report: Pick<DailyReport, 'symbol' | 'name'>, base: string): st
 <div class="jn-input"><label class="jn-q"><span class="muted small">무엇이 궁금한가요?</span><textarea name="q" rows="2" maxlength="300" placeholder="예: ${escape(ex[0]!)}"></textarea></label><button type="button" class="jn-plus" data-pick-expert aria-label="답변할 전문가 선택" title="전문가 선택">+</button></div>
 <div class="chat-sugg">${ex.map((q) => `<button type="button" data-fill="${escape(q)}">${escape(q)}</button>`).join('')}</div>
 <p class="muted small" data-selected-expert>위원회 전체에게 질문</p>
-<dialog class="v2-dialog"><header><b>누구에게 물을까요?</b><button type="button" class="dialog-x" data-close-expert aria-label="닫기">×</button></header><div class="ex-grid jn-who">${who.map((e, i) => `<label class="ex"><input type="radio" name="expert" value="${e.key}"${i ? '' : ' checked'}><span><b>${e.name}</b><small>${e.focus}</small></span></label>`).join('')}</div><p class="fine">초청 전문가는 ${CREDIT_COST.invite}크레딧 · 프로부터 이용할 수 있어요.</p></dialog>
+<dialog class="v2-dialog"><header><b>누구에게 물을까요?</b><button type="button" class="dialog-x" data-close-expert aria-label="닫기">×</button></header><div class="ex-grid">${who.map((e, i) => `<label class="ex"><input type="radio" name="expert" value="${e.key}"${i ? '' : ' checked'}><span><b>${e.name}</b><small>${e.focus}</small></span></label>`).join('')}</div><p class="fine">초청 전문가는 ${CREDIT_COST.invite}크레딧 · 프로부터 이용할 수 있어요.</p></dialog>
 <div class="ask-row"><button type="submit" class="credit-btn">${CREDIT_COST.standard}크레딧 · 질문하기</button></div><div class="ask-out" hidden aria-live="polite"></div></form>
 <p class="fine">답은 토론 맨 아래에 바로 달려요. 위원회 전체는 ${CREDIT_COST.standard}크레딧, 초청 전문가는 ${CREDIT_COST.invite}크레딧(프로부터)이에요. 전문가는 지금까지의 토론을 읽고 그 관점에서 의견·위험·지켜볼 것을 답해요. <a href="${base}pricing.html">요금제 보기</a></p></div>`;
 }
@@ -908,6 +908,7 @@ const stockScript = (coin: boolean) => `<script>
       $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + (Math.abs(ch) >= 100 ? Math.round(Math.abs(ch)).toLocaleString('ko-KR') : Number(Math.abs(ch).toPrecision(3)).toLocaleString('ko-KR', { maximumFractionDigits: 8 })) + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : '');
       $('sp-date').textContent = last.time + (COIN ? ' 일봉 (09:00 KST 기준)' : ' 종가');
       $('pb-name').textContent = d.name; $('pb-code').textContent = d.symbol; $('pb-price').textContent = won(last.close);
+      $('pb-price').parentElement.setAttribute('data-live',code);$('pb-change').parentElement.setAttribute('data-live',code);
       $('pb-change').textContent = prev ? (pc > 0 ? '▲ +' : pc < 0 ? '▼ ' : '') + pc.toFixed(2) + '%' : ''; $('pb-change').className = ch > 0 ? 'up' : ch < 0 ? 'down' : '';
       document.querySelectorAll('.skel').forEach(function (x) { x.classList.remove('skel'); });
     }

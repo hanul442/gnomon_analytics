@@ -39,7 +39,7 @@ try{
  for(const width of [375,390,768,1280]){console.log('Checking viewport',width);
   await page.setViewportSize({width,height:850});await page.goto(origin+'/stock.html?c=999999');
   await page.locator('#sp-name').filter({hasText:'UI 테스트'}).waitFor();await page.locator('#main[aria-busy]').waitFor({state:'detached'});
-  assert.equal(await page.locator('[role=tab][aria-controls]').count(),7);
+  assert.equal(await page.locator('[role=tab][aria-controls]:visible').count(),7);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.locator('#t-ai').click();await page.locator('#tab-ai .gnm-loading').waitFor({state:'visible'});
   await page.locator('#tab-ai .gnm-loading').waitFor({state:'detached'});
