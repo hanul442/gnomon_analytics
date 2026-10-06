@@ -171,7 +171,7 @@ export const LIVE_JS = `
         var f = el.getAttribute('data-live-f'), t = q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : '';
         if (f === 'tag') { el.hidden = false; el.textContent = q.open ? '● 실시간' : '장 마감'; el.classList.toggle('on', !!q.open); return; }
         if (f === 'price') el.textContent = won(q.price);
-        else if (f === 'pct') el.textContent = sg(q.changePct);
+        else if (f === 'pct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
         else if (f === 'arrowpct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
         else if (f === 'full') el.textContent = (q.change > 0 ? '▲' : q.change < 0 ? '▼' : '') + ' ' + Math.abs(q.change).toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + ' (' + sg(q.changePct) + ')';
         if (f !== 'price') { el.classList.remove('up', 'down'); if (t) el.classList.add(t); }
@@ -307,6 +307,12 @@ export const SURVEY_POP_JS = `
   })();`;
 
 export const POP_CSS = `.pop-wrap{position:fixed;inset:0;z-index:150;background:rgba(10,20,35,.45);display:grid;place-items:center;padding:16px;animation:pop-in .2s ease-out}.pop{width:min(380px,100%);background:#fff;border-radius:20px;padding:22px 20px 16px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}.pop-ic{font-size:40px}.pop b{display:block;font-size:18px;margin-top:6px}.pop p{font-size:14px;line-height:1.6;color:var(--fg2);margin:8px 0 14px}.pop-b{display:flex;gap:8px;justify-content:center}.pop-b button{flex:none;white-space:nowrap;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}.pop-b .btn-primary{flex:1;width:auto;margin:0;text-decoration:none;justify-content:center}@keyframes pop-in{from{opacity:0}to{opacity:1}}`;
+
+/** G-83: the loading mark — three soft orbs that breathe in turn, used wherever the page waits on data or AI. */
+export const ORBS_CSS = `.orbs{display:inline-flex;gap:5px;align-items:center;vertical-align:middle;margin-right:6px}.orbs i{width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0,#9fb6dc 30%,#2a4f8f 75%);box-shadow:0 0 10px rgba(42,79,143,.45);animation:orb 1.2s ease-in-out infinite}.orbs i:nth-child(2){animation-delay:.18s;background:radial-gradient(circle at 35% 30%,#fff 0,#f0a0a3 30%,#b23a5a 75%);box-shadow:0 0 10px rgba(178,58,90,.4)}.orbs i:nth-child(3){animation-delay:.36s;background:radial-gradient(circle at 35% 30%,#fff 0,#9fe0d6 30%,#1c8c7d 75%);box-shadow:0 0 10px rgba(28,140,125,.4)}
+@keyframes orb{0%,100%{transform:translateY(0) scale(.8);opacity:.55}50%{transform:translateY(-5px) scale(1.1);opacity:1}}.orbs-load{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:28px 0;color:var(--muted);font-size:13.5px}.orbs-load .orbs i{width:16px;height:16px}
+@media (prefers-reduced-motion:reduce){.orbs i{animation:none}}`;
+export const ORBS = '<span class="orbs" aria-hidden="true"><i></i><i></i><i></i></span>';
 
 export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:#1d6b3a;border-color:#bfe3cb;background:#effaf2}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(209,55,61,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(42,98,201,.22)}100%{background:transparent}}`;
 

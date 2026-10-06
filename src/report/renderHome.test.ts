@@ -12,7 +12,7 @@ const entry = (symbol: string, changePct: number, kind: HomeEntry['kind'] = 'sto
 test('home: no view bar or market tabs; temperature card; today picks carry a score and a reason per view (G-67)', () => {
   const html = renderHome({ entries: [entry('AAA', 9), entry('BBB', 0.1, 'etf')], selection: null, universe: null, pulse: null, indices: [] });
   assert.ok(!html.includes('id="pz-note"') && !html.includes('class="mkt-tabs"'));
-  assert.ok(html.includes('data-s-trader=') && html.includes('pw-trader') && html.includes('오늘 +9.00%'));
+  assert.ok(html.includes('data-s-trader=') && html.includes('pw-trader') && html.includes('오늘 ▲ +9.00%'));
   const s = (sym: string, v: string) => Number(new RegExp(`data-s-${v}="([-\\d.]+)"[^>]*>(?:(?!class="tp").)*?${sym}/index`, 's').exec(html)?.[1]);
   assert.ok(s('AAA', 'trader') > s('BBB', 'trader'), 'the big mover leads for traders');
   assert.ok(s('BBB', 'beginner') > s('AAA', 'beginner'), 'the ETF leads for beginners');

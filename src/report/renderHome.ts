@@ -4,6 +4,7 @@
 // reports as one-line rows, today's movers, a watchlist kept in the browser,
 // the scorecard summary and this week's filings. Pure rendering.
 
+import { ORBS } from './ui.js';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { MarketPulse, PulseBucket, StockCalc } from '../analysis/quickCalc.js';
@@ -19,7 +20,8 @@ import { FIELD_INDEX, matches, PRESETS } from '../analysis/screenRules.js';
 const esc = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
-const signed = (v: number | null, digits = 2) => (v === null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`);
+// G-84: a move always carries its arrow (▲ red up, ▼ blue down) next to the number.
+const signed = (v: number | null, digits = 2) => (v === null ? '—' : `${v > 0 ? '▲ +' : v < 0 ? '▼ ' : ''}${v.toFixed(digits)}%`);
 const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 const arrow = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? '▲' : '▼');
 
@@ -232,7 +234,7 @@ const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class=
 <p>무료는 한 줄 요약, <b>플러스</b>는 상세 설명, <b>프로</b>는 직접 요청하고 질문하기, <b>맥스</b>는 내 종목을 매주 위원회가 분석해요. 크레딧은 누구나 충전해서 써요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
 
 /** G-78: the reader's saved screens (or the first preset), run on today's screener.json in the page. */
-const MY_SCREENS = `<section class="block" id="myscreens"><div class="block-head"><h2>내 조건에 걸린 종목</h2><a class="more-link" href="screener.html#build">조건 만들기 ›</a></div><div id="ms-body" class="ms-grid"><p class="muted small">불러오는 중이에요.</p></div></section>`;
+const MY_SCREENS = `<section class="block" id="myscreens"><div class="block-head"><h2>내 조건에 걸린 종목</h2><a class="more-link" href="screener.html#build">조건 만들기 ›</a></div><div id="ms-body" class="ms-grid"><div class="orbs-load" style="grid-column:1/-1">${ORBS}<span>내 조건으로 오늘 종목을 찾는 중이에요</span></div></div></section>`;
 const MY_SCREENS_SCRIPT = `<script>
 (function () {
   var box = document.getElementById('ms-body'); if (!box) return;
@@ -326,7 +328,7 @@ const FILTER_SCRIPT = `<script>
     e.preventDefault();
     var h = a.getAttribute('href'), i = h.indexOf('#'), src = (i < 0 ? h : h.slice(0, i)) + '?embed=1' + (i < 0 ? '' : h.slice(i));
     pop = document.createElement('div'); pop.className = 'flt-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); pop.setAttribute('aria-label', '필터로 찾기');
-    pop.innerHTML = '<div class="flt-sheet"><div class="flt-top"><b>필터로 찾기</b><button type="button" class="flt-x" aria-label="닫기">×</button></div><iframe title="필터로 찾기" src="' + src + '"></iframe></div>';
+    pop.innerHTML = '<div class="flt-sheet"><div class="flt-top"><b>필터로 찾기</b><button type="button" class="flt-x" aria-label="닫기">×</button></div><div class="orbs-load flt-wait">${ORBS}<span>필터를 여는 중이에요</span></div><iframe title="필터로 찾기" src="' + src + '" onload="this.previousSibling.remove()"></iframe></div>';
     pop.addEventListener('click', function (ev) { if (ev.target === pop || (ev.target.classList && ev.target.classList.contains('flt-x'))) close(); });
     document.body.appendChild(pop); document.documentElement.classList.add('menu-open');
   });
@@ -425,7 +427,7 @@ const HOME_SCRIPT = `<script>
         var it = (items || []).find(function (x) { return x[0] === sym; }) || [sym, sym, '', null, null, 0];
         var ch = it[4], coin = sym.indexOf('KRW-') === 0, href = it[5] ? sym + '/index.html' : coin ? 'coin.html?m=' + sym : 'stock.html?c=' + sym;
         var p = it[3], price = p == null ? '' : '<b data-live="' + esc(sym) + '" data-live-f="price">' + (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원</b> ';
-        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b> <span class="muted small">' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : sym + (it[2] === 'ETF' ? ' · ETF' : '')) + '</span></a><span>' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
+        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b> <span class="muted small">' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : sym + (it[2] === 'ETF' ? ' · ETF' : '')) + '</span></a><span>' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
       }).join('');
     };
     show();

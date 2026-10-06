@@ -151,7 +151,7 @@ export const ALPHA_SCRIPT = `<script>
       if (!G.me) { location.href = base + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/')); return; }
       var box = f.closest('.card.debate') || f.closest('.card'), anchor = box.querySelector('.db-ev') || f.closest('.db-join') || f;
       var mine = document.createElement('div'); mine.className = 'db-turn db-bear db-guest db-me'; mine.innerHTML = '<div class="db-who"><b>나</b> · ' + esc(who) + '에게</div><div class="db-bubble">' + esc(q) + '</div>';
-      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-typing'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b> 작성 중…</div><div class="db-bubble"><i></i><i></i><i></i></div>';
+      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-typing'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b> 생각하는 중…</div><div class="db-bubble"><span class="orbs"><i></i><i></i><i></i></span></div>';
       anchor.parentNode.insertBefore(mine, anchor); anchor.parentNode.insertBefore(wait, anchor); mine.scrollIntoView({ block: 'center', behavior: 'smooth' });
       var btn = f.querySelector('[type=submit]'); btn.disabled = true;
       var said = [].map.call(box.querySelectorAll('.db-turn:not(.db-typing)'), function (t) { var w = t.querySelector('.db-who b'), x = t.querySelector('.db-bubble'); return (w ? w.textContent : '') + ': ' + (x ? x.textContent.replace(/\\s+/g, ' ').trim() : ''); }).join('\\n').slice(-5000);

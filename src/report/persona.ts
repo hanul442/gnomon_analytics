@@ -58,7 +58,8 @@ export const PERSONA_JS = `
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const won = (v: number) => `${v >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}원`;
-const pct = (v: number | null | undefined) => (v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`);
+const pct = (v: number | null | undefined) => (v == null ? '—' : `${v > 0 ? '▲ +' : v < 0 ? '▼ ' : ''}${v.toFixed(1)}%`);
+const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 const row = (k: string, v: string, note = '') => `<div><span>${esc(k)}</span><b>${v}</b>${note ? `<small>${esc(note)}</small>` : ''}</div>`;
 const LEVEL_WORD: Record<string, string> = { STRONG_BULLISH: '강한 강세', BULLISH: '강세', SLIGHTLY_BULLISH: '약간 강세', NEUTRAL: '중립', SLIGHTLY_BEARISH: '약간 약세', BEARISH: '약세', STRONG_BEARISH: '강한 약세' };
 const FOOT: Record<string, string> = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' };
@@ -72,13 +73,13 @@ export function personaCards(report: DailyReport): string {
   const fv = m?.fairValue, st = m?.structure;
   const below = st?.levels.filter((l) => l.price < p.close).sort((a, b) => b.price - a.price)[0];
   const above = st?.levels.filter((l) => l.price > p.close).sort((a, b) => a.price - b.price)[0];
-  const card = (key: Persona, q: string, title: string, rows: string, foot = '') =>
-    `<section class="pc pc-${key}"><div class="card"><div class="pc-q">${esc(q)}</div><h2>${esc(title)}</h2><div class="pc-rows">${rows}</div>${foot}</div></section>`;
+  const card = (key: Persona, q: string, title: string, rows: string, foot = '', cls = '') =>
+    `<section class="pc pc-${key}"><div class="card"><div class="pc-q">${esc(q)}</div><h2${cls ? ` class="${cls}"` : ''}>${esc(title)}</h2><div class="pc-rows">${rows}</div>${foot}</div></section>`;
   const big = p.moveZ20 != null && Math.abs(p.moveZ20) >= 2;
   const mom = (d: number) => report.momentum?.find((x) => x.days === d)?.returnPct ?? null;
   // Beginner: plain words, each number explained.
   const beginner = card('beginner', '쉽게 보면', line,
-    row('오늘', pct(p.changePct), big ? '평소보다 크게 움직였어요' : '평소 범위 안의 움직임이에요')
+    row('오늘', `<span class="${tone(p.changePct)}">${pct(p.changePct)}</span>`, big ? '평소보다 크게 움직였어요' : '평소 범위 안의 움직임이에요')
     + (sig ? row('기술 신호', sig, '여러 지표가 가리키는 방향이에요. 오를 확률은 아니에요') : '')
     + (fv ? row('가격 위치', fv.position === 'ABOVE' ? '비싼 쪽' : fv.position === 'BELOW' ? '싼 쪽' : '보통', `거래가 많이 된 가격대(${won(fv.low)}~${won(fv.high)})와 비교했어요`) : ''),
     '<p class="fine" style="margin-top:8px">모르는 말은 옆의 ? 를 누르면 풀이가 나와요. 투자 권유가 아니에요.</p>');
@@ -89,7 +90,7 @@ export function personaCards(report: DailyReport): string {
     + (below ? row('가까운 지지', won(below.price), `닿은 횟수 ${below.touches}번`) : '')
     + (above ? row('가까운 저항', won(above.price), `닿은 횟수 ${above.touches}번`) : '')
     + (m ? row('수급 흔적', FOOT[m.footprint.state] ?? '—') : '')
-    + (st?.atr14 ? row('하루 평균 움직임', `${((st.atr14 / p.close) * 100).toFixed(1)}%`, 'ATR 14일') : ''));
+    + (st?.atr14 ? row('하루 평균 움직임', `${((st.atr14 / p.close) * 100).toFixed(1)}%`, 'ATR 14일') : ''), '', tone(p.changePct));
   // Swing: the conclusion card (G-65): the two test prices and what each crossing would mean, with the odds.
   // Swing: no card of its own; the conclusion card heads the page (G-71).
   const swing = '';
@@ -99,9 +100,9 @@ export function personaCards(report: DailyReport): string {
   const lastQ = q.at(-1), yearAgo = q.at(-5);
   const yoy = op(lastQ) != null && op(yearAgo) != null && op(yearAgo)! > 0 ? ((op(lastQ)! / op(yearAgo)! - 1) * 100) : null;
   const long = card('long', '가치와 실적', fv ? `적정 범위 ${won(fv.low)}~${won(fv.high)}, 지금은 ${fv.position === 'ABOVE' ? '범위 위' : fv.position === 'BELOW' ? '범위 아래' : '범위 안'}` : line,
-    row('120일 등락', pct(mom(120)))
+    row('120일 등락', `<span class="${tone(mom(120))}">${pct(mom(120))}</span>`)
     + (snap?.per != null ? row('PER', `${snap.per.toFixed(1)}배`) : '') + (snap?.pbr != null ? row('PBR', `${snap.pbr.toFixed(2)}배`) : '')
-    + (yoy != null ? row('최근 분기 영업이익', pct(yoy), '1년 전 같은 분기 대비') : '')
+    + (yoy != null ? row('최근 분기 영업이익', `<span class="${tone(yoy)}">${pct(yoy)}</span>`, '1년 전 같은 분기 대비') : '')
     + (snap?.consensus?.targetPriceMean ? row('증권가 평균 목표가', won(snap.consensus.targetPriceMean), '증권사 의견이에요') : ''));
   return beginner + trader + swing + long;
 }

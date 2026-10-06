@@ -130,7 +130,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
       if (i >= turns.length) return finish();
       var t = turns[i], who = t.querySelector('.db-who b');
       typing.className = 'db-turn db-typing ' + (t.className.match(/db-(bull|bear|mid|red)/) || [''])[0];
-      typing.innerHTML = '<div class="db-who"><b>' + (who ? who.textContent : '') + '</b> 작성 중…</div><div class="db-bubble"><i></i><i></i><i></i></div>';
+      typing.innerHTML = '<div class="db-who"><b>' + (who ? who.textContent : '') + '</b> 작성 중…</div><div class="db-bubble"><span class="orbs"><i></i><i></i><i></i></span></div>';
       t.parentNode.insertBefore(typing, t);
       timer = setTimeout(function () { typing.remove(); t.hidden = false; t.classList.add('db-in'); i += 1; timer = setTimeout(next, 450); }, Math.min(1800, 500 + (t.textContent || '').length * 9));
     };
