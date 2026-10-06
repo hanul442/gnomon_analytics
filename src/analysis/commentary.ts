@@ -206,7 +206,7 @@ const ScenarioSchema = z.object({
   catalysts: z.array(z.string()).describe('이 시나리오를 앞당길 일'),
   invalidation: z.array(z.string()).describe('이 시나리오가 틀렸다고 볼 조건(가격 수준이나 사건)'),
   probability: z.number().describe('지금 근거로 본 이 시나리오의 확률(%) 추정. 세 시나리오의 합이 100이 되게 정수로'),
-  trigger: z.number().describe('이 시나리오가 시작된다고 볼 테스트 가격(원). BULL은 넘어서야 할 가격(위쪽), BEAR는 깨지면 안 되는 가격(아래쪽), BASE는 0. 근거의 지지·저항·구조 가격에서 고릅니다'),
+  trigger: z.number().describe('이 시나리오가 시작된다고 볼 테스트 가격(원). BULL은 넘어서야 할 가격(위쪽), BEAR는 아래로 이탈하면 약세 전개를 검토하는 가격(아래쪽), BASE는 0. 근거의 지지·저항·구조 가격에서 고릅니다'),
   zoneLow: z.number().describe('이 시나리오대로 가면 20거래일 안에 있을 만한 가격대의 아래 끝(원). 시나리오 가격대일 뿐 목표가가 아닙니다'),
   zoneHigh: z.number().describe('그 가격대의 위 끝(원)'),
 });
@@ -383,10 +383,11 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
         output_config: { format: betaZodOutputFormat(BriefSchema) },
         system: briefSystem(report.name, report.kind), messages: [user],
       });
-    if (response.stop_reason === 'refusal') return empty('FAILED', now, evidence, `REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
-    if (response.stop_reason === 'max_tokens') return empty('FAILED', now, evidence, 'MAX_TOKENS');
+    const failed=(reason:string):Commentary=>({...empty('FAILED',now,evidence,reason),model,servedBy:response.model,tier,...(response.usage?{usage:{inputTokens:response.usage.input_tokens,outputTokens:response.usage.output_tokens}}:{})});
+    if (response.stop_reason === 'refusal') return failed(`REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
+    if (response.stop_reason === 'max_tokens') return failed('MAX_TOKENS');
     const parsed = response.parsed_output as (z.infer<typeof BriefSchema> & Partial<z.infer<typeof CommentarySchema>>) | null;
-    if (!parsed) return empty('FAILED', now, evidence, 'UNPARSEABLE_OUTPUT');
+    if (!parsed) return failed('UNPARSEABLE_OUTPUT');
     const known = new Set(evidence.map((e) => e.id));
     let dropped = 0;
     const clean = (claims: readonly Claim[]) => {

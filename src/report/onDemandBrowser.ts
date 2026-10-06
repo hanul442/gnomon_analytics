@@ -31,7 +31,7 @@ export const JOBS_JS = `
     if(dialog)dialog.querySelector('.orbs-load').innerHTML='<b>리포트가 완성됐어요</b><span>데이터 기준 '+esc(r.dataDate||'확인 필요')+' · 생성 '+esc(r.generatedAt||'')+'</span><a class="btn-primary" href="'+href+'">리포트 보기</a>';
     if(G.refresh)G.refresh();return;
    }
-   if(r.status==='failed'){if(dialog)dialog.querySelector('.orbs-load').innerHTML='<b>리포트를 만들지 못했어요</b><p>'+esc(r.error||'크레딧은 반환했어요. 다시 요청해 주세요.')+'</p>';if(G.refresh)G.refresh();return;}
+   if(r.status==='failed'){if(dialog){dialog.querySelector('.orbs-load').innerHTML='<b>리포트를 만들지 못했어요</b><p>'+esc(r.error||'크레딧은 반환했어요. 다시 요청해 주세요.')+'</p><button type="button" class="btn-primary" data-retry-report>다시 요청</button>';dialog.querySelector('[data-retry-report]').onclick=function(){dialog.close();G.startReport(r.kind==='brief'?'brief':'report',r.symbol,r.symbol);};}if(G.refresh)G.refresh();return;}
    if(dialog){var text=dialog.querySelector('[data-job-state]');if(text)text.textContent=stage[r.stage]||'분석 중이에요';var c=dialog.querySelector('canvas');if(c)c.dataset.orb=r.stage==='composing'?'composing':'working';}
    timer=setTimeout(poll,1000);
   });};poll();

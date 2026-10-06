@@ -42,6 +42,17 @@ export async function refundJob(db:D1,job:ReportJob,reason:string,now:Date){
  db.prepare("INSERT OR IGNORE INTO ledger(user_id,delta,kind,note,ref,created_at) SELECT ?,?,'refund',?,?,? WHERE EXISTS(SELECT 1 FROM ledger WHERE user_id=? AND ref=?) AND NOT EXISTS(SELECT 1 FROM report_jobs WHERE id=? AND status='done')").bind(job.user_id,job.credits,reason,`refund:report:${job.id}`,now.toISOString(),job.user_id,`report:${job.id}`,job.id)
  ]);
 }
+export function reportFailureMessage(code:string|undefined):string{
+ const key=code??'UNKNOWN';
+ if(/MAX_TOKENS/.test(key))return 'AI 응답이 길이 제한을 넘어 리포트를 완성하지 못했어요. 크레딧은 반환됩니다. [MAX_TOKENS]';
+ if(/UNPARSEABLE_OUTPUT|SCHEMA|parse|JSON/i.test(key))return 'AI 응답 형식을 확인하지 못했어요. 크레딧은 반환됩니다. [INVALID_OUTPUT]';
+ if(/API_429|API_529/.test(key))return 'AI 서버가 혼잡해 생성을 마치지 못했어요. 크레딧은 반환됩니다. 잠시 후 다시 요청해 주세요. [AI_BUSY]';
+ if(/timeout|timed out|abort/i.test(key))return 'AI 응답 시간이 초과됐어요. 크레딧은 반환됩니다. 잠시 후 다시 요청해 주세요. [AI_TIMEOUT]';
+ if(/API_401|API_403|API_400|API_404|KEY_MISSING/.test(key))return 'AI 서버 연결 설정을 확인해야 해요. 크레딧은 반환됩니다. 운영자에게 알려 주세요. [AI_CONFIGURATION]';
+ if(/NO_EVIDENCE/.test(key))return '분석에 필요한 근거가 부족해요. 크레딧은 반환됩니다. [NO_EVIDENCE]';
+ if(/REFUSAL/.test(key))return 'AI가 이번 분석 응답을 제공하지 못했어요. 크레딧은 반환됩니다. [AI_REFUSAL]';
+ return 'AI 리포트를 완성하지 못했어요. 크레딧은 반환됩니다. [AI_GENERATION_FAILED]';
+}
 export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void>{
  const job=await db.prepare('SELECT * FROM report_jobs WHERE id=?').bind(id).first<ReportJob>();
  if(!job||['done','failed'].includes(job.status))return;
@@ -59,7 +70,7 @@ export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void
   const usage=commentary.usage;
   const usd=usage?usdOf(commentary.servedBy||commentary.model,usage.inputTokens,usage.outputTokens):0;
   await db.prepare('UPDATE report_jobs SET usd=? WHERE id=?').bind(usd,id).run();
-  if(commentary.status!=='OK'||!commentary.summary)throw new Error('AI 리포트 생성에 실패했어요. 크레딧은 반환됩니다.');
+  if(commentary.status!=='OK'||!commentary.summary)throw new Error(reportFailureMessage(commentary.error));
   report.commentary=commentary;report.generatedAt=deps.now().toISOString();
   await db.prepare("UPDATE report_jobs SET stage='composing',updated_at=? WHERE id=?").bind(deps.now().toISOString(),id).run();
   await db.prepare("UPDATE report_jobs SET status='done',stage='done',result_json=?,reserved_usd=0,updated_at=? WHERE id=? AND status='running'").bind(JSON.stringify(report),deps.now().toISOString(),id).run();
