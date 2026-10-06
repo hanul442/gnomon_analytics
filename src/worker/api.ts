@@ -93,7 +93,7 @@ function corsHeaders(req: Request, env: Env): Record<string, string> {
   const origin = req.headers.get('Origin') ?? '';
   const allowed = [new URL(env.SITE_URL).origin, ...(env.ALLOW_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)];
   return allowed.includes(origin)
-    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
     : { Vary: 'Origin' };
 }
 const json = (status: number, body: unknown, headers: Record<string, string>) =>

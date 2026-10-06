@@ -31,7 +31,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/screens/compose')return res.end(JSON.stringify({name:'거래량 증가',explanation:'테스트 조건',screen:{match:'all',rules:[{f:'vol1',op:'>=',v:3}]}}));
  if(path.startsWith('/api/candles/'))return res.end(JSON.stringify({bars:bars.slice(-20).map((b,i)=>({...b,time:1791262800+i*900}))}));
  if(path==='/api/ask/stream'){
-  res.setHeader('Content-Type','text/event-stream');res.write('event: delta\ndata: '+JSON.stringify({text:'테스트 답변'})+'\n\n');return setTimeout(()=>res.end('event: done\ndata: '+JSON.stringify({answer:'테스트 답변',tier:'question',model:'claude-haiku-4-5',credits:5,balance:395})+'\n\n'),650);
+  res.setHeader('Content-Type','text/event-stream');setTimeout(()=>res.write('event: delta\ndata: '+JSON.stringify({text:'테스트 답변'})+'\n\n'),450);return setTimeout(()=>res.end('event: done\ndata: '+JSON.stringify({answer:'테스트 답변',tier:'question',model:'claude-haiku-4-5',credits:5,balance:395})+'\n\n'),650);
  }
  if(path==='/api/reports/latest/999999')return res.end(JSON.stringify({job:null}));
  return res.end(JSON.stringify({items:[],rows:[]}));

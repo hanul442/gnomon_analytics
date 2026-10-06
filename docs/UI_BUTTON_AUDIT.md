@@ -16,7 +16,6 @@
 
 | 템플릿 파일 | 버튼 템플릿 수 |
 |---|---|
-
 | `alpha.ts` | 8 |
 | `alphaPages.ts` | 3 |
 | `appParts.ts` | 12 |

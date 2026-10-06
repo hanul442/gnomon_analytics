@@ -421,6 +421,7 @@ test('custom experts are account-owned, bounded, exported and used at the invite
  const other=await t.login('othercustom@example.com',(await t.call('POST','/admin/invites',{},boss.session)).body.code);
  assert.equal((await t.call('POST','/experts',{name:'x',focus:'x'},u.session)).status,400);
  assert.equal((await t.call('GET','/experts')).status,401);
+ assert.match((await handle(new Request('https://api.test/experts',{method:'OPTIONS',headers:{Origin:'https://hanul442.github.io'}}),t.env,t.deps)).headers.get('Access-Control-Allow-Methods')!,/DELETE/);
  const made=await t.call('POST','/experts',{name:'현금흐름 전문가',focus:'현금흐름과 설비투자 위험을 검토',style:'숫자와 근거 중심'},u.session);
  assert.equal(made.status,200);const id=made.body.expert.id;
  assert.equal((await t.call('GET','/experts',undefined,other.session)).body.items.length,0);
