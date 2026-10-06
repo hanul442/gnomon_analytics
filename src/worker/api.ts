@@ -7,6 +7,7 @@ import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, matches } from '../analysis/screenRules.js';
 import { intradaySignals, readIntraday } from '../analysis/intraday.js';
+import { deepPath, DEEP_DATE, DEEP_SYMBOL, unseal } from '../report/seal.js';
 import { parseNaverMinuteChart } from '../sources/naverPrice.js';
 
 export interface Env {
@@ -23,6 +24,8 @@ export interface Env {
   AI_DAILY_USD?: string;
   /** Questions a user may ask a day. */
   USER_DAILY_ASKS?: string;
+  /** G-61: the secret that opens sealed deep reports (GitHub secret GNM_DEEP_KEY). */
+  DEEP_KEY?: string;
 }
 export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient }
 
@@ -535,6 +538,47 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
   }
   return { date: data.date, screens: list.length, sent };
 }
+
+// ---- sealed deep reports (G-61) ----
+// The site holds <symbol>/deep/<date>.txt, sealed with DEEP_KEY. Opening one costs credits once per user
+// and report; admins and whoever requested the stock's report open it free.
+async function deepAccess(db: D1, u: User, symbol: string, date: string): Promise<boolean> {
+  if (u.role === 'admin') return true;
+  if (await db.prepare('SELECT 1 FROM unlocks WHERE user_id = ? AND symbol = ? AND date = ?').bind(u.id, symbol, date).first()) return true;
+  return !!(await db.prepare("SELECT 1 FROM action_requests WHERE user_id = ? AND symbol = ? AND kind IN ('report', 'upgrade') AND status != 'rejected' AND created_at <= ?").bind(u.id, symbol, `${date}T23:59:59Z`).first());
+}
+async function deepHtml(env: Env, deps: Deps, symbol: string, date: string): Promise<string> {
+  if (!env.DEEP_KEY) fail(503, 'NOT_SEALED', '심층 리포트 열쇠가 아직 설정되지 않았어요.');
+  const r = await deps.fetch(`${env.SITE_URL.replace(/\/$/, '')}/${deepPath(symbol, date)}`, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+  if (!r?.ok) fail(404, 'NOT_SEALED', '이 리포트의 심층 내용이 아직 없어요.');
+  try { return await unseal(await r!.text(), env.DEEP_KEY!); } catch { fail(500, 'UNSEAL_FAILED', '심층 리포트를 열지 못했어요. 운영자에게 알려 주세요.'); }
+  return '';
+}
+const deepParams = (params: string[]) => {
+  const symbol = decodeURIComponent(params[0] ?? ''), date = params[1] ?? '';
+  if (!DEEP_SYMBOL.test(symbol) || !DEEP_DATE.test(date)) fail(400, 'BAD_REPORT', '리포트 주소가 맞지 않아요.');
+  return { symbol, date };
+};
+
+route('GET', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})', async ({ req, env, deps, now, params }) => {
+  const u = await authed(req, env, now), { symbol, date } = deepParams(params);
+  if (!(await deepAccess(env.DB, u, symbol, date))) fail(402, 'LOCKED', `${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`, { cost: CREDIT_COST.unlock, balance: await balanceOf(env.DB, u.id) });
+  return { html: await deepHtml(env, deps, symbol, date) };
+});
+
+route('POST', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})/unlock', async ({ req, env, deps, now, params }) => {
+  const u = await authed(req, env, now), { symbol, date } = deepParams(params), db = env.DB;
+  // The report must exist before anything is charged.
+  const html = await deepHtml(env, deps, symbol, date);
+  if (await deepAccess(db, u, symbol, date)) return { html, charged: 0 };
+  const cost = CREDIT_COST.unlock;
+  if (!(await charge(db, u.id, cost, 'unlock', `${symbol} ${date} 심층 리포트`, `unlock:${u.id}:${symbol}:${date}`, now))) {
+    if (await deepAccess(db, u, symbol, date)) return { html, charged: 0 };
+    fail(402, 'NO_CREDITS', `크레딧이 모자라요. ${cost}크레딧이 필요해요.`, { cost, balance: await balanceOf(db, u.id) });
+  }
+  await db.prepare('INSERT OR IGNORE INTO unlocks (user_id, symbol, date, credits, created_at) VALUES (?, ?, ?, ?, ?)').bind(u.id, symbol, date, cost, iso(now)).run();
+  return { html, charged: cost, balance: await balanceOf(db, u.id) };
+});
 
 // ---- watchlist on the server and intraday alerts (G-52) ----
 route('GET', '/watch', async ({ req, env, now }) => {

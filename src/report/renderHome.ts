@@ -149,7 +149,8 @@ const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class=
 const WATCH = `<section class="block" id="watch"><div class="block-head"><h2>관심 종목</h2><span class="muted">이 브라우저에 저장돼요</span></div><div class="card list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div></section>`;
 
 export function renderHome(data: HomeData): string {
-  const entries = data.entries.filter((e) => e.group !== 'past' && e.group !== 'daily');
+  // Reports someone requested stay off the front page (G-61): they are found by search and opened with credits.
+  const entries = data.entries.filter((e) => e.group !== 'past' && e.group !== 'daily' && e.group !== 'request');
   const daily = data.entries.filter((e) => e.group === 'daily');
   const order = { core: 0, weekly: 1, request: 2, past: 3, daily: 4 } as const;
   const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));

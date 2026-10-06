@@ -46,6 +46,8 @@ export const ACTION_COST: Record<CreditAction, number> = {
   standard: callKrw('sonnet', 11_000, 2_000),
   // Haiku over the same evidence, short answer.
   question: callKrw('haiku', 11_000, 1_500),
+  // Opening a report that is already written: no model call.
+  unlock: 0,
 };
 
 /** One stock covered by the full committee every week, KRW a month (Max). */

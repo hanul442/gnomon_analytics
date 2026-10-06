@@ -117,7 +117,7 @@ test('a question charges its tier, a failure is refunded, and limits hold', asyn
   await t.call('POST', '/ask', { tier: 'standard', question: '세 번째' }, u.session);
   assert.equal((await t.call('POST', '/ask', { tier: 'question', question: '네 번째' }, u.session)).body.error, 'DAILY_LIMIT');
   // Spending past the balance is refused before any model call.
-  await t.call('POST', '/admin/grant', { userId: (await t.call('GET', '/admin/overview', undefined, boss.session)).body.users.find((x: any) => x.email === 'q@example.com').id, amount: -170 }, boss.session);
+  await t.call('POST', '/admin/grant', { userId: (await t.call('GET', '/admin/overview', undefined, boss.session)).body.users.find((x: any) => x.email === 'q@example.com').id, amount: -(ALPHA.monthlyCredits - 30) }, boss.session);
   t.tick(86_400_000);
   const n = calls.length;
   const broke = await t.call('POST', '/ask', { tier: 'deep', question: '돈 없음' }, u.session);
@@ -257,4 +257,38 @@ test('passwords (G-57): sign up once with an invite, then email + password; lock
   assert.equal((await t.call('POST', '/me/password', { password: 'second1234' }, link.session)).body.error, 'BAD_CURRENT');
   assert.equal((await t.call('POST', '/me/password', { password: 'second1234', current: 'first1234' }, link.session)).body.ok, true);
   assert.ok((await t.call('POST', '/auth/login', { email: 'l@example.com', password: 'second1234' })).body.session);
+});
+
+test('deep reports (G-61): locked until unlocked once with credits; requester and admin open free; nothing charged for a missing report', async () => {
+  const t = setup();
+  t.env.DEEP_KEY = 'deep-secret';
+  const { seal } = await import('../report/seal.js');
+  const sealed = await seal('<div class="deep-body">위원회 토론 본문</div>', 'deep-secret');
+  const real = t.deps.fetch;
+  t.deps.fetch = (async (url: string, init?: RequestInit) => (String(url).endsWith('/000660/deep/2026-10-02.txt') ? new Response(sealed) : real(url, init))) as typeof fetch;
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('d@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  const path = '/deep/000660/2026-10-02';
+  const locked = await t.call('GET', path, undefined, u.session);
+  assert.deepEqual([locked.status, locked.body.error, locked.body.cost, locked.body.balance], [402, 'LOCKED', CREDIT_COST.unlock, ALPHA.monthlyCredits]);
+  // A report with no sealed file costs nothing.
+  const missing = await t.call('POST', '/deep/005930/2026-10-02/unlock', {}, u.session);
+  assert.deepEqual([missing.status, missing.body.error], [404, 'NOT_SEALED']);
+  const open = await t.call('POST', `${path}/unlock`, {}, u.session);
+  assert.deepEqual([open.status, open.body.charged, open.body.balance], [200, CREDIT_COST.unlock, ALPHA.monthlyCredits - CREDIT_COST.unlock]);
+  assert.match(open.body.html, /위원회 토론 본문/);
+  // Opening again (or unlocking twice) is free.
+  assert.match((await t.call('GET', path, undefined, u.session)).body.html, /위원회 토론 본문/);
+  assert.equal((await t.call('POST', `${path}/unlock`, {}, u.session)).body.charged, 0);
+  assert.equal((await t.call('GET', '/me', undefined, u.session)).body.credits.balance, ALPHA.monthlyCredits - CREDIT_COST.unlock);
+  // The admin reads free; a bad address is refused; not logged in is refused.
+  assert.match((await t.call('GET', path, undefined, boss.session)).body.html, /위원회 토론 본문/);
+  assert.equal((await t.call('GET', '/deep/../2026-10-02', undefined, u.session)).status >= 400, true);
+  assert.equal((await t.call('GET', path)).status, 401);
+  // Out of credits: refused with the balance.
+  const poor = await t.login('p@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  const pid = (await t.call('GET', '/admin/overview', undefined, boss.session)).body.users.find((x: any) => x.email === 'p@example.com').id;
+  await t.call('POST', '/admin/grant', { userId: pid, amount: -(ALPHA.monthlyCredits - 3) }, boss.session);
+  const broke = await t.call('POST', `${path}/unlock`, {}, poor.session);
+  assert.deepEqual([broke.status, broke.body.error, broke.body.balance], [402, 'NO_CREDITS', 3]);
 });

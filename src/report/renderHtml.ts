@@ -581,11 +581,13 @@ export interface PageContext {
   commentaryFrom?: string | null;
   /** The report before the one whose commentary is shown (for "지난 리포트 대비"). */
   previous?: DailyReport | null;
+  /** G-61: the commentary given is the public part; the paid part is fetched from the API for this report date. */
+  deep?: { date: string } | null;
 }
 
 export function renderReport(report: DailyReport, links: { index: string; base?: string } & Partial<PageContext>): string {
   const base = links.base ?? '../';
-  const ctx: PageContext = { base, live: links.live ?? false, homeHref: links.homeHref ?? `${base}index.html`, archiveHref: links.archiveHref ?? `${base}archive.html`, commentaryFrom: links.commentaryFrom ?? null, previous: links.previous ?? null };
+  const ctx: PageContext = { base, live: links.live ?? false, homeHref: links.homeHref ?? `${base}index.html`, archiveHref: links.archiveHref ?? `${base}archive.html`, commentaryFrom: links.commentaryFrom ?? null, previous: links.previous ?? null, deep: links.deep ?? null };
   const m = report.market;
   const chart = priceChart(report, chartOverlays(m), base, CHART_ASSET);
   const panel = (key: TabKey, html: string) => `<section class="panel" id="tab-${key}" role="tabpanel" aria-labelledby="t-${key}" tabindex="-1"><h2 class="panel-title">${TABS.find((t) => t.key === key)!.label}</h2>${html}</section>`;
@@ -620,13 +622,17 @@ ${m ? gate(arenaTeaser(m.arena), { base, what: '전략 챔피언 레이스와 �
   const fromNote = ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : '';
   const isBrief = report.commentary?.status === 'OK' && report.commentary.tier === 'brief';
   // Brief reports: the brief itself is Plus. Committee reports: limited committee Plus, the rest Pro.
+  const sealedDeep = !!ctx.deep && report.commentary?.status === 'OK' && !isBrief;
   const aiBody = isBrief
     ? gate(whySection(report), { base, what: '요약 리포트: 요약 · 강세와 약세 근거 · 지켜볼 것' })
-    : report.commentary?.status === 'OK'
+    : sealedDeep
+      // G-61: the conclusion and the odds are open; the rest is the paid deep report, fetched once unlocked.
+      ? `${committeeLite(report)}${scenarioTeaser(report)}${deepSlot(report.symbol, ctx.deep!.date)}`
+      : report.commentary?.status === 'OK'
       // Plus sees at least what a brief shows (conclusion, desk stances, the evidence lists); Pro adds the committee's structure.
       ? `${gate(committeeLite(report) + whySection(report, { only: 'claims' }), { base, what: '제한된 AI 위원회: 결론 · 데스크 입장 · 레드팀 한 줄 · 강세와 약세 근거' })}${gate(debateSection(report) + whySection(report, { committee: !!committee, only: 'structure' }) + (m ? analystScores(m.analystBoard) : ''), { base, what: '토론형 위원회 · 최악의 경우 · 위원별 근거 · 시나리오 · 분석가 순위', need: 'pro' })}`
       : whySection(report);
-  const proExtras = gate(weekDiffSection(report, ctx.previous ?? null) + decisionTrace(report, ctx.live), { base, what: '지난 리포트 대비 · 이 판단을 만든 입력', need: 'pro' });
+  const proExtras = sealedDeep ? '' : gate(weekDiffSection(report, ctx.previous ?? null) + decisionTrace(report, ctx.live), { base, what: '지난 리포트 대비 · 이 판단을 만든 입력', need: 'pro' });
   const aiTab = report.commentary
     ? `${upgrade}${committee}${fromNote}${aiBody}${proExtras}${inviteBox(report, base)}${askBox(report, base)}`
     : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.</p></div>${askBox(report, base)}`;
@@ -645,23 +651,73 @@ ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
-  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT, archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
+
+/** The paid part of a committee report (G-61), rendered from the full commentary and sealed into <symbol>/deep/<date>.txt. */
+export function renderDeep(report: DailyReport, ctx: { live: boolean; previous?: DailyReport | null }): string {
+  const m = report.market;
+  return `<div class="deep-body">${whySection(report, { only: 'claims' })}${debateSection(report)}${whySection(report, { only: 'structure' })}${m ? analystScores(m.analystBoard) : ''}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
+}
+
+/** The scenario odds alone (the narratives are in the deep report). */
+function scenarioTeaser(report: DailyReport): string {
+  const sc = report.commentary?.scenarios ?? [];
+  const p = (['BULL', 'BASE', 'BEAR'] as const).map((k) => sc.find((x) => x.kind === k)?.probability);
+  if (!p.some((x) => typeof x === 'number')) return '';
+  return `<section class="block"><div class="block-head"><h2>시나리오 확률</h2><span class="muted">위원회 추정</span></div><div class="card"><div class="sc-prob">${(['bull', 'base', 'bear'] as const).map((k, i) => ((p[i] ?? 0) > 0 ? `<span class="sp-${k}" style="flex:${p[i]}">${['강세', '기본', '약세'][i]} ${p[i]}%</span>` : '')).join('')}</div><p class="fine">각 시나리오가 어떻게 전개되는지, 무엇이 나오면 틀린 것인지는 심층 리포트에 있어요. 확률은 추정이고 확신이 아니에요.</p></div></section>`;
+}
+
+export const DEEP_UNLOCK_CREDITS = 10;
+const DEEP_WHAT = '위원회 토론 · 위원별 근거 · 시나리오 전개와 무효화 조건 · 최악의 경우 · 강세·약세 근거 전체 · 분석가 순위 · 지난 리포트 대비';
+function deepSlot(symbol: string, date: string): string {
+  return `<section class="block deep-slot" id="deep-slot" data-symbol="${escape(symbol)}" data-date="${escape(date)}"><div class="card deep-lock"><div class="dl-ic" aria-hidden="true">🔒</div><div><b>심층 리포트</b><p class="muted small">${DEEP_WHAT}</p><div class="dl-row"><button type="button" class="btn-primary" id="deep-open" disabled>불러오는 중…</button><span class="muted small" id="deep-note"></span></div></div></div></section>`;
+}
+
+const DEEP_SCRIPT = `<script>
+(function () {
+  var slot = document.getElementById('deep-slot'); if (!slot) return;
+  var sym = slot.getAttribute('data-symbol'), date = slot.getAttribute('data-date'), btn = document.getElementById('deep-open'), note = document.getElementById('deep-note');
+  var path = '/deep/' + encodeURIComponent(sym) + '/' + date;
+  var show = function (html) { slot.innerHTML = html; slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); };
+  var say = function (t) { note.textContent = t; };
+  if (!window.GNM || !GNM.api) { btn.textContent = '알파 서버 연결 뒤 열 수 있어요'; return; }
+  (GNM.ready || Promise.resolve(null)).then(function (me) {
+    if (!me) { btn.disabled = false; btn.textContent = '로그인하고 열기'; btn.onclick = function () { location.href = (document.body.getAttribute('data-base') || '') + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/') + '#tab-ai'); }; return; }
+    GNM.call('GET', path).then(function (r) {
+      if (r.html) { show(r.html); return; }
+      if (r.error === 'NOT_SEALED') { btn.textContent = '아직 준비 중이에요'; say('심층 리포트는 다음 실행 뒤 열 수 있어요.'); return; }
+      var cost = r.cost || ${DEEP_UNLOCK_CREDITS}, bal = r.balance;
+      btn.disabled = false; btn.textContent = cost + '크레딧으로 열기';
+      say(bal == null ? '' : '남은 크레딧 ' + bal + '개 · 한 번 열면 계속 볼 수 있어요');
+      btn.onclick = function () {
+        btn.disabled = true; btn.textContent = '여는 중…';
+        GNM.call('POST', path + '/unlock', {}).then(function (u) {
+          if (u.html) { show(u.html); if (GNM.refresh) GNM.refresh(); if (GNM.track) GNM.track('deep_unlock', { symbol: sym }); return; }
+          btn.disabled = false; btn.textContent = cost + '크레딧으로 열기'; say(u.message || '열지 못했어요.');
+          if (u.error === 'NO_CREDITS' && GNM.openChat) GNM.openChat();
+        });
+      };
+    });
+  });
+})();
+</script>`;
 
 /**
  * The AI committee tab as folded cards (G-60): each card or block with a heading collapses to its
  * heading and a one-line preview; tap to open. The tally and the conclusion stay open.
  */
 const AI_FOLD_SCRIPT = `<script>
-(function () {
-  var tab = document.getElementById('tab-ai'); if (!tab) return;
+window.GNM_fold = function (tab, keepOpen) {
+  if (!tab) return;
   var heads = tab.querySelectorAll('.card > .head, section.block > .block-head, .card > h2, .card > h3:first-child');
   var seen = [], n = 0;
   heads.forEach(function (h) {
     var box = h.parentNode;
     if (seen.some(function (x) { return x.contains(box); }) || box.closest('.gate-cta')) return;
     seen.push(box); n += 1;
-    var open = n <= 2 || box.id === 'parliament-ai' || box.querySelector('#parliament-ai');
+    if (box.classList.contains('fold') || box.closest('.deep-lock')) return;
+    var open = n <= keepOpen || box.id === 'parliament-ai' || box.querySelector('#parliament-ai');
     var first = box.querySelector(':scope > :not(.head):not(.block-head):not(h2):not(h3) p, :scope > :not(.head):not(.block-head) li, :scope > p');
     var text = first ? first.textContent.replace(/\\s+/g, ' ').trim() : '';
     var pv = document.createElement('span'); pv.className = 'fold-pv'; pv.textContent = text.length > 64 ? text.slice(0, 64) + '…' : text;
@@ -673,7 +729,8 @@ const AI_FOLD_SCRIPT = `<script>
     h.addEventListener('click', flip);
     h.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(e); } });
   });
-})();
+};
+window.GNM_fold(document.getElementById('tab-ai'), 2);
 </script>`;
 
 const STANCE_WORD = { BULLISH: '강세', BEARISH: '약세', NEUTRAL: '중립', INSUFFICIENT_DATA: '근거 부족' } as const;
