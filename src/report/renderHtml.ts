@@ -704,33 +704,25 @@ const DEEP_SCRIPT = `<script>
 </script>`;
 
 /**
- * The AI committee tab as folded cards (G-60): each card or block with a heading collapses to its
- * heading and a one-line preview; tap to open. The tally and the conclusion stay open.
+ * The AI committee tab (G-60, revised): no folding; a row of section links at the top so a reader can
+ * jump straight to the debate, the scenarios or the evidence. Rebuilt when the deep part arrives.
  */
 const AI_FOLD_SCRIPT = `<script>
-window.GNM_fold = function (tab, keepOpen) {
-  if (!tab) return;
-  var heads = tab.querySelectorAll('.card > .head, section.block > .block-head, .card > h2, .card > h3:first-child');
-  var seen = [], n = 0;
-  heads.forEach(function (h) {
-    var box = h.parentNode;
-    if (seen.some(function (x) { return x.contains(box); }) || box.closest('.gate-cta')) return;
-    seen.push(box); n += 1;
-    if (box.classList.contains('fold') || box.closest('.deep-lock')) return;
-    var open = n <= keepOpen || box.id === 'parliament-ai' || box.querySelector('#parliament-ai');
-    var first = box.querySelector(':scope > :not(.head):not(.block-head):not(h2):not(h3) p, :scope > :not(.head):not(.block-head) li, :scope > p');
-    var text = first ? first.textContent.replace(/\\s+/g, ' ').trim() : '';
-    var pv = document.createElement('span'); pv.className = 'fold-pv'; pv.textContent = text.length > 64 ? text.slice(0, 64) + '…' : text;
-    var ic = document.createElement('span'); ic.className = 'fold-ic'; ic.setAttribute('aria-hidden', 'true');
-    h.classList.add('fold-head'); h.setAttribute('role', 'button'); h.setAttribute('tabindex', '0'); h.setAttribute('aria-expanded', String(!!open));
-    h.appendChild(pv); h.appendChild(ic);
-    box.classList.add('fold'); if (!open) box.classList.add('folded');
-    var flip = function (e) { if (e.target.closest('a, button:not(.fold-head)')) return; var f = box.classList.toggle('folded'); h.setAttribute('aria-expanded', String(!f)); };
-    h.addEventListener('click', flip);
-    h.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(e); } });
+window.GNM_fold = function () {
+  var tab = document.getElementById('tab-ai'); if (!tab) return;
+  var old = tab.querySelector('.ai-nav'); if (old) old.remove();
+  var items = [];
+  tab.querySelectorAll('.card > .head > h2, section.block > .block-head > h2').forEach(function (h, i) {
+    if (h.closest('.gate-cta, .deep-lock')) return;
+    var box = h.closest('.card, section.block'); if (!box.id) box.id = 'ai-sec-' + i;
+    items.push('<a href="#' + box.id + '">' + h.textContent.replace(/\\s+/g, ' ').trim() + '</a>');
   });
+  if (items.length < 3) return;
+  var nav = document.createElement('nav'); nav.className = 'ai-nav'; nav.setAttribute('aria-label', 'AI 위원회 바로 가기'); nav.innerHTML = items.join('');
+  var title = tab.querySelector('.panel-title'); (title || tab.firstChild).insertAdjacentElement(title ? 'afterend' : 'beforebegin', nav);
+  nav.addEventListener('click', function (e) { var a = e.target.closest('a'); if (!a) return; e.preventDefault(); var el = document.querySelector(a.getAttribute('href')); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
 };
-window.GNM_fold(document.getElementById('tab-ai'), 2);
+window.GNM_fold();
 </script>`;
 
 const STANCE_WORD = { BULLISH: '강세', BEARISH: '약세', NEUTRAL: '중립', INSUFFICIENT_DATA: '근거 부족' } as const;
