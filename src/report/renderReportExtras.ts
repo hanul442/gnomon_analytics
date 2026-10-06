@@ -88,9 +88,9 @@ ${turns.map((t, i) => {
     // Reports written before the fix may count from 1 (a turn answering itself); the red team sums up, it does not reply.
     const at = red ? undefined : replyIndex(t.replyTo, i), to = at != null ? turns[at] : undefined;
     const quote = to && to.speaker !== t.speaker ? `<div class="db-quote"><b>${esc(SPEAKER[to.speaker] ?? to.speaker)}</b>${esc(to.claim.text.length > 46 ? `${to.claim.text.slice(0, 46)}…` : to.claim.text)}</div>` : '';
-    return `<div class="db-turn db-${side}"><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}</div></div>`;
+    return `<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}</div></div>`;
   }).join('')}
-<p class="fine">말하는 위원은 위 표결의 분석가·데스크 그대로예요. 말 끝의 근거 번호를 누르면 그 근거가 펼쳐져요. 레드팀은 승패를 정하지 않아요.</p>${tail}</div></section>`;
+<button type="button" class="db-more">다른 위원 발언도 보기</button><p class="fine">말하는 위원은 위 표결의 분석가·데스크 그대로예요. 말 끝의 근거 번호를 누르면 그 근거가 펼쳐져요. 레드팀은 승패를 정하지 않아요.</p>${tail}</div></section>`;
 }
 
 /**
@@ -116,7 +116,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
 (function () {
   var play = function (box) {
     if (!box || box.getAttribute('data-played')) return; box.setAttribute('data-played', '1');
-    var turns = [].slice.call(box.querySelectorAll('.db-turn'));
+    var turns = [].slice.call(box.querySelectorAll('.db-turn')).filter(function (t) { return t.offsetParent !== null; });
     if (turns.length < 2 || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
     var sec = box.closest('section'), skip = sec && sec.querySelector('.db-skip'), done = false, timer = 0;
     turns.forEach(function (t) { t.hidden = true; });
