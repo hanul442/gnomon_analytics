@@ -40,7 +40,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/reports/fixture-done')return res.end(JSON.stringify({status:'done',symbol:'999999',fragments:{scenarios:scenarioPanel(scenarioReport),ai:'<section id="debate"><div class="card debate"><div class="db-chips"></div><div class="db-turn" data-speaker="MARKET"><div class="db-who"><b>시장 데스크</b></div><div class="db-bubble">테스트 토론</div></div><details class="db-ev"><summary>근거</summary></details></div></section>'}}));
  return res.end(JSON.stringify({items:[],rows:[]}));
 };
-const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist|experts)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
+const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist|experts)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(8765,'localhost',r));
 let browser;const errors=[];
 try{
@@ -82,5 +82,17 @@ try{
  await page.waitForFunction(()=>{var c=document.querySelector('#main>.gnm-loading canvas');return c&&c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0);});
  await page.waitForTimeout(250);assert.ok(await page.evaluate(()=>{var c=document.querySelector('#main>.gnm-loading canvas');return c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0);}));
  await page.screenshot({path:'test-artifacts/reduced-motion-orb.png'});await page.evaluate(()=>fixtureLoading.end());
+ for(const width of [375,390,768,1280]){
+  await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');
+  const ad=page.locator('.bn-hanul');const slide=await ad.getAttribute('data-i');await page.locator('[data-go="'+slide+'"]').click();
+  assert.ok(await ad.isVisible());assert.ok(await ad.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0));
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  if(width===375)await page.screenshot({path:'test-artifacts/hanul-banner-mobile.png'});
+  await ad.click();await page.waitForURL('**/hanul.html');await page.locator('#hanul-title').waitFor();
+  assert.equal(await page.locator('.hanul-project').count(),4);assert.ok(await page.locator('.hanul-intro img').evaluate(img=>img.complete&&img.naturalWidth>0));
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await page.screenshot({path:'test-artifacts/hanul-'+width+'.png',fullPage:true});
+  await page.getByRole('link',{name:'그노몬으로 돌아가기',exact:true}).click();await page.waitForURL('**/index.html');
+ }
  assert.deepEqual(errors,[]);console.log('Browser checks passed: four widths, seven tabs, expert dialog, coin minute/day, volume flow, AI conditions, Thinking Orbs chat.');
 }catch(e){console.error('Page errors:',errors);if(browser){const page=browser.contexts()[0]?.pages().at(-1);await page?.screenshot({path:'test-artifacts/failure.png'});}throw e;}finally{await browser?.close();await new Promise(r=>server.close(r));}
