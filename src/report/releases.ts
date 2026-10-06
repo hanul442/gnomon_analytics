@@ -1,6 +1,7 @@
 /** Retrospective grouping of merged functionality, not historical Git tags. */
-export const VERSION = '2.4.1';
+export const VERSION = '2.4.2';
 export const RELEASES = [
+ ['2.4.2','2026-10-06','즉시 리포트 생성에서 스트리밍 JSON이 정상이어도 형식 오류가 뜨던 문제를 수정했습니다. 완성된 응답 본문을 리포트 스키마로 직접 검증하며 잘못된 형식·응답 중단은 계속 실패로 처리하고 크레딧을 반환합니다.'],
  ['2.4.1','2026-10-06','시나리오의 조건 가격을 크게 표시하고 전망 범위·등락률을 보조 정보로 구분합니다. 구형 리포트는 기본 시나리오에 명시된 상단·하단 이탈 조건을 출처와 함께 표시합니다. AI 조건 적용·조건 저장·맞춤 전문가 저장·관심 목록 변경 후 체크 완료 안내를 표시하고 저장 실패는 오류로 알려 줍니다.'],
  ['2.4.0','2026-10-06','휴대폰 알림(웹 푸시)을 켤 수 있습니다. 매일 리포트, 관심 종목 새 리포트, 스크리너 조건, 내가 건 가격 도달, 요청한 리포트 완성을 🔔과 휴대폰으로 알려 줍니다. 종목 화면의 🔔 가격 알림으로 강세·약세 가격대 진입이나 원하는 가격을 걸고, 전체 → 알림 설정에서 종류별로 켜고 끕니다. 무료는 🔔 알림함, 플러스부터 휴대폰 푸시, 요금제가 오를수록 가격·스크리너 알림 개수가 늘어납니다.'],
  ['2.3.0','2026-10-06','☰ 메뉴를 없애고 아래 탭바(홈·검색·관심·성적표·전체)로 바꿨습니다. 전체를 누르면 내 계정·보기 방식·사용법·FAQ 등 나머지가 아래에서 올라옵니다. 넓은 화면은 같은 탭이 위쪽에 있습니다. 차트의 시나리오 전망은 강세·기본·약세 예상 가격대를 나란히 선 박스로 보여 줍니다. 위원회 가격대가 없는 리포트는 AI 분석가 목표가로, 그것도 없으면 변동성 계산으로 가격대를 채웁니다. 작은 광고는 6초마다 바뀌고 아래 카드와 간격을 띄웠습니다.'],
@@ -23,6 +24,6 @@ export const RELEASES = [
  ['0.1.0','2026-10-04','차트·기술 지표·뉴스와 AI 해설 확장.'],
  ['0.0.0','2026-10-03','SK하이닉스 일일 리포트로 시작한 알파 기본판.'],
 ] as const;
-export const versionBanner = (base:string) => `<aside class="version-banner" data-version="${VERSION}"><div><b>Alpha v${VERSION}</b><p>시나리오 조건 가격 복원 · 적용·저장 완료 안내</p><a href="${base}guide.html">새 사용법</a> · <a href="${base}updates.html">릴리스 노트</a></div><button type="button" data-dismiss-version aria-label="이 버전 안내 닫기">×</button></aside>`;
+export const versionBanner = (base:string) => `<aside class="version-banner" data-version="${VERSION}"><div><b>Alpha v${VERSION}</b><p>즉시 리포트 생성 형식 오류 수정 · 조건 가격 복원</p><a href="${base}guide.html">새 사용법</a> · <a href="${base}updates.html">릴리스 노트</a></div><button type="button" data-dismiss-version aria-label="이 버전 안내 닫기">×</button></aside>`;
 export const VERSION_CSS = `.version-banner[hidden]{display:none}.version-banner{display:flex;justify-content:space-between;gap:12px;padding:14px 18px;margin:12px 0 18px;background:#eef3fb;border:1px solid #ccd9ee;border-radius:14px;font-size:13px}.version-banner p{margin:4px 0}.version-banner button{border:0;background:none;font-size:22px;align-self:start;cursor:pointer}`;
 export const VERSION_JS = `(function(){var b=document.querySelector('[data-version]');if(!b)return;var key='gnm-version-dismissed-'+b.dataset.version;try{b.hidden=localStorage.getItem(key)==='1';}catch(e){}b.querySelector('[data-dismiss-version]').onclick=function(){b.hidden=true;try{localStorage.setItem(key,'1');}catch(e){}};})();`;

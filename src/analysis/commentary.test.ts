@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type Anthropic from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { buildDailyReport } from '../report/dailyReport.js';
 import { renderReport } from '../report/renderHtml.js';
@@ -169,4 +169,32 @@ test('replyIndex: points back only, shifting a 1-based pointer down one', async 
   assert.equal(replyIndex(undefined, 2), undefined);
   assert.equal(replyIndex(0, 0), undefined);
   assert.equal(replyIndex(5, 2), undefined);
+});
+
+test('streamed raw JSON is schema-validated instead of requiring parsed_output',async()=>{
+ const claim={text:'검증된 근거',evidenceIds:['P1'],kind:'FACT'};
+ const base={summary:claim,bullish:[claim],bearish:[],uncertain:[],watch:[],dataGaps:[],insights:{}};
+ const deep={...base,desks:[],redTeam:{counterargument:claim,unresolved:[]},scenarios:[{kind:'BULL',narrative:claim,catalysts:[],invalidation:[],probability:100,trigger:350000,zoneLow:360000,zoneHigh:380000}],analysts:[],debate:[],worstCase:{narrative:claim,checks:[]}};
+ for(const tier of ['brief','deep'] as const){
+  let calls=0;const raw=JSON.stringify(tier==='deep'?deep:base);
+  const client={beta:{messages:{stream:()=>{calls++;return {finalMessage:async()=>({stop_reason:'end_turn',model:COMMENTARY_MODEL,content:[{type:'text',text:raw.slice(0,30)},{type:'text',text:raw.slice(30)}],usage:{input_tokens:120,output_tokens:240}})};},parse:()=>{throw new Error('nonstreaming must not be called');}}}} as unknown as Anthropic;
+  const result=await writeCommentary(report,{client,tier});assert.equal(result.status,'OK');assert.equal(result.summary?.text,claim.text);assert.equal(calls,1);assert.deepEqual(result.usage,{inputTokens:120,outputTokens:240});
+  if(tier==='deep')assert.equal(result.scenarios?.[0]?.trigger,350000);
+ }
+});
+
+test('malformed, schema-invalid, refused and truncated streams retain failure costs',async()=>{
+ for(const [text,stop,expected] of [['{broken','end_turn','UNPARSEABLE_OUTPUT:JSON'],['{"summary":{}}','end_turn','UNPARSEABLE_OUTPUT:SCHEMA'],['{}','max_tokens','MAX_TOKENS'],['{}','refusal','REFUSAL:unknown']]){
+  const client={beta:{messages:{stream:()=>({finalMessage:async()=>({stop_reason:stop,model:COMMENTARY_MODEL,content:[{type:'text',text}],usage:{input_tokens:120,output_tokens:240}})})}}} as unknown as Anthropic;
+  const result=await writeCommentary(report,{client});assert.equal(result.status,'FAILED');assert.equal(result.error,expected);assert.deepEqual(result.usage,{inputTokens:120,outputTokens:240});
+ }
+});
+
+
+test('real SDK SSE assembly produces a usable brief without automatic parsed_output',async()=>{
+ const claim={text:'스트리밍 근거',evidenceIds:['P1'],kind:'FACT'};
+ const text=JSON.stringify({summary:claim,bullish:[claim],bearish:[],uncertain:[],watch:[],dataGaps:[],insights:{}});
+ const events=[{type:'message_start',message:{id:'msg_fixture',type:'message',role:'assistant',model:COMMENTARY_MODEL,content:[],stop_reason:null,stop_sequence:null,usage:{input_tokens:120,output_tokens:0}}},{type:'content_block_start',index:0,content_block:{type:'text',text:''}},{type:'content_block_delta',index:0,delta:{type:'text_delta',text:text.slice(0,20)}},{type:'content_block_delta',index:0,delta:{type:'text_delta',text:text.slice(20)}},{type:'content_block_stop',index:0},{type:'message_delta',delta:{stop_reason:'end_turn',stop_sequence:null},usage:{output_tokens:240}},{type:'message_stop'}];
+ let calls=0;const client=new Anthropic({apiKey:'fixture-not-a-real-key',maxRetries:0,fetch:async()=>{calls++;return new Response(events.map(e=>'event: '+e.type+'\ndata: '+JSON.stringify(e)+'\n\n').join(''),{headers:{'content-type':'text/event-stream'}});}});
+ const c=await writeCommentary(report,{client,tier:'brief'});assert.equal(c.status,'OK');assert.equal(c.summary?.text,'스트리밍 근거');assert.equal(calls,1);assert.equal(c.usage?.outputTokens,240);
 });

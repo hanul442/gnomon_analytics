@@ -390,7 +390,20 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const failed=(reason:string):Commentary=>({...empty('FAILED',now,evidence,reason),model,servedBy:response.model,tier,...(response.usage?{usage:{inputTokens:response.usage.input_tokens,outputTokens:response.usage.output_tokens}}:{})});
     if (response.stop_reason === 'refusal') return failed(`REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
     if (response.stop_reason === 'max_tokens') return failed('MAX_TOKENS');
-    const parsed = response.parsed_output as (z.infer<typeof BriefSchema> & Partial<z.infer<typeof CommentarySchema>>) | null;
+    let parsed = response.parsed_output as (z.infer<typeof BriefSchema> & Partial<z.infer<typeof CommentarySchema>>) | null;
+    // beta.messages.stream().finalMessage() returns raw content, unlike messages.parse().
+    // Validate the assembled text with the same schema without making another billed request.
+    if (!parsed) {
+      const text = (response.content ?? []).filter(b => b.type === 'text').map(b => b.text).join('');
+      if (text) {
+        try {
+          const json: unknown = JSON.parse(text);
+          const validated = tier === 'deep' ? CommentarySchema.safeParse(json) : BriefSchema.safeParse(json);
+          if (!validated.success) return failed('UNPARSEABLE_OUTPUT:SCHEMA');
+          parsed = validated.data;
+        } catch { return failed('UNPARSEABLE_OUTPUT:JSON'); }
+      }
+    }
     if (!parsed) return failed('UNPARSEABLE_OUTPUT');
     const known = new Set(evidence.map((e) => e.id));
     let dropped = 0;
