@@ -16,9 +16,9 @@ import { analystScores, arenaHeadline, arenaPanel, arenaRanking, arenaTeaser } f
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
-import { CONCLUSION_CSS, conclusionCard } from './conclusion.js';
+import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, voteSection } from './conclusion.js';
 import { BANNER_CSS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
-import { debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
+import { DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
@@ -219,7 +219,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .lock{width:14px;height:14px;flex:none;vertical-align:-2px;margin-right:4px}html:not([data-plan=pro]):not([data-plan=max]) [data-ov="forecast"],html:not([data-plan=pro]):not([data-plan=max]) .strat-pick,html:not([data-plan=pro]):not([data-plan=max]) #strat-info{display:none!important}
 .dk-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}.dk{display:inline-flex;gap:6px;font-size:13px;border-radius:8px;padding:4px 10px;background:#eef1f5}.dk b{font-weight:700}.dk-BULLISH{background:#fde8e6;color:#9f1d24}.dk-BEARISH{background:#e3ecfb;color:#1f4fa8}
 .ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:10px}.ex{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:9px 10px;cursor:pointer}.ex:has(input:checked){border-color:var(--navy);background:var(--accent-soft)}.ex span{display:flex;flex-direction:column}.ex small{color:var(--muted);font-size:12px}.ex input{accent-color:var(--navy);margin-top:3px}
-.jn-q{display:block}.jn-q textarea{width:100%;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:15px;margin-top:4px;resize:vertical}.join .chat-sugg{margin:8px 0 12px}.jn-k{font-weight:700;margin-bottom:6px}.jn-who{max-height:236px;overflow:auto}.join:has(input[value=committee]:checked) .jn-standing{display:none}
+.jn-q{display:block}.jn-q textarea{width:100%;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:15px;margin-top:4px;resize:vertical}.join .chat-sugg{margin:8px 0 12px}.jn-k{font-weight:700;margin-bottom:6px}.jn-who{display:flex;flex-wrap:wrap;gap:6px}.jn-who .ex{padding:6px 11px;border-radius:999px;align-items:center}.jn-who .ex small{display:none}.jn-who .ex input{margin:0}.join:has(input[value=committee]:checked) .jn-standing{display:none}
 .fresh{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:999px;padding:1px 9px;background:#e7f5ec;color:#1d6b3a}.fresh i{width:7px;height:7px;border-radius:50%;background:currentColor}.fresh.f-STALE{background:#eef1f5;color:#4a5566}.fresh.f-DEGRADED{background:#fff3d6;color:#7a4a00}.fresh.f-NOT_AVAILABLE{background:#fde8e6;color:#9f1d24}
 .paper-link{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.paper-link p{margin:2px 0 0}.paper-link .btn-primary{margin:0}
 .stock-hero{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}.request-card{background:var(--accent-soft);border:1px solid #cdd8ea;border-radius:16px;padding:18px}.request-card p{margin:6px 0;font-size:14px}
@@ -277,7 +277,7 @@ table.compact td,table.compact th{padding:7px 8px}.table-wrap{overflow-x:auto;ma
 .legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 16px;width:100%;font-size:13px;color:var(--muted)}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
 .why-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:8px}.why-col{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .why-col h3,.why-h{font-size:14px;margin:0 0 6px}.why-h{margin-top:16px}.bull h3{color:var(--up)}.bear h3{color:var(--down)}.unc h3{color:var(--muted)}
-ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.chips-inline{white-space:nowrap}
+ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.chips-inline{white-space:normal}.chips-inline .chip{white-space:nowrap}.desk-grid .why-col,.why-col{min-width:0;overflow-wrap:anywhere}
 .chip{display:inline-block;font-size:11px;font-weight:600;color:var(--accent-strong);background:var(--accent-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none}.chip:hover{background:var(--accent);color:#fff}
 .evid li{font-size:13px}.desk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.desk-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}.desk-grid p,.why-grid p{margin:4px 0;font-size:14px}
 .red-team{margin-top:12px;border-left:4px solid #d1373d;background:#fdf3f2;border-radius:0 12px 12px 0;padding:10px 14px}.red-team h3{font-size:14px;margin:0 0 4px;color:#9f1d24}.red-team p{margin:4px 0}
@@ -629,11 +629,11 @@ ${marketStrip(report)}
     : sealedDeep
       ? deepSlot(report.symbol, ctx.deep!.date)
       : report.commentary?.status === 'OK'
-      ? `${gate(debateSection(report) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
+      ? `${gate(debateSection(report, joinBox(report, base)) || `${whySection(report, { only: 'claims' })}<section class="block"><div class="card">${joinBox(report, base)}</div></section>`, { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
       : whySection(report);
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary
-    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion' }) : ''}${aiBody}${report.commentary.status === 'OK' ? joinBox(report, base) : ''}${record}`
+    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion' }) + voteSection(report) : ''}${aiBody}${sealedDeep ? `<section class="block"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
     : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매일 고른 종목과 요청된 종목에 리포트가 만들어져요. 궁금한 건 오른쪽 아래 <b>AI 질문</b>으로 물어보세요.</p></div>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
@@ -650,13 +650,13 @@ ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
-  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
 
 /** The paid part of a committee report (G-61), rendered from the full commentary and sealed into <symbol>/deep/<date>.txt. */
 export function renderDeep(report: DailyReport, ctx: { live: boolean; previous?: DailyReport | null }): string {
   const m = report.market;
-  return `<div class="deep-body">${debateSection(report) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
+  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'conclusion' })}${voteSection(report)}</div>${debateSection(report) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
 }
 
 export const DEEP_UNLOCK_CREDITS = 10;
@@ -676,7 +676,10 @@ const DEEP_SCRIPT = `<script>
   var slot = document.getElementById('deep-slot'); if (!slot) return;
   var sym = slot.getAttribute('data-symbol'), date = slot.getAttribute('data-date'), btn = document.getElementById('deep-open'), note = document.getElementById('deep-note');
   var path = '/deep/' + encodeURIComponent(sym) + '/' + date;
-  var show = function (html) { slot.innerHTML = html; slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); };
+  var show = function (html) { slot.innerHTML = html;
+    // The unlocked conclusion and vote (full scenarios and reasons) take the public ones' places.
+    var sw = slot.querySelector('.deep-swap'); if (sw) { [].slice.call(sw.children).forEach(function (n) { var old = n.id && document.getElementById(n.id); if (old && old !== n) old.replaceWith(n); }); sw.remove(); }
+    slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); if (window.GNM_debate) window.GNM_debate(); };
   var say = function (t) { note.textContent = t; };
   if (!window.GNM || !GNM.api) { btn.textContent = '알파 서버 연결 뒤 열 수 있어요'; return; }
   (GNM.ready || Promise.resolve(null)).then(function (me) {
@@ -732,14 +735,14 @@ const DESK_NAME = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDA
 function joinBox(report: DailyReport, base: string): string {
   const ex = ['요즘 왜 이렇게 움직였어요?', '지금 가장 큰 위험 요인은?', '어느 가격을 지켜봐야 해요?'];
   const who = [{ key: 'committee', name: '위원회 전체', focus: `지금 토론한 위원들이 답해요 · ${CREDIT_COST.question}크레딧부터` }, ...EXPERTS];
-  return `<section class="block" id="join"><div class="block-head"><h2>토론에 참여</h2><span class="muted">질문하거나 전문가를 불러 물어보세요</span></div>
-<div class="card"><form class="invite join" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">
+  return `<div class="db-join" id="join"><h3>토론에 참여 <span class="muted small">질문하거나 전문가를 불러 물어보세요</span></h3>
+<form class="invite join" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">
 <label class="jn-q"><span class="muted small">무엇이 궁금한가요?</span><textarea name="q" rows="2" maxlength="300" placeholder="예: ${escape(ex[0]!)}"></textarea></label>
 <div class="chat-sugg">${ex.map((q) => `<button type="button" data-fill="${escape(q)}">${escape(q)}</button>`).join('')}</div>
 <div class="jn-k muted small">누구에게 물을까요?</div>
 <div class="ex-grid jn-who">${who.map((e, i) => `<label class="ex"><input type="radio" name="expert" value="${e.key}"${i ? '' : ' checked'}><span><b>${e.name}</b><small>${e.focus}</small></span></label>`).join('')}</div>
 <div class="ask-row"><label class="muted small jn-standing"><input type="checkbox" name="standing"> 맥스: 이 전문가를 이 종목 위원회에 고정</label><button type="submit" class="credit-btn">묻기</button></div><div class="ask-out" hidden aria-live="polite"></div></form>
-<p class="fine">위원회 전체는 바로 답해요. 전문가는 프로 ${CREDIT_COST.invite}크레딧(맥스는 매달 30회 포함)이고, 이 종목 리포트의 근거로 질문에 답하고 의견·위험·지켜볼 것을 써요. <a href="${base}pricing.html">요금제 보기</a></p></div></section>`;
+<p class="fine">위원회 전체는 바로 답해요. 전문가는 프로 ${CREDIT_COST.invite}크레딧(맥스는 매달 30회 포함)이고, 이 종목 리포트의 근거로 질문에 답하고 의견·위험·지켜볼 것을 써요. <a href="${base}pricing.html">요금제 보기</a></p></div>`;
 }
 
 export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headline' | 'name' | 'status'>[], links: { base?: string; homeHref?: string; name?: string } = {}): string {
@@ -933,7 +936,7 @@ export const APP_CSS = `${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}$
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}`;
+export const UI_JS = `${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}`;
 const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).digest('hex').slice(0, 10);
 
 export async function writeAssets(siteDir: string): Promise<void> {
