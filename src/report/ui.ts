@@ -147,10 +147,10 @@ export const MENU: readonly { title: string; items: readonly [string, string][] 
 const MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /** The ☰ button for the top bar and the drawer it opens (assets/ui.js toggles it). */
-export function menuHtml(base: string): { button: string; drawer: string } {
+export function menuHtml(base: string, archiveHref?: string): { button: string; drawer: string } {
   return {
     button: `<button type="button" class="menu-btn" aria-label="전체 메뉴" aria-expanded="false" aria-controls="side-menu">${MENU_ICON}</button>`,
-    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체 메뉴</b><button type="button" class="sm-close" aria-label="닫기">×</button></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
+    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체 메뉴</b><button type="button" class="sm-close" aria-label="닫기">×</button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
   };
 }
 
@@ -177,9 +177,9 @@ export const MENU_JS = `
 
 
 /** The home banner's styles (markup and script in alphaPages.ts); here so the shared CSS has no import cycle. */
-export const BANNER_CSS = `.bn-slide[hidden]{display:none!important}.banner{position:relative;max-width:1180px;margin:14px auto 0;padding:0 24px}.bn-slide{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 12px;border-radius:16px;padding:14px 18px 22px;text-decoration:none;color:#fff;min-height:68px}
-.bn-slide b{font-size:16px}.bn-text{grid-column:2/3;font-size:13px;opacity:.88}.bn-cta{grid-row:1/3;grid-column:3;font-weight:700;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:7px 12px;white-space:nowrap}.bn-tag{grid-row:1/3;font-size:11px;font-weight:800;background:rgba(255,255,255,.2);border-radius:6px;padding:2px 6px}
+export const BANNER_CSS = `.bn-slide[hidden]{display:none!important}.banner{position:relative;max-width:1180px;margin:14px auto 0;padding:0 24px}.bn-slide{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px 14px;border-radius:18px;padding:24px 26px 32px;text-decoration:none;color:#fff;min-height:132px}
+.bn-slide b{font-size:21px;line-height:1.35}.bn-text{grid-column:2/3;font-size:14.5px;opacity:.9;line-height:1.55}.bn-cta{grid-row:1/3;grid-column:3;font-weight:700;font-size:13px;background:rgba(255,255,255,.18);border-radius:999px;padding:7px 12px;white-space:nowrap}.bn-tag{grid-row:1/3;font-size:11px;font-weight:800;background:rgba(255,255,255,.2);border-radius:6px;padding:2px 6px}
 .bn-navy{background:linear-gradient(120deg,#13294b,#2a4f8f)}.bn-teal{background:linear-gradient(120deg,#0d5e5a,#1c8c7d)}.bn-amber{background:linear-gradient(120deg,#8a4b06,#c47a12)}.bn-rose{background:linear-gradient(120deg,#7a1d38,#b23a5a)}
 .bn-dots{position:absolute;left:0;right:0;bottom:7px;display:flex;justify-content:center;gap:6px}.bn-dots button{width:7px;height:7px;border-radius:50%;border:0;padding:0;background:rgba(255,255,255,.45);cursor:pointer}.bn-dots button[aria-pressed=true]{background:#fff;width:18px;border-radius:4px}
-@media (max-width:820px){.banner{padding:0 14px;margin-top:10px}.bn-slide{grid-template-columns:auto 1fr;padding:12px 14px 22px}.bn-cta{grid-row:auto;grid-column:2;justify-self:start;padding:5px 10px}.bn-tag{grid-row:1}.bn-slide b{font-size:15px}}`;
+@media (max-width:820px){.banner{padding:0 14px;margin-top:10px}.bn-slide{grid-template-columns:auto 1fr;padding:18px 16px 28px;min-height:150px}.bn-cta{grid-row:auto;grid-column:2;justify-self:start;padding:5px 10px}.bn-tag{grid-row:1}.bn-slide b{font-size:18px}}`;
 
