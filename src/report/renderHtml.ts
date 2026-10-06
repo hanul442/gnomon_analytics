@@ -29,6 +29,7 @@ import { tabBar, BANNER_CSS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 import { adStrip, AD_CSS, AD_JS } from './ads.js';
+import { ALERTS_CSS, PRICE_ALERT_JS, PUSH_JS } from './pushParts.js';
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
 /** Pretendard web font, also served from our own site. */
@@ -332,7 +333,7 @@ export function shell(base: string, title: string, body: string, options: { tabs
   const tabs = options.tabs ?? [];
   const menu = menuHtml(base, options.archiveHref);
   return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#ffffff"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${PERSONA_BOOT}
+<meta name="theme-color" content="#13294b"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/gnomon-icon-192.png"><link rel="icon" type="image/png" href="${base}assets/gnomon-icon-96.png"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${PERSONA_BOOT}
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.${ASSET_VERSION}.css"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
@@ -979,11 +980,11 @@ export interface HomeEntry {
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
 const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
-export const APP_CSS = `${AD_CSS}${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
+export const APP_CSS = `${ALERTS_CSS}${AD_CSS}${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}`;
+export const UI_JS = `${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}`;
 const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).digest('hex').slice(0, 10);
 
 export async function writeAssets(siteDir: string): Promise<void> {

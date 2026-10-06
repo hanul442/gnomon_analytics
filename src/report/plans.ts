@@ -53,6 +53,20 @@ export const ASK_TIERS = [
 ] as const satisfies readonly { key: CreditAction; label: string; model: string; maxTokens: number; hint: string }[];
 export type AskTier = (typeof ASK_TIERS)[number]['key'];
 
+/**
+ * Notifications by plan (G-98). Everyone hears the day's reports and their own requested reports in 🔔;
+ * the phone push, watched-stock reports and more alerts come with the paid plans.
+ */
+export interface NotifyLimit { push: boolean; watchReport: boolean; priceAlerts: number; screenAlerts: number; intraday: boolean }
+export const NOTIFY_LIMITS: Record<PlanKey, NotifyLimit> = {
+  free: { push: false, watchReport: false, priceAlerts: 1, screenAlerts: 0, intraday: false },
+  plus: { push: true, watchReport: true, priceAlerts: 5, screenAlerts: 3, intraday: false },
+  pro: { push: true, watchReport: true, priceAlerts: 20, screenAlerts: 20, intraday: true },
+  max: { push: true, watchReport: true, priceAlerts: 50, screenAlerts: 50, intraday: true },
+};
+/** The plan a stored plan name counts as (alpha → pro). */
+export const notifyLimit = (plan: string): NotifyLimit => NOTIFY_LIMITS[(plan === 'alpha' ? ALPHA.rankAs : plan) as PlanKey] ?? NOTIFY_LIMITS.free;
+
 /** Watchlist size per plan. */
 export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 100, max: 1e9 };
 

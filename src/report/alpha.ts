@@ -97,7 +97,8 @@ export const ALPHA_SCRIPT = `<script>
       b.addEventListener('click', function () {
         if (pop) { pop.remove(); pop = null; return; }
         pop = document.createElement('div'); pop.className = 'bell-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '알림');
-        pop.innerHTML = r.items.length ? r.items.map(function (n) { return '<a class="' + (n.read_at ? '' : 'unread') + '" href="' + base + esc(n.link || '') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small></a>'; }).join('') : '<p class="muted small" style="padding:10px">알림이 없어요. 스크리너에서 저장한 조건의 🔔를 켜면 매일 장 마감 뒤 새로 걸린 종목을 알려 드려요.</p>';
+        pop.innerHTML = r.items.length ? r.items.map(function (n) { return '<a class="' + (n.read_at ? '' : 'unread') + '" href="' + base + esc(n.link || '') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small></a>'; }).join('') : '<p class="muted small" style="padding:10px">알림이 없어요. 새 리포트, 스크리너 조건, 가격 알림, 요청한 리포트가 여기와 휴대폰으로 와요.</p>';
+        pop.insertAdjacentHTML('beforeend', '<a class="bell-set" href="' + base + 'alerts.html"><b>⚙︎ 알림 설정 · 휴대폰 알림 켜기</b></a>');
         document.querySelector('.topbar').appendChild(pop);
         if (r.unread) { G.call('POST', '/notifications/read'); var i = b.querySelector('i'); if (i) i.remove(); r.unread = 0; }
         G.track('bell_open', {});

@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { handle, runAlerts, runIntraday, type Env } from './api.js';
 import { writeCommentary } from '../analysis/commentary.js';
 import { runReportJob } from './reports.js';
+import { runDailyNotify, runPriceAlerts } from './notify.js';
 import type { AskClient } from './ask.js';
 
 export default {
@@ -17,8 +18,11 @@ export default {
   /** Cron (wrangler.toml): screener alerts after the site's daily build. */
   async scheduled(event: { cron: string }, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<void> {
     const deps = { now: () => new Date(), fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init) };
-    // Every-10-minute trigger: the intraday scan; the evening triggers: screener alerts.
-    const job = event.cron.startsWith('*/10') ? runIntraday(env, deps) : runAlerts(env, deps);
+    const nctx = { db: env.DB, fetch: deps.fetch, site: env.SITE_URL, now: deps.now() };
+    // Every 10 minutes: the intraday scan (session only) and price alerts; the evening triggers: screener alerts and the daily report note.
+    const job = event.cron.startsWith('*/10')
+      ? Promise.all([runIntraday(env, deps), runPriceAlerts(nctx)])
+      : Promise.all([runAlerts(env, deps), runDailyNotify(nctx)]);
     ctx.waitUntil(job.then((r) => console.log(event.cron, JSON.stringify(r))));
   },
 };
@@ -31,5 +35,5 @@ function dependencies(env: Env, ctx?: {waitUntil(p:Promise<unknown>):void}) {
  }:undefined;
  // Report jobs run in the queue consumer (up to 15 minutes): give the streamed committee call room to finish.
  const reportClient=env.ANTHROPIC_API_KEY?new Anthropic({apiKey:env.ANTHROPIC_API_KEY,maxRetries:0,timeout:600000}):undefined;
- return {now:()=>new Date(),fetch:(input:RequestInfo|URL,init?:RequestInit)=>fetch(input,init),...(ai?{ai}:{}),...(reportClient?{generate:(report:import('../report/dailyReport.js').DailyReport,tier:import('../analysis/commentary.js').CommentaryTier)=>writeCommentary(report,{client:reportClient,tier})}:{}),...(ctx?{waitUntil:(p:Promise<unknown>)=>ctx.waitUntil(p)}:{})};
+ return {site:env.SITE_URL,now:()=>new Date(),fetch:(input:RequestInfo|URL,init?:RequestInit)=>fetch(input,init),...(ai?{ai}:{}),...(reportClient?{generate:(report:import('../report/dailyReport.js').DailyReport,tier:import('../analysis/commentary.js').CommentaryTier)=>writeCommentary(report,{client:reportClient,tier})}:{}),...(ctx?{waitUntil:(p:Promise<unknown>)=>ctx.waitUntil(p)}:{})};
 }

@@ -437,3 +437,19 @@ test('custom experts are account-owned, bounded, exported and used at the invite
  assert.equal((await t.call('POST','/ask',{tier:'standard',question:'위험은?',expert:'custom:'+id},u.session)).body.error,'BAD_EXPERT');
  await t.call('POST','/me/delete',{confirm:'삭제'},u.session);assert.equal((await t.env.DB.prepare('SELECT COUNT(*) AS n FROM custom_experts').first<{n:number}>())?.n,0);
 });
+
+test('plans: phone push from Plus, price alert caps by plan', async () => {
+  const t = setup();
+  const { session } = await t.login('boss@example.com');
+  await t.env.DB.prepare("UPDATE users SET plan = 'free' WHERE email = 'boss@example.com'").run();
+  const sub = { endpoint: 'https://push.test/x', keys: { p256dh: 'B' + 'a'.repeat(86), auth: 'a'.repeat(22) } };
+  assert.equal((await t.call('POST', '/push/subscribe', sub, session)).status, 403);
+  assert.equal((await t.call('POST', '/alerts/price', { symbol: '005930', op: '>=', price: 300000 }, session)).status, 200);
+  const second = await t.call('POST', '/alerts/price', { symbol: '000660', op: '<=', price: 1e6 }, session);
+  assert.equal(second.status, 403); assert.equal(second.body.limit, 1);
+  await t.env.DB.prepare("UPDATE users SET plan = 'plus' WHERE email = 'boss@example.com'").run();
+  assert.equal((await t.call('POST', '/push/subscribe', sub, session)).status, 200);
+  assert.equal((await t.call('POST', '/alerts/price', { symbol: '000660', op: '<=', price: 1e6 }, session)).status, 200);
+  const prefs = await t.call('GET', '/notify/prefs', undefined, session);
+  assert.equal(prefs.body.limits.priceAlerts, 5);
+});
