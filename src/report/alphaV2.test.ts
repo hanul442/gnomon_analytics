@@ -68,3 +68,10 @@ test('report failures preserve actionable categories without exposing provider d
  assert.match(reportFailureMessage('API_401:sensitive server details'),/AI_CONFIGURATION/);
  assert.doesNotMatch(reportFailureMessage('API_401:sensitive server details'),/sensitive server details/);
 });
+
+test('release banner appears on the home page only',async()=>{
+ const {shell}=await import('./renderHtml.js');
+ assert.match(shell('','홈','',{active:'home'}),/class="version-banner"/);
+ assert.doesNotMatch(renderStockPage(),/class="version-banner"/);
+ assert.doesNotMatch(renderGuide(),/class="version-banner"/);
+});
