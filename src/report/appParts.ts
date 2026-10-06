@@ -313,8 +313,10 @@ window.addEventListener('DOMContentLoaded', function () {
   // ---- AI scenarios: a fan from today's close to each scenario's 20-session range ----
   var scen = JSON.parse((document.getElementById('scen') || {}).textContent || '[]') || [], scBuilt = [], scExtra = 0;
   var SC = { BULL: [UP, '강세'], BASE: ['#5b6b80', '기본'], BEAR: [DOWN, '약세'] };
-  var drawScen = function (pick) {
-    scBuilt.forEach(function (x) { chart.removeSeries(x); }); scBuilt = [];
+  var scPick = 'ALL';
+  var drawScen = function (pick, keep) {
+    if (!keep) scPick = pick;
+    scBuilt.forEach(function (x) { chart.removeSeries(x); var i = allSeries.indexOf(x); if (i >= 0) allSeries.splice(i, 1); }); scBuilt = [];
     // One point per future session, so the fan spans twenty sessions on the time scale instead of one.
     var last = bars[bars.length - 1], days = [], d = last.date;
     for (var h = 1; h <= 20; h++) { d = addDays(d, 1); days.push(d); }
@@ -342,6 +344,8 @@ window.addEventListener('DOMContentLoaded', function () {
   };
   scButtons();
   // A report made on request brings its scenarios after the page loaded.
+  // Intraday candles (coins) use their own time scale: the daily fan steps aside and comes back with the daily view.
+  window.GNM_scenarioPause = function (off) { drawScen(off ? '' : scPick, true); };
   window.GNM_scenarios = function (list) { scen = list || []; scButtons(); drawScen('ALL'); setRange(currentRange, scExtra); };
 
   // ---- panes (below the price) ----
