@@ -22,6 +22,8 @@ const PAGE_CSS = `<style>
 .adm form.inline{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end}.adm form.inline input,.adm form.inline select{border:1px solid var(--line-strong);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
 .adm pre{white-space:pre-wrap;font-size:12px;margin:0;max-width:420px}.pill{display:inline-block;border-radius:999px;padding:0 8px;font-size:12px;font-weight:700;background:#eef1f5}.pill.pending{background:#fff3d6;color:#7a4a00}.pill.approved,.pill.done,.pill.OK{background:#e7f5ec;color:#1d6b3a}.pill.rejected,.pill.FAILED{background:#fde8e8;color:#9b1c1c}
 .bars{display:flex;flex-direction:column;gap:4px}.bars div{display:grid;grid-template-columns:140px 1fr 40px;gap:8px;align-items:center;font-size:13px}.bars i{display:block;height:10px;background:var(--navy);border-radius:4px}
+.adm{min-width:0}.adm-table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:820px){.adm .adm-responsive,.adm .adm-responsive tbody{display:block;width:100%}.adm .adm-responsive thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.adm .adm-responsive tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;padding:14px 0;border-bottom:1px solid var(--line)}.adm .adm-responsive tr:last-child{border-bottom:0}.adm .adm-responsive td{display:block;min-width:0;border:0;padding:3px 0;font-size:14px;white-space:normal;overflow-wrap:anywhere;text-align:left}.adm .adm-responsive td::before{content:attr(data-label);display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px}.adm .adm-responsive td[data-label="사용자"],.adm .adm-responsive td[data-label="이메일"],.adm .adm-responsive td[data-label="내용"],.adm .adm-responsive td[data-label="사유"],.adm .adm-responsive td[data-label="처리"],.adm .adm-responsive td[data-label="조정"],.adm .adm-responsive td[data-label="질문"],.adm .adm-responsive td[data-label="아쉬운 점·헷갈린 점·오류"],.adm .adm-responsive td[data-label="좋은 점·바라는 기능"],.adm .adm-responsive td[colspan]{grid-column:1/-1}.adm .act{flex-wrap:wrap;min-width:0}.adm .act input{max-width:100%;min-width:0}.adm .act button{min-height:44px}.adm table a{overflow-wrap:anywhere}}
 </style>`;
 
 const NO_API = `<div class="msg-err" data-no-api hidden>알파 서버가 아직 연결되지 않았어요. 연결되면 이 페이지에서 로그인할 수 있어요.</div><script>if(!document.querySelector('meta[name=gnm-api]'))document.querySelectorAll('[data-no-api]').forEach(function(e){e.hidden=false})</script>`;
@@ -255,7 +257,10 @@ export function renderAdmin(): string {
   var when = function (t) { return t ? new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; };
   var usd = function (v) { return '$' + Number(v || 0).toFixed(2); };
   var pill = function (s) { return '<span class="pill ' + esc(s) + '">' + esc({ pending: '대기', approved: '승인', rejected: '거절', done: '완료', OK: '답함', FAILED: '실패', REFUSED: '거부' }[s] || s) + '</span>'; };
-  var table = function (head, rows) { return '<table><thead><tr>' + head.map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>' + (rows.length ? rows.join('') : '<tr><td colspan="' + head.length + '" class="muted">없어요</td></tr>') + '</tbody></table>'; };
+  var table = function (head, rows) {
+    var labelled=rows.map(function(row){var column=0;return row.replace(/<td([^>]*)>/g,function(_,attrs){return '<td'+attrs+' data-label="'+esc(head[column++]||'')+'">';});});
+    return '<div class="adm-table-wrap"><table class="adm-responsive"><thead><tr>'+head.map(function(h){return '<th>'+esc(h)+'</th>';}).join('')+'</tr></thead><tbody>'+(labelled.length?labelled.join(''):'<tr><td colspan="'+head.length+'" class="muted">없어요</td></tr>')+'</tbody></table></div>';
+  };
   var post = function (path, body) { return GNM.call('POST', path, body).then(function (r) { if (r.error) GNM.toast(r.message); else load(); return r; }); };
   var avg = function (xs) { return xs.length ? (xs.reduce(function (s, x) { return s + x; }, 0) / xs.length).toFixed(1) : '—'; };
   var V = {
