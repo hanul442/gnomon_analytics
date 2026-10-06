@@ -31,7 +31,7 @@ test('coin chart labels support minute timestamps and daily BusinessDay values d
 test('unreported stock and coin pages use the full report template and keep missing AI slots',()=>{
  for(const kind of [undefined,'coin'] as const){
   const html=renderCalculationPage({symbol:kind?'KRW-BTC':'999999',name:'미생성',...(kind?{kind}:{}),bars:Array.from({length:80},(_,i)=>({symbol:kind?'KRW-BTC':'999999',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10),open:100+i,high:105+i,low:95+i,close:102+i,volume:1000})),now:new Date('2026-10-06T00:00:00Z')});
-  for(const id of ['tab-home','tab-chart','tab-technical','tab-strategy','tab-ai','tab-flows','tab-fundamentals','tab-news','home-conclusion','chart-card','ind-sheet','structure','parliament-ai','debate','join','chart-scenarios'])assert.ok(html.includes(`id="${id}"`),id);
+  for(const id of ['tab-home','tab-chart','tab-technical','tab-strategy','tab-ai','tab-flows','tab-fundamentals','tab-news','home-conclusion','chart-card','ind-sheet','structure','parliament-ai','debate','join'])assert.ok(html.includes(`id="${id}"`),id);assert.match(html,/id="scen"/);
   assert.match(html,/data-chart-indicator="fib"/);assert.match(html,/시나리오 미생성/);assert.match(html,/토론이 아직 생성되지 않았어요/);assert.match(html,/v2-mask/);assert.doesNotMatch(html,/AI 위원회가 고른 테스트 가격/);
   for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))if(!match[1]!.includes('application/json'))new vm.Script(match[2]!);
  }
@@ -56,7 +56,7 @@ test('scenario cards distinguish assumptions and invalidation without inferring 
  const {conclusionCard}=await import('./conclusion.js');
  const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-10-06',generatedAt:new Date(),bars:Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000})),disclosures:[],sources:[]});
  report.commentary={status:'OK',scenarios:[{kind:'BULL',narrative:{text:'상승 가정'},catalysts:['거래량 동반 상승'],invalidation:['지지 이탈']}]} as any;
- const html=conclusionCard(report);assert.match(html,/성립 근거·촉매/);assert.match(html,/무효화 조건 · 가정 재검토/);assert.match(html,/가격 기준 미지정/);assert.doesNotMatch(html,/이 가격 위로|이 가격 아래로|두 가격 사이|지지·저항을 테스트 가격/);
+ const html=conclusionCard(report);assert.match(html,/성립 근거·촉매/);assert.match(html,/무효화 조건 · 가정 재검토/);assert.doesNotMatch(html,/가격 기준 미지정/);assert.match(html,/가격대는 근거에서 확인/);assert.doesNotMatch(html,/이 가격 위로|이 가격 아래로|두 가격 사이|지지·저항을 테스트 가격/);
 });
 
 test('report failures preserve actionable categories without exposing provider details',async()=>{

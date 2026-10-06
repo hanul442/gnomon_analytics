@@ -31,6 +31,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderStockPage, type HomeEntry, type PageContext, writeAssets } from '../report/renderHtml.js';
 import { renderHome, renderReportsPage, type IndexQuote } from '../report/renderHome.js';
 import { renderHanul } from '../report/renderHanul.js';
+import { render509, renderSupport } from '../report/renderSupport.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
 import { renderPaper, renderScorecard, renderTerms } from '../report/renderScorecard.js';
@@ -605,6 +606,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'promos.json'), JSON.stringify(promos));
   // Alpha guide and surveys (G-58); notices for the home banner are edited by hand in banners.json.
   await writeFile(join(siteDir, 'hanul.html'), renderHanul());
+  await writeFile(join(siteDir, 'faq.html'), renderSupport());
+  await writeFile(join(siteDir, '509op.html'), render509());
   await mkdir(join(siteDir, 'assets'), { recursive: true });
   await copyFile(new URL('../../assets/hanul-logo.jpg', import.meta.url), join(siteDir, 'assets', 'hanul-logo.jpg'));
   await writeFile(join(siteDir, 'guide.html'), renderGuide());

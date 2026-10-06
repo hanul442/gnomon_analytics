@@ -28,8 +28,9 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   const page = await readFile(join(root, 'site', '000660', 'reports', '2026-10-02.html'), 'utf8');
   // G-71: four tabs; the old tab names live on as parts of them.
   for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-strategy', 'tab-ai', 'tab-flows', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
-  // Horizon gauges on the home and technical tabs, plus one per strategy in the arena.
-  assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 10);
+  // Horizon gauges on the home and technical tabs; strategies show their stance in the race rows (G-91), not a gauge card.
+  assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 5);
+  assert.ok(page.includes('class="race-stance') && !page.includes('전략별 현재 신호'));
   assert.ok(page.includes('전략 대결') && page.includes('챔피언 레이스'));
   for (const text of ['기술적 적정가', '예측 범위', '누적 순매수', '수급 흔적', '분기 실적', '증권가 평균 목표가', '가격 구조', '시장 대비 수익률']) assert.ok(page.includes(text), text);
   assert.ok(page.includes('data-ov="forecast"'));

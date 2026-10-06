@@ -1,4 +1,5 @@
-import {scenarioPlot} from './scenarioChart.js';
+import {scenarioPlot, scenarioZone} from './scenarioChart.js';
+export { scenarioZone };
 // Scenario assumptions, supporting catalysts and invalidation conditions are distinct.
 // Never infer a scenario trigger from unrelated support/resistance levels.
 
@@ -17,8 +18,6 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
   const sc = (k: 'BULL' | 'BASE' | 'BEAR') => c?.scenarios?.find((s) => s.kind === k);
   const bull = sc('BULL'), base = sc('BASE'), bear = sc('BEAR');
-  const upper = bull?.trigger;
-  const lower = bear?.trigger;
   const missing=![bull,base,bear].some(Boolean);
   const odds = (s: typeof bull) => (typeof s?.probability === 'number' ? `<b class="cl-p">${s.probability}%</b>` : '');
   const line = (c?.summary?.text ?? report.headline).split(/(?<=[.?!요])\s/)[0] ?? '';
@@ -31,14 +30,22 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
     const locked = sc.narrative.text === LOCKED_TEXT;
     return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>프로·맥스·알파 또는 개별 열기 권한으로 볼 수 있어요.</p><a href="#tab-ai">이용 권한 확인하기</a></div></div>` : `${scenarioPlot(report,sc.kind)}<div class="scenario-evidence"><b>조건·근거</b><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>성립 근거·촉매</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>무효화 조건 · 가정 재검토</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${!locked && sc.zone ? `<p class="cl-sc-k"><b>20거래일 예상 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</div>'}</div>`;
   };
-  const row = (cls: string, sc: typeof bull, label: string, px: string, what: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc||missing ? ' aria-expanded="false"' : ' disabled'}>${px}<div class="cl-what"><b>${label} 시나리오</b> ${odds(sc)}<small>${what}</small>${sc?.zone && sc.narrative.text!==LOCKED_TEXT ? `<small>20거래일 가격대 ${zone(sc.zone)}</small>` : ''}</div>${sc||missing ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
+  const row = (cls: string, sc: typeof bull, label: string, px: string, what: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc||missing ? ' aria-expanded="false"' : ' disabled'}>${px}<div class="cl-what"><b>${label} 시나리오</b> ${odds(sc)}<small>${what}</small></div>${sc||missing ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
+  // G-90: each side shows where that scenario would take the price in about 20 sessions (the committee's range, else
+  // the volatility range), never a breakout price that reads like a buy or sell signal.
+  const px = (k: 'BULL' | 'BEAR', arrow: string) => {
+    const z = scenarioZone(report, k);
+    if (!z) return `<div class="cl-px"><span class="cl-arrow">${arrow}</span><b>${k === 'BULL' ? '강세' : '약세'} 전개</b><small>가격대는 근거에서 확인</small></div>`;
+    const mid = (z.zone[0] + z.zone[1]) / 2;
+    return `<div class="cl-px"><span class="cl-arrow">${arrow}</span><b>${gap(mid, p.close)}</b><small>20거래일 뒤 ${won(z.zone[0])}~${won(z.zone[1])}${z.source === 'calc' ? ' · 변동성 계산' : ''}</small></div>`;
+  };
   const rows = [
-    upper !== undefined || bull || missing ? row('cl-up', bull, '강세', `<div class="cl-px"><span class="cl-arrow">▲</span><b>${upper !== undefined ? won(upper) : '강세 가정'}</b><small>${upper !== undefined ? '참고 가격 · '+gap(upper, p.close) : '가격 기준 미지정'}</small></div>`, '상승 흐름을 가정한 전개') : '',
-    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small>지금</small></div>`, '현재 근거에서 예상하는 기본 전개'),
-    lower !== undefined || bear || missing ? row('cl-down', bear, '약세', `<div class="cl-px"><span class="cl-arrow">▼</span><b>${lower !== undefined ? won(lower) : '약세 가정'}</b><small>${lower !== undefined ? '참고 가격 · '+gap(lower, p.close) : '가격 기준 미지정'}</small></div>`, '하락 흐름을 가정한 전개') : '',
+    row('cl-up', bull, '강세', px('BULL', '▲'), '이렇게 풀리면 20거래일 동안 오를 수 있는 폭'),
+    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small>지금</small></div>`, '현재 근거에서 가장 그럴듯한 전개'),
+    row('cl-down', bear, '약세', px('BEAR', '▼'), '이렇게 풀리면 20거래일 동안 내릴 수 있는 폭'),
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
-  const source = missing?'시나리오 해석·예상 범위는 아직 생성되지 않았어요':bull?.trigger !== undefined || bear?.trigger !== undefined ? '참고 가격에 닿았다는 이유만으로 시나리오가 확정되지 않아요. 성립 근거와 무효화 조건을 함께 확인하세요' : '시나리오 설명의 성립 근거와 무효화 조건을 함께 확인하세요';
+  const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : '%는 그 시나리오대로 갔을 때 20거래일 뒤 가격대의 가운데까지 거리예요. 목표가나 매매 신호가 아니고, 시나리오가 틀렸다고 볼 조건은 펼친 화면의 무효화 조건에 있어요';
   return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')}</div><h2 class="cl-line">${esc(line)}</h2>
 <div class="cl-ladder">${rows}</div>
 <p class="fine">${bull || bear || base ? '줄을 누르면 시나리오가 펼쳐져요. ' : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;

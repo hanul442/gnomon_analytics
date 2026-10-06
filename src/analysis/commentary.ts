@@ -370,15 +370,19 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const user = { role: 'user' as const, content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.\n\n${JSON.stringify(input, null, 2)}` };
     // Deep: the full committee on the large model, with the server-side fallback for safety declines.
     // Brief: the small model takes no effort setting or fallback.
+    // A deep committee report can run past a few minutes; stream it so the connection never sits idle and times out
+    // (the Worker's on-demand reports failed that way). Test doubles without stream() keep the plain call.
+    const call = <P extends Parameters<typeof client.beta.messages.parse>[0]>(params: P) =>
+      typeof client.beta.messages.stream === 'function' ? client.beta.messages.stream(params as never).finalMessage() as ReturnType<typeof client.beta.messages.parse<P>> : client.beta.messages.parse(params);
     const response = tier === 'deep'
-      ? await client.beta.messages.parse({
+      ? await call({
         model, max_tokens: 16000,
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
         output_config: { effort: 'medium', format: betaZodOutputFormat(CommentarySchema) },
         system: system(report.name, report.kind), messages: [user],
       })
-      : await client.beta.messages.parse({
+      : await call({
         model, max_tokens: 6000,
         output_config: { format: betaZodOutputFormat(BriefSchema) },
         system: briefSystem(report.name, report.kind), messages: [user],

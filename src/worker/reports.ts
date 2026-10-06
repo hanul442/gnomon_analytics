@@ -1,4 +1,4 @@
-import {scenarioPanel} from '../report/scenarioChart.js';
+import {scenarioLayer} from '../report/scenarioChart.js';
 import {coinFlow} from '../report/coinFlow.js';
 import type { D1 } from './db.js';
 import type { DailyReport } from '../report/dailyReport.js';
@@ -81,5 +81,5 @@ export function reportFragments(report:DailyReport){
  const claim=(title:string,items:readonly {text:string}[])=>`<div class="card"><h3>${title}</h3>${items.map(x=>`<p>${esc(x.text)}</p>`).join('')||'<p>확인된 근거가 없어요.</p>'}</div>`;
  const evidence=`<div class="card"><h3>분석 근거</h3>${(c.evidence??[]).map(e=>`<p><b>${esc(e.id)} · ${esc(e.label)}</b><br>${esc(e.detail)}</p>`).join('')}</div>`;
  const news=`<div class="card"><h3>뉴스·공시</h3>${report.filings.map(f=>`<p>${esc(f.filedDate)} · ${esc(f.title)}</p>`).join('')}${(report.news?.clusters??[]).map(n=>`<p>${esc(n.title)}</p>`).join('')||'<p>추가 뉴스 근거가 없어요.</p>'}</div>`;
- return {scenarios:scenarioPanel(report),home:claim('AI 요약',c.summary?[c.summary]:[])+conclusionCard(report,{id:'conclusion-live'}),ai:conclusionCard(report,{id:'conclusion'})+voteSection(report)+debateSection(report)+issuesSection(report)+claim('강세 근거',c.bullish??[])+claim('약세 근거',c.bearish??[])+claim('지켜볼 것',c.watch??[])+evidence+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
+ return {scenarios:JSON.stringify(scenarioLayer(report)),home:claim('AI 요약',c.summary?[c.summary]:[])+conclusionCard(report,{id:'conclusion-live'}),ai:conclusionCard(report,{id:'conclusion'})+voteSection(report)+debateSection(report)+issuesSection(report)+claim('강세 근거',c.bullish??[])+claim('약세 근거',c.bearish??[])+claim('지켜볼 것',c.watch??[])+evidence+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
 }
