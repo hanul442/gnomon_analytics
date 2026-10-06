@@ -15,7 +15,7 @@ document.addEventListener('click',function(e){
  if(!opt||!window.GNMChart){if(window.GNM)GNM.toast('이 지표를 그릴 가격 기록이 부족해요.');return;}
  // Structure values are calculated from daily prices, so leave minute/weekly mode first.
  var day=document.querySelector('[data-coin-tf="D"]');if(day)day.click();day=document.querySelector('[data-tf="D"]');if(day)day.click();
- if(tab)tab.click();if(opt.getAttribute('aria-pressed')!=='true')opt.click();
- var ctx=document.getElementById('chart-context');if(ctx){ctx.hidden=false;var name=opt.querySelector('b');var desc=opt.querySelector('small');ctx.querySelector('p').textContent=(name?name.textContent:key)+' · '+(desc?desc.textContent:'일봉 가격을 기준으로 확인하세요.');ctx.querySelector('button').onclick=function(){document.getElementById('t-technical').click();b.focus({preventScroll:true});b.scrollIntoView({block:'center',behavior:'auto'});};}
+ if(window.GNM_showTab)GNM_showTab('chart');else if(tab)tab.click();if(opt.getAttribute('aria-pressed')!=='true')opt.click();
+ var ctx=document.getElementById('chart-context');if(ctx){ctx.hidden=false;var name=opt.querySelector('b');var desc=opt.querySelector('small');ctx.querySelector('p').textContent=(name?name.textContent:key)+' · '+(desc?desc.textContent:'일봉 가격을 기준으로 확인하세요.');ctx.querySelector('button').onclick=function(){if(window.GNM_showTab)GNM_showTab('technical');else document.getElementById('t-technical').click();b.focus({preventScroll:true});b.scrollIntoView({block:'center',behavior:'auto'});};}
  requestAnimationFrame(function(){document.getElementById('chart-card').scrollIntoView({block:'start',behavior:'auto'});});
 });`;

@@ -582,6 +582,7 @@ const TAB_SCRIPT = `<script>
       show(next.getAttribute('aria-controls'), true);
     });
   });
+  window.GNM_showTab=function(key){var id='tab-'+key;if(show(id)){history.replaceState(null,'','#'+id);return true;}return false;};
   window.addEventListener('hashchange', route);
   route();
 })();
