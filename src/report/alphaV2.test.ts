@@ -31,7 +31,7 @@ test('coin chart labels support minute timestamps and daily BusinessDay values d
 test('unreported stock and coin pages use the full report template and keep missing AI slots',()=>{
  for(const kind of [undefined,'coin'] as const){
   const html=renderCalculationPage({symbol:kind?'KRW-BTC':'999999',name:'미생성',...(kind?{kind}:{}),bars:Array.from({length:80},(_,i)=>({symbol:kind?'KRW-BTC':'999999',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10),open:100+i,high:105+i,low:95+i,close:102+i,volume:1000})),now:new Date('2026-10-06T00:00:00Z')});
-  for(const id of ['tab-home','tab-chart','tab-technical','tab-ai','tab-flows','tab-fundamentals','tab-news','home-conclusion','chart-card','ind-sheet','structure','parliament-ai','debate','join','chart-scenarios'])assert.ok(html.includes(`id="${id}"`),id);
+  for(const id of ['tab-home','tab-chart','tab-technical','tab-strategy','tab-ai','tab-flows','tab-fundamentals','tab-news','home-conclusion','chart-card','ind-sheet','structure','parliament-ai','debate','join','chart-scenarios'])assert.ok(html.includes(`id="${id}"`),id);
   assert.match(html,/data-chart-indicator="fib"/);assert.match(html,/시나리오 미생성/);assert.match(html,/토론이 아직 생성되지 않았어요/);assert.match(html,/v2-mask/);assert.doesNotMatch(html,/AI 위원회가 고른 테스트 가격/);
   for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))if(!match[1]!.includes('application/json'))new vm.Script(match[2]!);
  }
@@ -48,6 +48,6 @@ test('scenario charts share ranges, do not invent absent forecasts, and do not e
  assert.match(scenarioPlot(report,'BEAR'),/열람 권한/);
  report.commentary!.scenarios![0]!.narrative.text=LOCKED_TEXT;
  assert.doesNotMatch(scenarioPanel(report),/120~140|검증 범위|<svg/);
- report.commentary!.scenarios![0]!.narrative.text='근거';delete report.commentary!.scenarios![0]!.zone;
- assert.match(scenarioPlot(report,'BASE'),/예측 가격 범위가 없어요/);new vm.Script(SCENARIO_JS);
+ report.commentary!.scenarios![0]!.narrative.text='저항 6,690원을 넘으면 7,292원과 8,250원을 확인하고 5,875원 이탈을 점검';delete report.commentary!.scenarios![0]!.zone;
+ assert.match(scenarioPlot(report,'BASE'),/<svg/);assert.match(scenarioPlot(report,'BASE'),/설명에 나온 가격 기준/);assert.match(scenarioPlot(report,'BASE'),/6,690원/);assert.match(scenarioPlot(report,'BASE'),/7,292원/);assert.doesNotMatch(scenarioPlot(report,'BASE'),/<rect/);new vm.Script(SCENARIO_JS);
 });

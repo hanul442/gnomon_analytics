@@ -1,3 +1,4 @@
+import {ORBS} from './ui.js';
 // Closed alpha in the browser (docs/DESIGN.md §5.13, G-44): sign-in state, the account badge, credit
 // spending through the API, usage events, in-place feedback and the weekly pulse survey.
 // Only active when the site is built with an API address (gnm.config.json or GNM_API_URL);
@@ -185,11 +186,11 @@ export const ALPHA_SCRIPT = `<script>
       var box = debate || f.closest('.card') || f.parentNode, anchor = box.querySelector('.db-ev');
       if(!anchor){anchor=document.createElement('div');anchor.className='db-ev';box.appendChild(anchor);}
       var mine = document.createElement('div'); mine.className = 'db-turn db-bear db-guest db-me'; mine.innerHTML = '<div class="db-who"><b>나</b> · ' + esc(who) + '에게</div><div class="db-bubble">' + esc(q) + '</div>';
-      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-typing'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b> 생각하는 중…</div><div class="db-bubble"><span class="orbs"><i></i><i></i><i></i></span></div>';
+      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-typing'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b> 답변 작성 중</div><div class="db-bubble"><div class="chat-progress">${ORBS}<span>생각하는 중…</span></div><div class="stream-answer"></div></div>';wait.setAttribute('aria-busy','true');
       anchor.parentNode.insertBefore(mine, anchor); anchor.parentNode.insertBefore(wait, anchor);
       var btn = f.querySelector('[type=submit]'); btn.disabled = true;
       var said = [].map.call(box.querySelectorAll('.db-turn:not(.db-typing)'), function (t) { var w = t.querySelector('.db-who b'), x = t.querySelector('.db-bubble'); return (w ? w.textContent : '') + ': ' + (x ? x.textContent.replace(/\\s+/g, ' ').trim() : ''); }).join('\\n').slice(-5000);
-      G.askStream({ tier: 'standard', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.db-bubble').textContent=text;}).then(function (r) {
+      G.askStream({ tier: 'standard', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.stream-answer').textContent=text;wait.querySelector('.chat-progress span:not(.orbs)').textContent='답변 작성 중';wait.querySelector('canvas').dataset.orb='composing';}).then(function (r) {
         btn.disabled = false; wait.remove();
         if (r.error) { mine.remove(); toast(r.message); if (r.error === 'NO_CREDITS' || r.error === 'PLAN_REQUIRED') location.href = base + 'pricing.html'; return; }
         var t = document.createElement('div'); t.className = 'db-turn db-mid db-guest db-in';

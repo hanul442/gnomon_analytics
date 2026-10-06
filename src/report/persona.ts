@@ -26,10 +26,10 @@ export const HOME_ORDER: Record<Exclude<Persona, 'all'>, string[]> = {
 };
 /** Report tabs each view keeps (the rest come back with "전체 보기"). */
 export const TAB_KEEP: Record<Exclude<Persona, 'all'>, string[]> = {
-  beginner: ['home', 'chart', 'technical', 'ai', 'flows', 'fundamentals', 'news'],
-  trader: ['home', 'chart', 'technical', 'ai', 'flows', 'fundamentals', 'news'],
-  swing: ['home', 'chart', 'technical', 'ai', 'flows', 'fundamentals', 'news'],
-  long: ['home', 'chart', 'technical', 'ai', 'flows', 'fundamentals', 'news'],
+  beginner: ['home', 'chart', 'technical', 'strategy', 'ai', 'flows', 'fundamentals', 'news'],
+  trader: ['home', 'chart', 'technical', 'strategy', 'ai', 'flows', 'fundamentals', 'news'],
+  swing: ['home', 'chart', 'technical', 'strategy', 'ai', 'flows', 'fundamentals', 'news'],
+  long: ['home', 'chart', 'technical', 'strategy', 'ai', 'flows', 'fundamentals', 'news'],
 };
 
 export const PERSONA_CSS = `${(Object.keys(TAB_KEEP) as Exclude<Persona, 'all'>[]).map((p) => `html[data-persona=${p}]:not(.show-all) .chips [role=tab]:not(${TAB_KEEP[p].map((t) => `#t-${t}`).join(',')})`).join(',')}{display:none}

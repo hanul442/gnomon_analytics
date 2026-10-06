@@ -89,8 +89,8 @@ ${turns.map((t, i) => {
     // Reports written before the fix may count from 1 (a turn answering itself); the red team sums up, it does not reply.
     const at = red ? undefined : replyIndex(t.replyTo, i), to = at != null ? turns[at] : undefined;
     const quote = to && to.speaker !== t.speaker ? `<div class="db-quote"><b>${esc(SPEAKER[to.speaker] ?? to.speaker)}</b>${esc(to.claim.text.length > 46 ? `${to.claim.text.slice(0, 46)}…` : to.claim.text)}</div>` : '';
-    return `${i===3?'<details class="db-full"><summary>전체 토론 보기</summary>':''}<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"${at != null ? ` data-reply="${at}"` : ''}><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}</div></div>`;
-  }).join('')}${turns.length>3?'</details>':''}
+    return `<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"${at != null ? ` data-reply="${at}"` : ''}><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}</div></div>`;
+  }).join('')}
 <p class="fine">말하는 위원은 위 표결의 분석가·데스크 그대로예요. 말 끝의 근거 번호를 누르면 그 근거가 펼쳐져요. 레드팀은 승패를 정하지 않아요.</p>${tail}</div></section>`;
 }
 
@@ -138,30 +138,13 @@ export const DEBATE_PLAY_SCRIPT = `<script>
  * reply hangs in the air. The red team always speaks.
  */
 export const DEBATE_FILTER_SCRIPT = `<script>
-(function () {
-  var FOCUS = ${JSON.stringify(VIEW_FOCUS)}, pick = null;
-  var apply = function (box) {
-    var turns = [].slice.call(box.querySelectorAll('.db-turn:not(.db-typing):not(.db-guest)'));
-    var chips = box.querySelector('.db-chips'); if (!chips || !turns.length) return;
-    var view = document.documentElement.getAttribute('data-persona') || 'swing', focus = FOCUS[view];
-    var speakers = [], names = {};
-    turns.forEach(function (t) { var s = t.getAttribute('data-speaker'); if (names[s]) return; names[s] = (t.querySelector('.db-who b') || {}).textContent || s; speakers.push(s); });
-    if (!pick) { pick = {}; speakers.forEach(function (s) { pick[s] = true; }); if (!speakers.some(function (s) { return pick[s]; })) speakers.forEach(function (s) { pick[s] = true; }); }
-    chips.innerHTML = '<span class="db-chips-k">발언자</span>' + speakers.map(function (s) { return '<button type="button" data-sp="' + s + '" aria-pressed="' + !!pick[s] + '">' + names[s] + '</button>'; }).join('') + '<button type="button" data-sp="*" class="db-all">모두</button>';
-    var on = turns.map(function (t) { var s = t.getAttribute('data-speaker'); return !!pick[s]; }), ctx = turns.map(function () { return false; });
-    turns.forEach(function (t, i) { var r = t.getAttribute('data-reply'); if (on[i] && r != null && !on[Number(r)]) ctx[Number(r)] = true; });
-    turns.forEach(function (t, i) { t.classList.toggle('db-off', !on[i] && !ctx[i]); t.classList.toggle('db-ctx', !on[i] && ctx[i]); });
-  };
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('.db-chips [data-sp]'); if (!b) return;
-    var box = b.closest('.debate'), s = b.getAttribute('data-sp');
-    if (s === '*') Object.keys(pick).forEach(function (k) { pick[k] = true; }); else pick[s] = !pick[s];
-    apply(box);
-  });
-  var all = function () { [].forEach.call(document.querySelectorAll('.card.debate'), apply); };
-  window.addEventListener('gnm-persona', function () { pick = null; all(); });
-  window.GNM_debateFilter = all;
-  all();
+(function(){
+ var all=function(){document.querySelectorAll('.card.debate').forEach(function(box){
+  var chips=box.querySelector('.db-chips');if(chips)chips.remove();
+  box.querySelectorAll('.db-full').forEach(function(fold){var summary=fold.querySelector('summary');if(summary)summary.remove();while(fold.firstChild)fold.before(fold.firstChild);fold.remove();});
+  box.querySelectorAll('.db-turn:not(.db-typing)').forEach(function(turn){turn.hidden=false;turn.classList.remove('db-off','db-ctx');});
+ });};
+ window.GNM_debateFilter=all;window.addEventListener('gnm-persona',all);all();
 })();
 </script>`;
 
