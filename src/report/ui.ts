@@ -251,23 +251,31 @@ export const TOUR_JS = `
         ['.top-tabs', '위쪽 탭', '홈 · 검색 · 관심 · 성적표, 그리고 전체에서 내 계정·보기 방식·사용법·FAQ로 가요.'],
       ],
       report: [
-        ['.chips', '탭', '요약 · 차트 · 기술 · AI 위원회 · 수급 · 실적 · 뉴스·공시. 처음엔 요약만 봐도 충분해요.'],
-        ['#home-conclusion', '지금 판단', '강세·기본·약세 시나리오별로 20거래일 뒤 예상 가격대와 확률이에요. 차트 탭에서는 같은 가격대가 박스로 보여요.'],
-        ['#home-conclusion .cl-row', '줄을 눌러 보세요', '시나리오가 펼쳐져요. 무엇이 나오면 그렇게 되는지, 언제 틀렸다고 볼지가 나와요. 약세 줄 안에는 최악의 경우가 있어요.'],
-        ['#t-ai', 'AI 위원회', '분석가 6명과 데스크 5곳의 표결, 서로 반박하는 토론, 근거 정리가 있어요. 토론에 직접 질문할 수도 있어요.'],
-        ['#t-flows', '수급 · 실적 · 뉴스', '외국인·기관 수급, 분기 실적과 밸류, 뉴스와 공시는 각자 탭에 있어요.'],
-        ['.chat-fab', 'AI 질문', '어느 화면에서든 이 종목에 대해 물어볼 수 있어요.'],
+        ['.chips', '여덟 탭', '요약 · 차트 · 기술 · 전략 · AI 위원회 · 수급 · 실적 · 뉴스·공시가 같은 위치에 있어요. 리포트가 없으면 AI 분석은 잠금으로 표시돼요.'],
+        ['#home-conclusion', '조건 가격', '큰 가격은 강세·약세 전개를 검토하는 조건이에요. 전망 범위와는 달라요. 분석 날짜·당시 종가와 조건 출처도 확인하세요.', 'home'],
+        ['#tab-chart', '차트에서 전망 비교', '시나리오 레이어를 켜면 강세·기본·약세 전망 범위를 차트 안에서 비교해요. 위원회·목표가·변동성 중 범위의 출처를 확인하세요.', 'chart'],
+        ['#tab-technical', '지표 선택', '피보나치·RSI 등 지표 본문에서 차트 연결을 누르면 해당 지표만 켜져요. 기술로 돌아가기로 보던 위치에 복귀해요.', 'technical'],
+        ['#tab-strategy', '전략 대결', '챔피언 레이스에서 전략별 강세·약세 판단과 성과를 함께 확인하세요.', 'strategy'],
+        ['#tab-ai', '토론과 질문', '전체 토론은 2초 생각 → 발언 → 2초 쉼으로 재생돼요. 바로 아래 입력창에서 질문하고 +로 답변자나 내 전문가를 고르세요. 전송 전 작은 크레딧 안내를 확인하세요.', 'ai'],
+        ['#tab-news', '뉴스·공시', '제목으로 원문을 확인하고 더 보기로 나머지를 펼쳐요. 기업 이벤트와 테마 확장은 준비 중이에요.', 'news'],
+      ],
+      find: [
+        ['#search', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
+        ['.find-tabs', '시장 선택', '주식·ETF·코인을 선택하세요. 시장별로 지원되는 조건이 달라요.'],
+        ['#ai-build', 'AI 조건', '원하는 특징을 문장으로 적고 ✦를 누르세요. 실제 생성 대기에는 Thinking Orbs가 표시돼요.'],
+        ['#sc-form', '검토·적용·저장', 'AI 제안을 검토해 적용한 뒤 조건을 직접 수정하고 저장하세요. 완료 안내가 나와야 저장된 상태예요. 오류면 다시 확인하세요.'],
       ],
     };
-    var kind = document.getElementById('tab-ai') ? 'report' : document.getElementById('today') ? 'home' : null;
+    var kind = document.getElementById('tab-ai') ? 'report' : document.getElementById('today') ? 'home' : document.getElementById('ai-build') ? 'find' : null;
     if (!kind) return;
-    var key = 'gnm-tour-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
-    try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
+    var key = 'gnm-tour-v243-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
+    try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-' + kind) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
     if (seen && !forced) return;
-    var steps = STEPS[kind].filter(function (s) { var el = document.querySelector(s[0]); return el && el.getClientRects().length; });
+    var steps = STEPS[kind].filter(function (s) { var el = document.querySelector(s[0]); return el && (s[3] || el.getClientRects().length); });
     if (!steps.length) return;
-    var i = 0, hole, tip;
-    var end = function () { try { localStorage.setItem(key, '1'); } catch (e) {} if (hole) hole.remove(); if (tip) tip.remove(); window.removeEventListener('resize', place); };
+    var i = 0, hole, tip, focusBefore = document.activeElement, originalTab = document.querySelector('.chips [aria-selected=true]');
+    var end = function () { try { localStorage.setItem(key, '1'); } catch (e) {} if (hole) hole.remove(); if (tip) tip.remove(); window.removeEventListener('resize', place); window.removeEventListener('scroll', place); window.removeEventListener('keydown', escapeTour); if (originalTab) { if (window.GNM_showTab) window.GNM_showTab(originalTab.getAttribute('aria-controls').replace('tab-','')); else originalTab.click(); } if (focusBefore && focusBefore.isConnected) focusBefore.focus({preventScroll:true}); };
+    var escapeTour = function(e){if(e.key === 'Escape') end();};
     var place = function () {
       var el = document.querySelector(steps[i][0]); if (!el) return;
       var r = el.getBoundingClientRect(), pad = 6;
@@ -276,17 +284,17 @@ export const TOUR_JS = `
       tip.style.top = (below ? Math.min(r.bottom + 14, innerHeight - 190) : Math.max(r.top - 14 - tip.offsetHeight, 10)) + 'px';
     };
     var show = function () {
-      var s = steps[i], el = document.querySelector(s[0]);
+      var s = steps[i]; if (s[3]) { if (window.GNM_showTab) window.GNM_showTab(s[3]); else { var tab = document.getElementById('t-' + s[3]); if (tab) tab.click(); } } var el = document.querySelector(s[0]);
       el.scrollIntoView({ block: 'center' });
       tip.innerHTML = '<div class="tr-n">' + (i + 1) + ' / ' + steps.length + '</div><b>' + s[1] + '</b><p>' + s[2] + '</p><div class="tr-b"><button type="button" data-t="x">그만 보기</button>' + (i ? '<button type="button" data-t="p">이전</button>' : '') + '<button type="button" data-t="n" class="tr-next">' + (i === steps.length - 1 ? '끝' : '다음') + '</button></div>';
-      setTimeout(place, 60);
+      tip.querySelector('[data-t=n]').focus({preventScroll:true}); setTimeout(place, 60);
     };
     var start = function () {
       hole = document.createElement('div'); hole.className = 'tr-hole';
       tip = document.createElement('div'); tip.className = 'tr-tip'; tip.setAttribute('role', 'dialog'); tip.setAttribute('aria-label', '사용법 둘러보기');
       document.body.appendChild(hole); document.body.appendChild(tip);
       tip.addEventListener('click', function (e) { var t = e.target.getAttribute && e.target.getAttribute('data-t'); if (!t) return; if (t === 'x') return end(); i += t === 'n' ? 1 : -1; if (i >= steps.length) return end(); show(); });
-      window.addEventListener('resize', place); window.addEventListener('scroll', place, { passive: true });
+      window.addEventListener('resize', place); window.addEventListener('scroll', place, { passive: true }); window.addEventListener('keydown', escapeTour);
       show();
     };
     setTimeout(start, forced ? 300 : 1200);

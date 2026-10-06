@@ -62,6 +62,7 @@ export const ALPHA_SCRIPT = `<script>
     }).catch(function(){return {error:'NETWORK',message:'답변 연결이 끊겼어요. 계정의 질문 기록을 확인해 주세요.'};});
   };
   try { G.me = get(SK) ? JSON.parse(get(MK) || 'null') : null; } catch (e) { G.me = null; }
+  if (G.me && (!G.me.user || !G.me.credits)) { G.me = null; set(MK, null); }
   G.read = function () { var m = G.me; return { plan: m ? m.user.rankAs : 'free', credits: m ? m.credits.balance : 0, trial: 0, grants: [], claimed: [], log: [], requests: [] }; };
   G.spend = function () { toast('크레딧은 서버에서 차감돼요.'); return false; };
   var paint = G.paint = function () {
@@ -82,7 +83,7 @@ export const ALPHA_SCRIPT = `<script>
   };
   G.refresh = function () {
     if (!get(SK)) { G.me = null; paint(); return Promise.resolve(null); }
-    return G.call('GET', '/me').then(function (r) { if (!r.error) { G.me = r; set(MK, JSON.stringify(r)); paint(); } return G.me; });
+    return G.call('GET', '/me').then(function (r) { if (!r.error && r.user && r.credits) { G.me = r; set(MK, JSON.stringify(r)); paint(); } return G.me; });
   };
   // Notifications (screener alerts): a bell next to the account badge.
   var bell = function () {
