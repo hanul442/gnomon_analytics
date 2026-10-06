@@ -19,7 +19,7 @@ import type { Claim, Commentary } from '../analysis/commentary.js';
 import { apiMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
 import { CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
 import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow, horizonStrip, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
-import { councilCard, DART_SCRIPT, freshness, freshnessBadge, hero, latestLists, marketStrip, priceChart, sparkline } from './appParts.js';
+import { councilCard, DART_SCRIPT, freshness, freshnessBadge, hero, latestLists, staleAiBar, marketStrip, priceChart, sparkline } from './appParts.js';
 import { analystScores, arenaHeadline, arenaPanel, arenaRanking, arenaTeaser } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
@@ -93,10 +93,10 @@ main{max-width:1180px;margin:0 auto;padding:20px 24px 64px;min-width:0}
 .orb{display:none;position:absolute;right:28%;top:-60px;width:260px;height:260px;border-radius:50%;pointer-events:none;opacity:.55;
 background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#8099bb 78%,#2d3f61 100%);box-shadow:inset -20px -26px 44px rgba(25,42,74,.25),0 18px 40px rgba(36,54,89,.18)}
 .orb::after{content:"";position:absolute;inset:18% 30% 52% 22%;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,255,255,0) 70%)}
-.hero-main,.key-points{position:relative}.eyebrow{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:600;color:var(--accent-strong)}
+.hero-main,.key-points{position:relative}.mkt-chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:800;background:#eef1f6;color:#334155}.mk-kospi{background:#e8f0fd;color:#1f55b8}.mk-kosdaq{background:#e9f7ef;color:#1b7a43}.mk-etf{background:#f3ecfd;color:#6b3fb8}.mk-coin{background:#fff4dc;color:#8a5a00}.eyebrow{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:600;color:var(--accent-strong)}
 .hero h1{font-family:var(--serif);font-weight:600;font-size:40px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.01em}
 .hero-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}.hero-price b{font-size:34px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.hero-price span{font-weight:600;font-variant-numeric:tabular-nums}
-.hero-sub{font-size:12px;color:var(--muted);margin-top:2px}.hero-chart{display:block;margin:12px 0 2px;padding:8px 10px 6px;border:1px solid var(--line);border-radius:14px;background:#fff;text-decoration:none;color:inherit;max-width:520px}.hero-chart:hover{border-color:var(--accent)}.hero-chart svg{display:block;width:100%;height:72px}.hc-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px}.hc-go{font-weight:800;color:var(--accent-strong)}.hero-line{margin:14px 0 0;color:var(--fg2);max-width:60ch}
+.stale-ai{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border-radius:14px;background:#fff8e6;border:1px solid #f3dfa8;font-size:13.5px}.stale-ai .btn-primary{white-space:nowrap}.hero-sub{font-size:12px;color:var(--muted);margin-top:2px}.hero-chart{display:block;margin:12px 0 2px;padding:8px 10px 6px;border:1px solid var(--line);border-radius:14px;background:#fff;text-decoration:none;color:inherit;max-width:520px}.hero-chart:hover{border-color:var(--accent)}.hero-chart svg{display:block;width:100%;height:72px}.hc-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px}.hc-go{font-weight:800;color:var(--accent-strong)}.hero-line{margin:14px 0 0;color:var(--fg2);max-width:60ch}
 .key-points{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
 .kp-title{font-family:var(--serif);font-weight:600;margin-bottom:6px}.key-points ul{list-style:none;margin:0;padding:0}
 .key-points li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}.key-points li:first-child{border-top:0}.key-points li span{color:var(--muted)}
@@ -617,7 +617,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const changes = report.changes?.length ? `<ul class="plain">${report.changes.map((c) => `<li>${escape(c)}</li>`).join('')}</ul>` : '<p class="empty">비교할 이전 리포트가 없어요.</p>';
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   // G-71: the conclusion (scenarios that open on tap) heads the summary tab, above everything else.
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${ctx.commentaryFrom && ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? staleAiBar(report, ctx.commentaryFrom) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 ${marketStrip(report)}
@@ -882,7 +882,7 @@ ${coin ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트�
   const head=body.slice(0,split), chart=body.slice(split,techAt), technical=body.slice(techAt,ending);
   const missing=(label:string)=>`<section class="block" data-missing><h2>${label}</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 생성되지 않은 분석이에요</b><p>리포트를 생성하면 이 영역에서 확인할 수 있어요.</p><button type="button" class="btn-primary" data-create-report>심층 리포트 생성하기</button></div></div></section>`;
   body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}</section><section class="panel" id="tab-strategy" role="tabpanel" aria-labelledby="t-strategy" hidden>${missing('전략 대결 · 모의투자')}</section>${[{key:'ai',label:'AI 위원회'},{key:'flows',label:'수급'},{key:'fundamentals',label:'실적'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${missing(t.label)}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'},'')}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
-  return shell('', coin ? '코인 차트 | Gnomon Analytics' : '종목 차트 | Gnomon Analytics', body, { tabs: TABS, bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(coin)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}` });
+  return shell('', coin ? '코인 차트 | Gnomon Analytics' : '종목 차트 | Gnomon Analytics', body, { tabs: TABS, bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(coin)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}${PARLIAMENT_SCRIPT}` });
 }
 
 /** The free chart page; coins (upbit KRW markets) reuse it with their own data folder and wording. */
@@ -904,7 +904,7 @@ const stockScript = (coin: boolean) => `<script>
     document.querySelectorAll('form.join').forEach(function(f){f.dataset.symbol=code;f.dataset.name=d.name;}); $('sp-star').setAttribute('data-star', code); if (window.GNM_starSync) GNM_starSync();
     // ETFs and coins picked for a daily AI report (G-56) keep their chart page; point to the report.
     fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { var rc = document.querySelector('.request-card'); if (r.ok && rc) rc.innerHTML = '<div class="lk-head"><b>AI 리포트가 있어요</b></div><p>매일 AI 리포트로 고른 적이 있어서 위원회 해설과 전체 대시보드가 있어요.</p><a class="btn-primary" href="' + code + '/index.html">AI 리포트 보기</a>'; }, function () {});
-    $('sp-name').textContent = d.name; $('sp-code').textContent = d.symbol; $('sp-market').textContent = COIN ? '업비트 원화' + (d.warning ? ' · 유의 종목' : '') : (d.market === 'KOSDAQ' ? '코스닥' : '코스피') + (d.kind === 'etf' ? ' ETF' : '');
+    $('sp-name').textContent = d.name; $('sp-code').textContent = d.symbol; $('sp-market').textContent = COIN ? '업비트 원화' + (d.warning ? ' · 유의 종목' : '') : (d.market === 'KOSDAQ' ? '코스닥' : '코스피') + (d.kind === 'etf' ? ' ETF' : ''); $('sp-market').className = 'mkt-chip ' + (COIN ? 'mk-coin' : d.kind === 'etf' ? 'mk-etf' : d.market === 'KOSDAQ' ? 'mk-kosdaq' : 'mk-kospi');
     var bars = d.bars.map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] }; });
     var last = bars[bars.length - 1], prev = bars[bars.length - 2];
     if (last) {

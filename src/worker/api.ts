@@ -528,6 +528,13 @@ route('POST', '/reports', async ({ req, env, deps, now }) => {
   try { await env.REPORT_QUEUE!.send({ id }); } catch { await refundJob(db,job!,'작업을 시작하지 못해 크레딧을 반환했어요.',now); fail(503,'QUEUE_FAILED','작업을 시작하지 못했어요. 크레딧은 반환했어요.'); }
   return { id, status:'queued', balance:await balanceOf(db,u.id) };
 });
+// G-108: my reports in one place — only the caller's own jobs and requests, newest first.
+route('GET', '/reports/mine', async ({ req, env, now }) => {
+  const u = await authed(req, env, now);
+  const jobs = (await env.DB.prepare("SELECT id, symbol, kind, status, stage, error, created_at, json_extract(result_json, '$.name') AS name, json_extract(result_json, '$.price.sessionDate') AS data_date FROM report_jobs WHERE user_id = ? ORDER BY created_at DESC LIMIT 50").bind(u.id).all()).results;
+  const requests = (await env.DB.prepare("SELECT id, kind, symbol, status, created_at FROM action_requests WHERE user_id = ? AND kind IN ('report', 'brief', 'upgrade') ORDER BY created_at DESC LIMIT 50").bind(u.id).all()).results;
+  return { jobs, requests };
+});
 route('GET', '/reports/latest/([^/]+)', async ({ req, env, now, params }) => {
   const u=await authed(req,env,now), symbol=decodeURIComponent(params[0]!);
   if (!DEEP_SYMBOL.test(symbol)) fail(400,'BAD_REPORT','종목코드를 확인해 주세요.');
@@ -639,6 +646,14 @@ route('GET', '/notifications', async ({ req, env, now }) => {
 route('POST', '/notifications/read', async ({ req, env, now }) => {
   const u = await authed(req, env, now);
   await env.DB.prepare('UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL').bind(iso(now), u.id).run();
+  return { ok: true };
+});
+
+// Clear the 🔔 list: one notification by id, or all of them.
+route('POST', '/notifications/clear', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req), id = Number(b.id);
+  if (Number.isInteger(id) && id > 0) await env.DB.prepare('DELETE FROM notifications WHERE user_id = ? AND id = ?').bind(u.id, id).run();
+  else await env.DB.prepare('DELETE FROM notifications WHERE user_id = ?').bind(u.id).run();
   return { ok: true };
 });
 

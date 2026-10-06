@@ -7,6 +7,7 @@ import { buildDailyReport } from '../report/dailyReport.js';
 import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
 import { usdOf } from './ask.js';
 import { conclusionCard, voteSection } from '../report/conclusion.js';
+import { parliament } from '../report/renderParliament.js';
 import { debateSection, issuesSection, decisionTrace } from '../report/renderReportExtras.js';
 import { flowsPanel, fundamentalsPanel } from '../report/renderMarket.js';
 export interface ReportQueue { send(body: { id: string }): Promise<void> }
@@ -23,11 +24,11 @@ export async function reportInput(site:string,symbol:string,deps:ReportDeps):Pro
  if(context?.ok){const r=await context.json() as DailyReport;if(r.symbol===symbol&&r.price){delete r.commentary;return r;}}
  const r=await deps.fetch(`${base}/${symbol.startsWith('KRW-')?'c':'s'}/${symbol}.json`,{signal:AbortSignal.timeout(8000)});
  if(!r.ok)throw new Error('분석에 필요한 데이터가 없어요. 데이터 갱신 뒤 다시 요청해 주세요.');
- const d=await r.json() as {name:string;bars:[string,number,number,number,number,number][]};
+ const d=await r.json() as {name:string;market?:string;kind?:string;bars:[string,number,number,number,number,number][]};
  if(!Array.isArray(d.bars)||d.bars.length<20)throw new Error('가격 기록이 부족해서 리포트를 만들 수 없어요.');
  const now=deps.now(), bars=d.bars.map(b=>({symbol,date:b[0],open:b[1],high:b[2],low:b[3],close:b[4],volume:b[5],source:symbol.startsWith('KRW-')?'upbit':'naver',retrievedAt:now.toISOString()}));
  if(bars.some(b=>!/^\d{4}-\d{2}-\d{2}$/.test(b.date)||![b.open,b.high,b.low,b.close,b.volume].every(Number.isFinite)||b.close<=0))throw new Error('가격 데이터 형식을 확인하지 못했어요.');
- const out=buildDailyReport({symbol,name:d.name,date:bars.at(-1)!.date,generatedAt:now,bars,disclosures:[],sources:[bars[0]!.source],...(symbol.startsWith('KRW-')?{kind:'coin' as const}:{})});
+ const out=buildDailyReport({symbol,name:d.name,date:bars.at(-1)!.date,generatedAt:now,bars,disclosures:[],sources:[bars[0]!.source],...(symbol.startsWith('KRW-')?{kind:'coin' as const,exchange:'UPBIT' as const}:{...(d.kind==='etf'?{kind:'etf' as const}:{}),...(d.market==='KOSPI'||d.market==='KOSDAQ'?{exchange:d.market}:{})})});
  out.notes.push('이 요청은 공개 가격 기록 기준입니다. 수급·실적·뉴스가 수집되지 않았다면 해당 판단은 보류합니다.');
  return out;
 }
@@ -86,5 +87,5 @@ export function reportFragments(report:DailyReport){
  const claim=(title:string,items:readonly {text:string}[])=>`<div class="card"><h3>${title}</h3>${items.map(x=>`<p>${esc(x.text)}</p>`).join('')||'<p>확인된 근거가 없어요.</p>'}</div>`;
  const evidence=`<div class="card"><h3>분석 근거</h3>${(c.evidence??[]).map(e=>`<p><b>${esc(e.id)} · ${esc(e.label)}</b><br>${esc(e.detail)}</p>`).join('')}</div>`;
  const news=`<div class="card"><h3>뉴스·공시</h3>${report.filings.map(f=>`<p>${esc(f.filedDate)} · ${esc(f.title)}</p>`).join('')}${(report.news?.clusters??[]).map(n=>`<p>${esc(n.title)}</p>`).join('')||'<p>추가 뉴스 근거가 없어요.</p>'}</div>`;
- return {scenarios:JSON.stringify(scenarioLayer(report)),home:claim('AI 요약',c.summary?[c.summary]:[])+conclusionCard(report,{id:'conclusion-live'}),ai:conclusionCard(report,{id:'conclusion'})+voteSection(report)+debateSection(report)+issuesSection(report)+claim('강세 근거',c.bullish??[])+claim('약세 근거',c.bearish??[])+claim('지켜볼 것',c.watch??[])+evidence+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
+ return {scenarios:JSON.stringify(scenarioLayer(report)),home:claim('AI 요약',c.summary?[c.summary]:[])+conclusionCard(report,{id:'conclusion-live'}),ai:conclusionCard(report,{id:'conclusion'})+parliament(report,null,{id:'parliament-ai',title:'위원회 표결',factions:['ai','desk'],link:null,note:'좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요.'})+voteSection(report)+debateSection(report)+issuesSection(report)+claim('강세 근거',c.bullish??[])+claim('약세 근거',c.bearish??[])+claim('지켜볼 것',c.watch??[])+evidence+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
 }

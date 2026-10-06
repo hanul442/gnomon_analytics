@@ -195,6 +195,13 @@ test('saved screens alert once per data date, only on newly matching stocks', as
   assert.ok(t.mails.some((m) => m.to === 'w@example.com'));
   await t.call('POST', '/notifications/read', {}, u.session);
   assert.equal((await t.call('GET', '/notifications', undefined, u.session)).body.unread, 0);
+  await t.env.DB.prepare("INSERT INTO notifications (user_id, kind, title, body, link, created_at) VALUES (?, 'daily', '두 번째', '', '', '2026-10-06T00:00:00Z')").bind((await t.env.DB.prepare('SELECT user_id FROM notifications LIMIT 1').first<{ user_id: string }>())!.user_id).run();
+  const two = (await t.call('GET', '/notifications', undefined, u.session)).body.items;
+  assert.equal(two.length, 2);
+  await t.call('POST', '/notifications/clear', { id: two[0].id }, u.session);
+  assert.deepEqual((await t.call('GET', '/notifications', undefined, u.session)).body.items.map((x: any) => x.id), [two[1].id], 'one cleared');
+  await t.call('POST', '/notifications/clear', {}, u.session);
+  assert.equal((await t.call('GET', '/notifications', undefined, u.session)).body.items.length, 0, 'all cleared');
 });
 
 test('intraday: Pro-level watchers hear once when volume runs ahead of its usual pace', async () => {
@@ -346,7 +353,7 @@ async function reportSetup() {
   t.deps.fetch=(async (url: RequestInfo|URL, init?:RequestInit)=>String(url).endsWith('/research/000660.json')?Response.json(report):real(url,init)) as typeof fetch;
   const queued:string[]=[];
   t.env.REPORT_QUEUE={send:async({id})=>{queued.push(id);}};
-  t.deps.generate=async()=>({...skippedCommentary(report,'test',new Date()),status:'OK',summary:{text:'비공개 분석 본문',evidenceIds:[],kind:'INFERENCE'},tier:'deep'});
+  t.deps.generate=async()=>({...skippedCommentary(report,'test',new Date()),status:'OK',summary:{text:'비공개 분석 본문',evidenceIds:[],kind:'INFERENCE'},desks:[{desk:'TECHNICAL',stance:'BULLISH',view:{text:'기술 의견',evidenceIds:[],kind:'INFERENCE'}}],tier:'deep'} as any);
   const boss=await t.login('boss@example.com');
   const user=await t.login('jobs@example.com',(await t.call('POST','/admin/invites',{},boss.session)).body.code);
   return {...t,queued,boss,user,report};
@@ -362,12 +369,14 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, P
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});assert.equal(runs,1);
  const done=await t.call('GET','/reports/'+a.body.id,undefined,t.user.session);
- assert.equal(done.body.status,'done');assert.match(done.body.fragments.home,/비공개 분석 본문/);
+ assert.equal(done.body.status,'done');assert.match(done.body.fragments.home,/비공개 분석 본문/);assert.match(done.body.fragments.ai,/class="[^"]*parliament/,'the committee seats come with a generated report');
  const other=await t.login('other@example.com',(await t.call('POST','/admin/invites',{},t.boss.session)).body.code);
  assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,200);
  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='other@example.com'").run();
  const blocked=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(blocked.status,404);assert.doesNotMatch(JSON.stringify(blocked.body),/비공개 분석 본문/);
  assert.equal((await t.call('GET','/reports/'+a.body.id)).status,401);
+ const mine=(await t.call('GET','/reports/mine',undefined,t.user.session)).body;assert.equal(mine.jobs.length,1);assert.equal(mine.jobs[0].status,'done');assert.equal(mine.jobs[0].symbol,'000660');
+ assert.deepEqual((await t.call('GET','/reports/mine',undefined,other.session)).body.jobs,[],'someone else\'s reports never show in my list');
  assert.equal((await t.call('GET','/me/export',undefined,t.user.session)).body.reportJobs.length,1);
 });
 

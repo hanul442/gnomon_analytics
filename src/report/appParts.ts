@@ -62,6 +62,18 @@ export function freshnessBadge(f: Freshness): string {
   return `<span class="fresh f-${f.state}" title="${esc(f.detail)}"><i aria-hidden="true"></i>${esc(f.label)}</span>`;
 }
 
+/** G-107: 코스피·코스닥·ETF·코인 at a glance, next to the code. */
+export function marketChip(report: DailyReport): string {
+  const ex = report.exchange ?? (report.kind === 'coin' ? 'UPBIT' : report.market?.benchmarks.find((b) => b.symbol === 'KOSPI' || b.symbol === 'KOSDAQ')?.symbol);
+  const label = report.kind === 'coin' || ex === 'UPBIT' ? '코인 · 업비트' : `${ex === 'KOSDAQ' ? '코스닥' : ex === 'KOSPI' ? '코스피' : ''}${report.kind === 'etf' ? `${ex ? ' ' : ''}ETF` : ''}`;
+  return label ? `<span class="mkt-chip mk-${report.kind === 'coin' || ex === 'UPBIT' ? 'coin' : report.kind === 'etf' ? 'etf' : (ex ?? '').toLowerCase()}">${esc(label)}</span>` : '';
+}
+
+/** G-106: the AI part is older than the prices on the page — say so and offer a fresh one. */
+export function staleAiBar(report: DailyReport, from: string): string {
+  return `<div class="stale-ai" data-stale-ai><span>🕒 AI 리포트는 <b>${esc(from)}</b> 기준이에요. 그 뒤 가격·공시가 바뀌었을 수 있어요.</span><button type="button" class="btn-primary" data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}">최신 리포트 생성하기</button></div>`;
+}
+
 /** G-103: a small 3-month chart right under the price; tapping it opens the chart tab. */
 export function heroChart(report: DailyReport): string {
   const pts = (report.recentCloses ?? []).slice(-63).filter((x) => Number.isFinite(x.close) && x.close > 0);
@@ -82,8 +94,8 @@ export function hero(report: DailyReport, options: { live: boolean; asOf: string
     m ? ['수급 흔적', FOOTPRINT_WORD[m.footprint.state], m.footprint.state === 'ACCUMULATION_LIKE' ? 'up' : m.footprint.state === 'DISTRIBUTION_LIKE' ? 'down' : ''] : null,
     m?.snapshot?.consensus?.targetPriceMean ? ['증권가 평균 목표가', won(m.snapshot.consensus.targetPriceMean), ''] : null,
   ].filter((x): x is string[] => x !== null);
-  return `<section class="hero" id="top"><div class="orb" aria-hidden="true"></div>
-<div class="hero-main"><div class="eyebrow"><span>${esc(report.kind === 'coin' ? report.symbol.replace('KRW-', '') : report.symbol)}</span>${report.kind ? `<span>${report.kind === 'etf' ? 'ETF' : '코인 · 업비트 원화'}</span>` : ''}${m?.benchmarks[0] ? `<span>${esc(m.benchmarks[0].name)}</span>` : ''}<span>${options.live ? `${esc(options.asOf)} 기준` : `${esc(report.date)} 리포트`}</span>${freshnessBadge(freshness(report))}</div>
+  return `<section class="hero" id="top" data-session="${esc(p?.sessionDate ?? report.date)}"><div class="orb" aria-hidden="true"></div>
+<div class="hero-main"><div class="eyebrow"><span>${esc(report.kind === 'coin' ? report.symbol.replace('KRW-', '') : report.symbol)}</span>${marketChip(report)}<span>${options.live ? `${esc(options.asOf)} 기준` : `${esc(report.date)} 리포트`}</span>${freshnessBadge(freshness(report))}</div>
 <div class="h1-row"><h1>${esc(report.name)}</h1>${starButton(report.symbol, report.name)}</div>
 ${p ? `<div class="hero-price"><b data-live="${esc(report.symbol)}" data-live-f="price">${esc(won(p.close))}</b><span class="live-tag" data-live="${esc(report.symbol)}" data-live-f="tag" hidden></span>${p.changePct === null ? '' : `<span class="${tone(p.changePct)}" data-live="${esc(report.symbol)}" data-live-f="full">${p.change! > 0 ? '▲' : p.change! < 0 ? '▼' : ''} ${esc(num(Math.abs(p.change!)))} (${esc(pct(p.changePct))})</span>`}</div>
 <div class="hero-sub">${esc(p.sessionDate ?? report.date)} ${report.kind === 'coin' ? '일봉 (09:00 KST 기준)' : '종가'}</div>${heroChart(report)}` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
@@ -92,16 +104,12 @@ ${points.length ? `<div class="key-points"><div class="kp-title">핵심 포인�
 </section>`;
 }
 
-/** Index-style strip: the stock and its benchmarks with a 60-session sparkline each. */
+/** Index-style strip: the market and the peer with a 60-session sparkline each. The stock itself has its own chart under the price. */
 export function marketStrip(report: DailyReport): string {
   const m = report.market;
-  const bars = report.recentBars ?? [];
   const items: { name: string; value: string; change: number | null; spark: number[] }[] = [];
-  if (report.price) {
-    items.push({ name: report.name, value: won(report.price.close), change: report.price.changePct, spark: bars.slice(-60).map((b) => b.close) });
-  }
   for (const b of m?.benchmarks ?? []) {
-    if (b.last === null) continue;
+    if (b.last === null || b.symbol === report.symbol || b.spark.length < 2) continue;
     items.push({ name: b.name, value: b.symbol === 'KOSPI' || b.symbol === 'KOSDAQ' ? num(b.last, 2) : won(b.last), change: b.changePct, spark: b.spark });
   }
   if (!items.length) return '';

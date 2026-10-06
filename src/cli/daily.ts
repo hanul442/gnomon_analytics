@@ -33,6 +33,7 @@ import { renderHome, renderReportsPage, type IndexQuote } from '../report/render
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
 import { MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
+import { renderMyReports } from '../report/renderMyReports.js';
 import { renderSignalsPage, renderThemesPage, signalData, themeData } from '../report/renderThemes.js';
 import { fetchThemes, type Theme } from '../sources/naverTheme.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
@@ -503,6 +504,7 @@ export async function composeReport(
     symbol: SYMBOL,
     name: ticker.name,
     ...(ticker.kind ? { kind: ticker.kind } : {}),
+    exchange: ticker.market,
     date: today.date,
     generatedAt: now,
     bars: daily,
@@ -654,6 +656,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'faq.html'), renderSupport());
   await writeFile(join(siteDir, '509op.html'), render509());
   await writeFile(join(siteDir, 'alerts.html'), renderAlerts());
+  await writeFile(join(siteDir, 'myreports.html'), renderMyReports());
   await writeFile(join(siteDir, 'sw.js'), SW_JS);
   await writeFile(join(siteDir, 'manifest.webmanifest'), MANIFEST);
   await mkdir(join(siteDir, 'assets'), { recursive: true });

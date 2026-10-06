@@ -140,8 +140,10 @@ ${center}</div>${opts.roster ? tally : ''}${roster}
 export const PARLIAMENT_SCRIPT = `<script>
 (function () {
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  document.querySelectorAll('.parliament').forEach(function (host) {
-    var data = host.querySelector('.pl-data'), panel = host.querySelector('.pl-detail'); if (!data || !panel) return;
+  // Callable again for a parliament painted later (an on-demand report); each one is wired once.
+  window.GNM_parliament = function () { document.querySelectorAll('.parliament').forEach(function (host) {
+    var data = host.querySelector('.pl-data'), panel = host.querySelector('.pl-detail'); if (!data || !panel || host.dataset.plOn) return;
+    host.dataset.plOn = '1';
     var seats = JSON.parse(data.textContent);
     var show = function (el) {
       var i = el.getAttribute('data-i');
@@ -164,6 +166,7 @@ export const PARLIAMENT_SCRIPT = `<script>
         host.querySelectorAll('.seat, .member').forEach(function (el) { el.classList.toggle('is-dim', !!f && el.getAttribute('data-f') !== f); });
       });
     });
-  });
+  }); };
+  window.GNM_parliament();
 })();
 </script>`;
