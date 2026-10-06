@@ -100,13 +100,12 @@ ${turns.map((t, i) => {
 export function issuesSection(report: DailyReport): string {
   const c = report.commentary;
   if (c?.status !== 'OK') return '';
-  const open = c.redTeam?.unresolved ?? [], watch = c.watch ?? [], w = c.worstCase;
-  if (!open.length && !watch.length && !w) return '';
-  return `<section class="block" id="issues"><div class="block-head"><h2>남은 쟁점</h2><span class="muted">토론이 풀지 못한 것과 판단이 바뀔 조건</span></div><div class="card issues">
+  const open = c.redTeam?.unresolved ?? [], watch = c.watch ?? [];
+  if (!open.length && !watch.length) return '';
+  return `<section class="block" id="issues"><div class="block-head"><h2>남은 쟁점</h2><span class="muted">토론이 풀지 못한 것과 판단이 바뀔 조건 · 최악의 경우는 약세 시나리오 안에 있어요</span></div><div class="card issues">
 ${open.length ? `<div class="pl-k">아직 갈리는 점</div><ul class="plain is-open">${open.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
 ${watch.length ? `<div class="pl-k">이게 나오면 판단이 바뀌어요</div><ul class="plain is-watch">${watch.map((x) => `<li>${kindChip(x.kind)}${esc(x.text)}</li>`).join('')}</ul>` : ''}
-${w ? `<div class="worst"><h3>최악의 경우</h3><p>${kindChip(w.narrative.kind)}${esc(w.narrative.text)}</p>${w.checks.length ? `<div class="pl-k">스스로 점검할 것</div><ul class="plain">${w.checks.map((x) => `<li>☐ ${esc(x)}</li>`).join('')}</ul>` : ''}</div>` : ''}
-<p class="fine">매수·매도 지시가 아니라 위험을 점검하는 목록이에요.</p></div></section>`;
+</div></section>`;
 }
 
 /**
@@ -159,8 +158,17 @@ document.addEventListener('click', function (e) {
   var d = document.createElement('div'); d.className = 'ev-pop'; d.setAttribute('data-for', b.textContent);
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var url = b.getAttribute('data-url');
-  d.innerHTML = '<b>' + esc(b.textContent) + '</b> ' + esc(b.getAttribute('data-label')) + (url ? ' <a href="' + esc(url) + '" target="_blank" rel="noopener">원문 ›</a>' : '');
+  var box = b.closest('.debate'), ev = box && box.querySelector('.db-ev');
+  d.innerHTML = '<b>' + esc(b.textContent) + '</b> ' + esc(b.getAttribute('data-label')) + (url ? ' <a href="' + esc(url) + '" target="_blank" rel="noopener">원문 ›</a>' : '') + (ev ? ' <button type="button" class="ev-jump" data-ev="' + esc(b.textContent) + '">근거 정리에서 보기</button>' : '');
   row.parentNode.insertBefore(d, row.nextSibling); b.setAttribute('aria-expanded', 'true');
+});
+document.addEventListener('click', function (e) {
+  var j = e.target.closest && e.target.closest('.ev-jump'); if (!j) return;
+  var box = j.closest('.debate'), ev = box && box.querySelector('.db-ev'); if (!ev) return;
+  ev.open = true;
+  var li = ev.querySelector('[data-ev-id="' + j.getAttribute('data-ev') + '"]');
+  [].forEach.call(ev.querySelectorAll('.ev-hit'), function (x) { x.classList.remove('ev-hit'); });
+  if (li) { li.classList.add('ev-hit'); li.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
 });
 </script>`;
 
@@ -175,6 +183,6 @@ export function insightLine(report: DailyReport, key: InsightKey, base: string):
 export const EXTRAS_CSS = `.card.debate{display:flex;flex-direction:column;gap:10px;background:#fff}.worst ul{list-style:none;padding-left:0}.db-turn{display:flex;flex-direction:column;max-width:82%}.db-bull{align-self:flex-start}.db-bear{align-self:flex-end;align-items:flex-end}.db-mid,.db-red{align-self:center;max-width:92%;align-items:center}.db-to{font-weight:500;color:var(--muted)}
 .db-skip{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}.db-turn[hidden]{display:none}.db-in{animation:db-in .25s ease-out}@keyframes db-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}.db-typing .db-bubble{display:flex;gap:4px;padding:12px 14px}.db-typing i{width:7px;height:7px;border-radius:50%;background:#94a3b8;animation:db-dot 1s infinite}.db-typing i:nth-child(2){animation-delay:.15s}.db-typing i:nth-child(3){animation-delay:.3s}@keyframes db-dot{0%,80%,100%{opacity:.3;transform:none}40%{opacity:1;transform:translateY(-3px)}}.db-join{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.db-join h3{margin:0 0 8px;font-size:15px}
 .db-who{font-size:11px;font-weight:700;color:var(--muted);margin:0 6px 3px}.db-bubble{border-radius:16px;padding:10px 13px;font-size:14px;line-height:1.6}.db-bull .db-bubble{background:#fde8e6;border-bottom-left-radius:4px}.db-bear .db-bubble{background:#e3ecfb;border-bottom-right-radius:4px}.db-mid .db-bubble{background:#f1f3f6}.db-red .db-bubble{background:#fff7e6;border:1px dashed #f1d9a6;text-align:center}
-.ev-row{display:inline-flex;flex-wrap:wrap;gap:3px;margin-left:4px;vertical-align:1px}.ev-chip{border:1px solid rgba(15,23,42,.18);background:rgba(255,255,255,.7);border-radius:6px;font:inherit;font-size:11px;font-weight:700;color:#475569;padding:0 5px;cursor:pointer}.ev-chip[aria-expanded=true]{background:var(--navy);color:#fff;border-color:var(--navy)}.ev-pop{margin-top:6px;font-size:12.5px;line-height:1.5;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;color:var(--fg2)}.ev-pop a{font-weight:700}.issues ul{list-style:none;padding-left:0}.issues .plain li{margin:4px 0}.issues .pl-k{margin-top:4px}.is-open li::before{content:'⇄ ';color:var(--muted)}.db-quote{border-left:3px solid rgba(15,23,42,.25);background:rgba(255,255,255,.55);border-radius:6px;padding:4px 8px;margin-bottom:6px;font-size:12px;color:#475569;line-height:1.45}.db-quote b{display:block;font-size:11px;color:#334155}.worst{margin-top:8px;border-top:1px solid var(--line);padding-top:10px}.worst h3{margin:0 0 4px;font-size:15px;color:#9b1c1c}
+.ev-row{display:inline-flex;flex-wrap:wrap;gap:3px;margin-left:4px;vertical-align:1px}.ev-chip{border:1px solid rgba(15,23,42,.18);background:rgba(255,255,255,.7);border-radius:6px;font:inherit;font-size:11px;font-weight:700;color:#475569;padding:0 5px;cursor:pointer}.ev-chip[aria-expanded=true]{background:var(--navy);color:#fff;border-color:var(--navy)}.ev-pop{margin-top:6px;font-size:12.5px;line-height:1.5;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;color:var(--fg2)}.ev-pop a{font-weight:700}.ev-jump{border:0;background:none;color:var(--accent-strong);font:inherit;font-weight:700;cursor:pointer;padding:0;margin-left:4px}.db-ev{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}.db-ev>summary{cursor:pointer;font-weight:800;font-size:15px;list-style:none;display:flex;justify-content:space-between;align-items:center}.db-ev>summary::-webkit-details-marker{display:none}.db-ev>summary::after{content:'열기 ▾';font-size:12.5px;font-weight:700;color:var(--accent-strong)}.db-ev[open]>summary::after{content:'닫기 ▴'}.db-ev .sum{font-size:14.5px;line-height:1.65;margin:10px 0}.ev-hit{background:#fff3c4;border-radius:6px;transition:background .3s}.db-ev .evid{list-style:none;padding:0;font-size:13px;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px 12px}.db-ev .evid li{padding:2px 4px;overflow-wrap:anywhere}.issues ul{list-style:none;padding-left:0}.issues .plain li{margin:4px 0}.issues .pl-k{margin-top:4px}.is-open li::before{content:'⇄ ';color:var(--muted)}.db-quote{border-left:3px solid rgba(15,23,42,.25);background:rgba(255,255,255,.55);border-radius:6px;padding:4px 8px;margin-bottom:6px;font-size:12px;color:#475569;line-height:1.45}.db-quote b{display:block;font-size:11px;color:#334155}.worst{margin-top:8px;border-top:1px solid var(--line);padding-top:10px}.worst h3{margin:0 0 4px;font-size:15px;color:#9b1c1c}
 .insight{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;background:linear-gradient(90deg,#eef3fb,#fff);border:1px solid #d7e2f3;border-radius:12px;padding:10px 13px;margin-bottom:14px;font-size:14px}.ins-k{font-size:11px;font-weight:800;color:#1d3a6e;background:#dfe8f6;border-radius:6px;padding:1px 6px}
 .ck{display:inline-block;font-size:10px;font-weight:700;border-radius:5px;padding:0 5px;margin-right:4px;vertical-align:1px}.ck-FACT{background:#e7f5ec;color:#1d6b3a}.ck-INFERENCE{background:#e8eef7;color:#1d3a6e}.ck-ASSUMPTION{background:#fff3d6;color:#7a4a00}`;

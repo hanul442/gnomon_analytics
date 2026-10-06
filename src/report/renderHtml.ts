@@ -629,11 +629,11 @@ ${marketStrip(report)}
     : sealedDeep
       ? deepSlot(report.symbol, ctx.deep!.date)
       : report.commentary?.status === 'OK'
-      ? `${gate(debateSection(report, joinBox(report, base)) || `${whySection(report, { only: 'claims' })}<section class="block"><div class="card">${joinBox(report, base)}</div></section>`, { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
+      ? `${gate(debateSection(report, evidenceFold(report) + joinBox(report, base)) || `${whySection(report, { only: 'claims' })}<section class="block"><div class="card">${joinBox(report, base)}</div></section>`, { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
       : whySection(report);
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary
-    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion' }) + voteSection(report) : ''}${aiBody}${sealedDeep ? `<section class="block"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
+    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion', title: '시나리오' }) + voteSection(report) : ''}${aiBody}${sealedDeep ? `<section class="block"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
     : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매일 고른 종목과 요청된 종목에 리포트가 만들어져요. 궁금한 건 오른쪽 아래 <b>AI 질문</b>으로 물어보세요.</p></div>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
@@ -656,11 +656,30 @@ ${panel('news', newsTab)}
 /** The paid part of a committee report (G-61), rendered from the full commentary and sealed into <symbol>/deep/<date>.txt. */
 export function renderDeep(report: DailyReport, ctx: { live: boolean; previous?: DailyReport | null }): string {
   const m = report.market;
-  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'conclusion' })}${voteSection(report)}</div>${debateSection(report) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
+  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'conclusion', title: '시나리오' })}${voteSection(report)}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
 }
 
 export const DEEP_UNLOCK_CREDITS = 10;
 const DEEP_WHAT = '위원회 토론 · 위원별 근거 · 시나리오 전개와 무효화 조건 · 최악의 경우 · 강세·약세 근거 전체 · 분석가 순위 · 지난 리포트 대비';
+/**
+ * G-70: the commentary's summary and its evidence, folded at the bottom of the debate card: bull and
+ * bear claims, uncertain points, and every numbered source (the debate's evidence chips jump here).
+ */
+function evidenceFold(report: DailyReport): string {
+  const c = report.commentary;
+  if (c?.status !== 'OK') return '';
+  const byId = new Map(c.evidence.map((e) => [e.id, e]));
+  const ids = (xs: readonly string[]) => xs.filter((id) => byId.has(id)).map((id) => `<span class="chip">${escape(id)}</span>`).join('');
+  const list = (cls: readonly Claim[]) => (cls.length ? `<ul class="claims">${cls.map((cl) => `<li>${kindChip(cl.kind)}${escape(cl.text)} <span class="chips-inline">${ids(cl.evidenceIds)}</span></li>`).join('')}</ul>` : '<p class="empty">없어요.</p>');
+  const src = c.evidence.map((e) => `<li data-ev-id="${escape(e.id)}"><b>${escape(e.id)}</b> ${e.url.startsWith('http') ? `<a href="${escape(e.url)}" rel="noopener" target="_blank">${escape(e.label)}</a>` : escape(e.label)}</li>`).join('');
+  return `<details class="db-ev"><summary><span>해설·근거 정리 <span class="muted small">강세 ${c.bullish.length} · 약세 ${c.bearish.length} · 자료 ${c.evidence.length}개</span></span></summary>
+${c.summary ? `<p class="sum">${kindChip(c.summary.kind)}${escape(c.summary.text)}</p>` : ''}
+<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish)}</div><div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish)}</div><div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain)}</div></div>
+${c.dataGaps.length ? `<h3 class="why-h">근거가 부족한 부분</h3><ul class="plain">${c.dataGaps.map((g) => `<li>${escape(g)}</li>`).join('')}</ul>` : ''}
+<h3 class="why-h">근거 자료 ${c.evidence.length}개</h3><ul class="plain evid">${src}</ul>
+<p class="fine">AI(${escape(c.servedBy ?? c.model)})가 이 리포트의 근거만 보고 썼어요. 근거 번호가 없는 주장은 뺐어요${c.dropped ? `(이번에 ${c.dropped}개)` : ''}. 틀릴 수 있고, 투자 권유가 아니에요.</p></details>`;
+}
+
 /** G-68: the paper trail, last and small: what changed since the last report, and the inputs behind this one. */
 function recordSection(report: DailyReport, ctx: { previous?: DailyReport | null; live: boolean }, base: string): string {
   const body = weekDiffSection(report, ctx.previous ?? null) + decisionTrace(report, ctx.live);
