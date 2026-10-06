@@ -9,6 +9,7 @@ import { cleanScreen, FIELD_INDEX, matches } from '../analysis/screenRules.js';
 import { intradaySignals, readIntraday } from '../analysis/intraday.js';
 import { deepPath, DEEP_DATE, DEEP_SYMBOL, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
+import { parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
 import { parseNaverMinuteChart } from '../sources/naverPrice.js';
 
 export interface Env {
@@ -251,6 +252,22 @@ const routes: [string, RegExp, Handler][] = [];
 const route = (method: string, path: string, h: Handler) => routes.push([method, new RegExp(`^${path}$`), h]);
 
 route('GET', '/health', async () => ({ ok: true }));
+
+// G-62: live prices for stocks and ETFs, from Naver's polling feed (the browser cannot call it across
+// origins). Public, at most 40 codes a call, answers cached for 8 seconds per code set in this isolate.
+const quoteCache = new Map<string, { at: number; quotes: Quote[] }>();
+route('GET', '/quote', async ({ req, deps, now }) => {
+  const codes = [...new Set((new URL(req.url).searchParams.get('s') ?? '').split(',').map((x) => x.trim().toUpperCase()).filter((x) => /^[0-9A-Z]{6}$/.test(x)))].slice(0, 40).sort();
+  if (!codes.length) fail(400, 'NO_CODES', '종목 코드를 6자리로 보내 주세요.');
+  const key = codes.join(','), hit = quoteCache.get(key);
+  if (hit && now.getTime() - hit.at < 8000) return { quotes: hit.quotes, cached: true };
+  const r = await deps.fetch(quoteUrl(codes), { signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).catch(() => null);
+  if (!r || !r.ok) fail(502, 'UPSTREAM', '실시간 시세를 가져오지 못했어요.');
+  const quotes = parseNaverQuotes(await r!.json().catch(() => null));
+  if (quoteCache.size > 500) quoteCache.clear();
+  quoteCache.set(key, { at: now.getTime(), quotes });
+  return { quotes };
+});
 
 route('POST', '/auth/start', async ({ req, env, deps, now }) => {
   const b = await body(req), email = normEmail(b.email), db = env.DB;

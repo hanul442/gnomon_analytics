@@ -18,6 +18,7 @@ function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
       seen.push(String(url));
       if (String(url).startsWith('https://api.resend.com')) { const b = JSON.parse(String(init!.body)); mails.push({ to: b.to[0], text: b.text }); return new Response('{}', { status: 200 }); }
       if (String(url).endsWith('/s/000660.json')) return Response.json({ name: 'SK하이닉스', market: 'KOSPI', bars: [['2026-10-02', 1, 2, 1, 2, 10]] });
+      if (String(url).startsWith('https://polling.finance.naver.com/')) return Response.json({ datas: [{ itemCode: '000660', closePrice: '1,860,000', compareToPreviousClosePrice: '18,000', fluctuationsRatio: '0.98', compareToPreviousPrice: { code: '2', name: 'RISING' }, marketStatus: 'OPEN', localTradedAt: '2026-10-05T12:00:00+09:00' }] });
       return new Response('no', { status: 404 });
     }) as typeof fetch,
     ...(opts.ai ? { ai: opts.ai } : {}),
@@ -305,4 +306,14 @@ test('a credit event is claimed once per account, only while it runs (G-73)', as
   assert.equal(first.status, 200);
   assert.ok(first.body.credits === 50 && first.body.balance >= 50);
   assert.equal((await t.call('POST', '/events/claim', { id: 'alpha-thanks-2026-10' }, u.session)).body.error, 'ALREADY');
+});
+
+test('live quotes come through the API, cached for a few seconds (G-62)', async () => {
+  const t = setup();
+  assert.equal((await t.call('GET', '/quote?s=abc')).body.error, 'NO_CODES');
+  const a = await t.call('GET', '/quote?s=000660');
+  assert.deepEqual([a.status, a.body.quotes[0].price, a.body.quotes[0].changePct, a.body.quotes[0].open], [200, 1860000, 0.98, true]);
+  const calls = t.seen.filter((u) => u.includes('polling.finance')).length;
+  assert.equal((await t.call('GET', '/quote?s=000660')).body.cached, true);
+  assert.equal(t.seen.filter((u) => u.includes('polling.finance')).length, calls);
 });

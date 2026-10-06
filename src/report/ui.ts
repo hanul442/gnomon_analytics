@@ -74,7 +74,7 @@ export const UI_CSS = `.deep-lock{display:flex;gap:14px;align-items:flex-start;b
 
 /** Compact bar with name, price, change and freshness; slides in once the hero scrolls away. */
 export function priceBar(opts: { name: string; symbol: string; price: string; change: string; tone: string; badge: string }): string {
-  return `<div class="price-bar" id="price-bar" aria-hidden="true"><b>${opts.name}</b><span class="pb-code">${opts.symbol}</span><span class="pb-price">${opts.price}</span><span class="${opts.tone}">${opts.change}</span>${opts.badge}</div>`;
+  return `<div class="price-bar" id="price-bar" aria-hidden="true"><b>${opts.name}</b><span class="pb-code">${opts.symbol}</span><span class="pb-price" data-live="${opts.symbol}" data-live-f="price">${opts.price}</span><span class="${opts.tone}" data-live="${opts.symbol}" data-live-f="arrowpct">${opts.change}</span>${opts.badge}</div>`;
 }
 
 export const UI_SCRIPT = `<script>
@@ -153,6 +153,72 @@ export function menuHtml(base: string, archiveHref?: string): { button: string; 
     drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체 메뉴</b><button type="button" class="sm-close" aria-label="닫기">×</button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div class="sm-group sm-view" id="sm-view"><div class="sm-title">내 보기 방식</div>${PERSONA_BAR}<p class="sm-hint">고르면 홈의 '오늘 볼 것'과 종목 화면이 바뀌어요.</p><a href="${base}onboarding.html">설문 다시 하기</a></div><div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
   };
 }
+
+/**
+ * Live prices (G-62): any element with data-live="<code or KRW-coin>" and data-live-f="price | pct |
+ * arrowpct | full | tag" follows the market. Stocks and ETFs poll the API's /quote every 10 seconds
+ * while the page is visible (every 60 outside trading hours); coins stream from Upbit's public WebSocket.
+ * Lists drawn later (the watchlist, 찾기) are picked up on the next tick.
+ */
+export const LIVE_JS = `
+  (function () {
+    var G = window.GNM || {}, last = {}, ws = null, wsSet = '', timer = 0;
+    var won = function (v) { var a = Math.abs(v); return (a >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: a >= 1 ? 2 : 4 })) + '원'; };
+    var sg = function (v) { return (v > 0 ? '+' : '') + v.toFixed(2) + '%'; };
+    var paint = function (sym, q) {
+      var prev = last[sym]; last[sym] = q;
+      document.querySelectorAll('[data-live="' + sym + '"]').forEach(function (el) {
+        var f = el.getAttribute('data-live-f'), t = q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : '';
+        if (f === 'tag') { el.hidden = false; el.textContent = q.open ? '● 실시간' : '장 마감'; el.classList.toggle('on', !!q.open); return; }
+        if (f === 'price') el.textContent = won(q.price);
+        else if (f === 'pct') el.textContent = sg(q.changePct);
+        else if (f === 'arrowpct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
+        else if (f === 'full') el.textContent = (q.change > 0 ? '▲' : q.change < 0 ? '▼' : '') + ' ' + Math.abs(q.change).toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + ' (' + sg(q.changePct) + ')';
+        if (f !== 'price') { el.classList.remove('up', 'down'); if (t) el.classList.add(t); }
+        if (prev && prev.price !== q.price) { el.classList.remove('live-up', 'live-down'); void el.offsetWidth; el.classList.add(q.price > prev.price ? 'live-up' : 'live-down'); }
+      });
+      window.dispatchEvent(new CustomEvent('gnm-quote', { detail: { symbol: sym, quote: q } }));
+    };
+    var symbols = function () { var s = {}; document.querySelectorAll('[data-live]').forEach(function (el) { s[el.getAttribute('data-live')] = 1; }); return Object.keys(s); };
+    var trading = function () { var k = new Date(Date.now() + 9 * 3600e3), d = k.getUTCDay(), m = k.getUTCHours() * 60 + k.getUTCMinutes(); return d > 0 && d < 6 && m >= 535 && m <= 940; };
+    var coins = function (list) {
+      var want = list.filter(function (x) { return x.indexOf('KRW-') === 0; }).sort().join(',');
+      if (!want || want === wsSet || !('WebSocket' in window)) return;
+      wsSet = want; if (ws) try { ws.close(); } catch (e) {}
+      ws = new WebSocket('wss://api.upbit.com/websocket/v1'); ws.binaryType = 'arraybuffer';
+      ws.onopen = function () { ws.send(JSON.stringify([{ ticket: 'gnm-' + Date.now() }, { type: 'ticker', codes: want.split(',') }, { format: 'SIMPLE' }])); };
+      ws.onmessage = function (e) {
+        try { var d = JSON.parse(typeof e.data === 'string' ? e.data : new TextDecoder().decode(e.data));
+          paint(d.cd, { price: d.tp, change: d.scp, changePct: d.scr * 100, open: true }); } catch (x) {}
+      };
+      ws.onclose = function () { if (wsSet === want) { wsSet = ''; setTimeout(function () { coins(symbols()); }, 5000); } };
+    };
+    var tick = function () {
+      clearTimeout(timer);
+      var list = symbols(); coins(list);
+      var codes = list.filter(function (x) { return /^[0-9A-Z]{6}$/.test(x); });
+      if (G.api && codes.length && !document.hidden) {
+        fetch(G.api + '/quote?s=' + codes.slice(0, 40).join(',')).then(function (r) { return r.json(); }).then(function (d) { (d.quotes || []).forEach(function (q) { paint(q.symbol, q); }); }).catch(function () {});
+      }
+      timer = setTimeout(tick, trading() ? 10000 : 60000);
+    };
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
+    // The chart's last daily candle follows the live price on a report page (stocks and ETFs, open market).
+    window.addEventListener('gnm-quote', function (e) {
+      var C = window.GNMChart, d = e.detail, bar = document.getElementById('price-bar');
+      if (!C || !C.candle || !C.bars || !d.quote.open || !bar || !bar.querySelector('[data-live="' + d.symbol + '"]') || d.symbol.indexOf('KRW-') === 0) return;
+      try {
+        var today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), b = C.bars[C.bars.length - 1], px = d.quote.price;
+        if (!b || b.date > today) return;
+        var same = b.date === today;
+        C.candle.update({ time: today, open: same ? b.open : px, high: same ? Math.max(b.high, px) : px, low: same ? Math.min(b.low, px) : px, close: px });
+      } catch (x) {}
+    });
+    window.GNM_live = { tick: tick, last: last };
+    setTimeout(tick, 300);
+  })();`;
+
+export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:#1d6b3a;border-color:#bfe3cb;background:#effaf2}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(209,55,61,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(42,98,201,.22)}100%{background:transparent}}`;
 
 export const MENU_CSS = `.menu-btn{width:38px;height:38px;border:0;border-radius:10px;background:none;color:#fff;cursor:pointer;display:grid;place-items:center;margin-left:2px}.menu-btn svg{width:22px;height:22px}.menu-btn:hover{background:rgba(255,255,255,.1)}
 .menu-scrim{position:fixed;inset:0;background:rgba(10,20,35,.42);z-index:90}.side-menu{position:fixed;top:0;right:0;bottom:0;width:min(300px,86vw);background:#fff;z-index:91;overflow-y:auto;padding:14px 16px 24px;box-shadow:-12px 0 32px rgba(10,20,35,.18);animation:sm-in .18s ease-out}
