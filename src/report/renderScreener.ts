@@ -6,7 +6,7 @@ import { ORBS } from './ui.js';
 import type { StockCalc } from '../analysis/quickCalc.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
-import { FIELD_INDEX, FIELDS, matches, PRESETS } from '../analysis/screenRules.js';
+import { FIELD_INDEX, FIELDS, matches, PRESETS, cleanScreen } from '../analysis/screenRules.js';
 import { SEARCH_SCRIPT, shell } from './renderHtml.js';
 
 /**
@@ -40,6 +40,7 @@ export function renderScreener(): string {
 <nav class="find-tabs" role="tablist" aria-label="시장"><button type="button" role="tab" data-find="stock" aria-selected="true">주식 <span id="sc-count" class="muted"></span></button><button type="button" role="tab" data-find="etf" aria-selected="false">ETF</button><button type="button" role="tab" data-find="coin" aria-selected="false">코인</button><a href="reports.html">AI 리포트</a></nav></section>
 <div id="find-stock"><p class="muted small" id="sc-kind-note" hidden style="margin:6px 0 0">ETF·코인도 주식과 같은 조건으로 걸러요. 시가총액·외국인 수급·공시 항목은 없어서 그 조건은 빼고 봐요. 코인의 '유의 종목'은 공시 위험 2단계로 쳐요.</p>
 <section class="block"><div class="pl-chips sc-presets" role="group" aria-label="빠른 조건">${PRESETS.map((p, i) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${i === 0}" title="${p.hint}">${p.label}${i ? ' <span class="lockmark">플러스</span>' : ''}</button>`).join('')}</div></section>
+<section class="block" id="ai-build"><div class="card"><h2>AI로 조건 만들기</h2><p class="muted small">원하는 종목의 특징을 말해 주세요. 제안한 기준을 확인한 뒤 검색에 적용할 수 있어요.</p><textarea id="ai-screen-q" maxlength="600" rows="2" placeholder="예: 거래량이 터졌는데 아직 많이 안 오른 코스닥 종목" style="width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px"></textarea><button type="button" class="btn-primary" id="ai-screen-send">AI에게 조건 만들기</button><div id="ai-screen-out" aria-live="polite"></div></div></section>
 <section class="block" id="build"><div class="card sc-form" id="sc-form">
 <div class="sc-top"><b>조건</b><label class="sc-inline">조건을<select name="match"><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></label>
 <label class="sc-inline"><input type="checkbox" name="norisk" checked> 공시 위험 2단계 이상 빼기</label>
@@ -124,7 +125,13 @@ const SCREENER_SCRIPT = `<script>
     el('match').value = sc.match || 'all'; el('norisk').checked = !!sc.maxRisk; draw();
   };
   var changed = function () { preset = ''; document.querySelectorAll('[data-preset]').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); }); draw(); };
+  var drawTimer=null, drawTicket=0;
   var draw = function () {
+    var ticket=++drawTicket;if(drawTimer)clearTimeout(drawTimer);
+    $('sc-body').innerHTML='<tr><td colspan="8"><div class="orbs-load">${ORBS}<span>조건에 맞는 종목을 찾는 중이에요</span></div></td></tr>';
+    drawTimer=setTimeout(function(){if(ticket===drawTicket)drawNow();},2000);
+  };
+  var drawNow = function () {
     var sc = free() ? PRESETS.top : current();
     var out = rows.filter(function (r) { return matches(r, sc, IDX); });
     var key = free() ? 'score' : el('sort').value;
@@ -181,12 +188,26 @@ const SCREENER_SCRIPT = `<script>
     if (api()) GNM.call('POST', '/screens', { name: name, screen: sc }).then(function (r) { if (r.error) GNM.toast(r.message); refreshSaved(); });
     else { var l = local(); l.push({ name: name.slice(0, 40), screen: sc }); try { localStorage.setItem(SKEY, JSON.stringify(l.slice(-20))); } catch (e) {} refreshSaved(); }
   });
+  $('ai-screen-send').addEventListener('click',function(){
+    var q=$('ai-screen-q').value.trim(), out=$('ai-screen-out'), button=this;
+    if(q.length<2){$('ai-screen-q').focus();return;}
+    if(!window.GNM||!GNM.api||!GNM.me){out.textContent='로그인하고 AI 연결 후 이용할 수 있어요.';return;}
+    button.disabled=true;out.innerHTML='<div class="orbs-load">${ORBS}<span>원하는 조건을 해석하고 있어요</span></div>';
+    GNM.call('POST','/screens/compose',{question:q,market:currentMarket,screen:current()}).then(function(r){
+      button.disabled=false;
+      if(r.error){out.textContent=r.message||'조건을 만들지 못했어요. 다시 요청해 주세요.';return;}
+      out.innerHTML='<h3>'+esc(r.name)+'</h3><p>'+esc(r.explanation)+'</p><p class="muted small">'+r.screen.rules.length+'개 조건 · AI가 제안한 기준입니다. 적용 후 아래 조건에서 수정할 수 있어요.</p><button type="button" class="btn-primary" data-apply-ai>이 조건으로 검색</button>';
+      out.querySelector('[data-apply-ai]').onclick=function(){load(r.screen);$('ai-screen-q').placeholder='예: 결과가 너무 많아요. 거래대금이 큰 것만 남겨 줘요';};
+      if(GNM.refresh)GNM.refresh();
+    }).catch(function(){button.disabled=false;out.textContent='연결이 끊겼어요. 다시 요청해 주세요.';});
+  });
   (window.GNM && GNM.ready ? GNM.ready : Promise.resolve()).then(refreshSaved);
   // screener.html#value opens with that preset (links from the home feed).
   var start = document.querySelector('[data-preset="' + location.hash.slice(1).replace(/[^a-z]/g, '') + '"]') || document.querySelector('[data-preset="top"]');
   load(PRESETS.top);
   // G-82: ETFs and coins use the same filters. Their lists (etfs.json, coins.json) are mapped onto the
   // stock row's places; what they do not have (market cap, investor flows, filings) stays empty.
+  var sourceTicket=0, currentMarket='stock';
   var cache = {}, LOADING = '<tr><td colspan="8" class="empty"><span class="orbs" aria-hidden="true"><i></i><i></i><i></i></span> 불러오는 중이에요.</td></tr>';
   var fromList = function (kind) { return function (x) { return [x[0], x[1], kind === 'coin' ? 'C' : 'E', null, x[4], x[5], x[6], x[7], x[8], x[9], x[10], x[13], x[14], 0, x[11], null, null, null, null, x[12], x[15], x[3] ? 2 : 0, x[3] ? '업비트 유의 종목' : '', null, null, null, null]; }; };
   var source = function (kind) {
@@ -196,10 +217,11 @@ const SCREENER_SCRIPT = `<script>
     return fetch(url).then(function (r) { return r.json(); }).then(function (d) { cache[url] = kind === 'stock' ? d.rows || [] : (d.rows || []).map(fromList(kind)); return cache[url]; });
   };
   window.GNM_screenSource = function (kind) {
+    var ticket=++sourceTicket;currentMarket=kind;
     var note = document.getElementById('sc-kind-note'); if (note) note.hidden = kind === 'stock';
-    return source(kind).then(function (r) { rows = r; draw(); }).catch(function () { $('sc-body').innerHTML = '<tr><td colspan="8" class="empty">목록을 불러오지 못했어요.</td></tr>'; });
+    return source(kind).then(function (r) { if(ticket!==sourceTicket)return; rows = r; draw(); var shared=new URLSearchParams(location.search).get('screen');if(shared){try{var sc=(${cleanScreen.toString()})(JSON.parse(shared));if(sc)load(sc);}catch(e){}} }).catch(function () { $('sc-body').innerHTML = '<tr><td colspan="8" class="empty">목록을 불러오지 못했어요.</td></tr>'; });
   };
   var first = /^#(etf|coin)$/.test(location.hash) ? location.hash.slice(1) : 'stock';
-  source(first).then(function (r) { rows = r; var note = document.getElementById('sc-kind-note'); if (note) note.hidden = first === 'stock'; if (start && start.getAttribute('data-preset') !== 'top' && !free()) start.click(); else draw(); }).catch(function () { $('sc-body').innerHTML = '<tr><td colspan="8" class="empty">계산 결과를 불러오지 못했어요.</td></tr>'; });
+  currentMarket=first; var firstTicket=++sourceTicket;source(first).then(function (r) { if(firstTicket!==sourceTicket)return; rows = r; var shared=new URLSearchParams(location.search).get('screen');if(shared){try{var sc=(${cleanScreen.toString()})(JSON.parse(shared));if(sc){load(sc);return;}}catch(e){}}  var note = document.getElementById('sc-kind-note'); if (note) note.hidden = first === 'stock'; if (start && start.getAttribute('data-preset') !== 'top' && !free()) start.click(); else draw(); }).catch(function () { $('sc-body').innerHTML = '<tr><td colspan="8" class="empty">계산 결과를 불러오지 못했어요.</td></tr>'; });
 })();
 </script>`;

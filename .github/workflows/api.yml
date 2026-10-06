@@ -5,7 +5,7 @@ name: Deploy API
 on:
   push:
     branches: [main]
-    paths: ['src/worker/**', 'src/report/plans.ts', 'src/report/seal.ts', 'src/analysis/screenRules.ts', 'src/analysis/intraday.ts', 'src/sources/naverPrice.ts', 'src/sources/naverQuote.ts', 'src/report/events.ts', 'migrations/**', 'wrangler.toml', '.github/workflows/api.yml']
+    paths: ['src/worker/**', 'src/report/plans.ts', 'src/report/seal.ts', 'src/analysis/screenRules.ts', 'src/analysis/intraday.ts', 'src/sources/naverPrice.ts', 'src/sources/naverQuote.ts', 'src/report/events.ts', 'src/report/conclusion.ts', 'src/report/renderReportExtras.ts', 'src/report/renderMarket.ts', 'src/report/dailyReport.ts', 'src/analysis/commentary.ts', 'migrations/**', 'wrangler.toml', '.github/workflows/api.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -50,6 +50,10 @@ jobs:
       - name: Apply migrations
         if: steps.cf.outputs.ready == 'true'
         run: npx wrangler d1 migrations apply gnm --remote
+      - name: Provision report queue
+        if: steps.cf.outputs.ready == 'true'
+        run: |
+          if ! npx wrangler queues list | grep -q 'gnm-reports'; then npx wrangler queues create gnm-reports; fi
       - name: Deploy
         if: steps.cf.outputs.ready == 'true'
         run: npx wrangler deploy 2>&1 | tee deploy.log

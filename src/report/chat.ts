@@ -1,3 +1,4 @@
+import {ORBS} from './ui.js';
 // The AI chat (docs/DESIGN.md §5.13, G-45): a button at the bottom right of every page opens a chat.
 // Each question picks a model and shows its credit cost before sending; each answer shows the
 // model and the credits it used. Out of credits, the chat offers a credit request (alpha) and the
@@ -133,7 +134,7 @@ export const CHAT_SCRIPT = `<script>
     }
     busy = true; send.disabled = true; q.value = '';
     add('me', esc(text));
-    var wait = add('ai wait', '<i></i><i></i><i></i> ' + esc(MODEL[t.model]) + '이 답을 쓰고 있어요');
+    var wait = add('ai wait', '${ORBS} ' + esc(MODEL[t.model]) + '이 답을 쓰고 있어요');
     var h = history();
     var done = function (m) { wait.remove(); h.push(m); remember(h); var d = add('ai', md(m.a) + meta(m)); bindRate(d, m); busy = false; send.disabled = false; };
     if (!g) {
@@ -142,7 +143,7 @@ export const CHAT_SCRIPT = `<script>
       return;
     }
     if (g.track) g.track('ask_sent', { tier: t.key, symbol: symbol() });
-    g.call('POST', '/ask', { tier: t.key, question: text, symbol: symbol() || undefined, page: pageText(), history: h.filter(function (m) { return m.sym === symbol(); }).slice(-3).map(function (m) { return { q: m.q, a: m.a }; }) }).then(function (r) {
+    g.askStream({ tier: t.key, question: text, symbol: symbol() || undefined, page: pageText(), history: h.filter(function (m) { return m.sym === symbol(); }).slice(-3).map(function (m) { return { q: m.q, a: m.a }; }) },function(text){wait.textContent=text;}).then(function (r) {
       if (r.error) {
         wait.remove(); busy = false; send.disabled = false;
         if (r.error === 'NO_CREDITS') need(r.message, {}); else if (r.error === 'LOGIN_REQUIRED') need(r.message, { login: true }); else add('sys', esc(r.message || '답을 받지 못했어요.'));

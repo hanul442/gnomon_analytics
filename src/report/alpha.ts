@@ -48,6 +48,18 @@ export const ALPHA_SCRIPT = `<script>
       });
     }, function () { return { error: 'NETWORK', message: '연결이 끊겼어요. 잠시 뒤 다시 해 주세요.', _status: 0 }; });
   };
+  G.askStream = function (body, onText) {
+    var session=get(SK), h={'Content-Type':'application/json'};if(session)h.Authorization='Bearer '+session;
+    return fetch(API+'/ask/stream',{method:'POST',headers:h,body:JSON.stringify(body)}).then(async function(res){
+      if(!res.ok)return res.json();
+      var reader=res.body.getReader(), decoder=new TextDecoder(), pending='', answer='', terminal=null;
+      while(true){var part=await reader.read();pending+=decoder.decode(part.value||new Uint8Array(),{stream:!part.done});var blocks=pending.split('\\n\\n');pending=blocks.pop();
+        blocks.forEach(function(block){var event=(/^event: (.+)$/m.exec(block)||[])[1], data=(/^data: (.+)$/m.exec(block)||[])[1];if(!data)return;var value=JSON.parse(data);if(event==='delta'){answer+=value.text;if(onText)onText(answer);}else if(event==='done'||event==='error')terminal=value;});
+        if(part.done)break;
+      }
+      return terminal||{error:'NETWORK',message:'답변 연결이 끊겼어요. 계정의 질문 기록을 확인해 주세요.'};
+    }).catch(function(){return {error:'NETWORK',message:'답변 연결이 끊겼어요. 계정의 질문 기록을 확인해 주세요.'};});
+  };
   try { G.me = get(SK) ? JSON.parse(get(MK) || 'null') : null; } catch (e) { G.me = null; }
   G.read = function () { var m = G.me; return { plan: m ? m.user.rankAs : 'free', credits: m ? m.credits.balance : 0, trial: 0, grants: [], claimed: [], log: [], requests: [] }; };
   G.spend = function () { toast('크레딧은 서버에서 차감돼요.'); return false; };
@@ -125,6 +137,7 @@ export const ALPHA_SCRIPT = `<script>
   var WORD = { report: '심층 리포트 요청', brief: '요약 리포트 요청', upgrade: '심층 리포트로 업그레이드', invite: '전문가 AI 초청' };
   var action = function (kind, sym, name, detail) {
     if (!G.me) { location.href = base + 'login.html'; return Promise.resolve(false); }
+    if (['report','brief','upgrade'].indexOf(kind)>=0 && G.startReport) return G.startReport(kind,sym,name);
     var c = G.me.costs[kind];
     if (!confirm(name + ' ' + WORD[kind] + (detail ? ' (' + detail + ')' : '') + ': ' + c + '크레딧을 쓸까요? 알파에서는 운영자가 확인하고 처리해요.')) return Promise.resolve(false);
     return G.call('POST', '/actions', { kind: kind, symbol: sym, detail: detail || '' }).then(function (r) {
@@ -143,19 +156,24 @@ export const ALPHA_SCRIPT = `<script>
   // at the bottom of the debate ('작성 중…' while it thinks). Experts cost the invite price (Pro).
   var md = function (t) { return esc(t).replace(/\\*\\*([^*]+)\\*\\*/g, '<b>$1</b>').split(/\\n{2,}/).map(function (p) { return '<p>' + p.replace(/\\n/g, '<br>') + '</p>'; }).join(''); };
   document.querySelectorAll('form.join').forEach(function (f) {
+    var dlg=f.querySelector('dialog'), chooser=f.querySelector('[data-pick-expert]');
+    if(dlg && chooser){chooser.addEventListener('click',function(){dlg.showModal();});dlg.querySelector('[data-close-expert]').addEventListener('click',function(){dlg.close();});dlg.addEventListener('click',function(e){if(e.target===dlg)dlg.close();});dlg.querySelectorAll('input[name=expert]').forEach(function(radio){radio.addEventListener('change',function(){f.querySelector('[data-selected-expert]').textContent=radio.closest('label').querySelector('b').textContent+'에게 질문';var submit=f.querySelector('[type=submit]');submit.textContent=(radio.value==='committee'?G.me?.costs.standard||10:G.me?.costs.invite||40)+'크레딧 · 질문하기';dlg.close();});});}
+
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var pick = f.querySelector('input[name=expert]:checked'), key = pick ? pick.value : 'committee', who = pick ? pick.closest('label').querySelector('b').textContent : 'AI 위원회';
       var qa = f.querySelector('textarea'), q = qa ? qa.value.trim().slice(0, 600) : '';
       if (q.length < 2) { toast('무엇이 궁금한지 적어 주세요.'); if (qa) qa.focus(); return; }
       if (!G.me) { location.href = base + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/')); return; }
-      var box = f.closest('.card.debate') || f.closest('.card'), anchor = box.querySelector('.db-ev') || f.closest('.db-join') || f;
+      var panel=f.closest('.panel')||f.closest('.join-wrap')?.parentNode, debate=panel&&panel.querySelector('.card.debate');
+      var box = debate || f.closest('.card'), anchor = box.querySelector('.db-ev');
+      if(!anchor){anchor=document.createElement('div');anchor.className='db-ev';box.appendChild(anchor);}
       var mine = document.createElement('div'); mine.className = 'db-turn db-bear db-guest db-me'; mine.innerHTML = '<div class="db-who"><b>나</b> · ' + esc(who) + '에게</div><div class="db-bubble">' + esc(q) + '</div>';
       var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-typing'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b> 생각하는 중…</div><div class="db-bubble"><span class="orbs"><i></i><i></i><i></i></span></div>';
-      anchor.parentNode.insertBefore(mine, anchor); anchor.parentNode.insertBefore(wait, anchor); mine.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      anchor.parentNode.insertBefore(mine, anchor); anchor.parentNode.insertBefore(wait, anchor);
       var btn = f.querySelector('[type=submit]'); btn.disabled = true;
       var said = [].map.call(box.querySelectorAll('.db-turn:not(.db-typing)'), function (t) { var w = t.querySelector('.db-who b'), x = t.querySelector('.db-bubble'); return (w ? w.textContent : '') + ': ' + (x ? x.textContent.replace(/\\s+/g, ' ').trim() : ''); }).join('\\n').slice(-5000);
-      G.call('POST', '/ask', { tier: 'standard', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said }).then(function (r) {
+      G.askStream({ tier: 'standard', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.db-bubble').textContent=text;}).then(function (r) {
         btn.disabled = false; wait.remove();
         if (r.error) { mine.remove(); toast(r.message); if (r.error === 'NO_CREDITS' || r.error === 'PLAN_REQUIRED') location.href = base + 'pricing.html'; return; }
         var t = document.createElement('div'); t.className = 'db-turn db-mid db-guest db-in';

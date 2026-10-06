@@ -6,6 +6,7 @@ import { ASK_TIERS, type AskTier } from '../report/plans.js';
 
 /** The part of the Anthropic client the chat uses (the SDK's messages.create in the Worker, a fake in tests). */
 export interface AskClient {
+  stream?: (params: Record<string, unknown>, onText: (text: string) => void) => ReturnType<AskClient["create"]>;
   create(params: Record<string, unknown>): Promise<{
     content: { type: string; text?: string }[];
     model: string;

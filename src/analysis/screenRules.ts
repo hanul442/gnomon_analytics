@@ -77,11 +77,14 @@ export function matches(row: readonly unknown[], screen: { match: string; rules:
 export function cleanScreen(input: unknown): Screen | null {
   if (!input || typeof input !== 'object') return null;
   const s = input as { match?: unknown; rules?: unknown; maxRisk?: unknown };
+  if (!['all', 'any'].includes(String(s.match))) return null;
   if (!Array.isArray(s.rules) || s.rules.length > 12) return null;
   const rules: Rule[] = [];
   for (const r of s.rules as { f?: unknown; op?: unknown; v?: unknown }[]) {
     const field = FIELDS.find((x) => x.key === r?.f);
     if (!field || !['>=', '<=', '=', '!='].includes(String(r.op))) return null;
+    if (r.v === null || r.v === undefined || r.v === '' || typeof r.v === 'boolean') return null;
+    if (field.kind === 'cat' && (!['=', '!='].includes(String(r.op)) || !field.options?.some(o => o[0] === r.v))) return null;
     const v = field.kind === 'num' ? Number(r.v) : String(r.v).slice(0, 20);
     if (field.kind === 'num' && !Number.isFinite(v)) return null;
     rules.push({ f: field.key, op: r.op as RuleOp, v });

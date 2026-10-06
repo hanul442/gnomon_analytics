@@ -1,3 +1,4 @@
+import { publicPanels } from '../report/publicPanels.js';
 // One daily run: for every stock in tickers.json collect, append, write
 // today's report once; then render the site.
 //
@@ -14,7 +15,7 @@ import { fetchUpbitDays, fetchUpbitDaysLong, UPBIT_SOURCE } from '../sources/upb
 import { escapeRegex } from './weekly.js';
 import { renderCoinsRedirect } from '../report/renderCoins.js';
 import { watchInfo } from '../report/conclusion.js';
-import { renderGuide, renderSurvey, validBanners } from '../report/alphaPages.js';
+import { renderGuide, renderUpdates, renderSurvey, validBanners } from '../report/alphaPages.js';
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
 import { SITE_CONFIG } from '../report/alpha.js';
@@ -571,6 +572,12 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     } else {
       await writeFile(join(dir, 'index.html'), renderIndex(reports, { base: '../', name: ticker.name }));
     }
+    if (page) {
+      const { commentary: _private, ...input } = page;
+      await mkdir(join(siteDir, 'research'), { recursive: true });
+      await writeFile(join(siteDir, 'research', ticker.symbol + '.json'), JSON.stringify(input));
+      await writeFile(join(siteDir, 'research', ticker.symbol + '.panels.json'), JSON.stringify(publicPanels(input)));
+    }
     const pick = picks.get(ticker.symbol);
     const day = daily.get(ticker.symbol);
     const group = day && !pick ? 'daily' : past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : requested.has(ticker.symbol) ? 'request' : 'core';
@@ -594,6 +601,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'promos.json'), JSON.stringify(promos));
   // Alpha guide and surveys (G-58); notices for the home banner are edited by hand in banners.json.
   await writeFile(join(siteDir, 'guide.html'), renderGuide());
+  await writeFile(join(siteDir, 'updates.html'), renderUpdates());
   // Guide screenshots (G-74) live in docs/guide and are published next to the page.
   await cp(join(root, 'docs', 'guide'), join(siteDir, 'guide'), { recursive: true }).catch(() => {});
   await writeFile(join(siteDir, 'survey.html'), renderSurvey());

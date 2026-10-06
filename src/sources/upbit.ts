@@ -69,3 +69,19 @@ export async function fetchUpbitDaysLong(market: string, now: Date, total = 1000
   }
   return [...out.values()].sort((a, b) => (a.date < b.date ? -1 : 1)).slice(-total);
 }
+
+export interface CoinCandle { time:number; open:number; high:number; low:number; close:number; volume:number }
+/** UTC timestamps stay absolute; the chart formats labels in KST. Missing trades are not fabricated. */
+export function parseUpbitMinutes(json:unknown, market:string):CoinCandle[]{
+ if(!Array.isArray(json))throw new Error('UPBIT_CANDLES_SHAPE');
+ const out=new Map<number,CoinCandle>();
+ for(const c of json as Record<string,unknown>[]){
+  if(c.market!==market||typeof c.candle_date_time_utc!=='string')continue;
+  const time=Date.parse(c.candle_date_time_utc+'Z')/1000;
+  const [open,high,low,close,volume]=[c.opening_price,c.high_price,c.low_price,c.trade_price,c.candle_acc_trade_volume].map(Number);
+  if(![time,open,high,low,close,volume].every(Number.isFinite)||!(open!>0&&close!>0&&low!>0&&high!>=low!&&volume!>=0))continue;
+  out.set(time,{time,open:open!,high:high!,low:low!,close:close!,volume:volume!});
+ }
+ return [...out.values()].sort((a,b)=>a.time-b.time);
+}
+export const fetchUpbitMinutes=(market:string,unit:number,fetcher:typeof fetch=fetch)=>get(`/candles/minutes/${unit}?market=${market}&count=200`,fetcher).then(j=>parseUpbitMinutes(j,market));

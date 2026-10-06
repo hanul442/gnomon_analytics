@@ -2,3 +2,5 @@ node_modules/
 dist/
 site/
 .wrangler/
+
+test-artifacts/

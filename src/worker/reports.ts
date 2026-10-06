@@ -1,0 +1,73 @@
+import {coinFlow} from '../report/coinFlow.js';
+import type { D1 } from './db.js';
+import type { DailyReport } from '../report/dailyReport.js';
+import { buildDailyReport } from '../report/dailyReport.js';
+import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
+import { usdOf } from './ask.js';
+import { conclusionCard, voteSection } from '../report/conclusion.js';
+import { debateSection, issuesSection, decisionTrace } from '../report/renderReportExtras.js';
+import { flowsPanel, fundamentalsPanel } from '../report/renderMarket.js';
+export interface ReportQueue { send(body: { id: string }): Promise<void> }
+export interface ReportJob {
+ id:string; user_id:string; symbol:string; kind:string; input_hash:string; input_json:string;
+ status:string; stage:string; credits:number; reserved_usd:number; usd:number;
+ result_json:string|null; error:string|null; created_at:string; updated_at:string;
+}
+export interface ReportDeps { now:()=>Date; fetch:typeof fetch; generate?:(report:DailyReport,tier:CommentaryTier)=>Promise<Commentary> }
+const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+export async function reportInput(site:string,symbol:string,deps:ReportDeps):Promise<DailyReport>{
+ const base=site.replace(/\/$/,'');
+ const context=await deps.fetch(`${base}/research/${symbol}.json`,{signal:AbortSignal.timeout(8000)}).catch(()=>null);
+ if(context?.ok){const r=await context.json() as DailyReport;if(r.symbol===symbol&&r.price){delete r.commentary;return r;}}
+ const r=await deps.fetch(`${base}/${symbol.startsWith('KRW-')?'c':'s'}/${symbol}.json`,{signal:AbortSignal.timeout(8000)});
+ if(!r.ok)throw new Error('분석에 필요한 데이터가 없어요. 데이터 갱신 뒤 다시 요청해 주세요.');
+ const d=await r.json() as {name:string;bars:[string,number,number,number,number,number][]};
+ if(!Array.isArray(d.bars)||d.bars.length<20)throw new Error('가격 기록이 부족해서 리포트를 만들 수 없어요.');
+ const now=deps.now(), bars=d.bars.map(b=>({symbol,date:b[0],open:b[1],high:b[2],low:b[3],close:b[4],volume:b[5],source:symbol.startsWith('KRW-')?'upbit':'naver',retrievedAt:now.toISOString()}));
+ if(bars.some(b=>!/^\d{4}-\d{2}-\d{2}$/.test(b.date)||![b.open,b.high,b.low,b.close,b.volume].every(Number.isFinite)||b.close<=0))throw new Error('가격 데이터 형식을 확인하지 못했어요.');
+ const out=buildDailyReport({symbol,name:d.name,date:bars.at(-1)!.date,generatedAt:now,bars,disclosures:[],sources:[bars[0]!.source],...(symbol.startsWith('KRW-')?{kind:'coin' as const}:{})});
+ out.notes.push('이 요청은 공개 가격 기록 기준입니다. 수급·실적·뉴스가 수집되지 않았다면 해당 판단은 보류합니다.');
+ return out;
+}
+export async function inputHash(report:DailyReport):Promise<string>{
+ // Request time is not evidence: otherwise refreshes evade deduplication.
+ const {generatedAt:_time,commentary:_ai,...input}=report;
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(input,(key,value)=>['retrievedAt','generatedAt'].includes(key)?undefined:value)));
+ return Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
+}
+export async function refundJob(db:D1,job:ReportJob,reason:string,now:Date){
+ await db.batch([
+ db.prepare("UPDATE report_jobs SET status='failed',stage='failed',error=?,reserved_usd=0,updated_at=? WHERE id=? AND status!='done'").bind(reason,now.toISOString(),job.id),
+ db.prepare("INSERT OR IGNORE INTO ledger(user_id,delta,kind,note,ref,created_at) SELECT ?,?,'refund',?,?,? WHERE EXISTS(SELECT 1 FROM ledger WHERE user_id=? AND ref=?) AND NOT EXISTS(SELECT 1 FROM report_jobs WHERE id=? AND status='done')").bind(job.user_id,job.credits,reason,`refund:report:${job.id}`,now.toISOString(),job.user_id,`report:${job.id}`,job.id)
+ ]);
+}
+export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void>{
+ const job=await db.prepare('SELECT * FROM report_jobs WHERE id=?').bind(id).first<ReportJob>();
+ if(!job||['done','failed'].includes(job.status))return;
+ // Queue redelivery must not run a second model call. A stale lease is failed/refunded, never retried blindly.
+ if(job.status==='running'){
+  if(Date.parse(job.updated_at)<deps.now().getTime()-15*60000)await refundJob(db,job,'작업 연결이 끊겨 크레딧을 반환했어요. 다시 요청해 주세요.',deps.now());
+  return;
+ }
+ const took=await db.prepare("UPDATE report_jobs SET status='running',stage='working',updated_at=? WHERE id=? AND status='queued'").bind(deps.now().toISOString(),id).run();
+ if(!took.meta?.changes)return;
+ try{
+  if(!deps.generate)throw new Error('AI 연결이 설정되지 않았어요.');
+  const report=JSON.parse(job.input_json) as DailyReport;
+  const commentary=await deps.generate(report,job.kind==='brief'?'brief':'deep');
+  const usage=commentary.usage;
+  const usd=usage?usdOf(commentary.servedBy||commentary.model,usage.inputTokens,usage.outputTokens):0;
+  await db.prepare('UPDATE report_jobs SET usd=? WHERE id=?').bind(usd,id).run();
+  if(commentary.status!=='OK'||!commentary.summary)throw new Error('AI 리포트 생성에 실패했어요. 크레딧은 반환됩니다.');
+  report.commentary=commentary;report.generatedAt=deps.now().toISOString();
+  await db.prepare("UPDATE report_jobs SET stage='composing',updated_at=? WHERE id=?").bind(deps.now().toISOString(),id).run();
+  await db.prepare("UPDATE report_jobs SET status='done',stage='done',result_json=?,reserved_usd=0,updated_at=? WHERE id=? AND status='running'").bind(JSON.stringify(report),deps.now().toISOString(),id).run();
+ }catch(e){await refundJob(db,job,e instanceof Error?e.message:'리포트를 만들지 못했어요.',deps.now());}
+}
+export function reportFragments(report:DailyReport){
+ const c=report.commentary!;
+ const claim=(title:string,items:readonly {text:string}[])=>`<div class="card"><h3>${title}</h3>${items.map(x=>`<p>${esc(x.text)}</p>`).join('')||'<p>확인된 근거가 없어요.</p>'}</div>`;
+ const evidence=`<div class="card"><h3>분석 근거</h3>${(c.evidence??[]).map(e=>`<p><b>${esc(e.id)} · ${esc(e.label)}</b><br>${esc(e.detail)}</p>`).join('')}</div>`;
+ const news=`<div class="card"><h3>뉴스·공시</h3>${report.filings.map(f=>`<p>${esc(f.filedDate)} · ${esc(f.title)}</p>`).join('')}${(report.news?.clusters??[]).map(n=>`<p>${esc(n.title)}</p>`).join('')||'<p>추가 뉴스 근거가 없어요.</p>'}</div>`;
+ return {home:claim('AI 요약',c.summary?[c.summary]:[])+conclusionCard(report,{id:'conclusion-live'}),ai:conclusionCard(report,{id:'conclusion'})+voteSection(report)+debateSection(report)+issuesSection(report)+claim('강세 근거',c.bullish??[])+claim('약세 근거',c.bearish??[])+claim('지켜볼 것',c.watch??[])+evidence+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
+}

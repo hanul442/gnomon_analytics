@@ -23,3 +23,13 @@ binding = "DB"
 database_name = "gnm"
 database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
+
+# Durable on-demand report jobs (provisioned by Deploy API).
+[[queues.producers]]
+binding = "REPORT_QUEUE"
+queue = "gnm-reports"
+[[queues.consumers]]
+queue = "gnm-reports"
+max_batch_size = 1
+max_batch_timeout = 1
+max_retries = 2
