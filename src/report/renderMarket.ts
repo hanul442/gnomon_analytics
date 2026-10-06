@@ -131,7 +131,7 @@ const ZONE = { DISCOUNT: '하단 구간', EQUILIBRIUM: '중간 구간', PREMIUM:
 const FIB = { SHALLOW: '얕은 되돌림', PREFERRED: '적정 되돌림', DEEP: '깊은 되돌림', EXTENDED: '과도한 되돌림' } as const;
 
 export function structureCard(s: StructureSnapshot | null, weekly: StructureSnapshot | null): string {
-  if (!s) return '<div class="card"><div class="head"><h2>가격 구조</h2></div><p class="empty">가격 기록이 부족해요.</p></div>';
+  if (!s) return '<div class="card" id="structure"><div class="head"><h2>가격 구조</h2></div><p class="empty">가격 기록이 부족해요.</p></div>';
   const lastBreak = s.breaks.at(-1);
   const breakText = lastBreak
     ? `${esc(lastBreak.date)} 종가 ${won(lastBreak.close)}가 ${lastBreak.direction === 'BULLISH' ? '스윙 고점' : '스윙 저점'} ${won(lastBreak.brokenSwing.price)}을 ${lastBreak.direction === 'BULLISH' ? '넘었어요' : '깨뜨렸어요'} (${lastBreak.type === 'CHOCH' ? '추세 전환 신호' : '추세 지속'}).`

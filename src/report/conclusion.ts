@@ -16,16 +16,14 @@ const zone = (z?: [number, number]) => (z ? `${won(z[0])} ~ ${won(z[1])}` : '');
 
 export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string } = {}): string {
   const p = report.price;
-  if (!p) return '';
+  if (!p) return `<section class="block cl-card"${opts.id?` id="${opts.id}"`:''}><div class="card"><div class="cl-k">${esc(opts.title??'지금 판단')}</div><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 가격 자료와 시나리오가 아직 준비되지 않았어요.</p></div></div></section>`;
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
   const sc = (k: 'BULL' | 'BASE' | 'BEAR') => c?.scenarios?.find((s) => s.kind === k);
   const bull = sc('BULL'), base = sc('BASE'), bear = sc('BEAR');
   const levels = report.market?.structure?.levels ?? [];
   const upper = bull?.trigger ?? levels.filter((l) => l.price > p.close).sort((a, b) => a.price - b.price)[0]?.price;
   const lower = bear?.trigger ?? levels.filter((l) => l.price < p.close).sort((a, b) => b.price - a.price)[0]?.price;
-  const anyOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
-  const missing=!c;
-  if (!missing && upper === undefined && lower === undefined && !anyOdds) return '';
+  const missing=![bull,base,bear].some(Boolean);
   const odds = (s: typeof bull) => (typeof s?.probability === 'number' ? `<b class="cl-p">${s.probability}%</b>` : '');
   const line = (c?.summary?.text ?? report.headline).split(/(?<=[.?!요])\s/)[0] ?? '';
   // G-70: the worst case belongs to the bear scenario: the far end of it, with the reader's own checks.
@@ -35,9 +33,9 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const detail = (sc: typeof bull, label: string) => {
     if (!sc) return missing?`<div class="cl-sc" hidden><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 ${label} 시나리오 미생성</b><button type="button" class="chip-toggle" data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}">리포트 생성</button></div></div></div>`:'';
     const locked = sc.narrative.text === LOCKED_TEXT;
-    return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>프로·맥스·알파 또는 개별 열기 권한으로 볼 수 있어요.</p><a href="#tab-ai">이용 권한 확인하기</a></div></div>` : `${scenarioPlot(report,sc.kind)}<details><summary>조건·근거 보기</summary><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>이게 나오면</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>${label}가 틀렸다고 볼 때</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${sc.zone ? `<p class="cl-sc-k"><b>20거래일 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</details>'}</div>`;
+    return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>프로·맥스·알파 또는 개별 열기 권한으로 볼 수 있어요.</p><a href="#tab-ai">이용 권한 확인하기</a></div></div>` : `${scenarioPlot(report,sc.kind)}<details><summary>조건·근거 보기</summary><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>이게 나오면</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>${label}가 틀렸다고 볼 때</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${!locked && sc.zone ? `<p class="cl-sc-k"><b>20거래일 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</details>'}</div>`;
   };
-  const row = (cls: string, sc: typeof bull, label: string, px: string, what: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc||missing ? ' aria-expanded="false"' : ' disabled'}>${px}<div class="cl-what">${what} ${label} 시나리오 ${odds(sc)}${sc?.zone ? `<small>20거래일 가격대 ${zone(sc.zone)}</small>` : ''}</div>${sc||missing ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
+  const row = (cls: string, sc: typeof bull, label: string, px: string, what: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc||missing ? ' aria-expanded="false"' : ' disabled'}>${px}<div class="cl-what">${what} ${label} 시나리오 ${odds(sc)}${sc?.zone && sc.narrative.text!==LOCKED_TEXT ? `<small>20거래일 가격대 ${zone(sc.zone)}</small>` : ''}</div>${sc||missing ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
   const rows = [
     upper !== undefined || bull || missing ? row('cl-up', bull, '강세', `<div class="cl-px"><span class="cl-arrow">▲</span><b>${upper !== undefined ? won(upper) : '위쪽'}</b><small>${upper !== undefined ? gap(upper, p.close) : ''}</small></div>`, `<b>${upper !== undefined ? '이 가격 위로 올라서면' : '오르는 쪽으로 가면'}</b>`) : '',
     row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small>지금</small></div>`, `<b>${upper !== undefined && lower !== undefined ? '두 가격 사이에 머물면' : '지금 가격 근처에서는'}</b>`),
