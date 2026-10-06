@@ -1755,11 +1755,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "006125",
-  "name": "SK디스커버리우",
-  "market": "KOSPI"
- },
- {
   "symbol": "006140",
   "name": "피제이전자",
   "market": "KOSDAQ"
@@ -6730,11 +6725,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "079650",
-  "name": "서산",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "079810",
   "name": "APS이노베이션",
   "market": "KOSDAQ"
@@ -10835,6 +10825,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "28513K",
+  "name": "SK케미칼우",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "285490",
   "name": "노바텍",
   "market": "KOSDAQ"
@@ -11362,6 +11357,11 @@
  {
   "symbol": "317690",
   "name": "퀀타매트릭스",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "317770",
+  "name": "엑스페릭스",
   "market": "KOSDAQ"
  },
  {
