@@ -4,7 +4,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { buildDailyReport } from '../report/dailyReport.js';
 import { renderReport } from '../report/renderHtml.js';
-import { buildEvidence, COMMENTARY_MODEL, sanitizeClaims, writeCommentary } from './commentary.js';
+import { buildEvidence, COMMENTARY_MODEL, normalizeProbabilities, sanitizeClaims, writeCommentary } from './commentary.js';
 
 const AT = '2026-10-05T09:30:00.000Z';
 const bars: PriceBar[] = Array.from({ length: 30 }, (_, i) => {
@@ -93,9 +93,9 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
       ],
       redTeam: { counterargument: { text: '과열', evidenceIds: ['P1'] }, unresolved: ['수급 해석', ' '] },
       scenarios: [
-        { kind: 'BULL', narrative: { text: '돌파', evidenceIds: ['T1'] }, catalysts: ['실적'], invalidation: ['170만 원 이탈'] },
-        { kind: 'BASE', narrative: { text: '횡보', evidenceIds: ['P1'] }, catalysts: [], invalidation: [] },
-        { kind: 'BEAR', narrative: { text: '하락', evidenceIds: ['ZZ'] }, catalysts: [], invalidation: [] },
+        { kind: 'BULL', narrative: { text: '돌파', evidenceIds: ['T1'] }, catalysts: ['실적'], invalidation: ['170만 원 이탈'], probability: 40 },
+        { kind: 'BASE', narrative: { text: '횡보', evidenceIds: ['P1'] }, catalysts: [], invalidation: [], probability: 35 },
+        { kind: 'BEAR', narrative: { text: '하락', evidenceIds: ['ZZ'] }, catalysts: [], invalidation: [], probability: 25 },
       ],
       analysts: [
         { analyst: 'trend_momentum', stance: 'BULLISH', confidence: 140, target: 330000, rationale: { text: '추세 유지', evidenceIds: ['T1'] } },
@@ -119,12 +119,14 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   assert.deepEqual(c.worstCase?.checks, ['무효화 가격 확인']);
   assert.deepEqual(Object.keys(c.insights ?? {}), ['technical']);
   const page = renderReport({ ...report, commentary: c }, { index: '../index.html' });
-  assert.ok(page.includes('id="debate"') && page.includes('추세·모멘텀 PM') && page.includes('↩ 추세·모멘텀 PM에게') && !page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술'));
+  assert.ok(page.includes('id="debate"') && page.includes('추세·모멘텀 PM') && page.includes('↩ 추세·모멘텀 PM에게') && !page.includes('낙관론자') && page.includes('최악의 경우') && page.includes('AI 한 줄 · 기술') && page.includes('class="sc-prob"') && page.includes('53%'));
   assert.deepEqual(c.desks?.map((d) => [d.desk, d.stance]), [['TECHNICAL', 'BULLISH']]);
   assert.deepEqual(c.redTeam?.unresolved, ['수급 해석']);
   assert.deepEqual(c.scenarios?.map((s) => s.kind), ['BULL', 'BASE']);
+  // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
+  assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v4');
+  assert.equal(c.promptVersion, 'gnm-committee-v5');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
@@ -142,4 +144,18 @@ test('a coin or an ETF gets its own rules and asset line; a stock prompt is unch
   assert.match(seen[1]!.system, /이 종목은 ETF예요/);
   assert.doesNotMatch(seen[2]!.system, /ETF예요|가상자산/);
   assert.doesNotMatch(seen[2]!.messages[0]!.content, /자산_종류/);
+});
+
+test('scenario probabilities sum to 100 in whole percents, or are left out (G-60)', () => {
+  assert.deepEqual(normalizeProbabilities([{ probability: 33.3 }, { probability: 33.3 }, { probability: 33.4 }]).map((x) => x.probability), [33, 33, 34]);
+  assert.deepEqual(normalizeProbabilities([{ probability: 2 }, { probability: 1 }, { probability: 1 }]).map((x) => x.probability), [50, 25, 25]);
+  assert.deepEqual(normalizeProbabilities([{ probability: 50 }, {}]), [{}, {}]);
+  assert.deepEqual(normalizeProbabilities([{ probability: 0 }, { probability: 0 }]), [{}, {}]);
+});
+
+test('a brief keeps one point a side and one thing to watch (G-60)', async () => {
+  const many = (t: string) => [1, 2, 3].map((i) => ({ text: `${t}${i}`, evidenceIds: ['P1'] }));
+  const reply = { stop_reason: 'end_turn', model: 'claude-haiku-4-5', parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, bullish: many('강'), bearish: many('약'), uncertain: many('불'), watch: many('봐'), dataGaps: [] } };
+  const c = await writeCommentary(report, { client: fakeClient(reply), now: () => new Date(AT), tier: 'brief' });
+  assert.deepEqual([c.bullish.length, c.bearish.length, c.uncertain.length, c.watch.length], [1, 1, 1, 1]);
 });
