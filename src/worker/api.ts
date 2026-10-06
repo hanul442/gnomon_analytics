@@ -8,6 +8,7 @@ import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, matches } from '../analysis/screenRules.js';
 import { intradaySignals, readIntraday } from '../analysis/intraday.js';
 import { deepPath, DEEP_DATE, DEEP_SYMBOL, unseal } from '../report/seal.js';
+import { openEvents } from '../report/events.js';
 import { parseNaverMinuteChart } from '../sources/naverPrice.js';
 
 export interface Env {
@@ -386,6 +387,16 @@ route('POST', '/me/delete', async ({ req, env, now }) => {
   await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
     db.prepare('DELETE FROM login_tokens WHERE email = ?').bind(u.email), db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)]);
   return { ok: true };
+});
+
+// G-73: claim a running credit event, once per account (the ledger's unique ref keeps it to one).
+route('POST', '/events/claim', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req), id = str(b.id, 60);
+  const ev = openEvents(kst(now).slice(0, 10)).find((e) => e.id === id);
+  if (!ev) fail(404, 'NO_EVENT', '지금 진행 중인 이벤트가 아니에요.');
+  const r = await credit(env.DB, u.id, ev!.credits, 'grant', `${ev!.title} ${ev!.credits}크레딧`, `event:${ev!.id}`, now).run();
+  if (!r.meta?.changes) fail(409, 'ALREADY', '이미 받은 이벤트예요.');
+  return { ok: true, credits: ev!.credits, balance: await balanceOf(env.DB, u.id) };
 });
 
 route('POST', '/credits/request', async ({ req, env, now }) => {

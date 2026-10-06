@@ -292,3 +292,17 @@ test('deep reports (G-61): locked until unlocked once with credits; requester an
   const broke = await t.call('POST', `${path}/unlock`, {}, poor.session);
   assert.deepEqual([broke.status, broke.body.error, broke.body.balance], [402, 'NO_CREDITS', 3]);
 });
+
+test('a credit event is claimed once per account, only while it runs (G-73)', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const code = (await t.call('POST', '/admin/invites', {}, boss.session)).body.code;
+  const u = await t.login('ev@example.com', code);
+  // 2026-10-05: not started yet.
+  assert.equal((await t.call('POST', '/events/claim', { id: 'alpha-thanks-2026-10' }, u.session)).body.error, 'NO_EVENT');
+  t.tick(24 * 3600_000);
+  const first = await t.call('POST', '/events/claim', { id: 'alpha-thanks-2026-10' }, u.session);
+  assert.equal(first.status, 200);
+  assert.ok(first.body.credits === 50 && first.body.balance >= 50);
+  assert.equal((await t.call('POST', '/events/claim', { id: 'alpha-thanks-2026-10' }, u.session)).body.error, 'ALREADY');
+});
