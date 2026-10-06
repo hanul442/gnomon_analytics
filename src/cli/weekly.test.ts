@@ -122,7 +122,7 @@ test('a refresh request writes one new deep report in the current prompt, even o
   const refresh = [{ symbol: '000660', requestedAt: '2026-10-03', refresh: true }];
   await runDaily({ ...opts, requests: refresh, now: new Date('2026-10-03T09:30:00Z') });
   assert.deepEqual(calls, ['SK하이닉스 (000660)']);
-  assert.match(await readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'), /gnm-committee-v6/);
+  assert.match(await readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'), /gnm-committee-v7/);
   assert.match(await readFile(path, 'utf8'), /gnm-committee-v2/);
   // Once a current report exists, the request does nothing.
   calls.length = 0;
@@ -198,3 +198,4 @@ test('sealed deep reports (G-61): the paid part is neither in the repository nor
     assert.match(await unseal(await readFile(join(root, 'site', '000660', 'deep', '2026-10-02.txt'), 'utf8'), 'test-deep-key'), /비밀시나리오/);
   } finally { setDeepKey(''); }
 });
+

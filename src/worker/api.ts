@@ -7,7 +7,8 @@ import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
 
 import { ALPHA, ASK_TIERS, CREDIT_ACTIONS, CREDIT_COST, EXPERTS, type AskTier, type CreditAction } from '../report/plans.js';
-import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
+import { answerText, askParams, summarizeStock, type AskClient } from './ask.js';
+import { normalizeUsage, usageUsd, totalInputTokens } from '../analysis/aiUsage.js';
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, FIELDS, matches } from '../analysis/screenRules.js';
 import { intradaySignals, readIntraday } from '../analysis/intraday.js';
@@ -238,16 +239,17 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
     await release();
     return fail(502, 'AI_FAILED', 'AI가 답하지 못했어요. 크레딧은 돌려드렸어요.');
   }
-  const usd = usdOf(model, res.usage.input_tokens, res.usage.output_tokens);
+  const usage = normalizeUsage(res.usage);
+  const usd = usageUsd(res.model || model, usage);
   const answer = answerText(res.content);
   const ok = res.stop_reason !== 'refusal' && answer.length > 0;
   if (!ok) await refund('AI가 답하지 않아 돌려드림');
-  const row = await db.prepare(`INSERT INTO questions (user_id, symbol, tier, model, question, answer, credits, input_tokens, output_tokens, usd, status, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(u.id, symbol ?? null, tier, res.model || model, question, answer, ok ? cost : 0,
-    res.usage.input_tokens, res.usage.output_tokens, usd, ok ? 'OK' : 'REFUSED', iso(now)).first<{ id: number }>();
+  const row = await db.prepare(`INSERT INTO questions (user_id, symbol, tier, model, question, answer, credits, input_tokens, output_tokens, usd, status, created_at, usage_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(u.id, symbol ?? null, tier, res.model || model, question, answer, ok ? cost : 0,
+    res.usage.input_tokens, res.usage.output_tokens, usd, ok ? 'OK' : 'REFUSED', iso(now), JSON.stringify(usage)).first<{ id: number }>();
   await release();
   if (!ok) fail(422, 'NO_ANSWER', '이 질문에는 답하지 않았어요. 크레딧은 돌려드렸어요.');
-  return { id: row?.id, answer, tier, model: res.model || model, credits: cost, ...(expert ? { speaker: expert.name } : {}), balance: await balanceOf(db, u.id), usage: { input: res.usage.input_tokens, output: res.usage.output_tokens } };
+  return { id: row?.id, answer, tier, model: res.model || model, credits: cost, ...(expert ? { speaker: expert.name } : {}), balance: await balanceOf(db, u.id), usage: { input: totalInputTokens(usage), output: usage.outputTokens, cacheRead: usage.cacheReadTokens ?? 0, cacheWrite5m: usage.cacheWrite5mTokens ?? 0, cacheWrite1h: usage.cacheWrite1hTokens ?? 0 } };
 }
 
 async function adminOverview(env: Env, now: Date) {
@@ -886,3 +888,4 @@ export async function handle(req: Request, env: Env, deps: Deps): Promise<Respon
     return json(500, { error: 'SERVER', message: '서버 오류가 났어요. 잠시 뒤 다시 해 주세요.' }, cors);
   }
 }
+

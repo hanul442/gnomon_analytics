@@ -6,22 +6,18 @@
 
 import { appendFile, mkdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { MODEL_PRICE, usageUsd, type AiUsage } from '../analysis/aiUsage.js';
 import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
 
 /** USD per million tokens, input / output. */
-export const PRICE_PER_MTOK: Record<string, readonly [number, number]> = {
-  'claude-opus-5-5': [4, 20], 'claude-sonnet-5-5': [2, 10], 'claude-haiku-4-5': [1, 5],
-};
+export const PRICE_PER_MTOK = MODEL_PRICE;
 /** Typical cost of one call per tier, USD (measured medians plus a margin), used to decide before calling. */
 export const ESTIMATE_USD: Record<CommentaryTier, number> = { deep: 0.15, brief: 0.03 };
 export const DEFAULT_BUDGET_USD = 25;
 
-export interface UsageLine { at: string; month: string; symbol: string; model: string; tier: CommentaryTier; inputTokens: number; outputTokens: number; usd: number }
+export interface UsageLine extends AiUsage { at: string; month: string; symbol: string; model: string; tier: CommentaryTier; usd: number }
 
-export const usd = (model: string, inputTokens: number, outputTokens: number) => {
-  const [i, o] = PRICE_PER_MTOK[model] ?? PRICE_PER_MTOK['claude-opus-5-5']!;
-  return (inputTokens * i + outputTokens * o) / 1e6;
-};
+export const usd = (model: string, inputTokens: number, outputTokens: number) => usageUsd(model, { inputTokens, outputTokens });
 
 export class AiBudget {
   constructor(readonly root: string, readonly month: string, readonly limit: number, public spent: number) {}
@@ -46,9 +42,10 @@ export class AiBudget {
     this.spent -= ESTIMATE_USD[tier];
     if (!c.usage) return;
     const model = c.servedBy ?? c.model;
-    const line: UsageLine = { at: at.toISOString(), month: this.month, symbol, model, tier, inputTokens: c.usage.inputTokens, outputTokens: c.usage.outputTokens, usd: Math.round(usd(model, c.usage.inputTokens, c.usage.outputTokens) * 1e5) / 1e5 };
+    const line: UsageLine = { at: at.toISOString(), month: this.month, symbol, model, tier, ...c.usage, usd: Math.round(usageUsd(model, c.usage) * 1e5) / 1e5 };
     this.spent += line.usd;
     await mkdir(dirname(AiBudget.path(this.root)), { recursive: true });
     await appendFile(AiBudget.path(this.root), `${JSON.stringify(line)}\n`);
   }
 }
+
