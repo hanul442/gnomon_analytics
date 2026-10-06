@@ -64,7 +64,7 @@ export const PRICE_ALERT_JS = `
   var G = window.GNM || {}, base = document.body.getAttribute('data-base') || '';
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var won = function (v) { return v >= 100 ? Math.round(v).toLocaleString('ko-KR') + '원' : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + '원'; };
-  var b = document.createElement('button'); b.type = 'button'; b.className = 'pa-btn'; b.innerHTML = '🔔<span>가격 알림</span>'; b.setAttribute('aria-label', '가격 알림 걸기');
+  var b = document.createElement('button'); b.type = 'button'; b.className = 'pa-btn'; b.innerHTML = '🔔'; b.title = '가격 알림 걸기'; b.setAttribute('aria-label', '가격 알림 걸기');
   star.after(b);
   var symbol = function () { return star.getAttribute('data-star') || new URLSearchParams(location.search).get('c') || new URLSearchParams(location.search).get('m') || ''; };
   var name = function () { var h = document.querySelector('.hero h1, #sp-name'); return h ? h.textContent.trim() : symbol(); };
@@ -103,7 +103,7 @@ export const PRICE_ALERT_JS = `
   });
 })();`;
 
-export const ALERTS_CSS = `.pa-btn{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;color:var(--fg)}.pa-btn:hover{border-color:var(--accent)}
+export const ALERTS_CSS = `.pa-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;background:none;border-radius:50%;padding:0;font:inherit;font-size:17px;cursor:pointer;margin-left:2px;vertical-align:middle;opacity:.55;filter:grayscale(1)}.pa-btn:hover,.pa-btn:focus-visible{opacity:1;filter:none;background:#eef1f6}
 .pa-picks{display:grid;gap:6px;margin:10px 0}.pa-picks button{display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 12px;font:inherit;cursor:pointer;text-align:left}.pa-picks button:hover{border-color:var(--accent)}.pa-picks span{font-size:13px;color:var(--fg2);white-space:nowrap}
 .pa-own{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:end}.pa-own label{grid-column:1/-1;display:grid;gap:4px;font-size:13px;font-weight:700}.pa-own input,.pa-own select{font:inherit;padding:9px 10px;border:1px solid var(--line-strong);border-radius:10px}.pa-own button{font:inherit;font-weight:800;border:0;border-radius:10px;padding:10px 14px;background:var(--navy);color:#fff;cursor:pointer}.pa-all{display:block;margin-top:8px;font-size:13px;font-weight:700}`;
 

@@ -18,12 +18,16 @@ export const JOBS_JS = `
    var composer=key==='ai'?panel.querySelector('.db-join'):null;if(composer)composer.remove();
    var target=panel.querySelector('[data-generated]');
    if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var title=panel.querySelector('.panel-title');panel.innerHTML='';if(title)panel.appendChild(title);panel.appendChild(target);}else if(key==='home'){var heroEl=panel.querySelector('.hero');while(heroEl&&heroEl.parentElement&&heroEl.parentElement!==panel)heroEl=heroEl.parentElement;if(heroEl&&heroEl.parentElement===panel)heroEl.after(target);else panel.prepend(target);}else panel.prepend(target);}
-   if(key==='home'){var stale=panel.querySelector('#home-conclusion');if(stale&&!target.contains(stale))stale.remove();}
+   if(key==='home'){var stale=panel.querySelector('#home-conclusion');if(stale&&!target.contains(stale))stale.remove();
+    // G-106: this AI report is older than the prices shown — offer a fresh one.
+    var old=panel.querySelector('[data-stale-ai]');if(old)old.remove();
+    var sess=((document.querySelector('[data-session]')||{}).dataset||{}).session||((document.getElementById('sp-date')||{}).textContent||'').slice(0,10);
+    if(r.dataDate&&sess&&/^\\d{4}-\\d{2}-\\d{2}$/.test(sess)&&r.dataDate<sess)target.insertAdjacentHTML('afterbegin','<div class="stale-ai" data-stale-ai><span>🕒 AI 리포트는 <b>'+esc(r.dataDate)+'</b> 기준이에요. 그 뒤 가격·공시가 바뀌었을 수 있어요.</span><button type="button" class="btn-primary" data-create-report data-symbol="'+esc(r.symbol)+'" data-name="'+esc(r.symbol)+'">최신 리포트 생성하기</button></div>');}
    target.innerHTML=r.fragments[key];if(composer)(panel.querySelector('.card.debate')||target).appendChild(composer);
    panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});
   });
   var join=document.querySelector('#tab-ai .join-wrap'), debate=document.querySelector('#tab-ai #debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}
-  if(window.GNM_debateFilter)GNM_debateFilter();if(window.GNM_debate)GNM_debate();if(window.GNM_pastQA)GNM_pastQA();return true;
+  if(window.GNM_parliament)GNM_parliament();if(window.GNM_debateFilter)GNM_debateFilter();if(window.GNM_debate)GNM_debate();if(window.GNM_pastQA)GNM_pastQA();return true;
  };
  // G-104: an estimated countdown and rotating lines while the committee writes (estimate, not a promise).
  var FUN=['위원 11명이 자리에 앉고 있어요 🪑','기술 데스크가 차트를 확대하는 중이에요 🔍','수급 데스크가 외국인 지갑을 들여다보는 중 👀','레드팀이 반론거리를 찾고 있어요 🥊','펀더멘털 데스크가 실적표에 형광펜 칠하는 중 🖍️','공시 데스크가 DART를 정독하고 있어요 📑','분석가들이 목표가를 두고 토론 중이에요 🗣️','강세파와 약세파가 팽팽해요 ⚖️','최악의 경우도 꼼꼼히 따져 보는 중 🧯','시나리오 확률을 계산기로 두드리는 중 🧮','근거 없는 말은 지우는 중이에요 ✂️','커피 한 모금… 거의 다 써 가요 ☕','토론 순서를 정리하고 있어요 🎙️','마지막으로 숫자를 한 번 더 확인해요 ✅'];

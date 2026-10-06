@@ -25,7 +25,7 @@ export const ALPHA_CSS = `
 .bell-btn{position:relative;border:1px solid rgba(255,255,255,.28);background:none;color:#fff;border-radius:999px;width:32px;height:30px;cursor:pointer;font-size:14px}.bell-btn i{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#e5484d;color:#fff;font:700 10px/16px inherit;font-style:normal;padding:0 4px}
 .bell-btn.push-on::after{content:'';position:absolute;left:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid var(--navy)}.bell-push{margin:2px 0 8px;padding:10px;border-radius:12px;background:#eef3fb;font-size:13px;display:flex;flex-direction:column;gap:6px}.bell-push.on{flex-direction:row;justify-content:space-between;align-items:center;background:#ecfdf3;color:#166534;font-weight:700}.bell-push button{font:inherit;font-weight:800;border-radius:10px;cursor:pointer}.bell-allow{border:0;background:var(--navy);color:#fff;padding:11px;font-size:14.5px}.bell-push.on button{border:1px solid #86efac;background:#fff;padding:5px 10px;font-size:12.5px;color:#166534}.bell-push small{color:var(--muted)}.home-alerts{display:block;margin:-4px 0 10px;padding:9px 12px;border-radius:12px;background:#fff7e6;border:1px solid #f4dca6;font-size:13.5px;text-decoration:none;color:var(--fg)}.home-alerts.on{background:#ecfdf3;border-color:#bbf7d0}
 .bell-pop{position:absolute;right:16px;top:58px;z-index:70;width:min(360px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:#fff;color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(15,27,45,.22);padding:8px}
-.bell-pop a{display:block;padding:9px 10px;border-radius:10px;text-decoration:none;color:inherit}.bell-pop a:hover{background:var(--accent-soft)}.bell-pop a.unread b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5484d;margin-right:6px;vertical-align:1px}.bell-pop small{display:block;color:var(--muted)}
+.bell-head{display:flex;justify-content:space-between;align-items:center;padding:6px 10px 4px;font-size:13px}.bell-head button{border:0;background:none;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline}.bell-item{display:flex;align-items:flex-start;gap:2px}.bell-item a{flex:1;min-width:0}.bell-x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:8px 6px;cursor:pointer;border-radius:8px}.bell-x:hover{background:#eef1f6;color:var(--fg)}.bell-pop a{display:block;padding:9px 10px;border-radius:10px;text-decoration:none;color:inherit}.bell-pop a:hover{background:var(--accent-soft)}.bell-pop a.unread b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5484d;margin-right:6px;vertical-align:1px}.bell-pop small{display:block;color:var(--muted)}
 `;
 
 export const ALPHA_SCRIPT = `<script>
@@ -111,7 +111,20 @@ export const ALPHA_SCRIPT = `<script>
       b.addEventListener('click', function () {
         if (pop) { pop.remove(); pop = null; return; }
         pop = document.createElement('div'); pop.className = 'bell-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '알림');
-        pop.innerHTML = r.items.length ? r.items.map(function (n) { return '<a class="' + (n.read_at ? '' : 'unread') + '" href="' + base + esc(n.link || '') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small></a>'; }).join('') : '<p class="muted small" style="padding:10px">알림이 없어요. 새 리포트, 스크리너 조건, 가격 알림, 요청한 리포트가 여기와 휴대폰으로 와요.</p>';
+        var EMPTY = '<p class="muted small bell-empty" style="padding:10px">알림이 없어요. 새 리포트, 스크리너 조건, 가격 알림, 요청한 리포트가 여기와 휴대폰으로 와요.</p>';
+        pop.innerHTML = r.items.length ? '<div class="bell-head"><b>알림 ' + r.items.length + '개</b><button type="button" data-bell-clear>모두 지우기</button></div>' + r.items.map(function (n) { return '<div class="bell-item" data-nid="' + n.id + '"><a class="' + (n.read_at ? '' : 'unread') + '" href="' + base + esc(n.link || '') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small></a><button type="button" class="bell-x" data-bell-del="' + n.id + '" aria-label="이 알림 지우기">×</button></div>'; }).join('') : EMPTY;
+        // G-105: clear one or all; the list updates right away and the server follows.
+        pop.addEventListener('click', function (e) {
+          var del = e.target.closest('[data-bell-del]'), all = e.target.closest('[data-bell-clear]');
+          if (!del && !all) return;
+          e.preventDefault();
+          if (all) { r.items = []; pop.querySelectorAll('.bell-item,.bell-head').forEach(function (x) { x.remove(); }); var bpush = pop.querySelector('.bell-push'); if (bpush) bpush.insertAdjacentHTML('afterend', EMPTY); else pop.insertAdjacentHTML('afterbegin', EMPTY); G.call('POST', '/notifications/clear', {}).then(function (x) { if (x.error) toast(x.message || '지우지 못했어요.'); else toast('알림을 모두 지웠어요.'); }); return; }
+          var id = Number(del.getAttribute('data-bell-del')); r.items = r.items.filter(function (n) { return n.id !== id; });
+          var row = del.closest('.bell-item'); if (row) row.remove();
+          var head = pop.querySelector('.bell-head b'); if (head) head.textContent = '알림 ' + r.items.length + '개';
+          if (!r.items.length) { var h = pop.querySelector('.bell-head'); if (h) { h.insertAdjacentHTML('afterend', EMPTY); h.remove(); } }
+          G.call('POST', '/notifications/clear', { id: id }).then(function (x) { if (x.error) toast(x.message || '지우지 못했어요.'); });
+        });
         pop.insertAdjacentHTML('beforeend', '<a class="bell-set" href="' + base + 'alerts.html"><b>⚙︎ 알림 설정</b></a>');
         // G-101: the phone switch comes first — one tap asks the browser, the result shows right there.
         pop.insertAdjacentHTML('afterbegin', '<div class="bell-push" hidden></div>');

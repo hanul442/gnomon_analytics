@@ -65,6 +65,8 @@ export interface DailyReport {
   news?: NewsSection;
   /** Horizon gauges, fair value, forecasts, flows, valuation, financials (docs/DESIGN.md §5). */
   market?: MarketSection;
+  /** Where it trades: KOSPI, KOSDAQ or UPBIT (shown next to the code). */
+  exchange?: 'KOSPI' | 'KOSDAQ' | 'UPBIT';
   /** What most readers miss (G-99): earnings surprises, dividends, buybacks, insider and 5% holder moves. */
   edge?: import('../analysis/edge.js').EdgeSection;
   /** AI commentary for "왜?" (docs/DESIGN.md §4.4); written once with the report. */
@@ -139,6 +141,7 @@ export function buildDailyReport(input: {
   symbol: string;
   name: string;
   kind?: 'etf' | 'coin';
+  exchange?: 'KOSPI' | 'KOSDAQ' | 'UPBIT';
   /** KST date being reported, YYYY-MM-DD. */
   date: string;
   generatedAt: Date;
@@ -213,6 +216,7 @@ export function buildDailyReport(input: {
     symbol: input.symbol,
     name: input.name,
     ...(input.kind ? { kind: input.kind } : {}),
+    ...(input.exchange ? { exchange: input.exchange } : {}),
     date: input.date,
     generatedAt: input.generatedAt.toISOString(),
     status: session ? 'SESSION' : 'NO_SESSION',
