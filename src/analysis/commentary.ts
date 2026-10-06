@@ -277,6 +277,44 @@ export const CommentaryWireSchema = CommentarySchema.extend({
 });
 export const BriefWireSchema = BriefSchema.extend({ insights: WireInsightsSchema.describe('근거가 없는 탭도 빈 text·evidenceIds와 INFERENCE kind로 반환') });
 
+/**
+ * G-102: the deep committee's schema is too big for constrained decoding ("compiled grammar is too large"), so the
+ * deep call asks for JSON in words and this repairs the small slips models make (an unknown enum, a number as text,
+ * a missing list) before the strict schema check. Anything it cannot repair is dropped, never invented.
+ */
+const DEEP_SCHEMA_TEXT = JSON.stringify(z.toJSONSchema(CommentaryWireSchema));
+const ENUMS = { kind: ['FACT', 'INFERENCE', 'ASSUMPTION'], desk: ['MARKET', 'TECHNICAL', 'FLOW', 'FUNDAMENTAL', 'EVENT'], stance4: ['BULLISH', 'BEARISH', 'NEUTRAL', 'INSUFFICIENT_DATA'], stance3: ['BULLISH', 'BEARISH', 'NEUTRAL'], scenario: ['BULL', 'BASE', 'BEAR'] } as const;
+const asArr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+const asStr = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v));
+const asNum = (v: unknown, d = 0): number => { const n = typeof v === 'number' ? v : Number(String(v ?? '').replace(/[,%원\s]/g, '')); return Number.isFinite(n) ? n : d; };
+const pick = <T extends string>(v: unknown, allowed: readonly T[]): T | null => { const t = asStr(v).trim().toUpperCase(); return (allowed as readonly string[]).includes(t) ? t as T : null; };
+const claimOf = (v: unknown) => { const o = (v && typeof v === 'object' ? v : { text: v }) as Record<string, unknown>; return { text: asStr(o.text).trim(), evidenceIds: asArr(o.evidenceIds).map(asStr).filter(Boolean), kind: pick(o.kind, ENUMS.kind) ?? 'INFERENCE' }; };
+export function repairDeep(raw: unknown): unknown {
+  const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const speakers = new Set<string>([...ANALYSTS.map((a) => a.id), ...ENUMS.desk, 'RED_TEAM']), analystIds = new Set<string>(ANALYSTS.map((a) => a.id));
+  const ins = (o.insights && typeof o.insights === 'object' ? o.insights : {}) as Record<string, unknown>;
+  const red = (o.redTeam && typeof o.redTeam === 'object' ? o.redTeam : {}) as Record<string, unknown>;
+  const worst = (o.worstCase && typeof o.worstCase === 'object' ? o.worstCase : {}) as Record<string, unknown>;
+  return {
+    summary: claimOf(o.summary),
+    desks: asArr(o.desks).flatMap((d) => { const x = (d ?? {}) as Record<string, unknown>, desk = pick(x.desk, ENUMS.desk), stance = pick(x.stance, ENUMS.stance4); return desk && stance ? [{ desk, stance, view: claimOf(x.view) }] : []; }),
+    redTeam: { counterargument: claimOf(red.counterargument), unresolved: asArr(red.unresolved).map(asStr).filter(Boolean) },
+    scenarios: asArr(o.scenarios).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, kind = pick(x.kind, ENUMS.scenario); return kind ? [{ kind, narrative: claimOf(x.narrative), catalysts: asArr(x.catalysts).map(asStr).filter(Boolean), invalidation: asArr(x.invalidation).map(asStr).filter(Boolean), probability: asNum(x.probability), trigger: asNum(x.trigger), zoneLow: asNum(x.zoneLow), zoneHigh: asNum(x.zoneHigh) }] : []; }),
+    analysts: asArr(o.analysts).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, id = asStr(x.analyst).trim(), stance = pick(x.stance, ENUMS.stance3); return analystIds.has(id) && stance ? [{ analyst: id, stance, confidence: asNum(x.confidence, 50), target: asNum(x.target), rationale: claimOf(x.rationale) }] : []; }),
+    debate: asArr(o.debate).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, sp = asStr(x.speaker).trim().toUpperCase() === 'RED_TEAM' ? 'RED_TEAM' : asStr(x.speaker).trim(), stance = pick(x.stance, ENUMS.stance3); return speakers.has(sp) && stance ? [{ speaker: sp, stance, replyTo: asNum(x.replyTo, -1), claim: claimOf(x.claim) }] : []; }),
+    worstCase: { narrative: claimOf(worst.narrative), checks: asArr(worst.checks).map(asStr).filter(Boolean) },
+    insights: Object.fromEntries((['technical', 'strategy', 'flow', 'fundamental', 'news'] as const).map((k) => [k, claimOf(ins[k])])),
+    bullish: asArr(o.bullish).map(claimOf), bearish: asArr(o.bearish).map(claimOf), uncertain: asArr(o.uncertain).map(claimOf), watch: asArr(o.watch).map(claimOf),
+    dataGaps: asArr(o.dataGaps).map(asStr).filter(Boolean),
+  };
+}
+/** The first top-level JSON object in a reply (a model may wrap it in a code fence or a sentence). */
+export function jsonOf(text: string): unknown {
+  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  if (start < 0 || end <= start) throw new Error('NO_JSON');
+  return JSON.parse(text.slice(start, end + 1));
+}
+
 
 /** Extra rules for an ETF or a coin (G-56); a stock's prompt is unchanged. */
 export const kindRule = (kind?: 'etf' | 'coin') => !kind ? '' : kind === 'etf'
@@ -390,8 +428,9 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
         model, max_tokens: 16000,
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
-        output_config: { effort: 'medium', format: betaZodOutputFormat(CommentaryWireSchema) },
-        system: system(report.name, report.kind), messages: [user],
+        // No constrained format here (G-102): the committee schema is past the grammar limit. The schema goes in the prompt.
+        output_config: { effort: 'medium' },
+        system: `${system(report.name, report.kind)}\n\n## 응답 형식\n아래 JSON 스키마에 맞는 JSON 객체 하나만 답합니다. 코드 블록·설명 문장 없이 { 로 시작해 } 로 끝냅니다. enum 값은 스키마에 적힌 것만 씁니다.\n${DEEP_SCHEMA_TEXT}`, messages: [user],
       })
       : await call({
         model, max_tokens: 6000,
@@ -408,9 +447,10 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       const text = (response.content ?? []).filter(b => b.type === 'text').map(b => b.text).join('');
       if (text) {
         try {
-          const json: unknown = JSON.parse(text);
+          const json: unknown = tier === 'deep' ? repairDeep(jsonOf(text)) : JSON.parse(text);
           const validated = tier === 'deep' ? CommentarySchema.safeParse(json) : BriefSchema.safeParse(json);
-          if (!validated.success) return failed('UNPARSEABLE_OUTPUT:SCHEMA');
+          // A repaired reply still needs the core: a written summary (an empty object is not a report).
+          if (!validated.success || !validated.data.summary.text.trim()) return failed('UNPARSEABLE_OUTPUT:SCHEMA');
           parsed = validated.data;
         } catch { return failed('UNPARSEABLE_OUTPUT:JSON'); }
       }
