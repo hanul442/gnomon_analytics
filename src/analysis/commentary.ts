@@ -7,6 +7,7 @@
 // it is stored as status FAILED and the page says "AI 해설 없음".
 
 import Anthropic from '@anthropic-ai/sdk';
+import { normalizeUsage, type AiUsage } from './aiUsage.js';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import type { DailyReport } from '../report/dailyReport.js';
@@ -16,8 +17,8 @@ export const COMMENTARY_MODEL = 'claude-opus-5-5';
 /** Weekly picks outside the top tier (G-28): a short summary only, on the small model. */
 export const BRIEF_MODEL = 'claude-haiku-4-5';
 export type CommentaryTier = 'deep' | 'brief';
-/** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v6';
+/** v7: stable committee cache prefix and compact claims; evidence/scenario contracts preserved. */
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v7';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -67,7 +68,7 @@ export interface Commentary {
   servedBy?: string;
   tier?: CommentaryTier;
   /** Tokens billed, for cost tracking. */
-  usage?: { inputTokens: number; outputTokens: number };
+  usage?: AiUsage;
   summary?: Claim;
   bullish: Claim[];
   bearish: Claim[];
@@ -272,7 +273,7 @@ export const kindRule = (kind?: 'etf' | 'coin') => !kind ? '' : kind === 'etf'
   ? '\n- 이 종목은 ETF예요. 개별 기업의 실적·공시·증권가 목표가 근거는 없고, 기초지수 구성·괴리율·총보수 정보도 받지 않았어요. 가격·거래량·기술·수급·뉴스 근거로만 판단하고, 없는 정보는 dataGaps에 적습니다. FUNDAMENTAL 데스크는 근거가 없으면 INSUFFICIENT_DATA로 둡니다.'
   : '\n- 이 종목은 업비트 원화 마켓의 가상자산(코인)이에요. 24시간 거래되고 일봉은 매일 09:00(KST)에 끊으며, "거래일"은 하루를 뜻합니다. 실적·공시·투자자별 수급·증권가 근거가 없으니 FLOW·FUNDAMENTAL 데스크는 INSUFFICIENT_DATA로 둡니다. 비교 대상은 비트코인이에요. 변동성이 주식보다 훨씬 크다는 점을 시나리오 가격대에 반영합니다.';
 
-const briefSystem = (name: string, kind?: 'etf' | 'coin') => `당신은 Gnomon Analytics의 리서치 요약 담당이에요. ${name} 주간 리포트의 짧은 AI 요약을 씁니다.
+const briefSystem = (kind?: 'etf' | 'coin') => `당신은 Gnomon Analytics의 리서치 요약 담당이에요. 사용자 자료에 명시된 종목 주간 리포트의 짧은 AI 요약을 씁니다.
 
 진짜 요약이에요. 30초 안에 읽히게 짧게 씁니다.
 - summary: 지금 이 종목에서 가장 중요한 한 가지와 그 이유, 2문장 이내(120자 안쪽).
@@ -289,7 +290,7 @@ const briefSystem = (name: string, kind?: 'etf' | 'coin') => `당신은 Gnomon A
 - 매수·매도를 권하거나 목표가·익절가·손절가를 제시하지 않습니다. 가격을 말해야 하면 시나리오 가격대와 무효화 가격으로만 씁니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
 - 같은 이야기의 재보도는 하나의 근거로 봅니다. 근거가 부족하면 dataGaps에 적고 억지로 결론 내지 않습니다.${kindRule(kind)}`;
 
-const system = (name: string, kind?: 'etf' | 'coin') => `당신은 Gnomon Analytics의 리서치 위원회예요. ${name} 일일 리포트의 "AI 해설"을 한 번에 씁니다.
+const system = () => `당신은 Gnomon Analytics의 리서치 위원회예요. 사용자 자료에 명시된 종목 일일 리포트의 "AI 해설"을 한 번에 씁니다.
 
 위원회 구성:
 - 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
@@ -310,7 +311,19 @@ ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 - 기사 수가 많다고 근거가 강한 것이 아닙니다. 같은 이야기의 재보도는 하나의 근거로 봅니다.
 - 모르는 것은 중립이 아닙니다. 근거가 부족하면 dataGaps에 적고, 억지로 결론 내지 않습니다.
 - 기술적 신호는 지표 요약일 뿐 오를 확률이 아닙니다.
-- 반대 근거를 함께 찾고, 무엇이 나오면 해석이 바뀌는지(watch)를 씁니다.${kindRule(kind)}`;
+- 반대 근거를 함께 찾고, 무엇이 나오면 해석이 바뀌는지(watch)를 씁니다.
+- 분량: summary는 2문장·120자 안쪽, 각 데스크·분석가·토론 발언·시나리오 설명은 1~2문장·100자 안쪽, insights는 각 40자 안쪽으로 씁니다.
+- bullish·bearish·uncertain·watch는 각각 핵심 1~2개만, 각 60자 안쪽으로 씁니다. 촉매·무효화 조건·미해결 이견·자료 부족은 각각 핵심 1~3개만 적습니다.
+- 같은 근거를 여러 필드에서 길게 되풀이하지 않습니다. 숫자·근거 ID·반론·무효화 조건은 생략하지 않습니다.`;
+
+export function commentarySystem(kind?: 'etf' | 'coin'): Anthropic.TextBlockParam[] {
+  const blocks: Anthropic.TextBlockParam[] = [{
+    type: 'text', text: system(), cache_control: { type: 'ephemeral', ttl: '5m' },
+  }];
+  const extra = kindRule(kind);
+  if (extra) blocks.push({ type: 'text', text: extra });
+  return blocks;
+}
 
 /** Keeps only known IDs; drops claims left with none. */
 export function sanitizeClaims(claims: readonly Claim[], known: ReadonlySet<string>): { kept: Claim[]; dropped: number } {
@@ -376,17 +389,18 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
         betas: ['server-side-fallback-2026-07-01'],
         fallbacks: 'default',
         output_config: { effort: 'medium', format: betaZodOutputFormat(CommentarySchema) },
-        system: system(report.name, report.kind), messages: [user],
+        system: commentarySystem(report.kind), messages: [user],
       })
       : await client.beta.messages.parse({
         model, max_tokens: 6000,
         output_config: { format: betaZodOutputFormat(BriefSchema) },
-        system: briefSystem(report.name, report.kind), messages: [user],
+        system: briefSystem(report.kind), messages: [user],
       });
-    if (response.stop_reason === 'refusal') return empty('FAILED', now, evidence, `REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
-    if (response.stop_reason === 'max_tokens') return empty('FAILED', now, evidence, 'MAX_TOKENS');
+    const failed = (error: string): Commentary => ({ ...empty('FAILED', now, evidence, error), model, servedBy: response.model, tier, ...(response.usage ? { usage: normalizeUsage(response.usage) } : {}) });
+    if (response.stop_reason === 'refusal') return failed(`REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
+    if (response.stop_reason === 'max_tokens') return failed('MAX_TOKENS');
     const parsed = response.parsed_output as (z.infer<typeof BriefSchema> & Partial<z.infer<typeof CommentarySchema>>) | null;
-    if (!parsed) return empty('FAILED', now, evidence, 'UNPARSEABLE_OUTPUT');
+    if (!parsed) return failed('UNPARSEABLE_OUTPUT');
     const known = new Set(evidence.map((e) => e.id));
     let dropped = 0;
     const clean = (claims: readonly Claim[]) => {
@@ -424,7 +438,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       ...(Object.keys(insights).length ? { insights } : {}),
       status: 'OK', model, promptVersion: COMMENTARY_PROMPT_VERSION, generatedAt: now.toISOString(),
       servedBy: response.model, tier,
-      ...(response.usage ? { usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens } } : {}),
+      ...(response.usage ? { usage: normalizeUsage(response.usage) } : {}),
       ...(summary ? { summary } : {}),
       // A brief stays a brief (G-60): the strongest point on each side and one thing to watch.
       ...(tier === 'brief'
@@ -440,3 +454,4 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     return empty('FAILED', now, evidence, message.slice(0, 200));
   }
 }
+

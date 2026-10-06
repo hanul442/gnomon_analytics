@@ -330,7 +330,7 @@ test('an invited expert answers in the debate at the invite price (G-80)', async
   const r = await t.call('POST', '/ask', { tier: 'standard', expert: 'semis', question: '업황은 어때요?', symbol: '000660', page: '이 종목 AI 위원회 토론:\n기술 데스크: 강세예요' }, u.session);
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.deepEqual([r.body.credits, r.body.speaker], [CREDIT_COST.invite, '반도체 전문가']);
-  assert.match(String(calls[0]!.system), /반도체 전문가/);
+  assert.match(JSON.stringify(calls[0]!.system), /반도체 전문가/);
   const c = await t.call('POST', '/ask', { tier: 'standard', expert: 'committee', question: '결론만 다시요' }, u.session);
   assert.deepEqual([c.body.credits, c.body.speaker], [CREDIT_COST.standard, 'AI 위원회']);
 });
@@ -411,4 +411,27 @@ test('chat SSE emits text deltas then the charged result, without waiting for a 
  while(!text.includes('첫 문장')){text+=new TextDecoder().decode((await reader.read()).value);}
  assert.match(text,/event: delta/);assert.doesNotMatch(text,/event: done/);finish();
  while(true){const chunk=await reader.read();if(chunk.done)break;text+=new TextDecoder().decode(chunk.value);}assert.match(text,/event: done/);assert.match(text,/"credits":5/);
+});
+
+
+test('cached streaming answers record actual served model costs and enforce the daily budget', async () => {
+  const t = setup({ ai: { create: async () => { throw Error('expected stream'); }, stream: async (_p, onText) => {
+    onText('답변');
+    return { content: [{ type: 'text', text: '답변' }], model: 'claude-opus-5-5', stop_reason: 'end_turn',
+      usage: { input_tokens: 1000, output_tokens: 100, cache_creation_input_tokens: 2000, cache_read_input_tokens: 10000 } };
+  } } });
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('cache@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  const res = await handle(new Request('https://api.test/ask/stream', { method: 'POST',
+    headers: { Authorization: `Bearer ${u.session}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tier: 'standard', question: '지금 위험은?' }) }), t.env, t.deps);
+  assert.equal(res.status, 200);
+  const text = await res.text();
+  assert.match(text, /답변/);
+  const row = await t.env.DB.prepare('SELECT model, usd, usage_json FROM questions ORDER BY id DESC LIMIT 1').first<{ model:string;usd:number;usage_json:string }>();
+  assert.equal(row!.model, 'claude-opus-5-5');
+  assert.equal(row!.usd, 0.018);
+  assert.equal(JSON.parse(row!.usage_json).cacheReadTokens, 10000);
+  t.env.AI_DAILY_USD = '0.08'; // 0.018 actual + 0.07 reservation exceeds this.
+  assert.equal((await t.call('POST', '/ask', { tier:'standard', question:'후속 질문' }, u.session)).body.error, 'AI_BUDGET');
 });

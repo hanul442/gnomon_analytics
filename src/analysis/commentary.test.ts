@@ -127,23 +127,23 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
   assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v6');
+  assert.equal(c.promptVersion, 'gnm-committee-v7');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
 
 test('a coin or an ETF gets its own rules and asset line; a stock prompt is unchanged (G-56)', async () => {
   const reply = { stop_reason: 'end_turn', model: COMMENTARY_MODEL, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } };
-  const seen: { system: string; messages: { content: string }[] }[] = [];
+  const seen: { system: {text:string}[] | string; messages: { content: string }[] }[] = [];
   const coin = buildDailyReport({ symbol: 'KRW-BTC', name: '비트코인', kind: 'coin', date: '2026-09-30', generatedAt: new Date(AT), bars: bars.map((b) => ({ ...b, symbol: 'KRW-BTC' })), disclosures: [], sources: [], news: [], newsStatus: [] });
   await writeCommentary(coin, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT), tier: 'brief' });
   await writeCommentary({ ...report, kind: 'etf' }, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
   await writeCommentary(report, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
-  assert.match(seen[0]!.system, /가상자산\(코인\)/);
+  assert.match(JSON.stringify(seen[0]!.system), /가상자산\(코인\)/);
   assert.match(seen[0]!.messages[0]!.content, /"자산_종류": "코인/);
   assert.doesNotMatch(coin.headline, /공시/);
-  assert.match(seen[1]!.system, /이 종목은 ETF예요/);
-  assert.doesNotMatch(seen[2]!.system, /ETF예요|가상자산/);
+  assert.match(JSON.stringify(seen[1]!.system), /이 종목은 ETF예요/);
+  assert.doesNotMatch(JSON.stringify(seen[2]!.system), /ETF예요|가상자산/);
   assert.doesNotMatch(seen[2]!.messages[0]!.content, /자산_종류/);
 });
 
@@ -169,4 +169,20 @@ test('replyIndex: points back only, shifting a 1-based pointer down one', async 
   assert.equal(replyIndex(undefined, 2), undefined);
   assert.equal(replyIndex(0, 0), undefined);
   assert.equal(replyIndex(5, 2), undefined);
+});
+
+
+test('committee cache prefix is shared across symbols and asset rules, and failures retain billable usage', async () => {
+  const seen: unknown[] = [];
+  const reply = { stop_reason: 'max_tokens', model: COMMENTARY_MODEL,
+    usage: { input_tokens: 100, output_tokens: 16000, cache_read_input_tokens: 2000, cache_creation_input_tokens: 500 } };
+  const c = await writeCommentary(report, { client: fakeClient(reply, seen) });
+  await writeCommentary({ ...report, name: '삼성전자', symbol: '005930', kind: 'etf' }, { client: fakeClient(reply, seen) });
+  const systems = seen.map(p => (p as {system: {text:string;cache_control?:unknown}[]}).system);
+  assert.deepEqual(systems[0]![0], systems[1]![0]);
+  assert.ok(systems[0]![0]!.cache_control);
+  assert.doesNotMatch(systems[0]![0]!.text, /SK하이닉스|삼성전자/);
+  assert.match(systems[1]![1]!.text, /ETF/);
+  assert.equal(c.status, 'FAILED');
+  assert.deepEqual(c.usage, { inputTokens: 100, outputTokens: 16000, cacheWrite5mTokens: 500, cacheReadTokens: 2000 });
 });

@@ -3,7 +3,7 @@ import type { D1 } from './db.js';
 import type { DailyReport } from '../report/dailyReport.js';
 import { buildDailyReport } from '../report/dailyReport.js';
 import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
-import { usdOf } from './ask.js';
+import { usageUsd } from '../analysis/aiUsage.js';
 import { conclusionCard, voteSection } from '../report/conclusion.js';
 import { debateSection, issuesSection, decisionTrace } from '../report/renderReportExtras.js';
 import { flowsPanel, fundamentalsPanel } from '../report/renderMarket.js';
@@ -56,8 +56,8 @@ export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void
   const report=JSON.parse(job.input_json) as DailyReport;
   const commentary=await deps.generate(report,job.kind==='brief'?'brief':'deep');
   const usage=commentary.usage;
-  const usd=usage?usdOf(commentary.servedBy||commentary.model,usage.inputTokens,usage.outputTokens):0;
-  await db.prepare('UPDATE report_jobs SET usd=? WHERE id=?').bind(usd,id).run();
+  const usd=usage?usageUsd(commentary.servedBy||commentary.model,usage):0;
+  await db.prepare('UPDATE report_jobs SET usd=?,usage_json=? WHERE id=?').bind(usd,JSON.stringify(usage??null),id).run();
   if(commentary.status!=='OK'||!commentary.summary)throw new Error('AI 리포트 생성에 실패했어요. 크레딧은 반환됩니다.');
   report.commentary=commentary;report.generatedAt=deps.now().toISOString();
   await db.prepare("UPDATE report_jobs SET stage='composing',updated_at=? WHERE id=?").bind(deps.now().toISOString(),id).run();
@@ -71,3 +71,4 @@ export function reportFragments(report:DailyReport){
  const news=`<div class="card"><h3>뉴스·공시</h3>${report.filings.map(f=>`<p>${esc(f.filedDate)} · ${esc(f.title)}</p>`).join('')}${(report.news?.clusters??[]).map(n=>`<p>${esc(n.title)}</p>`).join('')||'<p>추가 뉴스 근거가 없어요.</p>'}</div>`;
  return {home:claim('AI 요약',c.summary?[c.summary]:[])+conclusionCard(report,{id:'conclusion-live'}),ai:conclusionCard(report,{id:'conclusion'})+voteSection(report)+debateSection(report)+issuesSection(report)+claim('강세 근거',c.bullish??[])+claim('약세 근거',c.bearish??[])+claim('지켜볼 것',c.watch??[])+evidence+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
 }
+
