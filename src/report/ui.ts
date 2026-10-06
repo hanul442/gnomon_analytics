@@ -145,20 +145,26 @@ export const MENU: readonly { title: string; items: readonly [string, string][] 
   { title: '고객 지원', items: [['자주 묻는 질문 (FAQ)', 'faq.html'], ['1:1 문의 · Q&A', 'faq.html#ask'], ['HANUL 프로젝트 소개', 'hanul.html']] },
   { title: '계정', items: [['요금제·크레딧', 'pricing.html'], ['이용약관·면책', 'terms.html']] },
 ];
-const QUICK: readonly [string, string, string][] = [
+/** The app's tabs (G-95): the bottom bar on phones, the same links in the top bar on wide screens. 전체 opens the sheet. */
+export const TABS: readonly [string, string, string][] = [
   ['홈', 'index.html#top', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'],
+  ['검색', 'index.html#search', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'],
   ['관심', 'index.html#watch', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>'],
   ['성적표', 'scorecard.html', '<path d="M5 20V10M10 20V4M15 20v-7M20 20v-11"/>'],
-  ['내 계정', 'account.html', '<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c1.2-3.6 4-5.2 7-5.2s5.8 1.6 7 5.2"/>'],
 ];
+const ALL_ICON = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>';
+const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+/** One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones). */
+export function tabBar(base: string, where: 'top' | 'bottom'): string {
+  return `<nav class="${where === 'top' ? 'top-tabs' : 'bottom-nav'}" aria-label="${where === 'top' ? '주 메뉴' : '빠른 이동'}">${TABS.map(([l, h, d]) => `<a href="${base}${h}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('')}<button type="button" class="nav-all" data-all-menu aria-haspopup="dialog" aria-expanded="false" aria-controls="side-menu">${svgI(ALL_ICON)}<span>전체</span></button></nav>`;
+}
 
-const MENU_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /** The ☰ button for the top bar and the drawer it opens (assets/ui.js toggles it). */
 export function menuHtml(base: string, archiveHref?: string): { button: string; drawer: string } {
   return {
-    button: `<button type="button" class="menu-btn" aria-label="전체 메뉴" aria-expanded="false" aria-controls="side-menu">${MENU_ICON}</button>`,
-    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체 메뉴</b><button type="button" class="sm-close" aria-label="닫기">×</button></div><div class="sm-quick">${QUICK.map(([l, h, d]) => `<a href="${base}${h}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg><span>${l}</span></a>`).join('')}</div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div class="sm-group sm-view" id="sm-view"><div class="sm-title">내 보기 방식</div>${PERSONA_BAR}<p class="sm-hint">고르면 홈의 '오늘 볼 것'과 종목 화면이 바뀌어요.</p><a href="${base}onboarding.html">설문 다시 하기</a></div><div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
+    button: tabBar(base, 'top'),
+    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체</b><button type="button" class="sm-close" aria-label="닫기">×</button></div><div class="sm-group sm-acct"><a href="${base}pricing.html" data-acct-tab="1"><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></a></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div class="sm-group sm-view" id="sm-view"><div class="sm-title">내 보기 방식</div>${PERSONA_BAR}<p class="sm-hint">고르면 홈의 '오늘 볼 것'과 종목 화면이 바뀌어요.</p><a href="${base}onboarding.html">설문 다시 하기</a></div><div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
   };
 }
 
@@ -240,11 +246,12 @@ export const TOUR_JS = `
         ['.ix-row', '시장 한눈에', '코스피·코스닥과 시장 온도예요. 시장 온도는 전 종목의 기술 신호를 모은 거예요.'],
         ['#watch', '관심 종목', '어디서든 ☆를 누르면 여기에 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
         ['#today', '오늘 볼 것', '내 보기 방식(초보·단타·스윙·장기)에 맞춰 오늘 볼 종목 네 개를 골라 이유와 함께 보여 줘요.'],
-        ['.menu-btn', '☰ 메뉴', '보기 방식을 바꾸거나 설문, 성적표, 내 계정으로 가요.'],
+        ['.bottom-nav', '아래 탭', '홈 · 검색 · 관심 · 성적표, 그리고 전체에서 내 계정·보기 방식·사용법·FAQ로 가요.'],
+        ['.top-tabs', '위쪽 탭', '홈 · 검색 · 관심 · 성적표, 그리고 전체에서 내 계정·보기 방식·사용법·FAQ로 가요.'],
       ],
       report: [
         ['.chips', '탭', '요약 · 차트 · 기술 · AI 위원회 · 수급 · 실적 · 뉴스·공시. 처음엔 요약만 봐도 충분해요.'],
-        ['#home-conclusion', '지금 판단', '위아래 테스트 가격과 그때의 시나리오예요. 가격을 넘거나 깨면 어느 쪽으로 갈지, 확률과 함께 보여 줘요.'],
+        ['#home-conclusion', '지금 판단', '강세·기본·약세 시나리오별로 20거래일 뒤 예상 가격대와 확률이에요. 차트 탭에서는 같은 가격대가 박스로 보여요.'],
         ['#home-conclusion .cl-row', '줄을 눌러 보세요', '시나리오가 펼쳐져요. 무엇이 나오면 그렇게 되는지, 언제 틀렸다고 볼지가 나와요. 약세 줄 안에는 최악의 경우가 있어요.'],
         ['#t-ai', 'AI 위원회', '분석가 6명과 데스크 5곳의 표결, 서로 반박하는 토론, 근거 정리가 있어요. 토론에 직접 질문할 수도 있어요.'],
         ['#t-flows', '수급 · 실적 · 뉴스', '외국인·기관 수급, 분기 실적과 밸류, 뉴스와 공시는 각자 탭에 있어요.'],
@@ -322,25 +329,31 @@ export const ORBS = '<span class="orbs" aria-hidden="true"><canvas data-orb="wor
 
 export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:#1d6b3a;border-color:#bfe3cb;background:#effaf2}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(209,55,61,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(42,98,201,.22)}100%{background:transparent}}`;
 
-export const MENU_CSS = `.menu-btn{width:38px;height:38px;border:0;border-radius:10px;background:none;color:#fff;cursor:pointer;display:grid;place-items:center;margin-left:2px}.menu-btn svg{width:22px;height:22px}.menu-btn:hover{background:rgba(255,255,255,.1)}
+export const MENU_CSS = `.top-tabs{display:flex;align-items:center;gap:2px;margin-right:6px}.top-tabs a,.top-tabs button{display:flex;align-items:center;gap:6px;border:0;background:none;color:#dbe4f3;font:inherit;font-size:14px;font-weight:700;padding:8px 11px;border-radius:10px;text-decoration:none;cursor:pointer}.top-tabs svg{width:18px;height:18px}.top-tabs a:hover,.top-tabs button:hover,.top-tabs [aria-current=page]{background:rgba(255,255,255,.12);color:#fff}@media(max-width:820px){.top-tabs{display:none}}
+.sm-acct a{display:flex!important;justify-content:space-between;align-items:center;background:#f3f6fb;border-radius:12px!important;padding:14px 14px!important}.sm-acct small{font-size:12.5px;color:var(--muted);font-weight:600}.sm-acct{border-top:0!important;padding-top:4px!important}
 .menu-scrim{position:fixed;inset:0;background:rgba(10,20,35,.42);z-index:90}.side-menu{position:fixed;top:0;right:0;bottom:0;width:min(300px,86vw);background:#fff;z-index:91;overflow-y:auto;padding:14px 16px 24px;box-shadow:-12px 0 32px rgba(10,20,35,.18);animation:sm-in .18s ease-out}
 @keyframes sm-in{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}.sm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.sm-head b{font-size:17px}.sm-close{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);width:38px;height:38px}
 .sm-group{border-top:1px solid var(--line);padding:10px 0 6px}.sm-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:2px}.side-menu a{display:block;padding:10px 6px;border-radius:10px;text-decoration:none;color:var(--fg);font-weight:600;font-size:15px}.side-menu a:hover,.side-menu a[aria-current=page]{background:#eef3fb;color:var(--accent-strong)}.sm-foot{font-size:12px;color:var(--muted);margin-top:12px}.sm-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 10px}.side-menu .sm-quick a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border:1px solid var(--line);border-radius:12px;font-size:13px}.sm-quick svg{width:22px;height:22px}
-html.menu-open{overflow:hidden}.sm-view .persona-bar{margin:6px 0 4px}.sm-view .persona-bar .lbl{display:none}.sm-hint{font-size:12px;color:var(--muted);margin:4px 2px}`;
+html.menu-open{overflow:hidden}.sm-view .persona-bar{margin:6px 0 4px}.sm-view .persona-bar .lbl{display:none}.sm-hint{font-size:12px;color:var(--muted);margin:4px 2px}
+@media(max-width:820px){.side-menu{top:auto;bottom:0;right:0;top:auto;left:0;width:auto;max-height:82vh;border-radius:20px 20px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom));animation:sm-up .2s ease-out}}@keyframes sm-up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}`;
 
 export const MENU_JS = `
-  // The ☰ menu: opens the drawer, closes on the scrim, the × button, Escape or a link.
+  // 전체 (G-95): the tab bar's last tab opens every other place as a sheet (a side panel on wide screens).
   (function () {
-    var btn = document.querySelector('.menu-btn'), nav = document.getElementById('side-menu'), scrim = document.querySelector('.menu-scrim');
-    if (!btn || !nav) return;
-    var here = location.pathname.split('/').pop() || 'index.html';
+    var btns = [].slice.call(document.querySelectorAll('[data-all-menu]')), nav = document.getElementById('side-menu'), scrim = document.querySelector('.menu-scrim');
+    if (!btns.length || !nav) return;
+    var here = location.pathname.split('/').pop() || 'index.html', last = null;
     nav.querySelectorAll('a').forEach(function (a) { if (a.getAttribute('href').split('/').pop().split('#')[0] === here && here !== 'index.html') a.setAttribute('aria-current', 'page'); });
-    var set = function (open) { nav.hidden = !open; scrim.hidden = !open; btn.setAttribute('aria-expanded', String(open)); document.documentElement.classList.toggle('menu-open', open); if (open) nav.querySelector('a').focus(); };
-    btn.addEventListener('click', function () { set(nav.hidden); });
+    // The current tab: by page, and on home by the section in the hash.
+    var mark = function () { var h = location.hash.slice(1); document.querySelectorAll('[data-tab-link]').forEach(function (a) { var k = a.getAttribute('data-tab-link'), on = here === 'index.html' ? (k === (h === 'watch' || h === 'search' ? h : 'top')) : k === here; if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); };
+    mark(); window.addEventListener('hashchange', mark);
+    document.querySelectorAll('[data-tab-link=search]').forEach(function (a) { a.addEventListener('click', function () { var q = document.getElementById('q'); if (q) setTimeout(function () { q.focus(); }, 60); }); });
+    var set = function (open, by) { nav.hidden = !open; scrim.hidden = !open; btns.forEach(function (b) { b.setAttribute('aria-expanded', String(open)); }); document.documentElement.classList.toggle('menu-open', open); if (open) { last = by || null; nav.querySelector('a').focus(); } else if (last) last.focus(); };
+    btns.forEach(function (b) { b.addEventListener('click', function () { set(nav.hidden, b); }); });
     scrim.addEventListener('click', function () { set(false); });
     nav.querySelector('.sm-close').addEventListener('click', function () { set(false); });
     nav.addEventListener('click', function (e) { if (e.target.closest('a')) set(false); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !nav.hidden) { set(false); btn.focus(); } });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !nav.hidden) set(false); });
   })();`;
 
 

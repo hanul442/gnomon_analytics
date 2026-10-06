@@ -25,7 +25,7 @@ import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
 import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, parliamentViewNote, SEATS_JS, VIEW_FOCUS_CSS } from './conclusion.js';
-import { BANNER_CSS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
+import { tabBar, BANNER_CSS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 import { adStrip, AD_CSS, AD_JS } from './ads.js';
@@ -299,7 +299,7 @@ ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.d
 .panel{display:block}.panel[hidden]{display:none}.panel+.panel{margin-top:32px}.js-tabs .panel+.panel{margin-top:0}.js-tabs .panel-title{display:none}.panel-title{margin:0 0 12px}.panel:focus{outline:none}
 footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--muted);font-size:12px}footer p{margin:2px 0}
 .bottom-nav{display:none}.site-links{display:flex;flex-wrap:wrap;gap:6px 16px;max-width:1180px;margin:8px auto 0;padding:0 24px;font-size:12px;color:var(--muted)}.site-links a{color:var(--fg2)}
-@media (max-width:820px){.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom))}.bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--fg2);text-decoration:none;min-height:44px;justify-content:center}.bottom-nav svg{width:22px;height:22px}body:has(.bottom-nav){padding-bottom:64px}}
+@media (max-width:820px){.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom))}.bottom-nav a,.bottom-nav button{display:flex;flex-direction:column;align-items:center;gap:2px;font:inherit;font-size:11px;font-weight:600;color:var(--fg2);text-decoration:none;min-height:44px;justify-content:center;border:0;background:none;cursor:pointer;padding:0}.bottom-nav [aria-current=page],.bottom-nav [aria-expanded=true]{color:var(--accent-strong);font-weight:800}.bottom-nav svg{width:22px;height:22px}body:has(.bottom-nav){padding-bottom:64px}}
 .needle{transform-box:view-box;transform-origin:110px 104px;transform:rotate(var(--r));animation:settle 900ms var(--ease-out) 200ms both}
 @keyframes settle{from{transform:rotate(0deg)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -336,15 +336,14 @@ export function shell(base: string, title: string, body: string, options: { tabs
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.${ASSET_VERSION}.css"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
-<nav class="top-links" aria-label="사이트"><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a>${menu.button}</nav></div>
+${menu.button}<nav class="top-links" aria-label="사이트"><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>${menu.drawer}
 <main id="main" tabindex="-1">${options.active === 'home' ? versionBanner(base) : options.ads === false ? '' : adStrip(base)}${body}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script>${LOADING_JS}${VERSION_JS}${AD_JS}</script><script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
 function bottomNav(base: string): string {
-  const item = (href: string, label: string, path: string) => `<a href="${href}"><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg><span>${label}</span></a>`;
-  return `<nav class="bottom-nav" aria-label="빠른 이동">${item(`${base}index.html#top`, '홈', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>')}${item(`${base}index.html#watch`, '관심', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>')}${item(`${base}scorecard.html`, '성적표', '<path d="M5 20V10M10 20V4M15 20v-7M20 20v-11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>')}${item(`${base}pricing.html" data-acct-tab="1`, '내 계정', '<circle cx="12" cy="8.5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1.2-3.6 4-5.2 7-5.2s5.8 1.6 7 5.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>')}</nav>`;
+  return tabBar(base, 'bottom');
 }
 
 const GAUGE_COLORS = ['#1d4fa3', '#3b7be0', '#8fb3ec', '#c4cbc9', '#f0a0a3', '#e5484d', '#a8262b'];

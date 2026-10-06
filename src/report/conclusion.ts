@@ -37,7 +37,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
     const z = scenarioZone(report, k);
     if (!z) return `<div class="cl-px"><span class="cl-arrow">${arrow}</span><b>${k === 'BULL' ? '강세' : '약세'} 전개</b><small>가격대는 근거에서 확인</small></div>`;
     const mid = (z.zone[0] + z.zone[1]) / 2;
-    return `<div class="cl-px"><span class="cl-arrow">${arrow}</span><b>${gap(mid, p.close)}</b><small>20거래일 뒤 ${won(z.zone[0])}~${won(z.zone[1])}${z.source === 'calc' ? ' · 변동성 계산' : ''}</small></div>`;
+    return `<div class="cl-px"><span class="cl-arrow">${arrow}</span><b>${gap(mid, p.close)}</b><small>20거래일 뒤 ${won(z.zone[0])}~${won(z.zone[1])}${z.source === 'calc' ? ' · 변동성 계산' : z.source === 'analyst' ? ' · AI 분석가 목표가' : ''}</small></div>`;
   };
   const rows = [
     row('cl-up', bull, '강세', px('BULL', '▲'), '이렇게 풀리면 20거래일 동안 오를 수 있는 폭'),

@@ -46,7 +46,7 @@ export const PERSONA_BAR = `<div class="persona-bar" role="group" aria-label="ë³
 export const PERSONA_JS = `
   document.addEventListener('click', function (e) {
     var o = e.target.closest && e.target.closest('[data-open-view]');
-    if (o) { e.preventDefault(); var m = document.querySelector('.menu-btn'); if (m) { m.click(); var g = document.getElementById('sm-view'); if (g) g.scrollIntoView({ block: 'nearest' }); } return; }
+    if (o) { e.preventDefault(); var m = [].slice.call(document.querySelectorAll('[data-all-menu]')).filter(function (x) { return x.getClientRects().length; })[0]; if (m) { m.click(); var g = document.getElementById('sm-view'); if (g) g.scrollIntoView({ block: 'nearest' }); } return; }
     var b = e.target.closest && e.target.closest('.persona-bar [data-persona]'); if (!b) return;
     var p = b.getAttribute('data-persona');
     try { localStorage.setItem('gnm-persona', p); } catch (x) {}
