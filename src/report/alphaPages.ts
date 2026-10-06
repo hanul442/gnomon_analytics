@@ -85,17 +85,28 @@ const PAGE = `<style>.gd{max-width:760px;margin:0 auto}.gd h2{margin:26px 0 8px;
 .sv .opts input{accent-color:var(--navy)}.sv .opts label:has(input:checked){border-color:var(--navy);background:#eef3fb;font-weight:700}.sv .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:4px}.sv .nps label{justify-content:center;padding:8px 0;border-radius:10px}.sv .nps input{display:none}
 .sv textarea{width:100%;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;min-height:80px}.sv .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}</style>`;
 
+/** G-74: the guide, on real screenshots (site/guide/*.webp, copied from docs/guide), with a live tour per page. */
+const GUIDE_STEPS: readonly { id: string; title: string; img?: string; alt?: string; body: string }[] = [
+  { id: 'start', title: '시작하기', body: `<ol><li><b>가입</b>: 받은 초대 코드로 한 번 가입하면, 다음부터는 이메일과 비밀번호로 로그인해요.</li><li><b>맞춤 설문 (약 7분)</b>: 투자 경험, 스타일, 보유 기간, 관심 업종을 알려 주시면 홈의 '오늘 볼 것'과 종목 화면이 그에 맞게 바뀌어요. 언제든 ☰ 메뉴에서 고칠 수 있어요.</li><li><b>보기 방식</b>: ☰ 메뉴 맨 위에서 초보 · 단타 · 스윙 · 장기 · 전체 중 고르면 바로 바뀌어요.</li><li><b>크레딧</b>: 알파 참여자는 매달 400크레딧을 받아요. 배너의 이벤트에서 더 받을 수 있어요. 심층 리포트 열기(10), AI 질문(5~), 전문가 초청 등에 써요.</li></ol>` },
+  { id: 'home', title: '홈 화면', img: 'g-home.webp', alt: '홈 화면: 검색, 배너, 시장 한눈에, 관심 종목, 오늘 볼 것', body: `<ol><li><b>검색</b>: 종목·ETF·코인을 이름, 코드, 초성(ㅅㅅㅈㅈ)으로 찾아요.</li><li><b>배너</b>: 공지, 크레딧 이벤트(받기를 누르면 바로 들어와요), 설문, 사용법이 돌아가요. 옆으로 밀어서 넘겨요.</li><li><b>시장 한눈에</b>: 코스피·코스닥과 <b>시장 온도</b>예요. 시장 온도는 전 종목의 기술 신호를 강세부터 약세까지 일곱 칸으로 모은 거예요.</li><li><b>관심 종목</b>: 어디서든 ☆를 누르면 모여요. 장중엔 가격이 실시간으로 바뀌어요(오르면 빨강, 내리면 파랑으로 잠깐 깜빡여요).</li><li><b>오늘 볼 것</b>: 보기 방식에 맞춰 네 개를 골라 이유를 붙여 줘요. 단타는 오늘 많이 움직인 순, 스윙은 테스트 가격에 가까운 순, 장기는 적정가 아래 순, 초보는 대표 종목과 ETF부터예요.</li></ol>` },
+  { id: 'report', title: '종목 리포트: 탭 4개', img: 'g-tabs.webp', alt: '종목 리포트 맨 위: 탭 4개와 지금 판단 카드', body: `<p>요약 · 차트 · AI 위원회 · 자료. <b>처음엔 요약 탭만 봐도 충분해요.</b></p><ul><li><b>요약</b>: 지금 판단, 가격, 핵심 포인트, 최근 뉴스·공시.</li><li><b>차트</b>: 캔들, 지표, 그리기 도구, 전략 대결(어떤 매매 규칙이 이 종목에서 잘 맞았나).</li><li><b>AI 위원회</b>: 시나리오, 표결, 토론, 남은 쟁점.</li><li><b>자료</b>: 기술 · 수급 · 실적 · 뉴스·공시 원자료. 위쪽 버튼으로 바로 이동해요.</li></ul>` },
+  { id: 'conclusion', title: '지금 판단 (시나리오) 읽는 법', img: 'g-conclusion.webp', alt: '지금 판단 카드: 위쪽 테스트 가격, 지금 가격, 아래쪽 테스트 가격과 약세 시나리오를 펼친 모습', body: `<ol><li><b>▲ 위쪽 테스트 가격</b>: 이 가격 위로 올라서면 강세 시나리오로 봐요. 옆의 %는 위원회가 추정한 확률이에요.</li><li><b>● 지금 가격</b>: 두 가격 사이에 머물면 기본 시나리오예요.</li><li><b>▼ 아래쪽 테스트 가격</b>: 이 가격 아래로 내려가면 약세 시나리오예요.</li><li><b>줄을 누르면</b> 펼쳐져요: 무엇이 나오면 그렇게 되는지, 언제 틀렸다고 볼지, 20거래일 가격대. 약세 줄 안에는 <b>최악의 경우</b>와 스스로 점검할 목록이 있어요.</li></ol><p class="gd-note">확률은 예언이 아니라 지금 근거로 본 추정이에요. 모든 확률은 기록해 두었다가 실제 결과로 채점해 <a href="scorecard.html">성적표</a>에 쌓여요.</p>` },
+  { id: 'vote', title: 'AI 위원회: 표결', img: 'g-vote.webp', alt: '위원회 표결: 강세·중립·약세 막대와 위원별 판단과 근거', body: `<p>분석가 6명(추세, 평균회귀, 파동·구조, 거래량·수급, 실적·밸류, 이벤트)과 데스크 5곳(시장, 기술, 수급, 펀더멘털, 공시·뉴스)이 각자 판단해요. 카드마다 <b>강세/약세/중립, 확신도, 근거 한 줄</b>이 있어요. 분석가의 판단은 20거래일 뒤 실제 가격으로 채점돼요.</p>` },
+  { id: 'debate', title: 'AI 위원회: 토론', img: 'g-debate.webp', alt: '위원회 토론: 채팅 형식 말풍선, 답장 인용, 근거 번호를 눌러 펼친 모습', body: `<ol><li>위원들이 <b>채팅처럼 한 마디씩</b> 서로 반박해요. 답장에는 상대 말이 인용돼요. 마지막은 레드팀이 합의한 것과 풀리지 않은 것을 정리해요.</li><li>말 끝의 <b>근거 번호</b>(P1, Q1, N8…)를 누르면 그 근거가 펼쳐지고, 원문이나 근거 정리로 갈 수 있어요.</li><li>토론 아래 <b>해설·근거 정리</b>를 열면 강세·약세 근거와 근거 자료 전체가 있어요.</li><li><b>토론에 참여</b>: 질문을 쓰고 위원회 전체(바로 답해요) 또는 전문가(반도체, 2차전지, 매크로…)를 골라 물어요.</li></ol>` },
+  { id: 'find', title: '찾기', img: 'g-find.webp', alt: '찾기: 검색창과 주식·ETF·코인 탭', body: `<p>하단의 <b>찾기</b>에서 검색하거나, 주식 · ETF · 코인 탭에서 조건으로 걸러요. 주식은 미리 만든 조건(강세 신호 상위, 바닥권 거래량 폭발, 매집 흔적…)을 누르거나 직접 조합하고, 저장하면 새로 걸리는 종목을 알림으로 받아요.</p>` },
+  { id: 'feedback', title: '의견 보내기', body: `<p>화면 곳곳의 👍👎, <a href="survey.html?k=weekly">주간 설문(1분)</a>, <a href="onboarding.html">맞춤 설문(약 7분)</a>으로 알려 주세요. 매주 바뀐 점을 배너 공지로 알려 드려요.</p>` },
+];
+
 export function renderGuide(): string {
-  const body = `${PAGE}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>알파 테스트</span><span>3분</span></div><h1>그노몬 사용법</h1><p class="hero-line">처음 들어오셨다면 이 순서대로 둘러보세요. 언제든 오른쪽 위 ☰ 메뉴에서 다시 열 수 있어요.</p></div></section>
-<section class="block gd"><div class="card">
-<h2>1. 시작하기</h2><ol><li><b>가입</b>: 받은 초대 코드로 한 번 가입하면, 다음부터는 이메일과 비밀번호로 로그인해요.</li><li><b>1분 설문</b>: 투자 경험·보유 기간·관심 업종을 고르면 홈 화면 순서와 추천 스크리너가 맞춰져요. 홈 위쪽 <b>설문 수정하기</b>로 언제든 바꿔요.</li><li><b>크레딧</b>: 알파 동안 매달 기본 크레딧이 들어와요. 모자라면 내 계정에서 더 요청할 수 있어요.</li></ol>
-<h2>2. 홈 화면</h2><ul><li>맨 위 배너: 공지, 설문, 사용법이 돌아가며 나와요.</li><li><b>검색</b>: 종목·ETF·코인 이름, 코드, 초성(ㅅㅅㅈㅈ)으로 찾아요.</li><li><b>매일 AI 리포트</b>: 평일엔 주식 5·ETF 1·코인 1, 주말엔 코인 1개를 AI가 분석해요.</li><li><b>관심 종목</b>: ☆를 누르면 담겨요. 로그인하면 다른 기기에서도 그대로 보여요.</li></ul>
-<h2>3. 종목 리포트 보는 법</h2><ul><li>위쪽 탭: 홈 · 차트 · 기술 분석 · 전략 · 수급 · 펀더멘털 · 뉴스 · AI 위원회.</li><li><b>핵심 포인트</b>: 중기 기술 신호, 기술적 적정가, 수급 흔적, 증권가 평균 목표가를 먼저 보여 줘요.</li><li><b>AI 위원회</b>: 분석가 6명과 데스크 5곳이 근거를 들어 토론하고, 강세·기본·약세 시나리오와 무효화 조건을 정리해요.</li><li>차트는 지표를 하나씩 켜고 끌 수 있고, 선을 그어 볼 수 있어요.</li></ul>
-<h2>4. 스크리너</h2><p>미리 만든 조건(강세 신호 상위, 거래량 급증, 매집 흔적 등)을 누르거나 조건을 직접 조합해요. 조건을 저장하면 새로 걸리는 종목을 알림으로 받아요.</p>
-<h2>5. AI에게 묻기</h2><p>오른쪽 아래 말풍선을 누르면 질문창이 열려요. 질문마다 모델(빠른 답 · 표준 · 심층)을 고르고, 쓰는 크레딧이 미리 보여요.</p>
-<h2>6. 의견 보내기</h2><p>화면 곳곳의 👍👎와 의견 칸, 그리고 <a href="survey.html?k=weekly">주간 설문</a> · <a href="survey.html?k=midterm">중간 설문</a>으로 알려 주세요. 매주 바뀐 점을 공지로 알려 드려요.</p>
-<p class="gd-note">그노몬의 모든 내용은 계산 결과와 시나리오 해설이고, 투자 권유가 아니에요. 투자 판단과 결과의 책임은 투자자 본인에게 있어요.</p>
-</div></section>`;
+  const toc = GUIDE_STEPS.map((s, i) => `<a href="#g-${s.id}">${i + 1}. ${s.title}</a>`).join('');
+  const steps = GUIDE_STEPS.map((s, i) => `<section class="gd-step" id="g-${s.id}"><h2>${i + 1}. ${s.title}</h2><div class="gd-row${s.img ? '' : ' gd-noimg'}">${s.img ? `<figure><img src="guide/${s.img}" alt="${s.alt}" loading="lazy" width="390"><figcaption>실제 화면 (SK하이닉스 리포트 예시)</figcaption></figure>` : ''}<div class="gd-text">${s.body}</div></div></section>`).join('');
+  const body = `${PAGE}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>알파 테스트</span><span>5분</span></div><h1>그노몬 사용법</h1><p class="hero-line">실제 화면으로 설명해요. 직접 눌러 보며 익히려면 둘러보기를 시작하세요.</p>
+<div class="gd-tours"><a class="btn-primary" href="index.html?tour=1">홈 둘러보기 시작 ›</a><a class="btn-ghost" href="000660/index.html?tour=1">종목 리포트 둘러보기 ›</a></div></div></section>
+<section class="block gd"><nav class="gd-toc" aria-label="목차">${toc}</nav>${steps}
+<p class="gd-note">그노몬의 모든 내용은 계산 결과와 시나리오 해설이고, 투자 권유가 아니에요. 투자 판단과 결과의 책임은 투자자 본인에게 있어요.</p></section>
+<style>.gd{max-width:980px}.gd-tours{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.gd-tours a{display:inline-flex;text-decoration:none}.gd-toc{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.gd-toc a{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;text-decoration:none;color:var(--fg)}
+.gd-step{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin:14px 0;scroll-margin-top:80px}.gd-step h2{margin:0 0 12px}.gd-row{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:start}.gd-noimg{grid-template-columns:1fr}.gd-row figure{margin:0;position:sticky;top:80px}.gd-row img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(15,34,68,.08)}.gd-row figcaption{font-size:12px;color:var(--muted);margin-top:4px;text-align:center}.gd-text li{margin:6px 0}
+@media (max-width:820px){.gd-row{grid-template-columns:1fr}.gd-row figure{position:static;max-width:340px;margin:0 auto}}</style>`;
   return shell('', '사용법 · 그노몬', body, {});
 }
 

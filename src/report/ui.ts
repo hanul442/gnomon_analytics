@@ -218,6 +218,66 @@ export const LIVE_JS = `
     setTimeout(tick, 300);
   })();`;
 
+/**
+ * The guided tour (G-74): on the real page, a dimmed screen with a hole around one part and a bubble
+ * that says what it is. Home and report pages each have their own steps. It starts once on the first
+ * visit, or any time with ?tour=1 (the guide's buttons), and remembers when it was finished or skipped.
+ */
+export const TOUR_JS = `
+  (function () {
+    var STEPS = {
+      home: [
+        ['#top', '검색', '종목·ETF·코인을 이름, 코드, 초성(ㅅㅅㅈㅈ)으로 찾아요. 하단의 찾기에서는 조건으로 걸러 볼 수도 있어요.'],
+        ['#banner', '배너', '공지, 크레딧 이벤트, 설문, 사용법이 돌아가며 나와요. 이벤트의 받기를 누르면 크레딧이 바로 들어와요.'],
+        ['.ix-row', '시장 한눈에', '코스피·코스닥과 시장 온도예요. 시장 온도는 전 종목의 기술 신호를 모은 거예요.'],
+        ['#watch', '관심 종목', '어디서든 ☆를 누르면 여기에 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
+        ['#today', '오늘 볼 것', '내 보기 방식(초보·단타·스윙·장기)에 맞춰 오늘 볼 종목 네 개를 골라 이유와 함께 보여 줘요.'],
+        ['.menu-btn', '☰ 메뉴', '보기 방식을 바꾸거나 설문, 성적표, 내 계정으로 가요.'],
+      ],
+      report: [
+        ['.chips', '탭 4개', '요약 · 차트 · AI 위원회 · 자료. 처음엔 요약만 봐도 충분해요.'],
+        ['#home-conclusion', '지금 판단', '위아래 테스트 가격과 그때의 시나리오예요. 가격을 넘거나 깨면 어느 쪽으로 갈지, 확률과 함께 보여 줘요.'],
+        ['#home-conclusion .cl-row', '줄을 눌러 보세요', '시나리오가 펼쳐져요. 무엇이 나오면 그렇게 되는지, 언제 틀렸다고 볼지가 나와요. 약세 줄 안에는 최악의 경우가 있어요.'],
+        ['#t-ai', 'AI 위원회', '분석가 6명과 데스크 5곳의 표결, 서로 반박하는 토론, 근거 정리가 있어요. 토론에 직접 질문할 수도 있어요.'],
+        ['#t-data', '자료', '기술·수급·실적·뉴스와 공시 원자료예요.'],
+        ['.chat-fab', 'AI 질문', '어느 화면에서든 이 종목에 대해 물어볼 수 있어요.'],
+      ],
+    };
+    var kind = document.getElementById('tab-ai') ? 'report' : document.getElementById('today') ? 'home' : null;
+    if (!kind) return;
+    var key = 'gnm-tour-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
+    try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
+    if (seen && !forced) return;
+    var steps = STEPS[kind].filter(function (s) { var el = document.querySelector(s[0]); return el && el.getClientRects().length; });
+    if (!steps.length) return;
+    var i = 0, hole, tip;
+    var end = function () { try { localStorage.setItem(key, '1'); } catch (e) {} if (hole) hole.remove(); if (tip) tip.remove(); window.removeEventListener('resize', place); };
+    var place = function () {
+      var el = document.querySelector(steps[i][0]); if (!el) return;
+      var r = el.getBoundingClientRect(), pad = 6;
+      hole.style.cssText = 'top:' + (r.top - pad) + 'px;left:' + (r.left - pad) + 'px;width:' + (r.width + pad * 2) + 'px;height:' + (r.height + pad * 2) + 'px';
+      var below = r.bottom + 180 < innerHeight || r.top < 200;
+      tip.style.top = (below ? Math.min(r.bottom + 14, innerHeight - 190) : Math.max(r.top - 14 - tip.offsetHeight, 10)) + 'px';
+    };
+    var show = function () {
+      var s = steps[i], el = document.querySelector(s[0]);
+      el.scrollIntoView({ block: 'center' });
+      tip.innerHTML = '<div class="tr-n">' + (i + 1) + ' / ' + steps.length + '</div><b>' + s[1] + '</b><p>' + s[2] + '</p><div class="tr-b"><button type="button" data-t="x">그만 보기</button>' + (i ? '<button type="button" data-t="p">이전</button>' : '') + '<button type="button" data-t="n" class="tr-next">' + (i === steps.length - 1 ? '끝' : '다음') + '</button></div>';
+      setTimeout(place, 60);
+    };
+    var start = function () {
+      hole = document.createElement('div'); hole.className = 'tr-hole';
+      tip = document.createElement('div'); tip.className = 'tr-tip'; tip.setAttribute('role', 'dialog'); tip.setAttribute('aria-label', '사용법 둘러보기');
+      document.body.appendChild(hole); document.body.appendChild(tip);
+      tip.addEventListener('click', function (e) { var t = e.target.getAttribute && e.target.getAttribute('data-t'); if (!t) return; if (t === 'x') return end(); i += t === 'n' ? 1 : -1; if (i >= steps.length) return end(); show(); });
+      window.addEventListener('resize', place); window.addEventListener('scroll', place, { passive: true });
+      show();
+    };
+    setTimeout(start, forced ? 300 : 1200);
+  })();`;
+
+export const TOUR_CSS = `.tr-hole{position:fixed;z-index:200;border-radius:14px;box-shadow:0 0 0 9999px rgba(10,20,35,.6);pointer-events:none;transition:all .2s}.tr-tip{position:fixed;z-index:201;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 28px));background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 14px 36px rgba(0,0,0,.25)}.tr-tip b{font-size:16px}.tr-tip p{margin:6px 0 10px;font-size:14px;line-height:1.6;color:var(--fg2)}.tr-n{font-size:11.5px;font-weight:700;color:var(--accent-strong)}.tr-b{display:flex;gap:6px;justify-content:flex-end}.tr-b button{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.tr-b [data-t=x]{margin-right:auto;border:0;color:var(--muted)}.tr-b .tr-next{background:var(--navy);color:#fff;border-color:var(--navy)}`;
+
 export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:#1d6b3a;border-color:#bfe3cb;background:#effaf2}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(209,55,61,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(42,98,201,.22)}100%{background:transparent}}`;
 
 export const MENU_CSS = `.menu-btn{width:38px;height:38px;border:0;border-radius:10px;background:none;color:#fff;cursor:pointer;display:grid;place-items:center;margin-left:2px}.menu-btn svg{width:22px;height:22px}.menu-btn:hover{background:rgba(255,255,255,.1)}
