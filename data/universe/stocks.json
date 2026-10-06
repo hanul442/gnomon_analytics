@@ -3160,11 +3160,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "017250",
-  "name": "인터엠",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "017370",
   "name": "우신시스템",
   "market": "KOSPI"
@@ -5110,6 +5105,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "047080",
+  "name": "한빛소프트",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "047310",
   "name": "파워로직스",
   "market": "KOSDAQ"
@@ -5577,6 +5577,11 @@
  {
   "symbol": "054210",
   "name": "이랜텍",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "054220",
+  "name": "비츠로시스",
   "market": "KOSDAQ"
  },
  {
@@ -7465,6 +7470,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "094800",
+  "name": "맵스리얼티",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "094820",
   "name": "일진파워",
   "market": "KOSDAQ"
@@ -7562,11 +7572,6 @@
  {
   "symbol": "096530",
   "name": "씨젠",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "096630",
-  "name": "에스코넥",
   "market": "KOSDAQ"
  },
  {
@@ -10145,6 +10150,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "238490",
+  "name": "힘스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "239340",
   "name": "이스트에이드",
   "market": "KOSDAQ"
@@ -10457,6 +10467,11 @@
  {
   "symbol": "261200",
   "name": "덴티스",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "261520",
+  "name": "이지스",
   "market": "KOSDAQ"
  },
  {
@@ -10902,11 +10917,6 @@
  {
   "symbol": "290270",
   "name": "휴네시온",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "290520",
-  "name": "신도기연",
   "market": "KOSDAQ"
  },
  {
@@ -12922,11 +12932,6 @@
  {
   "symbol": "448280",
   "name": "에코아이",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "448710",
-  "name": "코츠테크놀로지",
   "market": "KOSDAQ"
  },
  {
