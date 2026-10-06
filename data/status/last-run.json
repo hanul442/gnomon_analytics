@@ -1,27 +1,27 @@
 {
- "at": "2026-10-06T10:00:52.840Z",
+ "at": "2026-10-06T10:07:57.846Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2768
+   "count": 2767
   },
   {
    "source": "naver:m-stock:etf",
    "ok": true,
-   "count": 1171
+   "count": 1172
   },
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2698,
+   "count": 2697,
    "error": "27 failed "
   },
   {
    "source": "naver:fchart:day:etf",
    "ok": true,
-   "count": 1170,
+   "count": 1171,
    "error": "1 failed "
   },
   {
@@ -252,12 +252,7 @@
    ]
   },
   {
-   "symbol": "314930",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "000020",
+   "symbol": "001520",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -267,7 +262,12 @@
    "failedSources": []
   },
   {
-   "symbol": "001520",
+   "symbol": "314930",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "000020",
    "report": "EXISTS",
    "failedSources": []
   },
