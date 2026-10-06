@@ -125,7 +125,8 @@ export function buildEvidence(report: DailyReport): EvidenceItem[] {
         detail: `일봉 ${st.bias}, 주봉 ${m.weeklyStructure?.bias ?? '없음'}; 최근 돌파 ${b ? `${b.date} ${b.type} ${b.direction} (스윙 ${won(b.brokenSwing.price)})` : '없음'}; 피보나치 ${st.fibonacci?.retracement != null ? `${(st.fibonacci.retracement * 100).toFixed(1)}%` : '없음'}; 지지·저항 ${st.levels.map((l) => `${l.kind === 'SUPPORT' ? '지지' : '저항'} ${won(l.price)}`).join(', ')}; 볼린저 %B ${st.bollinger ? Math.round(st.bollinger.percentB * 100) : '없음'}` });
     }
     if (m.flows) {
-      const sums = m.flows.sums.map((x) => `${x.days}일 외국인 ${x.foreign ?? '없음'}주, 기관 ${x.institution ?? '없음'}주, 개인 ${x.individual ?? '없음'}주`).join('; ');
+      const eok = (v: number | null | undefined) => (v == null ? '' : `(약 ${v > 0 ? '+' : ''}${(v / 1e8).toFixed(1)}억 원)`);
+      const sums = m.flows.sums.map((x) => `${x.days}일 외국인 ${x.foreign ?? '없음'}주${eok(x.foreignValue)}, 기관 ${x.institution ?? '없음'}주${eok(x.institutionValue)}, 개인 ${x.individual ?? '없음'}주${eok(x.individualValue)}`).join('; ');
       items.push({ id: 'Q1', kind: 'FLOW', label: '투자자별 수급', url: '#tab-flows',
         detail: `${sums}. 외국인 보유율 20일 변화 ${m.flows.holdRatioChange20?.toFixed(2) ?? '없음'}%p. 수급 흔적 ${m.footprint.state} (점수 ${m.footprint.score}). ${m.footprint.reasons.join(' ')}` });
     }

@@ -13,7 +13,7 @@ export interface SignalScore { date: string; preset: string; symbol: string; hor
 
 /** How each preset picks its top ten (the same order its screener view defaults to). */
 const ORDER: Record<string, (r: readonly unknown[]) => number> = {
-  volsurge: (r) => Number(r[14] ?? 0), accum: (r) => Number(r[17] ?? 0), breakout: (r) => Number(r[15] ?? 0),
+  volsurge: (r) => Number(r[14] ?? 0), bottomvol: (r) => Number(r[26] ?? 0), accum: (r) => Number(r[17] ?? 0), breakout: (r) => Number(r[15] ?? 0),
   value: (r) => -Number(r[11] ?? 0), rebound: (r) => -Number(r[9] ?? 0), hot: (r) => Number(r[11] ?? 0), risky: (r) => Number(r[21] ?? 0),
 };
 

@@ -170,9 +170,11 @@ const OVERLAYS: [string, string, boolean][] = [
   ['ma5', '이동평균 5', false], ['ma20', '이동평균 20', true], ['ma60', '이동평균 60', true], ['ma120', '이동평균 120', false],
   ['ema12', '지수이동평균 12·26', false], ['bb', '볼린저 밴드', false], ['ichimoku', '일목균형표', false], ['env', '엔벨로프', false],
   ['levels', '지지·저항', false], ['fib', '피보나치', false], ['fair', '적정가 범위', false], ['forecast', '예측 범위', false],
+  ['spikes', '거래량 폭발일', false],
 ];
 const PANES: [string, string, boolean][] = [
   ['volume', '거래량', true], ['rsi', 'RSI', false], ['macd', 'MACD', false], ['stoch', '스토캐스틱', false],
+  ['value', '거래대금', false], ['ad', '매집·분산(A/D)', false],
   ['cci', 'CCI', false], ['wr', '윌리엄스 %R', false], ['obv', 'OBV', false], ['atr', 'ATR', false],
 ];
 const DESC: Record<string, string> = {
@@ -180,6 +182,7 @@ const DESC: Record<string, string> = {
   ema12: '최근 가격에 무게를 둔 평균 두 개', bb: '20일 평균 ± 표준편차 2배, 변동 범위', ichimoku: '구름대로 보는 추세와 지지', env: '20일 평균 ±5% 띠',
   levels: '자주 막히거나 받친 가격대', fib: '최근 큰 흐름의 되돌림 비율', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위(10~90%)',
   volume: '하루 거래된 주식 수', rsi: '과열(70 이상)·과매도(30 이하)', macd: '단기·장기 평균의 차이로 보는 추세 전환', stoch: '최근 범위 안에서 지금 가격의 위치',
+  spikes: '20일 평균의 3배 넘게 거래된 날을 캔들 아래에 표시(▲ 오른 날 · ▼ 내린 날)', value: '하루 거래대금(종가 × 거래량, 억 원). 진하게 칠한 날은 20일 평균의 3배 이상', ad: '거래가 많은 날 종가가 하루 범위의 위쪽(매집 쪽)·아래쪽(분산 쪽)에서 끝났는지 누적한 선',
   cci: '평균에서 얼마나 벗어났는지', wr: '최근 고점 대비 위치(과열·과매도)', obv: '오른 날·내린 날 거래량 누적', atr: '하루 평균 움직임 폭',
 };
 const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true" class="gear"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -316,6 +319,13 @@ window.addEventListener('DOMContentLoaded', function () {
     stoch: function (p) { var k = C.map(function (c, i) { if (i < 13) return null; var h = hh(14, i), l = ll(14, i); return h === l ? 50 : (c - l) / (h - l) * 100; }); var ks = sma(k.map(function (x) { return x == null ? 0 : x; }), 3).map(function (x, i) { return i < 15 ? null : x; }); var ds = sma(ks.map(function (x) { return x == null ? 0 : x; }), 3).map(function (x, i) { return i < 17 ? null : x; }); return [line(ks, '#00968a', p, { title: '%K' }), line(ds, '#d97706', p, { title: '%D' })]; },
     cci: function (p) { var tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }), m = sma(tp, 20); return [line(tp.map(function (x, i) { if (m[i] == null) return null; var md = 0; for (var j = i - 19; j <= i; j++) md += Math.abs(tp[j] - m[i]); md /= 20; return md === 0 ? 0 : (x - m[i]) / (0.015 * md); }), '#0e7490', p, { title: 'CCI 20' })]; },
     wr: function (p) { return [line(C.map(function (c, i) { if (i < 13) return null; var h = hh(14, i), l = ll(14, i); return h === l ? -50 : (h - c) / (h - l) * -100; }), '#be185d', p, { title: '%R 14' })]; },
+    value: function (p) {
+      var tv = bars.map(function (b) { return b.close * b.volume / 1e8; }), m = sma(tv, 20);
+      var s = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'price', precision: 1, minMove: 0.1 }, priceLineVisible: false, lastValueVisible: true, title: '거래대금(억)' }, p);
+      s.setData(bars.map(function (b, i) { var big = i >= 20 && m[i - 1] && tv[i] >= m[i - 1] * 3, up = !i || b.close >= bars[i - 1].close; return { time: b.date, value: tv[i], color: big ? (up ? 'rgba(209,55,61,.95)' : 'rgba(42,98,201,.95)') : (up ? 'rgba(209,55,61,.35)' : 'rgba(42,98,201,.35)') }; }));
+      return [s, line(m, '#64748b', p, { title: '20일 평균' })];
+    },
+    ad: function (p) { var a = 0; return [line(bars.map(function (b) { a += b.high > b.low ? ((b.close - b.low) - (b.high - b.close)) / (b.high - b.low) * b.volume : 0; return a; }), '#0f766e', p, { title: 'A/D', lastValueVisible: false })]; },
     obv: function (p) { var o = 0; return [line(C.map(function (c, i) { if (i) o += c > C[i - 1] ? V[i] : c < C[i - 1] ? -V[i] : 0; return o; }), '#475569', p, { title: 'OBV' })]; },
     atr: function (p) { var a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * 13 + tr) / 14; return i < 14 ? null : a; }), '#223456', p, { title: 'ATR 14' })]; }
   };
@@ -329,7 +339,11 @@ window.addEventListener('DOMContentLoaded', function () {
     chart.panes().forEach(function (p, i) { p.setStretchFactor(i === 0 ? 3 : 1); });
     el.style.height = (mobile ? 360 : 440) + paneOrder.length * (mobile ? 90 : 110) + 'px';
   };
+  // Volume spikes: 3× the 20-session average, marked under the candle.
+  var spikeMarks = null;
+  var spikeList = function () { var avg = sma(V, 20), out = []; for (var i = 20; i < bars.length; i++) if (avg[i - 1] && V[i] >= avg[i - 1] * 3) { var up = C[i] >= C[i - 1]; out.push({ time: t(i), position: 'belowBar', shape: up ? 'arrowUp' : 'arrowDown', color: up ? '#d1373d' : '#2a62c9', text: (V[i] / avg[i - 1]).toFixed(1) + '배' }); } return out; };
   var setOverlay = function (k, on) {
+    if (k === 'spikes') { if (!spikeMarks) spikeMarks = L.createSeriesMarkers(candle, []); spikeMarks.setMarkers(on ? spikeList() : []); return; }
     if (lineMakers[k]) { (priceLines[k] || []).forEach(function (pl) { candle.removePriceLine(pl); }); priceLines[k] = on ? lineMakers[k]() : []; return; }
     (built[k] || []).forEach(function (s) { chart.removeSeries(s); });
     built[k] = on ? overlayMakers[k]() : [];

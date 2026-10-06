@@ -29,6 +29,10 @@ export const FIELDS: readonly Field[] = [
   { key: 'tv', label: '거래대금', idx: 19, kind: 'num', unit: '억 원' },
   { key: 'hi52', label: '52주 고점 대비', idx: 20, kind: 'num', unit: '%' },
   { key: 'risk', label: '공시 위험 단계', idx: 21, kind: 'num', unit: '(0~3)' },
+  { key: 'lo52', label: '52주 저점 대비', idx: 23, kind: 'num', unit: '%', hint: '종가 ÷ 1년 최저가 − 1 (0이면 신저가)' },
+  { key: 'tvr', label: '거래대금 급증(오늘)', idx: 24, kind: 'num', unit: '배', hint: '오늘 거래대금 ÷ 직전 20일 평균' },
+  { key: 'ad', label: '매집·분산 강도(A/D)', idx: 25, kind: 'num', unit: '(−100~100)', hint: '20일 동안 거래가 많은 날 종가가 하루 범위 위쪽에서 끝났는지(+) 아래쪽인지(−)' },
+  { key: 'spike10', label: '최근 10일 최대 거래량', idx: 26, kind: 'num', unit: '배', hint: '최근 10거래일 중 가장 많이 거래된 날 ÷ 그 전 20일 평균' },
 ];
 
 export const FIELD_INDEX: Record<string, number> = Object.fromEntries(FIELDS.map((f) => [f.key, f.idx]));
@@ -36,6 +40,7 @@ export const FIELD_INDEX: Record<string, number> = Object.fromEntries(FIELDS.map
 /** Ready-made screens; picking one fills the builder, so every preset can be edited. */
 export const PRESETS: readonly { key: string; label: string; hint: string; screen: Screen }[] = [
   { key: 'top', label: '강세 신호 상위', hint: '지표 16개 종합 점수가 높은 순', screen: { match: 'all', rules: [{ f: 'level', op: '=', v: 'BULL' }], maxRisk: 2 } },
+  { key: 'bottomvol', label: '바닥권 거래량 폭발 (아직 안 오름)', hint: '52주 저점 20% 안쪽, 최근 10일 안에 거래량이 평소 3배 넘게 터졌는데 20일 등락이 +5% 이하인 종목', screen: { match: 'all', rules: [{ f: 'lo52', op: '<=', v: 20 }, { f: 'spike10', op: '>=', v: 3 }, { f: 'r20', op: '<=', v: 5 }, { f: 'tv', op: '>=', v: 3 }], maxRisk: 2 } },
   { key: 'volsurge', label: '거래량 급증·상승', hint: '오늘 거래량이 20일 평균의 3배 이상이고 오른 종목', screen: { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 3 }, { f: 'chg', op: '>=', v: 1 }], maxRisk: 2 } },
   { key: 'accum', label: '매집 흔적', hint: 'OBV는 올랐는데 가격은 제자리인 종목', screen: { match: 'all', rules: [{ f: 'flow', op: '=', v: 'A' }, { f: 'tv', op: '>=', v: 10 }], maxRisk: 2 } },
   { key: 'breakout', label: '52주 고점 돌파 시도', hint: '52주 고점 3% 안쪽에서 거래량이 늘어난 종목', screen: { match: 'all', rules: [{ f: 'hi52', op: '>=', v: -3 }, { f: 'vol5', op: '>=', v: 1.5 }], maxRisk: 2 } },
