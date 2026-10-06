@@ -35,11 +35,11 @@ export function screenerRows(universe: readonly UniverseRow[], calcs: ReadonlyMa
 export function renderScreener(): string {
   // G-72: 찾기 — one place to find anything: search across stocks, ETFs and coins, then browse each
   // market with conditions. The ETF and coin pages became tabs here.
-  const body = `<section class="find-head" id="top"><h1>찾기</h1><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 이름이나 코드 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="검색" aria-controls="search-results"></label>
+  const body = `<section class="find-head" id="top"><h1>자세히 검색</h1><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 이름이나 코드 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div>
 <nav class="find-tabs" role="tablist" aria-label="시장"><button type="button" role="tab" data-find="stock" aria-selected="true">주식 <span id="sc-count" class="muted"></span></button><button type="button" role="tab" data-find="etf" aria-selected="false">ETF</button><button type="button" role="tab" data-find="coin" aria-selected="false">코인</button><a href="reports.html">AI 리포트</a></nav></section>
 <div id="find-stock"><section class="block"><div class="pl-chips sc-presets" role="group" aria-label="빠른 조건">${PRESETS.map((p, i) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${i === 0}" title="${p.hint}">${p.label}${i ? ' <span class="lockmark">플러스</span>' : ''}</button>`).join('')}</div></section>
-<section class="block"><div class="card sc-form" id="sc-form">
+<section class="block" id="build"><div class="card sc-form" id="sc-form">
 <div class="sc-top"><b>조건</b><label class="sc-inline">조건을<select name="match"><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></label>
 <label class="sc-inline"><input type="checkbox" name="norisk" checked> 공시 위험 2단계 이상 빼기</label>
 <label class="sc-inline">정렬<select name="sort"><option value="score">신호 점수 높은 순</option><option value="vol1">거래량 급증 큰 순</option><option value="r20">20거래일 등락 큰 순</option><option value="r20a">20거래일 등락 작은 순</option><option value="cap">시가총액 큰 순</option><option value="tv">거래대금 큰 순</option><option value="tvr">거래대금 급증 큰 순</option><option value="spike10">최근 10일 거래량 폭발 큰 순</option><option value="ad">매집 강도(A/D) 큰 순</option><option value="gap">적정가보다 많이 아래 순</option></select></label></div>
@@ -61,7 +61,7 @@ html[data-plan=free] .sc-table th:nth-child(7),html[data-plan=free] .sc-table td
 </div>${coinsBlock()}
 <style>.find-head{max-width:1180px;margin:14px auto 0;padding:0 24px}.find-head h1{font-size:24px;margin:4px 0 12px}.find-head .search-box{background:#fff;border:2px solid var(--navy)}.find-tabs{display:flex;gap:6px;margin:14px 0 4px;overflow-x:auto}.find-tabs>*{flex:none;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:8px 16px;font:inherit;font-size:14.5px;font-weight:700;cursor:pointer;text-decoration:none;color:var(--fg)}.find-tabs [aria-selected=true]{background:var(--navy);color:#fff;border-color:var(--navy)}.find-tabs [aria-selected=true] .muted{color:#c9d3e3}.find-tabs a{color:var(--accent-strong)}#find-stock .sc-presets{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#find-stock .sc-presets>*{flex:none}@media (max-width:820px){.find-head{padding:0 14px}}</style>
 <footer id="sources" style="padding:24px 0 0"><p>계산 결과이고, 투자 권유가 아니에요. 기술 신호는 오를 확률이 아니에요. 공시 위험은 제목으로 분류한 경고라 원문을 꼭 확인해 주세요.</p></footer>`;
-  return shell('', '찾기 | Gnomon Analytics', body, { active: 'screener', scripts: SCREENER_SCRIPT + SEARCH_SCRIPT + FIND_CN_SCRIPT + FIND_TABS_SCRIPT });
+  return shell('', '자세히 검색 | Gnomon Analytics', body, { active: 'screener', scripts: SCREENER_SCRIPT + SEARCH_SCRIPT + FIND_CN_SCRIPT + FIND_TABS_SCRIPT });
 }
 
 /** 찾기 tabs: 주식 is the screener; ETF and 코인 share one list. #etf / #coin open those tabs. */

@@ -604,7 +604,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const signals = await trackSignals(root, rows, dataDate, dataDate ?? kstParts(new Date()).date);
   await writeFile(join(siteDir, 'scorecard.html'), renderScorecard(home.filter((e) => e.group !== 'past'), signals.board));
   await writeFile(join(siteDir, 'terms.html'), renderTerms());
-  await writeFile(join(siteDir, 'paper.html'), renderPaper(home.filter((e) => e.group !== 'past')));
+  await writeFile(join(siteDir, 'paper.html'), renderPaper());
   // Screener over every stock's free computation (G-43).
   await writeFile(join(siteDir, 'screener.html'), renderScreener());
   await writeFile(join(siteDir, 'screener.json'), JSON.stringify({ date: dataDate, rows }));

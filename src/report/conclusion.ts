@@ -38,7 +38,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const row = (cls: string, sc: typeof bull, label: string, px: string, what: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc ? ' aria-expanded="false"' : ' disabled'}>${px}<div class="cl-what">${what} ${label} 시나리오 ${odds(sc)}${sc?.zone ? `<small>20거래일 가격대 ${zone(sc.zone)}</small>` : ''}</div>${sc ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
   const rows = [
     upper !== undefined || bull ? row('cl-up', bull, '강세', `<div class="cl-px"><span class="cl-arrow">▲</span><b>${upper !== undefined ? won(upper) : '위쪽'}</b><small>${upper !== undefined ? gap(upper, p.close) : ''}</small></div>`, `<b>${upper !== undefined ? '이 가격 위로 올라서면' : '오르는 쪽으로 가면'}</b>`) : '',
-    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b>${won(p.close)}</b><small>지금</small></div>`, `<b>${upper !== undefined && lower !== undefined ? '두 가격 사이에 머물면' : '지금 가격 근처에서는'}</b>`),
+    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small>지금</small></div>`, `<b>${upper !== undefined && lower !== undefined ? '두 가격 사이에 머물면' : '지금 가격 근처에서는'}</b>`),
     lower !== undefined || bear ? row('cl-down', bear, '약세', `<div class="cl-px"><span class="cl-arrow">▼</span><b>${lower !== undefined ? won(lower) : '아래쪽'}</b><small>${lower !== undefined ? gap(lower, p.close) : ''}</small></div>`, `<b>${lower !== undefined ? '이 가격 아래로 내려가면' : '내리는 쪽으로 가면'}</b>`) : '',
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
@@ -85,8 +85,7 @@ export function voteSection(report: DailyReport): string {
   const n = (k: string) => members.filter((m) => m.stance === k).length;
   const order = { BULLISH: 0, NEUTRAL: 1, INSUFFICIENT_DATA: 2, BEARISH: 3 } as const;
   const rows = [...members].sort((a, b) => order[a.stance] - order[b.stance]).map((m) => `<li class="vt-m" data-member="${m.id}"><div class="vt-who"><b>${esc(m.who)}</b><span class="vt-s ${VOTE[m.stance][1]}">${VOTE[m.stance][0]}${m.conf != null ? ` · 확신 ${Math.round(m.conf <= 1 ? m.conf * 100 : m.conf)}%` : ''}</span></div><p>${esc(m.why)}</p></li>`).join('');
-  return `<section class="block" id="vote"><div class="block-head"><h2>위원회 표결</h2><span class="muted">분석가 ${(c.analysts ?? []).length}명 · 데스크 ${(c.desks ?? []).length}곳</span></div><div class="card vt">
-${tallies(members)}
+  return `<section class="block" id="vote"><div class="block-head"><h2>위원별 판단</h2><span class="muted">분석가 ${(c.analysts ?? []).length}명 · 데스크 ${(c.desks ?? []).length}곳</span></div><div class="card vt">
 <p class="vt-help pc-only-beginner">강세는 '오를 쪽', 약세는 '내릴 쪽', 중립은 '아직 어느 쪽도 아니다'로 본다는 뜻이에요. 확신은 그 판단을 얼마나 자신하는지예요.</p><p class="vt-help pc-not-all">내 보기 방식에 맞는 위원으로 위원회를 꾸렸어요. 토론도 이 위원들 말만 보여요. <a href="#" data-open-view>보기 방식 바꾸기</a></p>${viewSeats(members.map((m) => m.id))}<ul class="vt-list">${rows}</ul><button type="button" class="vt-more">다른 위원도 보기</button><p class="fine">분석가는 각자 맡은 방법(추세·평균회귀·수급·실적 등)으로, 데스크는 맡은 자료(시장·기술·수급·실적·공시뉴스)로 판단해요. 분석가의 판단은 20거래일 뒤 실제 가격으로 채점돼 성적표에 쌓여요.</p></div></section>`;
 }
 

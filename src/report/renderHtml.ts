@@ -290,7 +290,7 @@ ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.d
 .panel{display:block}.panel[hidden]{display:none}.panel+.panel{margin-top:32px}.js-tabs .panel+.panel{margin-top:0}.js-tabs .panel-title{display:none}.panel-title{margin:0 0 12px}.panel:focus{outline:none}
 footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--muted);font-size:12px}footer p{margin:2px 0}
 .bottom-nav{display:none}.site-links{display:flex;flex-wrap:wrap;gap:6px 16px;max-width:1180px;margin:8px auto 0;padding:0 24px;font-size:12px;color:var(--muted)}.site-links a{color:var(--fg2)}
-@media (max-width:820px){.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);background:#fff;border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom))}.bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--fg2);text-decoration:none;min-height:44px;justify-content:center}.bottom-nav svg{width:22px;height:22px}body:has(.bottom-nav){padding-bottom:64px}}
+@media (max-width:820px){.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);background:#fff;border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom))}.bottom-nav a{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:600;color:var(--fg2);text-decoration:none;min-height:44px;justify-content:center}.bottom-nav svg{width:22px;height:22px}body:has(.bottom-nav){padding-bottom:64px}}
 .needle{transform-box:view-box;transform-origin:110px 104px;transform:rotate(var(--r));animation:settle 900ms var(--ease-out) 200ms both}
 @keyframes settle{from{transform:rotate(0deg)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
@@ -303,15 +303,16 @@ main{padding:14px 14px 48px}.hero{padding:22px 18px;border-radius:18px}.hero h1{
 footer{padding:0 16px 32px}}
 `;
 
-// G-71: four tabs. The old tab names stay as anchors inside them (#tab-technical opens 자료 at 기술).
-type TabKey = 'home' | 'chart' | 'ai' | 'data';
+// G-71/G-79: six tabs; 기술 and 전략 live in the chart tab as parts (#tab-technical, #tab-strategy still work).
+type TabKey = 'home' | 'chart' | 'ai' | 'flows' | 'fundamentals' | 'news';
 const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'home', label: '요약' },
-  { key: 'chart', label: '차트' },
+  { key: 'chart', label: '차트·기술' },
   { key: 'ai', label: 'AI 위원회' },
-  { key: 'data', label: '자료' },
+  { key: 'flows', label: '수급' },
+  { key: 'fundamentals', label: '실적' },
+  { key: 'news', label: '뉴스·공시' },
 ];
-const DATA_PARTS = [['technical', '기술'], ['flows', '수급'], ['fundamentals', '실적'], ['news', '뉴스·공시']] as const;
 
 export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean }): string {
   const cur = (k: string) => (options.active === k ? ' aria-current="page"' : '');
@@ -321,18 +322,18 @@ export function shell(base: string, title: string, body: string, options: { tabs
   const menu = menuHtml(base, options.archiveHref);
   return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#ffffff"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${PERSONA_BOOT}
-<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.css?v=${ASSET_VERSION}"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
+<link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.${ASSET_VERSION}.css"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
 <nav class="top-links" aria-label="사이트"><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a>${menu.button}</nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>${menu.drawer}
-<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.js?v=${ASSET_VERSION}"></script>${options.scripts ?? ''}<script src="${base}assets/ui.js?v=${ASSET_VERSION}"></script></body></html>`;
+<main id="main" tabindex="-1">${body}<nav class="site-links" aria-label="안내"><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
 function bottomNav(base: string): string {
   const item = (href: string, label: string, path: string) => `<a href="${href}"><svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg><span>${label}</span></a>`;
-  return `<nav class="bottom-nav" aria-label="빠른 이동">${item(`${base}index.html#top`, '홈', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>')}${item(`${base}screener.html`, '찾기', '<circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>')}${item(`${base}index.html#watch`, '관심', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>')}${item(`${base}scorecard.html`, '성적표', '<path d="M5 20V10M10 20V4M15 20v-7M20 20v-11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>')}${item(`${base}pricing.html" data-acct-tab="1`, '내 계정', '<circle cx="12" cy="8.5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1.2-3.6 4-5.2 7-5.2s5.8 1.6 7 5.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>')}</nav>`;
+  return `<nav class="bottom-nav" aria-label="빠른 이동">${item(`${base}index.html#top`, '홈', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>')}${item(`${base}index.html#watch`, '관심', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>')}${item(`${base}scorecard.html`, '성적표', '<path d="M5 20V10M10 20V4M15 20v-7M20 20v-11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>')}${item(`${base}pricing.html" data-acct-tab="1`, '내 계정', '<circle cx="12" cy="8.5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c1.2-3.6 4-5.2 7-5.2s5.8 1.6 7 5.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>')}</nav>`;
 }
 
 const GAUGE_COLORS = ['#1d4fa3', '#3b7be0', '#8fb3ec', '#c4cbc9', '#f0a0a3', '#e5484d', '#a8262b'];
@@ -603,7 +604,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const changes = report.changes?.length ? `<ul class="plain">${report.changes.map((c) => `<li>${escape(c)}</li>`).join('')}</ul>` : '<p class="empty">비교할 이전 리포트가 없어요.</p>';
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   // G-71: the conclusion (scenarios that open on tap) heads the summary tab, above everything else.
-  const home = `${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 ${marketStrip(report)}
@@ -614,7 +615,7 @@ ${marketStrip(report)}
   const technical = `${insightLine(report, 'technical', base)}${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
   // Free: the champion's name. Plus: the ranking. Pro: trades, curves, Monte Carlo and chart markers.
   const strategyTab = `${insightLine(report, 'strategy', base)}${m ? arenaHeadline(m.arena) : ''}${gate(m ? arenaRanking(m.arena) : '', { base, what: '전략 8개 순위표 · 지금 신호 · 검증 구간 수익' })}${gate(m ? arenaPanel(m.arena) : '<div class="card empty">이 리포트에는 전략 대결 기록이 없어요.</div>', { base, what: '매매 시점 · 수익 곡선 · 몬테카를로 · 거래 기록', need: 'pro' })}
-<section class="block"><div class="card paper-link"><div><b>모의투자 장부</b><p class="muted small">전략 챔피언과 AI 분석가를 따라 했다면 어땠는지, 리포트 종목 전체를 모아 따로 보여 줘요.</p></div><a class="btn-primary" href="${base}paper.html">모의투자 보기</a></div></section>`;
+<section class="block"><div class="card paper-link"><div><b>모의투자 장부</b><p class="muted small">전략 챔피언과 AI 분석가를 따라 했다면 어땠는지, 리포트 종목 전체를 모아 따로 보여 줘요.</p></div><a class="btn-primary" href="${base}scorecard.html#paper">성적표에서 보기</a></div></section>`;
   // Investor flows and fundamentals are public data: free. Our footprint reading is Plus.
   const flowsTab = insightLine(report, 'flow', base) + (m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>');
   const fundTab = insightLine(report, 'fundamental', base) + (m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>');
@@ -635,18 +636,19 @@ ${marketStrip(report)}
       : whySection(report);
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary
-    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion', title: '시나리오' }) + voteSection(report) : ''}${aiBody}${sealedDeep ? `<section class="block"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
+    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion', title: '시나리오' }) + parliament(report, ctx.commentaryFrom ?? null, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석을 누르면 그 위원의 판단과 근거가 나와요. 아래는 내 보기 방식에 맞춰 꾸린 위원회예요.' }) + voteSection(report) : ''}${aiBody}${sealedDeep ? `<section class="block"><div class="card">${joinBox(report, base)}</div></section>` : ''}${record}`
     : `<div class="card"><p class="empty">아직 AI 위원회 해설이 없어요. 매일 고른 종목과 요청된 종목에 리포트가 만들어져요. 궁금한 건 오른쪽 아래 <b>AI 질문</b>으로 물어보세요.</p></div>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const p = report.price;
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
   const part = (key: string, label: string, html: string) => `<section class="data-part" id="tab-${key}"><h2 class="data-h">${label}</h2>${html}</section>`;
-  const dataTab = `<nav class="data-nav" aria-label="자료 바로 가기">${DATA_PARTS.map(([k, l]) => `<a href="#tab-${k}">${l}</a>`).join('')}</nav>${part('technical', '기술', technical)}${part('flows', '수급', flowsTab)}${part('fundamentals', '실적', fundTab)}${part('news', '뉴스·공시', newsTab)}`;
   const body = `${bar}${panel('home', home)}
-${panel('chart', `${chartTab}<section class="data-part" id="tab-strategy"><h2 class="data-h">전략</h2>${strategyTab}</section>`)}
+${panel('chart', `<nav class="data-nav" aria-label="차트 탭 바로 가기"><a href="#tab-chart-top">차트</a><a href="#tab-technical">기술 신호</a><a href="#tab-strategy">전략</a></nav><div id="tab-chart-top"></div>${chartTab}${part('technical', '기술 신호', technical)}${part('strategy', '전략', strategyTab)}`)}
 ${panel('ai', aiTab)}
-${panel('data', dataTab)}
+${panel('flows', flowsTab)}
+${panel('fundamentals', fundTab)}
+${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
@@ -859,7 +861,7 @@ ${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산
 <section class="block"><div class="card chart-card"><div class="chart-head"><div><div class="muted small">최근 1년 일봉</div><div class="period-stat" id="period-stat" aria-live="polite"></div></div>
 <div class="seg" role="group" aria-label="기간">${[['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250]].map(([l, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 126}">${l}</button>`).join('')}</div></div>
 <div id="chart" style="height:420px"><p class="empty" id="sp-empty" hidden>차트 데이터를 불러오지 못했어요. 상장 종목 코드가 맞는지 확인해 주세요.</p></div>
-<p class="fine">이동평균 20(주황)·60(보라)과 거래량이에요.</p></div></section>
+<p class="fine" id="sp-ma-note">이동평균 20·60과 거래량이에요.</p></div></section>
 ${open}${gate(detail, { base: '', what: '기술적 적정가' })}${gate(forecast, { base: '', what: '예측 가격 범위', need: 'pro' })}
 ${coin ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트가 생기면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>`}
 <footer id="sources" style="padding:24px 0 0"><p>${coin ? '데이터: 업비트 원화 마켓 일봉(09:00 KST 기준). 매일 저녁 갱신해요. 가상자산은 원금 손실 위험이 커요.' : '데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
@@ -917,7 +919,12 @@ const stockScript = (coin: boolean) => `<script>
     var candle = chart.addSeries(L.CandlestickSeries, { upColor: '#d1373d', downColor: '#2a62c9', borderVisible: false, wickUpColor: '#d1373d', wickDownColor: '#2a62c9' });
     candle.setData(bars);
     var ma = function (n) { var out = [], s = 0; for (var i = 0; i < bars.length; i++) { s += bars[i].close; if (i >= n) s -= bars[i - n].close; if (i >= n - 1) out.push({ time: bars[i].time, value: s / n }); } return out; };
-    [[20, '#e8890c'], [60, '#7a4fb3']].forEach(function (m) { chart.addSeries(L.LineSeries, { color: m[1], lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }).setData(ma(m[0])); });
+    // G-76: the moving averages follow the reader's view (☰ 메뉴 > 내 보기 방식).
+    var VIEW_MA = { beginner: [20, 60], trader: [5, 20], swing: [20, 60], long: [60, 120], all: [20, 60, 120] }, MA_COLOR = { 5: '#d1373d', 20: '#e8890c', 60: '#7a4fb3', 120: '#2a62c9' };
+    var mas = VIEW_MA[document.documentElement.getAttribute('data-persona') || 'swing'] || [20, 60];
+    mas.forEach(function (n) { chart.addSeries(L.LineSeries, { color: MA_COLOR[n], lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }).setData(ma(n)); });
+    window.addEventListener('gnm-persona', function () { location.reload(); });
+    var note = document.getElementById('sp-ma-note'); if (note) note.textContent = '이동평균 ' + mas.join('·') + '과 거래량이에요. 내 보기 방식에 맞춘 지표예요(☰ 메뉴에서 바꿀 수 있어요).';
     var vol = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceScaleId: 'v', priceLineVisible: false, lastValueVisible: false });
     vol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
     vol.setData(bars.map(function (b, i) { return { time: b.time, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(42,98,201,.35)' : 'rgba(209,55,61,.35)' }; }));
@@ -960,5 +967,11 @@ const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).dige
 
 export async function writeAssets(siteDir: string): Promise<void> {
   await mkdir(join(siteDir, 'assets'), { recursive: true });
-  await Promise.all([writeFile(join(siteDir, 'assets', 'app.css'), APP_CSS), writeFile(join(siteDir, 'assets', 'app.js'), APP_JS), writeFile(join(siteDir, 'assets', 'ui.js'), UI_JS)]);
+  // Versioned file names (G-79): the Pages CDN can keep serving an old app.css for a while when only a
+  // query string changes, so each build's assets get their own names. The plain names stay for old pages.
+  const v = ASSET_VERSION;
+  await Promise.all([
+    writeFile(join(siteDir, 'assets', `app.${v}.css`), APP_CSS), writeFile(join(siteDir, 'assets', `app.${v}.js`), APP_JS), writeFile(join(siteDir, 'assets', `ui.${v}.js`), UI_JS),
+    writeFile(join(siteDir, 'assets', 'app.css'), APP_CSS), writeFile(join(siteDir, 'assets', 'app.js'), APP_JS), writeFile(join(siteDir, 'assets', 'ui.js'), UI_JS),
+  ]);
 }

@@ -14,6 +14,7 @@ import { gate } from './plans.js';
 import { ALPHA_BANNERS, BANNER_JS, bannerHtml, eventBanners, type Banner } from './alphaPages.js';
 import { openEvents } from './events.js';
 import { HOME_ORDER } from './persona.js';
+import { FIELD_INDEX, matches, PRESETS } from '../analysis/screenRules.js';
 
 const esc = (value: string): string =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -230,6 +231,34 @@ function filings(entries: readonly HomeEntry[]): string {
 const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class="pl-k">지금 요금제 <b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧</div>
 <p>무료는 한 줄 요약, <b>플러스</b>는 상세 설명, <b>프로</b>는 직접 요청하고 질문하기, <b>맥스</b>는 내 종목을 매주 위원회가 분석해요. 크레딧은 누구나 충전해서 써요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
 
+/** G-78: the reader's saved screens (or the first preset), run on today's screener.json in the page. */
+const MY_SCREENS = `<section class="block" id="myscreens"><div class="block-head"><h2>내 조건에 걸린 종목</h2><a class="more-link" href="screener.html#build">조건 만들기 ›</a></div><div id="ms-body" class="ms-grid"><p class="muted small">불러오는 중이에요.</p></div></section>`;
+const MY_SCREENS_SCRIPT = `<script>
+(function () {
+  var box = document.getElementById('ms-body'); if (!box) return;
+  var IDX = ${JSON.stringify(FIELD_INDEX)}, PRESET = ${JSON.stringify(PRESETS.slice(0, 1).map((x) => ({ name: x.label, screen: x.screen, key: x.key })))}[0];
+  var matches = ${matches.toString()};
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
+  var local = function () { try { return JSON.parse(localStorage.getItem('gnm-screens') || '[]'); } catch (e) { return []; } };
+  var screens = function () { var G = window.GNM; return G && G.api && G.me ? G.call('GET', '/screens').then(function (r) { return r.screens || []; }).catch(function () { return []; }) : Promise.resolve(local()); };
+  Promise.all([fetch('screener.json').then(function (r) { return r.json(); }), (window.GNM && GNM.ready ? GNM.ready : Promise.resolve()).then(screens)]).then(function (all) {
+    var rows = (all[0] && all[0].rows) || [], list = all[1].slice(0, 3), mine = list.length;
+    if (!mine) list = [PRESET];
+    var score = IDX.score;
+    box.innerHTML = list.map(function (x) {
+      var hit = rows.filter(function (r) { return matches(r, x.screen, IDX); }).sort(function (a, b) { return (b[score] || 0) - (a[score] || 0); });
+      var top = hit.slice(0, 4).map(function (r) {
+        var c = r[IDX.chg], href = r[13] ? r[0] + '/index.html' : 'stock.html?c=' + r[0];
+        return '<a class="ms-row" href="' + href + '"><b>' + esc(r[1]) + '</b><span><span data-live="' + r[0] + '" data-live-f="price">' + won(r[IDX.close]) + '</span> <span class="' + (c > 0 ? 'up' : c < 0 ? 'down' : '') + '" data-live="' + r[0] + '" data-live-f="pct">' + (c > 0 ? '+' : '') + Number(c).toFixed(2) + '%</span></span></a>';
+      }).join('');
+      return '<div class="card ms-card"><div class="ms-head"><b>' + esc(x.name) + '</b><span class="muted small">' + hit.length + '종목</span></div>' + (top || '<p class="muted small">오늘은 걸린 종목이 없어요.</p>') + '<a class="ms-more" href="screener.html' + (x.key ? '#' + x.key : '#build') + '">전체 보기 ›</a></div>';
+    }).join('') + (mine ? '' : '<p class="muted small ms-note">스크리너에서 조건을 저장하면 여기에 매일 걸린 종목이 떠요. 지금은 기본 조건(강세 신호 상위)이에요.</p>');
+    if (window.GNM_live) GNM_live.tick();
+  }).catch(function () { box.innerHTML = '<p class="muted small">조건 검색 데이터를 불러오지 못했어요.</p>'; });
+})();
+</script>`;
+
 const WATCH = `<section class="block" id="watch"><div class="block-head"><h2>관심 종목</h2><span class="muted">이 브라우저에 저장돼요</span></div><div class="card list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div></section>`;
 
 export function renderHome(data: HomeData): string {
@@ -241,14 +270,18 @@ export function renderHome(data: HomeData): string {
   const covered = new Set(data.entries.map((e) => e.symbol));
   const asOf = data.pulse?.date ?? data.indices[0]?.date ?? '';
   const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
-<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div></section>
+<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
+<button type="button" class="flt-btn" aria-expanded="false" aria-controls="flt">⚙︎ 필터 설정하기 <small>시장·조건으로 자세히 찾기</small></button>
+<div class="card flt" id="flt" hidden><div class="flt-k">어디서 찾을까요?</div><div class="flt-row"><a href="screener.html">국내 주식</a><a href="screener.html#etf">ETF</a><a href="screener.html#coin">코인</a><a href="reports.html">AI 리포트 있는 종목</a></div>
+<div class="flt-k">이런 종목</div><div class="flt-row">${PRESETS.map((x) => `<a href="screener.html#${x.key}" title="${esc(x.hint)}">${esc(x.label)}</a>`).join('')}</div>
+<a class="flt-more" href="screener.html#build">조건 직접 만들기 (지표·거래량·수급·적정가…) ›</a></div></div></section>
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 ${indexStrip(data.indices, data.universe, data.pulse)}
-<div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${movers(data.universe, covered)}</div>
+<div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${MY_SCREENS}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <div class="show-more"><button type="button" class="btn-ghost" id="show-all">다른 정보도 보기</button></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT });
+  return shell('', 'Gnomon Analytics | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + FILTER_SCRIPT });
 }
 
 /** My feed (G-46): from the onboarding survey, kept in this browser. Leads with my stocks and puts first what I said I want to see. */
@@ -282,6 +315,11 @@ const FEED_SCRIPT = `<script>
 })();
 </script>`;
 
+const FILTER_SCRIPT = `<script>
+(function () { var b = document.querySelector('.flt-btn'), p = document.getElementById('flt'); if (!b || !p) return;
+  b.addEventListener('click', function () { var o = p.hidden; p.hidden = !o; b.setAttribute('aria-expanded', String(o)); }); })();
+</script>`;
+
 /** "오늘 볼 것" by view (G-67): sort by the view's score, keep four. */
 const TODAY_SCRIPT = `<script>
 (function () {
@@ -302,7 +340,7 @@ const PERSONA_HOME_SCRIPT = `<script>
 (function () {
   var ORDER = ${JSON.stringify(HOME_ORDER)}, main = document.querySelector('.home-main'), more = document.getElementById('show-all');
   if (!main) return;
-  var ALL = ['feed', 'watch', 'today', 'pulse', 'movers'];
+  var ALL = ['feed', 'watch', 'today', 'myscreens', 'pulse', 'movers'];
   var apply = function () {
     var p = document.documentElement.getAttribute('data-persona') || 'swing', keep = ORDER[p], all = !keep || document.documentElement.classList.contains('show-all');
     var hidden = 0, after = null;
@@ -321,7 +359,9 @@ const PERSONA_HOME_SCRIPT = `<script>
 })();
 </script>`;
 
-const HOME_STYLE = `<style>.pw{display:none}html[data-persona=beginner] .pw-beginner,html[data-persona=trader] .pw-trader,html[data-persona=swing] .pw-swing,html[data-persona=all] .pw-swing,html[data-persona=long] .pw-long,html:not([data-persona]) .pw-swing{display:inline}.tp[hidden]{display:none}.tp-lead{margin:-4px 0 10px;font-size:13px;color:var(--fg2)}.tp-lead a{font-weight:700;margin-left:6px}
+const HOME_STYLE = `<style>.flt-btn{display:flex;align-items:baseline;gap:8px;margin:8px 0 0;border:0;background:none;font:inherit;font-size:14px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 2px}.flt-btn small{font-weight:500;color:var(--muted)}.flt{margin-top:6px;padding:14px 16px}.flt-k{font-size:12.5px;font-weight:800;color:var(--muted);margin:2px 0 6px}.flt-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.flt-row a{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:700;text-decoration:none;color:var(--fg)}.flt-row a:hover{border-color:var(--accent);color:var(--accent-strong)}.flt-more{font-weight:800;font-size:14px}
+.ms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.ms-card{padding:12px 14px}.ms-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}.ms-row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-size:14px}.ms-row:hover b{color:var(--accent-strong)}.ms-more{display:block;margin-top:6px;font-size:13px;font-weight:700}.ms-note{grid-column:1/-1}
+.pw{display:none}html[data-persona=beginner] .pw-beginner,html[data-persona=trader] .pw-trader,html[data-persona=swing] .pw-swing,html[data-persona=all] .pw-swing,html[data-persona=long] .pw-long,html:not([data-persona]) .pw-swing{display:inline}.tp[hidden]{display:none}.tp-lead{margin:-4px 0 10px;font-size:13px;color:var(--fg2)}.tp-lead a{font-weight:700;margin-left:6px}
 .tmp{text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:7px}.tmp:hover{border-color:var(--accent)}.tmp-v{font-size:19px}.tmp .pulse-bar{height:12px}.tmp-n{display:flex;justify-content:space-between;font-size:13px;font-weight:700}
 .tp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.tp{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 44px 14px 16px}.tp:hover{border-color:var(--accent)}.tp .star{position:absolute;top:8px;right:6px}.tp-main{text-decoration:none;color:inherit;display:block}.tp-top{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.tp-why{font-size:12px;color:var(--accent-strong);font-weight:700}.tp-name{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.tp-name>b{font-size:17px}.tp-px{font-size:14px}.tp-line{margin:6px 0 0;font-size:14px;line-height:1.6;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .top-search{max-width:1180px;margin:14px auto 0;padding:0 24px}.top-search .search-box{background:#fff;border:2px solid var(--navy);box-shadow:0 6px 18px rgba(15,34,68,.08)}.top-search .search-box input{font-size:16px}

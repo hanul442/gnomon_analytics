@@ -21,14 +21,14 @@ const fakeFetch = (async (url: string | URL | Request) => {
   return new Response('<rss><channel></channel></rss>');
 }) as typeof fetch;
 
-test('report pages have four tabs with gauges, fair value, forecasts, flows and fundamentals; the front page is live', async () => {
+test('report pages have six tabs with gauges, fair value, forecasts, flows and fundamentals; the front page is live', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gnm-'));
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, tickers });
   const page = await readFile(join(root, 'site', '000660', 'reports', '2026-10-02.html'), 'utf8');
   // G-71: four tabs; the old tab names live on as parts of them.
-  for (const id of ['tab-home', 'tab-chart', 'tab-ai', 'tab-data']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
-  for (const id of ['tab-technical', 'tab-strategy', 'tab-flows', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`class="data-part" id="${id}"`));
+  for (const id of ['tab-home', 'tab-chart', 'tab-ai', 'tab-flows', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
+  for (const id of ['tab-technical', 'tab-strategy']) assert.match(page, new RegExp(`class="data-part" id="${id}"`));
   // Horizon gauges on the home and technical tabs, plus one per strategy in the arena.
   assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 10);
   assert.ok(page.includes('전략 대결') && page.includes('챔피언 레이스'));
@@ -45,7 +45,7 @@ test('report pages have four tabs with gauges, fair value, forecasts, flows and 
   // Chart v6: drawing tools, day/week/month and the index comparison (the benchmark series is embedded).
   assert.ok(page.includes('data-draw="fib"') && page.includes('data-tf="W"') && page.includes('data-compare') && page.includes('id="benchmarks"') && page.includes('window.GNMChart'));
   // UI layer: price in the header after scrolling, a bottom tab bar, glossary terms, the indicator names marked for it.
-  assert.ok(page.includes('id="price-bar"') && page.includes('class="bottom-nav"') && page.includes('assets/ui.js?v=') && UI_JS.includes('"몬테카를로"') && APP_CSS.includes('.chat-fab') && page.includes('class="term-cell"'));
+  assert.ok(page.includes('id="price-bar"') && page.includes('class="bottom-nav"') && /assets\/ui\.[0-9a-f]{10}\.js/.test(page) && UI_JS.includes('"몬테카를로"') && APP_CSS.includes('.chat-fab') && page.includes('class="term-cell"'));
   // Plans: details sit behind Plus gates; anyone can ask the AI with credits.
   assert.ok((page.match(/class="gate" data-need="plus"/g) ?? []).length >= 2, 'plus gates');
   assert.ok((page.match(/class="gate" data-need="pro"/g) ?? []).length >= 2, 'pro gates');
