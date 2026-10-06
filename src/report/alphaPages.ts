@@ -53,7 +53,7 @@ export const BANNER_JS = `<script>
 })();
 </script>`;
 
-const PAGE = `<style>.gd{max-width:760px;margin:0 auto}.gd h2{margin:26px 0 8px;font-size:19px}.gd p,.gd li{line-height:1.7}.gd ol,.gd ul{padding-left:20px}.gd .tip{background:#eef3fb;border-radius:12px;padding:10px 14px;font-size:14px}
+const PAGE = `<style>.gd{max-width:760px;margin:0 auto}.gd h2{margin:26px 0 8px;font-size:19px}.gd p,.gd li{line-height:1.7}.gd ol,.gd ul{padding-left:20px}.gd .gd-note{background:#eef3fb;border-radius:12px;padding:10px 14px;font-size:14px}
 .sv{max-width:720px;margin:0 auto}.sv .q{padding:14px 0;border-top:1px solid var(--line)}.sv h3{font-size:16px;margin:0 0 8px}.sv .opts{display:flex;flex-wrap:wrap;gap:6px}.sv .opts label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:999px;padding:7px 12px;font-size:14px;cursor:pointer;background:#fff}
 .sv .opts input{accent-color:var(--navy)}.sv .opts label:has(input:checked){border-color:var(--navy);background:#eef3fb;font-weight:700}.sv .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:4px}.sv .nps label{justify-content:center;padding:8px 0;border-radius:10px}.sv .nps input{display:none}
 .sv textarea{width:100%;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;min-height:80px}.sv .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}</style>`;
@@ -67,7 +67,7 @@ export function renderGuide(): string {
 <h2>4. 스크리너</h2><p>미리 만든 조건(강세 신호 상위, 거래량 급증, 매집 흔적 등)을 누르거나 조건을 직접 조합해요. 조건을 저장하면 새로 걸리는 종목을 알림으로 받아요.</p>
 <h2>5. AI에게 묻기</h2><p>오른쪽 아래 말풍선을 누르면 질문창이 열려요. 질문마다 모델(빠른 답 · 표준 · 심층)을 고르고, 쓰는 크레딧이 미리 보여요.</p>
 <h2>6. 의견 보내기</h2><p>화면 곳곳의 👍👎와 의견 칸, 그리고 <a href="survey.html?k=weekly">주간 설문</a> · <a href="survey.html?k=midterm">중간 설문</a>으로 알려 주세요. 매주 바뀐 점을 공지로 알려 드려요.</p>
-<p class="tip">그노몬의 모든 내용은 계산 결과와 시나리오 해설이고, 투자 권유가 아니에요. 투자 판단과 결과의 책임은 투자자 본인에게 있어요.</p>
+<p class="gd-note">그노몬의 모든 내용은 계산 결과와 시나리오 해설이고, 투자 권유가 아니에요. 투자 판단과 결과의 책임은 투자자 본인에게 있어요.</p>
 </div></section>`;
   return shell('', '사용법 · 그노몬', body, {});
 }
