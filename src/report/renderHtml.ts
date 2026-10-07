@@ -16,7 +16,7 @@ import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim } from '../analysis/commentary.js';
 import { apiMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
 import { CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
-import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
+import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, miniGauge, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { DART_SCRIPT, freshness, freshnessBadge, hero, latestLists, staleAiBar, marketStrip, priceChart } from './appParts.js';
 import { arenaHeadline, arenaPanel } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
@@ -78,7 +78,7 @@ a{color:inherit}button,a{touch-action:manipulation;-webkit-tap-highlight-color:t
 /* header + chip tabs */
 .topbar{position:sticky;top:0;z-index:30;background:var(--navy);border-bottom:1px solid #0a1832;color:#fff}
 .topbar-in{max-width:1180px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff}.brand svg{width:28px;height:28px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff}.brand svg{width:28px;height:28px}.curia-mark{width:38px;height:40px;overflow:hidden;position:relative;background:white;flex:none}.curia-mark img{position:absolute;width:120px;max-width:none;height:120px;left:-42px;top:-34px}
 .brand b{display:block;font-family:var(--brand-serif);font-weight:600;font-size:19px;letter-spacing:.18em;line-height:1.1}.brand small{display:block;font-size:10px;color:#9fb6dc;letter-spacing:.12em}
 .top-links{display:flex;gap:4px;font-size:13px}.top-links a{text-decoration:none;color:rgba(255,255,255,.82);padding:6px 10px;border-radius:999px}.top-links a:hover{background:rgba(255,255,255,.1);color:#fff}
 .chips{max-width:1180px;margin:0 auto;padding:0 24px 10px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
@@ -146,7 +146,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .reason{margin:6px 0;font-size:14px}.tally{color:var(--muted);font-size:13px}
 .meta{display:inline-flex;flex-wrap:wrap;gap:2px 12px}.m-date.meta{display:none}
 .moms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.mom{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-.mom .k{color:var(--muted);font-size:12px}.mom .v{font-size:18px;font-weight:700;margin:2px 0}
+.momentum-gauge{margin:10px 0}.momentum-gauge svg{width:100%;max-width:180px;display:block;margin:auto}.momentum-axis{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);gap:4px}.mom .k{color:var(--muted);font-size:12px}.mom .v{font-size:18px;font-weight:700;margin:2px 0}
 .gbars{display:grid;gap:12px;margin-top:16px}.gtitle{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
 .track{display:flex;height:10px;border-radius:999px;overflow:hidden;background:#e2e8f1;gap:2px}.track i{display:block;height:100%}
 .track i.v-BULLISH{background:#e5484d}.track i.v-BEARISH{background:#3b7be0}.track i.v-NEUTRAL{background:#b6c0cf}.track i.b-LOW{background:#dee5ef}
@@ -325,19 +325,19 @@ export const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'news', label: '뉴스·공시' },
 ];
 
-export function shell(base: string, title: string, body: string, options: { tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean }): string {
+export function shell(base: string, title: string, body: string, options: { lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean }): string {
   // The site root lists every covered stock; `base` always points at it.
   const rootHref = `${base}index.html`;
   const tabs = options.tabs ?? [];
   const menu = menuHtml(base, options.archiveHref);
   return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#13294b"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/gnomon-icon-192.png"><link rel="icon" type="image/png" href="${base}assets/gnomon-icon-96.png"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${PERSONA_BOOT}
+<meta name="theme-color" content="#13294b"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/curia-icon-192.png"><link rel="icon" type="image/png" href="${base}assets/curia-icon-96.png"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${PERSONA_BOOT}
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.${ASSET_VERSION}.css"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}">${ICON.logo}<div><b>GNOMON</b><small>ANALYTICS</small></div></a>
+<header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}"><span class="curia-mark"><img src="${base}assets/curia-logo.png" alt=""></span><div><b>CURIA</b><small>AI COMMITTEE</small></div></a>
 ${menu.button}<nav class="top-links" aria-label="사이트"><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.map((t, i) => `<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i === 0}"${i ? ' tabindex="-1"' : ''}>${t.label}</a>`).join('')}</div>` : ''}</header>${menu.drawer}
-<main id="main" tabindex="-1">${options.active === 'home' ? versionBanner(base) : ''}${options.ads === false ? '' : adStrip(base)}${body}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script>${LOADING_JS}${VERSION_JS}${AD_JS}</script><script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
+<main id="main" tabindex="-1">${options.lead ?? ''}${options.active === 'home' ? versionBanner(base) : ''}${options.ads === false ? '' : adStrip(base)}${body}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script>${LOADING_JS}${VERSION_JS}${AD_JS}</script><script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
@@ -389,9 +389,10 @@ function signalSection(report: DailyReport): string {
   const tone = t.score === null ? '' : t.score >= 0.1 ? 'up' : t.score <= -0.1 ? 'down' : '';
   const trendMark = { UP: '▲', FLAT: '■', DOWN: '▼' } as const;
   const trendWord = { UP: '상승', FLAT: '보합', DOWN: '하락' } as const;
+  const momentumScale = Math.max(20, Math.ceil(Math.max(0, ...(report.momentum ?? []).map(m => Math.abs(m.returnPct ?? 0))) / 10) * 10);
   const momentum = (report.momentum ?? []).map((m) => `<div class="mom"><div class="k">${escape(m.label)}</div>
 <div class="v ${m.trend === 'UP' ? 'up' : m.trend === 'DOWN' ? 'down' : ''}">${m.trend ? `${trendMark[m.trend]} ${trendWord[m.trend]}` : '판단 보류'}</div>
-<div class="k">${m.days}일 ${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}</div></div>`).join('');
+<div class="momentum-gauge">${miniGauge(m.returnPct === null ? null : m.returnPct / momentumScale, `${m.label} ${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}`)}<div class="momentum-axis"><span>−${momentumScale}%</span><span>0%</span><span>+${momentumScale}%</span></div></div><div class="k">${m.days}일 <b>${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}</b></div></div>`).join('');
   const rows = t.votes.map((v) => `<tr><td class="term-cell">${indicatorKey(v.label)?`<button type="button" class="indicator-link" data-chart-indicator="${indicatorKey(v.label)}" title="차트에서 보기">${escape(v.label)} ↗</button>`:escape(v.label)}</td><td class="num">${v.value === null ? '없음' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
 <td>${v.vote ? `<span class="badge v-${v.vote}">${VOTE_LABEL[v.vote]}</span>` : '<span class="badge b-LOW">계산 불가</span>'}</td><td class="why">${escape(v.rule)}</td></tr>`).join('');
   return `<div class="grid-signal" id="signal"><div class="card signal"><div class="head"><h2>기술적 신호</h2><span class="sub" style="margin:0">${escape(t.sessionDate)} 종가 기준</span></div>
@@ -401,7 +402,7 @@ ${gaugeSvg(t)}<div class="signal-label ${tone}">${escape(t.label)}</div>
 <p class="fine">기술적 지표 ${t.votes.length}개의 요약이에요. 오를 확률이 아니고, 투자 권유가 아니에요.</p></div>
 <div class="card"><div class="head"><h2>모멘텀</h2></div><div class="moms">${momentum}</div>
 ${groupBars(t)}
-<p class="fine" style="margin:8px 0 0">단기 5거래일 ±2%, 중기 20거래일 ±5%, 장기 120거래일 ±10% 안이면 보합이에요.</p>
+<p class="fine" style="margin:8px 0 0">게이지는 실제 기간 수익률이며 세 기간의 눈금은 동일합니다. 단기 5거래일 ±2%, 중기 20거래일 ±5%, 장기 120거래일 ±10% 안이면 보합이에요.</p>
 <details class="votes" id="votes"><summary>지표별 투표 보기</summary><div class="table-wrap"><table><thead><tr><th>지표</th><th>값</th><th>투표</th><th class="why">규칙</th></tr></thead><tbody>${rows}</tbody></table></div></details></div></div>`;
 }
 
@@ -649,7 +650,7 @@ ${panel('fundamentals', fundTab)}
 ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
-  const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
+  const title = ctx.live ? `${report.name} 리서치 대시보드 | CURIA` : `${report.name} ${report.date} 일일 리포트 | CURIA`;
   return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
 
@@ -782,7 +783,7 @@ export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headli
 <p class="hero-line">매주 금요일 장 마감 뒤(18:30 KST)에 한 번 만들고, 만든 뒤에는 고치지 않아요. 최신 데이터는 대시보드에서 볼 수 있어요.</p></div></section>
 <section class="block" id="archive"><div class="card list">${sorted.length ? sorted.map((r) => `<div class="row-item"><span class="badge ${r.status === 'SESSION' ? 'b-MEDIUM' : 'b-LOW'}">${r.status === 'SESSION' ? '거래일' : '휴장'}</span><div class="ri-main"><a href="reports/${escape(r.date)}.html">${escape(r.date)}</a><div class="muted small">${escape(r.headline)}</div></div></div>`).join('') : '<p class="empty">아직 리포트가 없어요.</p>'}</div></section>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 투자 권유가 아니에요.</p></footer>`;
-  return shell(base, `${name} 지난 리포트 | Gnomon Analytics`, body, { archiveHref: 'archive.html', homeHref: links.homeHref ?? 'index.html' });
+  return shell(base, `${name} 지난 리포트 | CURIA`, body, { archiveHref: 'archive.html', homeHref: links.homeHref ?? 'index.html' });
 }
 
 // Client-side search over search.json: name, code or Korean initial consonants (초성).
@@ -879,7 +880,7 @@ ${coin ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트�
   const head=body.slice(0,split), chart=body.slice(split,techAt), technical=body.slice(techAt,ending);
   const missing=(label:string)=>`<section class="block" data-missing><h2>${label}</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 생성되지 않은 분석이에요</b><p>리포트를 생성하면 이 영역에서 확인할 수 있어요.</p><button type="button" class="btn-primary" data-create-report>심층 리포트 생성하기</button></div></div></section>`;
   body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}</section><section class="panel" id="tab-strategy" role="tabpanel" aria-labelledby="t-strategy" hidden>${missing('전략 대결 · 모의투자')}</section>${[{key:'ai',label:'AI 위원회'},{key:'flows',label:'수급'},{key:'fundamentals',label:'실적'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${missing(t.label)}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
-  return shell('', coin ? '코인 차트 | Gnomon Analytics' : '종목 차트 | Gnomon Analytics', body, { tabs: TABS, bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(coin)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}${PARLIAMENT_SCRIPT}` });
+  return shell('', coin ? '코인 차트 | CURIA' : '종목 차트 | CURIA', body, { tabs: TABS, bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(coin)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}${PARLIAMENT_SCRIPT}` });
 }
 
 /** The free chart page; coins (upbit KRW markets) reuse it with their own data folder and wording. */
@@ -897,7 +898,7 @@ const stockScript = (coin: boolean) => `<script>
   var toReport = function () { if(new URLSearchParams(location.search).get('job')) return Promise.resolve(false);return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
   fetch((COIN ? 'c/' : 's/') + code + '.json').then(function (r) { if(r.status===404 && new URLSearchParams(location.search).get('job'))return fetch('research/'+code+'.json').then(function(rr){if(!rr.ok)throw new Error();return rr.json();}).then(function(x){return {name:x.name,symbol:x.symbol,market:x.kind||'주식',bars:(x.recentBars||[]).map(function(b){return [b.date,b.open,b.high,b.low,b.close,b.volume];})};}); if (r.status === 404 && !COIN) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     if(d.pageUrl && /^(?:[sc]\\/[0-9A-Z-]+\\.html|[0-9A-Z-]+\\/index\\.html)$/.test(d.pageUrl)){location.replace(d.pageUrl+location.search+location.hash);return;}
-    document.title = d.name + ' 차트 | Gnomon Analytics';
+    document.title = d.name + ' 차트 | CURIA';
     document.querySelectorAll('form.join').forEach(function(f){f.dataset.symbol=code;f.dataset.name=d.name;}); $('sp-star').setAttribute('data-star', code); if (window.GNM_starSync) GNM_starSync();
     // ETFs and coins picked for a daily AI report (G-56) keep their chart page; point to the report.
     fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { var rc = document.querySelector('.request-card'); if (r.ok && rc) rc.innerHTML = '<div class="lk-head"><b>AI 리포트가 있어요</b></div><p>매일 AI 리포트로 고른 적이 있어서 위원회 해설과 전체 대시보드가 있어요.</p><a class="btn-primary" href="' + code + '/index.html">AI 리포트 보기</a>'; }, function () {});

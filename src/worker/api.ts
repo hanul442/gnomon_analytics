@@ -131,10 +131,10 @@ const monthlyGrant = (db: D1, u: User, now: Date) =>
 
 async function sendMail(env: Env, deps: Deps, to: string, link: string): Promise<void> {
   if (!env.RESEND_API_KEY) fail(503, 'MAIL_UNAVAILABLE', '메일 발송이 아직 설정되지 않았어요. 운영자에게 로그인 링크를 받아 주세요.');
-  const html = `<div style="font-family:sans-serif;max-width:480px"><h2>그노몬 로그인</h2><p>아래 버튼을 누르면 로그인돼요. 링크는 ${LOGIN_TTL_MIN}분 동안 한 번만 쓸 수 있어요.</p><p><a href="${link}" style="display:inline-block;background:#0f2244;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">로그인</a></p><p style="color:#666;font-size:13px">요청하지 않았다면 이 메일을 무시해 주세요.</p></div>`;
+  const html = `<div style="font-family:sans-serif;max-width:480px"><h2>큐리아 로그인</h2><p>아래 버튼을 누르면 로그인돼요. 링크는 ${LOGIN_TTL_MIN}분 동안 한 번만 쓸 수 있어요.</p><p><a href="${link}" style="display:inline-block;background:#0f2244;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">로그인</a></p><p style="color:#666;font-size:13px">요청하지 않았다면 이 메일을 무시해 주세요.</p></div>`;
   const r = await deps.fetch('https://api.resend.com/emails', {
     method: 'POST', headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: env.MAIL_FROM || 'Gnomon <onboarding@resend.dev>', to: [to], subject: '그노몬 로그인 링크', html, text: `그노몬 로그인 링크 (${LOGIN_TTL_MIN}분): ${link}` }),
+    body: JSON.stringify({ from: env.MAIL_FROM || 'CURIA <onboarding@resend.dev>', to: [to], subject: '큐리아 로그인 링크', html, text: `큐리아 로그인 링크 (${LOGIN_TTL_MIN}분): ${link}` }),
   });
   if (!r.ok) fail(502, 'MAIL_FAILED', '메일을 보내지 못했어요. 잠시 뒤 다시 해 주세요.');
 }
@@ -733,7 +733,7 @@ route('POST', '/push/unsubscribe', async ({ req, env, now }) => {
 
 route('POST', '/push/test', async ({ req, env, deps, now }) => {
   const u = await authed(req, env, now);
-  await notifyUser({ db: env.DB, fetch: deps.fetch, site: env.SITE_URL, now }, u.id, 'test', { title: '알림이 잘 와요', body: '그노몬 알림이 이 기기로 와요. 설정은 전체 → 알림 설정에서 바꿀 수 있어요.', link: 'alerts.html' });
+  await notifyUser({ db: env.DB, fetch: deps.fetch, site: env.SITE_URL, now }, u.id, 'test', { title: '알림이 잘 와요', body: '큐리아 알림이 이 기기로 와요. 설정은 전체 → 알림 설정에서 바꿀 수 있어요.', link: 'alerts.html' });
   return { ok: true, devices: (await env.DB.prepare('SELECT COUNT(*) AS n FROM push_subs WHERE user_id = ?').bind(u.id).first<{ n: number }>())?.n ?? 0 };
 });
 
@@ -802,7 +802,7 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
       const lines = fresh.slice(0, 20).map((row) => `<li><b>${String(row[1]).replace(/[<>&]/g, '')}</b> ${String(row[0])}</li>`).join('');
       await deps.fetch('https://api.resend.com/emails', {
         method: 'POST', headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: env.MAIL_FROM || 'Gnomon <onboarding@resend.dev>', to: [s.email], subject: `[그노몬] '${s.name}' 새 종목 ${fresh.length}개`, html: `<p>${data.date} 장 마감 기준으로 새로 걸린 종목이에요.</p><ul>${lines}</ul><p><a href="${env.SITE_URL}/screener.html">스크리너에서 보기</a></p><p style="color:#666;font-size:12px">계산 결과이고 투자 권유가 아니에요.</p>` }),
+        body: JSON.stringify({ from: env.MAIL_FROM || 'CURIA <onboarding@resend.dev>', to: [s.email], subject: `[큐리아] '${s.name}' 새 종목 ${fresh.length}개`, html: `<p>${data.date} 장 마감 기준으로 새로 걸린 종목이에요.</p><ul>${lines}</ul><p><a href="${env.SITE_URL}/screener.html">스크리너에서 보기</a></p><p style="color:#666;font-size:12px">계산 결과이고 투자 권유가 아니에요.</p>` }),
       }).catch(() => undefined);
     }
   }

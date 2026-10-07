@@ -43,5 +43,5 @@ document.addEventListener('DOMContentLoaded', function () {
   if (G.ready) G.ready.then(start); else start(null);
 });
 </script>`;
-  return shell('', '내 리포트 | Gnomon Analytics', body, { noFeedback: true });
+  return shell('', '내 리포트 | CURIA', body, { noFeedback: true });
 }

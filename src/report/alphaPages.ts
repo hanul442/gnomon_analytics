@@ -110,14 +110,14 @@ const GUIDE_STEPS: readonly { id: string; title: string; img?: string; alt?: str
 export function renderGuide(): string {
   const toc = GUIDE_STEPS.map((s, i) => `<a href="#g-${s.id}">${i + 1}. ${s.title}</a>`).join('');
   const steps = GUIDE_STEPS.map((s, i) => `<section class="gd-step" id="g-${s.id}"><h2>${i + 1}. ${s.title}</h2><div class="gd-row${s.img ? '' : ' gd-noimg'}">${s.img ? `<figure><img src="guide/${s.img}" alt="${s.alt}" loading="lazy" width="390"><figcaption>이전 알파 화면 예시 · 최신 구성은 설명을 참고하세요</figcaption></figure>` : ''}<div class="gd-text">${s.body}</div></div></section>`).join('');
-  const body = `${PAGE}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>알파 테스트</span><span>5분</span></div><h1>그노몬 사용법</h1><p class="hero-line">실제 화면으로 설명해요. 직접 눌러 보며 익히려면 둘러보기를 시작하세요.</p>
+  const body = `${PAGE}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>알파 테스트</span><span>5분</span></div><h1>큐리아 사용법</h1><p><a href="market-reports.html">시장 데일리·위클리</a>에서 오늘과 이번 주 코스피·코스닥·코인·ETF 현황을 읽으세요. 개별 자산의 종가 날짜와 비교 시작일을 확인하고, 아래 AI 위원회에서 합의·이견·시나리오·반론을 비교하세요. 주간 수익률은 월요일 전 마지막 종가부터 계산하며, 주중에는 누적 집계입니다.</p><p class="hero-line">실제 화면으로 설명해요. 직접 눌러 보며 익히려면 둘러보기를 시작하세요.</p>
 <div class="gd-tours"><a class="btn-primary" href="index.html?tour=1">홈 둘러보기 시작 ›</a><a class="btn-ghost" href="000660/index.html?tour=1">종목 리포트 둘러보기 ›</a><a class="btn-ghost" href="screener.html?tour=1">검색 조건 둘러보기 ›</a></div></div></section>
 <section class="block gd"><nav class="gd-toc" aria-label="목차">${toc}</nav>${steps}
-<p class="gd-note">그노몬의 모든 내용은 계산 결과와 시나리오 해설이고, 투자 권유가 아니에요. 투자 판단과 결과의 책임은 투자자 본인에게 있어요.</p></section>
+<p class="gd-note">큐리아의 모든 내용은 계산 결과와 시나리오 해설이고, 투자 권유가 아니에요. 투자 판단과 결과의 책임은 투자자 본인에게 있어요.</p></section>
 <style>.gd{max-width:980px}.gd-tours{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.gd-tours a{display:inline-flex;text-decoration:none}.gd-toc{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.gd-toc a{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;text-decoration:none;color:var(--fg)}
 .gd-step{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin:14px 0;scroll-margin-top:80px}.gd-step h2{margin:0 0 12px}.gd-row{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:start}.gd-noimg{grid-template-columns:1fr}.gd-row figure{margin:0;position:sticky;top:80px}.gd-row img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(15,34,68,.08)}.gd-row figcaption{font-size:12px;color:var(--muted);margin-top:4px;text-align:center}.gd-text li{margin:6px 0}
 @media (max-width:820px){.gd-row{grid-template-columns:1fr}.gd-row figure{position:static;max-width:340px;margin:0 auto}}</style>`;
-  return shell('', '사용법 · 그노몬', body, {});
+  return shell('', '사용법 · 큐리아', body, {});
 }
 
 type Q = { key: string; title: string; type: 'one' | 'many' | 'text' | 'nps'; options?: readonly string[]; note?: string };
@@ -125,7 +125,7 @@ export const SURVEYS: Record<'midterm' | 'weekly', { title: string; lead: string
   midterm: {
     title: '알파 중간 설문', lead: '지금까지 써 보신 소감을 들려주세요. 약 5분 걸려요. 답은 서비스 개선에만 써요.',
     questions: [
-      { key: 'nps', title: '투자하는 친구에게 그노몬을 추천할 만한가요?', type: 'nps' },
+      { key: 'nps', title: '투자하는 친구에게 큐리아을 추천할 만한가요?', type: 'nps' },
       { key: 'use', title: '가장 자주 쓴 기능은?', type: 'many', note: '여러 개 골라도 돼요', options: ['홈 화면', '종목 검색', '종목 리포트', 'AI 위원회', '매일 AI 리포트', '차트', '스크리너', 'ETF·코인', 'AI 질문', '관심 종목·알림', '성적표·모의투자'] },
       { key: 'best', title: '가장 쓸모 있었던 것 하나와 이유', type: 'text' },
       { key: 'hard', title: '어렵거나 헷갈렸던 화면·용어', type: 'text' },
@@ -139,7 +139,7 @@ export const SURVEYS: Record<'midterm' | 'weekly', { title: string; lead: string
   weekly: {
     title: '이번 주 설문', lead: '1분이면 돼요. 이번 주에 쓴 것만 떠올려 주세요.',
     questions: [
-      { key: 'nps', title: '이번 주 그노몬, 친구에게 추천할 만했나요?', type: 'nps' },
+      { key: 'nps', title: '이번 주 큐리아, 친구에게 추천할 만했나요?', type: 'nps' },
       { key: 'used', title: '이번 주에 쓴 것', type: 'many', options: ['종목 리포트', 'AI 위원회', '매일 AI 리포트', '스크리너', 'ETF·코인', 'AI 질문', '관심 종목·알림', '거의 안 썼어요'] },
       { key: 'best', title: '좋았던 것 하나', type: 'text' },
       { key: 'worst', title: '불편했던 것 하나', type: 'text' },
@@ -155,7 +155,7 @@ export function renderSurvey(): string {
 (function () {
   var S = ${JSON.stringify(SURVEYS)}, k = new URLSearchParams(location.search).get('k'), s = S[k] || S.weekly; k = S[k] ? k : 'weekly';
   var esc = function (v) { return String(v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  document.getElementById('sv-title').textContent = s.title; document.getElementById('sv-lead').textContent = s.lead; document.title = s.title + ' · 그노몬';
+  document.getElementById('sv-title').textContent = s.title; document.getElementById('sv-lead').textContent = s.lead; document.title = s.title + ' · 큐리아';
   var form = document.getElementById('sv');
   form.innerHTML = s.questions.map(function (q, i) {
     var head = '<h3>' + (i + 1) + '. ' + esc(q.title) + '</h3>' + (q.note ? '<div class="muted small">' + esc(q.note) + '</div>' : '');
@@ -181,7 +181,7 @@ export function renderSurvey(): string {
   });
 })();
 </script>`;
-  return shell('', '설문 · 그노몬', body, { scripts: script, noFeedback: true });
+  return shell('', '설문 · 큐리아', body, { scripts: script, noFeedback: true });
 }
 
-export function renderUpdates(): string { return shell('','업데이트 기록 · 그노몬',`<section class="hero"><h1>Alpha 업데이트 기록</h1><p>큰 변화는 첫 자리, 중간 변화는 둘째 자리, 작은 수정은 셋째 자리를 올려요.</p><p class="muted">v0.0.0~v1.4.0은 기존 커밋을 기능별로 묶은 회고 기록입니다. 당시 배포 태그와 일대일 대응하지 않습니다. 현재 버전은 v${VERSION}이며 공개된 이 화면의 릴리스 노트와 사용법을 함께 확인해 주세요.</p></section><section class="card block"><h2>v${VERSION} 주요 변화와 사용 순서</h2><ol><li><b>분석 보기</b>: 리포트가 없는 종목도 동일한 화면 구조로 열립니다. 미생성 AI 분석은 같은 위치에 잠금으로 남고, 차트와 기술 계산은 먼저 볼 수 있어요. 기술의 피보나치·볼린저·RSI·MACD·ATR을 누르면 해당 지표를 켠 차트로 이동하고, 기술로 돌아가기로 복귀할 수 있어요. 코인은 차트에서 일봉 또는 1·5·15·60분봉을 선택하세요. 시나리오를 펼치면 미니 차트를 보고, 차트 탭에서는 강세·기본·약세를 비교할 수 있어요. 수급 탭에서 거래량·OBV·매집/분산을 확인하세요.</li><li><b>리포트 만들기</b>: 생성 버튼을 누르면 바로 작업이 시작됩니다. 기존 심층 리포트는 요금제 또는 개별 열람 권한에 따라 열리며, 미권한 영역은 잠금으로 표시됩니다.</li><li><b>토론 참여</b>: AI 위원회 토론 바로 아래 질문을 적고, 입력창 옆 + 버튼으로 위원회 전체 또는 전문가를 고르세요. 보내기 전에 표시된 크레딧 비용을 확인하세요.</li><li><b>AI 검색 조건</b>: 스크리너에서 원하는 종목의 특징을 문장으로 적으세요. AI가 제안한 조건을 확인·수정한 뒤 적용하고, 다시 사용할 조건은 저장하세요.</li><li><b>진행 상태</b>: 채팅·검색·필터·탭 준비에 실제 대기가 길어질 때 Thinking Orbs가 표시됩니다. 즉시 준비되는 화면은 바로 볼 수 있습니다.</li></ol><p><a href="guide.html">전체 사용법 보기</a></p></section><section class="card block"><h2>준비 중 · 기업 이벤트와 테마</h2><p>실적 발표·배당·임원/주요주주 공시와 거래대금 비교부터 연결합니다. 발표 전 예상치 이력에 기반한 분기 서프라이즈와 근거가 확인된 테마 탐색은 후속 작업입니다. 아직 완료된 릴리스에 포함하지 않습니다.</p></section>${RELEASES.map(([v,date,text])=>`<section class="card block"><h2>Alpha v${v}</h2><small>${date}</small><p>${text}</p></section>`).join('')}`,{}); }
+export function renderUpdates(): string { return shell('','업데이트 기록 · 큐리아',`<section class="hero"><h1>Alpha 업데이트 기록</h1><p>큰 변화는 첫 자리, 중간 변화는 둘째 자리, 작은 수정은 셋째 자리를 올려요.</p><p class="muted">v0.0.0~v1.4.0은 기존 커밋을 기능별로 묶은 회고 기록입니다. 당시 배포 태그와 일대일 대응하지 않습니다. 현재 버전은 v${VERSION}이며 공개된 이 화면의 릴리스 노트와 사용법을 함께 확인해 주세요.</p></section><section class="card block"><h2>v${VERSION} 주요 변화와 사용 순서</h2><ol><li><b>분석 보기</b>: 리포트가 없는 종목도 동일한 화면 구조로 열립니다. 미생성 AI 분석은 같은 위치에 잠금으로 남고, 차트와 기술 계산은 먼저 볼 수 있어요. 기술의 피보나치·볼린저·RSI·MACD·ATR을 누르면 해당 지표를 켠 차트로 이동하고, 기술로 돌아가기로 복귀할 수 있어요. 코인은 차트에서 일봉 또는 1·5·15·60분봉을 선택하세요. 시나리오를 펼치면 미니 차트를 보고, 차트 탭에서는 강세·기본·약세를 비교할 수 있어요. 수급 탭에서 거래량·OBV·매집/분산을 확인하세요.</li><li><b>리포트 만들기</b>: 생성 버튼을 누르면 바로 작업이 시작됩니다. 기존 심층 리포트는 요금제 또는 개별 열람 권한에 따라 열리며, 미권한 영역은 잠금으로 표시됩니다.</li><li><b>토론 참여</b>: AI 위원회 토론 바로 아래 질문을 적고, 입력창 옆 + 버튼으로 위원회 전체 또는 전문가를 고르세요. 보내기 전에 표시된 크레딧 비용을 확인하세요.</li><li><b>AI 검색 조건</b>: 스크리너에서 원하는 종목의 특징을 문장으로 적으세요. AI가 제안한 조건을 확인·수정한 뒤 적용하고, 다시 사용할 조건은 저장하세요.</li><li><b>진행 상태</b>: 채팅·검색·필터·탭 준비에 실제 대기가 길어질 때 Thinking Orbs가 표시됩니다. 즉시 준비되는 화면은 바로 볼 수 있습니다.</li></ol><p><a href="guide.html">전체 사용법 보기</a></p></section><section class="card block"><h2>준비 중 · 기업 이벤트와 테마</h2><p>실적 발표·배당·임원/주요주주 공시와 거래대금 비교부터 연결합니다. 발표 전 예상치 이력에 기반한 분기 서프라이즈와 근거가 확인된 테마 탐색은 후속 작업입니다. 아직 완료된 릴리스에 포함하지 않습니다.</p></section>${RELEASES.map(([v,date,text])=>`<section class="card block"><h2>Alpha v${v}</h2><small>${date}</small><p>${text}</p></section>`).join('')}`,{}); }

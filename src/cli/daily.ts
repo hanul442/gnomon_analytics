@@ -1,3 +1,4 @@
+import { writeMarketReports, publishMarketReports } from './marketReports.js';
 import { publicPanels } from '../report/publicPanels.js';
 // One daily run: for every stock in tickers.json collect, append, write
 // today's report once; then render the site.
@@ -377,6 +378,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
       if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
     }
   }
+  if (today.hour >= SETTLED_HOUR_KST) await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget);
   await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')) });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
@@ -699,7 +701,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'sw.js'), SW_JS);
   await writeFile(join(siteDir, 'manifest.webmanifest'), MANIFEST);
   await mkdir(join(siteDir, 'assets'), { recursive: true });
-  for (const n of [96, 192, 512]) await copyFile(new URL(`../../assets/gnomon-icon-${n}.png`, import.meta.url), join(siteDir, 'assets', `gnomon-icon-${n}.png`));
+  for (const n of [96, 192, 512]) await copyFile(new URL(`../../assets/curia-icon-${n}.png`, import.meta.url), join(siteDir, 'assets', `curia-icon-${n}.png`));
+  await copyFile(new URL('../../assets/curia-logo.png', import.meta.url), join(siteDir, 'assets', 'curia-logo.png'));
   await copyFile(new URL('../../assets/hanul-logo.jpg', import.meta.url), join(siteDir, 'assets', 'hanul-logo.jpg'));
   await writeFile(join(siteDir, 'guide.html'), renderGuide());
   await writeFile(join(siteDir, 'updates.html'), renderUpdates());
@@ -726,7 +729,9 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const last = bars.at(-1), prev = bars.at(-2);
     if (last) indices.push({ symbol, name, date: last.date, close: last.close, changePct: prev ? (last.close / prev.close - 1) * 100 : null, closes: bars.slice(-60).map((b) => b.close) });
   }
+  const marketReports = await publishMarketReports(root, siteDir);
   const homeData = {
+    marketReports,
     banners,
     entries: home, universe, indices, pulse: extras.pulse ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
     selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,

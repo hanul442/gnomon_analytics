@@ -1,8 +1,8 @@
 {
-  "name": "gnomon-analytics",
+  "name": "curia-analytics",
   "version": "0.0.1",
   "private": true,
-  "description": "Gnomon Analytics (GNM): evidence-first daily research reports",
+  "description": "CURIA (큐리아): evidence-first daily research reports",
   "type": "module",
   "scripts": {
     "build:orbs": "node scripts/build-orbs.mjs",

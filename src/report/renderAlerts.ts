@@ -28,7 +28,7 @@ export function renderAlerts(): string {
 <div id="al-body" hidden>
 <section class="card"><div class="al-push"><div><h2>휴대폰 알림</h2><span class="al-state" id="al-state">확인 중…</span></div><div class="al-btns"><button type="button" id="al-on">이 기기에서 켜기</button><button type="button" class="ghost" id="al-test" hidden>테스트 알림</button><button type="button" class="ghost" id="al-off" hidden>끄기</button></div></div>
 <p class="al-msg" id="al-push-msg" role="status"></p>
-<p class="al-help" id="al-help"><b>안드로이드</b> 크롬·삼성 인터넷은 바로 켜져요. <b>Brave</b>는 설정 → 개인정보 보호 → 'Google 서비스를 푸시 메시지에 사용'을 켜야 와요.<br><b>아이폰</b>은 Safari에서 공유 → '홈 화면에 추가'를 한 뒤, 홈 화면의 그노몬 아이콘으로 열어서 켜 주세요(iOS 16.4 이상).</p></section>
+<p class="al-help" id="al-help"><b>안드로이드</b> 크롬·삼성 인터넷은 바로 켜져요. <b>Brave</b>는 설정 → 개인정보 보호 → 'Google 서비스를 푸시 메시지에 사용'을 켜야 와요.<br><b>아이폰</b>은 Safari에서 공유 → '홈 화면에 추가'를 한 뒤, 홈 화면의 큐리아 아이콘으로 열어서 켜 주세요(iOS 16.4 이상).</p></section>
 <section class="card al-plan" id="al-plan" hidden></section>
 <section class="card"><h2>받을 알림</h2>${PREFS.map(([k, t, d]) => `<label class="al-row"><span><b>${t}</b><small>${d}</small></span><span class="sw"><input type="checkbox" data-pref="${k}" checked><i></i></span></label>`).join('')}<p class="al-msg" id="al-pref-msg" role="status"></p></section>
 <section class="card"><h2>스크리너 조건 알림</h2><div class="al-list" id="al-screens"><p class="muted small">불러오는 중…</p></div><p class="al-help">조건은 <a href="screener.html">필터로 종목 찾기</a>에서 저장해요. 매일 장 마감 뒤 새로 걸린 종목을 알려요.</p></section>
@@ -92,5 +92,5 @@ document.addEventListener('DOMContentLoaded', function () {
   if (G.ready) G.ready.then(start); else start(null);
 });
 </script>`;
-  return shell('', '알림 설정 | Gnomon Analytics', body, { noFeedback: true });
+  return shell('', '알림 설정 | CURIA', body, { noFeedback: true });
 }

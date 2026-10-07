@@ -90,12 +90,16 @@ try{
  // G-111: stocks get minute candles and a tick line that grows with live quotes.
  await page.locator('[data-coin-tf="T"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'최근 체결 30개'}).waitFor();
  await page.goto(origin+'/stock.html?c=999999#tab-chart');await page.locator('[data-coin-tf="5"]').waitFor();
+ assert.equal(await page.locator('.coin-tf [data-tf="D"]').count(),1);assert.equal(await page.locator('.seg.tf').count(),0);
+ await page.locator('[data-tf="W"]').click();assert.equal(await page.locator('[data-draw="trend"]').isDisabled(),true);
  await page.locator('[data-coin-tf="5"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'정규장 5분봉'}).waitFor();
  await page.locator('[data-coin-tf="T"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'오늘 1분 종가 30개'}).waitFor();
  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('gnm-quote',{detail:{symbol:'999999',quote:{price:155}}})));
  assert.equal(await page.evaluate(()=>{var s=GNMChart.chart.timeScale().getVisibleLogicalRange();return s!==null;}),true);
  await page.screenshot({path:'test-artifacts/stock-ticks.png'});
- await page.locator('[data-coin-tf="D"]').click();await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="D"]').waitFor();
+ await page.locator('[data-coin-tf="D"]').click();assert.equal(await page.locator('[data-draw="trend"]').isDisabled(),false);
+ assert.equal(await page.locator('#sc-layer').isVisible(),false);await page.locator('[data-open="ind-sheet"]').click();await page.locator('[data-sc="ALL"]').click();assert.equal(await page.locator('[data-sc="ALL"]').getAttribute('aria-pressed'),'true');await page.locator('[data-sc=""]').click();assert.equal(await page.locator('[data-sc=""]').getAttribute('aria-pressed'),'true');await page.locator('#ind-sheet .sheet-done').click();
+ await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="D"]').waitFor();
  await page.locator('[data-coin-tf="D"]').click();await page.locator('#t-flows').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/admin.html');await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();
@@ -124,7 +128,7 @@ try{
   assert.equal(await page.locator('.hanul-project').count(),4);assert.ok(await page.locator('.hanul-intro img').evaluate(img=>img.complete&&img.naturalWidth>0));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.screenshot({path:'test-artifacts/hanul-'+width+'.png',fullPage:true});
-  await page.getByRole('link',{name:'그노몬으로 돌아가기',exact:true}).click();await page.waitForURL('**/index.html');
+  await page.getByRole('link',{name:'큐리아로 돌아가기',exact:true}).click();await page.waitForURL('**/index.html');
  }
  // G-97: the 🔔 가격 알림 dialog on a stock page and the settings page.
  await page.setViewportSize({width:390,height:850});await page.goto(origin+'/stock.html?c=999999');await page.locator('#main[aria-busy]').waitFor({state:'detached'});

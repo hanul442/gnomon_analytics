@@ -2,12 +2,12 @@
 // the service worker, the web app manifest, push on/off, and the 가격 알림 button on stock pages.
 
 /** The service worker at the site root: shows a push and opens its page when tapped. */
-export const SW_JS = `// Gnomon Analytics service worker: notifications only (no offline cache).
+export const SW_JS = `// CURIA service worker: notifications only (no offline cache).
 self.addEventListener('install', function () { self.skipWaiting(); });
 self.addEventListener('activate', function (e) { e.waitUntil(self.clients.claim()); });
 self.addEventListener('push', function (e) {
-  var d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { title: '그노몬', body: e.data ? e.data.text() : '' }; }
-  e.waitUntil(self.registration.showNotification(d.title || '그노몬 알림', { body: d.body || '', icon: 'assets/gnomon-icon-192.png', badge: 'assets/gnomon-icon-96.png', tag: d.tag || undefined, renotify: !!d.tag, data: { link: d.link || './' } }));
+  var d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { title: '큐리아', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || '큐리아 알림', { body: d.body || '', icon: 'assets/curia-icon-192.png', badge: 'assets/curia-icon-96.png', tag: d.tag || undefined, renotify: !!d.tag, data: { link: d.link || './' } }));
 });
 self.addEventListener('notificationclick', function (e) {
   e.notification.close();
@@ -20,9 +20,9 @@ self.addEventListener('notificationclick', function (e) {
 `;
 
 export const MANIFEST = JSON.stringify({
-  name: 'Gnomon Analytics', short_name: '그노몬', start_url: './index.html', scope: './', display: 'standalone',
+  name: 'CURIA', short_name: '큐리아', start_url: './index.html', scope: './', display: 'standalone',
   background_color: '#ffffff', theme_color: '#13294b', lang: 'ko',
-  icons: [{ src: 'assets/gnomon-icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'assets/gnomon-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }],
+  icons: [{ src: 'assets/curia-icon-192.png', sizes: '1536x1536', type: 'image/png' }, { src: 'assets/curia-icon-512.png', sizes: '1536x1536', type: 'image/png', purpose: 'any' }],
 });
 
 /** Push on/off for this browser, shared by the alerts page and the price alert dialog. */
