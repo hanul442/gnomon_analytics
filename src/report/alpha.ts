@@ -163,7 +163,7 @@ export const ALPHA_SCRIPT = `<script>
   // G-109: settings that follow the account — view, chart indicators and drawings, dismissed tours and popups.
   // Writes to these keys while signed in are noticed wherever they happen and sent a moment later; on a new
   // browser the account's copy is applied and the page reloads once. Changes made signed out stay local.
-  var SYNC = /^gnm-(persona|prefs|ind|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/, SAT = 'gnm-settings-at', applying = false, pushT = null;
+  var SYNC = /^gnm-(persona|prefs|ind|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/, SAT = 'gnm-settings-at', applying = false, pushT = null;
   var syncKeys = function () { var out = {}; try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && SYNC.test(k)) out[k] = localStorage.getItem(k); } } catch (e) {} return out; };
   var pushSettings = function () { clearTimeout(pushT); pushT = setTimeout(function () { if (G.me) G.call('POST', '/me/settings', { data: syncKeys() }).then(function (r) { if (r && r.updatedAt) set(SAT, String(Date.parse(r.updatedAt))); }); }, 1500); };
   try {
@@ -292,7 +292,7 @@ export const ALPHA_SCRIPT = `<script>
       wait.scrollIntoView({ block: 'center', behavior: 'smooth' });
       var btn = f.querySelector('[type=submit]'); btn.disabled = true;
       var said = [].map.call(box.querySelectorAll('.db-turn:not(.db-typing):not(.db-wait)'), function (t) { var w = t.querySelector('.db-who b'), x = t.querySelector('.db-bubble'); return (w ? w.textContent : '') + ': ' + (x ? x.textContent.replace(/\\s+/g, ' ').trim() : ''); }).join('\\n').slice(-5000);
-      G.askStream({ tier: 'standard', source: 'debate', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.stream-answer').textContent=text;wait.querySelector('.chat-progress span:not(.orbs)').textContent='답변 쓰는 중';wait.querySelector('canvas').dataset.orb='composing';}).then(function (r) {
+      G.askStream({ tier: 'standard', source: 'debate', expert: key, question: q, symbol: f.getAttribute('data-symbol'), reportDate:f.getAttribute('data-report-date'), page: (f.getAttribute('data-report-date')||'')+' AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.stream-answer').textContent=text;wait.querySelector('.chat-progress span:not(.orbs)').textContent='답변 쓰는 중';wait.querySelector('canvas').dataset.orb='composing';}).then(function (r) {
         btn.disabled = false; wait.remove();
         if (r.error) { mine.remove(); toast(r.message); if (r.error === 'NO_CREDITS' || r.error === 'PLAN_REQUIRED') location.href = base + 'pricing.html'; return; }
         var x = { q: q, who: who, key: key, speaker: r.speaker || who, a: r.answer, credits: r.credits, at: new Date().toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) };

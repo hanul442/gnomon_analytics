@@ -1,3 +1,4 @@
+import {renderMarketReport,renderMarketDeep} from '../dist/report/marketReport.js';
 import {shell} from '../dist/report/renderHtml.js';
 import {DEBATE_PLAY_SCRIPT,DEBATE_FILTER_SCRIPT} from '../dist/report/renderReportExtras.js';
 // Offline browser verification: fixture API, no production account or paid model calls.
@@ -33,10 +34,14 @@ await writeFile(root+'/site/scenario-fixture.html','<!doctype html><meta charset
 const legacyReport=structuredClone(scenarioReport);delete legacyReport.commentary.scenarios[1].zone;legacyReport.commentary.scenarios[1].narrative.text='175원, 176원, 177원, 178원, 179원, 180원을 가격 기준으로 확인합니다.';await writeFile(root+'/site/legacy-scenario-fixture.html','<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>body{font-family:sans-serif;margin:12px;color:#14233a}'+SCENARIO_CSS+'</style>'+scenarioPanel(legacyReport)+'<script>'+SCENARIO_JS+'</script>');
 await writeFile(root+'/site/debate-fixture.html',shell('','토론 재생 테스트','<section id="debate"><div class="block-head"><h2>위원회 토론</h2><button type="button" class="db-skip" hidden>전체 바로 보기</button></div><div class="card debate">'+['시장 데스크','기술 데스크','레드팀'].map(who=>'<div class="db-turn"><div class="db-who"><b>'+who+'</b></div><div class="db-bubble">검증 발언</div></div>').join('')+'</div></section>',{scripts:DEBATE_FILTER_SCRIPT+DEBATE_PLAY_SCRIPT}));
 let customExperts=[],savedScreens=[];const sync={on:false,pushed:[]};const priceAlerts=[];
+const marketClaim={text:'공개 시장 요약',kind:'FACT',refs:['M1']};
+const marketFixture={schema:'curia.market-report.v2',date:'2026-10-07',from:'2026-10-07',generatedAt:'2026-10-07T09:30:00Z',period:'daily',groups:[],ai:{status:'OK',summary:marketClaim,council:{summary:marketClaim,desks:[{name:'코스피',view:'중립',claims:[{...marketClaim,text:'유료 시장 담당자 근거'}]}],consensus:[],disagreements:[],scenarios:[],redTeam:[],watch:[],dataGaps:[]}}};
+await writeFile(root+'/site/market-fixture.html',renderMarketReport(marketFixture));let marketPlan='alpha';
 const api=async(path,req,res)=>{
  res.setHeader('Content-Type','application/json');
+ if(path==='/api/deep/MARKET-DAILY/2026-10-07')return res.end(JSON.stringify(marketPlan==='free'?{error:'PLAN_REQUIRED',message:'플러스부터 열 수 있어요'}:{html:renderMarketDeep(marketFixture)}));
  if(path==='/api/admin/overview')return res.end(JSON.stringify({users:[],creditRequests:[],actions:[{id:'fixture-action',created_at:'2026-10-06T08:00:00Z',email:'long-mobile-test@example.test',kind:'report',symbol:'005500',detail:'모바일에서 확인할 리포트 요청 내용',credits:100,status:'pending'}],invites:[],pulses:[],feedback:[],questions:[],events:[],spend:{today:0,month:0,dailyCap:5}}));
- if(path==='/api/me')return res.end(JSON.stringify({user:{email:'fixture@example.test',rankAs:'pro',plan:'alpha',planName:'알파'},credits:{balance:400},costs:CREDIT_COST,survey:{onboarding:true,pulseDue:false}}));
+ if(path==='/api/me')return res.end(JSON.stringify({user:{email:'fixture@example.test',rankAs:marketPlan==='alpha'?'pro':marketPlan,plan:marketPlan,planName:marketPlan==='alpha'?'알파':marketPlan},credits:{balance:400},costs:CREDIT_COST,survey:{onboarding:true,pulseDue:false}}));
  if(path==='/api/experts'){if(req.method==='POST'){let body='';for await(const x of req)body+=x;const expert={...JSON.parse(body),id:'00000000-0000-4000-8000-000000000001'};customExperts.push(expert);return res.end(JSON.stringify({expert}));}return res.end(JSON.stringify({items:customExperts}));}
  if(path==='/api/screens'){if(req.method==='POST'){let b='';for await(const x of req)b+=x;const body=JSON.parse(b);if(body.name==='실패테스트')return res.end(JSON.stringify({error:'TEST_FAILED',message:'저장에 실패했어요.'}));savedScreens.push({...body,id:savedScreens.length+1});return res.end(JSON.stringify({id:savedScreens.length}));}return res.end(JSON.stringify({screens:savedScreens}));}
  if(path==='/api/me/settings'){if(req.method==='POST'){let b='';for await(const x of req)b+=x;sync.pushed.push(JSON.parse(b).data);return res.end(JSON.stringify({ok:true,updatedAt:new Date().toISOString()}));}return res.end(JSON.stringify(sync.on?{data:{'gnm-persona':'trader'},updatedAt:'2026-10-06T00:00:00.000Z'}:{data:{},updatedAt:null}));}
@@ -63,6 +68,11 @@ try{
  await context.addInitScript(()=>localStorage.setItem('gnm-session','fixture-only'));
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  await mkdir('test-artifacts',{recursive:true});
+ marketPlan='free';await page.setViewportSize({width:375,height:850});await page.goto(origin+'/market-fixture.html');await page.locator('#deep-open').filter({hasText:'요금제 보기'}).waitFor();assert.ok(!(await page.content()).includes('유료 시장 담당자 근거'));assert.ok((await page.locator('#main').innerText()).includes('공개 시장 요약'));await page.screenshot({path:'test-artifacts/market-free.png'});
+ marketPlan='alpha';
+ for(const width of [375,390,768,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/market-fixture.html');await page.locator('#debate .db-join').waitFor();await page.locator('#debate [data-pick-expert]').click();await page.locator('dialog[open]').waitFor();await page.locator('[data-close-expert]').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/market-paid-'+width+'.png'});}
+ await page.locator('#debate textarea[name=q]').fill('약세 반론은?');await page.locator('#debate [type=submit]').click();await page.locator('#debate .db-answer').waitFor();assert.ok((await page.locator('#debate .db-answer').innerText()).includes('테스트 답변'));
+
  for(const width of [375,390,768,1280]){console.log('Checking viewport',width);
   await page.setViewportSize({width,height:850});await page.goto(origin+'/stock.html?c=999999');
   await page.locator('h1').filter({hasText:'UI 테스트'}).waitFor();await page.locator('#main[aria-busy]').waitFor({state:'detached'});await page.waitForFunction(()=>document.documentElement.dataset.reportJob==='done');if(width===390){await page.locator('#tab-ai [data-stale-ai] .sa-go').waitFor({state:'attached'});}assert.equal(await page.locator('#tab-ai [data-generated=ai]').count(),1);assert.doesNotMatch(await page.locator('#tab-ai').innerText(),/아직 위원회 리포트가 없어요/);
@@ -123,6 +133,10 @@ try{
  await page.screenshot({path:'test-artifacts/reduced-motion-orb.png'});await page.evaluate(()=>fixtureLoading.end());
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');
+  assert.equal(await page.locator('#market-report-cards .market-daily-card').count(),1);
+  assert.ok((await page.locator('#market-report-cards .market-daily-card').boundingBox()).height<190);
+  assert.doesNotMatch(await page.locator('#market-report-cards').innerText(),/위클리/);
+  assert.ok(await page.evaluate(()=>{const search=document.querySelector('.top-search'),banner=document.getElementById('banner');return !!banner&&!!(search.compareDocumentPosition(banner)&Node.DOCUMENT_POSITION_FOLLOWING);}));
   const ad=page.locator('.bn-hanul');const slide=await ad.getAttribute('data-i');await page.locator('[data-go="'+slide+'"]').click();
   assert.ok(await ad.isVisible());assert.ok(await ad.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);

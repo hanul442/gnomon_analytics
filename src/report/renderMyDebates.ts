@@ -18,9 +18,9 @@ export function renderMyDebates(): string {
 <section class="card" id="md-body" hidden><div class="md-tools"><input id="md-q" type="search" placeholder="종목이나 질문 내용으로 찾기" aria-label="내 질문 찾기"><div class="md-seg" role="group" aria-label="어디서 물었는지"><button type="button" data-s="debate" aria-pressed="true">위원회 토론</button><button type="button" data-s="" aria-pressed="false">채팅 포함 전체</button></div></div><div id="md-list"><p class="muted small">불러오는 중…</p></div></section>
 </div><script>
 document.addEventListener('DOMContentLoaded', function () {
-  var G = window.GNM || {}, $ = function (id) { return document.getElementById(id); }, rows = [], names = {}, source = 'debate';
+  var G = window.GNM || {}, $ = function (id) { return document.getElementById(id); }, rows = [], names = {'MARKET-DAILY':'시장 데일리'}, source = 'debate';
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var page = function (s) { return (s.indexOf('KRW-') === 0 ? 'coin.html?m=' : 'stock.html?c=') + encodeURIComponent(s) + '#tab-ai'; };
+  var page = function (s) { if(s==='MARKET-DAILY')return 'market-reports.html';return (s.indexOf('KRW-') === 0 ? 'coin.html?m=' : 'stock.html?c=') + encodeURIComponent(s) + '#tab-ai'; };
   var when = function (t) { var d = new Date(t); return isNaN(d) ? '' : (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   var paint = function () {
     var q = ($('md-q').value || '').trim().toLowerCase();

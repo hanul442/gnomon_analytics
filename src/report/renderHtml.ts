@@ -703,11 +703,11 @@ function recordSection(report: DailyReport, ctx: { previous?: DailyReport | null
   return body ? `<div class="ai-record">${gate(body, { base, what: '기록: 지난 리포트 대비 · 이 판단을 만든 입력', need: 'pro' })}</div>` : '';
 }
 
-function deepSlot(symbol: string, date: string): string {
+export function deepSlot(symbol: string, date: string): string {
   return `<section class="block deep-slot" id="deep-slot" data-symbol="${escape(symbol)}" data-date="${escape(date)}"><div class="card deep-lock v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="dl-ic" aria-hidden="true">🔒</div><div><b>심층 리포트</b><p class="muted small">${DEEP_WHAT}</p><div class="dl-row"><button type="button" class="btn-primary" id="deep-open" disabled>불러오는 중…</button><span class="muted small" id="deep-note"></span></div></div></div></section>`;
 }
 
-const DEEP_SCRIPT = `<script>
+export const DEEP_SCRIPT = `<script>
 (function () {
   var slot = document.getElementById('deep-slot'); if (!slot) return;
   var sym = slot.getAttribute('data-symbol'), date = slot.getAttribute('data-date'), btn = document.getElementById('deep-open'), note = document.getElementById('deep-note');
@@ -722,6 +722,7 @@ const DEEP_SCRIPT = `<script>
     if (!me) { btn.disabled = false; btn.textContent = '로그인하고 열기'; btn.onclick = function () { location.href = (document.body.getAttribute('data-base') || '') + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/') + '#tab-ai'); }; return; }
     GNM.call('GET', path).then(function (r) {
       if (r.html) { show(r.html); return; }
+      if(r.error === 'PLAN_REQUIRED'){btn.disabled=false;btn.textContent='요금제 보기';say(r.message||'플러스부터 열 수 있어요');btn.onclick=function(){location.href=(document.body.getAttribute('data-base')||'')+'pricing.html';};return;}
       if (r.error === 'NOT_SEALED') { btn.textContent = '아직 준비 중이에요'; say('심층 리포트는 다음 실행 뒤 열 수 있어요.'); return; }
       var cost = r.cost || ${DEEP_UNLOCK_CREDITS}, bal = r.balance;
       btn.disabled = false; btn.textContent = cost + '크레딧으로 열기';
@@ -766,7 +767,7 @@ window.GNM_fold();
 /** G-66: one place to join the debate. Ask the committee (opens the chat with the question) or seat an
  *  expert who answers it from this stock's evidence (Pro credits, Max monthly allowance). Replaces the
  *  separate "AI에게 직접 질문" and "전문가 AI 초청" boxes. */
-function joinBox(report: Pick<DailyReport, 'symbol' | 'name'>): string {
+export function joinBox(report: Pick<DailyReport, 'symbol' | 'name'>): string {
   const who = [{ key: 'committee', name: '위원회 전체', focus: '지금 토론한 위원들이 답해요' }, ...EXPERTS];
   return `<div class="db-join" id="join"><form class="invite join" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">
 <div class="jn-input"><button type="button" class="jn-plus" data-pick-expert aria-label="답변할 전문가 선택" title="전문가 선택">+</button><label class="jn-q"><textarea name="q" rows="1" maxlength="600" aria-label="토론에 질문" placeholder="토론에 질문하세요"></textarea></label><button type="submit" class="jn-send" aria-label="질문 전송" title="전송">➤</button></div>

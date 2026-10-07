@@ -197,7 +197,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   if (!tier) fail(400, 'BAD_TIER', '모델을 골라 주세요.');
   const question = str(b.question, 1000);
   if (question.length < 2) fail(400, 'EMPTY', '질문을 적어 주세요.');
-  const symbol = typeof b.symbol === 'string' && /^(?:\d{6}|KRW-[A-Z0-9]{1,15})$/.test(b.symbol) ? b.symbol : undefined;
+  const symbol = typeof b.symbol === 'string' && /^(?:\d{6}|KRW-[A-Z0-9]{1,15}|MARKET-DAILY)$/.test(b.symbol) ? b.symbol : undefined;
   const page = str(b.page, 6000);
   const history = (Array.isArray(b.history) ? b.history : []).slice(-3)
     .map((h) => ({ q: str((h as { q?: unknown })?.q, 1000), a: str((h as { a?: unknown })?.a, 2000) })).filter((h) => h.q && h.a);
@@ -238,7 +238,8 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   const refund = (why: string) => credit(db, u.id, cost, 'refund', why, `refund:${ref}`, now).run();
   let res: Awaited<ReturnType<AskClient['create']>>;
   try {
-    const siteData = symbol ? await fetchStock(env, deps, symbol) : '';
+    let siteData = symbol && !symbol.startsWith('MARKET-') ? await fetchStock(env, deps, symbol) : '';
+    if(symbol?.startsWith('MARKET-')&&typeof b.reportDate==='string'&&DEEP_DATE.test(b.reportDate)){const r=await deps.fetch(`${env.SITE_URL.replace(/\/$/,'')}/market/${symbol==='MARKET-DAILY'?'daily':'weekly'}-${b.reportDate}.json`).catch(()=>null);if(r?.ok)siteData=(await r.text()).slice(0,12000);}
     const params = askParams({ tier: tier!, question, ...(symbol ? { symbol } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) });
     res = onText && deps.ai!.stream ? await deps.ai!.stream(params, onText) : await deps.ai!.create(params);
   } catch {
@@ -832,12 +833,14 @@ const deepParams = (params: string[]) => {
 
 route('GET', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})', async ({ req, env, deps, now, params }) => {
   const u = await authed(req, env, now), { symbol, date } = deepParams(params);
+  if(symbol.startsWith('MARKET-')&&RANK[u.plan]!<RANK.plus!&&u.role!=='admin')fail(403,'PLAN_REQUIRED','시장 상세 리포트는 플러스부터 열 수 있어요. 무료는 요약을 볼 수 있어요.');
   if (!(await deepAccess(env.DB, u, symbol, date))) fail(402, 'LOCKED', `${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`, { cost: CREDIT_COST.unlock, balance: await balanceOf(env.DB, u.id) });
   return { html: await deepHtml(env, deps, symbol, date) };
 });
 
 route('POST', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})/unlock', async ({ req, env, deps, now, params }) => {
   const u = await authed(req, env, now), { symbol, date } = deepParams(params), db = env.DB;
+  if(symbol.startsWith('MARKET-')&&RANK[u.plan]!<RANK.plus!&&u.role!=='admin')fail(403,'PLAN_REQUIRED','시장 상세 리포트는 플러스부터 열 수 있어요.');
   // The report must exist before anything is charged.
   const html = await deepHtml(env, deps, symbol, date);
   if (await deepAccess(db, u, symbol, date)) return { html, charged: 0 };
@@ -866,7 +869,7 @@ route('POST', '/watch', async ({ req, env, now }) => {
 });
 
 // G-109: browser settings that follow the account. Only known keys; each value a short string.
-const SETTING_KEY = /^gnm-(persona|prefs|ind|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/;
+const SETTING_KEY = /^gnm-(persona|prefs|ind|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/;
 route('GET', '/me/settings', async ({ req, env, now }) => {
   const u = await authed(req, env, now);
   const r = await env.DB.prepare('SELECT data, updated_at FROM user_settings WHERE user_id = ?').bind(u.id).first<{ data: string; updated_at: string }>();

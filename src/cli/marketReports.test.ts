@@ -4,8 +4,10 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type Anthropic from '@anthropic-ai/sdk';
-import { writeMarketReports } from './marketReports.js';
+import { writeMarketReports, savePrivateMarketReport } from './marketReports.js';
 import { AiBudget } from './aiBudget.js';
+import { renderMarketReport, renderMarketDeep, type MarketReport } from '../report/marketReport.js';
+import { unseal } from '../report/seal.js';
 
 test('truncated market analysis records billed tokens and leaves a retryable failure', async()=>{
  const root=await mkdtemp(join(tmpdir(),'curia-market-'));
@@ -19,12 +21,26 @@ test('truncated market analysis records billed tokens and leaves a retryable fai
   }}}} as unknown as Anthropic;
   const budget=new AiBudget(root,'2026-10',25,0);
   await writeMarketReports(root,new Date('2026-10-07T09:30:00Z'),[],undefined,client,budget);
-  for(const period of ['daily','weekly']){
+  for(const period of ['daily']){
    const report=JSON.parse(await readFile(join(root,'reports','market',`${period}-2026-10-07.json`),'utf8'));
    assert.equal(report.ai.status,'FAILED');assert.match(report.ai.error,/출력 길이 제한/);
   }
   const ledger=(await readFile(AiBudget.path(root),'utf8')).trim().split('\n').map(x=>JSON.parse(x));
-  assert.equal(ledger.length,2);assert.equal(ledger[0].outputTokens,12000);
-  assert.ok(Math.abs(budget.spent-0.1202)<1e-8);
+  assert.equal(ledger.length,1);assert.equal(ledger[0].outputTokens,12000);
+  assert.ok(Math.abs(budget.spent-0.0601)<1e-8);
  } finally {await rm(root,{recursive:true,force:true});}
+});
+
+test('paid market analysis is encrypted in storage and absent from free HTML; missing key fails closed',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'curia-private-'));
+ const summary={text:'공개 요약',kind:'FACT' as const,refs:['M1']};
+ const r:MarketReport={schema:'curia.market-report.v2',date:'2026-10-07',from:'2026-10-07',generatedAt:'2026-10-07T09:30:00Z',period:'daily',groups:[],ai:{status:'OK',council:{summary,desks:[{name:'코스피',view:'중립',claims:[{...summary,text:'유료 담당자 근거'}]}],consensus:[],disagreements:[],scenarios:[],redTeam:[],watch:[],dataGaps:[]}}};
+ try{
+  const saved=await savePrivateMarketReport(join(root,'report.json'),r,'test-secret');
+  const raw=await readFile(join(root,'report.json'),'utf8');assert.ok(!raw.includes('유료 담당자 근거'));assert.equal(saved.ai.council,undefined);
+  assert.match(await unseal(saved.ai.sealed!,'test-secret'),/유료 담당자 근거/);
+  const html=renderMarketReport(saved);assert.ok(html.includes('공개 요약'));assert.ok(!html.includes('유료 담당자 근거'));assert.ok(html.includes('data-symbol="MARKET-DAILY"'));assert.ok(html.includes('data-report-date="2026-10-07"'));
+  assert.ok(renderMarketDeep(r).includes('유료 담당자 근거'));
+  const closed=await savePrivateMarketReport(join(root,'closed.json'),r,'');assert.equal(closed.ai.status,'FAILED');assert.equal(closed.ai.council,undefined);assert.ok(!(await readFile(join(root,'closed.json'),'utf8')).includes('유료 담당자 근거'));
+ }finally{await rm(root,{recursive:true,force:true});}
 });

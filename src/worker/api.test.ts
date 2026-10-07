@@ -281,6 +281,27 @@ test('passwords (G-57): sign up once with an invite, then email + password; lock
   assert.ok((await t.call('POST', '/auth/login', { email: 'l@example.com', password: 'second1234' })).body.session);
 });
 
+test('market reports enforce paid plans even with credits; Plus unlocks once and market questions retain dated context',async()=>{
+ let input:Record<string,unknown>|undefined;
+ const t=setup({ai:{create:async p=>{input=p;return {model:'claude-sonnet-5-5',stop_reason:'end_turn',usage:{input_tokens:10,output_tokens:10},content:[{type:'text',text:'근거와 반론'}]};}}});
+ t.env.DEEP_KEY='market-secret';
+ const {seal}=await import('../report/seal.js');const sealed=await seal('<div>시장 상세 근거</div>','market-secret');const real=t.deps.fetch;
+ t.deps.fetch=(async(url:string,init?:RequestInit)=>String(url).endsWith('/MARKET-DAILY/deep/2026-10-07.txt')?new Response(sealed):String(url).endsWith('/market/daily-2026-10-07.json')?Response.json({date:'2026-10-07',ai:{summary:{text:'당일 요약'}}}):real(url,init)) as typeof fetch;
+ const boss=await t.login('boss@example.com');const u=await t.login('market@example.com',(await t.call('POST','/admin/invites',{},boss.session)).body.code);
+ const path='/deep/MARKET-DAILY/2026-10-07';
+ await t.env.DB.prepare("UPDATE users SET plan='free' WHERE email='market@example.com'").run();
+ assert.equal((await t.call('GET',path,undefined,u.session)).body.error,'PLAN_REQUIRED');
+ assert.equal((await t.call('POST',path+'/unlock',{},u.session)).body.error,'PLAN_REQUIRED');
+ assert.equal((await t.call('GET','/me',undefined,u.session)).body.credits.balance,ALPHA.monthlyCredits);
+ await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='market@example.com'").run();
+ assert.equal((await t.call('GET',path,undefined,u.session)).body.error,'LOCKED');
+ assert.equal((await t.call('POST',path+'/unlock',{},u.session)).body.charged,CREDIT_COST.unlock);
+ assert.match((await t.call('GET',path,undefined,u.session)).body.html,/시장 상세 근거/);
+ const answer=await t.call('POST','/ask',{tier:'standard',source:'debate',expert:'committee',symbol:'MARKET-DAILY',reportDate:'2026-10-07',question:'약세 반론은?',page:'시장 담당자의 반론'},u.session);
+ assert.equal(answer.status,200);assert.ok(JSON.stringify(input).includes('당일 요약'));
+ const history=await t.call('GET','/questions/mine?source=debate&symbol=MARKET-DAILY',undefined,u.session);assert.equal(history.body.items[0].symbol,'MARKET-DAILY');
+});
+
 test('deep reports (G-61): locked until unlocked once with credits; requester and admin open free; nothing charged for a missing report', async () => {
   const t = setup();
   t.env.DEEP_KEY = 'deep-secret';

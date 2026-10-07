@@ -29,5 +29,5 @@ export async function unseal(sealed: string, secret: string): Promise<string> {
 
 /** Where the sealed paid HTML of a report lives on the site, relative to the site root. */
 export const deepPath = (symbol: string, date: string) => `${symbol}/deep/${date}.txt`;
-export const DEEP_SYMBOL = /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/;
+export const DEEP_SYMBOL = /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15}|MARKET-DAILY)$/;
 export const DEEP_DATE = /^\d{4}-\d{2}-\d{2}$/;

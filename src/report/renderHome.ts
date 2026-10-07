@@ -231,7 +231,7 @@ function filings(entries: readonly HomeEntry[]): string {
 }
 
 const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class="pl-k">지금 요금제 <b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧</div>
-<p>무료는 한 줄 요약, <b>플러스</b>는 상세 설명, <b>프로</b>는 직접 요청하고 질문하기, <b>맥스</b>는 내 종목을 매주 위원회가 분석해요. 크레딧은 누구나 충전해서 써요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
+<p>무료는 요약, <b>플러스</b>는 상세 열기·리포트 요청·AI 질문, <b>프로</b>는 위원회 전체와 전문가 초청, <b>맥스</b>는 내 종목 전담 위원회예요. 크레딧 기능은 플러스부터 사용해요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
 
 /** G-78: the reader's saved screens (or the first preset), run on today's screener.json in the page. */
 const MY_SCREENS = `<section class="block" id="myscreens"><div class="block-head"><h2 id="ms-title">내 조건에 걸린 종목</h2><a class="more-link" href="screener.html#ai-build">AI로 조건 만들기 ›</a></div><div id="ms-body" class="ms-grid"><div class="orbs-load" style="grid-column:1/-1">${ORBS}<span>내 조건으로 오늘 종목을 찾는 중이에요</span></div></div></section>`;
@@ -296,10 +296,9 @@ const FILTER_GROUPS: readonly { icon: string; title: string; keys: readonly stri
 ];
 
 function marketReportCards(reports: readonly MarketReport[]): string {
- return `<section class="block" id="market-report-cards"><div class="block-head"><h2>시장 데일리 · 위클리</h2><a href="market-reports.html">지난 리포트</a></div><div class="grid2">${(['daily','weekly'] as const).map(period=>{
-  const latest=reports.filter(r=>r.period===period).sort((a,b)=>b.date.localeCompare(a.date))[0];
-  return `<a class="card" style="display:block;text-decoration:none" href="${latest?`market/${period}-${latest.date}.html`:'market-reports.html'}"><h3>${period==='daily'?'오늘의 데일리':'이번 주 위클리'}</h3><p class="muted">${latest?esc(period==='daily'?latest.date:`${latest.from} ~ ${latest.date} · 주중 누적`):'리포트 준비 중'}</p><p>코스피 · 코스닥 · 코인 · ETF</p><p>${latest?.ai.council?esc(latest.ai.council.summary.text):'시장 현황 · AI 위원회 관점 · 쟁점 · 시나리오'}</p><span class="tag">${latest?`AI ${esc(latest.ai.status)}`:'첫 집계 대기'}</span></a>`;
- }).join('')}</div></section>`;
+ const latest=reports.filter(r=>r.period==='daily').sort((a,b)=>b.date.localeCompare(a.date))[0];
+ const summary=latest?.ai.summary??latest?.ai.council?.summary;
+ return `<style>.market-daily-card{display:block;text-decoration:none;padding:12px 16px!important}.md-head{display:flex;align-items:center;gap:10px}.md-head b{font-size:16px}.md-head span{font-size:12px;color:var(--muted);margin-left:auto}.md-head i{font-style:normal}.market-daily-card p{margin:7px 0;font-size:13px;line-height:1.45}.md-markets{color:var(--muted)}.md-summary{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.market-daily-card .tag{font-size:11px}</style><section class="block" id="market-report-cards"><div class="block-head"><h2>시장 데일리</h2><a href="market-reports.html">지난 리포트</a></div><a class="card market-daily-card" href="${latest?`market/daily-${latest.date}.html`:'market-reports.html'}"><div class="md-head"><b>오늘의 시장</b><span>${esc(latest?.date??'준비 중')}</span><i>›</i></div><p class="md-markets">코스피 · 코스닥 · 코인 · ETF</p><p class="md-summary">${esc(summary?.text??'시장 현황과 AI 위원회의 관점·반론을 한곳에서 확인하세요.')}</p><span class="tag">${latest?.ai.status==='OK'?'분석 완료':'AI 요약 준비 중'}</span></a></section>`;
 }
 
 export function renderHome(data: HomeData): string {
@@ -315,6 +314,7 @@ export function renderHome(data: HomeData): string {
 <div class="card flt" id="flt" hidden><div class="flt-seg" role="group" aria-label="찾을 곳"><a href="screener.html">국내 주식</a><a href="screener.html#etf">ETF</a><a href="screener.html#coin">코인</a><a href="reports.html">AI 리포트</a></div>
 ${FILTER_GROUPS.map((g) => `<div class="flt-k">${g.icon} ${g.title}</div><div class="flt-list">${g.keys.map((k) => PRESETS.find((x) => x.key === k)).filter((x) => x).map((x) => `<a href="screener.html#${x!.key}"><b>${esc(x!.label)}</b><small>${esc(x!.hint)}</small></a>`).join('')}</div>`).join('')}
 <div class="flt-actions"><a class="flt-more" href="screener.html#build">⚙︎ 조건 직접 만들기</a><a class="flt-more ai" href="screener.html#build">✦ AI에게 말로 찾기</a></div><p class="flt-foot">누르면 이 화면 위에 필터 창이 열려요. 결과는 계산값이고 투자 권유가 아니에요.</p></div></div></section>
+${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 ${indexStrip(data.indices, data.universe, data.pulse)}
 ${marketReportCards(data.marketReports ?? [])}
 <p class="phase-note" id="phase-note"></p><div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${THEMES_TOP}${SIGNALS}
@@ -322,7 +322,7 @@ ${MY_SCREENS}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <div class="show-more"><button type="button" class="btn-ghost" id="show-all">더 보기</button></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'CURIA | 오늘 시장', body, { lead: bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS]), active: 'home', scripts: THEMES_TOP_SCRIPT + SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + FILTER_SCRIPT + SIGNALS_SCRIPT });
+  return shell('', 'CURIA | 오늘 시장', body, { active: 'home', scripts: THEMES_TOP_SCRIPT + SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + FILTER_SCRIPT + SIGNALS_SCRIPT });
 }
 
 /** My feed (G-46): from the onboarding survey, kept in this browser. Leads with my stocks and puts first what I said I want to see. */
