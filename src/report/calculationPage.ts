@@ -8,5 +8,5 @@ export function renderCalculationPage(input: {symbol:string;name:string;kind?:'e
   const date=input.bars.at(-1)?.date??new Date(input.now.getTime()+9*3600000).toISOString().slice(0,10);
   const report=buildDailyReport({symbol:input.symbol,name:input.name,...(input.kind?{kind:input.kind}:{}),date,generatedAt:input.now,bars:input.bars,disclosures:[],sources:[]});
   report.market=buildMarketSection({symbol:input.symbol,date,generatedAt:input.now,daily:input.bars,weekly:[],intraday:[],flows:[],snapshots:[],finance:[],research:[],benchmarks:[],loggedForecasts:[],status:[]});
-  return renderReport(report,{index:'../index.html',base:'../',live:true}).replaceAll('최근 7일 관련 뉴스가 없어요.','관련 뉴스 자료가 아직 수집되지 않았어요.').replaceAll('최근 30일 공시가 없어요.','공시 자료가 아직 수집되지 않았어요.');
+  return renderReport(report,{index:'../index.html',base:'../',live:true}).replaceAll('최근 7일 관련 뉴스가 없어요.','관련 뉴스 자료가 아직 수집되지 않았어요.').replaceAll('최근 30일 공시가 없어요.','공시 자료가 아직 수집되지 않았어요.').replace('<body data-base=',`<body data-fill="${input.kind==='coin'?'':input.symbol}" data-close="${input.bars.at(-1)?.close??''}" data-base=`);
 }

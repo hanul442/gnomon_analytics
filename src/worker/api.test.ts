@@ -500,3 +500,22 @@ test('plans: phone push from Plus, price alert caps by plan', async () => {
   const prefs = await t.call('GET', '/notify/prefs', undefined, session);
   assert.equal(prefs.body.limits.priceAlerts, 5);
 });
+
+test('stockinfo (G-120): a stock without a report gets valuation, news and filings panels; a failing source is left out', async () => {
+  const t = setup(), base = t.deps.fetch;
+  t.deps.fetch = (async (url: string, init?: RequestInit) => {
+    const u = String(url);
+    if (u.endsWith('/stock/015760/integration')) return Response.json({ stockName: '한국전력', totalInfos: [{ code: 'per', value: '2.45배' }, { code: 'pbr', value: '0.38배' }, { code: 'bps', value: '78,939원' }], consensusInfo: { createDate: '2026-10-01', priceTargetMean: '45,000' } });
+    if (u.includes('/news/stock/015760')) return Response.json([{ total: 1, items: [{ officeName: '연합뉴스', datetime: '202610072010', title: '한전 뉴스', mobileNewsUrl: 'https://n.news.naver.com/mnews/article/001/1' }] }]);
+    if (u.includes('/stock/015760/disclosure')) return Response.json([{ disclosureId: 1, title: '풍문 해명', datetime: '2026-10-02T11:11:29', author: 'KOSCOM' }]);
+    return base(url, init);
+  }) as typeof fetch;
+  const r = await t.call('GET', '/stockinfo/015760?close=30000');
+  assert.equal(r.status, 200);
+  assert.match(r.body.fundamentals, /2\.45배/);
+  assert.match(r.body.fundamentals, /45,000원/);
+  assert.match(r.body.news, /한전 뉴스/);
+  assert.match(r.body.filings, /풍문 해명/);
+  assert.equal(r.body.flows, '');
+  assert.equal((await t.call('GET', '/stockinfo/xyz')).status, 404);
+});

@@ -13,8 +13,8 @@ export function apiMeta(): string {
 
 export const ALPHA_CSS = `
 .alpha-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#e8eef7;color:#1d3a6e;font-size:13px;padding:8px 14px;border-bottom:1px solid #c9d6ee}.alpha-bar a{font-weight:700}.alpha-bar button{border:0;background:none;color:inherit;font-size:16px;cursor:pointer}
-.fb-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:18px;padding:10px 12px;border:1px dashed var(--line-strong);border-radius:12px;font-size:13px;color:var(--muted)}
-.fb-row button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 9px;cursor:pointer;font:inherit}.fb-row button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
+.fb-row{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:22px 0 4px;padding:12px 4px 4px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}.fb-row>span{margin-right:2px}
+.fb-row button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 11px;cursor:pointer;font:inherit;font-size:12.5px;color:var(--fg2)}.fb-row button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
 .fb-row form{display:flex;gap:6px;flex:1 1 100%}.fb-row input{flex:1;border:1px solid var(--line-strong);border-radius:8px;padding:6px 9px;font:inherit}
 .wk-pulse{position:fixed;left:20px;bottom:20px;z-index:65;width:min(360px,calc(100vw - 28px));background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 44px rgba(15,27,45,.22);padding:14px}
 .wk-pulse h3{margin:0 0 6px;font-size:15px}.wk-pulse .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:3px;margin:6px 0 2px}.wk-pulse .nps button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 0;font:inherit;font-size:12px;cursor:pointer}

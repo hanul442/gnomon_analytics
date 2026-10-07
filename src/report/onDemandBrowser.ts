@@ -34,19 +34,22 @@ export const JOBS_JS = `
   if(window.GNM_parliament)GNM_parliament();if(window.GNM_debateFilter)GNM_debateFilter();if(window.GNM_debate)GNM_debate();if(window.GNM_pastQA)GNM_pastQA();return true;
  };
  // G-104: an estimated countdown and rotating lines while the committee writes (estimate, not a promise).
+ // Each stage has its own Thinking Orbs; the big orb cycles through the stage's set while the job runs.
+ var ORB_CYCLE={queued:['connecting','breathing','listening'],searching:['searching','listening','connecting'],working:['solving','weaving','shaping','working'],composing:['composing','weaving','shaping']},STEPS=[['queued','접수','connecting'],['searching','자료 확인','searching'],['working','토론·분석','solving'],['composing','작성','composing']],curStage='queued';
+ var paintSteps=function(){if(!dialog)return;var at=STEPS.findIndex(function(x){return x[0]===curStage;});dialog.querySelectorAll('.job-steps li').forEach(function(li,k){li.className=k<at?'done':k===at?'on':'';});var big=dialog.querySelector('.orbs-load canvas');if(big)big.dataset.orb=(ORB_CYCLE[curStage]||ORB_CYCLE.working)[0];};
  var FUN=['위원 11명이 자리에 앉고 있어요 🪑','기술 데스크가 차트를 확대하는 중이에요 🔍','수급 데스크가 외국인 지갑을 들여다보는 중 👀','레드팀이 반론거리를 찾고 있어요 🥊','펀더멘털 데스크가 실적표에 형광펜 칠하는 중 🖍️','공시 데스크가 DART를 정독하고 있어요 📑','분석가들이 목표가를 두고 토론 중이에요 🗣️','강세파와 약세파가 팽팽해요 ⚖️','최악의 경우도 꼼꼼히 따져 보는 중 🧯','시나리오 확률을 계산기로 두드리는 중 🧮','근거 없는 말은 지우는 중이에요 ✂️','커피 한 모금… 거의 다 써 가요 ☕','토론 순서를 정리하고 있어요 🎙️','마지막으로 숫자를 한 번 더 확인해요 ✅'];
  var eta={iv:null,started:null,est:150,start:function(){var self=this;clearInterval(self.iv);self.started=null;var i=Math.floor(Math.random()*FUN.length),tick=0;
    var paintEta=function(){if(!dialog)return;var el=dialog.querySelector('[data-eta]'),bar=dialog.querySelector('[data-eta-bar]'),fun=dialog.querySelector('[data-fun]');if(!el)return;
     var t0=self.started||Date.now(),gone=(Date.now()-t0)/1000,left=Math.round(self.est-gone);
     var mmss=function(t){t=Math.max(0,Math.round(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');};el.textContent=left>0?mmss(left):'거의 다 됐어요 · '+mmss(gone)+' 지남';
     if(bar)bar.style.width=Math.min(97,gone/self.est*100)+'%';
-    if(fun&&tick%4===0){fun.textContent=left>0?FUN[i%FUN.length]:'예상보다 조금 더 걸리고 있어요. 꼼꼼히 쓰는 중이에요 🐢';i++;}tick++;};
+    if(fun&&tick%4===0){fun.textContent=left>0?FUN[i%FUN.length]:'예상보다 조금 더 걸리고 있어요. 꼼꼼히 쓰는 중이에요 🐢';i++;var big=dialog.querySelector('.orbs-load canvas'),seq=ORB_CYCLE[curStage]||ORB_CYCLE.working;if(big)big.dataset.orb=seq[i%seq.length];}tick++;};
    paintEta();self.iv=setInterval(paintEta,1000);},
   stop:function(){clearInterval(this.iv);this.iv=null;},
   set:function(kind,createdAt,etaSec){this.est=etaSec>0?etaSec:(kind==='brief'?40:150);var t=Date.parse(createdAt||'');if(Number.isFinite(t))this.started=t;}};
  var watch=function(id,show){
   if(timer)clearTimeout(timer);store(id);
-  if(show){if(dialog)dialog.remove();dialog=document.createElement('dialog');dialog.className='v2-dialog';dialog.innerHTML='<header><b>AI 리포트 생성</b><button type="button" class="dialog-x" aria-label="닫기">×</button></header><div class="orbs-load">${ORBS}<span data-job-state>작업을 확인하고 있어요</span></div><div class="job-eta"><div class="job-eta-top"><span>예상 남은 시간</span><b data-eta>계산 중</b></div><div class="job-bar"><i data-eta-bar></i></div><p class="job-fun" data-fun aria-live="polite"></p></div><p class="muted small">창을 닫아도 작업은 계속됩니다. 새로고침 후에도 확인할 수 있어요.</p>';document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('button').onclick=function(){dialog.close();};eta.start();}
+  if(show){if(dialog)dialog.remove();dialog=document.createElement('dialog');dialog.className='v2-dialog';dialog.innerHTML='<header><b>AI 리포트 생성</b><button type="button" class="dialog-x" aria-label="닫기">×</button></header><div class="orbs-load">${ORBS}<span data-job-state>작업을 확인하고 있어요</span></div><ol class="job-steps">'+STEPS.map(function(x){return '<li><canvas data-orb="'+x[2]+'" data-size="20" aria-hidden="true"></canvas><span>'+x[1]+'</span></li>';}).join('')+'</ol><div class="job-eta"><div class="job-eta-top"><span>예상 남은 시간</span><b data-eta>계산 중</b></div><div class="job-bar"><i data-eta-bar></i></div><p class="job-fun" data-fun aria-live="polite"></p></div><p class="muted small">창을 닫아도 작업은 계속됩니다. 새로고침 후에도 확인할 수 있어요.</p>';document.body.appendChild(dialog);dialog.showModal();curStage='queued';paintSteps();dialog.querySelector('button').onclick=function(){dialog.close();};eta.start();}
   var poll=function(){G.call('GET','/reports/'+id).then(function(r){
    if(r.error&&typeof r.error==='string'&&!r.status){if(dialog)dialog.querySelector('[data-job-state]').textContent=r.message||'작업을 확인하지 못했어요';if(r.error==='NOT_FOUND'||r.error==='FORBIDDEN'||r.error==='UNAUTHORIZED')return;timer=setTimeout(poll,5000);return;}
    if(r.kind||r.createdAt)eta.set(r.kind,r.createdAt,r.etaSec);
@@ -59,7 +62,7 @@ export const JOBS_JS = `
     if(G.refresh)G.refresh();return;
    }
    if(r.status==='failed'){eta.stop();if(dialog){dialog.querySelector('.orbs-load').innerHTML='<b>리포트를 만들지 못했어요</b><p>'+esc(r.error||'크레딧은 반환했어요. 다시 요청해 주세요.')+'</p><button type="button" class="btn-primary" data-retry-report>다시 요청</button>';dialog.querySelector('[data-retry-report]').onclick=function(){dialog.close();G.startReport(r.kind==='brief'?'brief':'report',r.symbol,r.symbol);};}if(G.refresh)G.refresh();return;}
-   if(dialog){var text=dialog.querySelector('[data-job-state]');if(text)text.textContent=stage[r.stage]||'분석 중이에요';var c=dialog.querySelector('canvas');if(c)c.dataset.orb=r.stage==='composing'?'composing':'working';}
+   if(dialog){var text=dialog.querySelector('[data-job-state]');if(text)text.textContent=stage[r.stage]||'분석 중이에요';curStage=stage[r.stage]?r.stage:'working';paintSteps();}
    timer=setTimeout(poll,1000);
   });};poll();
  };
