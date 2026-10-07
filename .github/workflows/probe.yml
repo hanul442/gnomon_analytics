@@ -18,16 +18,24 @@ jobs:
       - name: Theme list and one theme
         run: |
           cat > probe.mjs <<'JS'
-          const UA = { 'User-Agent': 'Mozilla/5.0 (compatible; GnomonAnalytics/1.0; +https://hanul442.github.io/gnomon_analytics/)' };
-          for (const url of ['https://finance.naver.com/sise/theme.naver?&page=1', 'https://finance.naver.com/sise/theme.naver?page=1', 'https://finance.naver.com/sise/sise_group_detail.naver?type=theme&no=536']) {
-            const r = await fetch(url, { headers: UA });
-            const buf = await r.arrayBuffer();
-            const html = new TextDecoder('euc-kr').decode(buf);
-            const i = html.indexOf('sise_group_detail');
-            console.log('URL', url, 'status', r.status, 'final', r.url, 'bytes', buf.byteLength, 'type', r.headers.get('content-type'));
-            console.log('  links sise_group_detail:', (html.match(/sise_group_detail/g) || []).length, ' item/main:', (html.match(/item\/main\.naver\?code=/g) || []).length, ' info_txt:', (html.match(/info_txt/g) || []).length);
-            console.log('  title:', (/<title>([^<]*)/.exec(html) || [])[1]);
-            console.log('  snippet:', JSON.stringify(html.slice(Math.max(0, i - 120), i + 220)));
-          }
+          const UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36', Accept: 'application/json, text/plain, */*' };
+          const show = async (url) => {
+            try {
+              const r = await fetch(url, { headers: UA });
+              const t = await r.text();
+              console.log('URL', url, 'status', r.status, 'final', r.url, 'len', t.length, 'type', r.headers.get('content-type'));
+              console.log('  head:', JSON.stringify(t.slice(0, 400)));
+              return t;
+            } catch (e) { console.log('URL', url, 'ERR', e.message); return ''; }
+          };
+          const page = await show('https://stock.naver.com/market/stock/kr/theme/1');
+          const apis = [...new Set((page.match(/["'`](\/api\/[^"'`\s]{3,120}|https:\/\/[a-z.]*naver\.com\/api\/[^"'`\s]{3,120})/g) || []).map((x) => x.slice(1)))].slice(0, 40);
+          console.log('api strings in page:', JSON.stringify(apis));
+          const nd = /<script id="__NEXT_DATA__"[^>]*>([\s\S]{0,600})/.exec(page); console.log('next data head:', nd ? JSON.stringify(nd[1]) : 'none');
+          const js = [...new Set(page.match(/\/_next\/static\/[^"']+\.js/g) || [])].slice(0, 60);
+          let found = new Set();
+          for (const src of js) { const b = await fetch('https://stock.naver.com' + src).then((r) => r.text()).catch(() => ''); for (const m of b.matchAll(/["'`]([^"'`\s]*theme[^"'`\s]*)["'`]/gi)) if (m[1].length < 140 && /api|\//.test(m[1])) found.add(m[1]); }
+          console.log('theme strings in js:', JSON.stringify([...found].slice(0, 80)));
+          for (const u of ['https://m.stock.naver.com/api/stocks/theme?page=1&pageSize=20', 'https://m.stock.naver.com/api/stocks/theme/536?page=1&pageSize=20', 'https://stock.naver.com/api/domestic/market/theme?page=1&pageSize=20', 'https://api.stock.naver.com/stock/theme?page=1&pageSize=20']) await show(u);
           JS
           node probe.mjs
