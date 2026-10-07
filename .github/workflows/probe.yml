@@ -21,8 +21,6 @@ jobs:
           const H = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36', Accept: 'application/json' };
           const list = await fetch('https://m.stock.naver.com/api/stocks/theme?page=1&pageSize=100', { headers: H }).then((r) => r.json());
           console.log('list keys', Object.keys(list), 'groups', list.groups?.length, 'total', list.totalCount, 'first', JSON.stringify(list.groups?.[0]));
-          const last = await fetch('https://m.stock.naver.com/api/stocks/theme?page=4&pageSize=100', { headers: H }).then((r) => r.json());
-          console.log('page4 groups', last.groups?.length);
           const one = await fetch('https://m.stock.naver.com/api/stocks/theme/536?page=1&pageSize=100', { headers: H }).then((r) => r.json());
           console.log('detail keys', Object.keys(one), 'stocks', one.stocks?.length, 'total', one.totalCount);
           console.log('first stock', JSON.stringify(one.stocks?.[0]));
