@@ -259,17 +259,21 @@ export const ALPHA_SCRIPT = `<script>
     if(wrapper&&debate){debate.appendChild(f.closest('.db-join'));wrapper.remove();}
     costNote();
     // G-93: my questions and their answers stay in this browser, per stock, and come back on the next visit.
+    var server=null;
     var SKEY='gnm-debate:'+(f.getAttribute('data-symbol')||location.pathname);
     var saved=function(){try{return JSON.parse(localStorage.getItem(SKEY)||'[]');}catch(e){return [];}};
-    var keep=function(x){var all=saved();all.push(x);try{localStorage.setItem(SKEY,JSON.stringify(all.slice(-20)));}catch(e){}};
+    var keep=function(x){var all=saved();all.push(x);try{localStorage.setItem(SKEY,JSON.stringify(all.slice(-20)));}catch(e){}if(server)server.push(x);};
     var spot=function(){var p=f.closest('.panel')||(f.closest('.join-wrap')||{}).parentNode,d=p&&p.querySelector('.card.debate'),box=d||f.closest('.card')||f.parentNode,a=box.querySelector('.db-ev');if(!a){a=document.createElement('div');a.className='db-ev';box.appendChild(a);}return a;};
     var mineTurn=function(q,who){var d=document.createElement('div');d.className='db-turn db-bear db-guest db-me';d.innerHTML='<div class="db-who"><b>나</b> · '+esc(who)+'에게</div><div class="db-bubble">'+esc(q)+'</div>';return d;};
     var answerTurn=function(x){var d=document.createElement('div');d.className='db-turn db-mid db-guest db-answer';d.innerHTML='<div class="db-who"><b>'+esc(x.speaker)+'</b> · '+(x.key==='committee'?'위원회 답변':'초청 전문가')+'</div><div class="db-bubble md">'+md(x.a)+'</div><div class="db-cost muted small">'+(x.at?esc(x.at)+' · ':'')+x.credits+'크레딧</div>';return d;};
     // Drawn again whenever the debate is rebuilt (a report made on request replaces it).
+    // G-116: signed in, my questions come from the account (every device); signed out, from this browser.
+    var sym=f.getAttribute('data-symbol');
+    if(G.me&&sym)G.call('GET','/questions/mine?source=debate&symbol='+encodeURIComponent(sym)).then(function(r){if(r.error||!r.items)return;server=r.items.slice().reverse().map(function(x){return {q:x.question,a:x.answer||'',who:x.speaker||'AI 위원회',speaker:x.speaker||'AI 위원회',key:x.speaker?'expert':'committee',credits:x.credits,at:String(x.created_at||'').slice(0,16).replace('T',' ')};});renderPast();});
     var renderPast=function(){
      document.querySelectorAll('[data-past]').forEach(function(n){n.remove();});
-     var past=saved();if(!past.length)return;
-     var a0=spot(),head=document.createElement('div');head.className='db-past';head.setAttribute('data-past','');head.textContent='내가 한 질문 '+past.length+'개 · 이 기기에 저장돼요';a0.parentNode.insertBefore(head,a0);
+     var past=server||saved();if(!past.length)return;
+     var a0=spot(),head=document.createElement('div');head.className='db-past';head.setAttribute('data-past','');head.innerHTML='내가 한 질문 '+past.length+'개 · '+(server?'계정에 저장돼요 · <a href="'+base+'mydebates.html">내 토론 기록 전체 ›</a>':'이 기기에 저장돼요');a0.parentNode.insertBefore(head,a0);
      past.forEach(function(x){var m=mineTurn(x.q,x.who),t=answerTurn(x);m.setAttribute('data-past','');t.setAttribute('data-past','');a0.parentNode.insertBefore(m,a0);a0.parentNode.insertBefore(t,a0);});
     };
     renderPast();window.GNM_pastQA=renderPast;
@@ -288,7 +292,7 @@ export const ALPHA_SCRIPT = `<script>
       wait.scrollIntoView({ block: 'center', behavior: 'smooth' });
       var btn = f.querySelector('[type=submit]'); btn.disabled = true;
       var said = [].map.call(box.querySelectorAll('.db-turn:not(.db-typing):not(.db-wait)'), function (t) { var w = t.querySelector('.db-who b'), x = t.querySelector('.db-bubble'); return (w ? w.textContent : '') + ': ' + (x ? x.textContent.replace(/\\s+/g, ' ').trim() : ''); }).join('\\n').slice(-5000);
-      G.askStream({ tier: 'standard', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.stream-answer').textContent=text;wait.querySelector('.chat-progress span:not(.orbs)').textContent='답변 쓰는 중';wait.querySelector('canvas').dataset.orb='composing';}).then(function (r) {
+      G.askStream({ tier: 'standard', source: 'debate', expert: key, question: q, symbol: f.getAttribute('data-symbol'), page: '이 종목 AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.stream-answer').textContent=text;wait.querySelector('.chat-progress span:not(.orbs)').textContent='답변 쓰는 중';wait.querySelector('canvas').dataset.orb='composing';}).then(function (r) {
         btn.disabled = false; wait.remove();
         if (r.error) { mine.remove(); toast(r.message); if (r.error === 'NO_CREDITS' || r.error === 'PLAN_REQUIRED') location.href = base + 'pricing.html'; return; }
         var x = { q: q, who: who, key: key, speaker: r.speaker || who, a: r.answer, credits: r.credits, at: new Date().toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) };

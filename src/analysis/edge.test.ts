@@ -71,6 +71,6 @@ test('DART ownership parsers: numbers with commas, old rows and bad receipt numb
 test('Naver themes: the mobile JSON list and members, bad rows skipped', () => {
   assert.deepEqual(parseThemeList({ groups: [{ no: 591, name: '재개발 수혜' }, { no: 'x', name: '잘못된' }, { no: 42, name: '반도체' }] }), [{ no: '591', name: '재개발 수혜' }, { no: '42', name: '반도체' }]);
   assert.deepEqual(parseThemeList('<html>'), []);
-  assert.deepEqual(parseThemeMembers({ stocks: [{ itemCode: '005930', stockName: '삼성전자', themeReason: '메모리 <b>세계 1위</b>' }, { itemCode: '000660', stockName: 'SK하이닉스' }, { itemCode: '005930', stockName: '삼성전자' }, { itemCode: 'bad', stockName: 'x' }] }),
+  assert.deepEqual(parseThemeMembers({ stocks: [{ itemCode: '005930', stockName: '삼성전자' }, { itemCode: '000660', stockName: 'SK하이닉스' }, { itemCode: '005930', stockName: '삼성전자' }, { itemCode: 'bad', stockName: 'x' }], themeItemInfoMap: { '005930': '메모리 <b>세계 1위</b>' } }),
     [{ symbol: '005930', name: '삼성전자', reason: '메모리 세계 1위' }, { symbol: '000660', name: 'SK하이닉스', reason: '' }]);
 });

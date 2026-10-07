@@ -76,7 +76,7 @@ test('the first settled run picks the week: core and the largest company get the
   const paper = (await readFile(join(root, 'data', 'paper', '000660.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as { date: string });
   assert.ok(paper.some((p) => p.date === '2026-10-05'));
   // The live page carries the latest committee's commentary with its date.
-  assert.match(await readFile(join(root, 'site', '000660', 'index.html'), 'utf8'), /2026-10-02 리포트의 AI 위원회 해설/);
+  assert.match(await readFile(join(root, 'site', '000660', 'index.html'), 'utf8'), /AI 리포트 2026-10-02 기준[\s\S]*최신 리포트 만들기/);
 });
 
 test('a requested stock gets one deep committee report, then dashboards only', async () => {

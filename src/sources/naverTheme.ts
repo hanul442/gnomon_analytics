@@ -19,16 +19,17 @@ export function parseThemeList(json: unknown): { no: string; name: string }[] {
   });
 }
 
-/** One theme's members: `{ stocks: [{ itemCode, stockName, ... }] }`; the inclusion reason when Naver gives one. */
+/** One theme's members: `{ stocks: [{ itemCode, stockName }], themeItemInfoMap: { code: reason } }`. */
 export function parseThemeMembers(json: unknown): Theme['members'] {
-  const stocks = json && typeof json === 'object' ? (json as { stocks?: unknown }).stocks : null;
+  const body = json && typeof json === 'object' ? json as { stocks?: unknown; themeItemInfoMap?: unknown } : null, stocks = body?.stocks;
   if (!Array.isArray(stocks)) return [];
+  const reasons = body!.themeItemInfoMap && typeof body!.themeItemInfoMap === 'object' ? body!.themeItemInfoMap as Record<string, unknown> : {};
   const seen = new Set<string>();
   return stocks.flatMap((s: Record<string, unknown>) => {
     const symbol = text(s.itemCode), name = text(s.stockName);
     if (!/^[0-9A-Z]{6}$/.test(symbol) || !name || seen.has(symbol)) return [];
     seen.add(symbol);
-    const reason = text(s.themeReason ?? s.reason ?? s.description ?? s.themeDescription ?? s.infoText).slice(0, 160);
+    const reason = text(reasons[symbol] ?? s.themeReason ?? s.reason).slice(0, 160);
     return [{ symbol, name, reason }];
   });
 }

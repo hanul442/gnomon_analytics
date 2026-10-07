@@ -244,7 +244,8 @@ ${kpi('증권가 평균 목표가', cons?.targetPriceMean ? won(cons.targetPrice
     return `<td class="num"><span class="${tone(r.benchmark)}">${pct(r.benchmark)}</span><br><small class="${tone(diff)}">차이 ${diff === null ? '없음' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%p`}</small></td>`;
   }).join('')}</tr>`).join('');
   const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
-  const research = market.research.map((r) => `<li><span class="why">${esc(r.date)} ${esc(r.broker)}</span> ${esc(r.title)}</li>`).join('');
+  // G-117: each report opens on Naver (summary and the broker's PDF) in a new tab.
+  const research = market.research.map((r) => `<li><span class="why">${esc(r.date)} ${esc(r.broker)}</span> ${/^\d+$/.test(r.id) ? `<a href="https://m.stock.naver.com/research/company/${esc(r.id)}" target="_blank" rel="noopener">${esc(r.title)} ↗</a>` : esc(r.title)}</li>`).join('');
   return `${kpis}
 <div class="grid2 tight" style="margin-top:16px"><div class="card"><div class="head"><h2>분기 실적</h2><div class="legend-inline"><span><i class="sw-rev"></i>매출액</span><span><i class="sw-op"></i>영업이익</span><span><i class="sw-est"></i>추정치</span></div></div>
 ${earningsChart(q)}

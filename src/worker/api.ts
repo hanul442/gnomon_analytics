@@ -209,6 +209,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   }
   if (typeof b.expert === 'string' && !expert) fail(400, 'BAD_EXPERT', '전문가를 다시 골라 주세요.');
   const invited = !!expert && expert.key !== 'committee';
+  const source = b.source === 'debate' || expert ? 'debate' : 'chat', speaker = expert?.name ?? null;
   const db = env.DB, cost = invited ? CREDIT_COST.invite : CREDIT_COST[tier!];
   if (RANK[u.plan]! < RANK.plus!) fail(403, 'PLAN_REQUIRED', 'AI 질문은 플러스 요금제부터 쓸 수 있어요.');
   if (invited && RANK[u.plan]! < RANK.pro!) fail(403, 'PLAN_REQUIRED', '전문가 초청은 프로 요금제부터 쓸 수 있어요.');
@@ -241,7 +242,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
     res = onText && deps.ai!.stream ? await deps.ai!.stream(params, onText) : await deps.ai!.create(params);
   } catch {
     await refund('AI 응답 실패로 돌려드림');
-    await db.prepare("INSERT INTO questions (user_id, symbol, tier, model, question, credits, status, created_at) VALUES (?, ?, ?, ?, ?, 0, 'FAILED', ?)").bind(u.id, symbol ?? null, tier, model, question, iso(now)).run();
+    await db.prepare("INSERT INTO questions (user_id, symbol, tier, model, question, credits, status, created_at, source, speaker) VALUES (?, ?, ?, ?, ?, 0, 'FAILED', ?, ?, ?)").bind(u.id, symbol ?? null, tier, model, question, iso(now), source, speaker).run();
     await release();
     return fail(502, 'AI_FAILED', 'AI가 답하지 못했어요. 크레딧은 돌려드렸어요.');
   }
@@ -249,9 +250,9 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   const answer = answerText(res.content);
   const ok = res.stop_reason !== 'refusal' && answer.length > 0;
   if (!ok) await refund('AI가 답하지 않아 돌려드림');
-  const row = await db.prepare(`INSERT INTO questions (user_id, symbol, tier, model, question, answer, credits, input_tokens, output_tokens, usd, status, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(u.id, symbol ?? null, tier, res.model || model, question, answer, ok ? cost : 0,
-    res.usage.input_tokens, res.usage.output_tokens, usd, ok ? 'OK' : 'REFUSED', iso(now)).first<{ id: number }>();
+  const row = await db.prepare(`INSERT INTO questions (user_id, symbol, tier, model, question, answer, credits, input_tokens, output_tokens, usd, status, created_at, source, speaker)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(u.id, symbol ?? null, tier, res.model || model, question, answer, ok ? cost : 0,
+    res.usage.input_tokens, res.usage.output_tokens, usd, ok ? 'OK' : 'REFUSED', iso(now), source, speaker).first<{ id: number }>();
   await release();
   if (!ok) fail(422, 'NO_ANSWER', '이 질문에는 답하지 않았어요. 크레딧은 돌려드렸어요.');
   return { id: row?.id, answer, tier, model: res.model || model, credits: cost, ...(expert ? { speaker: expert.name } : {}), balance: await balanceOf(db, u.id), usage: { input: res.usage.input_tokens, output: res.usage.output_tokens } };
@@ -585,6 +586,18 @@ route('POST', '/screens/compose', async ({req,env,deps,now}) => {
   const allowed=market==='stock'?null:new Set(['close','chg','level','score','r5','r20','r120','fairGap','pos','vol1','tv','hi52','risk']);
   if(!screen?.rules.length || (allowed && screen.rules.some(r=>!allowed.has(r.f)||r.f==='market'))){await credit(env.DB,u.id,r.credits,'refund','지원하지 않는 조건',`screen-refund:${r.id}`,now).run();fail(422,'UNSUPPORTED',str(parsed!.unsupported,300)||'이 시장의 데이터로 계산할 수 없는 조건이에요. 크레딧은 반환했어요.');}
   return {name:str(parsed!.name,40)||'AI 조건',explanation:str(parsed!.explanation,1000),screen,credits:r.credits,balance:r.balance};
+});
+
+// G-116: my questions and the answers, kept with the account — the debate ones per stock, or all of them.
+route('GET', '/questions/mine', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), url = new URL(req.url);
+  const symbol = url.searchParams.get('symbol'), source = url.searchParams.get('source');
+  const where = ["user_id = ?", "status = 'OK'"], args: unknown[] = [u.id];
+  if (symbol && /^(?:\d{6}|[0-9][0-9A-Z]{5}|KRW-[A-Z0-9]{1,15})$/.test(symbol)) { where.push('symbol = ?'); args.push(symbol); }
+  if (source === 'debate') where.push("(source = 'debate' OR speaker IS NOT NULL)");
+  else if (source === 'chat') where.push("(source IS NULL OR source = 'chat')");
+  const items = (await env.DB.prepare(`SELECT id, symbol, source, speaker, question, answer, credits, created_at FROM questions WHERE ${where.join(' AND ')} ORDER BY id DESC LIMIT 200`).bind(...args).all()).results;
+  return { items };
 });
 
 route('POST', '/ask', async ({ req, env, deps, now }) => ask(env, deps, await authed(req, env, now), await body(req), now));
