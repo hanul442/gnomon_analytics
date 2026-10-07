@@ -1135,11 +1135,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "003650",
-  "name": "미창석유",
-  "market": "KOSPI"
- },
- {
   "symbol": "003670",
   "name": "포스코퓨처엠",
   "market": "KOSPI"
@@ -1660,11 +1655,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "005850",
-  "name": "에스엘",
-  "market": "KOSPI"
- },
- {
   "symbol": "005860",
   "name": "한일사료",
   "market": "KOSDAQ"
@@ -1802,6 +1792,11 @@
  {
   "symbol": "006400",
   "name": "삼성SDI",
+  "market": "KOSPI"
+ },
+ {
+  "symbol": "006405",
+  "name": "삼성SDI우",
   "market": "KOSPI"
  },
  {
@@ -4625,13 +4620,13 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "038870",
-  "name": "에코심플렉스",
+  "symbol": "038680",
+  "name": "에스넷",
   "market": "KOSDAQ"
  },
  {
-  "symbol": "038880",
-  "name": "아이에이",
+  "symbol": "038870",
+  "name": "에코심플렉스",
   "market": "KOSDAQ"
  },
  {
@@ -5133,6 +5128,11 @@
   "symbol": "047810",
   "name": "한국항공우주",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "047820",
+  "name": "초록뱀미디어",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "047820",
@@ -6755,11 +6755,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "079980",
-  "name": "휴비스",
-  "market": "KOSPI"
- },
- {
   "symbol": "080010",
   "name": "이상네트웍스",
   "market": "KOSDAQ"
@@ -6958,11 +6953,6 @@
   "symbol": "084695",
   "name": "대상홀딩스우",
   "market": "KOSPI"
- },
- {
-  "symbol": "084730",
-  "name": "팅크웨어",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "084850",
@@ -7387,11 +7377,6 @@
  {
   "symbol": "092780",
   "name": "DYP",
-  "market": "KOSPI"
- },
- {
-  "symbol": "092790",
-  "name": "넥스틸",
   "market": "KOSPI"
  },
  {
@@ -7900,6 +7885,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "104480",
+  "name": "티케이케미칼",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "104540",
   "name": "코렌텍",
   "market": "KOSDAQ"
@@ -8175,6 +8165,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "115480",
+  "name": "씨유메디칼",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "115500",
   "name": "케이씨에스",
   "market": "KOSDAQ"
@@ -8313,11 +8308,6 @@
   "symbol": "122870",
   "name": "와이지엔터테인먼트",
   "market": "KOSDAQ"
- },
- {
-  "symbol": "122900",
-  "name": "아이마켓코리아",
-  "market": "KOSPI"
  },
  {
   "symbol": "122990",
@@ -9390,11 +9380,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "196490",
-  "name": "디에이테크놀로지",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "196700",
   "name": "웹스",
   "market": "KOSDAQ"
@@ -9767,11 +9752,6 @@
  {
   "symbol": "215600",
   "name": "신라젠",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "215790",
-  "name": "이노인스트루먼트",
   "market": "KOSDAQ"
  },
  {
@@ -10430,11 +10410,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "258830",
-  "name": "세종메디칼",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "259630",
   "name": "엠플러스",
   "market": "KOSDAQ"
@@ -10705,11 +10680,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "274090",
-  "name": "켄코아에어로스페이스",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "274400",
   "name": "이노시뮬레이션",
   "market": "KOSDAQ"
@@ -10742,11 +10712,6 @@
  {
   "symbol": "277810",
   "name": "레인보우로보틱스",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "277880",
-  "name": "티에스아이",
   "market": "KOSDAQ"
  },
  {
@@ -11032,6 +10997,11 @@
  {
   "symbol": "297090",
   "name": "씨에스베어링",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "297570",
+  "name": "아틀라스링크",
   "market": "KOSDAQ"
  },
  {
@@ -11387,6 +11357,11 @@
  {
   "symbol": "318010",
   "name": "팜스빌",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "318020",
+  "name": "포인트모바일",
   "market": "KOSDAQ"
  },
  {
@@ -11820,6 +11795,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "351870",
+  "name": "차이커뮤니케이션",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "352090",
   "name": "스톰테크",
   "market": "KOSDAQ"
@@ -12053,11 +12033,6 @@
   "symbol": "365550",
   "name": "ESR켄달스퀘어리츠",
   "market": "KOSPI"
- },
- {
-  "symbol": "365590",
-  "name": "하이딥",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "365660",

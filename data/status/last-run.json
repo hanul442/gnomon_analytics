@@ -1,39 +1,38 @@
 {
- "at": "2026-10-06T16:07:48.150Z",
+ "at": "2026-10-07T06:32:27.973Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2768
+   "count": 2763
   },
   {
    "source": "naver:m-stock:etf",
    "ok": true,
-   "count": 1171
+   "count": 1175
   },
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2698,
-   "error": "27 failed "
+   "count": 2694,
+   "error": "26 failed "
   },
   {
    "source": "naver:fchart:day:etf",
    "ok": true,
-   "count": 1170,
+   "count": 1174,
    "error": "1 failed "
   },
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 291,
-   "error": "1 failed "
+   "count": 292
   },
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 352
+   "count": 494
   },
   {
    "source": "naver:themes",
