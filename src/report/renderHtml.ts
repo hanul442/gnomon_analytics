@@ -919,7 +919,7 @@ const stockScript = (coin: boolean) => `<script>
       document.querySelectorAll('.skel').forEach(function (x) { x.classList.remove('skel'); });
     }
     ['sp-request-credit', 'sp-request-brief'].forEach(function (id) { var rb = $(id); if (rb) { rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name); } });
-    if(COIN && window.GNM_coinChartReady)GNM_coinChartReady();
+    if(window.GNM_coinChartReady)GNM_coinChartReady();
     var c = d.calc, VOTE = { BULLISH: '강세', NEUTRAL: '중립', BEARISH: '약세' };
     var signed = function (v) { return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%'; };
     if (COIN && c && c.volume){var flow=document.getElementById('tab-flows');flow.innerHTML='<section class="card block"><h2>거래량·매집/분산</h2><div class="facts"><div><span>오늘 거래량</span><b>'+c.volume.ratio1.toFixed(2)+'배</b></div><div><span>5일 평균 거래량</span><b>'+c.volume.ratio5.toFixed(2)+'배</b></div><div><span>20일 OBV</span><b>'+c.volume.obvPct.toFixed(1)+'%</b></div><div><span>A/D 강도</span><b>'+(c.volume.adPct||0).toFixed(1)+'</b></div></div><p>'+(c.volume.flow==='ACCUM'?'매집과 비슷한 흔적':c.volume.flow==='DIST'?'분산과 비슷한 흔적':'뚜렷한 매집·분산 괴리 없음')+'</p><p class="fine">업비트 일봉 기준 '+c.date+' · 투자자 신원을 뜻하지 않아요.</p></section>'; }
@@ -952,7 +952,7 @@ const stockScript = (coin: boolean) => `<script>
     var note = document.getElementById('sp-ma-note'); if (note) note.textContent = '이동평균 ' + mas.join('·') + '과 거래량이에요. 내 보기 방식에 맞춘 지표예요(☰ 메뉴에서 바꿀 수 있어요).';
     var vol = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceScaleId: 'v', priceLineVisible: false, lastValueVisible: false });
     vol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
-    chart._gnmSeries= [candle,vol].concat(maSeries);if(COIN&&window.GNM_coinChartReady)GNM_coinChartReady();
+    chart._gnmSeries= [candle,vol].concat(maSeries);if(window.GNM_coinChartReady)GNM_coinChartReady();
     vol.setData(bars.map(function (b, i) { return { time: b.time, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(42,98,201,.35)' : 'rgba(209,55,61,.35)' }; }));
     var stat = $('period-stat'), current = 126, lastW = el.clientWidth;
     var setRange = function (n) {

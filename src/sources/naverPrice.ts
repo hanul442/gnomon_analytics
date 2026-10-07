@@ -86,3 +86,38 @@ export async function fetchNaverWeeklyBars(symbol: string, count: number, option
 export async function fetchNaverIntraday(symbol: string, options: { fetch?: typeof fetch; now?: () => Date } = {}): Promise<IntradaySession[]> {
   return parseNaverMinuteChart(await fetchChart(symbol, 'minute', 4000, options), symbol, (options.now ?? (() => new Date()))());
 }
+
+/** One minute bar for the chart: absolute UTC seconds; labels are drawn in KST. */
+export interface MinuteCandle { time: number; open: number; high: number; low: number; close: number; volume: number }
+
+/**
+ * G-111: N-minute candles from the minute feed, regular session only. The feed carries a close and a
+ * cumulative volume per minute (open/high/low come as null), so each candle's open/high/low are taken
+ * from the minute closes inside it and its volume from the change in cumulative volume.
+ */
+export function parseNaverMinuteCandles(body: string, unit: number): MinuteCandle[] {
+  const out: MinuteCandle[] = [];
+  let lastDay = '', lastCum = 0, cur: MinuteCandle | null = null;
+  for (const match of body.matchAll(ITEM)) {
+    const parts = (match[1] ?? '').split('|'), stamp = parts[0] ?? '';
+    if (parts.length < 6 || !/^\d{12}$/.test(stamp)) continue;
+    const date = isoDate(stamp.slice(0, 8)), hh = Number(stamp.slice(8, 10)), mm = Number(stamp.slice(10, 12)), hhmm = `${stamp.slice(8, 10)}:${stamp.slice(10, 12)}`;
+    const close = Number(parts[4]), cum = Number(parts[5]);
+    if (!date || hhmm < SESSION_OPEN || hhmm > SESSION_CLOSE || !(close > 0) || !Number.isFinite(cum) || cum < 0) continue;
+    if (date !== lastDay) { lastDay = date; lastCum = 0; }
+    const vol = Math.max(0, cum - lastCum); lastCum = Math.max(lastCum, cum);
+    // Bucket start in minutes since 09:00, then back to an absolute time (KST = UTC+9).
+    const since = (hh - 9) * 60 + mm, start = since - (since % unit);
+    const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+    const time = Date.UTC(y, m - 1, d, 9, start) / 1000 - 9 * 3600;
+    if (cur && cur.time === time) { cur.high = Math.max(cur.high, close); cur.low = Math.min(cur.low, close); cur.close = close; cur.volume += vol; }
+    else { cur = { time, open: close, high: close, low: close, close, volume: vol }; out.push(cur); }
+  }
+  if (!out.length && !body.includes('<chartdata')) throw new Error('NAVER_UNEXPECTED_RESPONSE');
+  return out;
+}
+
+/** About the last ten sessions of minute data, as N-minute candles (the most recent 200). */
+export async function fetchNaverMinuteCandles(symbol: string, unit: number, options: { fetch?: typeof fetch } = {}): Promise<MinuteCandle[]> {
+  return parseNaverMinuteCandles(await fetchChart(symbol, 'minute', 4000, options), unit).slice(-200);
+}

@@ -1,7 +1,7 @@
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
 import { notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
-import { fetchUpbitMinutes } from '../sources/upbit.js';
+import { fetchUpbitMinutes, fetchUpbitTicks } from '../sources/upbit.js';
 import { reportInput, inputHash, refundJob, reportFragments, type ReportQueue, type ReportJob } from './reports.js';
 import type { DailyReport } from '../report/dailyReport.js';
 import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
@@ -17,7 +17,7 @@ import { intradaySignals, readIntraday } from '../analysis/intraday.js';
 import { deepPath, DEEP_DATE, DEEP_SYMBOL, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
 import { parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
-import { parseNaverMinuteChart } from '../sources/naverPrice.js';
+import { fetchNaverMinuteCandles, parseNaverMinuteChart } from '../sources/naverPrice.js';
 
 export interface Env {
   DB: D1;
@@ -494,6 +494,25 @@ route('GET','/candles/(KRW-[A-Z0-9]{1,15})/(1|5|15|60)',async({deps,params,now})
  if(coinCandles.size>=64)coinCandles.delete(coinCandles.keys().next().value!);
  const pending=fetchUpbitMinutes(symbol,unit,deps.fetch).then(bars=>({symbol,unit,bars,retrievedAt:iso(now)})).catch(()=>{coinCandles.delete(key);return fail(502,'COIN_DATA','분봉을 가져오지 못했어요. 잠시 후 다시 선택해 주세요.');});
  coinCandles.set(key,{at:now.getTime(),pending});return pending;
+});
+// G-111: stock minute candles (from Naver's 1-minute closes) and tick views. Cached 30 s per symbol and unit.
+const cached=(key:string,now:Date,load:()=>Promise<unknown>,why:string)=>{
+ const old=coinCandles.get(key);if(old&&now.getTime()-old.at<30000)return old.pending;
+ if(coinCandles.size>=64)coinCandles.delete(coinCandles.keys().next().value!);
+ const pending=load().catch(()=>{coinCandles.delete(key);return fail(502,'CHART_DATA',why);});
+ coinCandles.set(key,{at:now.getTime(),pending});return pending;
+};
+route('GET','/candles/([0-9][0-9A-Z]{5})/(1|5|15|60)',async({deps,params,now})=>{
+ const symbol=params[0]!,unit=Number(params[1]);
+ return cached(symbol+':'+unit,now,()=>fetchNaverMinuteCandles(symbol,unit,{fetch:deps.fetch}).then(bars=>{if(!bars.length)throw new Error('empty');return {symbol,unit,bars,retrievedAt:iso(now)};}),'분봉을 가져오지 못했어요. 잠시 후 다시 선택해 주세요.');
+});
+// Ticks: coins get Upbit's recent trades; stocks get today's 1-minute closes. The page appends live quotes after that.
+route('GET','/ticks/(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})',async({deps,params,now})=>{
+ const symbol=params[0]!,coin=symbol.startsWith('KRW-');
+ return cached(symbol+':T',now,()=>coin
+  ?fetchUpbitTicks(symbol,deps.fetch).then(points=>({symbol,kind:'trades',points,retrievedAt:iso(now)}))
+  :fetchNaverMinuteCandles(symbol,1,{fetch:deps.fetch}).then(bars=>{const day=bars.length?new Date((bars.at(-1)!.time+9*3600)*1000).toISOString().slice(0,10):'';const today=bars.filter(b=>new Date((b.time+9*3600)*1000).toISOString().slice(0,10)===day);return {symbol,kind:'minuteCloses',points:today.map(b=>({time:b.time,price:b.close,volume:b.volume})),retrievedAt:iso(now)};}),
+ '틱 데이터를 가져오지 못했어요. 잠시 후 다시 선택해 주세요.');
 });
 route('POST', '/reports', async ({ req, env, deps, now }) => {
   const u = await authed(req, env, now), b = await body(req);
