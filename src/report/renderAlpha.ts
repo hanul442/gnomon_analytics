@@ -30,14 +30,14 @@ const NO_API = `<div class="msg-err" data-no-api hidden>알파 서버가 아직 
 
 export function renderLogin(): string {
   const body = `${PAGE_CSS}<style>.seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#eef1f5;border-radius:12px;padding:4px;margin:12px 0 4px}.seg2 button{border:0;background:none;border-radius:9px;padding:9px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer}.seg2 button[aria-selected=true]{background:#fff;color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.08)}.form-card input{font-size:16px}.alt{margin-top:14px;font-size:13px}</style>
-<section class="card form-card"><div class="eyebrow"><span>클로즈드 알파</span></div><h1>큐리아 로그인</h1>${NO_API}
+<section class="card form-card"><div class="eyebrow"><span>클로즈드 알파</span></div><h1>그노몬 로그인</h1>${NO_API}
 <div id="verifying" class="msg-ok" hidden>로그인하고 있어요…</div>
 <div class="seg2" role="tablist"><button type="button" role="tab" data-mode="login" aria-selected="true">로그인</button><button type="button" role="tab" data-mode="signup" aria-selected="false">처음이에요 (초대 코드)</button></div>
 <form id="login" autocomplete="on"><div class="fld"><label for="email">이메일</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>
 <div class="fld"><label for="pw">비밀번호</label><input id="pw" type="password" autocomplete="current-password" required minlength="8" maxlength="72"><small class="muted" data-only="signup" hidden>8자 이상, 영문과 숫자를 함께 넣어 주세요.</small></div>
 <div class="fld" data-only="signup" hidden><label for="pw2">비밀번호 확인</label><input id="pw2" type="password" autocomplete="new-password" maxlength="72"></div>
 <div class="fld" data-only="signup" hidden><label for="invite">초대 코드</label><input id="invite" autocomplete="off" placeholder="GNM-XXXXXX" style="text-transform:uppercase"></div>
-<label class="chk" data-only="signup" hidden><input type="checkbox" id="terms"> <span><a href="terms.html" target="_blank">이용 약관과 면책</a>을 읽었고, 큐리아의 정보가 투자 권유가 아니며 투자 판단과 결과의 책임이 나에게 있다는 데 동의해요.</span></label>
+<label class="chk" data-only="signup" hidden><input type="checkbox" id="terms"> <span><a href="terms.html" target="_blank">이용 약관과 면책</a>을 읽었고, 그노몬의 정보가 투자 권유가 아니며 투자 판단과 결과의 책임이 나에게 있다는 데 동의해요.</span></label>
 <button class="btn-primary" type="submit" id="go">로그인</button><div id="out" aria-live="polite"></div></form>
 <p class="alt muted">비밀번호를 아직 안 정했거나 잊었다면 운영자에게 로그인 링크를 받아 들어온 뒤, <b>내 계정</b>에서 비밀번호를 정할 수 있어요.</p></section>`;
   const script = `<script>
@@ -86,7 +86,7 @@ export function renderLogin(): string {
   });
 })();
 </script>`;
-  return shell('', '로그인 · 큐리아', body, { scripts: script, chat: false, noFeedback: true, bottomNav: false });
+  return shell('', '로그인 · 그노몬', body, { scripts: script, chat: false, noFeedback: true, bottomNav: false });
 }
 
 const SECTORS = ['반도체', '2차전지·소재', '바이오·헬스케어', '자동차·조선', '방산·기계', '금융', '인터넷·게임', '화학·에너지', '소비재·유통', '건설·부동산', '통신·미디어', '지주·기타'];
@@ -108,14 +108,14 @@ export const ONBOARDING_QUESTIONS = [
   { key: 'trustAi', title: 'AI가 쓴 투자 해설을 얼마나 믿을 것 같아요?', type: 'one', options: ['거의 안 믿어요', '참고만 해요', '근거가 있으면 믿어요', '꽤 믿어요'] },
   { key: 'sectors', section: '3. 관심사', title: '관심 있는 업종을 골라 주세요', note: '여러 개 골라도 돼요', type: 'many', options: SECTORS },
   { key: 'tickers', title: '갖고 있거나 지켜보는 종목이 있나요?', note: '최대 10개 · 관심 종목에 바로 담아 드려요', type: 'tickers', options: [] },
-  { key: 'interests', title: '큐리아에서 주로 보고 싶은 것은?', note: '여러 개 골라도 돼요', type: 'many', options: ['AI 해설·위원회', '기술적 신호·차트', '외국인·기관 수급', '실적·밸류에이션', '공시·뉴스', '전략·백테스트', '모의투자·성적표', '조건 검색(스크리너)'] },
+  { key: 'interests', title: '그노몬에서 주로 보고 싶은 것은?', note: '여러 개 골라도 돼요', type: 'many', options: ['AI 해설·위원회', '기술적 신호·차트', '외국인·기관 수급', '실적·밸류에이션', '공시·뉴스', '전략·백테스트', '모의투자·성적표', '조건 검색(스크리너)'] },
   { key: 'alerts', title: '받고 싶은 알림은?', note: '여러 개 골라도 돼요', type: 'many', options: ['관심 종목 급등락', '관심 종목 공시', '테스트 가격 돌파·이탈', '조건 검색에 새로 걸린 종목', '매일 아침 요약', '알림은 싫어요'] },
-  { key: 'explain', section: '4. 큐리아에 바라는 것', title: '설명은 어느 수준이 좋아요?', type: 'one', options: ['아주 쉬운 말로', '보통', '전문 용어 그대로'] },
+  { key: 'explain', section: '4. 그노몬에 바라는 것', title: '설명은 어느 수준이 좋아요?', type: 'one', options: ['아주 쉬운 말로', '보통', '전문 용어 그대로'] },
   { key: 'length', title: '종목 리포트는 어느 정도 길이가 좋아요?', type: 'one', options: ['결론 한 줄', '결론과 이유 세 줄', '근거까지 자세히', '데이터 전부'] },
   { key: 'tools', title: '지금 쓰는 도구는?', note: '여러 개 골라도 돼요', type: 'many', options: ['증권사 앱(MTS·HTS)', '네이버·다음 증권', '증권사 리포트', '유료 리딩방·구독', 'TradingView 같은 해외 도구', '엑셀·직접 만든 도구', '없어요'] },
   { key: 'pay', title: '이런 서비스에 한 달에 얼마까지 낼 수 있어요?', type: 'one', options: ['무료만 써요', '1만 원 안쪽', '1~3만 원', '3~5만 원', '5~10만 원', '10만 원 넘게도'] },
   { key: 'worry', title: '이런 서비스를 쓸 때 걱정되는 점은?', type: 'text', options: [] },
-  { key: 'wish', title: '큐리아에 가장 바라는 것 하나', type: 'text', options: [] },
+  { key: 'wish', title: '그노몬에 가장 바라는 것 하나', type: 'text', options: [] },
   { key: 'interview', title: '20분 화상 인터뷰에 참여해 주실 수 있나요?', note: '참여하면 크레딧 200개를 드려요', type: 'one', options: ['네, 좋아요', '아니요'] },
 ] as const;
 
@@ -126,7 +126,7 @@ export function renderOnboarding(): string {
     if (x.type === 'tickers') return `<div class="q" data-q="${x.key}">${head}<div class="fld"><input id="tk-in" placeholder="종목 이름이나 코드" autocomplete="off"></div><div class="sugg" id="tk-sugg" hidden></div><div class="picked" id="tk-picked"></div></div>`;
     return `<div class="q" data-q="${x.key}">${head}<div class="opts">${x.options.map((o) => `<label><input type="${x.type === 'one' ? 'radio' : 'checkbox'}" name="${x.key}" value="${o}">${o}</label>`).join('')}</div></div>`;
   }).join('');
-  const body = `${PAGE_CSS}<section class="card form-card" style="max-width:720px"><div class="eyebrow"><span>맞춤 설문</span><span>약 7분 · ${ONBOARDING_QUESTIONS.length}문항</span></div><h1>나에게 맞는 큐리아 만들기</h1>
+  const body = `${PAGE_CSS}<section class="card form-card" style="max-width:720px"><div class="eyebrow"><span>맞춤 설문</span><span>약 7분 · ${ONBOARDING_QUESTIONS.length}문항</span></div><h1>나에게 맞는 그노몬 만들기</h1>
 <p class="muted">네 부분(나의 투자 · 판단하는 방식 · 관심사 · 바라는 것)으로 나눠 물어요. 답에 따라 보기 방식, 홈의 '오늘 볼 것', 관심 종목, 설명 수준이 정해져요. 모르는 건 건너뛰어도 되고, 언제든 ☰ 메뉴에서 다시 할 수 있어요. 답은 서비스 개선에만 써요.</p>${NO_API}
 <div class="stepbar" aria-hidden="true" style="position:sticky;top:64px;z-index:3"><i id="prog"></i></div><style>.sv-sec{font-size:18px;margin:26px 0 4px;padding-top:14px;border-top:2px solid var(--navy);color:var(--accent-strong)}</style><form id="survey">${q}<button class="btn-primary" type="submit">완료하고 내 홈 보기</button><div id="out" aria-live="polite"></div></form></section>`;
   const script = `<script>
@@ -181,7 +181,7 @@ export function renderOnboarding(): string {
   });
 })();
 </script>`;
-  return shell('', '설문 · 큐리아', body, { scripts: script, chat: false, noFeedback: true });
+  return shell('', '설문 · 그노몬', body, { scripts: script, chat: false, noFeedback: true });
 }
 
 export function renderAccount(): string {
@@ -242,7 +242,7 @@ export function renderAccount(): string {
   });
 })();
 </script>`;
-  return shell('', '내 계정 · 큐리아', body, { scripts: script, active: 'account', noFeedback: true });
+  return shell('', '내 계정 · 그노몬', body, { scripts: script, active: 'account', noFeedback: true });
 }
 
 export function renderAdmin(): string {
@@ -347,6 +347,6 @@ export function renderAdmin(): string {
   load();
 })();
 </script>`;
-  return shell('', '운영 · 큐리아', body, { scripts: script, chat: false, noFeedback: true });
+  return shell('', '운영 · 그노몬', body, { scripts: script, chat: false, noFeedback: true });
 }
 

@@ -10,7 +10,7 @@ import { renderMarketReport, renderMarketDeep, type MarketReport } from '../repo
 import { unseal } from '../report/seal.js';
 
 test('truncated market analysis records billed tokens and leaves a retryable failure', async()=>{
- const root=await mkdtemp(join(tmpdir(),'curia-market-'));
+ const root=await mkdtemp(join(tmpdir(),'gnomon-market-'));
  try {
   await mkdir(join(root,'data','prices'),{recursive:true});
   await writeFile(join(root,'data','prices','KOSPI.jsonl'),'{"date":"2026-10-06","close":100}\n{"date":"2026-10-07","close":110}\n');

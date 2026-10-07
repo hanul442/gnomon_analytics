@@ -701,8 +701,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'sw.js'), SW_JS);
   await writeFile(join(siteDir, 'manifest.webmanifest'), MANIFEST);
   await mkdir(join(siteDir, 'assets'), { recursive: true });
-  for (const n of [96, 192, 512]) await copyFile(new URL(`../../assets/curia-icon-${n}.png`, import.meta.url), join(siteDir, 'assets', `curia-icon-${n}.png`));
-  await copyFile(new URL('../../assets/curia-logo.png', import.meta.url), join(siteDir, 'assets', 'curia-logo.png'));
+  for (const n of [96, 192, 512]) await copyFile(new URL(`../../assets/gnomon-icon-${n}.png`, import.meta.url), join(siteDir, 'assets', `gnomon-icon-${n}.png`));
+  await copyFile(new URL('../../assets/gnomon-mark.png', import.meta.url), join(siteDir, 'assets', 'gnomon-mark.png'));
   await copyFile(new URL('../../assets/hanul-logo.jpg', import.meta.url), join(siteDir, 'assets', 'hanul-logo.jpg'));
   await writeFile(join(siteDir, 'guide.html'), renderGuide());
   await writeFile(join(siteDir, 'updates.html'), renderUpdates());

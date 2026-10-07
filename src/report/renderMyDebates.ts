@@ -52,5 +52,5 @@ document.addEventListener('DOMContentLoaded', function () {
   if (G.ready) G.ready.then(start); else start(null);
 });
 </script>`;
-  return shell('', '내 토론 기록 | CURIA', body, { noFeedback: true });
+  return shell('', '내 토론 기록 | GNOMON', body, { noFeedback: true });
 }
