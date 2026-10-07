@@ -7,11 +7,10 @@ import { ARENA_COST, type ArenaResult, type StrategyResult } from '../analysis/s
 import { PAPER_START_KRW, type PaperBook } from '../analysis/paper.js';
 import { miniGauge } from './renderMarket.js';
 import { esc } from './html.js';
+import { won, tone } from './format.js';
 
 
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const pct = (v: number | null, d = 1) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${(v * 100).toFixed(d)}%`);
-const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 const sh = (v: number | null) => (v === null ? '없음' : v.toFixed(2));
 /** Colour only when the gauge label itself says 강세 or 약세. */
 const sigTone = (v: number | null) => (v === null ? '' : v >= 0.3 ? 'up' : v <= -0.3 ? 'down' : '');

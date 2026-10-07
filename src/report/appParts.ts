@@ -8,11 +8,10 @@ import { starButton } from './ui.js';
 import { scenarioLayer } from './scenarioChart.js';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import { esc } from './html.js';
+import { won, tone, pct as fmtPct } from './format.js';
+const pct = (v: number | null, digits = 2) => fmtPct(v, digits, '없음');
 
-const won = (v: number) => `${(v>=100?Math.round(v):v).toLocaleString('ko-KR',{maximumFractionDigits:8})}원`;
 const num = (v: number, digits = 0) => v.toLocaleString('ko-KR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-const pct = (v: number | null, digits = 2) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`);
-const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 const kstTime = (iso: string) => new Date(Date.parse(iso) + 9 * 3600_000).toISOString().slice(5, 16).replace('T', ' ');
 
 /** Small line chart; colour follows the sign of the whole window (Korean convention). */
@@ -107,18 +106,6 @@ ${points.length ? `<div class="key-points"><div class="kp-title">핵심 포인�
 </section>`;
 }
 
-/** Index-style strip: the market and the peer with a 60-session sparkline each. The stock itself has its own chart under the price. */
-export function marketStrip(report: DailyReport): string {
-  const m = report.market;
-  const items: { name: string; value: string; change: number | null; spark: number[] }[] = [];
-  for (const b of m?.benchmarks ?? []) {
-    if (b.last === null || b.symbol === report.symbol || b.spark.length < 2) continue;
-    items.push({ name: b.name, value: b.symbol === 'KOSPI' || b.symbol === 'KOSDAQ' ? num(b.last, 2) : won(b.last), change: b.changePct, spark: b.spark });
-  }
-  if (!items.length) return '';
-  return `<section class="block"><div class="block-head"><h2>시장 한눈에</h2><span class="muted">최근 60거래일</span></div>
-<div class="strip">${items.map((it) => `<div class="strip-item"><div class="si-name">${esc(it.name)}</div><div class="si-value">${esc(it.value)}</div><div class="si-change ${tone(it.change)}">${esc(pct(it.change))}</div>${sparkline(it.spark, `${it.name} 최근 60거래일`, 120, 36, it.change == null ? null : it.change >= 0)}</div>`).join('')}</div></section>`;
-}
 
 
 

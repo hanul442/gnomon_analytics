@@ -5,6 +5,8 @@
 
 import type { DailyReport } from './dailyReport.js';
 import { esc } from './html.js';
+import { won, tone, move } from './format.js';
+const pct = (v: number | null | undefined) => move(v, 1);
 
 export type Persona = 'beginner' | 'trader' | 'swing' | 'long' | 'all';
 export const PERSONAS: readonly { key: Persona; label: string; question: string }[] = [
@@ -57,9 +59,6 @@ export const PERSONA_JS = `
     if (window.GNM && GNM.track) GNM.track('persona', { p: p });
   });`;
 
-const won = (v: number) => `${v >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}원`;
-const pct = (v: number | null | undefined) => (v == null ? '—' : `${v > 0 ? '▲ +' : v < 0 ? '▼ ' : ''}${v.toFixed(1)}%`);
-const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 const row = (k: string, v: string, note = '') => `<div><span>${esc(k)}</span><b>${v}</b>${note ? `<small>${esc(note)}</small>` : ''}</div>`;
 const LEVEL_WORD: Record<string, string> = { STRONG_BULLISH: '강한 강세', BULLISH: '강세', SLIGHTLY_BULLISH: '약간 강세', NEUTRAL: '중립', SLIGHTLY_BEARISH: '약간 약세', BEARISH: '약세', STRONG_BEARISH: '강한 약세' };
 const FOOT: Record<string, string> = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' };

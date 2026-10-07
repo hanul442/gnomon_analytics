@@ -18,11 +18,9 @@ import { openEvents } from './events.js';
 import { HOME_ORDER } from './persona.js';
 import { FIELD_INDEX, matches, PRESETS } from '../analysis/screenRules.js';
 import { esc } from './html.js';
+import { won, tone, move as signed } from './format.js';
 
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 // G-84: a move always carries its arrow (▲ red up, ▼ blue down) next to the number.
-const signed = (v: number | null, digits = 2) => (v === null ? '—' : `${v > 0 ? '▲ +' : v < 0 ? '▼ ' : ''}${v.toFixed(digits)}%`);
-const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 
 export interface IndexQuote { symbol: string; name: string; date: string; close: number; changePct: number | null; closes: number[] }
 
@@ -448,7 +446,7 @@ const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-
 .plan-cta p{font-size:14px;margin:8px 0}.plan-cta .btn-primary{width:100%;justify-content:center}
 .wl{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.wl:first-child{border-top:0}.wl a{text-decoration:none}
 @media (max-width:1100px){.home-grid{grid-template-columns:minmax(0,1fr)}.home-rail{position:static}}
-@media (max-width:820px){.ix-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.ix-row>.card:not(.ix){grid-column:1/3}.ix .spark{display:none}.ix-v{font-size:18px}.home-hero h1{font-size:24px}.home-hero .hero-line{display:block;font-size:13px}.rr-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rr-chips>*{flex:none}}
+@media (max-width:820px){.ix-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.ix-row>.tmp{grid-column:1/3}.ix .spark{display:none}.ix-v{font-size:18px}.home-hero h1{font-size:24px}.home-hero .hero-line{display:block;font-size:13px}.rr-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rr-chips>*{flex:none}}
 </style>`;
 
 const HOME_SCRIPT = `<script>

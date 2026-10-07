@@ -7,8 +7,8 @@
 import type { DailyReport } from './dailyReport.js';
 import { ANALYSTS } from '../analysis/analysts.js';
 import { esc } from './html.js';
+import { won } from './format.js';
 
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 
 export type Faction = 'ai' | 'desk' | 'strategy' | 'indicator';
 export type Stance = 'bull' | 'neutral' | 'bear' | 'abstain';

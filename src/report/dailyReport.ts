@@ -6,6 +6,7 @@ import { clusterNews, type NewsCluster } from '../analysis/news.js';
 import type { Commentary } from '../analysis/commentary.js';
 import { horizonMomentum, summarizeTechnicals, technicalReason, type HorizonMomentum, type TechnicalSummary } from '../analysis/technicals.js';
 import { readFilingTitle, type Importance } from './classify.js';
+import { won } from './format.js';
 
 export const REPORT_SCHEMA = 'gnm.daily-report.v0';
 
@@ -93,7 +94,6 @@ export interface NewsSection {
 }
 
 const IMPORTANCE_ORDER: Record<Importance, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
-const won = (value: number): string => `${Math.round(value).toLocaleString('ko-KR')}원`;
 const pct = (value: number): string => `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
 
 function mean(values: readonly number[]): number | null {

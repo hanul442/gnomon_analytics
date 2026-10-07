@@ -5,8 +5,8 @@
 import type { DailyReport } from './dailyReport.js';
 import { dartViewerUrl } from '../sources/opendart.js';
 import { esc } from './html.js';
+import { won } from './format.js';
 
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const eok = (v: number) => (Math.abs(v) >= 1e8 ? `${(v / 1e8).toLocaleString('ko-KR', { maximumFractionDigits: Math.abs(v) >= 1e10 ? 0 : 1 })}억원` : won(v));
 const shares = (n: number) => `${n > 0 ? '+' : ''}${n.toLocaleString('ko-KR')}주`;
 const qLabel = (p: string) => `${p.slice(0, 4)}년 ${Number(p.slice(4)) / 3}분기`;
