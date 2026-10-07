@@ -193,12 +193,12 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
 <div class="seg" role="group" aria-label="기간">${RANGES.map(([label, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 63}">${label}</button>`).join('')}</div></div>
 <div class="chart-tools"><div class="preset-row" role="group" aria-label="지표"><span class="label">지표</span><button type="button" class="tool-btn" data-open="ind-sheet" aria-haspopup="dialog">${GEAR}지표 고르기</button><button type="button" class="chip-toggle" id="ind-reset" title="내 보기 방식의 기본 지표로 되돌려요">내 보기 기본</button></div>
 ${strategies.length ? `<button type="button" class="strat-pick" data-open="strat-sheet" aria-haspopup="dialog"><span class="label">전략 매매 시점</span><b id="strat-current">끄기</b><span class="caret" aria-hidden="true">▾</span></button>` : ''}</div>
-<div class="active-pills" id="active-pills" aria-label="켜진 지표"></div>${scBar}
+<div class="active-pills" id="active-pills" aria-label="켜진 지표"></div>
 ${chartToolbar(!!report.market?.benchmarks.some((b) => b.series?.length))}
 <div class="sheet" id="ind-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="ind-sheet-t"><div class="sheet-head"><b id="ind-sheet-t">지표 고르기</b><button type="button" class="sheet-done" data-close>완료</button></div>
 <p class="muted small" style="margin:0 0 6px">켜고 끈 지표는 이 기기에 저장돼서 다른 종목에서도 그대로 보여요.</p><div class="opt-group"><div class="opt-k">가격 위에 겹치기</div>${OVERLAYS.map(([k, l, on]) => opt('ov', k, l, on)).join('')}</div>
 <div class="opt-group"><div class="opt-k">아래 창</div>${PANES.map(([k, l, on]) => opt('pane', k, l, on)).join('')}</div>
-<div class="opt-group"><div class="opt-k">차트 위 표시</div>${opt('vl', 'filing', '공시', true, '공시가 나온 날 문서 아이콘과 점선')}${opt('vl', 'news', '뉴스', true, '중요도 보통 이상 뉴스가 나온 날 아이콘')}</div></div></div>
+<div class="opt-group"><div class="opt-k">시나리오 전망</div>${scBar}</div><div class="opt-group"><div class="opt-k">차트 위 표시</div>${opt('vl', 'filing', '공시', true, '공시가 나온 날 문서 아이콘과 점선')}${opt('vl', 'news', '뉴스', true, '중요도 보통 이상 뉴스가 나온 날 아이콘')}</div></div></div>
 ${strategies.length ? `<div class="sheet" id="strat-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="strat-sheet-t"><div class="sheet-head"><b id="strat-sheet-t">전략 매매 시점 보기</b><button type="button" class="sheet-done" data-close>닫기</button></div>
 <p class="muted small" style="margin:0 0 6px">고른 전략의 과거 매수(▲)·매도(▼) 시점을 차트에 표시해요. 순위는 검증 구간 샤프 순이에요.</p>
 <button type="button" class="opt" data-strategy="" aria-pressed="true"><span class="opt-t"><b>끄기</b><small>매매 시점을 표시하지 않아요</small></span><i class="radio" aria-hidden="true"></i></button>
@@ -302,7 +302,8 @@ window.addEventListener('DOMContentLoaded', function () {
   var SC = { BULL: [UP, '강세'], BASE: ['#5b6b80', '기본'], BEAR: [DOWN, '약세'] };
   // G-96: each scenario's 20-session range is a box from today to twenty sessions ahead, labelled with what it means.
   // An invisible anchor series puts those future sessions on the time scale and keeps the boxes inside the price scale.
-  var scPick = 'ALL', scShown = [], scDays = [], boxes = document.getElementById('sc-boxes');
+  var scPick = '', scShown = [], scDays = [], boxes = document.getElementById('sc-boxes');
+  try { var storedSc=localStorage.getItem('gnm-scenario-layer');if(['','ALL','BULL','BASE','BEAR'].indexOf(storedSc)>=0)scPick=storedSc; } catch(e){}
   var compact = function (v) { return v >= 1e8 ? (v / 1e8).toFixed(1).replace(/\\.0$/, '') + '억' : v >= 1e5 ? Math.round(v / 1e4).toLocaleString('ko-KR') + '만' : v >= 100 ? Math.round(v).toLocaleString('ko-KR') : String(+v.toPrecision(4)); };
   var drawBoxes = function () {
     if (!boxes) return;
@@ -326,7 +327,7 @@ window.addEventListener('DOMContentLoaded', function () {
     }).join('');
   };
   var drawScen = function (pick, keep) {
-    if (!keep) scPick = pick;
+    if (!keep) { scPick = pick; try{localStorage.setItem('gnm-scenario-layer',pick);}catch(e){} }
     scBuilt.forEach(function (x) { chart.removeSeries(x); var i = allSeries.indexOf(x); if (i >= 0) allSeries.splice(i, 1); }); scBuilt = [];
     var last = bars[bars.length - 1], d = last.date; scDays = [];
     for (var h = 1; h <= 20; h++) { d = addDays(d, 1); scDays.push(d); }
@@ -346,6 +347,7 @@ window.addEventListener('DOMContentLoaded', function () {
     scBar.hidden = !scen.length; if (!scen.length) { scBar.innerHTML = ''; return; }
     scBar.innerHTML = '<span class="label">시나리오 전망</span><button type="button" data-sc="ALL" aria-pressed="true">모두</button>' + scen.map(function (x) { return '<button type="button" data-sc="' + x.kind + '" class="sc-' + x.kind + '" aria-pressed="false">' + SC[x.kind][1] + (x.p != null ? ' ' + x.p + '%' : '') + '</button>'; }).join('') + '<button type="button" data-sc="" aria-pressed="false">끄기</button><span class="sc-note">' + scen.map(function (x) { return '<span class="sc-' + x.kind + '">' + SC[x.kind][1] + ' ' + compact(x.zone[0]) + '~' + compact(x.zone[1]) + '</span>'; }).join(' · ') + ' · 20거래일 뒤 ' + (scen.some(function (x) { return x.source === 'calc'; }) ? '(변동성 계산)' : scen.some(function (x) { return x.source === 'analyst'; }) ? '(AI 분석가 목표가)' : '(AI 위원회)') + '</span>';
     scBar.querySelectorAll('[data-sc]').forEach(function (b) {
+      b.setAttribute('aria-pressed',String(b.getAttribute('data-sc')===scPick));
       b.addEventListener('click', function () {
         scBar.querySelectorAll('[data-sc]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
         drawScen(b.getAttribute('data-sc'));
@@ -358,7 +360,7 @@ window.addEventListener('DOMContentLoaded', function () {
   // A report made on request brings its scenarios after the page loaded.
   // Intraday candles (coins) use their own time scale: the daily fan steps aside and comes back with the daily view.
   window.GNM_scenarioPause = function (off) { drawScen(off ? '' : scPick, true); };
-  window.GNM_scenarios = function (list) { scen = list || []; scButtons(); drawScen('ALL'); setRange(currentRange, scExtra); };
+  window.GNM_scenarios = function (list) { scen = list || []; scButtons(); drawScen(scPick); setRange(currentRange, scExtra); };
 
   // ---- panes (below the price) ----
   var paneMakers = {
@@ -537,7 +539,7 @@ window.addEventListener('DOMContentLoaded', function () {
       setRange(Number(b.getAttribute('data-range')), Math.max(fc && fc.getAttribute('aria-pressed') === 'true' ? 62 : 0, scExtra));
     });
   });
-  if (scen.length) drawScen('ALL');
+  if (scen.length) drawScen(scPick);
   setRange(63, scExtra);
   requestAnimationFrame(drawLines);
   window.GNMChart = { L: L, chart: chart, candle: candle, bars: bars, series: function () { return allSeries.slice(); } };

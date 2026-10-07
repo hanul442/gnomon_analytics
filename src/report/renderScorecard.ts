@@ -96,16 +96,16 @@ ${head}${gate(forecastCard.replace('<section class="block">', '<section class="b
 .more-all{display:block;margin:10px auto 0;border:1px dashed var(--line-strong);background:#fff;border-radius:999px;padding:8px 16px;font:inherit;font-size:13.5px;font-weight:700;color:var(--accent-strong);cursor:pointer}.fr-table{table-layout:auto;width:100%}.fr-open{margin-left:4px;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}.fr-open[aria-expanded=true]{background:var(--navy);color:#fff}.fr-ledger td{background:#f7f9fc;white-space:normal}.fr-ledger td>*{max-width:calc(100vw - 48px);overflow-x:auto;box-sizing:border-box}
 @media (max-width:820px){.sc-bigs{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-tiles{gap:6px}.sc-tile{padding:10px}.sc-tile b{font-size:17px}.sc-tile .pl-k{font-size:11.5px}.hide-m{display:none}}</style>
 <footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 모의투자는 가상 계좌예요. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '성적표 | Gnomon Analytics', body, { active: 'scorecard', scripts: SCORE_JS });
+  return shell('', '성적표 | CURIA', body, { active: 'scorecard', scripts: SCORE_JS });
 }
 
 export function renderTerms(): string {
   const sec = (id: string, title: string, items: string[]) => `<section class="block" id="${id}"><div class="card terms"><h2>${title}</h2><ul class="plain">${items.map((i) => `<li>${i}</li>`).join('')}</ul></div></section>`;
   const body = `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>이용약관 · 면책</span><span>초안</span></div><h1>이용약관과 면책</h1>
 <p class="hero-line">법률 검토 전 초안이에요. 유료 서비스를 열기 전에 검토를 거쳐 바뀔 수 있어요.</p></div></section>
-<section class="block"><p class="mock-note"><b>초안이에요.</b> 지금 Gnomon Analytics는 무료 시험 운영 중이고, 요금제와 결제는 MOCK이에요.</p></section>
+<section class="block"><p class="mock-note"><b>초안이에요.</b> 지금 CURIA는 무료 시험 운영 중이고, 요금제와 결제는 MOCK이에요.</p></section>
 ${sec('nature', '서비스의 성격', [
-    'Gnomon Analytics는 공개 데이터로 계산한 기술 지표, 적정가·예측 범위, AI 해설을 보여 주는 리서치 도구예요.',
+    'CURIA는 공개 데이터로 계산한 기술 지표, 적정가·예측 범위, AI 해설을 보여 주는 리서치 도구예요.',
     '<b>투자 자문이나 매매 권유가 아니에요.</b> 특정 종목을 사고팔라고 권하지 않고, 매수·매도 신호나 목표가를 제시하지 않아요.',
     '투자 판단과 그 결과는 이용자 본인의 책임이에요.',
     '유료로 정보를 제공하기 전에 자본시장법상 유사투자자문업 신고 등 필요한 절차를 확인하고 따를 예정이에요.',
@@ -133,12 +133,12 @@ ${sec('privacy', '개인정보', [
   ])}
 ${sec('contact', '문의', ['오류 신고와 리포트 요청은 GitHub 이슈로 받아요.'])}
 <footer id="sources" style="padding:24px 0 0"><p>마지막 수정: 초안. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '이용약관·면책 | Gnomon Analytics', body, {});
+  return shell('', '이용약관·면책 | CURIA', body, {});
 }
 
 /** G-77: 모의투자 is part of the scorecard ('따라 했다면'); the old address forwards there. */
 export function renderPaper(): string {
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=scorecard.html#paper"><title>성적표 | Gnomon Analytics</title></head><body><a href="scorecard.html#paper">성적표로 이동</a></body></html>`;
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=scorecard.html#paper"><title>성적표 | CURIA</title></head><body><a href="scorecard.html#paper">성적표로 이동</a></body></html>`;
 }
 
 /** '전체 보기' opens the rest of a list; '장부' opens a stock's ledger under its row. */

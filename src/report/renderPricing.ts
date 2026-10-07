@@ -91,7 +91,7 @@ ${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>$
 <details><summary>요금제마다 무엇이 달라요?</summary><p>플러스는 계산 상세와 요약 리포트를 보고 크레딧으로 리포트를 요청해요. 프로는 AI 위원회 리포트 전체·전략·모의투자를 보고, 요약 리포트를 심층으로 업그레이드해요. 맥스는 관심 종목 10개를 매주 AI 위원회가 알아서 분석하고, 전문가용 도구(전략 랩·포트폴리오 리스크·시점 재현)를 써요.</p></details>
 <details><summary>투자 자문인가요?</summary><p>아니요. 공개 데이터로 계산한 결과와 AI 해설이고, 매수·매도를 권하지 않아요. 유료 서비스를 열기 전에 관련 법(유사투자자문업 신고 등)을 확인할 예정이에요.</p></details></div></section>
 <footer id="sources" style="padding:24px 0 0"><p>가격은 부가세 포함 기준의 초안이에요. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '요금제 | Gnomon Analytics', body, { active: 'pricing', scripts: PRICING_SCRIPT });
+  return shell('', '요금제 | CURIA', body, { active: 'pricing', scripts: PRICING_SCRIPT });
 }
 
 const PRICING_SCRIPT = `<script>
@@ -128,7 +128,7 @@ export function renderCheckout(): string {
 <div id="co-done" class="card done" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
 <h2 style="margin:6px 0">테스트 결제가 끝났어요</h2><p id="co-result"></p><p class="muted small">MOCK 영수증이에요. 실제 결제 기록이 아니에요.</p><p><a class="btn-primary" href="index.html">홈으로</a> <a href="pricing.html" style="margin-left:10px">요금제 보기</a></p></div></div>
 <footer id="sources" style="padding:24px 0 0"><p>투자 권유가 아니에요.</p></footer>`;
-  return shell('', '결제 | Gnomon Analytics', body, { active: 'pricing', scripts: `<script>
+  return shell('', '결제 | CURIA', body, { active: 'pricing', scripts: `<script>
 (function () {
   var G = window.GNM, ITEMS = ${JSON.stringify(ITEMS)}, BONUS = ${JSON.stringify(Object.fromEntries(PLANS.map((p) => [p.key, p.topUpBonus])))};
   var key = new URLSearchParams(location.search).get('item'), item = ITEMS.find(function (x) { return x.key === key; });

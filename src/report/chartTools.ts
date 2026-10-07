@@ -30,6 +30,7 @@ ${hasBenchmark ? '<button type="button" class="chip-toggle" data-compare aria-pr
 }
 
 export const CHART_V6_CSS = `
+.coin-tf{max-width:100%;overflow-x:auto;flex-wrap:nowrap;white-space:nowrap}.coin-tf button{flex:none}.dt:disabled{opacity:.4;cursor:not-allowed}
 .v6-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:6px 0}
 .draw-tools{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
 .dt{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 8px;font:inherit;font-size:12px;font-weight:600;color:var(--fg2);cursor:pointer;min-height:32px}
@@ -145,14 +146,15 @@ window.addEventListener('DOMContentLoaded', function () {
     if (tf === 'D') saved = G.series().filter(function (s) { return s !== candle; }).map(function (s) { var v = s.options().visible !== false; s.applyOptions({ visible: false }); return [s, v]; });
     if (k === 'D') {
       candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
-      saved.forEach(function (x) { x[0].applyOptions({ visible: x[1] }); }); saved = []; hidden = false;
+      saved.forEach(function (x) { x[0].applyOptions({ visible: x[1] }); }); saved = []; hidden = false; if(window.GNM_scenarioPause)GNM_scenarioPause(false);
       var r = document.querySelector('[data-range][aria-pressed=true]'); if (r) r.click();
     } else {
-      candle.setData(aggregate(k)); hidden = true; chart.timeScale().fitContent();
+      candle.setData(aggregate(k)); hidden = true; if(window.GNM_scenarioPause)GNM_scenarioPause(true); chart.timeScale().fitContent();
       say(k === 'W' ? '주봉이에요. 지표·전략·그림은 일봉에서 보여요.' : '월봉이에요. 지표·전략·그림은 일봉에서 보여요.');
     }
     document.querySelectorAll('[data-range]').forEach(function (b) { b.disabled = k !== 'D'; });
     card.classList.toggle('tf-agg', k !== 'D');
+    document.querySelectorAll('[data-ov],[data-pane],[data-vl],[data-sc],[data-strategy],[data-open="strat-sheet"],#ind-reset,[data-draw],[data-draw-clear],[data-compare]').forEach(function(b){b.disabled=k!=='D';});
     tf = k; redraw();
   };
   document.querySelectorAll('[data-tf]').forEach(function (b) { b.addEventListener('click', function () { setTf(b.getAttribute('data-tf')); }); });

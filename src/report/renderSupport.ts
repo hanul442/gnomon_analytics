@@ -7,7 +7,7 @@ import { esc } from './html.js';
 
 export const FAQ: readonly { group: string; items: readonly [string, string][] }[] = [
   { group: '처음 쓰실 때', items: [
-    ['그노몬은 어떤 서비스예요?', '주식·ETF·코인의 가격, 수급, 실적, 공시·뉴스를 한 화면에 모으고, AI 위원회가 강세·기본·약세 시나리오와 근거를 정리해 주는 리서치 서비스예요. 매수·매도를 권하지 않아요.'],
+    ['큐리아은 어떤 서비스예요?', '주식·ETF·코인의 가격, 수급, 실적, 공시·뉴스를 한 화면에 모으고, AI 위원회가 강세·기본·약세 시나리오와 근거를 정리해 주는 리서치 서비스예요. 매수·매도를 권하지 않아요.'],
     ['어디서부터 보면 돼요?', '홈 검색창에서 종목을 찾고, 리포트의 맨 위 시나리오 카드부터 보세요. 줄을 누르면 시나리오의 근거와 무효화 조건이 펼쳐져요. 화면 위를 따라가는 사용법은 ☰ 메뉴 → 사용법에 있어요.'],
     ['홈 화면이 사람마다 달라요?', '맞춤 설문과 ☰ 메뉴의 \'내 보기 방식\'에 따라 오늘 볼 것의 순서, 차트 기본 지표, AI 위원회에서 먼저 보이는 위원이 바뀌어요.'],
   ] },
@@ -59,7 +59,7 @@ export function renderSupport(): string {
  });
 })();
 </script>`;
-  return shell('', 'FAQ·문의 | Gnomon Analytics', body, { noFeedback: true });
+  return shell('', 'FAQ·문의 | CURIA', body, { noFeedback: true });
 }
 
 const BENEFITS: readonly [string, string, string][] = [
@@ -82,7 +82,7 @@ export function render509(): string {
 <h2>지원 혜택</h2><div class="op-grid">${BENEFITS.map(([i, t, d]) => `<div class="op-b"><i aria-hidden="true">${i}</i><b>${t}</b><p>${d}</p></div>`).join('')}</div>
 <h2>하는 일</h2><div class="op-grid"><div class="op-b"><b>상황간부</b><p>부대 상황을 실시간으로 파악하고 보고·전파해 지휘 판단을 돕는 역할이에요.</p></div><div class="op-b"><b>영상간부</b><p>감시 장비 영상을 분석해 경계 작전의 빈틈을 줄이는 역할이에요.</p></div></div>
 <h2>지원 절차 (일반적인 흐름)</h2><ol class="op-steps"><li>모집 공고에서 자격 요건과 일정 확인</li><li>온라인 지원서 접수</li><li>필기·체력·면접 등 선발 평가</li><li>최종 합격 후 양성 교육</li></ol>
-<p class="op-note"><b>꼭 확인하세요.</b> 이 페이지는 Gnomon 알파 기간의 광고 자리 시험용 가상 광고예요. 실제 지원 자격, 혜택, 일정은 해마다 바뀔 수 있으니 반드시 육군 모집 공식 안내에서 확인해 주세요. 이 페이지는 지원서를 받거나 개인정보를 모으지 않아요.</p>
-<a class="op-back" href="index.html">Gnomon 홈으로 돌아가기</a></div>`;
+<p class="op-note"><b>꼭 확인하세요.</b> 이 페이지는 CURIA 알파 기간의 광고 자리 시험용 가상 광고예요. 실제 지원 자격, 혜택, 일정은 해마다 바뀔 수 있으니 반드시 육군 모집 공식 안내에서 확인해 주세요. 이 페이지는 지원서를 받거나 개인정보를 모으지 않아요.</p>
+<a class="op-back" href="index.html">CURIA 홈으로 돌아가기</a></div>`;
   return shell('', '509OP 육군 부사관 지원 | 광고', body, { chat: false, noFeedback: true, ads: false });
 }

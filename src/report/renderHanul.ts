@@ -1,7 +1,7 @@
 import { shell } from './renderHtml.js';
 
 const PROJECTS = [
-  { name: 'Gnomon Analytics', category: '시장 리서치', text: '주식·ETF·코인의 가격, 수급, 실적과 뉴스를 한곳에서 읽는 리서치 서비스입니다. 기술 지표와 AI 위원회의 서로 다른 관점을 비교하고, 판단의 근거를 확인합니다.' },
+  { name: 'CURIA', category: '시장 리서치', text: '주식·ETF·코인의 가격, 수급, 실적과 뉴스를 한곳에서 읽는 리서치 서비스입니다. 기술 지표와 AI 위원회의 서로 다른 관점을 비교하고, 판단의 근거를 확인합니다.' },
   { name: 'BLACK ORACLE', category: 'AI 투자 연구', text: '시장에 대한 가설을 세우고, 근거와 시나리오를 기록하며 검증하는 AI 투자 연구 프로젝트입니다. 여러 AI의 판단과 전략 실험을 연결해 예측이 맞았는지, 어디서 틀렸는지 추적합니다.' },
   { name: 'DAYTAPE', category: '일상과 실행', text: '출석, 퀘스트, 랭킹을 통해 일상의 작은 실천을 이어가는 기록 프로젝트입니다. 해야 할 일을 지속할 수 있는 경험으로 바꾸는 것을 목표로 합니다.' },
   { name: 'SHADOW COMPUTE', category: '산업과 금융 연구', text: 'AI 인프라를 둘러싼 전력, 데이터센터와 금융의 연결을 연구합니다. 설비투자가 산업과 자금 흐름에 어떤 영향을 주는지 데이터와 계량 분석으로 살펴봅니다.' },
@@ -18,9 +18,9 @@ export function renderHanul(): string {
 <img src="assets/hanul-logo.jpg" alt="HANUL by Hanseo Kim" width="1536" height="512">
 <div><span class="hanul-label">IDEAS INTO PROJECTS</span><h1 id="hanul-title">아이디어를 실험하고,<br>제품으로 만듭니다.</h1><p>HANUL은 김한서의 프로젝트를 모아 소개하는 개인 브랜드입니다. AI와 데이터를 활용한 리서치, 투자 연구, 일상의 실행 도구를 만듭니다.</p><span class="hanul-credit">by Hanseo Kim</span></div>
 </section>
-<section aria-labelledby="hanul-projects"><div class="hanul-heading"><h2 id="hanul-projects">만들고 연구하는 것들</h2><a href="index.html">그노몬으로 돌아가기</a></div>
+<section aria-labelledby="hanul-projects"><div class="hanul-heading"><h2 id="hanul-projects">만들고 연구하는 것들</h2><a href="index.html">큐리아로 돌아가기</a></div>
 <div class="hanul-grid">${PROJECTS.map((p) => `<article class="hanul-project"><span class="hanul-category">${p.category}</span><h3>${p.name}</h3><p>${p.text}</p></article>`).join('')}</div></section>
 <p class="hanul-note">이 페이지는 HANUL 가상 기업 광고에 연결된 개인 프로젝트 소개입니다.</p>
-<a class="hanul-return" href="index.html">Gnomon Analytics 홈</a></div>`;
+<a class="hanul-return" href="index.html">CURIA 홈</a></div>`;
   return shell('', 'HANUL | 프로젝트 소개', body, { chat: false, noFeedback: true, bottomNav: false, ads: false });
 }

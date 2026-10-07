@@ -5,7 +5,7 @@ import { esc } from './html.js';
 const ADS: readonly { brand: string; text: string; href: string; cta: string; tone: string }[] = [
   { brand: 'HANUL', text: '아이디어를 실험하고, 제품으로 만듭니다.', href: 'hanul.html', cta: '보기', tone: 'ink' },
   { brand: '509OP', text: '육군 부사관 지원 · 상황간부 · 영상간부', href: '509op.html', cta: '혜택 보기', tone: 'teal' },
-  { brand: 'Gnomon 프로', text: '위원회 토론 전체와 전문가 초청, 2주 무료 체험', href: 'pricing.html', cta: '요금제', tone: 'navy' },
+  { brand: 'CURIA 프로', text: '위원회 토론 전체와 전문가 초청, 2주 무료 체험', href: 'pricing.html', cta: '요금제', tone: 'navy' },
   { brand: '광고 자리', text: '증권·핀테크 파트너 광고가 들어갈 수 있어요', href: 'faq.html#ask', cta: '광고 문의', tone: 'rose' },
 ];
 

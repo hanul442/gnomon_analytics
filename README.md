@@ -1,4 +1,4 @@
-# Gnomon Analytics (GNM)
+# CURIA (큐리아)
 
 **사이트: https://hanul442.github.io/gnomon_analytics/**
 
@@ -42,3 +42,6 @@ OPENDART_API_KEY=... npm run build && npm run daily
 - **Secrets** (Settings → Secrets and variables → Actions): `OPENDART_API_KEY`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `ANTHROPIC_API_KEY`
 - **GitHub Pages:** Settings → Pages → Source를 **GitHub Actions**로 둬요.
 - 마지막 실행에서 실패한 수집 출처는 `data/status/last-run.json`에서 볼 수 있어요.
+
+
+서비스 브랜드는 CURIA입니다. 기존 주소·저장소·gnm API/DB 계약은 호환성을 유지합니다. 시장 데일리 및 월요일부터 기준일까지의 주중 위클리는 `market-reports.html`에서 확인합니다.
