@@ -59,7 +59,7 @@ test('a finished market report is kept unless regeneration is asked, and a faile
   await writeMarketReports(root,new Date('2026-10-07T09:30:00Z'),[],undefined,client,new AiBudget(root,'2026-10',25,0),false);
   assert.equal(calls,0);
   await writeMarketReports(root,new Date('2026-10-07T12:30:00Z'),[],undefined,client,new AiBudget(root,'2026-10',25,0),true);
-  assert.equal(calls,1);
+  assert.equal(calls,3);
   const kept=JSON.parse(await readFile(file,'utf8'));
   assert.equal(kept.ai.status,'OK');assert.equal(kept.ai.summary.text,'이전 요약');
  }finally{await rm(root,{recursive:true,force:true});}
