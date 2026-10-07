@@ -85,3 +85,20 @@ export function parseUpbitMinutes(json:unknown, market:string):CoinCandle[]{
  return [...out.values()].sort((a,b)=>a.time-b.time);
 }
 export const fetchUpbitMinutes=(market:string,unit:number,fetcher:typeof fetch=fetch)=>get(`/candles/minutes/${unit}?market=${market}&count=200`,fetcher).then(j=>parseUpbitMinutes(j,market));
+
+/** G-111: recent trades as one point per second (the last trade of that second), oldest first. */
+export interface TickPoint { time: number; price: number; volume: number }
+export function parseUpbitTicks(json: unknown, market: string): TickPoint[] {
+ if (!Array.isArray(json)) throw new Error('UPBIT_TICKS_SHAPE');
+ const out = new Map<number, TickPoint>();
+ for (const t of json as Record<string, unknown>[]) {
+  if (t.market !== market) continue;
+  const ms = Number(t.timestamp), price = Number(t.trade_price), volume = Number(t.trade_volume);
+  if (!Number.isFinite(ms) || !(price > 0) || !Number.isFinite(volume)) continue;
+  const time = Math.floor(ms / 1000), prev = out.get(time);
+  // The API lists newest first, so the first one seen for a second is its last trade.
+  if (prev) prev.volume += volume; else out.set(time, { time, price, volume });
+ }
+ return [...out.values()].sort((a, b) => a.time - b.time);
+}
+export const fetchUpbitTicks = (market: string, fetcher: typeof fetch = fetch) => get(`/trades/ticks?market=${market}&count=500`, fetcher).then((j) => parseUpbitTicks(j, market));

@@ -3,7 +3,7 @@ import { mkdtemp, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { fetchUpbitDaysLong, parseUpbitDays, parseUpbitMarkets } from './upbit.js';
+import { fetchUpbitDaysLong, parseUpbitDays, parseUpbitMarkets, parseUpbitTicks } from './upbit.js';
 import { writeCoinPages } from '../cli/coins.js';
 
 const candle = (i: number, close: number) => ({ market: 'KRW-BTC', candle_date_time_kst: new Date(Date.UTC(2026, 3, 1) + i * 86_400_000).toISOString().slice(0, 10) + 'T09:00:00', opening_price: close, high_price: close * 1.01, low_price: close * 0.99, trade_price: close, candle_acc_trade_volume: 100 + i });
@@ -57,4 +57,14 @@ test('minute candles preserve absolute UTC time, sort and deduplicate, rejecting
  const bar={market:'KRW-BTC',candle_date_time_utc:'2026-10-06T05:00:00',opening_price:100,high_price:110,low_price:90,trade_price:105,candle_acc_trade_volume:2};
  const list=parseUpbitMinutes([bar,bar,{...bar,market:'KRW-ETH'},{...bar,opening_price:'bad'}],'KRW-BTC');assert.equal(list.length,1);assert.equal(list[0]!.time,Date.parse('2026-10-06T05:00:00Z')/1000);
  await fetchUpbitMinutes('KRW-BTC',15,(async(url)=>{assert.match(String(url),/minutes\/15\?market=KRW-BTC&count=200/);return Response.json([bar]);}) as typeof fetch);
+});
+
+test('ticks: one point per second (its last trade), oldest first, other markets skipped', () => {
+  const ticks = parseUpbitTicks([
+    { market: 'KRW-BTC', timestamp: 1791262802900, trade_price: 101, trade_volume: 0.5 },
+    { market: 'KRW-BTC', timestamp: 1791262802100, trade_price: 100, trade_volume: 0.25 },
+    { market: 'KRW-ETH', timestamp: 1791262801000, trade_price: 5, trade_volume: 1 },
+    { market: 'KRW-BTC', timestamp: 1791262800500, trade_price: 99, trade_volume: 1 },
+  ], 'KRW-BTC');
+  assert.deepEqual(ticks, [{ time: 1791262800, price: 99, volume: 1 }, { time: 1791262802, price: 101, volume: 0.75 }]);
 });

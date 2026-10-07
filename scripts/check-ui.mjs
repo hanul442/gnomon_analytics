@@ -41,6 +41,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/notify/prefs')return res.end(JSON.stringify({prefs:{daily:true,watchReport:true,screen:false,price:true,request:true,push:true},devices:0,screens:[{id:1,name:'거래량 증가',alert:1}]}));
  if(path==='/api/alerts/price'){if(req.method==='POST'){let b='';for await(const x of req)b+=x;priceAlerts.push(JSON.parse(b));return res.end(JSON.stringify({id:priceAlerts.length}));}return res.end(JSON.stringify({items:priceAlerts.map((a,i)=>({id:i+1,...a,created_at:'2026-10-06T00:00:00Z',fired_at:null}))}));}
  if(path==='/api/screens/compose')return res.end(JSON.stringify({name:'거래량 증가',explanation:'테스트 조건',screen:{match:'all',rules:[{f:'vol1',op:'>=',v:3}]}}));
+ if(path.startsWith('/api/ticks/'))return res.end(JSON.stringify({kind:path.includes('KRW-')?'trades':'minuteCloses',points:Array.from({length:30},(_,i)=>({time:1791262800+i*60,price:150+Math.sin(i)*2,volume:10}))}));
  if(path.startsWith('/api/candles/'))return res.end(JSON.stringify({bars:bars.slice(-20).map((b,i)=>({...b,time:1791262800+i*900}))}));
  if(path==='/api/ask/stream'){
   res.setHeader('Content-Type','text/event-stream');setTimeout(()=>res.write('event: delta\ndata: '+JSON.stringify({text:'테스트 답변'})+'\n\n'),1000);return setTimeout(()=>res.end('event: done\ndata: '+JSON.stringify({answer:'테스트 답변',tier:'question',model:'claude-haiku-4-5',credits:5,balance:395})+'\n\n'),2200);
@@ -49,7 +50,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/reports/fixture-done')return res.end(JSON.stringify({status:'done',symbol:'999999',fragments:{scenarios:scenarioPanel(scenarioReport),ai:'<section id="debate"><div class="card debate"><div class="db-chips"></div><div class="db-turn" data-speaker="MARKET"><div class="db-who"><b>시장 데스크</b></div><div class="db-bubble">테스트 토론</div></div><details class="db-ev"><summary>근거</summary></details></div></section>'}}));
  return res.end(JSON.stringify({items:[],rows:[]}));
 };
-const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist|watch|experts|admin|alerts|notify|push)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
+const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|experts|admin|alerts|notify|push)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(8765,'localhost',r));
 let browser;const errors=[];
 try{
@@ -83,6 +84,15 @@ try{
  }
  await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="15"]').waitFor();
  await page.locator('[data-coin-tf="15"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'최근 20개'}).waitFor();await page.waitForFunction(()=>{var r=GNMChart.chart.timeScale().getVisibleRange();return r&&r.from>=1791262800;});
+ // G-111: stocks get minute candles and a tick line that grows with live quotes.
+ await page.locator('[data-coin-tf="T"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'최근 체결 30개'}).waitFor();
+ await page.goto(origin+'/stock.html?c=999999#tab-chart');await page.locator('[data-coin-tf="5"]').waitFor();
+ await page.locator('[data-coin-tf="5"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'정규장 5분봉'}).waitFor();
+ await page.locator('[data-coin-tf="T"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'오늘 1분 종가 30개'}).waitFor();
+ await page.evaluate(()=>window.dispatchEvent(new CustomEvent('gnm-quote',{detail:{symbol:'999999',quote:{price:155}}})));
+ assert.equal(await page.evaluate(()=>{var s=GNMChart.chart.timeScale().getVisibleLogicalRange();return s!==null;}),true);
+ await page.screenshot({path:'test-artifacts/stock-ticks.png'});
+ await page.locator('[data-coin-tf="D"]').click();await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="D"]').waitFor();
  await page.locator('[data-coin-tf="D"]').click();await page.locator('#t-flows').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/admin.html');await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();

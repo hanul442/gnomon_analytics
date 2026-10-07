@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { NAVER_WEEK_SOURCE, parseNaverDailyChart, parseNaverMinuteChart } from './naverPrice.js';
+import { NAVER_WEEK_SOURCE, parseNaverDailyChart, parseNaverMinuteCandles, parseNaverMinuteChart } from './naverPrice.js';
 
 const AT = new Date('2026-10-02T09:30:00Z');
 const FEED = `<?xml version="1.0" encoding="EUC-KR" ?>
@@ -49,4 +49,23 @@ test('week and index feeds parse as bars', async () => {
   assert.equal(weeks[0]!.source, 'naver:fchart:week');
   const kospi = parseNaverDailyChart(await readFile(join(dir, 'kospi.xml'), 'latin1'), 'KOSPI', new Date());
   assert.equal(kospi.at(-1)!.close, 7003.74);
+});
+
+test('minute candles: N-minute buckets from minute closes, volume from the cumulative count, regular session only', () => {
+  const feed = `<chartdata symbol="005930" timeframe="minute">
+<item data="202610060850|null|null|null|100|10" />
+<item data="202610060900|null|null|null|100|100" />
+<item data="202610060901|null|null|null|104|150" />
+<item data="202610060904|null|null|null|98|180" />
+<item data="202610060905|null|null|null|101|200" />
+<item data="202610070900|null|null|null|110|30" />
+</chartdata>`;
+  const five = parseNaverMinuteCandles(feed, 5);
+  assert.deepEqual(five.map((c) => [new Date(c.time * 1000).toISOString(), c.open, c.high, c.low, c.close, c.volume]), [
+    ['2026-10-06T00:00:00.000Z', 100, 104, 98, 98, 180],
+    ['2026-10-06T00:05:00.000Z', 101, 101, 101, 101, 20],
+    ['2026-10-07T00:00:00.000Z', 110, 110, 110, 110, 30],
+  ]);
+  assert.equal(parseNaverMinuteCandles(feed, 1).length, 5);
+  assert.throws(() => parseNaverMinuteCandles('<html>blocked</html>', 1), /NAVER_UNEXPECTED_RESPONSE/);
 });
