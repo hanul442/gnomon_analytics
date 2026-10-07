@@ -147,15 +147,55 @@ export const ALPHA_SCRIPT = `<script>
     });
   };
   // Watchlist sync (G-52): the newer side wins; local changes are pushed as they happen.
+  // G-109: a new browser takes the account's list; the page repaints once (reload) so stars and lists show it.
   var watchSync = function () {
-    if (!G.me) return;
+    if (!G.me) return Promise.resolve(false);
     var local = []; try { local = JSON.parse(get('gnm-watch') || '[]'); } catch (e) {}
     var at = Number(get('gnm-watch-at') || 0);
-    G.call('GET', '/watch').then(function (r) {
-      if (r.error) return;
+    return G.call('GET', '/watch').then(function (r) {
+      if (r.error) return false;
       var serverAt = r.updatedAt ? Date.parse(r.updatedAt) : 0;
-      if (serverAt > at && JSON.stringify(r.symbols) !== JSON.stringify(local)) { set('gnm-watch', JSON.stringify(r.symbols)); set('gnm-watch-at', String(serverAt)); }
-      else if (at > serverAt) G.call('POST', '/watch', { symbols: local });
+      if (serverAt > at && JSON.stringify(r.symbols) !== JSON.stringify(local)) { set('gnm-watch', JSON.stringify(r.symbols)); set('gnm-watch-at', String(serverAt)); return true; }
+      if (at > serverAt || (!serverAt && local.length)) G.call('POST', '/watch', { symbols: local });
+      return false;
+    }).catch(function () { return false; });
+  };
+  // G-109: settings that follow the account — view, chart indicators and drawings, dismissed tours and popups.
+  // Writes to these keys while signed in are noticed wherever they happen and sent a moment later; on a new
+  // browser the account's copy is applied and the page reloads once. Changes made signed out stay local.
+  var SYNC = /^gnm-(persona|prefs|ind|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/, SAT = 'gnm-settings-at', applying = false, pushT = null;
+  var syncKeys = function () { var out = {}; try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && SYNC.test(k)) out[k] = localStorage.getItem(k); } } catch (e) {} return out; };
+  var pushSettings = function () { clearTimeout(pushT); pushT = setTimeout(function () { if (G.me) G.call('POST', '/me/settings', { data: syncKeys() }).then(function (r) { if (r && r.updatedAt) set(SAT, String(Date.parse(r.updatedAt))); }); }, 1500); };
+  try {
+    var S = Storage.prototype, rawSet = S.setItem, rawDel = S.removeItem;
+    S.setItem = function (k, v) { rawSet.call(this, k, v); if (!applying && this === window.localStorage && SYNC.test(k) && get(SK)) { rawSet.call(this, SAT, String(Date.now())); pushSettings(); } };
+    S.removeItem = function (k) { rawDel.call(this, k); if (!applying && this === window.localStorage && SYNC.test(k) && get(SK)) { rawSet.call(this, SAT, String(Date.now())); pushSettings(); } };
+  } catch (e) {}
+  var settingsSync = function () {
+    if (!G.me) return Promise.resolve(false);
+    var at = Number(get(SAT) || 0);
+    return G.call('GET', '/me/settings').then(function (r) {
+      if (r.error) return false;
+      var serverAt = r.updatedAt ? Date.parse(r.updatedAt) : 0, local = syncKeys(), data = r.data || {}, changed = false;
+      if (serverAt > at) {
+        applying = true;
+        try {
+          Object.keys(local).forEach(function (k) { if (!(k in data)) { localStorage.removeItem(k); changed = true; } });
+          Object.keys(data).forEach(function (k) { if (SYNC.test(k) && typeof data[k] === 'string' && local[k] !== data[k]) { localStorage.setItem(k, data[k]); changed = true; } });
+        } catch (e) {}
+        applying = false; set(SAT, String(serverAt));
+        return changed;
+      }
+      if (at > serverAt || (!serverAt && Object.keys(local).length)) pushSettings();
+      return false;
+    }).catch(function () { return false; });
+  };
+  var syncAll = function () {
+    return Promise.all([watchSync(), settingsSync()]).then(function (r) {
+      if (!r[0] && !r[1]) return;
+      // Once per page: the reload shows the account's copy; the guard stops a loop if storage is blocked.
+      var key = 'gnm-sync-reload:' + location.pathname; try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch (e) { return; }
+      location.reload();
     });
   };
   window.addEventListener('gnm-watch', function () { if (!G.me) return; var w = []; try { w = JSON.parse(get('gnm-watch') || '[]'); } catch (e) {} G.call('POST', '/watch', { symbols: w }); });
@@ -307,6 +347,6 @@ export const ALPHA_SCRIPT = `<script>
     }
   };
   paint();
-  G.ready = G.refresh().then(function () { feedback(); nudges(); bell(); watchSync(); paintHomeAlerts(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return G.me; });
+  G.ready = G.refresh().then(function () { feedback(); nudges(); bell(); syncAll(); paintHomeAlerts(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return G.me; });
 })();
 </script>`;

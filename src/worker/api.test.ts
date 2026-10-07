@@ -149,8 +149,17 @@ test('surveys, feedback and events are stored; export and delete cover everythin
   assert.equal((await t.call('POST', '/events', { events: [{ name: 'tab_open', page: '/', props: { tab: 'chart' } }, { name: 'BAD NAME' }] }, u.session)).body.saved, 1);
   const ov = await t.call('GET', '/admin/overview', undefined, boss.session);
   assert.deepEqual([ov.body.feedback.length, ov.body.events[0].name], [1, 'tab_open']);
+  // G-109: settings follow the account; unknown keys and non-strings are dropped.
+  assert.deepEqual((await t.call('GET', '/me/settings', undefined, u.session)).body, { data: {}, updatedAt: null });
+  const saved = await t.call('POST', '/me/settings', { data: { 'gnm-persona': 'trader', 'gnm-ind': '["rsi"]', 'gnm-draw:005930': '[]', 'gnm-session': 'secret', 'gnm-prefs': 5, other: 'x' } }, u.session);
+  assert.equal(saved.body.count, 3);
+  const got = await t.call('GET', '/me/settings', undefined, u.session);
+  assert.deepEqual(got.body.data, { 'gnm-persona': 'trader', 'gnm-ind': '["rsi"]', 'gnm-draw:005930': '[]' });
+  assert.ok(got.body.updatedAt);
+  assert.equal((await t.call('POST', '/me/settings', { data: Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`gnm-draw:00000${i % 10}${i >= 10 ? 'A' : ''}`, 'x'.repeat(19_000)])) }, u.session)).status, 413);
+  assert.equal((await t.call('GET', '/me/settings')).status, 401);
   const ex = await t.call('GET', '/me/export', undefined, u.session);
-  assert.deepEqual([ex.body.surveys.length, ex.body.events.length, ex.body.ledger.length], [1, 1, 1]);
+  assert.deepEqual([ex.body.surveys.length, ex.body.events.length, ex.body.ledger.length, ex.body.settings.length], [1, 1, 1, 1]);
   assert.equal((await t.call('POST', '/me/delete', { confirm: 'no' }, u.session)).body.error, 'CONFIRM');
   assert.equal((await t.call('POST', '/me/delete', { confirm: '삭제' }, u.session)).status, 200);
   assert.equal((await t.call('GET', '/me', undefined, u.session)).status, 401);
@@ -364,6 +373,9 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, P
  const [a,b]=await Promise.all([t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session),t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session)]);
  assert.equal(a.status,200);assert.equal(b.status,200);assert.equal(a.body.id,b.body.id);assert.equal(t.queued.length,1);
  assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits-CREDIT_COST.report);
+ assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,t.user.session)).body.etaSec,undefined,'no estimate before three finished jobs');
+ for(const [i,sec] of [[1,60],[2,90],[3,120]] as const)await t.env.DB.prepare("INSERT INTO report_jobs (id,user_id,symbol,kind,input_hash,input_json,status,stage,credits,reserved_usd,created_at,updated_at) VALUES (?,?,?,?,?,?,'done','done',0,0,?,?)").bind('hist-'+i,'someone','005930','report','h'+i,'{}','2026-10-01T00:00:00.000Z',new Date(Date.parse('2026-10-01T00:00:00Z')+sec*1000).toISOString()).run();
+ assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,t.user.session)).body.etaSec,120,'the countdown starts from recent real durations');
  const {runReportJob}=await import('./reports.js');let runs=0;
  const gen=t.deps.generate!;t.deps.generate=async(r,k)=>{runs++;return gen(r,k);};
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});

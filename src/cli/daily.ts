@@ -704,7 +704,10 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   for (const t of tickers) if (!items.some((i) => i[0] === t.symbol)) items.push([t.symbol, t.name, t.market, null, null, 1]);
   await writeFile(join(siteDir, 'search.json'), JSON.stringify({ fields: ['symbol', 'name', 'market', 'close', 'changePct', 'report'], items }));
   // G-99: themes (with today's numbers) and the market-wide signal radar.
-  const lite = (universe ?? []).map((r) => ({ symbol: r.symbol, name: r.name, close: r.close, changePct: r.changePct, tradingValue: r.tradingValue, marketCap: r.marketCap }));
+  // Without today's market list (a run that did not fetch it), names still come from the listed-stock file.
+  const lite = universe
+    ? universe.map((r) => ({ symbol: r.symbol, name: r.name, close: r.close, changePct: r.changePct, tradingValue: r.tradingValue, marketCap: r.marketCap }))
+    : (await readListedStocks(root)).map((r) => ({ symbol: r.symbol, name: r.name, close: null, changePct: null, tradingValue: null, marketCap: null }));
   const themeFile = JSON.parse(await readFile(join(root, 'data', 'themes.json'), 'utf8').catch(() => 'null')) as { themes: Theme[] } | null;
   const td = themeData(themeFile?.themes ?? [], lite, dataDate ?? kstParts(new Date()).date);
   await writeFile(join(siteDir, 'themes.json'), JSON.stringify(td.themes));

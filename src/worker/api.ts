@@ -425,15 +425,15 @@ route('GET', '/me/ledger', async ({ req, env, now }) => {
 route('GET', '/me/export', async ({ req, env, now }) => {
   const u = await authed(req, env, now), db = env.DB;
   const all = (t: string) => db.prepare(`SELECT * FROM ${t} WHERE user_id = ?`).bind(u.id).all().then((r) => r.results);
-  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'custom_experts', 'price_alerts', 'notify_prefs'].map(all));
-  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs };
+  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'custom_experts', 'price_alerts', 'notify_prefs', 'user_settings'].map(all));
+  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings };
 });
 
 route('POST', '/me/delete', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   if (b.confirm !== '삭제') fail(400, 'CONFIRM', "확인 문구 '삭제'를 적어 주세요.");
   const db = env.DB;
-  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'custom_experts', 'push_subs', 'notify_prefs', 'price_alerts', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
+  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'custom_experts', 'push_subs', 'notify_prefs', 'price_alerts', 'user_settings', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
     db.prepare('DELETE FROM login_tokens WHERE email = ?').bind(u.email), db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)]);
   return { ok: true };
 });
@@ -546,7 +546,13 @@ route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
   if (!job || (job.user_id!==u.id && !(job.status==='done' && RANK[u.plan]! >= RANK.pro!))) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
   if (['queued','running'].includes(job!.status) && Date.parse(job!.updated_at)<now.getTime()-15*60000) { await refundJob(env.DB,job!,'작업 시간이 초과되어 크레딧을 반환했어요.',now); job!.status='failed'; job!.stage='failed'; job!.error='작업 시간이 초과됐어요. 다시 요청해 주세요.'; }
   const report=job!.status==='done' && job!.result_json ? JSON.parse(job!.result_json) as DailyReport:null;
-  return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(report?{generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report)}:{})};
+  // G-110: the countdown starts from how long this kind actually took lately (70th percentile of the last 20).
+  let etaSec:number|null=null;
+  if (['queued','running'].includes(job!.status)) {
+    const took=(await env.DB.prepare("SELECT (julianday(updated_at)-julianday(created_at))*86400 AS s FROM report_jobs WHERE kind=? AND status='done' ORDER BY created_at DESC LIMIT 20").bind(job!.kind).all<{s:number}>()).results.map((x)=>x.s).filter((x)=>x>=5&&x<=900).sort((a,b)=>a-b);
+    if (took.length>=3) etaSec=Math.round(took[Math.min(took.length-1,Math.floor(took.length*0.7))]!);
+  }
+  return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(etaSec?{etaSec}:{}),...(report?{generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report)}:{})};
 });
 route('POST', '/screens/compose', async ({req,env,deps,now}) => {
   const u=await authed(req,env,now), b=await body(req), question=str(b.question,600), market=str(b.market,10)||'stock';
@@ -812,6 +818,30 @@ route('POST', '/watch', async ({ req, env, now }) => {
   await env.DB.prepare('INSERT INTO watchlists (user_id, symbols, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET symbols = excluded.symbols, updated_at = excluded.updated_at')
     .bind(u.id, JSON.stringify(symbols), iso(now)).run();
   return { ok: true, count: symbols.length, updatedAt: iso(now) };
+});
+
+// G-109: browser settings that follow the account. Only known keys; each value a short string.
+const SETTING_KEY = /^gnm-(persona|prefs|ind|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/;
+route('GET', '/me/settings', async ({ req, env, now }) => {
+  const u = await authed(req, env, now);
+  const r = await env.DB.prepare('SELECT data, updated_at FROM user_settings WHERE user_id = ?').bind(u.id).first<{ data: string; updated_at: string }>();
+  return { data: r ? JSON.parse(r.data) : {}, updatedAt: r?.updated_at ?? null };
+});
+
+route('POST', '/me/settings', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req);
+  const raw = b.data && typeof b.data === 'object' && !Array.isArray(b.data) ? b.data as Record<string, unknown> : {};
+  const data: Record<string, string> = {};
+  let size = 0;
+  for (const [k, v] of Object.entries(raw)) {
+    if (!SETTING_KEY.test(k) || typeof v !== 'string' || v.length > 20_000) continue;
+    size += k.length + v.length;
+    if (size > 200_000) fail(413, 'SETTINGS_TOO_LARGE', '설정이 너무 커서 저장하지 못했어요. 차트 그림을 일부 지운 뒤 다시 시도해 주세요.');
+    data[k] = v;
+  }
+  await env.DB.prepare('INSERT INTO user_settings (user_id, data, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at')
+    .bind(u.id, JSON.stringify(data), iso(now)).run();
+  return { ok: true, count: Object.keys(data).length, updatedAt: iso(now) };
 });
 
 const latin1 = (buf: ArrayBuffer) => { const a = new Uint8Array(buf); let s = ''; for (let i = 0; i < a.length; i += 8192) s += String.fromCharCode(...a.subarray(i, i + 8192)); return s; };
