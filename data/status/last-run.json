@@ -1,5 +1,5 @@
 {
- "at": "2026-10-07T07:04:46.736Z",
+ "at": "2026-10-07T07:36:06.925Z",
  "selected": null,
  "universe": [
   {
@@ -15,14 +15,12 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2697,
-   "error": "27 failed "
+   "count": 2724
   },
   {
    "source": "naver:fchart:day:etf",
    "ok": true,
-   "count": 1171,
-   "error": "1 failed "
+   "count": 1172
   },
   {
    "source": "upbit:candles:days:all",
@@ -32,13 +30,12 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 542
+   "count": 578
   },
   {
    "source": "naver:themes",
-   "ok": false,
-   "count": 0,
-   "error": "TOO_FEW_THEMES:0:failed=0"
+   "ok": true,
+   "count": 261
   }
  ],
  "stocks": [
