@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { periodAsset, weekStart, renderMarketReport, parseMarketCouncil, type MarketReport } from './marketReport.js';
+import { periodAsset, weekStart, renderMarketReport, parseMarketCouncil, marketClaimText, type MarketReport } from './marketReport.js';
 const bars=[{date:'2026-10-02',close:100},{date:'2026-10-05',close:110},{date:'2026-10-07',close:121},{date:'2026-10-08',close:999}];
 test('weekly uses pre-Monday baseline, filters future prices and deduplicates sessions',()=>{
  assert.equal(weekStart('2026-10-07'),'2026-10-05');
@@ -39,3 +39,5 @@ test('market committee preserves actual experts, reply targets, stances and refe
  assert.equal(council.summary.kind,'ASSUMPTION');assert.equal(council.desks[0]!.claims[0]!.kind,'ASSUMPTION');
  assert.deepEqual(council.summary.refs,['M1']);assert.match(council.dataGaps[0]!,/가정으로 표시/);
  });
+
+test('coin sample returns are never presented as an unsupported aggregate index',()=>{assert.equal(marketClaimText('코인 지수는 -1.82~-10.12%'), '수집 코인은 -1.82~-10.12%');});
