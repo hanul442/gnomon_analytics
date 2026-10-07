@@ -18,6 +18,7 @@ import { deepPath, DEEP_DATE, DEEP_SYMBOL, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
 import { parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
 import { fetchNaverMinuteCandles, parseNaverMinuteChart } from '../sources/naverPrice.js';
+import { getJson as naverJson, parseSnapshot } from '../sources/naverStock.js';
 
 export interface Env {
   DB: D1;
@@ -514,6 +515,21 @@ route('GET','/ticks/(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})',async({deps,params,no
   ?fetchUpbitTicks(symbol,deps.fetch).then(points=>({symbol,kind:'trades',points,retrievedAt:iso(now)}))
   :fetchNaverMinuteCandles(symbol,1,{fetch:deps.fetch}).then(bars=>{const day=bars.length?new Date((bars.at(-1)!.time+9*3600)*1000).toISOString().slice(0,10):'';const today=bars.filter(b=>new Date((b.time+9*3600)*1000).toISOString().slice(0,10)===day);return {symbol,kind:'minuteCloses',points:today.map(b=>({time:b.time,price:b.close,volume:b.volume})),retrievedAt:iso(now)};}),
  '틱 데이터를 가져오지 못했어요. 잠시 후 다시 선택해 주세요.');
+});
+// G-118: PER and PBR for a handful of stocks (a theme's members), from Naver's per-stock summary.
+// Kept 6 hours per stock; one that fails is left out rather than failing the rest.
+const valuations=new Map<string,{at:number;v:{per:number|null;estimatedPer:number|null;pbr:number|null}|null}>();
+route('GET','/valuation',async({req,deps,now})=>{
+ const codes=[...new Set((new URL(req.url).searchParams.get('s')??'').split(',').map(x=>x.trim().toUpperCase()).filter(x=>/^[0-9][0-9A-Z]{5}$/.test(x)))].slice(0,16);
+ const out:Record<string,{per:number|null;estimatedPer:number|null;pbr:number|null}>={};
+ await Promise.all(codes.map(async(code)=>{
+  const hit=valuations.get(code);
+  if(hit&&now.getTime()-hit.at<6*3600_000){if(hit.v)out[code]=hit.v;return;}
+  try{const sn=parseSnapshot(await naverJson(`/stock/${code}/integration`,deps.fetch),code,iso(now).slice(0,10),now);const v={per:sn.per,estimatedPer:sn.estimatedPer,pbr:sn.pbr};valuations.set(code,{at:now.getTime(),v});out[code]=v;}
+  catch{valuations.set(code,{at:now.getTime(),v:null});}
+ }));
+ if(valuations.size>2000)valuations.clear();
+ return {items:out};
 });
 route('POST', '/reports', async ({ req, env, deps, now }) => {
   const u = await authed(req, env, now), b = await body(req);

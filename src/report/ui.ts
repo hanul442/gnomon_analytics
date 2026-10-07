@@ -140,11 +140,11 @@ export const UI_SCRIPT = `<script>
 const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 /** Menu groups: [label, href]. Hrefs are relative to the site root. */
 export const MENU: readonly { title: string; items: readonly [string, string][] }[] = [
-  // The bottom bar's four places sit on top as tiles; everything else is grouped below, once each.
+  // G-119: grouped by what people come for — finding stocks, their own things, then help and the account.
   { title: '찾아보기', items: [['필터로 종목 찾기', 'screener.html'], ['테마별 종목', 'themes.html'], ['공시 레이더 (숨은 신호)', 'signals.html'], ['AI 리포트 모음', 'reports.html'], ['ETF', 'etfs.html'], ['코인', 'coins.html']] },
-  { title: '알파 테스트', items: [['사용법', 'guide.html'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly']] },
-  { title: '고객 지원', items: [['자주 묻는 질문 (FAQ)', 'faq.html'], ['1:1 문의 · Q&A', 'faq.html#ask'], ['HANUL 프로젝트 소개', 'hanul.html']] },
-  { title: '계정', items: [['📄 내 리포트', 'myreports.html'], ['💬 내 토론 기록', 'mydebates.html'], ['🔔 알림 설정', 'alerts.html'], ['요금제·크레딧', 'pricing.html'], ['이용약관·면책', 'terms.html']] },
+  { title: '내 활동', items: [['📄 내 리포트', 'myreports.html'], ['💬 내 토론 기록', 'mydebates.html'], ['🔔 알림 설정', 'alerts.html']] },
+  { title: '도움말', items: [['사용법', 'guide.html'], ['자주 묻는 질문 (FAQ)', 'faq.html'], ['1:1 문의 · Q&A', 'faq.html#ask'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly']] },
+  { title: '계정', items: [['요금제·크레딧', 'pricing.html'], ['이용약관·면책', 'terms.html'], ['HANUL 프로젝트 소개', 'hanul.html']] },
 ];
 /** The app's tabs (G-95): the bottom bar on phones, the same links in the top bar on wide screens. 전체 opens the sheet. */
 export const TABS: readonly [string, string, string][] = [

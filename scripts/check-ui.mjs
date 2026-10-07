@@ -22,6 +22,8 @@ for(const [dir,symbol,name,kind] of [['s','999999','UI 테스트','stock'],['c',
  await mkdir(root+'/site/'+dir,{recursive:true});await writeFile(root+'/site/'+dir+'/'+symbol+'.json',JSON.stringify({pageUrl:dir+'/'+symbol+'.html',symbol,name,kind,market:'KOSPI',bars:bars.map(b=>[b.date,b.open,b.high,b.low,b.close,b.volume]),calc:quickCalc(symbol,bars,new Date())}));
  await writeFile(root+'/site/'+dir+'/'+symbol+'.html',renderCalculationPage({symbol,name,...(kind==='coin'?{kind:'coin'}:{}),bars:bars.map(b=>({...b,symbol,source:'fixture',retrievedAt:new Date().toISOString()})),now:new Date()}));
 }
+await writeFile(root+'/site/theme-index.json',JSON.stringify({'999999':[['1','테스트 테마'],['2','두 번째 테마']]}));await mkdir(root+'/site/theme',{recursive:true});
+await writeFile(root+'/site/theme/1.json',JSON.stringify({no:'1',name:'테스트 테마',members:[['999999','UI 테스트',2.1,12.5,5e11,bars.slice(-40).map(b=>b.close)],['000001','동료 하나',-1.2,4.0,9e11,bars.slice(-40).map(b=>b.close*1.1)],['000002','동료 둘',0.5,-3.1,2e11,bars.slice(-40).map(b=>b.close*0.9)],['000003','동료 셋',1.5,8.2,1e11,bars.slice(-40).map(b=>b.close*0.8)]]}));
 await writeFile(root+'/site/screener.json',JSON.stringify({date:'2026-10-06',rows:[['999999','UI 테스트','P',100,181,2,'BULLISH',80,5,10,20,-5,'B',0,3,2,2,20,'A',100,-1,0,'',10,3,40,4]]}));
 const scenarioReport=buildDailyReport({symbol:'999999',name:'시나리오 테스트',date:'2026-10-06',generatedAt:new Date(),bars:bars.map(b=>({...b,symbol:'999999',source:'fixture',retrievedAt:'2026-10-06T00:00:00Z'})),disclosures:[],sources:[]});
 scenarioReport.commentary={status:'OK',scenarios:[['BULL',[190,220],195],['BASE',[170,190]],['BEAR',[130,160],160]].map(([kind,zone,trigger])=>({kind,zone,trigger,narrative:{text:'펼쳐 보는 상세 근거'},catalysts:['검증 조건'],invalidation:['무효화 조건']}))};
@@ -41,6 +43,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/notify/prefs')return res.end(JSON.stringify({prefs:{daily:true,watchReport:true,screen:false,price:true,request:true,push:true},devices:0,screens:[{id:1,name:'거래량 증가',alert:1}]}));
  if(path==='/api/alerts/price'){if(req.method==='POST'){let b='';for await(const x of req)b+=x;priceAlerts.push(JSON.parse(b));return res.end(JSON.stringify({id:priceAlerts.length}));}return res.end(JSON.stringify({items:priceAlerts.map((a,i)=>({id:i+1,...a,created_at:'2026-10-06T00:00:00Z',fired_at:null}))}));}
  if(path==='/api/screens/compose')return res.end(JSON.stringify({name:'거래량 증가',explanation:'테스트 조건',screen:{match:'all',rules:[{f:'vol1',op:'>=',v:3}]}}));
+ if(path==='/api/valuation')return res.end(JSON.stringify({items:{'999999':{per:15,estimatedPer:12,pbr:1.2},'000001':{per:10,estimatedPer:9,pbr:1},'000002':{per:-3,estimatedPer:null,pbr:0.8},'000003':{per:12,estimatedPer:11,pbr:1.1}}}));
  if(path.startsWith('/api/ticks/'))return res.end(JSON.stringify({kind:path.includes('KRW-')?'trades':'minuteCloses',points:Array.from({length:30},(_,i)=>({time:1791262800+i*60,price:150+Math.sin(i)*2,volume:10}))}));
  if(path.startsWith('/api/candles/'))return res.end(JSON.stringify({bars:bars.slice(-20).map((b,i)=>({...b,time:1791262800+i*900}))}));
  if(path==='/api/ask/stream'){
@@ -50,7 +53,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/reports/fixture-done')return res.end(JSON.stringify({status:'done',symbol:'999999',dataDate:'2026-09-01',fragments:{scenarios:scenarioPanel(scenarioReport),ai:'<section id="debate"><div class="card debate"><div class="db-chips"></div><div class="db-turn" data-speaker="MARKET"><div class="db-who"><b>시장 데스크</b></div><div class="db-bubble">테스트 토론</div></div><details class="db-ev"><summary>근거</summary></details></div></section>'}}));
  return res.end(JSON.stringify({items:[],rows:[]}));
 };
-const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|experts|admin|alerts|notify|push)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
+const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|valuation|experts|admin|alerts|notify|push)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(8765,'localhost',r));
 let browser;const errors=[];
 try{
@@ -156,6 +159,11 @@ try{
   await page.keyboard.press('Escape');assert.equal(await page.locator('.tr-tip').count(),0);assert.equal(await page.locator('#t-home').getAttribute('aria-selected'),'true');
   await page.goto(origin+'/screener.html?tour=1');await page.locator('.tr-tip').waitFor();await page.locator('.tr-tip [data-t=n]').click();await page.locator('.tr-tip [data-t=n]').click();assert.ok((await page.locator('.tr-tip').innerText()).includes('AI 조건'));await page.keyboard.press('Escape');
  }
+ // G-118: same-theme comparison on the summary tab: cards in a sideways strip, return and PER against the theme.
+ await page.goto(origin+'/stock.html?c=999999');await page.locator('#peers .pe-card').first().waitFor();
+ assert.equal(await page.locator('#peers .pe-card').count(),4);await page.locator('#peers .pe-per').filter({hasText:'중간값 11.0배보다'}).waitFor();
+ assert.match(await page.locator('#peers .pe-sum').innerText(),/4개 중 1위/);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#peers').screenshot({path:'test-artifacts/peers.png'});
  // G-109: a fresh browser takes the account's settings and watchlist, reloads once, and sends later changes.
  sync.on=true;{const fresh=await browser.newContext();await fresh.addInitScript(()=>localStorage.setItem('gnm-session','fixture-only'));const p2=await fresh.newPage();p2.on('pageerror',e=>errors.push(e.message));let loads=0;p2.on('load',()=>loads++);
   await p2.goto(origin+'/index.html');await p2.waitForFunction(()=>localStorage.getItem('gnm-persona')==='trader'&&(localStorage.getItem('gnm-watch')||'').includes('999999'));await p2.waitForTimeout(1500);
