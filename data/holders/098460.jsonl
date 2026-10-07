@@ -13,3 +13,4 @@
 {"symbol":"098460","receiptNo":"20260908000138","date":"2026-09-08","reporter":"J.P.MORGANSECURITIESPLC","shares":3350549,"delta":-135954,"ratio":4.91,"ratioDelta":-0.2,"reason":"특별관계자 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"098460","receiptNo":"20260908000412","date":"2026-09-08","reporter":"고영홀딩스","shares":14273629,"delta":180197,"ratio":20.93,"ratioDelta":0.27,"reason":"특별관계자 추가","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"098460","receiptNo":"20260929000545","date":"2026-09-29","reporter":"삼성자산운용","shares":2658233,"delta":-1975473,"ratio":3.9,"ratioDelta":-2.85,"reason":"매매로 인한 변동보고의무 발생(삼성액티브자산운용의 위탁운용분 포함)","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"098460","receiptNo":"20261007000511","date":"2026-10-07","reporter":"J.P.MORGANSECURITIESPLC","shares":3830894,"delta":3830894,"ratio":5.62,"ratioDelta":5.62,"reason":"신규보고의무 발생","retrievedAt":"2026-10-07T09:26:21.598Z"}

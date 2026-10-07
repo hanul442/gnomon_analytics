@@ -265,6 +265,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "0007J0",
+  "name": "인벤테라",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "000810",
   "name": "삼성화재",
   "market": "KOSPI"
@@ -2750,11 +2755,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "012790",
-  "name": "신일제약",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "012800",
   "name": "대창",
   "market": "KOSPI"
@@ -4157,11 +4157,6 @@
  {
   "symbol": "033340",
   "name": "좋은사람들",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "033500",
-  "name": "동성화인텍",
   "market": "KOSDAQ"
  },
  {
@@ -8410,6 +8405,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "125490",
+  "name": "한라캐스트",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "126340",
   "name": "비나텍",
   "market": "KOSDAQ"
@@ -11150,11 +11150,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "303530",
-  "name": "이노뎁",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "303810",
   "name": "동국생명과학",
   "market": "KOSDAQ"
@@ -12742,6 +12737,11 @@
  {
   "symbol": "420770",
   "name": "기가비스",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "424760",
+  "name": "벨로크",
   "market": "KOSDAQ"
  },
  {

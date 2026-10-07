@@ -19,3 +19,10 @@
 {"at":"2026-10-06T09:14:28.254Z","month":"2026-10","symbol":"00104K","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":4363,"outputTokens":675,"usd":0.03095}
 {"at":"2026-10-06T09:14:28.254Z","month":"2026-10","symbol":"475830","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":5962,"outputTokens":685,"usd":0.03755}
 {"at":"2026-10-06T09:14:28.254Z","month":"2026-10","symbol":"000020","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":7042,"outputTokens":718,"usd":0.04253}
+{"at":"2026-10-07T09:26:21.598Z","month":"2026-10","symbol":"0082N0","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":5154,"outputTokens":674,"usd":0.0341}
+{"at":"2026-10-07T09:26:21.598Z","month":"2026-10","symbol":"900140","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":5309,"outputTokens":633,"usd":0.0339}
+{"at":"2026-10-07T09:26:21.598Z","month":"2026-10","symbol":"033780","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":8617,"outputTokens":701,"usd":0.04849}
+{"at":"2026-10-07T09:26:21.598Z","month":"2026-10","symbol":"KRW-POD","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":4741,"outputTokens":597,"usd":0.0309}
+{"at":"2026-10-07T09:26:21.598Z","month":"2026-10","symbol":"460860","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":5675,"outputTokens":765,"usd":0.038}
+{"at":"2026-10-07T09:26:21.598Z","month":"2026-10","symbol":"126600","model":"claude-opus-5-5","tier":"deep","inputTokens":12130,"outputTokens":7195,"usd":0.19242}
+{"at":"2026-10-07T09:26:21.598Z","month":"2026-10","symbol":"455850","model":"claude-opus-5-5","tier":"deep","inputTokens":10345,"outputTokens":6807,"usd":0.17752}

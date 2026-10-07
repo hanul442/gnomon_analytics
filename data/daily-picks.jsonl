@@ -6,3 +6,10 @@
 {"date":"2026-10-06","symbol":"00104K","name":"CJ4우(전환)","kind":"stock","market":"KOSPI","tier":"brief","reason":"스크리너 '바닥권 거래량 폭발 (아직 안 오름)' 상위"}
 {"date":"2026-10-06","symbol":"133690","name":"TIGER 미국나스닥100","kind":"etf","market":"KOSPI","tier":"brief","reason":"거래대금 상위 ETF"}
 {"date":"2026-10-06","symbol":"KRW-LSK","name":"리스크","kind":"coin","market":"UPBIT","tier":"deep","reason":"24시간 거래대금 상위 코인"}
+{"date":"2026-10-07","symbol":"126600","name":"BGF에코머티리얼즈","kind":"stock","market":"KOSDAQ","tier":"deep","reason":"스크리너 '거래량 급증·상승' 상위"}
+{"date":"2026-10-07","symbol":"033780","name":"KT&G","kind":"stock","market":"KOSPI","tier":"brief","reason":"스크리너 '강세 신호 상위' 상위"}
+{"date":"2026-10-07","symbol":"900140","name":"엘브이엠씨홀딩스","kind":"stock","market":"KOSPI","tier":"brief","reason":"스크리너 '바닥권 거래량 폭발 (아직 안 오름)' 상위"}
+{"date":"2026-10-07","symbol":"0082N0","name":"카나프테라퓨틱스","kind":"stock","market":"KOSDAQ","tier":"brief","reason":"스크리너 '많이 내린 뒤 반등 신호' 상위"}
+{"date":"2026-10-07","symbol":"460860","name":"동국제강","kind":"stock","market":"KOSPI","tier":"brief","reason":"스크리너 '매집 흔적' 상위"}
+{"date":"2026-10-07","symbol":"455850","name":"SOL AI반도체소부장","kind":"etf","market":"KOSPI","tier":"deep","reason":"거래대금 상위 ETF"}
+{"date":"2026-10-07","symbol":"KRW-POD","name":"돌핀","kind":"coin","market":"UPBIT","tier":"brief","reason":"24시간 거래대금 상위 코인"}
