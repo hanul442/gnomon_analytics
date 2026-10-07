@@ -43,7 +43,9 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
   const done=old?.schema==='curia.market-report.v4'&&old.ai.status==='OK'&&!!(old.ai.council||old.ai.sealed);
   if(done&&!regenerate){await savePrivateMarketReport(file,old!);continue;}
   const report:MarketReport={schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
-  if((apiKey||injectedClient)&&budget.allows('brief')&&report.groups.some(g=>g.assets.some(a=>a.date===date))){
+  // The committee's structure is checked strictly, so a regeneration gets up to three tries; each failure is logged (no secrets in it).
+  const hasToday=report.groups.some(g=>g.assets.some(a=>a.date===date));
+  for(let attempt=1;attempt<=(regenerate?3:1)&&report.ai.status!=='OK'&&(apiKey||injectedClient)&&hasToday&&budget.allows('brief');attempt++){
    budget.reserve('brief'); let accounted=false;
    try{
     const client=injectedClient??new Anthropic({apiKey:apiKey!,timeout:180000,maxRetries:1});
@@ -55,7 +57,10 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
     if(!validCouncil(council,report.groups))throw new Error('위원회 구조 또는 근거 검증 실패');
     report.ai={status:'OK',model:response.model,council};
    }catch(error){report.ai={status:'FAILED',error:error instanceof Error?error.message.slice(0,180):'생성 오류'};}finally{if(!accounted)budget.spent-=0.03;}
-  }else if(!report.groups.some(g=>g.assets.some(a=>a.date===date)))report.ai.error='당일 데이터가 없어 위원회 생성을 보류합니다';
+   if(report.ai.status!=='OK')console.log(`market ${period} AI attempt ${attempt} failed: ${report.ai.error}`);
+  }
+  if(!hasToday)report.ai.error='당일 데이터가 없어 위원회 생성을 보류합니다';
+  if(done&&report.ai.status!=='OK')console.log(`market ${period}: regeneration failed, keeping the earlier committee`);
   await savePrivateMarketReport(file,done&&report.ai.status!=='OK'?old!:report);
  }
 }
