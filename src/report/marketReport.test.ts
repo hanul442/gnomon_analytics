@@ -30,3 +30,11 @@ test('market committee preserves actual experts, reply targets, stances and refe
  const html=renderMarketDeep(report);assert.match(html,/추세·모멘텀 PM/);assert.equal((html.match(/class="db-turn /g)??[]).length,12);assert.match(html,/data-reply="0"/);assert.doesNotMatch(renderMarketReport(report),/전문가 검증 발언[\s\S]*전문가 검증 발언/);
  council.debate![1]!.replyTo=1;assert.equal(validCouncil(council,groups),false);council.debate![1]!.replyTo=0;council.debate![1]!.stance='BULLISH';assert.equal(validCouncil(council,groups),false);
 });
+
+ test('unsupported claim classification is conservatively disclosed as an assumption',()=>{
+ const claim={text:'근거',kind:'OBSERVATION',refs:['M1']};
+ const raw={summary:claim,desks:['코스피','코스닥','코인','ETF'].map(name=>({name,view:'중립',claims:[claim]})),consensus:[],disagreements:[],scenarios:['강세','기본','약세'].map(name=>({name,trigger:claim,outlook:claim,invalidation:claim})),redTeam:[],watch:[],dataGaps:[]};
+ const council=parseMarketCouncil(JSON.stringify(raw));
+ assert.equal(council.summary.kind,'ASSUMPTION');assert.equal(council.desks[0]!.claims[0]!.kind,'ASSUMPTION');
+ assert.deepEqual(council.summary.refs,['M1']);assert.match(council.dataGaps[0]!,/가정으로 표시/);
+ });

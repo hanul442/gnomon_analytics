@@ -20,6 +20,16 @@ export const MarketCouncilGenerationSchema=MarketCouncilSchema.extend({experts:z
 /** Extra, unsupported scenario names are dropped; the three required cases still validate strictly. */
 export function parseMarketCouncil(text:string):MarketCouncil {
  const raw=JSON.parse(text);
+ let normalized=0;
+ const normalize=(value:unknown):void=>{
+  if(Array.isArray(value)){value.forEach(normalize);return;}
+  if(!value||typeof value!=='object')return;
+  const item=value as Record<string,unknown>;
+  if(typeof item.text==='string'&&Array.isArray(item.refs)&&'kind' in item&&!['FACT','INFERENCE','ASSUMPTION'].includes(String(item.kind))){item.kind='ASSUMPTION';normalized++;}
+  Object.values(item).forEach(normalize);
+ };
+ normalize(raw);
+ if(normalized&&Array.isArray(raw?.dataGaps))raw.dataGaps.push(`분류가 불명확한 발언 ${normalized}개는 가정으로 표시했습니다.`);
  if(Array.isArray(raw?.scenarios)){const keep=raw.scenarios.filter((s:unknown)=>!!s&&typeof s==='object'&&['강세','기본','약세'].includes(String((s as {name?:unknown}).name)));if(keep.length!==raw.scenarios.length){raw.scenarios=keep;if(Array.isArray(raw.dataGaps))raw.dataGaps.push('지원 범위를 벗어난 추가 시나리오는 제외했습니다.');}}
  return MarketCouncilSchema.parse(raw);
 }

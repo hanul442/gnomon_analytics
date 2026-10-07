@@ -16,7 +16,7 @@ test('truncated market analysis records billed tokens and leaves a retryable fai
   await writeFile(join(root,'data','prices','KOSPI.jsonl'),'{"date":"2026-10-06","close":100}\n{"date":"2026-10-07","close":110}\n');
   const client={beta:{messages:{stream:(params:Record<string,unknown>)=>{
    assert.equal(params.max_tokens,12000);
-   assert.equal(typeof (params.output_format as Record<string,unknown>).parse,'undefined');
+   assert.equal(typeof ((params.output_config as Record<string,unknown>).format as Record<string,unknown>).parse,'undefined');
    return {finalMessage:async()=>({model:'claude-haiku-4-5',stop_reason:'max_tokens',usage:{input_tokens:100,output_tokens:12000},content:[{type:'text',text:'{"summary":'}]})};
   }}}} as unknown as Anthropic;
   const budget=new AiBudget(root,'2026-10',25,0);
