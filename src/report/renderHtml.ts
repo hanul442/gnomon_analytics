@@ -653,7 +653,7 @@ ${report.kind ? '' : peersSlot(report.symbol)}
 ${panel('chart', chartTab)}
 ${panel('technical', technical)}
 ${panel('strategy', strategyTab)}
-${panel('ai', aiTab).replace('role="tabpanel"',`data-ai-date="${escape(report.commentary?.status==='OK'?(ctx.commentaryFrom??report.date):'')}" role="tabpanel"`)}
+${panel('ai', aiTab).replace('role="tabpanel"',`role="tabpanel" data-ai-date="${escape(report.commentary?.status==='OK'?(ctx.commentaryFrom??report.date):'')}"`)}
 ${panel('flows', flowsTab)}
 ${panel('fundamentals', fundTab)}
 ${panel('news', newsTab)}
