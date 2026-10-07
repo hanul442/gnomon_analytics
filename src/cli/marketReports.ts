@@ -25,7 +25,7 @@ export async function collectMarketGroups(root:string,date:string,period:Period,
  for(const [id,name,file,folder] of [['M3','코인','coins.json','c'],['M4','ETF','etfs.json','s']] as const){
   const list=await json(join(root,'site',file)); const rows:CoinRow[]=list?.rows??[]; const assets=[];
   for(const row of [...rows].sort((a,b)=>(b[12]??0)-(a[12]??0))){const page=await json(join(root,'site',folder,`${row[0]}.json`)); const bars=page?.bars?.map((b:[string,number,number,number,number])=>({date:b[0],close:b[4]}))??[]; const asset=periodAsset(row[0],row[1],bars,date,from,period,row[12]);if(asset)assets.push(asset);}
-  groups.push({id,name,source:id==='M3'?'업비트 원화마켓 일봉 · 09:00 KST 경계 · 스냅샷 등락은 24시간 기준':'네이버 금융 국내 상장 ETF 일봉 · 가격 수익률',universe:rows.length,assets,snapshotDate:list?.date??null,breadth:{up:rows.filter(r=>(r[5]??0)>0).length,down:rows.filter(r=>(r[5]??0)<0).length,flat:rows.filter(r=>r[5]===0).length}});
+  groups.push({id,name,source:id==='M3'?'업비트 원화마켓 일봉 · 09:00 KST 경계 · 스냅샷 등락은 전일 종가(09:00 KST) 대비 · 거래대금만 24시간 기준':'네이버 금융 국내 상장 ETF 일봉 · 가격 수익률',universe:rows.length,assets,snapshotDate:list?.date??null,breadth:{up:rows.filter(r=>(r[5]??0)>0).length,down:rows.filter(r=>(r[5]??0)<0).length,flat:rows.filter(r=>r[5]===0).length}});
  }
  return groups;
 }
@@ -34,8 +34,8 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
  const budget=sharedBudget??await AiBudget.load(root,now);
  for(const period of ['daily','weekly'] as const){
   const file=join(dir,`${period}-${date}.json`); const old=await json(file) as MarketReport|null;
-  if(old?.ai.status==='OK')continue;
-  const report:MarketReport={schema:'curia.market-report.v1',date,from:period==='weekly'?weekStart(date):date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
+  if(old?.schema==='curia.market-report.v2'&&old.ai.status==='OK')continue;
+  const report:MarketReport={schema:'curia.market-report.v2',date,from:period==='weekly'?weekStart(date):date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
   if((apiKey||injectedClient)&&budget.allows('brief')&&report.groups.some(g=>g.assets.some(a=>a.date===date))){
    budget.reserve('brief'); let accounted=false;
    try{

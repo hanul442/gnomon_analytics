@@ -13,6 +13,6 @@ test('stale data and missing baseline never become current returns',()=>{
  assert.equal(periodAsset('K','K',bars.slice(1),'2026-10-07','2026-10-05','weekly')?.returnPct,null);
 });
 test('market report labels failures, partial week, and escapes AI errors',()=>{
- const r:MarketReport={schema:'curia.market-report.v1',date:'2026-10-07',from:'2026-10-05',generatedAt:'2026-10-07T09:30:00Z',period:'weekly',groups:[],ai:{status:'FAILED',error:'<script>bad</script>'}};
+ const r:MarketReport={schema:'curia.market-report.v2',date:'2026-10-07',from:'2026-10-05',generatedAt:'2026-10-07T09:30:00Z',period:'weekly',groups:[],ai:{status:'FAILED',error:'<script>bad</script>'}};
  const html=renderMarketReport(r);assert.ok(html.includes('주중 누적 집계'));assert.ok(html.includes('생성에 실패'));assert.ok(html.includes('&lt;script&gt;bad'));assert.ok(!html.includes('<script>bad'));
 });
