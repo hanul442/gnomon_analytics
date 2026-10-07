@@ -166,8 +166,11 @@ export function renderReportsPage(data: HomeData): string {
   const daily = data.entries.filter((e) => e.group === 'daily');
   const order = { core: 0, weekly: 1, request: 2, past: 3, daily: 4 } as const;
   const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
-  const body = `${HOME_STYLE}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>AI 리포트 모음</span></div><h1>최근 AI 리포트</h1><p class="hero-line">매일 고른 종목과 이번 주 리포트를 모았어요. 다른 종목은 검색에서 찾을 수 있어요.</p></div></section>${dailyRows(daily)}${reportRows(sorted, data.selection)}`;
-  return shell('', 'AI 리포트 모음 | CURIA', '<section class="card block"><h2>시장 전체 리포트</h2><p><a href="market-reports.html">오늘의 데일리 · 이번 주 위클리 · AI 위원회</a></p></section>' + body, { scripts: HOME_SCRIPT });
+  const latest = [...new Set(daily.map((e) => e.pickDate ?? ''))].sort().at(-1);
+  const tile = (href: string, title: string, sub: string) => `<a href="${href}"><b>${title}</b><small>${sub}</small></a>`;
+  const head = `<section class="card rp-head"><div class="pl-k">AI 리포트 모음</div><h1>최근 AI 리포트</h1><p class="muted">시장 데일리, 매일 고른 종목, 이번 주 리포트를 한곳에 모았어요. 다른 종목은 검색에서 찾을 수 있어요.</p>
+<nav class="rp-links" aria-label="리포트 바로가기">${tile('market-reports.html', '시장 데일리', '코스피·코스닥·코인·ETF')}${daily.length ? tile('#daily', '매일 AI 리포트', `${latest ? esc(latest.slice(5).replace('-', '/')) + ' 최신 · ' : ''}${daily.length}건`) : ''}${tile('#reports', '이번 주 리포트', `${sorted.length}종목`)}</nav></section>`;
+  return shell('', 'AI 리포트 모음 | CURIA', `${HOME_STYLE}${head}${dailyRows(daily)}${reportRows(sorted, data.selection)}`, { scripts: HOME_SCRIPT });
 }
 
 function movers(universe: readonly UniverseRow[] | null, covered: ReadonlySet<string>): string {
@@ -434,9 +437,9 @@ const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-
 .pulse-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}.pulse-head b{font-size:22px}.pulse-bar{height:16px;border-radius:8px}
 .pulse-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--fg2)}.pulse-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .rr{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.rr-chips{padding:10px 0 4px}
-.rr-main{text-decoration:none;min-width:0}.rr-name{display:flex;align-items:center;gap:8px}.rr-name b{font-size:15px}.rr-line{margin:2px 0 0;font-size:13px;color:var(--fg2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.rr-side{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:13px;font-variant-numeric:tabular-nums}.rr-side b{font-size:14px}.sig{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:#eef1f5;color:var(--fg2)}.sig.up{background:#fde8e6;color:#9f1d24}.sig.down{background:#e3ecfb;color:#1f4fa8}
-.tier{font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;background:#eef1f5;color:var(--fg2)}.tier.t-core{background:var(--navy);color:#fff}.tier.t-request{background:#fff3d6;color:#7a4a00}
+.rr-main{text-decoration:none;min-width:0}.rr-name{display:flex;align-items:center;flex-wrap:wrap;gap:3px 6px;min-width:0}.rr-name b{font-size:15px;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rr-name .tier{flex:none;white-space:nowrap}.rr-line{margin:2px 0 0;font-size:13px;color:var(--fg2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rr-side{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}@media(max-width:520px){.rr{grid-template-columns:minmax(0,1fr) auto 28px;gap:8px}.rr-side b{font-size:13.5px}.rr-side span{font-size:12px}.rr-line{-webkit-line-clamp:1}}.rp-head{padding:18px;margin:16px 0 12px}.rp-head h1{font-size:24px;margin:2px 0 6px}.rp-head p{margin:0 0 12px;font-size:14px}.rp-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.rp-links a{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:12px;padding:11px 13px;text-decoration:none;color:var(--fg);background:var(--soft)}.rp-links a:hover{border-color:var(--accent)}.rp-links b{font-size:14.5px}.rp-links small{font-size:12px;color:var(--muted)}.rr-side b{font-size:14px}.sig{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:#eef1f5;color:var(--fg2)}.sig.up{background:#fde8e6;color:#9f1d24}.sig.down{background:#e3ecfb;color:#1f4fa8}
+.tier{font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;white-space:nowrap;background:#eef1f5;color:var(--fg2)}.tier.t-core{background:var(--navy);color:#fff}.tier.t-request{background:#fff3d6;color:#7a4a00}
 .rr[hidden]{display:none}
 
 .mv-tabs{margin:10px 0 4px}.mvr{display:grid;grid-template-columns:22px minmax(0,1fr) auto 36px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.mvr-i{color:var(--muted);font-weight:700;font-size:13px}.mvr-n{text-decoration:none;display:flex;flex-direction:column;min-width:0}.mvr-n b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mvr-v{display:flex;flex-direction:column;align-items:flex-end;font-size:13px;font-variant-numeric:tabular-nums}
@@ -445,7 +448,7 @@ const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-
 .plan-cta p{font-size:14px;margin:8px 0}.plan-cta .btn-primary{width:100%;justify-content:center}
 .wl{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.wl:first-child{border-top:0}.wl a{text-decoration:none}
 @media (max-width:1100px){.home-grid{grid-template-columns:minmax(0,1fr)}.home-rail{position:static}}
-@media (max-width:820px){.ix-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.ix-row>.card:last-child{grid-column:1/3}.ix .spark{display:none}.ix-v{font-size:18px}.home-hero h1{font-size:24px}.home-hero .hero-line{display:block;font-size:13px}.rr-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rr-chips>*{flex:none}}
+@media (max-width:820px){.ix-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.ix-row>.card:not(.ix){grid-column:1/3}.ix .spark{display:none}.ix-v{font-size:18px}.home-hero h1{font-size:24px}.home-hero .hero-line{display:block;font-size:13px}.rr-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rr-chips>*{flex:none}}
 </style>`;
 
 const HOME_SCRIPT = `<script>

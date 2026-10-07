@@ -143,3 +143,33 @@ export async function fetchNaverStockData(symbol: string, date: string, options:
     finance: [...parseFinance(quarter, symbol, 'QUARTER', now), ...parseFinance(annual, symbol, 'ANNUAL', now)],
   };
 }
+
+export interface StockNewsItem { title: string; office: string; at: string; url: string; summary: string }
+export interface StockDisclosure { id: string; title: string; at: string; author: string }
+const entities = (s: string) => s.replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/<[^>]*>/g, '').trim();
+
+/** /news/stock/{code}: clusters of { total, items[] }; the first item of each cluster stands for it. */
+export function parseStockNews(payload: unknown): StockNewsItem[] {
+  if (!Array.isArray(payload)) return [];
+  const out: StockNewsItem[] = [];
+  for (const cluster of payload) {
+    const items = record(cluster).items;
+    const it = Array.isArray(items) ? record(items[0]) : {};
+    const dt = typeof it.datetime === 'string' && /^\d{12}$/.test(it.datetime) ? it.datetime : null;
+    const url = typeof it.mobileNewsUrl === 'string' && /^https:\/\/n\.news\.naver\.com\//.test(it.mobileNewsUrl) ? it.mobileNewsUrl : null;
+    if (!dt || !url || typeof it.title !== 'string') continue;
+    out.push({ title: entities(String(it.titleFull ?? it.title)), office: entities(String(it.officeName ?? '')), at: `${dt.slice(0, 4)}-${dt.slice(4, 6)}-${dt.slice(6, 8)} ${dt.slice(8, 10)}:${dt.slice(10, 12)}`, url, summary: entities(String(it.body ?? '')).slice(0, 140) });
+  }
+  return out;
+}
+
+/** /stock/{code}/disclosure: [{ disclosureId, title, datetime (ISO, KST), author }]. */
+export function parseStockDisclosures(payload: unknown): StockDisclosure[] {
+  if (!Array.isArray(payload)) return [];
+  return payload.flatMap((raw) => {
+    const r = record(raw);
+    const at = typeof r.datetime === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(r.datetime) ? r.datetime.slice(0, 16).replace('T', ' ') : null;
+    if (r.disclosureId == null || !at || typeof r.title !== 'string') return [];
+    return [{ id: String(r.disclosureId), title: entities(r.title), at, author: entities(String(r.author ?? '')) }];
+  });
+}

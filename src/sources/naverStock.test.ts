@@ -64,3 +64,19 @@ test('unexpected payloads fail loudly', () => {
   assert.throws(() => parseSnapshot('<html>', '000660', '2026-10-04', at), /NAVER_SNAPSHOT_UNEXPECTED_RESPONSE/);
   assert.throws(() => parseFinance({}, '000660', 'QUARTER', at), /NAVER_FINANCE_UNEXPECTED_RESPONSE/);
 });
+
+test('parseStockNews keeps one article per cluster with a Naver mobile link', async () => {
+  const { parseStockNews } = await import('./naverStock.js');
+  const rows = parseStockNews([{ total: 2, items: [{ officeName: '연합뉴스', datetime: '202610072010', title: '&quot;한전&quot; 지원', body: '본문 <b>요약</b>', mobileNewsUrl: 'https://n.news.naver.com/mnews/article/001/1' }] }, { total: 1, items: [{ title: 'x', datetime: 'bad', mobileNewsUrl: 'https://n.news.naver.com/a' }] }, { items: [{ title: 'y', datetime: '202610071200', mobileNewsUrl: 'https://evil.example/a' }] }]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]!.title, '"한전" 지원');
+  assert.equal(rows[0]!.at, '2026-10-07 20:10');
+  assert.equal(rows[0]!.summary, '본문 요약');
+});
+
+test('parseStockDisclosures reads id, title, time and author', async () => {
+  const { parseStockDisclosures } = await import('./naverStock.js');
+  const rows = parseStockDisclosures([{ disclosureId: 147761921, title: '풍문 또는 보도에 대한 해명', datetime: '2026-10-02T11:11:29', author: 'KOSCOM' }, { title: 'no id' }]);
+  assert.deepEqual(rows, [{ id: '147761921', title: '풍문 또는 보도에 대한 해명', at: '2026-10-02 11:11', author: 'KOSCOM' }]);
+  assert.deepEqual(parseStockDisclosures({}), []);
+});

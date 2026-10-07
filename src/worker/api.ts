@@ -18,7 +18,8 @@ import { deepPath, DEEP_DATE, DEEP_SYMBOL, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
 import { parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
 import { fetchNaverMinuteCandles, parseNaverMinuteChart } from '../sources/naverPrice.js';
-import { getJson as naverJson, parseSnapshot } from '../sources/naverStock.js';
+import { getJson as naverJson, parseFinance, parseInvestorFlows, parseResearch, parseSnapshot, parseStockDisclosures, parseStockNews } from '../sources/naverStock.js';
+import { stockInfoFragments } from '../report/stockInfo.js';
 
 export interface Env {
   DB: D1;
@@ -531,6 +532,26 @@ route('GET','/valuation',async({req,deps,now})=>{
  }));
  if(valuations.size>2000)valuations.clear();
  return {items:out};
+});
+// G-120: valuation, earnings, flows, news and filings for a stock without a report, rendered as the
+// report's own panels. Each source is read on its own so one failure leaves the others; kept 3 hours.
+const stockInfos=new Map<string,{at:number;v:unknown}>();
+route('GET','/stockinfo/([0-9][0-9A-Z]{5})',async({req,deps,params,now})=>{
+ const code=params[0]!,closeArg=Number(new URL(req.url).searchParams.get('close'));
+ const close=Number.isFinite(closeArg)&&closeArg>0?closeArg:null,key=code+':'+(close??'');
+ const hit=stockInfos.get(key);if(hit&&now.getTime()-hit.at<3*3600_000)return hit.v;
+ const date=iso(now).slice(0,10),get=(path:string)=>naverJson(path,deps.fetch).catch(()=>null);
+ const [integration,quarter,annual,trend,news,disclosure]=await Promise.all([get(`/stock/${code}/integration`),get(`/stock/${code}/finance/quarter`),get(`/stock/${code}/finance/annual`),get(`/stock/${code}/trend?pageSize=60`),get(`/news/stock/${code}?pageSize=15&page=1`),get(`/stock/${code}/disclosure?pageSize=15&page=1`)]);
+ const safe=<T,>(f:()=>T,d:T):T=>{try{return f();}catch{return d;}};
+ const name=safe(()=>String((integration as {stockName?:unknown}|null)?.stockName??code),code);
+ const v={symbol:code,...stockInfoFragments({symbol:code,name,close,now,
+  snapshot:integration?safe(()=>parseSnapshot(integration,code,date,now),null):null,
+  research:integration?safe(()=>parseResearch(integration,code,now),[]):[],
+  finance:[...(quarter?safe(()=>parseFinance(quarter,code,'QUARTER',now),[]):[]),...(annual?safe(()=>parseFinance(annual,code,'ANNUAL',now),[]):[])],
+  flows:trend?safe(()=>parseInvestorFlows(trend,code,now),[]):[],
+  news:parseStockNews(news),disclosures:parseStockDisclosures(disclosure)})};
+ if(stockInfos.size>=300)stockInfos.delete(stockInfos.keys().next().value!);
+ stockInfos.set(key,{at:now.getTime(),v});return v;
 });
 route('POST', '/reports', async ({ req, env, deps, now }) => {
   const u = await authed(req, env, now), b = await body(req);
