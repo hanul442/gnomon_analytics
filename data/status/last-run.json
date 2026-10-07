@@ -1,5 +1,5 @@
 {
- "at": "2026-10-07T09:38:27.537Z",
+ "at": "2026-10-07T09:50:03.850Z",
  "selected": null,
  "universe": [
   {
@@ -30,7 +30,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 682
+   "count": 704
   }
  ],
  "stocks": [
@@ -270,6 +270,11 @@
    "failedSources": []
   },
   {
+   "symbol": "KRW-POD",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "455850",
    "report": "EXISTS",
    "failedSources": [
@@ -278,11 +283,6 @@
      "error": "NAVER_FINANCE_UNEXPECTED_RESPONSE"
     }
    ]
-  },
-  {
-   "symbol": "KRW-POD",
-   "report": "EXISTS",
-   "failedSources": []
   },
   {
    "symbol": "460860",

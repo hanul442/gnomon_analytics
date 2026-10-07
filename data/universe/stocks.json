@@ -5325,6 +5325,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "051490",
+  "name": "나라엠앤디",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "051500",
   "name": "CJ프레시웨이",
   "market": "KOSDAQ"
@@ -5542,6 +5547,11 @@
  {
   "symbol": "053950",
   "name": "경남제약",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "053980",
+  "name": "오상자이엘",
   "market": "KOSDAQ"
  },
  {
@@ -7767,11 +7777,6 @@
  {
   "symbol": "101170",
   "name": "우림피티에스",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "101240",
-  "name": "씨큐브",
   "market": "KOSDAQ"
  },
  {
@@ -10025,6 +10030,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "228850",
+  "name": "레이언스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "229000",
   "name": "젠큐릭스",
   "market": "KOSDAQ"
@@ -11452,11 +11462,6 @@
  {
   "symbol": "322310",
   "name": "오로스테크놀로지",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "322510",
-  "name": "제이엘케이",
   "market": "KOSDAQ"
  },
  {
@@ -13502,11 +13507,6 @@
  {
   "symbol": "479880",
   "name": "한국제15호스팩",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "479960",
-  "name": "위너스일렉",
   "market": "KOSDAQ"
  },
  {
