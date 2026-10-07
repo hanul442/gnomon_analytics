@@ -2,7 +2,7 @@
 
 The public brand is CURIA (큐리아). Keep the repository name, deployed URLs, gnm API routes, schema IDs, database, queue names, authentication keys and local preferences compatible. Supplied logo artwork is published intact; the header crops its symbol using CSS. PWA icons reference the same original artwork with its actual pixel dimensions.
 
-Home order: event banners first in main, release notice, search, KOSPI/KOSDAQ index strip, daily/weekly market report links, personalized stock sections. Chart timeframe controls have one shared group: daily, weekly, monthly, minute candles and recent trades/live prices. Stock “ticks” are labelled live prices because their baseline is minute closes, not an exchange tick feed. Daily-only drawing, index comparison and period controls are disabled in non-daily views. Scenarios are off by default and controlled inside the indicator sheet; the selected mode is saved locally. Momentum gauges share a symmetric return scale, with the actual return and the scale shown.
+Home order: event banners first in main, release notice, search, KOSPI/KOSDAQ index strip, daily/weekly market report links, personalized stock sections. Chart timeframe controls have one shared group: daily, weekly, monthly, minute candles and recent trades/live prices. Stock “ticks” are labelled live prices because their baseline is minute closes, not an exchange tick feed. Daily-only indicator switches, drawing, index comparison and period controls are disabled in non-daily views. Scenarios are off by default and controlled inside the indicator sheet; the selected mode is saved locally. Momentum gauges share a symmetric return scale, with the actual return and the scale shown.
 
 ## Generation and data contract
 

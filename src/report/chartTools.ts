@@ -154,7 +154,7 @@ window.addEventListener('DOMContentLoaded', function () {
     }
     document.querySelectorAll('[data-range]').forEach(function (b) { b.disabled = k !== 'D'; });
     card.classList.toggle('tf-agg', k !== 'D');
-    document.querySelectorAll('[data-draw],[data-draw-clear],[data-compare]').forEach(function(b){b.disabled=k!=='D';});
+    document.querySelectorAll('[data-ov],[data-pane],[data-vl],[data-sc],[data-strategy],[data-open="strat-sheet"],#ind-reset,[data-draw],[data-draw-clear],[data-compare]').forEach(function(b){b.disabled=k!=='D';});
     tf = k; redraw();
   };
   document.querySelectorAll('[data-tf]').forEach(function (b) { b.addEventListener('click', function () { setTf(b.getAttribute('data-tf')); }); });
