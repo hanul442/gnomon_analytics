@@ -367,3 +367,6 @@
 {"date":"2026-10-07","preset":"accum","symbol":"005010","market":"P","close":3940,"method":"gnm-signal-v1"}
 {"date":"2026-10-07","preset":"value","symbol":"006880","market":"P","close":4350,"method":"gnm-signal-v1"}
 {"date":"2026-10-07","preset":"breakout","symbol":"141000","market":"Q","close":15000,"method":"gnm-signal-v1"}
+{"date":"2026-10-07","preset":"top","symbol":"001060","market":"P","close":27600,"method":"gnm-signal-v1"}
+{"date":"2026-10-07","preset":"accum","symbol":"413630","market":"Q","close":4195,"method":"gnm-signal-v1"}
+{"date":"2026-10-07","preset":"rebound","symbol":"275630","market":"Q","close":3990,"method":"gnm-signal-v1"}

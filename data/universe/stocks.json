@@ -3470,6 +3470,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "0218L0",
+  "name": "네오뷰",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "0220W0",
   "name": "한화머시너리앤서비스홀딩스",
   "market": "KOSPI"
@@ -10783,11 +10788,6 @@
   "symbol": "282330",
   "name": "BGF리테일",
   "market": "KOSPI"
- },
- {
-  "symbol": "282620",
-  "name": "기도산업",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "282620",

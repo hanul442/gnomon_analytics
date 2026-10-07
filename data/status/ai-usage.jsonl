@@ -29,3 +29,4 @@
 {"at":"2026-10-07T09:50:03.850Z","month":"2026-10","symbol":"CURIA-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":8921,"outputTokens":3720,"usd":0.11008}
 {"at":"2026-10-07T09:50:03.850Z","month":"2026-10","symbol":"CURIA-MARKET-weekly","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":8905,"outputTokens":3574,"usd":0.1071}
 {"at":"2026-10-07T10:06:56.543Z","month":"2026-10","symbol":"CURIA-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":9083,"outputTokens":3860,"usd":0.11353}
+{"at":"2026-10-07T10:30:05.122Z","month":"2026-10","symbol":"CURIA-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"brief","inputTokens":10831,"outputTokens":6267,"usd":0.16866}
