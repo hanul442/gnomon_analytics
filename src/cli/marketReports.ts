@@ -34,12 +34,14 @@ export async function collectMarketGroups(root:string,date:string,period:Period,
  }
  return groups;
 }
-export async function writeMarketReports(root:string, now:Date, universe:readonly UniverseRow[], apiKey?:string, injectedClient?:Anthropic, sharedBudget?:AiBudget):Promise<void>{
+export async function writeMarketReports(root:string, now:Date, universe:readonly UniverseRow[], apiKey?:string, injectedClient?:Anthropic, sharedBudget?:AiBudget, regenerate=process.env.MARKET_REGEN==='1'):Promise<void>{
  const date=new Date(now.getTime()+9*3600000).toISOString().slice(0,10), dir=join(root,'reports','market');await mkdir(dir,{recursive:true});
  const budget=sharedBudget??await AiBudget.load(root,now);
  for(const period of ['daily'] as const){
   const file=join(dir,`${period}-${date}.json`); const old=await json(file) as MarketReport|null;
-  if(old?.schema==='curia.market-report.v4'&&old.ai.status==='OK'&&(old.ai.council||old.ai.sealed)){await savePrivateMarketReport(file,old);continue;}
+  // A finished report is kept; MARKET_REGEN=1 (manual run) asks for a fresh committee, keeping the old one if that fails.
+  const done=old?.schema==='curia.market-report.v4'&&old.ai.status==='OK'&&!!(old.ai.council||old.ai.sealed);
+  if(done&&!regenerate){await savePrivateMarketReport(file,old!);continue;}
   const report:MarketReport={schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
   if((apiKey||injectedClient)&&budget.allows('brief')&&report.groups.some(g=>g.assets.some(a=>a.date===date))){
    budget.reserve('brief'); let accounted=false;
@@ -54,7 +56,7 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
     report.ai={status:'OK',model:response.model,council};
    }catch(error){report.ai={status:'FAILED',error:error instanceof Error?error.message.slice(0,180):'생성 오류'};}finally{if(!accounted)budget.spent-=0.03;}
   }else if(!report.groups.some(g=>g.assets.some(a=>a.date===date)))report.ai.error='당일 데이터가 없어 위원회 생성을 보류합니다';
-  await savePrivateMarketReport(file,report);
+  await savePrivateMarketReport(file,done&&report.ai.status!=='OK'?old!:report);
  }
 }
 /** Paid analysis never goes into the public repository as plaintext. Missing keys fail closed. */

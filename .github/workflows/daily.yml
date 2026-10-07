@@ -9,6 +9,11 @@ on:
     # Weekends: the coin's daily AI report and the coin list (G-56); stock pages are rebuilt as they are.
     - cron: '30 9 * * 0,6'
   workflow_dispatch:
+    inputs:
+      regen_market:
+        description: 'Regenerate today\'s market daily AI committee (keeps the old one if it fails)'
+        type: boolean
+        default: false
 permissions:
   contents: write
   pages: write
@@ -44,6 +49,7 @@ jobs:
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GNM_DEEP_KEY: ${{ secrets.GNM_DEEP_KEY }}
+          MARKET_REGEN: ${{ inputs.regen_market && '1' || '' }}
         run: npm run daily
       - name: Commit collected data and reports
         run: |
