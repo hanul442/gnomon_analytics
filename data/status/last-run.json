@@ -1,5 +1,5 @@
 {
- "at": "2026-10-07T09:26:21.598Z",
+ "at": "2026-10-07T09:38:27.537Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2724
+   "count": 2719
   },
   {
    "source": "naver:fchart:day:etf",
@@ -30,7 +30,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 672
+   "count": 682
   }
  ],
  "stocks": [
@@ -250,44 +250,44 @@
    ]
   },
   {
+   "symbol": "126600",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "0082N0",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "900140",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "033780",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-POD",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "460860",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "126600",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "455850",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": [
     {
      "source": "naver:m-stock",
      "error": "NAVER_FINANCE_UNEXPECTED_RESPONSE"
     }
    ]
+  },
+  {
+   "symbol": "KRW-POD",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "460860",
+   "report": "EXISTS",
+   "failedSources": []
   }
  ],
  "failed": []
