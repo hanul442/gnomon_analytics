@@ -145,6 +145,7 @@ window.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-tf]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-tf') === k)); });
     if (tf === 'D') saved = G.series().filter(function (s) { return s !== candle; }).map(function (s) { var v = s.options().visible !== false; s.applyOptions({ visible: false }); return [s, v]; });
     if (k === 'D') {
+      say('');
       candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
       saved.forEach(function (x) { x[0].applyOptions({ visible: x[1] }); }); saved = []; hidden = false; if(window.GNM_scenarioPause)GNM_scenarioPause(false);
       var r = document.querySelector('[data-range][aria-pressed=true]'); if (r) r.click();
