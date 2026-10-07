@@ -1,6 +1,7 @@
 /** Retrospective grouping of merged functionality, not historical Git tags. */
-export const VERSION = '2.6.1';
+export const VERSION = '2.6.2';
 export const RELEASES = [
+ ['2.6.2','2026-10-07','종목 요약에 같은 테마 종목 비교를 넣었습니다. 같은 테마 종목들의 오늘·20일 수익률과 미니 차트를 옆으로 넘겨 보고, 이 종목의 20일 수익률 순위와 PER이 테마 중간값보다 얼마나 높은지 보여 줍니다. 홈은 검색 → 시장 지수 → 관심 종목 → 오늘 볼 것 → 오늘 강한 테마 → 숨은 신호 순으로 바꾸고, 이벤트 배너는 아래로 내렸습니다. 전체 메뉴를 찾아보기·내 활동·도움말·계정으로 다시 묶었고, 상단 업데이트 안내는 항상 최신 업데이트 내용을 보여 줍니다.'],
  ['2.6.1','2026-10-07','생성한 리포트의 AI 위원회 탭이 매일 리포트와 같은 화면(시나리오·표결 의석·근거 정리·토론·판단 입력)으로 나옵니다. AI 리포트가 가격보다 이전 날짜면 요약과 AI 위원회 탭 모두에 최신 리포트 만들기 버튼이 나옵니다(생성 리포트에서 안내가 사라지던 문제도 고침). 전체 → 내 토론 기록에서 위원회에 한 질문과 답을 종목별로 모아 봅니다(계정에 저장, 다른 기기에서도 보임). 증권사 리포트 제목을 누르면 요약과 PDF 원문이 열립니다. 테마별 종목이 다시 나옵니다(네이버 테마 화면이 바뀌어 비어 있었음). 피보나치는 최근 120거래일 최고가·최저가를 기준으로 계산하고 그 기준을 카드와 차트에 표시합니다. 리포트가 없는 종목과 즉시 생성 리포트에도 전략 대결이 나오고, 종목 가격 기록을 2년치로 늘렸습니다. 지수 미니 차트 색이 오늘 등락과 같아지고, 다른 기기에서 로그인하면 이미 본 튜토리얼은 다시 뜨지 않습니다.'],
  ['2.6.0','2026-10-07','차트에 분봉과 틱을 넣었습니다. 주식·ETF는 1·5·15·60분봉(정규장, 1분 종가로 만든 봉)을, 코인은 업비트 분봉을 봅니다. 틱은 코인은 최근 체결, 주식은 오늘 1분 종가로 시작해 실시간 가격이 들어올 때마다 이어 그립니다.'],
  ['2.5.4','2026-10-07','코드 정리: 화면 개편 뒤 쓰이지 않던 옛 화면 조각(위원회 요약 카드, 분석가 대결표, 전략 순위표·홈 티저, 코인 목록 블록 등)과 안 쓰는 변수·불러오기를 지우고, 17곳에 흩어져 있던 HTML 이스케이프 함수를 하나로 모았습니다. 안 쓰는 코드가 다시 쌓이지 않도록 빌드 검사를 켰습니다. 화면과 기능은 그대로입니다.'],
@@ -37,6 +38,8 @@ export const RELEASES = [
  ['0.1.0','2026-10-04','차트·기술 지표·뉴스와 AI 해설 확장.'],
  ['0.0.0','2026-10-03','SK하이닉스 일일 리포트로 시작한 알파 기본판.'],
 ] as const;
-export const versionBanner = (base:string) => `<aside class="version-banner" data-version="${VERSION}"><div><b>Alpha v${VERSION}</b><p>모바일 채팅 Thinking Orbs 개선 · 새 사용법</p><a href="${base}guide.html">새 사용법</a> · <a href="${base}updates.html">릴리스 노트</a></div><button type="button" data-dismiss-version aria-label="이 버전 안내 닫기">×</button></aside>`;
+/** The banner's line: the latest release note's first sentence, so it never goes stale. */
+const latestLine = (): string => { const note = String(RELEASES[0]?.[2] ?? ''), first = note.split(/(?<=[.다])\s/)[0] ?? note; return (first.length > 70 ? `${first.slice(0, 68)}…` : first).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!); };
+export const versionBanner = (base:string) => `<aside class="version-banner" data-version="${VERSION}"><div><b>Alpha v${VERSION}</b><p>${latestLine()}</p><a href="${base}updates.html">이번 업데이트 전체 보기</a> · <a href="${base}guide.html">사용법</a></div><button type="button" data-dismiss-version aria-label="이 버전 안내 닫기">×</button></aside>`;
 export const VERSION_CSS = `.version-banner[hidden]{display:none}.version-banner{display:flex;justify-content:space-between;gap:12px;padding:14px 18px;margin:12px 0 18px;background:#eef3fb;border:1px solid #ccd9ee;border-radius:14px;font-size:13px}.version-banner p{margin:4px 0}.version-banner button{border:0;background:none;font-size:22px;align-self:start;cursor:pointer}`;
 export const VERSION_JS = `(function(){var b=document.querySelector('[data-version]');if(!b)return;var key='gnm-version-dismissed-'+b.dataset.version;try{b.hidden=localStorage.getItem(key)==='1';}catch(e){}b.querySelector('[data-dismiss-version]').onclick=function(){b.hidden=true;try{localStorage.setItem(key,'1');}catch(e){}};})();`;

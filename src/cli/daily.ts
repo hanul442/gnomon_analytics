@@ -83,6 +83,32 @@ async function storable(report: DailyReport): Promise<DailyReport> {
 }
 
 /** Writes a report page; with the key, the page gets the public part and the paid part is sealed next to it. */
+/**
+ * G-118: one small file per theme (site/theme/<no>.json) for the 같은 테마 비교 strip: each member's day move,
+ * 20-session return and its last 60 closes. Closes come from the stock page data, else the covered stock's log.
+ */
+async function writeThemePeers(root: string, siteDir: string, themes: readonly { no: string; name: string; members: readonly (readonly [string, string, number | null, number | null, number | null, number | null, string])[] }[]): Promise<void> {
+  await mkdir(join(siteDir, 'theme'), { recursive: true });
+  const cache = new Map<string, number[]>();
+  const closes = async (symbol: string): Promise<number[]> => {
+    const hit = cache.get(symbol); if (hit) return hit;
+    let out: number[] = [];
+    try { const page = JSON.parse(await readFile(join(siteDir, 's', `${symbol}.json`), 'utf8')) as { bars?: [string, number, number, number, number, number][] }; out = (page.bars ?? []).map((b) => b[4]); } catch { /* covered stocks have no page file */ }
+    if (!out.length) out = (await readLog<PriceBar>(join(root, 'data', 'prices', `${symbol}.jsonl`)).catch(() => [] as PriceBar[])).sort((a, b) => (a.date < b.date ? -1 : 1)).map((b) => b.close);
+    out = out.filter((x) => Number.isFinite(x) && x > 0).slice(-60);
+    cache.set(symbol, out);
+    return out;
+  };
+  const r4 = (v: number) => Number(v.toPrecision(5));
+  for (const t of themes) {
+    const members = await Promise.all(t.members.map(async (m) => {
+      const c = await closes(m[0]), ret20 = c.length > 20 ? (c.at(-1)! / c.at(-21)! - 1) * 100 : null;
+      return [m[0], m[1], m[3], ret20 == null ? null : Math.round(ret20 * 10) / 10, m[5], c.slice(-40).map(r4)] as const;
+    }));
+    await writeFile(join(siteDir, 'theme', `${t.no}.json`), JSON.stringify({ no: t.no, name: t.name, fields: ['symbol', 'name', 'changePct', 'ret20', 'marketCap', 'spark'], members }));
+  }
+}
+
 /** The shared CSS/JS under versioned names (G-79): the Pages CDN can keep serving an old app.css for a
  *  while when only a query string changes, so each build's assets get their own names; the plain names stay for old pages. */
 async function writeAssets(siteDir: string): Promise<void> {
@@ -725,6 +751,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const td = themeData(themeFile?.themes ?? [], lite, dataDate ?? kstParts(new Date()).date);
   await writeFile(join(siteDir, 'themes.json'), JSON.stringify(td.themes));
   await writeFile(join(siteDir, 'theme-index.json'), JSON.stringify(td.index));
+  await writeThemePeers(root, siteDir, td.themes.themes);
   const eventLog = (await readFile(join(root, 'data', 'event-filings.jsonl'), 'utf8').catch(() => '')).split('\n').filter(Boolean).map((l) => JSON.parse(l) as EventFiling);
   await writeFile(join(siteDir, 'signals.json'), JSON.stringify(signalData(eventLog, lite, kstParts(new Date()).date)));
   await writeFile(join(siteDir, 'themes.html'), renderThemesPage());
