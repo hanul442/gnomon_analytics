@@ -10,9 +10,6 @@ import { LOADING_CSS, LOADING_JS } from './loading.js';
 // Look: BLACK ORACLE mobile mockup v1 tone (docs/DESIGN.md G-15). The price chart
 // uses TradingView Lightweight Charts v5, served from our own site.
 
-import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim } from '../analysis/commentary.js';
@@ -95,7 +92,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .hero-main,.key-points{position:relative}.mkt-chip{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:800;background:#eef1f6;color:#334155}.mk-kospi{background:#e8f0fd;color:#1f55b8}.mk-kosdaq{background:#e9f7ef;color:#1b7a43}.mk-etf{background:#f3ecfd;color:#6b3fb8}.mk-coin{background:#fff4dc;color:#8a5a00}.eyebrow{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;font-weight:600;color:var(--accent-strong)}
 .hero h1{font-family:var(--serif);font-weight:600;font-size:40px;line-height:1.15;margin:6px 0 10px;letter-spacing:-.01em}
 .hero-price{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 14px}.hero-price b{font-size:34px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.hero-price span{font-weight:600;font-variant-numeric:tabular-nums}
-.stale-ai{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border-radius:14px;background:#fff8e6;border:1px solid #f3dfa8;font-size:13.5px}.stale-ai .btn-primary{white-space:nowrap}.hero-sub{font-size:12px;color:var(--muted);margin-top:2px}.hero-chart{display:block;margin:12px 0 2px;padding:8px 10px 6px;border:1px solid var(--line);border-radius:14px;background:#fff;text-decoration:none;color:inherit;max-width:520px}.hero-chart:hover{border-color:var(--accent)}.hero-chart svg{display:block;width:100%;height:72px}.hc-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px}.hc-go{font-weight:800;color:var(--accent-strong)}.hero-line{margin:14px 0 0;color:var(--fg2);max-width:60ch}
+.stale-ai{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:4px 12px;margin:0 0 14px;padding:12px 14px;border-radius:14px;background:#fff8e6;border:1px solid #f0d9a0}.sa-ic{font-size:20px;line-height:1}.sa-tx b{display:block;font-size:14px}.sa-tx small{display:block;font-size:12.5px;color:var(--fg2);margin-top:2px}.sa-go{font:inherit;font-size:13.5px;font-weight:800;white-space:nowrap;border:0;border-radius:10px;padding:9px 14px;background:var(--navy);color:#fff;cursor:pointer}.sa-go:hover{filter:brightness(1.15)}@media (max-width:560px){.stale-ai{grid-template-columns:auto minmax(0,1fr)}.sa-go{grid-column:1/-1;width:100%;margin-top:6px;padding:11px}}.hero-sub{font-size:12px;color:var(--muted);margin-top:2px}.hero-chart{display:block;margin:12px 0 2px;padding:8px 10px 6px;border:1px solid var(--line);border-radius:14px;background:#fff;text-decoration:none;color:inherit;max-width:520px}.hero-chart:hover{border-color:var(--accent)}.hero-chart svg{display:block;width:100%;height:72px}.hc-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:4px}.hc-go{font-weight:800;color:var(--accent-strong)}.hero-line{margin:14px 0 0;color:var(--fg2);max-width:60ch}
 .key-points{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
 .kp-title{font-family:var(--serif);font-weight:600;margin-bottom:6px}.key-points ul{list-style:none;margin:0;padding:0}
 .key-points li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}.key-points li:first-child{border-top:0}.key-points li span{color:var(--muted)}
@@ -630,22 +627,12 @@ ${marketStrip(report)}
   const flowsTab = insightLine(report, 'flow', base) + (report.kind==='coin' ? coinFlow(report) : m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>') + edgeFlows(report);
   const fundTab = insightLine(report, 'fundamental', base) + (m ? fundamentalsPanel(m, report.price?.close ?? null, report.name) : '<div class="card empty">이 리포트에는 펀더멘털 기록이 없어요.</div>') + edgeFundamentals(report);
   const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>요약 리포트예요</b><p class="muted small">AI 위원회 전체(데스크 5곳·분석가 6명·레드팀·시나리오)로 다시 쓰려면 심층 리포트로 업그레이드하세요. 프로부터 쓸 수 있어요.</p></div><button type="button" class="credit-btn" data-spend="upgrade" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">심층으로 업그레이드 <small>${CREDIT_COST.upgrade}크레딧</small></button></div></section>` : '';
-  const fromNote = ctx.commentaryFrom ? `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요. AI 해설은 매주 금요일 장 마감 뒤 한 번 만들어져요.</p>` : '';
-  const isBrief = report.commentary?.status === 'OK' && report.commentary.tier === 'brief';
-  // Brief reports: the brief itself is Plus. Committee reports: limited committee Plus, the rest Pro.
-  const sealedDeep = !!ctx.deep && report.commentary?.status === 'OK' && !isBrief;
-  // G-68: one conclusion (the card, with the vote), then the debate with its evidence inline, then what it
-  // left open, then the reader's turn. No second conclusion, no separate evidence list, no seat chart.
-  const aiBody = isBrief
-    ? gate(whySection(report), { base, what: '요약 리포트: 요약 · 강세와 약세 근거 · 지켜볼 것' })
-    : sealedDeep
-      ? deepSlot(report.symbol, ctx.deep!.date)
-      : report.commentary?.status === 'OK'
-      ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
-      : whySection(report);
+  // G-114: an older committee says so with a way to a fresh one, on the AI tab as on the summary.
+  const fromNote = ctx.commentaryFrom ? (ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? staleAiBar(report, ctx.commentaryFrom) : `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요.</p>`) : '';
+  const sealedDeep = !!ctx.deep && report.commentary?.status === 'OK' && report.commentary.tier !== 'brief';
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary?.status === 'OK'
-    ? `${upgrade}${fromNote}${report.commentary.status === 'OK' ? conclusionCard(report, { id: 'conclusion', title: '시나리오' }) + parliament(report, ctx.commentaryFrom ?? null, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(☰ 메뉴에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`) : ''}${aiBody}${sealedDeep ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}${record}`
+    ? `${upgrade}${fromNote}${committeeTab(report, { base, from: ctx.commentaryFrom ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
     : `${report.commentary?whySection(report):''}${conclusionCard(report,{id: 'conclusion',title: '시나리오'})}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 토론이 아직 생성되지 않았어요</b><button type="button" class="chip-toggle" data-create-report data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">리포트 생성</button></div></div>${joinBox(report)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
   const newsTab = `${insightLine(report, 'news', base)}${edgeEvents(report)}${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 DART 원문이 열려요</span></div>${filingsTable(report)}</div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
@@ -663,6 +650,23 @@ ${panel('news', newsTab)}
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | Gnomon Analytics` : `${report.name} ${report.date} 일일 리포트 | Gnomon Analytics`;
   return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+}
+
+/**
+ * G-115: the AI committee tab's body — conclusion, the seat chart, then the debate with its evidence, the
+ * reader's turn and what is left open. One renderer for daily pages and for reports generated on request.
+ */
+export function committeeTab(report: DailyReport, opts: { base: string; from: string | null; deepDate?: string }): string {
+  const base = opts.base, isBrief = report.commentary?.status === 'OK' && report.commentary.tier === 'brief';
+  const aiBody = isBrief
+    ? gate(whySection(report), { base, what: '요약 리포트: 요약 · 강세와 약세 근거 · 지켜볼 것' })
+    : opts.deepDate
+      ? deepSlot(report.symbol, opts.deepDate)
+      : report.commentary?.status === 'OK'
+      ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
+      : whySection(report);
+  const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(☰ 메뉴에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`);
+  return `${conclusionCard(report, { id: 'conclusion', title: '시나리오' })}${seats}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
 }
 
 /** The paid part of a committee report (G-61), rendered from the full commentary and sealed into <symbol>/deep/<date>.txt. */
@@ -989,15 +993,10 @@ export const APP_CSS = `${THEME_CHIPS_CSS}${EDGE_CSS}${ALERTS_CSS}${AD_CSS}${CON
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
 export const UI_JS = `${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}`;
-const ASSET_VERSION = createHash('sha256').update(APP_CSS + APP_JS + UI_JS).digest('hex').slice(0, 10);
-
-export async function writeAssets(siteDir: string): Promise<void> {
-  await mkdir(join(siteDir, 'assets'), { recursive: true });
-  // Versioned file names (G-79): the Pages CDN can keep serving an old app.css for a while when only a
-  // query string changes, so each build's assets get their own names. The plain names stay for old pages.
-  const v = ASSET_VERSION;
-  await Promise.all([
-    writeFile(join(siteDir, 'assets', `app.${v}.css`), APP_CSS), writeFile(join(siteDir, 'assets', `app.${v}.js`), APP_JS), writeFile(join(siteDir, 'assets', `ui.${v}.js`), UI_JS),
-    writeFile(join(siteDir, 'assets', 'app.css'), APP_CSS), writeFile(join(siteDir, 'assets', 'app.js'), APP_JS), writeFile(join(siteDir, 'assets', 'ui.js'), UI_JS),
-  ]);
-}
+/** Two FNV-1a passes give a short, stable content hash without node:crypto (this module also runs in the Worker). */
+const contentHash = (text: string): string => {
+  let a = 0x811c9dc5, b = 0x01000193 ^ text.length;
+  for (let i = 0; i < text.length; i += 1) { const c = text.charCodeAt(i); a = Math.imul(a ^ c, 0x01000193); b = Math.imul(b ^ c, 0x0100019d); }
+  return ((a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0')).slice(0, 10);
+};
+export const ASSET_VERSION = contentHash(APP_CSS + APP_JS + UI_JS);

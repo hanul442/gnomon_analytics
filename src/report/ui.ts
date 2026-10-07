@@ -240,6 +240,7 @@ export const LIVE_JS = `
  */
 export const TOUR_JS = `
   (function () {
+    var run = function () {
     var STEPS = {
       home: [
         ['#top', '검색', '종목·ETF·코인을 이름, 코드, 초성(ㅅㅅㅈㅈ)으로 찾아요. 아래 필터로 시장과 조건을 골라 자세히 찾을 수 있어요.'],
@@ -298,6 +299,12 @@ export const TOUR_JS = `
       show();
     };
     setTimeout(start, forced ? 300 : 1200);
+    };
+    // G-112: a signed-in visitor on a new device first takes the account's settings (tours already seen
+    // come with them), so the tour waits for that before deciding to start.
+    var session = null; try { session = localStorage.getItem('gnm-session'); } catch (e) {}
+    var go = function () { if (session && window.GNM && window.GNM.ready) window.GNM.ready.then(run, run); else run(); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else setTimeout(go, 0);
   })();`;
 
 export const TOUR_CSS = `.tr-hole{position:fixed;z-index:200;border-radius:14px;box-shadow:0 0 0 9999px rgba(10,20,35,.6);pointer-events:none;transition:all .2s}.tr-tip{position:fixed;z-index:201;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 28px));background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 14px 36px rgba(0,0,0,.25)}.tr-tip b{font-size:16px}.tr-tip p{margin:6px 0 10px;font-size:14px;line-height:1.6;color:var(--fg2)}.tr-n{font-size:11.5px;font-weight:700;color:var(--accent-strong)}.tr-b{display:flex;gap:6px;justify-content:flex-end}.tr-b button{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.tr-b [data-t=x]{margin-right:auto;border:0;color:var(--muted)}.tr-b .tr-next{background:var(--navy);color:#fff;border-color:var(--navy)}`;

@@ -571,7 +571,7 @@ route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
     const took=(await env.DB.prepare("SELECT (julianday(updated_at)-julianday(created_at))*86400 AS s FROM report_jobs WHERE kind=? AND status='done' ORDER BY created_at DESC LIMIT 20").bind(job!.kind).all<{s:number}>()).results.map((x)=>x.s).filter((x)=>x>=5&&x<=900).sort((a,b)=>a-b);
     if (took.length>=3) etaSec=Math.round(took[Math.min(took.length-1,Math.floor(took.length*0.7))]!);
   }
-  return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(etaSec?{etaSec}:{}),...(report?{generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report)}:{})};
+  return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(etaSec?{etaSec}:{}),...(report?{generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report,env.SITE_URL.replace(/\/?$/,'/'))}:{})};
 });
 route('POST', '/screens/compose', async ({req,env,deps,now}) => {
   const u=await authed(req,env,now), b=await body(req), question=str(b.question,600), market=str(b.market,10)||'stock';

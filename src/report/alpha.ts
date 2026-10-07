@@ -191,6 +191,7 @@ export const ALPHA_SCRIPT = `<script>
     }).catch(function () { return false; });
   };
   var syncAll = function () {
+    var ww = document.getElementById('watch-where'); if (ww && G.me) ww.textContent = '계정에 저장돼요 · 다른 기기에서도 보여요';
     return Promise.all([watchSync(), settingsSync()]).then(function (r) {
       if (!r[0] && !r[1]) return;
       // Once per page: the reload shows the account's copy; the guard stops a loop if storage is blocked.
@@ -347,6 +348,6 @@ export const ALPHA_SCRIPT = `<script>
     }
   };
   paint();
-  G.ready = G.refresh().then(function () { feedback(); nudges(); bell(); syncAll(); paintHomeAlerts(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return G.me; });
+  G.ready = G.refresh().then(function () { feedback(); nudges(); bell(); paintHomeAlerts(); G.track('page_view', { plan: G.me ? G.me.user.plan : 'signed_out' }); flush(); return syncAll().then(function () { return G.me; }, function () { return G.me; }); });
 })();
 </script>`;

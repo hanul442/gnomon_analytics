@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { quickCalc, type StockCalc } from '../analysis/quickCalc.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import type { UniverseRow } from '../sources/naverList.js';
-import { fetchUpbitDays, fetchUpbitMarkets, fetchUpbitTickers } from '../sources/upbit.js';
+import { fetchUpbitDaysLong, fetchUpbitMarkets, fetchUpbitTickers } from '../sources/upbit.js';
 import { renderCalculationPage } from '../report/calculationPage.js';
 import { compactCalc } from './stockPages.js';
 
@@ -57,7 +57,7 @@ export async function writeCoinPages(siteDir: string, options: { now: () => Date
   for (let i = 0; i < markets.length; i += 2) {
     await Promise.all(markets.slice(i, i + 2).map(async (m) => {
       try {
-        const bars = await fetchUpbitDays(m.market, now, fetcher);
+        const bars = await fetchUpbitDaysLong(m.market, now, 400, fetcher);
         if (bars.length < 2) return;
         const calc = quickCalc(m.market, bars, now), t = tickers.get(m.market), last = bars.at(-1)!, prev = bars.at(-2)!;
         await writeFile(join(dir, `${m.market}.json`), JSON.stringify({ pageUrl: `c/${m.market}.html`, symbol: m.market, name: m.name, english: m.english, market: 'UPBIT', warning: m.warning,
