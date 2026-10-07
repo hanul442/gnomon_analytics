@@ -30,6 +30,8 @@ export function parseMarketCouncil(text:string):MarketCouncil {
  };
  normalize(raw);
  if(normalized&&Array.isArray(raw?.dataGaps))raw.dataGaps.push(`분류가 불명확한 발언 ${normalized}개는 가정으로 표시했습니다.`);
+ // A desk can withhold judgment; its spoken stance uses the neutral position.
+ if(Array.isArray(raw?.debate))for(const turn of raw.debate)if(turn?.stance==='INSUFFICIENT_DATA')turn.stance='NEUTRAL';
  if(Array.isArray(raw?.scenarios)){const keep=raw.scenarios.filter((s:unknown)=>!!s&&typeof s==='object'&&['강세','기본','약세'].includes(String((s as {name?:unknown}).name)));if(keep.length!==raw.scenarios.length){raw.scenarios=keep;if(Array.isArray(raw.dataGaps))raw.dataGaps.push('지원 범위를 벗어난 추가 시나리오는 제외했습니다.');}}
  return MarketCouncilSchema.parse(raw);
 }

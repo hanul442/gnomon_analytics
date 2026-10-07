@@ -52,15 +52,15 @@ var href=function(s){return 'stock.html?c='+encodeURIComponent(s);};`;
 
 export function renderThemesPage(): string {
   const body = `${PAGE_CSS}<div class="tm"><section class="card tm-hero"><div class="pl-k">테마</div><h1>테마별 종목</h1><p>같은 재료로 함께 움직이는 종목 묶음이에요. 오늘 많이 오른 테마부터 보여 주고, 테마를 누르면 소속 종목과 편입 이유가 나와요.</p></section>
-<div id="tm-list-wrap"><div class="tm-tools"><input id="tm-q" type="search" placeholder="테마나 종목 이름 (예: 2차전지, 삼성)" aria-label="테마 검색"><div class="tm-seg" role="group" aria-label="정렬"><button type="button" data-sort="avg" aria-pressed="true">상승률</button><button type="button" data-sort="value" aria-pressed="false">거래대금</button><button type="button" data-sort="low" aria-pressed="false">하락률</button><button type="button" data-sort="count" aria-pressed="false">종목 수</button><button type="button" data-sort="name" aria-pressed="false">이름순</button></div></div><div class="tm-list" id="tm-list"><p class="muted">불러오는 중…</p></div></div>
+<div id="tm-list-wrap"><div class="tm-tools"><input id="tm-q" type="search" placeholder="테마나 종목 이름 (예: 2차전지, 삼성)" aria-label="테마 검색"><div class="tm-seg" role="group" aria-label="정렬"><button type="button" data-sort="avg" aria-pressed="true">상승률</button><button type="button" data-sort="value" aria-pressed="false">거래대금</button><button type="button" data-sort="low" aria-pressed="false">하락률</button><button type="button" data-sort="count" aria-pressed="false">종목 수</button><button type="button" data-sort="name" aria-pressed="false">이름순</button></div><button type="button" id="tm-list-direction" class="chip-toggle" aria-label="테마 목록 정렬 방향">내림차순 ↓</button></div><div class="tm-list" id="tm-list"><p class="muted">불러오는 중…</p></div></div>
 <div class="tm-detail" id="tm-detail" hidden></div>
 <p class="fine">테마 분류와 편입 이유는 네이버 금융 기준이고 매주 다시 가져와요. 등락은 장 마감 기준이에요. 투자 권유가 아니에요.</p></div>
 <script>
 (function(){${COMMON_JS}
- var data=null,sort='avg',memberSort='change',memberAsc=false;var compareMembers=(${compareThemeMembers.toString()});try{memberSort=localStorage.getItem('gnm-theme-sort')||'change';memberAsc=localStorage.getItem('gnm-theme-direction')==='asc';}catch(e){}
+ var data=null,sort='avg',listAsc=false,memberSort='change',memberAsc=false;var compareMembers=(${compareThemeMembers.toString()});try{memberSort=localStorage.getItem('gnm-theme-sort')||'change';memberAsc=localStorage.getItem('gnm-theme-direction')==='asc';}catch(e){}
  var list=function(){var q=document.getElementById('tm-q').value.trim().toLowerCase(),t=data.themes.slice();
   if(q)t=t.filter(function(x){return x.name.toLowerCase().indexOf(q)>=0||x.members.some(function(m){return String(m[1]).toLowerCase().indexOf(q)>=0||m[0]===q;});});
-  t.sort(function(a,b){return sort==='name'?a.name.localeCompare(b.name,'ko'):sort==='count'?b.members.length-a.members.length:sort==='value'?b.value-a.value:sort==='low'?(a.avg==null?999:a.avg)-(b.avg==null?999:b.avg):(b.avg==null?-999:b.avg)-(a.avg==null?-999:a.avg);});
+  t.sort(function(a,b){var av=sort==='name'?a.name:sort==='count'?a.members.length:sort==='value'?a.value:a.avg,bv=sort==='name'?b.name:sort==='count'?b.members.length:sort==='value'?b.value:b.avg;if(av==null)return bv==null?0:1;if(bv==null)return -1;var d=sort==='name'?av.localeCompare(bv,'ko'):av-bv;return (listAsc?d:-d)||a.name.localeCompare(b.name,'ko');});
   document.getElementById('tm-list').innerHTML=t.length?t.slice(0,200).map(function(x){var lead=x.members.slice().sort(function(a,b){return compareMembers(a,b,'change',false);}).slice(0,3).map(function(m){return esc(m[1])+' '+pct(m[3]);}).join(' · ');
    return '<a class="tm-item" href="#'+esc(x.no)+'"><div class="tm-top"><b>'+esc(x.name)+'</b><span class="'+cls(x.avg)+'">'+pct(x.avg)+'</span></div><div class="tm-meta">'+x.members.length+'종목 · 오름 '+x.up+' 내림 '+x.down+' · 거래대금 '+eok(x.value)+'</div><div class="tm-lead">'+lead+'</div></a>';}).join(''):'<p class="muted">맞는 테마가 없어요.</p>';
  };
@@ -74,7 +74,8 @@ export function renderThemesPage(): string {
  var route=function(){var no=location.hash.slice(1);if(no)detail(no);else{document.getElementById('tm-detail').hidden=true;document.getElementById('tm-list-wrap').hidden=false;}};
  fetch('themes.json').then(function(r){return r.json();}).then(function(j){data=j;list();route();}).catch(function(){document.getElementById('tm-list').innerHTML='<p class="muted">테마 자료를 아직 모으지 못했어요. 다음 업데이트 뒤 다시 확인해 주세요.</p>';});
  document.getElementById('tm-q').addEventListener('input',function(){if(data)list();});
- document.querySelectorAll('[data-sort]').forEach(function(b){b.onclick=function(){sort=b.getAttribute('data-sort');document.querySelectorAll('[data-sort]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});if(data)list();};});
+ document.querySelectorAll('[data-sort]').forEach(function(b){b.onclick=function(){sort=b.getAttribute('data-sort');listAsc=sort==='low'||sort==='name';document.getElementById('tm-list-direction').textContent=listAsc?'오름차순 ↑':'내림차순 ↓';document.querySelectorAll('[data-sort]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});if(data)list();};});
+ document.getElementById('tm-list-direction').onclick=function(){listAsc=!listAsc;this.textContent=listAsc?'오름차순 ↑':'내림차순 ↓';if(data)list();};
  window.addEventListener('hashchange',function(){if(data)route();});
 })();
 </script>`;
