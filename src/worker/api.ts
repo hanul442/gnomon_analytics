@@ -2,7 +2,7 @@ import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
 import { notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
 import { fetchUpbitMinutes } from '../sources/upbit.js';
-import { reportInput, inputHash, runReportJob, refundJob, reportFragments, type ReportQueue, type ReportJob } from './reports.js';
+import { reportInput, inputHash, refundJob, reportFragments, type ReportQueue, type ReportJob } from './reports.js';
 import type { DailyReport } from '../report/dailyReport.js';
 import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
@@ -746,10 +746,7 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
     const before = s.last_symbols ? new Set(JSON.parse(s.last_symbols) as string[]) : null;
     const fresh = before ? hits.filter((row) => !before.has(String(row[0]))) : [];
     const stmts = [db.prepare('UPDATE screens SET last_symbols = ?, last_date = ? WHERE id = ?').bind(JSON.stringify(symbols), data.date, s.id)];
-    if (fresh.length) {
-      const names = fresh.slice(0, 8).map((row) => String(row[1])).join(', ') + (fresh.length > 8 ? ` 외 ${fresh.length - 8}개` : '');
-      sent += 1;
-    }
+    if (fresh.length) sent += 1;
     await db.batch(stmts);
     if (fresh.length) await notifyUser({ db, fetch: deps.fetch, site: env.SITE_URL, now }, s.user_id, 'screen', { title: `'${s.name}' 조건에 새로 걸린 종목 ${fresh.length}개`, body: `${data.date} 장 마감 기준: ${fresh.slice(0, 8).map((row) => String(row[1])).join(', ')}${fresh.length > 8 ? ` 외 ${fresh.length - 8}개` : ''}`, link: 'screener.html' });
     if (fresh.length && env.RESEND_API_KEY) {

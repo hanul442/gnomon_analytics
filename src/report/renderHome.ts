@@ -16,14 +16,12 @@ import { ALPHA_BANNERS, BANNER_JS, bannerHtml, eventBanners, type Banner } from 
 import { openEvents } from './events.js';
 import { HOME_ORDER } from './persona.js';
 import { FIELD_INDEX, matches, PRESETS } from '../analysis/screenRules.js';
+import { esc } from './html.js';
 
-const esc = (value: string): string =>
-  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 // G-84: a move always carries its arrow (▲ red up, ▼ blue down) next to the number.
 const signed = (v: number | null, digits = 2) => (v === null ? '—' : `${v > 0 ? '▲ +' : v < 0 ? '▼ ' : ''}${v.toFixed(digits)}%`);
 const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
-const arrow = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? '▲' : '▼');
 
 export interface IndexQuote { symbol: string; name: string; date: string; close: number; changePct: number | null; closes: number[] }
 
@@ -294,7 +292,6 @@ export function renderHome(data: HomeData): string {
   const order = { core: 0, weekly: 1, request: 2, past: 3, daily: 4 } as const;
   const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
   const covered = new Set(data.entries.map((e) => e.symbol));
-  const asOf = data.pulse?.date ?? data.indices[0]?.date ?? '';
   const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
 <div class="find-row"><button type="button" class="flt-btn" aria-expanded="false" aria-controls="flt">⚙︎ 필터</button><a class="find-link" href="themes.html">🧭 테마별 종목</a><a class="find-link" href="signals.html">📡 공시 레이더</a></div>

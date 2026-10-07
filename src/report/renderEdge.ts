@@ -3,10 +3,9 @@
 // earnings in 실적, every surfaced filing in 뉴스·공시. Only collected facts; an absent source says so.
 
 import type { DailyReport } from './dailyReport.js';
-import type { EdgeSection } from '../analysis/edge.js';
 import { dartViewerUrl } from '../sources/opendart.js';
+import { esc } from './html.js';
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const eok = (v: number) => (Math.abs(v) >= 1e8 ? `${(v / 1e8).toLocaleString('ko-KR', { maximumFractionDigits: Math.abs(v) >= 1e10 ? 0 : 1 })}억원` : won(v));
 const shares = (n: number) => `${n > 0 ? '+' : ''}${n.toLocaleString('ko-KR')}주`;
@@ -56,11 +55,6 @@ export function edgeEvents(report: DailyReport): string {
   return `<section class="block edge-sec"><div class="block-head"><h2>주요 이벤트 공시</h2><span class="muted small">최근 180일 · 실적·배당·자사주·지분·수주</span></div><div class="card"><ul class="edge-ev">${e.events.map((x) => `<li><span class="edge-tag t-${x.key}">${esc(x.label)}</span><a href="${dartViewerUrl(x.receiptNo)}" target="_blank" rel="noopener">${esc(x.title)}</a><small>${esc(x.date)} · ${esc(x.why)}</small></li>`).join('')}</ul></div></section>`;
 }
 
-/** Evidence lines for the AI committee (cited like any other source). */
-export function edgeEvidence(e: EdgeSection | undefined): { label: string; detail: string }[] {
-  if (!e) return [];
-  return e.highlights.map((h) => ({ label: `놓치기 쉬운 정보: ${h.key}`, detail: h.text }));
-}
 
 export const EDGE_CSS = `.edge-card .card{border-left:4px solid var(--navy)}.edge-k{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:6px}.edge-card ul{list-style:none;padding:0;margin:0}.edge-card li a{display:flex;align-items:center;gap:8px;padding:9px 2px;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-size:14px;line-height:1.45}.edge-card li:first-child a{border-top:0}.edge-card li b{flex:1;font-weight:700}.edge-card li i{font-style:normal;color:var(--muted)}.edge-next{margin:8px 0 0;font-size:13px;color:var(--fg2)}
 .edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}.edge-sum{font-size:14.5px;margin:4px 0 10px}.edge-list{margin:0;padding-left:18px;line-height:1.8;font-size:14px}.edge-ev{list-style:none;padding:0;margin:0}.edge-ev li{padding:10px 0;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}.edge-ev li:first-child{border-top:0}.edge-ev a{font-weight:700;font-size:14px}.edge-ev small{flex-basis:100%;color:var(--muted);font-size:12px}.edge-tag{font-size:11.5px;font-weight:800;border-radius:6px;padding:2px 7px;background:#eef1f6;color:var(--fg2)}.t-earnings,.t-contract{background:#e8f0fd;color:#1f55b8}.t-dividend,.t-buyback{background:#fdecec;color:#b4232b}.t-insider,.t-holder{background:#fff4dc;color:#8a5a00}.t-buybackSell{background:#eef1f6;color:#475569}`;

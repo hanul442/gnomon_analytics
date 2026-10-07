@@ -1,4 +1,3 @@
-import {indicatorKey} from './indicatorLinks.js';
 // Dashboard panels for the market section (docs/DESIGN.md §5): horizon gauges,
 // fair value and forecasts, structure, investor flows, fundamentals.
 // Small charts are server-drawn SVG with a <title> per mark for hover; the
@@ -9,9 +8,8 @@ import type { ForecastScore, PriceForecast, TechnicalFairValue } from '../analys
 import type { Footprint, StructureSnapshot } from '../analysis/structure.js';
 import type { FinancePeriod, StockSnapshot } from '../types.js';
 import type { FlowSection, MarketSection } from './marketSection.js';
+import { esc } from './html.js';
 
-const esc = (value: string): string =>
-  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const won = (v: number) => `${(v>=100?Math.round(v):v).toLocaleString('ko-KR',{maximumFractionDigits:8})}원`;
 const pct = (v: number | null, digits = 1) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`);
 const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
@@ -276,14 +274,3 @@ export function chartOverlays(market: MarketSection | undefined): unknown {
   };
 }
 
-/** Home-page version of the horizon gauges: one row of five cells, each a verdict and a −1…+1 meter. */
-export function horizonStrip(horizons: readonly HorizonGauge[]): string {
-  if (!horizons.length) return '';
-  const cells = horizons.map((h) => {
-    const s = h.summary;
-    const t = s.score === null ? '' : s.score >= 0.1 ? 'up' : s.score <= -0.1 ? 'down' : '';
-    const pos = s.score === null ? 50 : Math.round(((s.score + 1) / 2) * 100);
-    return `<div class="hs-cell" title="${esc(`${h.label} (${h.barLabel}, ${h.span}): ${s.label}, 강세 ${s.counts.bullish} · 약세 ${s.counts.bearish}`)}"><span class="hs-k">${esc(h.label)}</span><b class="${t}">${esc(s.label)}</b><span class="hs-meter" aria-hidden="true"><i style="left:${pos}%"></i></span><span class="hs-sub">${esc(h.barLabel)}</span></div>`;
-  }).join('');
-  return `<div class="card hs" role="group" aria-label="기간별 기술 신호">${cells}</div>`;
-}

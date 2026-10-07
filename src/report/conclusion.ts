@@ -5,8 +5,8 @@ export { scenarioZone };
 
 import type { DailyReport } from './dailyReport.js';
 import { LOCKED_TEXT } from '../analysis/commentary.js';
+import { esc } from './html.js';
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const won = (v: number) => `${v >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}원`;
 const gap = (to: number, from: number) => { const g = (to / from - 1) * 100; return `${g > 0 ? '+' : ''}${g.toFixed(1)}%`; };
 const zone = (z?: [number, number]) => (z ? `${won(z[0])} ~ ${won(z[1])}` : '');
@@ -109,11 +109,6 @@ ${Object.entries(VIEW_FOCUS).map(([v, ids]) => {
 `;
   }).join('\n')}`;
 
-/** The view's committee line, the '다른 위원도 보기' buttons' behaviour. */
-export const viewSeats = (members: readonly string[]) => Object.entries(VIEW_FOCUS).map(([v, ids]) => {
-  const n = members.filter((m) => ids.includes(m)).length;
-  return `<p class="vt-seat vt-seat-${v}">${VIEW_LABEL[v]} 위원회 · ${n}명 (전체 ${members.length}명 중)</p>`;
-}).join('');
 export const SEATS_JS = `
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('.vt-more, .db-more'); if (!b) return;

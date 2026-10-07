@@ -52,10 +52,6 @@ function sma(a: readonly number[], n: number): (number | null)[] {
   a.forEach((v, i) => { s += v; if (i >= n) s -= a[i - n]!; out.push(i >= n - 1 ? s / n : null); });
   return out;
 }
-function rolling(a: readonly number[], n: number, f: (w: number[]) => number): (number | null)[] {
-  return a.map((_, i) => (i >= n - 1 ? f(a.slice(i - n + 1, i + 1)) : null));
-}
-
 export function context(bars: readonly ArenaBar[]): Ctx {
   const close = bars.map((b) => b.close), high = bars.map((b) => b.high), low = bars.map((b) => b.low), volume = bars.map((b) => b.volume);
   const sma20 = sma(close, 20);

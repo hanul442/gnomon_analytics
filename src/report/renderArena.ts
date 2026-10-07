@@ -6,13 +6,9 @@
 import { ARENA_COST, type ArenaResult, type StrategyResult } from '../analysis/strategies.js';
 import { PAPER_START_KRW, type PaperBook } from '../analysis/paper.js';
 import { miniGauge } from './renderMarket.js';
-import type { AnalystScore } from '../analysis/analysts.js';
-import { ANALYSTS } from '../analysis/analysts.js';
-import type { Commentary } from '../analysis/commentary.js';
+import { esc } from './html.js';
 
 
-const esc = (value: string): string =>
-  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const pct = (v: number | null, d = 1) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${(v * 100).toFixed(d)}%`);
 const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
@@ -77,14 +73,6 @@ ${championCard(a)}
 <p class="fine">BOT의 전략 규칙을 이 종목의 과거 일봉에 그대로 적용해 본 결과예요. 신호가 난 날의 다음 날부터 수익을 계산하고(미리 보기 없음), 왕복 거래 비용 ${(a.cost * 100).toFixed(2)}%를 빼요. 순위는 뒤쪽 30% 검증 구간의 샤프 비율로 매기고, 거래가 2번 미만이면 챔피언이 될 수 없어요. 몬테카를로는 실제 거래 수익을 무작위로 다시 뽑아 2,000번 돌린 결과예요. 과거 성적이 앞날을 보장하지 않고, 투자 권유가 아니에요.</p></section>`;
 }
 
-/** Top three for the home tab. */
-export function arenaTeaser(a: ArenaResult | null): string {
-  if (!a) return '';
-  const top = a.results.filter((r) => r.qualified).slice(0, 3);
-  return `<section class="block"><div class="block-head"><h2>전략 챔피언 레이스</h2><a href="#tab-strategy" class="more-link">전체 보기 ›</a></div>
-<div class="card race race-mini">${top.map((r) => `<div class="race-row${r.key === a.championKey ? ' is-champ' : ''}">${rankMark(r)}<div class="race-name"><b>${esc(r.name)}</b><span class="muted small">${esc(r.origin)}</span></div>${equitySpark(r.equity, `${r.name} 누적 수익 곡선`)}
-<div class="race-num"><b class="${tone(r.oosReturn)}">${pct(r.oosReturn)}</b><span class="muted small">검증</span></div><div class="race-sig">${signalBadge(r)}</div></div>`).join('')}</div></section>`;
-}
 
 /** Free: the champion's name only. */
 export function arenaHeadline(a: ArenaResult | null): string {
@@ -92,53 +80,12 @@ export function arenaHeadline(a: ArenaResult | null): string {
   return `<section class="block arena-head"><div class="card paper-link"><div><div class="pl-k">이 종목의 전략 챔피언</div><b style="font-size:18px">${champ ? esc(champ.name) : '아직 없어요'}</b><p class="muted small">전략 8개를 4년 동안 백테스트해 검증 구간 성과로 순위를 매겨요. 순위표는 플러스, 매매 시점·몬테카를로는 프로부터 볼 수 있어요.</p></div></div></section>`;
 }
 
-/** Plus: every strategy's rank, current signal and out-of-sample return, without trades or curves. */
-export function arenaRanking(a: ArenaResult | null): string {
-  if (!a) return '<div class="card"><p class="empty">전략 대결 기록이 없어요.</p></div>';
-  const rows = a.results.filter((r) => r.key !== 'hold').map((r) => `<tr${r.key === a.championKey ? ' class="is-champ"' : ''}><td>${r.rank}</td><td class="nm"><b>${esc(r.name)}</b><div class="muted small">${esc(r.origin)}</div></td><td>${signalBadge(r)}</td><td class="num ${tone(r.oosReturn)}">${pct(r.oosReturn)}</td><td class="num">${r.oosTrades}</td></tr>`).join('');
-  const hold = a.results.find((r) => r.key === 'hold');
-  return `<section class="block"><div class="block-head"><h2>전략 순위표</h2><span class="muted small">${esc(a.oosFrom)}부터 검증 구간${hold ? ` · 보유 ${pct(hold.oosReturn)}` : ''}</span></div><div class="card table-wrap"><table class="compact"><thead><tr><th>순위</th><th>전략</th><th>지금 신호</th><th class="num">검증 구간 수익</th><th class="num">거래 수</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
-}
 
 // ---- AI analyst battle (docs/DESIGN.md §5.6) ----
 
 
-const STANCE = { BULLISH: ['강세', 'v-BULLISH'], BEARISH: ['약세', 'v-BEARISH'], NEUTRAL: ['중립', 'v-NEUTRAL'] } as const;
 
-export function analystBattle(board: readonly AnalystScore[], c: Commentary | undefined, baseClose: number | null): string {
-  const views = c?.status === 'OK' ? c.analysts ?? [] : [];
-  if (!views.length && !board.some((b) => b.latest)) {
-    return '<section class="block" id="analysts"><div class="block-head"><h2>AI 분석가 대결</h2></div><div class="card"><p class="empty">아직 분석가 예측이 없어요. 주간 리포트(금요일 장 마감 뒤)를 만들 때 기록하고, 20거래일 뒤 실제 가격으로 채점해요.</p></div></section>';
-  }
-  const anyScored = board.some((b) => b.scored > 0);
-  const cards = ANALYSTS.map((a) => {
-    const v = views.find((x) => x.analyst === a.id);
-    const s = board.find((b) => b.analyst === a.id);
-    const initial = a.name.slice(0, 1);
-    const move = v && baseClose ? (v.target / baseClose - 1) : null;
-    return `<div class="analyst"><div class="an-top"><span class="avatar" aria-hidden="true">${esc(initial)}</span><div class="an-name"><b>${esc(a.name)}</b><span class="muted small">${esc(a.focus)}</span></div>
-${v ? `<span class="badge ${STANCE[v.stance][1]}">${STANCE[v.stance][0]}</span>` : '<span class="badge b-LOW">의견 없음</span>'}</div>
-${v ? `<div class="an-nums"><div><span class="label">확신도</span><b>${v.confidence}%</b><div class="conf"><i style="width:${v.confidence}%"></i></div></div><div><span class="label">20거래일 뒤 예상</span><b>${won(v.target)}</b><span class="small ${tone(move)}">${pct(move)}</span></div></div>
-<p class="an-why">${esc(v.rationale.text)}</p>` : ''}
-<div class="muted small">${s && s.scored ? `채점 ${s.scored}건, 방향 적중 ${Math.round(s.hitRate! * 100)}%, 오차 중앙값 ${s.medianErrorPct!.toFixed(1)}%${s.rank ? `, ${s.rank}위` : ''}` : `채점 대기 ${s?.pending ?? 0}건`}</div></div>`;
-  }).join('');
-  const ranked = board.filter((b) => b.rank !== null);
-  const table = anyScored ? `<div class="table-wrap"><table class="compact"><thead><tr><th>순위</th><th>분석가</th><th class="num">채점</th><th class="num">방향 적중</th><th class="num">오차 중앙값</th></tr></thead><tbody>${ranked.map((b) => `<tr><td>${b.rank}</td><td>${esc(b.name)}</td><td class="num">${b.scored}건</td><td class="num">${Math.round(b.hitRate! * 100)}%</td><td class="num">${b.medianErrorPct!.toFixed(1)}%</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted small">첫 채점은 첫 예측 뒤 20거래일이 지나면 나와요. 그때부터 방향 적중률과 목표가 오차로 순위를 매겨요.</p>';
-  return `<section class="block" id="analysts"><div class="block-head"><h2>AI 분석가 대결</h2><span class="muted small">BOT 투자위원회 분석가 6명, 20거래일 예측</span></div>
-<div class="analyst-grid">${cards}</div>
-<div class="card" style="margin-top:14px"><div class="head"><h2>적중 순위</h2></div>${table}</div>
-<p class="fine">분석가는 같은 AI가 서로 다른 관점을 맡아 쓴 의견이에요. 예측은 쓴 날 그대로 기록하고 고치지 않아요. 방향 적중은 예상 가격과 실제 가격이 기준가의 같은 쪽에 있는지로 보고(중립은 ±2% 안), 오차는 예상 가격과 실제 가격의 차이예요. 투자 권유가 아니에요.</p></section>`;
-}
 
-/** The analysts' scoreboard on its own (the calls themselves sit in the committee parliament). */
-export function analystScores(board: readonly AnalystScore[]): string {
-  const ranked = board.filter((b) => b.rank !== null);
-  const pending = board.reduce((n, b) => n + b.pending, 0);
-  const body = ranked.length ? `<div class="table-wrap"><table class="compact"><thead><tr><th>순위</th><th>분석가</th><th class="num">채점</th><th class="num">방향 적중</th><th class="num">오차 중앙값</th></tr></thead><tbody>${ranked.map((b) => `<tr><td>${b.rank}</td><td>${esc(b.name)}</td><td class="num">${b.scored}건</td><td class="num">${Math.round(b.hitRate! * 100)}%</td><td class="num">${b.medianErrorPct!.toFixed(1)}%</td></tr>`).join('')}</tbody></table></div>`
-    : `<p class="muted small">첫 채점은 첫 예측 뒤 20거래일이 지나면 나와요(지금 채점 대기 ${pending}건). 그때부터 방향 적중률과 목표가 오차로 순위를 매겨요.</p>`;
-  return `<section class="block" id="analysts"><div class="block-head"><h2>분석가 적중 순위</h2><span class="muted small">20거래일 예측을 실제 가격으로 채점</span></div><div class="card">${body}
-<p class="fine">분석가는 같은 AI가 서로 다른 관점을 맡아 쓴 의견이에요. 예측은 쓴 날 그대로 기록하고 고치지 않아요. 방향 적중은 예상 가격과 실제 가격이 기준가의 같은 쪽에 있는지로 보고(중립은 ±2% 안), 오차는 예상 가격과 실제 가격의 차이예요. 투자 권유가 아니에요.</p></div></section>`;
-}
 
 /** Paper-trading ledger (G-21): each follower's virtual account, replayed from logged entries. */
 export function paperPanel(books: readonly PaperBook[] | undefined): string {

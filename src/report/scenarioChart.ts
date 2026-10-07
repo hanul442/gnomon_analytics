@@ -1,9 +1,9 @@
 import type { DailyReport } from './dailyReport.js';
 import { LOCKED_TEXT } from '../analysis/commentary.js';
+import { esc } from './html.js';
 
 const names = { BULL: '강세', BASE: '기본', BEAR: '약세' } as const;
 const colors = { BULL: '#cb3c46', BASE: '#69788d', BEAR: '#2862bd' } as const;
-const esc = (s: string) => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]!));
 /** Where a scenario would take the price in about 20 sessions: the committee's zone, else the volatility forecast's side. */
 export function scenarioZone(report: DailyReport, kind: 'BULL' | 'BASE' | 'BEAR'): { zone: [number, number]; source: 'ai' | 'analyst' | 'calc' } | undefined {
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;

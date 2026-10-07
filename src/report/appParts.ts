@@ -7,10 +7,8 @@ import { CHART_V6_JS, chartToolbar } from './chartTools.js';
 import { starButton } from './ui.js';
 import { scenarioLayer } from './scenarioChart.js';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
-import type { Commentary } from '../analysis/commentary.js';
+import { esc } from './html.js';
 
-const esc = (value: string): string =>
-  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const won = (v: number) => `${(v>=100?Math.round(v):v).toLocaleString('ko-KR',{maximumFractionDigits:8})}원`;
 const num = (v: number, digits = 0) => v.toLocaleString('ko-KR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const pct = (v: number | null, digits = 2) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`);
@@ -117,44 +115,9 @@ export function marketStrip(report: DailyReport): string {
 <div class="strip">${items.map((it) => `<div class="strip-item"><div class="si-name">${esc(it.name)}</div><div class="si-value">${esc(it.value)}</div><div class="si-change ${tone(it.change)}">${esc(pct(it.change))}</div>${sparkline(it.spark, `${it.name} 최근 60거래일`)}</div>`).join('')}</div></section>`;
 }
 
-const STANCE_SCORE = { BULLISH: 80, NEUTRAL: 50, BEARISH: 20 } as const;
-const STANCE_WORD = { BULLISH: '강세', NEUTRAL: '중립', BEARISH: '약세', INSUFFICIENT_DATA: '근거 부족' } as const;
-const DESK_WORD = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDAMENTAL: '펀더멘털', EVENT: '공시·뉴스' } as const;
 
-/** 0–100: share of desks leaning bullish minus bearish, mapped onto 0–100 (50 = balanced). */
-export function consensusScore(c: Commentary | undefined): number | null {
-  const desks = (c?.desks ?? []).filter((d) => d.stance !== 'INSUFFICIENT_DATA');
-  if (!desks.length) return null;
-  return Math.round(desks.reduce((s, d) => s + STANCE_SCORE[d.stance as keyof typeof STANCE_SCORE], 0) / desks.length);
-}
 
-function ring(score: number | null): string {
-  const r = 34, c = 2 * Math.PI * r;
-  const len = score === null ? 0 : (score / 100) * c;
-  return `<svg viewBox="0 0 84 84" class="ring" role="img" aria-label="위원회 합의 점수 ${score ?? '없음'}">
-<circle cx="42" cy="42" r="${r}" fill="none" stroke="#d9e1ec" stroke-width="7"/>
-<circle cx="42" cy="42" r="${r}" fill="none" stroke="url(#ringGold)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${len.toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 42 42)"/>
-<defs><linearGradient id="ringGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8fa5c3"/><stop offset="1" stop-color="#243659"/></linearGradient></defs>
-<text x="42" y="47" text-anchor="middle" class="ring-num">${score ?? '–'}</text></svg>`;
-}
 
-export function councilCard(c: Commentary | undefined, from: string | null): string {
-  if (!c || c.status !== 'OK') {
-    return `<section class="block"><div class="block-head"><h2>AI 위원회</h2></div><div class="card"><p class="empty">${c ? 'AI 해설을 만들지 못했어요.' : '아직 AI 위원회 해설이 없어요. 매주 금요일 장 마감 뒤 리포트에서 만들어져요.'}</p></div></section>`;
-  }
-  const score = consensusScore(c);
-  const label = score === null ? '판단 보류' : score >= 60 ? '강세 의견이 많아요' : score <= 40 ? '약세 의견이 많아요' : '의견이 엇갈려요';
-  const desks = c.desks ?? [];
-  const bars = desks.map((d) => {
-    const v = d.stance === 'INSUFFICIENT_DATA' ? null : STANCE_SCORE[d.stance];
-    return `<div class="dbar"><span class="dbar-v">${v ?? '–'}</span><div class="dbar-track"><i style="height:${v ?? 4}%" class="${d.stance === 'BULLISH' ? 'bull' : d.stance === 'BEARISH' ? 'bear' : 'neu'}"></i></div><span class="dbar-k">${DESK_WORD[d.desk]}</span></div>`;
-  }).join('');
-  return `<section class="block"><div class="block-head"><h2>AI 위원회 합의</h2><a href="#tab-ai" class="more-link">자세히 보기 ›</a></div>
-<div class="card council"><div class="council-top">${ring(score)}<div><div class="council-label ${score !== null && score >= 60 ? 'up' : score !== null && score <= 40 ? 'down' : ''}">${label}</div>
-<p>${esc(c.summary?.text ?? '')}</p>${from ? `<div class="muted small">${esc(from)} 리포트의 해설이에요.</div>` : ''}</div></div>
-${bars ? `<div class="dbars" aria-label="데스크별 의견">${bars}</div>` : ''}
-${c.redTeam ? `<div class="debate"><b>레드팀</b> ${esc(c.redTeam.counterargument.text)}</div>` : ''}</div></section>`;
-}
 
 /** Filing link to the DART viewer (it adapts to phones by itself). */
 const dartLink = (f: ReportedFiling) => `<a href="${esc(f.url)}" data-dart="${esc(f.receiptNo)}" rel="noopener" target="_blank">${esc(f.title)}</a>`;
