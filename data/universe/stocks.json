@@ -440,6 +440,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "001260",
+  "name": "남광토건",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "001270",
   "name": "부국증권",
   "market": "KOSPI"
@@ -902,11 +907,6 @@
  {
   "symbol": "002880",
   "name": "디와이에이",
-  "market": "KOSPI"
- },
- {
-  "symbol": "002900",
-  "name": "TYM",
   "market": "KOSPI"
  },
  {
@@ -1590,6 +1590,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "005500",
+  "name": "삼진제약",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "005610",
   "name": "삼립",
   "market": "KOSPI"
@@ -1987,11 +1992,6 @@
  {
   "symbol": "007590",
   "name": "동방아그로",
-  "market": "KOSPI"
- },
- {
-  "symbol": "007610",
-  "name": "선도전기",
   "market": "KOSPI"
  },
  {

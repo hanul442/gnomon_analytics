@@ -5,3 +5,4 @@
 {"symbol":"080220","receiptNo":"20260409002767","date":"2026-04-09","reporter":"한국증권금융","shares":1328775,"delta":-395703,"ratio":3.86,"ratioDelta":-1.15,"reason":"신용공여에 따른 담보권 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"080220","receiptNo":"20260504000386","date":"2026-05-04","reporter":"박성식","shares":4313386,"delta":282653,"ratio":12.42,"ratioDelta":0.72,"reason":"발행회사의 최대주주 및 특수관계인 전환사채 및 신주인수권부사채 행사자 지정","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"080220","receiptNo":"20260522000113","date":"2026-05-22","reporter":"박성식","shares":4350245,"delta":36859,"ratio":12.51,"ratioDelta":0.09,"reason":"발행회사의 최대주주 및 특수관계인 전환사채 행사자 지정","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"080220","receiptNo":"20261007000312","date":"2026-10-07","reporter":"삼성자산운용","shares":3550741,"delta":784530,"ratio":10.31,"ratioDelta":2.28,"reason":"매매로 인한 변동보고의무 발생","retrievedAt":"2026-10-07T07:04:46.736Z"}

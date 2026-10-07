@@ -13,3 +13,4 @@
 {"symbol":"058470","receiptNo":"20260729000050","date":"2026-07-29","reporter":"J.P.MORGANSECURITIESPLC","shares":3073540,"delta":-822666,"ratio":4.03,"ratioDelta":-1.08,"reason":"보유비율 및 특별관계자 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"058470","receiptNo":"20260803000359","date":"2026-08-03","reporter":"미래에셋자산운용","shares":4505763,"delta":-3614752,"ratio":5.91,"ratioDelta":-4.75,"reason":"지분율 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"058470","receiptNo":"20261001000503","date":"2026-10-01","reporter":"미래에셋자산운용","shares":5296338,"delta":790575,"ratio":6.95,"ratioDelta":1.04,"reason":"지분율 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"058470","receiptNo":"20261007000297","date":"2026-10-07","reporter":"삼성자산운용","shares":6585897,"delta":1693924,"ratio":8.64,"ratioDelta":2.22,"reason":"매매로 인한 변동보고의무 발생(삼성액티브자산운용의 위탁운용분 포함)","retrievedAt":"2026-10-07T07:04:46.736Z"}

@@ -36,3 +36,4 @@
 {"symbol":"178320","receiptNo":"20260907000312","date":"2026-09-07","reporter":"전동규","shares":13019430,"delta":0,"ratio":20.43,"ratioDelta":-0.02,"reason":"주식담보대출 추가 및 연장, 담보제공 주식 수 변동 등","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"178320","receiptNo":"20260921000252","date":"2026-09-21","reporter":"전동규","shares":13019430,"delta":0,"ratio":20.43,"ratioDelta":0,"reason":"주식담보대출 만기 연장","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"178320","receiptNo":"20260923000407","date":"2026-09-23","reporter":"전동규","shares":13068517,"delta":49087,"ratio":20.51,"ratioDelta":0.08,"reason":"특별관계자 추가, 주식 근질권설정 계약 상대방 추가","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"178320","receiptNo":"20261007000290","date":"2026-10-07","reporter":"네오솔루션즈","shares":9691740,"delta":1147018,"ratio":14.83,"ratioDelta":1.54,"reason":"주식수,지분율 1%이상 변동","retrievedAt":"2026-10-07T07:04:46.736Z"}

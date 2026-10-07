@@ -7,3 +7,4 @@
 {"symbol":"036930","receiptNo":"20260706000306","date":"2026-07-06","reporter":"삼성자산운용","shares":2791074,"delta":-480778,"ratio":6,"ratioDelta":-1.04,"reason":"매매로 인한 변동보고의무 발생(삼성액티브자산운용의 위탁운용분 포함)","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"036930","receiptNo":"20260707000374","date":"2026-07-07","reporter":"미래에셋자산운용","shares":2709958,"delta":1312415,"ratio":5.83,"ratioDelta":2.82,"reason":"신규","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"036930","receiptNo":"20260803000357","date":"2026-08-03","reporter":"미래에셋자산운용","shares":3220590,"delta":510632,"ratio":6.93,"ratioDelta":1.1,"reason":"지분율 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"036930","receiptNo":"20261007000313","date":"2026-10-07","reporter":"삼성자산운용","shares":3790501,"delta":999427,"ratio":8.15,"ratioDelta":2.15,"reason":"매매로 인한 변동보고의무 발생(삼성액티브자산운용의 위탁운용분 포함)","retrievedAt":"2026-10-07T07:04:46.736Z"}

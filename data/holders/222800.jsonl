@@ -8,3 +8,4 @@
 {"symbol":"222800","receiptNo":"20260707000377","date":"2026-07-07","reporter":"미래에셋자산운용","shares":2007003,"delta":136890,"ratio":5.36,"ratioDelta":0.37,"reason":"신규","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"222800","receiptNo":"20260901000189","date":"2026-09-01","reporter":"미래에셋자산운용","shares":1813315,"delta":-193688,"ratio":4.84,"ratioDelta":-0.52,"reason":"지분율 변동","retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"222800","receiptNo":"20261002000233","date":"2026-10-02","reporter":"국민연금공단","shares":2675449,"delta":394914,"ratio":7.14,"ratioDelta":1.05,"reason":"단순추가취득/처분","retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"222800","receiptNo":"20261007000299","date":"2026-10-07","reporter":"삼성자산운용","shares":3290590,"delta":703844,"ratio":8.55,"ratioDelta":1.62,"reason":"매매로 인한 변동보고의무 발생(삼성액티브자산운용의 위탁운용분 포함)","retrievedAt":"2026-10-07T07:04:46.736Z"}
