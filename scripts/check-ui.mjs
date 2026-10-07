@@ -22,6 +22,8 @@ for(const [dir,symbol,name,kind] of [['s','999999','UI 테스트','stock'],['c',
  await mkdir(root+'/site/'+dir,{recursive:true});await writeFile(root+'/site/'+dir+'/'+symbol+'.json',JSON.stringify({pageUrl:dir+'/'+symbol+'.html',symbol,name,kind,market:'KOSPI',bars:bars.map(b=>[b.date,b.open,b.high,b.low,b.close,b.volume]),calc:quickCalc(symbol,bars,new Date())}));
  await writeFile(root+'/site/'+dir+'/'+symbol+'.html',renderCalculationPage({symbol,name,...(kind==='coin'?{kind:'coin'}:{}),bars:bars.map(b=>({...b,symbol,source:'fixture',retrievedAt:new Date().toISOString()})),now:new Date()}));
 }
+const forecastBars=Array.from({length:160},(_,i)=>({...bars[i%bars.length],date:new Date(Date.UTC(2026,0,1+i)).toISOString().slice(0,10),symbol:'999998',source:'fixture',retrievedAt:new Date().toISOString()}));
+await writeFile(root+'/site/s/999998.html',renderCalculationPage({symbol:'999998',name:'시나리오 메뉴 테스트',bars:forecastBars,now:new Date()}));
 await writeFile(root+'/site/theme-index.json',JSON.stringify({'999999':[['1','테스트 테마'],['2','두 번째 테마']]}));await mkdir(root+'/site/theme',{recursive:true});
 await writeFile(root+'/site/theme/1.json',JSON.stringify({no:'1',name:'테스트 테마',members:[['999999','UI 테스트',2.1,12.5,5e11,bars.slice(-40).map(b=>b.close)],['000001','동료 하나',-1.2,4.0,9e11,bars.slice(-40).map(b=>b.close*1.1)],['000002','동료 둘',0.5,-3.1,2e11,bars.slice(-40).map(b=>b.close*0.9)],['000003','동료 셋',1.5,8.2,1e11,bars.slice(-40).map(b=>b.close*0.8)]]}));
 await writeFile(root+'/site/screener.json',JSON.stringify({date:'2026-10-06',rows:[['999999','UI 테스트','P',100,181,2,'BULLISH',80,5,10,20,-5,'B',0,3,2,2,20,'A',100,-1,0,'',10,3,40,4]]}));
@@ -98,7 +100,7 @@ try{
  assert.equal(await page.evaluate(()=>{var s=GNMChart.chart.timeScale().getVisibleLogicalRange();return s!==null;}),true);
  await page.screenshot({path:'test-artifacts/stock-ticks.png'});
  await page.locator('[data-coin-tf="D"]').click();assert.equal(await page.locator('[data-draw="trend"]').isDisabled(),false);
- await page.goto(origin+'/s/999999.html#tab-chart');await page.locator('[data-sc="ALL"]').waitFor({state:'attached'});
+ await page.goto(origin+'/s/999998.html#tab-chart');await page.locator('[data-sc="ALL"]').waitFor({state:'attached'});
  assert.equal(await page.locator('#sc-layer').isVisible(),false);await page.locator('[data-open="ind-sheet"]').click();await page.locator('[data-sc="ALL"]').click();assert.equal(await page.locator('[data-sc="ALL"]').getAttribute('aria-pressed'),'true');await page.locator('[data-sc=""]').click();assert.equal(await page.locator('[data-sc=""]').getAttribute('aria-pressed'),'true');await page.locator('#ind-sheet .sheet-done').click();
  await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="D"]').waitFor();
  await page.locator('[data-coin-tf="D"]').click();await page.locator('#t-flows').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
