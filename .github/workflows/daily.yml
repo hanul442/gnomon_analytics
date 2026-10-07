@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       regen_market:
-        description: 'Regenerate today\'s market daily AI committee (keeps the old one if it fails)'
+        description: "Regenerate today's market daily AI committee (keeps the old one if it fails)"
         type: boolean
         default: false
 permissions:
