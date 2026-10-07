@@ -4770,6 +4770,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "040910",
+  "name": "아이씨디",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "041020",
   "name": "폴라리스오피스",
   "market": "KOSDAQ"
@@ -5645,6 +5650,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "055490",
+  "name": "테이팩스",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "055550",
   "name": "신한지주",
   "market": "KOSPI"
@@ -5903,11 +5913,6 @@
   "symbol": "063080",
   "name": "컴투스홀딩스",
   "market": "KOSDAQ"
- },
- {
-  "symbol": "063160",
-  "name": "종근당바이오",
-  "market": "KOSPI"
  },
  {
   "symbol": "063160",
@@ -9565,11 +9570,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "206640",
-  "name": "바디텍메드",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "206650",
   "name": "유바이오로직스",
   "market": "KOSDAQ"
@@ -9932,11 +9932,6 @@
  {
   "symbol": "224110",
   "name": "에이텍모빌리티",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "225190",
-  "name": "LK삼양",
   "market": "KOSDAQ"
  },
  {
@@ -10800,6 +10795,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "282620",
+  "name": "기도산업",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "282720",
   "name": "금양그린파워",
   "market": "KOSDAQ"
@@ -10985,6 +10985,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "293780",
+  "name": "압타바이오",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "293940",
   "name": "신한알파리츠",
   "market": "KOSPI"
@@ -11092,11 +11097,6 @@
  {
   "symbol": "299170",
   "name": "더블유에스아이",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "299660",
-  "name": "셀리드",
   "market": "KOSDAQ"
  },
  {
