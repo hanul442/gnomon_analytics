@@ -1061,3 +1061,4 @@
 {"symbol":"KRW-BTC","date":"2026-10-07","open":115969000,"high":115990000,"low":113557000,"close":113599000,"volume":962.90509427,"source":"upbit:candles:days","retrievedAt":"2026-10-07T11:42:49.910Z"}
 {"symbol":"KRW-BTC","date":"2026-10-07","open":115969000,"high":115990000,"low":113520000,"close":113552000,"volume":992.95634392,"source":"upbit:candles:days","retrievedAt":"2026-10-07T12:02:21.102Z"}
 {"symbol":"KRW-BTC","date":"2026-10-07","open":115969000,"high":115990000,"low":113520000,"close":113552000,"volume":992.95648626,"source":"upbit:candles:days","retrievedAt":"2026-10-07T12:02:21.102Z"}
+{"symbol":"KRW-BTC","date":"2026-10-07","open":115969000,"high":115990000,"low":113298000,"close":113373000,"volume":1036.81935134,"source":"upbit:candles:days","retrievedAt":"2026-10-07T12:26:19.275Z"}
