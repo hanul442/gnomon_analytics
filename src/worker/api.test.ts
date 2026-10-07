@@ -115,7 +115,12 @@ test('a question charges its tier, a failure is refunded, and limits hold', asyn
   assert.equal((await t.call('GET', '/me', undefined, u.session)).body.credits.balance, ALPHA.monthlyCredits - CREDIT_COST.deep);
   assert.equal((await t.call('POST', `/ask/${r.body.id}/rate`, { rating: 1 }, u.session)).status, 200);
   await t.call('POST', '/ask', { tier: 'question', question: '두 번째' }, u.session);
-  await t.call('POST', '/ask', { tier: 'standard', question: '세 번째' }, u.session);
+  await t.call('POST', '/ask', { tier: 'standard', source: 'debate', expert: 'committee', question: '세 번째', symbol: '000660' }, u.session);
+  // G-116: debate questions are kept with the account, per stock; chat ones are listed apart; others' never.
+  const debate = (await t.call('GET', '/questions/mine?source=debate&symbol=000660', undefined, u.session)).body.items;
+  assert.deepEqual(debate.map((x: any) => [x.question, x.source, x.speaker, x.answer]), [['세 번째', 'debate', 'AI 위원회', '근거로 보면 이래요.']]);
+  assert.deepEqual((await t.call('GET', '/questions/mine?source=chat', undefined, u.session)).body.items.map((x: any) => x.question), ['두 번째', 'SK하이닉스 왜 올랐나요?']);
+  assert.deepEqual((await t.call('GET', '/questions/mine', undefined, boss.session)).body.items, []);
   assert.equal((await t.call('POST', '/ask', { tier: 'question', question: '네 번째' }, u.session)).body.error, 'DAILY_LIMIT');
   // Spending past the balance is refused before any model call.
   await t.call('POST', '/admin/grant', { userId: (await t.call('GET', '/admin/overview', undefined, boss.session)).body.users.find((x: any) => x.email === 'q@example.com').id, amount: -(ALPHA.monthlyCredits - 30) }, boss.session);

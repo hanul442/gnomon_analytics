@@ -68,9 +68,9 @@ test('DART ownership parsers: numbers with commas, old rows and bad receipt numb
   assert.throws(() => parseInsider({ status: '020', message: '요청 제한을 초과하였습니다.' }, 'x', now, '2026-01-01'), (e: Error) => /DART_STATUS_020/.test(e.message) && !/crtfc_key|http/.test(e.message));
 });
 
-test('Naver themes: list links and member rows with the inclusion reason', () => {
-  const list = '<td class="col_type1"><a href="/sise/sise_group_detail.naver?type=theme&no=536">2차전지(소재&amp;부품)</a></td><td><a href="/sise/sise_group_detail.naver?type=theme&amp;no=42">반도체</a></td><a href="/sise/sise_group_detail.naver?type=theme&no=536">2차전지(소재&amp;부품)</a>';
-  assert.deepEqual(parseThemeList(list), [{ no: '536', name: '2차전지(소재&부품)' }, { no: '42', name: '반도체' }]);
-  const detail = '<table><tr><th>종목명</th></tr><tr><td class="name"><div class="name_area"><a href="/item/main.naver?code=005930">삼성전자</a><div class="info_layer"><p class="info_txt">메모리 반도체 <b>세계 1위</b> 업체</p></div></div></td></tr><tr><td><a href="/item/main.naver?code=000660">SK하이닉스</a></td></tr><tr><td><a href="/item/main.naver?code=005930">삼성전자</a></td></tr></table>';
-  assert.deepEqual(parseThemeMembers(detail), [{ symbol: '005930', name: '삼성전자', reason: '메모리 반도체 세계 1위 업체' }, { symbol: '000660', name: 'SK하이닉스', reason: '' }]);
+test('Naver themes: the mobile JSON list and members, bad rows skipped', () => {
+  assert.deepEqual(parseThemeList({ groups: [{ no: 591, name: '재개발 수혜' }, { no: 'x', name: '잘못된' }, { no: 42, name: '반도체' }] }), [{ no: '591', name: '재개발 수혜' }, { no: '42', name: '반도체' }]);
+  assert.deepEqual(parseThemeList('<html>'), []);
+  assert.deepEqual(parseThemeMembers({ stocks: [{ itemCode: '005930', stockName: '삼성전자' }, { itemCode: '000660', stockName: 'SK하이닉스' }, { itemCode: '005930', stockName: '삼성전자' }, { itemCode: 'bad', stockName: 'x' }], themeItemInfoMap: { '005930': '메모리 <b>세계 1위</b>' } }),
+    [{ symbol: '005930', name: '삼성전자', reason: '메모리 세계 1위' }, { symbol: '000660', name: 'SK하이닉스', reason: '' }]);
 });

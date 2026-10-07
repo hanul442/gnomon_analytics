@@ -27,7 +27,8 @@ export interface StructureSnapshot {
   breaks: StructureBreak[];
   /** Where the close sits in the latest swing range: lower third DISCOUNT, upper third PREMIUM. */
   zone: { rangeLow: number; rangeHigh: number; percentile: number; label: 'DISCOUNT' | 'EQUILIBRIUM' | 'PREMIUM' } | null;
-  fibonacci: { from: Swing; to: Swing; retracement: number | null; zone: 'SHALLOW' | 'PREFERRED' | 'DEEP' | 'EXTENDED' | null; levels: { ratio: number; price: number }[] } | null;
+  /** The leg is stated: `from` → `to` are the extremes of the last `lookback` sessions (G-113). */
+  fibonacci: { from: Swing; to: Swing; retracement: number | null; zone: 'SHALLOW' | 'PREFERRED' | 'DEEP' | 'EXTENDED' | null; lookback: number; levels: { ratio: number; price: number }[] } | null;
   levels: PriceLevel[];
   bollinger: { middle: number; upper: number; lower: number; percentB: number; bandwidthPct: number } | null;
   atr14: number | null;
@@ -68,24 +69,28 @@ export function structureBreaks(bars: readonly Bar[], points: readonly Swing[]):
   return breaks;
 }
 
-const FIB_RATIOS = [0.236, 0.382, 0.5, 0.618, 0.786];
+const FIB_RATIOS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+export const FIB_LOOKBACK = 120;
 
-/** Retracement of the last completed leg (swing to opposite swing) by the current close. */
-export function fibonacci(points: readonly Swing[], close: number): StructureSnapshot['fibonacci'] {
-  // Alternate HIGH/LOW keeping the more extreme of repeated types.
-  const alt: Swing[] = [];
-  for (const s of points) {
-    const prev = alt.at(-1);
-    if (!prev || prev.type !== s.type) alt.push(s);
-    else if (s.type === 'HIGH' ? s.price > prev.price : s.price < prev.price) alt[alt.length - 1] = s;
-  }
-  if (alt.length < 2) return null;
-  const from = alt[alt.length - 2]!, to = alt[alt.length - 1]!;
-  const leg = to.price - from.price;
-  if (leg === 0) return null;
-  const retracement = (to.price - close) / leg;
+/**
+ * G-113: Fibonacci on one stated leg — the highest high and the lowest low of the last `lookback`
+ * sessions (about six months). Whichever came later is where the move ended: low → high is an up leg and
+ * the levels count down from the high (how far it has given back); high → low is a down leg and they
+ * count up from the low (how far it has bounced). Ratio 0 is the leg's end, 1 its start.
+ */
+export function fibonacci(input: readonly Bar[], close: number, lookback = FIB_LOOKBACK): StructureSnapshot['fibonacci'] {
+  const bars = input.slice(-lookback);
+  if (bars.length < 20) return null;
+  let hi = bars[0]!, lo = bars[0]!;
+  for (const b of bars) { if (b.high > hi.high) hi = b; if (b.low < lo.low) lo = b; }
+  const leg = hi.high - lo.low;
+  if (!(leg > 0)) return null;
+  const up = lo.date < hi.date;
+  const swingOf = (b: Bar, type: 'HIGH' | 'LOW'): Swing => ({ date: b.date, price: type === 'HIGH' ? b.high : b.low, type, confirmedOn: b.date });
+  const from = up ? swingOf(lo, 'LOW') : swingOf(hi, 'HIGH'), to = up ? swingOf(hi, 'HIGH') : swingOf(lo, 'LOW');
+  const retracement = up ? (hi.high - close) / leg : (close - lo.low) / leg;
   const zone = retracement < 0 ? null : retracement < 0.382 ? 'SHALLOW' : retracement <= 0.618 ? 'PREFERRED' : retracement <= 0.786 ? 'DEEP' : 'EXTENDED';
-  return { from, to, retracement, zone, levels: FIB_RATIOS.map((ratio) => ({ ratio, price: to.price - leg * ratio })) };
+  return { from, to, retracement, zone, lookback: bars.length, levels: FIB_RATIOS.map((ratio) => ({ ratio, price: up ? hi.high - leg * ratio : lo.low + leg * ratio })) };
 }
 
 /** Swing prices within 1.5% of each other are one level; the nearest three each side of the close are kept. */
@@ -140,7 +145,7 @@ export function structureSnapshot(input: readonly Bar[], lookback = 250): Struct
     sessionDate: last.date, close: last.close,
     bias: breaks.at(-1)?.direction ?? 'NEUTRAL',
     swings: points.slice(-12), breaks: breaks.slice(-8), zone,
-    fibonacci: fibonacci(points, last.close),
+    fibonacci: fibonacci(bars, last.close),
     levels: priceLevels(points, last.close),
     bollinger: bollinger(bars.map((b) => b.close)),
     atr14: atr(bars),

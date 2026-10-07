@@ -28,12 +28,13 @@ import { COMMENTARY_PROMPT_VERSION, publicCommentary, skippedCommentary, writeCo
 import { deepPath, seal, unseal } from '../report/seal.js';
 import { AiBudget } from './aiBudget.js';
 import type Anthropic from '@anthropic-ai/sdk';
-import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderStockPage, type HomeEntry, type PageContext, writeAssets } from '../report/renderHtml.js';
+import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderStockPage, type HomeEntry, type PageContext, APP_CSS, APP_JS, UI_JS, ASSET_VERSION } from '../report/renderHtml.js';
 import { renderHome, renderReportsPage, type IndexQuote } from '../report/renderHome.js';
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
 import { MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
 import { renderMyReports } from '../report/renderMyReports.js';
+import { renderMyDebates } from '../report/renderMyDebates.js';
 import { renderSignalsPage, renderThemesPage, signalData, themeData } from '../report/renderThemes.js';
 import { fetchThemes, type Theme } from '../sources/naverTheme.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
@@ -82,6 +83,17 @@ async function storable(report: DailyReport): Promise<DailyReport> {
 }
 
 /** Writes a report page; with the key, the page gets the public part and the paid part is sealed next to it. */
+/** The shared CSS/JS under versioned names (G-79): the Pages CDN can keep serving an old app.css for a
+ *  while when only a query string changes, so each build's assets get their own names; the plain names stay for old pages. */
+async function writeAssets(siteDir: string): Promise<void> {
+  await mkdir(join(siteDir, 'assets'), { recursive: true });
+  const v = ASSET_VERSION;
+  await Promise.all([
+    writeFile(join(siteDir, 'assets', `app.${v}.css`), APP_CSS), writeFile(join(siteDir, 'assets', `app.${v}.js`), APP_JS), writeFile(join(siteDir, 'assets', `ui.${v}.js`), UI_JS),
+    writeFile(join(siteDir, 'assets', 'app.css'), APP_CSS), writeFile(join(siteDir, 'assets', 'app.js'), APP_JS), writeFile(join(siteDir, 'assets', 'ui.js'), UI_JS),
+  ]);
+}
+
 async function writeReportPage(siteDir: string, path: string, report: DailyReport, links: Parameters<typeof renderReport>[1], deepDate: string | null): Promise<void> {
   const c = report.commentary;
   if (!DEEP_KEY || !deepDate || c?.status !== 'OK' || c.tier === 'brief' || c.sealed) { await writeFile(path, renderReport(report, links)); return; }
@@ -657,6 +669,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, '509op.html'), render509());
   await writeFile(join(siteDir, 'alerts.html'), renderAlerts());
   await writeFile(join(siteDir, 'myreports.html'), renderMyReports());
+  await writeFile(join(siteDir, 'mydebates.html'), renderMyDebates());
   await writeFile(join(siteDir, 'sw.js'), SW_JS);
   await writeFile(join(siteDir, 'manifest.webmanifest'), MANIFEST);
   await mkdir(join(siteDir, 'assets'), { recursive: true });

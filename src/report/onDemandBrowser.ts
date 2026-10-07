@@ -12,18 +12,19 @@ export const JOBS_JS = `
   document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent='AI 리포트가 준비됐어요';});
   var request=document.querySelector('.request-card');if(request){var head=request.querySelector('.lk-head b'),description=request.querySelector('p');if(head)head.textContent='AI 리포트가 준비됐어요';if(description)description.textContent='AI 위원회 탭에서 생성된 리포트를 확인하세요.';}
 
+  // G-106/G-114: an AI report older than the prices shown says so, with a way to a fresh one, on the summary and the AI tab.
+  var sess=((document.querySelector('[data-session]')||{}).dataset||{}).session||((document.getElementById('sp-date')||{}).textContent||'').slice(0,10);
+  var bar=r.dataDate&&/^\\d{4}-\\d{2}-\\d{2}$/.test(sess)&&r.dataDate<sess?'<div class="stale-ai" data-stale-ai role="note"><span class="sa-ic" aria-hidden="true">🕒</span><div class="sa-tx"><b>더 새로운 데이터가 있어요</b><small>AI 리포트 '+esc(r.dataDate)+' 기준 · 가격 '+esc(sess)+' 기준</small></div><button type="button" class="sa-go" data-create-report data-symbol="'+esc(r.symbol)+'" data-name="'+esc(r.symbol)+'">최신 리포트 만들기</button></div>':'';
   Object.keys(r.fragments||{}).forEach(function(key){
    if(key==='scenarios'){try{var list=JSON.parse(r.fragments[key]);if(window.GNM_scenarios)window.GNM_scenarios(list);}catch(e){}return;}
    var panel=document.getElementById('tab-'+key);if(!panel)return;
    var composer=key==='ai'?panel.querySelector('.db-join'):null;if(composer)composer.remove();
    var target=panel.querySelector('[data-generated]');
    if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var title=panel.querySelector('.panel-title');panel.innerHTML='';if(title)panel.appendChild(title);panel.appendChild(target);}else if(key==='home'){var heroEl=panel.querySelector('.hero');while(heroEl&&heroEl.parentElement&&heroEl.parentElement!==panel)heroEl=heroEl.parentElement;if(heroEl&&heroEl.parentElement===panel)heroEl.after(target);else panel.prepend(target);}else panel.prepend(target);}
-   if(key==='home'){var stale=panel.querySelector('#home-conclusion');if(stale&&!target.contains(stale))stale.remove();
-    // G-106: this AI report is older than the prices shown — offer a fresh one.
-    var old=panel.querySelector('[data-stale-ai]');if(old)old.remove();
-    var sess=((document.querySelector('[data-session]')||{}).dataset||{}).session||((document.getElementById('sp-date')||{}).textContent||'').slice(0,10);
-    if(r.dataDate&&sess&&/^\\d{4}-\\d{2}-\\d{2}$/.test(sess)&&r.dataDate<sess)target.insertAdjacentHTML('afterbegin','<div class="stale-ai" data-stale-ai><span>🕒 AI 리포트는 <b>'+esc(r.dataDate)+'</b> 기준이에요. 그 뒤 가격·공시가 바뀌었을 수 있어요.</span><button type="button" class="btn-primary" data-create-report data-symbol="'+esc(r.symbol)+'" data-name="'+esc(r.symbol)+'">최신 리포트 생성하기</button></div>');}
-   target.innerHTML=r.fragments[key];if(composer)(panel.querySelector('.card.debate')||target).appendChild(composer);
+   if(key==='home'){var stale=panel.querySelector('#home-conclusion');if(stale&&!target.contains(stale))stale.remove();}
+   panel.querySelectorAll('[data-stale-ai]').forEach(function(x){x.remove();});
+   target.innerHTML=r.fragments[key];if(composer&&!target.querySelector('.db-join'))(panel.querySelector('.card.debate')||target).appendChild(composer);
+   if(bar&&(key==='home'||key==='ai'))target.insertAdjacentHTML('afterbegin',bar);
    panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});
   });
   var join=document.querySelector('#tab-ai .join-wrap'), debate=document.querySelector('#tab-ai #debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}

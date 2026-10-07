@@ -22,15 +22,24 @@ test('a close above the last swing high is a BOS; breaking the other way flips t
   assert.equal(flip.type, 'CHOCH');
 });
 
-test('fibonacci measures the close against the last leg', () => {
-  const pts = [
-    { date: day(1), price: 100, type: 'LOW' as const, confirmedOn: day(4) },
-    { date: day(5), price: 200, type: 'HIGH' as const, confirmedOn: day(8) },
-  ];
-  const f = fibonacci(pts, 150)!;
+test('fibonacci: the six-month high and low set the leg; the later one decides its direction', () => {
+  const b = (i: number, low: number, high: number) => ({ date: day(i), open: low, high, low, close: (low + high) / 2, volume: 1 });
+  // Low of 100 on day 5, high of 200 on day 20: an up leg; a close of 150 has given back half.
+  const up = Array.from({ length: 30 }, (_, i) => b(i, i === 5 ? 100 : 140, i === 20 ? 200 : 160));
+  const f = fibonacci(up, 150)!;
+  assert.deepEqual([f.from.type, f.from.price, f.to.type, f.to.price], ['LOW', 100, 'HIGH', 200]);
   assert.equal(f.retracement, 0.5);
   assert.equal(f.zone, 'PREFERRED');
-  assert.deepEqual(f.levels.map((l) => Math.round(l.price * 10) / 10), [176.4, 161.8, 150, 138.2, 121.4]);
+  assert.deepEqual(f.levels.map((l) => Math.round(l.price * 10) / 10), [200, 176.4, 161.8, 150, 138.2, 121.4, 100]);
+  // High first, low later: a down leg; levels count up from the low and the close's bounce is measured.
+  const down = Array.from({ length: 30 }, (_, i) => b(i, i === 22 ? 100 : 140, i === 3 ? 200 : 160));
+  const g = fibonacci(down, 123.6)!;
+  assert.deepEqual([g.from.type, g.to.type], ['HIGH', 'LOW']);
+  assert.equal(Math.round(g.retracement! * 1000), 236);
+  assert.equal(g.levels[1]!.price.toFixed(1), '123.6');
+  // Only the last 120 sessions count, and too short a history gives nothing.
+  assert.equal(fibonacci([...Array.from({ length: 10 }, (_, i) => b(i, 1, 999)), ...up.map((x, i) => ({ ...x, date: day(100 + i) }))], 150, 30)!.to.price, 200);
+  assert.equal(fibonacci(up.slice(0, 10), 150), null);
 });
 
 test('price levels: nearby swings merge, nearest three each side', () => {

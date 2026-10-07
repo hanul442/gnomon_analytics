@@ -62,8 +62,10 @@ export async function fetchUpbitDaysLong(market: string, now: Date, total = 1000
   let to = '';
   while (out.size < total) {
     const page = await get(`/candles/days?market=${market}&count=200${to ? `&to=${encodeURIComponent(to)}` : ''}`, fetcher).then((j) => parseUpbitDays(j, market, now));
+    const before = out.size;
     for (const b of page) out.set(b.date, b);
-    if (page.length < 200) break;
+    // A short page is the start of the market; a page with nothing new would loop forever.
+    if (page.length < 200 || out.size === before) break;
     to = `${page[0]!.date}T00:00:00Z`;
     if (pauseMs) await new Promise((r) => setTimeout(r, pauseMs));
   }

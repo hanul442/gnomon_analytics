@@ -16,12 +16,13 @@ const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 
 const kstTime = (iso: string) => new Date(Date.parse(iso) + 9 * 3600_000).toISOString().slice(5, 16).replace('T', ' ');
 
 /** Small line chart; colour follows the sign of the whole window (Korean convention). */
-export function sparkline(values: readonly number[], label: string, width = 120, height = 36): string {
+/** The line takes the colour of the change shown next to it (`up`), else of its own first-to-last move. */
+export function sparkline(values: readonly number[], label: string, width = 120, height = 36, up?: boolean | null): string {
   if (values.length < 2) return '';
   const lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1;
   const pts = values.map((v, i) => `${((i / (values.length - 1)) * width).toFixed(1)},${(height - 3 - ((v - lo) / span) * (height - 6)).toFixed(1)}`).join(' ');
-  const up = values.at(-1)! >= values[0]!;
-  return `<svg viewBox="0 0 ${width} ${height}" class="spark" role="img" aria-label="${esc(label)}"><polyline fill="none" stroke="${up ? '#d1373d' : '#2a62c9'}" stroke-width="1.6" points="${pts}"/></svg>`;
+  const rising = up ?? values.at(-1)! >= values[0]!;
+  return `<svg viewBox="0 0 ${width} ${height}" class="spark" role="img" aria-label="${esc(label)}"><polyline fill="none" stroke="${rising ? '#d1373d' : '#2a62c9'}" stroke-width="1.6" points="${pts}"/></svg>`;
 }
 
 const FOOTPRINT_WORD = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' } as const;
@@ -69,7 +70,11 @@ export function marketChip(report: DailyReport): string {
 
 /** G-106: the AI part is older than the prices on the page — say so and offer a fresh one. */
 export function staleAiBar(report: DailyReport, from: string): string {
-  return `<div class="stale-ai" data-stale-ai><span>🕒 AI 리포트는 <b>${esc(from)}</b> 기준이에요. 그 뒤 가격·공시가 바뀌었을 수 있어요.</span><button type="button" class="btn-primary" data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}">최신 리포트 생성하기</button></div>`;
+  return staleAiMarkup(report.symbol, report.name, from, report.price?.sessionDate ?? report.date);
+}
+/** The same bar for pages and for a report painted later (onDemandBrowser builds it from this string's shape). */
+export function staleAiMarkup(symbol: string, name: string, from: string, priceDate: string): string {
+  return `<div class="stale-ai" data-stale-ai role="note"><span class="sa-ic" aria-hidden="true">🕒</span><div class="sa-tx"><b>더 새로운 데이터가 있어요</b><small>AI 리포트 ${esc(from)} 기준 · 가격 ${esc(priceDate)} 기준</small></div><button type="button" class="sa-go" data-create-report data-symbol="${esc(symbol)}" data-name="${esc(name)}">최신 리포트 만들기</button></div>`;
 }
 
 /** G-103: a small 3-month chart right under the price; tapping it opens the chart tab. */
@@ -112,7 +117,7 @@ export function marketStrip(report: DailyReport): string {
   }
   if (!items.length) return '';
   return `<section class="block"><div class="block-head"><h2>시장 한눈에</h2><span class="muted">최근 60거래일</span></div>
-<div class="strip">${items.map((it) => `<div class="strip-item"><div class="si-name">${esc(it.name)}</div><div class="si-value">${esc(it.value)}</div><div class="si-change ${tone(it.change)}">${esc(pct(it.change))}</div>${sparkline(it.spark, `${it.name} 최근 60거래일`)}</div>`).join('')}</div></section>`;
+<div class="strip">${items.map((it) => `<div class="strip-item"><div class="si-name">${esc(it.name)}</div><div class="si-value">${esc(it.value)}</div><div class="si-change ${tone(it.change)}">${esc(pct(it.change))}</div>${sparkline(it.spark, `${it.name} 최근 60거래일`, 120, 36, it.change == null ? null : it.change >= 0)}</div>`).join('')}</div></section>`;
 }
 
 
@@ -163,7 +168,7 @@ const PANES: [string, string, boolean][] = [
 const DESC: Record<string, string> = {
   ma5: '최근 5거래일 평균 가격', ma20: '한 달 평균 가격, 단기 추세', ma60: '석 달 평균 가격, 중기 추세', ma120: '반년 평균 가격, 장기 추세',
   ema12: '최근 가격에 무게를 둔 평균 두 개', bb: '20일 평균 ± 표준편차 2배, 변동 범위', ichimoku: '구름대로 보는 추세와 지지', env: '20일 평균 ±5% 띠',
-  levels: '자주 막히거나 받친 가격대', fib: '최근 큰 흐름의 되돌림 비율', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위(10~90%)',
+  levels: '자주 막히거나 받친 가격대', fib: '최근 120거래일 최고·최저를 잇는 흐름의 되돌림 비율', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위(10~90%)',
   volume: '하루 거래된 주식 수', rsi: '과열(70 이상)·과매도(30 이하)', macd: '단기·장기 평균의 차이로 보는 추세 전환', stoch: '최근 범위 안에서 지금 가격의 위치',
   spikes: '20일 평균의 3배 넘게 거래된 날을 캔들 아래에 표시(▲ 오른 날 · ▼ 내린 날)', value: '하루 거래대금(종가 × 거래량, 억 원). 진하게 칠한 날은 20일 평균의 3배 이상', ad: '거래가 많은 날 종가가 하루 범위의 위쪽(매집 쪽)·아래쪽(분산 쪽)에서 끝났는지 누적한 선',
   cci: '평균에서 얼마나 벗어났는지', wr: '최근 고점 대비 위치(과열·과매도)', obv: '오른 날·내린 날 거래량 누적', atr: '하루 평균 움직임 폭',
@@ -272,7 +277,7 @@ window.addEventListener('DOMContentLoaded', function () {
   };
   var lineMakers = {
     levels: function () { return (ov.levels || []).map(function (l) { return candle.createPriceLine({ price: l.price, color: l.kind === 'SUPPORT' ? DOWN : UP, lineWidth: 1, axisLabelVisible: true, title: l.kind === 'SUPPORT' ? '지지' : '저항' }); }); },
-    fib: function () { return (ov.fib || []).map(function (f) { return candle.createPriceLine({ price: f.price, color: GOLD, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: 'Fib ' + (f.ratio * 100).toFixed(1) + '%' }); }); },
+    fib: function () { return (ov.fib || []).map(function (f) { return candle.createPriceLine({ price: f.price, color: GOLD, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: f.ratio === 0 ? 'Fib 0% (끝)' : f.ratio === 1 ? 'Fib 100% (시작)' : 'Fib ' + (f.ratio * 100).toFixed(1) + '%' }); }); },
     fair: function () { if (!ov.fair) return []; return [['low', '적정 하단'], ['center', '적정가'], ['high', '적정 상단']].map(function (k) { return candle.createPriceLine({ price: ov.fair[k[0]], color: '#223456', lineWidth: k[0] === 'center' ? 2 : 1, lineStyle: k[0] === 'center' ? 0 : 2, axisLabelVisible: true, title: k[1] }); }); }
   };
   var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); var w = d.getUTCDay(); if (w !== 0 && w !== 6) n--; } return d.toISOString().slice(0, 10); };

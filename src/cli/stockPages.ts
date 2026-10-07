@@ -12,7 +12,8 @@ import { renderCalculationPage } from '../report/calculationPage.js';
 import { pool } from './weekly.js';
 import { quickCalc, type StockCalc } from '../analysis/quickCalc.js';
 
-export const STOCK_PAGE_BARS = 250;
+/** About two years: enough history for the strategy race's in- and out-of-sample split and a long chart. */
+export const STOCK_PAGE_BARS = 500;
 
 export async function writeStockPages(
   siteDir: string,

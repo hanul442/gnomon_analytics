@@ -48,7 +48,7 @@ const BUCKETS: readonly [PulseBucket, string, string][] = [
 ];
 
 function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null, pulse: MarketPulse | null): string {
-  const cards = indices.map((i) => `<div class="card ix"><div class="ix-top"><div><div class="pl-k">${esc(i.name)}</div><div class="ix-v">${i.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</div><div class="${tone(i.changePct)} ix-c">${signed(i.changePct)}</div></div>${sparkline(i.closes, `${i.name} 최근 60거래일`, 110, 40)}</div><div class="muted small">${esc(i.date)} 종가</div></div>`).join('');
+  const cards = indices.map((i) => `<div class="card ix"><div class="ix-top"><div><div class="pl-k">${esc(i.name)}</div><div class="ix-v">${i.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</div><div class="${tone(i.changePct)} ix-c">${signed(i.changePct)}</div></div>${sparkline(i.closes, `${i.name} 최근 60거래일`, 110, 40, i.changePct == null ? null : i.changePct >= 0)}</div><div class="muted small">${esc(i.date)} 종가</div></div>`).join('');
   const temp = tempCard(pulse, universe);
   return cards || temp ? `<section class="block ix-row">${cards}${temp}</section>` : '';
 }
@@ -275,7 +275,7 @@ const SIGNALS_SCRIPT = `<script>
   }).catch(function () {});
 })();
 </script>`;
-const WATCH = `<section class="block" id="watch"><div class="block-head"><h2>관심 종목</h2><span class="muted">이 브라우저에 저장돼요</span></div><div class="card list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div></section>`;
+const WATCH = `<section class="block" id="watch"><div class="block-head"><h2>관심 종목</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div></section>`;
 
 /** The filter menu (G-94): presets grouped by what the reader is looking for, each with its one-line meaning. */
 const FILTER_GROUPS: readonly { icon: string; title: string; keys: readonly string[] }[] = [

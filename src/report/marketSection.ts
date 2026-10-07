@@ -120,7 +120,6 @@ export function buildMarketSection(input: {
   paperEntries?: readonly PaperEntry[];
   status: readonly NewsSourceStatus[];
   /** Calculation pages share the report layout without running strategy backtests. */
-  calculationOnly?: boolean;
 }): MarketSection {
   const upTo = <T extends { date: string }>(xs: readonly T[]) => [...xs].filter((x) => x.date <= input.date).sort((a, b) => (a.date < b.date ? -1 : 1));
   const daily = upTo(input.daily.filter((b) => b.symbol === input.symbol));
@@ -134,7 +133,7 @@ export function buildMarketSection(input: {
     structure: structureSnapshot(daily),
     weeklyStructure: structureSnapshot(weekly, 260),
     footprint: footprint(daily, input.flows.filter((f) => f.symbol === input.symbol)),
-    arena: input.calculationOnly ? null : runArena(daily),
+    arena: runArena(daily),
     analystBoard: scoreAnalysts((input.analystCalls ?? []).filter((c) => c.symbol === input.symbol), daily),
     paper: paperBooks((input.paperEntries ?? []).filter((e) => e.symbol === input.symbol && e.date <= input.date), daily),
     forecasts,

@@ -146,6 +146,7 @@ export function structureCard(s: StructureSnapshot | null, weekly: StructureSnap
 <div><button type="button" class="indicator-link" data-chart-indicator="atr" title="차트에서 보기"><span class="label">하루 평균 변동폭 (ATR14) ↗</span><b>${s.atr14 ? `${won(s.atr14)} (${((s.atr14 / s.close) * 100).toFixed(1)}%)` : '없음'}</b></button></div>
 </div>
 <p class="reason">${breakText}</p>
+${fib ? `<p class="reason">피보나치 기준: 최근 ${fib.lookback}거래일의 ${fib.from.type === 'LOW' ? '최저가' : '최고가'} ${won(fib.from.price)}(${esc(fib.from.date)}) → ${fib.to.type === 'HIGH' ? '최고가' : '최저가'} ${won(fib.to.price)}(${esc(fib.to.date)}). ${fib.to.type === 'HIGH' ? '오른 폭 가운데 얼마나 되돌려 내려왔는지' : '내린 폭 가운데 얼마나 되돌려 올라왔는지'}를 재요${fib.retracement !== null ? ` · 지금 ${(fib.retracement * 100).toFixed(1)}%` : ''}.</p>` : ''}
 ${levels ? `<div class="table-wrap"><table class="compact"><thead><tr><th>구분</th><th class="num">가격</th><th class="num">현재가 대비</th><th class="num">닿은 횟수</th></tr></thead><tbody>${levels}</tbody></table></div>` : ''}
 <p class="fine">스윙 고점·저점은 양쪽 3개 봉보다 높거나 낮은 봉이고, 오른쪽 3개 봉이 마감된 뒤에야 확정해요. 1.5% 안에 모인 스윙은 하나의 지지·저항으로 묶어요.</p></div>`;
 }
@@ -243,7 +244,8 @@ ${kpi('증권가 평균 목표가', cons?.targetPriceMean ? won(cons.targetPrice
     return `<td class="num"><span class="${tone(r.benchmark)}">${pct(r.benchmark)}</span><br><small class="${tone(diff)}">차이 ${diff === null ? '없음' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%p`}</small></td>`;
   }).join('')}</tr>`).join('');
   const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
-  const research = market.research.map((r) => `<li><span class="why">${esc(r.date)} ${esc(r.broker)}</span> ${esc(r.title)}</li>`).join('');
+  // G-117: each report opens on Naver (summary and the broker's PDF) in a new tab.
+  const research = market.research.map((r) => `<li><span class="why">${esc(r.date)} ${esc(r.broker)}</span> ${/^\d+$/.test(r.id) ? `<a href="https://m.stock.naver.com/research/company/${esc(r.id)}" target="_blank" rel="noopener">${esc(r.title)} ↗</a>` : esc(r.title)}</li>`).join('');
   return `${kpis}
 <div class="grid2 tight" style="margin-top:16px"><div class="card"><div class="head"><h2>분기 실적</h2><div class="legend-inline"><span><i class="sw-rev"></i>매출액</span><span><i class="sw-op"></i>영업이익</span><span><i class="sw-est"></i>추정치</span></div></div>
 ${earningsChart(q)}
