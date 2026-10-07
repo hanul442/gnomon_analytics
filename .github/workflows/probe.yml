@@ -25,5 +25,6 @@ jobs:
           console.log('detail keys', Object.keys(one), 'stocks', one.stocks?.length, 'total', one.totalCount);
           console.log('first stock', JSON.stringify(one.stocks?.[0]));
           for (const k of Object.keys(one)) if (k !== 'stocks') console.log('  ', k, JSON.stringify(one[k]).slice(0, 300));
+          for (const u of ['https://m.stock.naver.com/research/company/96384', 'https://finance.naver.com/research/company_read.naver?nid=96384', 'https://m.stock.naver.com/api/research/company/96384']) { const r = await fetch(u, { headers: H }); const t = await r.text(); console.log('R', u, r.status, r.url, t.length, JSON.stringify(t.slice(0, 200)), 'pdf:', (t.match(/https?:[^"' ]+\.pdf/) || [''])[0]); }
           JS
           node probe.mjs
