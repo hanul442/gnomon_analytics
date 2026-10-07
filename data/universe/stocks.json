@@ -5645,11 +5645,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "055490",
-  "name": "테이팩스",
-  "market": "KOSPI"
- },
- {
   "symbol": "055550",
   "name": "신한지주",
   "market": "KOSPI"
@@ -5908,6 +5903,11 @@
   "symbol": "063080",
   "name": "컴투스홀딩스",
   "market": "KOSDAQ"
+ },
+ {
+  "symbol": "063160",
+  "name": "종근당바이오",
+  "market": "KOSPI"
  },
  {
   "symbol": "063160",
@@ -9565,6 +9565,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "206640",
+  "name": "바디텍메드",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "206650",
   "name": "유바이오로직스",
   "market": "KOSDAQ"
@@ -10977,11 +10982,6 @@
  {
   "symbol": "293580",
   "name": "나우IB",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "293780",
-  "name": "압타바이오",
   "market": "KOSDAQ"
  },
  {
