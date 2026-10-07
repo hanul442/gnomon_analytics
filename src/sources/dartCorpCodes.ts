@@ -59,7 +59,7 @@ export async function fetchCorpCodes(options: { apiKey: string; fetch?: typeof f
 /** GET into a buffer; never puts the URL (it carries the key) in an error. */
 function download(url: string, timeoutMs: number): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const req = get(url, { headers: { 'User-Agent': 'CuriaAnalytics/1.0' } }, (res) => {
+    const req = get(url, { headers: { 'User-Agent': 'GnomonAnalytics/1.0' } }, (res) => {
       if (res.statusCode !== 200) { res.resume(); reject(new Error(`DART_CORP_HTTP_${res.statusCode}`)); return; }
       const chunks: Buffer[] = [];
       res.on('data', (c: Buffer) => chunks.push(c));

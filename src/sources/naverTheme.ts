@@ -6,7 +6,7 @@
 export interface Theme { no: string; name: string; members: { symbol: string; name: string; reason: string }[] }
 
 const BASE = 'https://m.stock.naver.com/api/stocks/theme';
-const HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; CuriaAnalytics/1.0; +https://hanul442.github.io/gnomon_analytics/)', Accept: 'application/json' };
+const HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; GnomonAnalytics/1.0; +https://hanul442.github.io/gnomon_analytics/)', Accept: 'application/json' };
 const text = (v: unknown) => (typeof v === 'string' ? v.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() : typeof v === 'number' ? String(v) : '');
 
 /** One page of the theme list: `{ groups: [{ no, name, ... }] }`. */

@@ -181,7 +181,7 @@ export function parseRss(xml: string, sourceId: string, retrievedAt: Date, defau
 }
 
 export async function fetchRss(url: string, sourceId: string, options: { fetch?: typeof fetch; now?: () => Date; publisher?: string } = {}): Promise<NewsItem[]> {
-  const response = await (options.fetch ?? fetch)(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CuriaAnalytics/0.1)' }, signal: AbortSignal.timeout(20_000) });
+  const response = await (options.fetch ?? fetch)(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GnomonAnalytics/0.1)' }, signal: AbortSignal.timeout(20_000) });
   if (!response.ok) throw new Error(`RSS_HTTP_${response.status}:${sourceId}`);
   return parseRss(decodeFeed(new Uint8Array(await response.arrayBuffer()), response.headers.get('content-type')), sourceId, (options.now ?? (() => new Date()))(), options.publisher);
 }

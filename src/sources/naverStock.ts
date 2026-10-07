@@ -10,7 +10,7 @@ export const NAVER_FINANCE_SOURCE = 'naver:m-stock:finance';
 export const NAVER_RESEARCH_SOURCE = 'naver:m-stock:research';
 const BASE = 'https://m.stock.naver.com/api';
 // Identify ourselves honestly; the API answers non-browser clients.
-const HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; CuriaAnalytics/1.0; +https://hanul442.github.io/gnomon_analytics/)', Accept: 'application/json' };
+const HEADERS = { 'User-Agent': 'Mozilla/5.0 (compatible; GnomonAnalytics/1.0; +https://hanul442.github.io/gnomon_analytics/)', Accept: 'application/json' };
 
 /** "+76,049" → 76049, "49.75%" → 49.75, "8.21배" → 8.21, "-"/"N/A" → null. */
 export function num(value: unknown): number | null {

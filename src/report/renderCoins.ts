@@ -7,7 +7,7 @@ import { starButton } from './ui.js';
 /** Coins (Upbit) and ETFs (KOSPI/KOSDAQ) share this list; rows have the same shape (src/cli/coins.ts CoinRow). */
 /** G-72: ETFs and coins are tabs of 찾기 (screener.html#etf, #coin); the old pages forward there. */
 export function renderCoinsRedirect(kind: 'coin' | 'etf'): string {
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=screener.html#${kind}"><title>찾기 | CURIA</title></head><body><a href="screener.html#${kind}">찾기로 이동</a></body></html>`;
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=screener.html#${kind}"><title>찾기 | GNOMON</title></head><body><a href="screener.html#${kind}">찾기로 이동</a></body></html>`;
 }
 
 
@@ -27,7 +27,7 @@ ${coin ? '<label class="sc-inline"><input type="checkbox" id="cn-warn"> 유의 �
 html[data-plan=free] .sc-table th:nth-child(7),html[data-plan=free] .sc-table td:nth-child(7){display:none}
 @media (max-width:820px){.sc-table th:nth-child(5),.sc-table td:nth-child(5),.sc-table th:nth-child(6),.sc-table td:nth-child(6),.sc-table th:nth-child(8),.sc-table td:nth-child(8){display:none}}</style>
 <footer id="sources" style="padding:24px 0 0"><p>${coin ? '데이터: 업비트 공개 시세. 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : '데이터: Naver 금융. 레버리지·인버스 ETF는 오래 들고 있으면 기초지수와 수익이 달라질 수 있어요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', `${coin ? '코인' : 'ETF'} | CURIA`, body, { active: coin ? 'coins' : 'etfs', scripts: COINS_SCRIPT(coin) });
+  return shell('', `${coin ? '코인' : 'ETF'} | GNOMON`, body, { active: coin ? 'coins' : 'etfs', scripts: COINS_SCRIPT(coin) });
 }
 
 const COINS_SCRIPT = (coin: boolean) => `<script>
