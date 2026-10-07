@@ -3470,11 +3470,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "0218L0",
-  "name": "네오뷰",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "0220W0",
   "name": "한화머시너리앤서비스홀딩스",
   "market": "KOSPI"
@@ -5547,11 +5542,6 @@
  {
   "symbol": "053950",
   "name": "경남제약",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "053980",
-  "name": "오상자이엘",
   "market": "KOSDAQ"
  },
  {
@@ -10030,11 +10020,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "228850",
-  "name": "레이언스",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "229000",
   "name": "젠큐릭스",
   "market": "KOSDAQ"
@@ -10805,6 +10790,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "282620",
+  "name": "기도산업",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "282720",
   "name": "금양그린파워",
   "market": "KOSDAQ"
@@ -11462,6 +11452,11 @@
  {
   "symbol": "322310",
   "name": "오로스테크놀로지",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "322510",
+  "name": "제이엘케이",
   "market": "KOSDAQ"
  },
  {
@@ -13507,6 +13502,11 @@
  {
   "symbol": "479880",
   "name": "한국제15호스팩",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "479960",
+  "name": "위너스일렉",
   "market": "KOSDAQ"
  },
  {

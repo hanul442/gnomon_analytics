@@ -366,3 +366,4 @@
 {"date":"2026-10-07","preset":"large","symbol":"003380","market":"Q","close":11580,"method":"gnm-signal-v1"}
 {"date":"2026-10-07","preset":"accum","symbol":"005010","market":"P","close":3940,"method":"gnm-signal-v1"}
 {"date":"2026-10-07","preset":"value","symbol":"006880","market":"P","close":4350,"method":"gnm-signal-v1"}
+{"date":"2026-10-07","preset":"breakout","symbol":"141000","market":"Q","close":15000,"method":"gnm-signal-v1"}
