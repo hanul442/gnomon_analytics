@@ -42,9 +42,9 @@ const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5
 const star = (symbol: string, name: string) => `<button type="button" class="star" data-star="${esc(symbol)}" aria-pressed="false" aria-label="${esc(name)} 관심 종목">${STAR}</button>`;
 
 
-function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null, pulse: MarketPulse | null): string {
+function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null, pulse: MarketPulse | null, dailyHref = 'market-reports.html'): string {
   const cards = indices.map((i) => `<div class="card ix"><div class="ix-top"><div><div class="pl-k">${esc(i.name)}</div><div class="ix-v">${i.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</div><div class="${tone(i.changePct)} ix-c">${signed(i.changePct)}</div></div>${sparkline(i.closes, `${i.name} 최근 60거래일`, 110, 40, i.changePct == null ? null : i.changePct >= 0)}</div><div class="muted small">${esc(i.date)} 종가</div></div>`).join('');
-  const temp = tempCard(pulse, universe);
+  const temp = tempCard(pulse, universe, dailyHref);
   return cards || temp ? `<section class="block ix-row">${cards}${temp}</section>` : '';
 }
 
@@ -52,9 +52,11 @@ function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseR
  * Market temperature (home, G-67): in the third index slot instead of a bare up/down count. One verdict,
  * the 7-step signal bar over every stock, and today's up/down count as the small print.
  */
-function tempCard(p:MarketPulse|null,universe:readonly UniverseRow[]|null):string {
+/** The newest market daily (G-122): the home temperature card opens it. */
+const latestDaily = (data: HomeData): string => { const d = data.marketReports?.filter((r) => r.period === 'daily').sort((a, b) => b.date.localeCompare(a.date))[0]; return d ? `market/daily-${d.date}.html` : 'market-reports.html'; };
+function tempCard(p:MarketPulse|null,universe:readonly UniverseRow[]|null,href:string):string {
  const rows=(universe??[]).filter(r=>r.kind==='stock'&&r.changePct!==null);
- return marketTemperature(p,{up:rows.filter(r=>r.changePct!>0).length,down:rows.filter(r=>r.changePct!<0).length,flat:rows.filter(r=>r.changePct===0).length});
+ return marketTemperature(p,{up:rows.filter(r=>r.changePct!>0).length,down:rows.filter(r=>r.changePct!<0).length,flat:rows.filter(r=>r.changePct===0).length},'시장',href);
 }
 
 const GROUP = { core: '위원회 전체', weekly: '요약', request: '요청', past: '', daily: '' } as const;
@@ -291,12 +293,12 @@ export function renderHome(data: HomeData): string {
   const covered = new Set(data.entries.map((e) => e.symbol));
   const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
-<div class="find-row"><button type="button" class="flt-btn" aria-expanded="false" aria-controls="flt">⚙︎ 필터</button><a class="find-link" href="themes.html">🧭 테마별 종목</a><a class="find-link" href="signals.html">📡 공시 레이더</a><a class="find-link" id="market-daily-link" href="${data.marketReports?.filter(r=>r.period==='daily').sort((a,b)=>b.date.localeCompare(a.date))[0]?`market/daily-${data.marketReports.filter(r=>r.period==='daily').sort((a,b)=>b.date.localeCompare(a.date))[0]!.date}.html`:'market-reports.html'}">✦ 데일리</a></div>
+<div class="find-row"><button type="button" class="flt-btn" aria-expanded="false" aria-controls="flt">⚙︎ 필터</button><a class="find-link" href="themes.html">🧭 테마별 종목</a><a class="find-link" href="signals.html">📡 공시 레이더</a></div>
 <div class="card flt" id="flt" hidden><div class="flt-seg" role="group" aria-label="찾을 곳"><a href="screener.html">국내 주식</a><a href="screener.html#etf">ETF</a><a href="screener.html#coin">코인</a><a href="reports.html">AI 리포트</a></div>
 ${FILTER_GROUPS.map((g) => `<div class="flt-k">${g.icon} ${g.title}</div><div class="flt-list">${g.keys.map((k) => PRESETS.find((x) => x.key === k)).filter((x) => x).map((x) => `<a href="screener.html#${x!.key}"><b>${esc(x!.label)}</b><small>${esc(x!.hint)}</small></a>`).join('')}</div>`).join('')}
 <div class="flt-actions"><a class="flt-more" href="screener.html#build">⚙︎ 조건 직접 만들기</a><a class="flt-more ai" href="screener.html#build">✦ AI에게 말로 찾기</a></div><p class="flt-foot">누르면 이 화면 위에 필터 창이 열려요. 결과는 계산값이고 투자 권유가 아니에요.</p></div></div></section>
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
-${indexStrip(data.indices, data.universe, data.pulse)}
+${indexStrip(data.indices, data.universe, data.pulse, latestDaily(data))}
 
 <p class="phase-note" id="phase-note"></p><div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${THEMES_TOP}${SIGNALS}
 ${MY_SCREENS}${movers(data.universe, covered)}</div>

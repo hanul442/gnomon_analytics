@@ -86,14 +86,27 @@ export function monthlyBars(bars: readonly Bar[]): Bar[] {
   return out;
 }
 
-/** The five gauges. Any input may be empty; that horizon then withholds its call. */
+/** Weekly bars from daily ones (Monday-keyed weeks), for pages that have only daily prices. */
+export function weeklyFromDaily(bars: readonly Bar[]): Bar[] {
+  const out: Bar[] = [];
+  for (const bar of [...bars].sort((a, b) => (a.date < b.date ? -1 : 1))) {
+    const d = new Date(`${bar.date}T00:00:00Z`); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+    const week = d.toISOString().slice(0, 10), prev = out.at(-1);
+    if (prev && prev.date === week) { prev.high = Math.max(prev.high, bar.high); prev.low = Math.min(prev.low, bar.low); prev.close = bar.close; prev.volume += bar.volume; }
+    else out.push({ date: week, open: bar.open, high: bar.high, low: bar.low, close: bar.close, volume: bar.volume });
+  }
+  return out;
+}
+
+/** The five gauges. Any input may be empty; that horizon then withholds its call. Missing weekly bars are built from daily ones. */
 export function horizonGauges(input: { intraday: readonly IntradaySession[]; daily: readonly Bar[]; weekly: readonly Bar[] }): HorizonGauge[] {
+  const weekly = input.weekly.length ? [...input.weekly] : weeklyFromDaily(input.daily);
   const series: Record<HorizonKey, { bars: Bar[]; note?: string }> = {
-    ULTRA_SHORT: { bars: intradayBars(input.intraday, 15), note: '분봉 종가로 만든 15분봉이라 고가·저가가 실제보다 좁을 수 있어요.' },
-    SHORT: { bars: intradayBars(input.intraday, 60), note: '최근 약 10거래일의 60분봉이라 긴 이동평균은 계산되지 않을 수 있어요.' },
+    ULTRA_SHORT: { bars: intradayBars(input.intraday, 15), note: input.intraday.length ? '분봉 종가로 만든 15분봉이라 고가·저가가 실제보다 좁을 수 있어요.' : '이 종목은 저장된 분봉이 없어 초단기·단기는 판단을 보류해요. 차트의 분봉에서 직접 확인할 수 있어요.' },
+    SHORT: { bars: intradayBars(input.intraday, 60), ...(input.intraday.length ? { note: '최근 약 10거래일의 60분봉이라 긴 이동평균은 계산되지 않을 수 있어요.' } : {}) },
     MEDIUM: { bars: [...input.daily] },
-    MEDIUM_LONG: { bars: [...input.weekly] },
-    LONG: { bars: monthlyBars(input.weekly), note: '주봉 5년치로 만든 월봉이라 120개월 이동평균은 계산되지 않아요.' },
+    MEDIUM_LONG: { bars: weekly, ...(input.weekly.length ? {} : { note: '일봉을 묶어 만든 주봉이에요.' }) },
+    LONG: { bars: monthlyBars(weekly), note: input.weekly.length ? '주봉 5년치로 만든 월봉이라 120개월 이동평균은 계산되지 않아요.' : '일봉 약 2년치로 만든 월봉이라 긴 이동평균은 계산되지 않을 수 있어요.' },
   };
   return HORIZONS.map((h) => {
     const { bars, note } = series[h.key];
