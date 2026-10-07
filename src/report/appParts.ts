@@ -74,7 +74,7 @@ export function staleAiBar(report: DailyReport, from: string): string {
 }
 /** The same bar for pages and for a report painted later (onDemandBrowser builds it from this string's shape). */
 export function staleAiMarkup(symbol: string, name: string, from: string, priceDate: string): string {
-  return `<div class="stale-ai" data-stale-ai role="note"><span class="sa-ic" aria-hidden="true">🕒</span><div class="sa-tx"><b>더 새로운 데이터가 있어요</b><small>AI 리포트 ${esc(from)} 기준 · 가격 ${esc(priceDate)} 기준</small></div><button type="button" class="sa-go" data-create-report data-symbol="${esc(symbol)}" data-name="${esc(name)}">최신 리포트 만들기</button></div>`;
+  return `<div class="stale-ai" data-stale-ai role="note"><span class="sa-ic" aria-hidden="true">🕒</span><div class="sa-tx"><b>분석 후 새 데이터가 추가됐어요</b><small>AI 리포트 ${esc(from)} 기준 · 가격 ${esc(priceDate)} 기준</small></div><button type="button" class="sa-go" data-create-report data-symbol="${esc(symbol)}" data-name="${esc(name)}">새 데이터로 다시 분석</button></div>`;
 }
 
 /** G-103: a small 3-month chart right under the price; tapping it opens the chart tab. */
@@ -191,11 +191,11 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
 <div class="cur-price"><b>${last ? esc(won(last.close)) : '없음'}</b>${last && prev ? `<span class="${tone(last.close - prev.close)}">${last.close >= prev.close ? '▲' : '▼'} ${esc(num(Math.abs(last.close - prev.close)))} (${esc(pct((last.close / prev.close - 1) * 100))})</span>` : ''}</div>
 <div class="period-stat" id="period-stat" aria-live="polite"></div></div>
 <div class="seg" role="group" aria-label="기간">${RANGES.map(([label, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 63}">${label}</button>`).join('')}</div></div>
-<div class="chart-tools"><div class="preset-row" role="group" aria-label="지표"><span class="label">지표</span><button type="button" class="tool-btn" data-open="ind-sheet" aria-haspopup="dialog">${GEAR}지표 고르기</button><button type="button" class="chip-toggle" id="ind-reset" title="내 보기 방식의 기본 지표로 되돌려요">내 보기 기본</button></div>
+<div class="chart-tools"><div class="preset-row" role="group" aria-label="지표"><span class="label">지표</span><button type="button" class="tool-btn" data-open="ind-sheet" aria-haspopup="dialog">${GEAR}지표·레이어</button><button type="button" class="chip-toggle" id="ind-reset" title="내 보기 방식의 기본 지표로 되돌려요">내 보기 기본</button></div>
 ${strategies.length ? `<button type="button" class="strat-pick" data-open="strat-sheet" aria-haspopup="dialog"><span class="label">전략 매매 시점</span><b id="strat-current">끄기</b><span class="caret" aria-hidden="true">▾</span></button>` : ''}</div>
 <div class="active-pills" id="active-pills" aria-label="켜진 지표"></div>
 ${chartToolbar(!!report.market?.benchmarks.some((b) => b.series?.length))}
-<div class="sheet" id="ind-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="ind-sheet-t"><div class="sheet-head"><b id="ind-sheet-t">지표 고르기</b><button type="button" class="sheet-done" data-close>완료</button></div>
+<div class="sheet" id="ind-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="ind-sheet-t"><div class="sheet-head"><b id="ind-sheet-t">지표·레이어</b><button type="button" class="sheet-done" data-close>완료</button></div>
 <p class="muted small" style="margin:0 0 6px">켜고 끈 지표는 이 기기에 저장돼서 다른 종목에서도 그대로 보여요.</p><div class="opt-group"><div class="opt-k">가격 위에 겹치기</div>${OVERLAYS.map(([k, l, on]) => opt('ov', k, l, on)).join('')}</div>
 <div class="opt-group"><div class="opt-k">아래 창</div>${PANES.map(([k, l, on]) => opt('pane', k, l, on)).join('')}</div>
 <div class="opt-group"><div class="opt-k">시나리오 전망</div>${scBar}</div><div class="opt-group"><div class="opt-k">차트 위 표시</div>${opt('vl', 'filing', '공시', true, '공시가 나온 날 문서 아이콘과 점선')}${opt('vl', 'news', '뉴스', true, '중요도 보통 이상 뉴스가 나온 날 아이콘')}</div></div></div>
@@ -245,6 +245,7 @@ window.addEventListener('DOMContentLoaded', function () {
   // Every series, so chart tools (chartTools.ts) can hide them on the weekly and monthly views.
   var allSeries = [], addSeries = chart.addSeries.bind(chart);
   chart.addSeries = function () { var s = addSeries.apply(null, arguments); allSeries.push(s); return s; };
+  var removeSeries=chart.removeSeries.bind(chart);chart.removeSeries=function(s){allSeries=allSeries.filter(function(x){return x!==s;});return removeSeries(s);};
   var t = function (i) { return bars[i].date; };
   var C = bars.map(function (b) { return b.close; }), H = bars.map(function (b) { return b.high; }), Lo = bars.map(function (b) { return b.low; }), V = bars.map(function (b) { return b.volume; });
   var candle = chart.addSeries(L.CandlestickSeries, { upColor: UP, downColor: DOWN, borderVisible: false, wickUpColor: UP, wickDownColor: DOWN });
@@ -387,10 +388,10 @@ window.addEventListener('DOMContentLoaded', function () {
     atr: function (p) { var a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * 13 + tr) / 14; return i < 14 ? null : a; }), '#223456', p, { title: 'ATR 14' })]; }
   };
   var paneOrder = [];
+  var clearPanes=function(){Object.keys(paneMakers).forEach(function(k){(built['pane:'+k]||[]).forEach(function(s){chart.removeSeries(s);});delete built['pane:'+k];});while(chart.panes().length>1)chart.removePane(chart.panes().length-1);};
   var rebuildPanes = function () {
     // Remove all indicator panes and re-add the selected ones in menu order.
-    while (chart.panes().length > 1) chart.removePane(chart.panes().length - 1);
-    Object.keys(paneMakers).forEach(function (k) { delete built['pane:' + k]; });
+    clearPanes();
     paneOrder = Array.prototype.slice.call(document.querySelectorAll('[data-pane]')).filter(function (b) { return b.getAttribute('aria-pressed') === 'true'; }).map(function (b) { return b.getAttribute('data-pane'); });
     paneOrder.forEach(function (k, i) { built['pane:' + k] = paneMakers[k](i + 1); });
     chart.panes().forEach(function (p, i) { p.setStretchFactor(i === 0 ? 3 : 1); });
@@ -405,6 +406,8 @@ window.addEventListener('DOMContentLoaded', function () {
     (built[k] || []).forEach(function (s) { chart.removeSeries(s); });
     built[k] = on ? overlayMakers[k]() : [];
   };
+  var analysisSuspended=false;
+  var suspendAnalysis=function(on){if(on===analysisSuspended)return;analysisSuspended=on;if(on){clearPanes();Object.keys(priceLines).forEach(function(k){priceLines[k].forEach(function(pl){candle.removePriceLine(pl);});priceLines[k]=[];});if(spikeMarks)spikeMarks.setMarkers([]);el.style.height=(mobile?360:440)+'px';}else{rebuildPanes();document.querySelectorAll('[data-ov][aria-pressed=true]').forEach(function(b){var k=b.dataset.ov;if(lineMakers[k]||k==='spikes')setOverlay(k,true);});}};
   document.querySelectorAll('[data-ov]').forEach(function (b) {
     if (b.getAttribute('aria-pressed') === 'true') setOverlay(b.getAttribute('data-ov'), true);
     b.addEventListener('click', function () { var on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); setOverlay(b.getAttribute('data-ov'), on); if (b.getAttribute('data-ov') === 'forecast') setRange(currentRange, on ? 62 : scExtra); });
@@ -512,15 +515,15 @@ window.addEventListener('DOMContentLoaded', function () {
 
   // ---- legend, ranges and period change ----
   var legend = document.getElementById('legend'), stat = document.getElementById('period-stat');
-  var byDate = {}; bars.forEach(function (b, i) { byDate[b.date] = i; });
-  var show = function (i) { var b = bars[i]; if (!b) return; legend.textContent = b.date + '  시가 ' + won(b.open) + '  고가 ' + won(b.high) + '  저가 ' + won(b.low) + '  종가 ' + won(b.close) + '  거래량 ' + b.volume.toLocaleString('ko-KR') + '주'; };
+  var activeBars=bars;var byDate = {}; bars.forEach(function (b, i) { byDate[b.date] = i; });
+  var show = function (i) { var b = activeBars[i]; if (!b) return; legend.textContent = b.date + '  시가 ' + won(b.open) + '  고가 ' + won(b.high) + '  저가 ' + won(b.low) + '  종가 ' + won(b.close) + '  거래량 ' + b.volume.toLocaleString('ko-KR') + '주'; };
   show(bars.length - 1);
-  chart.subscribeCrosshairMove(function (p) { show(p && p.time && byDate[p.time] != null ? byDate[p.time] : bars.length - 1); });
+  chart.subscribeCrosshairMove(function (p) { show(p && p.time && byDate[p.time] != null ? byDate[p.time] : activeBars.length - 1); });
   var currentRange = 63;
   var currentExtra = 0;
   // A chart built inside a hidden tab has no width; once the tab is shown, apply the chosen range again.
   var lastWidth = el.clientWidth;
-  chart.timeScale().subscribeSizeChange(function (w) { if (!lastWidth && w > 0) setRange(currentRange, currentExtra); lastWidth = w; });
+  chart.timeScale().subscribeSizeChange(function (w) { if (!analysisSuspended && !lastWidth && w > 0) setRange(currentRange, currentExtra); lastWidth = w; });
   var setRange = function (n, extra) {
     currentRange = n;
     var from = Math.max(0, bars.length - n);
@@ -542,7 +545,7 @@ window.addEventListener('DOMContentLoaded', function () {
   if (scen.length) drawScen(scPick);
   setRange(63, scExtra);
   requestAnimationFrame(drawLines);
-  window.GNMChart = { L: L, chart: chart, candle: candle, bars: bars, series: function () { return allSeries.slice(); } };
+  window.GNMChart = { L: L, chart: chart, candle: candle, bars: bars, series: function () { return allSeries.slice(); },suspendAnalysis:suspendAnalysis,showBars:function(list){activeBars=list;byDate={};list.forEach(function(b,i){byDate[b.date||b.time]=i;});show(list.length-1);} };
   if(window.GNM_coinChartReady)window.GNM_coinChartReady();
 });
 `;

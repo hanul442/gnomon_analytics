@@ -51,7 +51,7 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   assert.ok((page.match(/class="gate" data-need="pro"/g) ?? []).length >= 2, 'pro gates');
   assert.ok(page.includes('data-plan="free"'), 'free plan');
   assert.ok(!page.includes('class="card hs"'), 'the horizon strip lives on the 자료 tab only (G-71)');
-  assert.ok(page.includes('id="vlines"') && page.includes('id="ev-strip"') && page.includes('class="trade-log"'));
+  assert.ok(page.includes('id="vlines"') && page.includes('id="ev-strip"') && page.includes('class="race-entry"'));
   // The front page is the live dashboard; the archive lists dated reports.
   const front = await readFile(join(root, 'site', '000660', 'index.html'), 'utf8');
   assert.ok(front.includes('class="fresh '));

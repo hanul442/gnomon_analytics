@@ -1,4 +1,6 @@
 import {renderMarketReport,renderMarketDeep} from '../dist/report/marketReport.js';
+import {renderThemesPage} from '../dist/report/renderThemes.js';
+import {ANALYSTS} from '../dist/analysis/analysts.js';
 import {shell} from '../dist/report/renderHtml.js';
 import {DEBATE_PLAY_SCRIPT,DEBATE_FILTER_SCRIPT} from '../dist/report/renderReportExtras.js';
 // Offline browser verification: fixture API, no production account or paid model calls.
@@ -33,9 +35,11 @@ scenarioReport.commentary={status:'OK',scenarios:[['BULL',[190,220],195],['BASE'
 await writeFile(root+'/site/scenario-fixture.html','<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>body{font-family:sans-serif;margin:20px;color:#14233a}button{font:inherit}.card{border:1px solid #ddd;border-radius:14px;padding:12px}figure svg{max-width:100%}'+SCENARIO_CSS+CONCLUSION_CSS+'</style>'+conclusionCard(scenarioReport)+scenarioPanel(scenarioReport)+'<script>'+SCENARIO_JS+CONCLUSION_JS+'</script>');
 const legacyReport=structuredClone(scenarioReport);delete legacyReport.commentary.scenarios[1].zone;legacyReport.commentary.scenarios[1].narrative.text='175원, 176원, 177원, 178원, 179원, 180원을 가격 기준으로 확인합니다.';await writeFile(root+'/site/legacy-scenario-fixture.html','<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>body{font-family:sans-serif;margin:12px;color:#14233a}'+SCENARIO_CSS+'</style>'+scenarioPanel(legacyReport)+'<script>'+SCENARIO_JS+'</script>');
 await writeFile(root+'/site/debate-fixture.html',shell('','토론 재생 테스트','<section id="debate"><div class="block-head"><h2>위원회 토론</h2><button type="button" class="db-skip" hidden>전체 바로 보기</button></div><div class="card debate">'+['시장 데스크','기술 데스크','레드팀'].map(who=>'<div class="db-turn"><div class="db-who"><b>'+who+'</b></div><div class="db-bubble">검증 발언</div></div>').join('')+'</div></section>',{scripts:DEBATE_FILTER_SCRIPT+DEBATE_PLAY_SCRIPT}));
+await writeFile(root+'/site/themes.html',renderThemesPage());await writeFile(root+'/site/themes.json',JSON.stringify({date:'2026-10-07',themes:[{no:'sort-test',name:'정렬 테스트',avg:1,up:1,down:1,value:300,members:[['999999','가 종목',10,2,100,1000,'근거'],['000001','나 종목',20,-1,200,500,'근거'],['000002','다 종목',null,null,null,null,'근거']]}]}));
 let customExperts=[],savedScreens=[];const sync={on:false,pushed:[]};const priceAlerts=[];
 const marketClaim={text:'공개 시장 요약',kind:'FACT',refs:['M1']};
 const marketFixture={schema:'curia.market-report.v2',date:'2026-10-07',from:'2026-10-07',generatedAt:'2026-10-07T09:30:00Z',period:'daily',groups:[],ai:{status:'OK',summary:marketClaim,council:{summary:marketClaim,desks:[{name:'코스피',view:'중립',claims:[{...marketClaim,text:'유료 시장 담당자 근거'}]}],consensus:[],disagreements:[],scenarios:[],redTeam:[],watch:[],dataGaps:[]}}};
+marketFixture.ai.council.experts=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'].map(speaker=>({speaker,stance:'NEUTRAL',claim:{...marketClaim,text:'유료 시장 담당자 근거'}}));marketFixture.ai.council.debate=[...marketFixture.ai.council.experts.map(e=>e.speaker),'RED_TEAM'].map((speaker,i)=>({speaker,stance:'NEUTRAL',replyTo:i===0||i===11?-1:i-1,claim:{...marketClaim,text:'유료 시장 담당자 근거'}}));
 await writeFile(root+'/site/market-fixture.html',renderMarketReport(marketFixture));let marketPlan='alpha';
 const api=async(path,req,res)=>{
  res.setHeader('Content-Type','application/json');
@@ -60,7 +64,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/reports/fixture-done')return res.end(JSON.stringify({status:'done',symbol:'999999',dataDate:'2026-09-01',fragments:{scenarios:scenarioPanel(scenarioReport),ai:'<section id="debate"><div class="card debate"><div class="db-chips"></div><div class="db-turn" data-speaker="MARKET"><div class="db-who"><b>시장 데스크</b></div><div class="db-bubble">테스트 토론</div></div><details class="db-ev"><summary>근거</summary></details></div></section>'}}));
  return res.end(JSON.stringify({items:[],rows:[]}));
 };
-const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|valuation|experts|admin|alerts|notify|push)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
+const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|deep|questions|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|valuation|experts|admin|alerts|notify|push)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(8765,'localhost',r));
 let browser;const errors=[];
 try{
@@ -70,13 +74,13 @@ try{
  await mkdir('test-artifacts',{recursive:true});
  marketPlan='free';await page.setViewportSize({width:375,height:850});await page.goto(origin+'/market-fixture.html');await page.locator('#deep-open').filter({hasText:'요금제 보기'}).waitFor();assert.ok(!(await page.content()).includes('유료 시장 담당자 근거'));assert.ok((await page.locator('#main').innerText()).includes('공개 시장 요약'));await page.screenshot({path:'test-artifacts/market-free.png'});
  marketPlan='alpha';
- for(const width of [375,390,768,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/market-fixture.html');await page.locator('#debate .db-join').waitFor();await page.locator('#debate [data-pick-expert]').click();await page.locator('dialog[open]').waitFor();await page.locator('[data-close-expert]').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/market-paid-'+width+'.png'});}
+ for(const width of [375,390,768,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/market-fixture.html');await page.locator('#debate .db-join').waitFor();assert.equal(await page.locator('#debate [data-speaker]').count(),12);await page.locator('#debate [data-pick-expert]').click();await page.locator('dialog[open]').waitFor();await page.locator('[data-close-expert]').click();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/market-paid-'+width+'.png'});}
  await page.locator('#debate textarea[name=q]').fill('약세 반론은?');await page.locator('#debate [type=submit]').click();await page.locator('#debate .db-answer').waitFor();assert.ok((await page.locator('#debate .db-answer').innerText()).includes('테스트 답변'));
 
  for(const width of [375,390,768,1280]){console.log('Checking viewport',width);
   await page.setViewportSize({width,height:850});await page.goto(origin+'/stock.html?c=999999');
   await page.locator('h1').filter({hasText:'UI 테스트'}).waitFor();await page.locator('#main[aria-busy]').waitFor({state:'detached'});await page.waitForFunction(()=>document.documentElement.dataset.reportJob==='done');if(width===390){await page.locator('#tab-ai [data-stale-ai] .sa-go').waitFor({state:'attached'});}assert.equal(await page.locator('#tab-ai [data-generated=ai]').count(),1);assert.doesNotMatch(await page.locator('#tab-ai').innerText(),/아직 위원회 리포트가 없어요/);
-  assert.equal(await page.locator('[role=tab][aria-controls]:visible').count(),8);
+  assert.equal(await page.locator('[role=tab][aria-controls]:visible').count(),4);await page.locator('#analysis-menu').click();assert.equal(await page.locator('#analysis-tabs [role=tab]:visible').count(),4);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   const beforeIndicators=await page.locator('#ind-sheet [aria-pressed=true][data-ov],#ind-sheet [aria-pressed=true][data-pane]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-ov')||n.getAttribute('data-pane')));const beforeSaved=await page.evaluate(()=>localStorage.getItem('gnm-ind'));await page.locator('#t-technical').click();assert.equal(await page.locator('[aria-label="기술 지표 차트 바로 보기"]').count(),0);await page.locator('[data-chart-indicator=fib]').first().click();assert.equal(await page.locator('[data-ov=fib]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('#t-chart').getAttribute('aria-selected'),'true');assert.equal(await page.locator('#ind-sheet [aria-pressed=true][data-ov],#ind-sheet [aria-pressed=true][data-pane]').count(),1);assert.ok(await page.locator('#overlays').evaluate(el=>JSON.parse(el.textContent).fib.length>0));if(width===375)await page.screenshot({path:'test-artifacts/indicator-chart.png'});await page.locator('#chart-context button').click();assert.equal(await page.locator('#t-technical').getAttribute('aria-selected'),'true');assert.deepEqual(await page.locator('#ind-sheet [aria-pressed=true][data-ov],#ind-sheet [aria-pressed=true][data-pane]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-ov')||n.getAttribute('data-pane'))),beforeIndicators);assert.equal(await page.evaluate(()=>localStorage.getItem('gnm-ind')),beforeSaved);
   await page.locator('#t-ai').click();assert.equal(await page.locator('#tab-ai .gnm-loading').count(),0);
@@ -97,29 +101,27 @@ try{
   assert.equal(labels.length,6);for(let i=1;i<labels.length;i++)assert.ok(labels[i].top>=labels[i-1].bottom,'price labels overlap');assert.ok(labels.every(r=>r.right<=width),'price labels overflow');
   await page.screenshot({path:`test-artifacts/scenario-labels-${width}.png`});
  }
- await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="15"]').waitFor();
+ await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-minute-menu]').waitFor();await page.locator('[data-minute-menu]').click();
  await page.locator('[data-coin-tf="15"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'최근 20개'}).waitFor();await page.waitForFunction(()=>{var r=GNMChart.chart.timeScale().getVisibleRange();return r&&r.from>=1791262800;});
- // G-111: stocks get minute candles and a tick line that grows with live quotes.
+ // Coins retain actual trade ticks; stocks expose minute/day/week/month only.
  await page.locator('[data-coin-tf="T"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'최근 체결 30개'}).waitFor();
- await page.goto(origin+'/stock.html?c=999999#tab-chart');await page.locator('[data-coin-tf="5"]').waitFor();
+ await page.goto(origin+'/stock.html?c=999999#tab-chart');await page.locator('[data-minute-menu]').waitFor();
  assert.equal(await page.locator('.coin-tf [data-tf="D"]').count(),1);assert.equal(await page.locator('.seg.tf').count(),0);
- await page.locator('[data-tf="W"]').click();assert.equal(await page.locator('[data-draw="trend"]').isDisabled(),true);
- await page.locator('[data-coin-tf="5"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'정규장 5분봉'}).waitFor();
- await page.locator('[data-coin-tf="T"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'오늘 1분 종가 30개'}).waitFor();
- await page.evaluate(()=>window.dispatchEvent(new CustomEvent('gnm-quote',{detail:{symbol:'999999',quote:{price:155}}})));
- assert.equal(await page.evaluate(()=>{var s=GNMChart.chart.timeScale().getVisibleLogicalRange();return s!==null;}),true);
- await page.screenshot({path:'test-artifacts/stock-ticks.png'});
+ await page.locator('[data-tf="W"]').click();assert.equal(await page.locator('[data-draw="trend"]').isDisabled(),true);assert.equal(await page.evaluate(()=>GNMChart.chart.panes().length),1);assert.ok(await page.evaluate(()=>GNMChart.candle.data().length<GNMChart.bars.length/3));await page.locator('[data-tf="M"]').click();assert.equal(await page.evaluate(()=>GNMChart.chart.panes().length),1);assert.ok((await page.locator('#chart').boundingBox()).height<500);await page.screenshot({path:'test-artifacts/stock-monthly.png'});
+ await page.locator('[data-minute-menu]').click();await page.locator('[data-coin-tf="5"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'정규장 5분봉'}).waitFor();
+ assert.equal(await page.locator('[data-coin-tf="T"]').count(),0);assert.equal(await page.evaluate(()=>GNMChart.chart.panes().length),1);await page.screenshot({path:'test-artifacts/stock-minutes.png'});
  await page.locator('[data-coin-tf="D"]').click();assert.equal(await page.locator('[data-draw="trend"]').isDisabled(),false);
  await page.goto(origin+'/s/999998.html#tab-chart');await page.locator('[data-sc="ALL"]').waitFor({state:'attached'});
  assert.equal(await page.locator('#sc-layer').isVisible(),false);await page.locator('[data-open="ind-sheet"]').click();await page.locator('[data-sc="ALL"]').click();assert.equal(await page.locator('[data-sc="ALL"]').getAttribute('aria-pressed'),'true');await page.locator('[data-sc=""]').click();assert.equal(await page.locator('[data-sc=""]').getAttribute('aria-pressed'),'true');await page.locator('#ind-sheet .sheet-done').click();
  await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="D"]').waitFor();
- await page.locator('[data-coin-tf="D"]').click();await page.locator('#t-flows').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
+ await page.locator('[data-coin-tf="D"]').click();await page.locator('#analysis-menu').click();await page.locator('#t-flows').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/admin.html');await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   for(const selector of ['td[data-label="사용자"]','td[data-label="내용"]','[data-act=fixture-action] button[data-s=done]','[data-act=fixture-action] button[data-s=rejected]']){const box=await page.locator(selector).boundingBox();assert.ok(box&&box.x>=0&&box.x+box.width<=width,'admin field clipped: '+selector);}
   await page.screenshot({path:`test-artifacts/admin-${width}.png`});
  }
+ for(const width of [375,390,768,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/themes.html#sort-test');await page.locator('#tm-member-sort').waitFor();await page.locator('#tm-member-sort').selectOption('value');if((await page.locator('#tm-direction').innerText()).includes('오름'))await page.locator('#tm-direction').click();assert.match(await page.locator('#tm-members .tm-row').first().innerText(),/나 종목/);await page.locator('#tm-direction').click();assert.match(await page.locator('#tm-members .tm-row').first().innerText(),/가 종목/);assert.match(await page.locator('#tm-members .tm-row').last().innerText(),/다 종목/);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/theme-sort-'+width+'.png'});}
  await page.goto(origin+'/screener.html');await page.locator('#ai-screen-q').fill('거래량이 터진 종목');await page.locator('#ai-screen-send').click();await page.locator('[data-apply-ai]').waitFor();await page.locator('[data-apply-ai]').click();await page.locator('#sc-body .orbs-load').waitFor({state:'detached'});assert.equal(await page.locator('[data-k=f]').first().inputValue(),'vol1');await page.locator('.toast[data-kind=success]').filter({hasText:'AI 조건을 적용했어요.'}).waitFor();
  page.once('dialog',d=>d.accept('내 조건'));await page.locator('#save-screen').click();await page.locator('.toast[data-kind=success]').filter({hasText:'조건을 저장했어요.'}).waitFor();await page.locator('#saved-list .ld').waitFor();
  page.once('dialog',d=>d.accept('실패테스트'));await page.locator('#save-screen').click();await page.locator('.toast[data-kind=error]').filter({hasText:'저장에 실패했어요.'}).waitFor();assert.equal(await page.locator('.toast[data-kind=success]').count(),0);assert.equal(await page.locator('#save-screen').isEnabled(),true);
@@ -133,9 +135,7 @@ try{
  await page.screenshot({path:'test-artifacts/reduced-motion-orb.png'});await page.evaluate(()=>fixtureLoading.end());
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');
-  assert.equal(await page.locator('#market-report-cards .market-daily-card').count(),1);
-  assert.ok((await page.locator('#market-report-cards .market-daily-card').boundingBox()).height<190);
-  assert.doesNotMatch(await page.locator('#market-report-cards').innerText(),/위클리/);
+  assert.equal(await page.locator('#market-report-cards').count(),0);assert.equal(await page.locator('.find-row #market-daily-link').count(),1);assert.match(await page.locator('#market-daily-link').getAttribute('href'),/market/);
   assert.ok(await page.evaluate(()=>{const search=document.querySelector('.top-search'),banner=document.getElementById('banner');return !!banner&&!!(search.compareDocumentPosition(banner)&Node.DOCUMENT_POSITION_FOLLOWING);}));
   const ad=page.locator('.bn-hanul');const slide=await ad.getAttribute('data-i');await page.locator('[data-go="'+slide+'"]').click();
   assert.ok(await ad.isVisible());assert.ok(await ad.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0));

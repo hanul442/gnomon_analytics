@@ -869,7 +869,7 @@ route('POST', '/watch', async ({ req, env, now }) => {
 });
 
 // G-109: browser settings that follow the account. Only known keys; each value a short string.
-const SETTING_KEY = /^gnm-(persona|prefs|ind|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/;
+const SETTING_KEY = /^gnm-(persona|prefs|ind|theme-sort|theme-direction|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/;
 route('GET', '/me/settings', async ({ req, env, now }) => {
   const u = await authed(req, env, now);
   const r = await env.DB.prepare('SELECT data, updated_at FROM user_settings WHERE user_id = ?').bind(u.id).first<{ data: string; updated_at: string }>();

@@ -19,3 +19,12 @@ Existing GitHub daily schedule remains 18:30 KST. A push affecting reporting/ass
 ## Verification
 
 TypeScript typecheck, complete existing test suite, and new tests for weekly baseline, future/stale quotes and report escaping. Browser tests verify a single timeframe group, weekly→minute→daily transitions, scenario toggling and mobile overflow. Browser execution requires Playwright Chromium; CI installs it before running the UI suite.
+
+## 2.7.1 화면 및 토론 계약
+
+- 홈 데일리는 공시 레이더 옆 버튼 하나로 접근한다. 큰 카드는 제거한다.
+- 시장 온도는 홈의 기존 7단계 기술 신호 인포그래픽을 공유하고 네 시장별 실제 집계를 표시한다. 신호가 없으면 기술 신호로 가장하지 않고 일간 상승·하락 분포라고 명시한다.
+- v4 시장 리포트는 기존 분석가 6명·데스크 5곳이 각각 판단하고 12차례 토론한다. 마지막은 레드팀, 응답 대상은 앞 발언만 허용하고 입장은 개별 판단과 일치해야 한다. 일반 리포트의 토론 렌더러와 발언자·근거·질문 흐름을 재사용한다.
+- 분봉은 일봉 앞에서 세부 단위를 고르고, 주식 실시간 가격 봉을 삭제한다. 주봉·월봉에서는 일봉 시리즈 데이터·가격선·보조 영역을 제거하고 일봉 복귀 때 복원한다.
+- 분석 상위 메뉴 아래 기술·전략·수급·실적 화면을 각각 유지한다. 전략별 기록은 챔피언 레이스의 해당 전략을 펼쳐서 확인한다.
+- 테마 목록과 구성 종목 정렬을 선택하고 방향을 변경한다. 구성 종목 정렬 기준·방향은 계정 설정으로 동기화한다.

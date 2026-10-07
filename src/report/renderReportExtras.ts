@@ -72,12 +72,14 @@ export function decisionTrace(report: DailyReport, live: boolean): string {
 <p class="fine">같은 입력과 같은 방법 버전이면 같은 계산이 나와요. AI 해설은 입력·모델·프롬프트 버전을 함께 남겨요.</p></div></section>`;
 }
 
-const SPEAKER: Record<string, string> = { ...Object.fromEntries(ANALYSTS.map((a) => [a.id, a.name])), MARKET: '시장 데스크', TECHNICAL: '기술 데스크', FLOW: '수급 데스크', FUNDAMENTAL: '펀더멘털 데스크', EVENT: '공시·뉴스 데스크', RED_TEAM: '레드팀' };
+export const SPEAKER: Record<string, string> = { ...Object.fromEntries(ANALYSTS.map((a) => [a.id, a.name])), MARKET: '시장 데스크', TECHNICAL: '기술 데스크', FLOW: '수급 데스크', FUNDAMENTAL: '펀더멘털 데스크', EVENT: '공시·뉴스 데스크', RED_TEAM: '레드팀' };
 const SIDE = { BULLISH: ['강세', 'bull'], BEARISH: ['약세', 'bear'], NEUTRAL: ['중립', 'mid'] } as const;
 
 /** v4: the committee's own members argue their stances in turn, answering each other; the red team closes. */
 export function debateSection(report: DailyReport, tail = ''): string {
-  const c = report.commentary;
+  return renderCommitteeDebate(report.commentary,tail);
+}
+export function renderCommitteeDebate(c:Pick<Commentary,'status'|'debate'|'evidence'>|undefined,tail=''):string {
   if (c?.status !== 'OK' || !c.debate?.length) return '';
   const turns = c.debate;
   const byId = new Map(c.evidence.map((e) => [e.id, e]));

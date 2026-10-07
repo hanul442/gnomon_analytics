@@ -40,6 +40,14 @@ export const CHART_V6_CSS = `
 @media (max-width:820px){.draw-tools{margin-left:0;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;width:100%}.dt span{display:none}.dt[data-draw-clear] span{display:inline}}
 `;
 
+/** Aggregate sorted, unique sessions; weekly buckets start on Monday. */
+export function aggregateBars(bars:readonly {date:string;open:number;high:number;low:number;close:number;volume:number}[],unit:'W'|'M') {
+ const out:{time:string;date:string;open:number;high:number;low:number;close:number;volume:number}[]=[];
+ const sessions=[...new Map(bars.map(b=>[b.date,b])).values()].sort((a,b)=>a.date.localeCompare(b.date));
+ for(const b of sessions){const d=new Date(b.date+'T00:00:00Z');const time=unit==='M'?b.date.slice(0,7)+'-01':new Date(d.getTime()-((d.getUTCDay()+6)%7)*86400000).toISOString().slice(0,10);let cur=out.at(-1);if(!cur||cur.time!==time){cur={...b,time,date:time};out.push(cur);}else{cur.high=Math.max(cur.high,b.high);cur.low=Math.min(cur.low,b.low);cur.close=b.close;cur.volume+=b.volume;}}
+ return out;
+}
+
 export const CHART_V6_JS = `
 window.addEventListener('DOMContentLoaded', function () {
   var G = window.GNMChart; if (!G) return;
@@ -133,24 +141,21 @@ window.addEventListener('DOMContentLoaded', function () {
 
   // ---- day / week / month ----
   var tf = 'D', saved = [];
-  var bucket = function (date, k) { if (k === 'M') return date.slice(0, 7) + '-01'; var d = new Date(date + 'T00:00:00Z'); var wd = (d.getUTCDay() + 6) % 7; return new Date(d.getTime() - wd * 86400000).toISOString().slice(0, 10); };
-  var aggregate = function (k) {
-    var out = [], cur = null;
-    bars.forEach(function (b) { var key = bucket(b.date, k); if (!cur || cur.time !== key) { cur = { time: key, open: b.open, high: b.high, low: b.low, close: b.close }; out.push(cur); } else { cur.high = Math.max(cur.high, b.high); cur.low = Math.min(cur.low, b.low); cur.close = b.close; } });
-    return out;
-  };
+  var aggregate = function(k){return (${aggregateBars.toString()})(bars,k);};
   var setTf = function (k) {
     if (k === tf) return;
     if (mode) setMode(mode);
     document.querySelectorAll('[data-tf]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-tf') === k)); });
-    if (tf === 'D') saved = G.series().filter(function (s) { return s !== candle; }).map(function (s) { var v = s.options().visible !== false; s.applyOptions({ visible: false }); return [s, v]; });
+    if(tf==='D'&&window.GNM_scenarioPause)GNM_scenarioPause(true);
+    if (tf === 'D' && G.suspendAnalysis) G.suspendAnalysis(true);
+    if (tf === 'D') saved = G.series().filter(function (s) { return s !== candle; }).map(function (s) { var v = s.options().visible !== false; var data=s.data().slice();s.setData([]);s.applyOptions({ visible: false }); return [s, v, data]; });
     if (k === 'D') {
       say('');
       candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
-      saved.forEach(function (x) { x[0].applyOptions({ visible: x[1] }); }); saved = []; hidden = false; if(window.GNM_scenarioPause)GNM_scenarioPause(false);
+      saved.forEach(function (x) { x[0].setData(x[2]);x[0].applyOptions({ visible: x[1] }); }); saved = [];if(G.suspendAnalysis)G.suspendAnalysis(false);if(G.showBars)G.showBars(bars); hidden = false; if(window.GNM_scenarioPause)GNM_scenarioPause(false);
       var r = document.querySelector('[data-range][aria-pressed=true]'); if (r) r.click();
     } else {
-      candle.setData(aggregate(k)); hidden = true; if(window.GNM_scenarioPause)GNM_scenarioPause(true); chart.timeScale().fitContent();
+      var agg=aggregate(k);candle.setData(agg);if(G.showBars)G.showBars(agg);hidden = true; if(window.GNM_scenarioPause)GNM_scenarioPause(true); var selected=document.querySelector('[data-range][aria-pressed=true]'),n=selected?Number(selected.dataset.range):bars.length,cut=bars[Math.max(0,bars.length-n)].date,visible=agg.filter(function(b){return b.time>=cut;});if(visible.length<2)visible=agg.slice(-2);if(visible.length)chart.timeScale().setVisibleRange({from:visible[0].time,to:visible[visible.length-1].time});
       say(k === 'W' ? '주봉이에요. 지표·전략·그림은 일봉에서 보여요.' : '월봉이에요. 지표·전략·그림은 일봉에서 보여요.');
     }
     document.querySelectorAll('[data-range]').forEach(function (b) { b.disabled = k !== 'D'; });
