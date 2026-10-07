@@ -726,10 +726,16 @@ export const DEEP_SCRIPT = `<script>
     var sw = slot.querySelector('.deep-swap'); if (sw) { [].slice.call(sw.children).forEach(function (n) { var old = n.id && document.getElementById(n.id); if (old && old !== n) old.replaceWith(n); }); sw.remove(); }
     var join=document.querySelector('.join-wrap'), debate=slot.querySelector('#debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); if (window.GNM_debateFilter) window.GNM_debateFilter(); if (window.GNM_debate) window.GNM_debate(); };
   var say = function (t) { note.textContent = t; };
+  // While the paid part is fetched or unlocked: a large Thinking Orb that cycles through its states.
+  var loader = null, cycle = null;
+  var busy = function (text) { if (loader) { loader.querySelector('span').textContent = text; return; } loader = document.createElement('div'); loader.className = 'orbs-load deep-loader'; loader.setAttribute('role', 'status'); loader.innerHTML = '<canvas data-orb="connecting" aria-hidden="true"></canvas><span></span><small>위원 판단 · 시나리오 · 토론을 펼치는 중</small>'; loader.querySelector('span').textContent = text; slot.classList.add('deep-loading'); slot.appendChild(loader); var states = ['connecting', 'weaving', 'composing', 'shaping'], i = 0; cycle = setInterval(function () { var c = loader && loader.querySelector('canvas'); if (c) c.dataset.orb = states[++i % states.length]; }, 1600); };
+  var idle = function () { clearInterval(cycle); cycle = null; if (loader) loader.remove(); loader = null; slot.classList.remove('deep-loading'); };
   if (!window.GNM || !GNM.api) { btn.textContent = '알파 서버 연결 뒤 열 수 있어요'; return; }
   (GNM.ready || Promise.resolve(null)).then(function (me) {
     if (!me) { btn.disabled = false; btn.textContent = '로그인하고 열기'; btn.onclick = function () { location.href = (document.body.getAttribute('data-base') || '') + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/') + '#tab-ai'); }; return; }
+    busy('심층 리포트를 불러오고 있어요');
     GNM.call('GET', path).then(function (r) {
+      idle();
       if (r.html) { show(r.html); return; }
       if(r.error === 'PLAN_REQUIRED'){btn.disabled=false;btn.textContent='요금제 보기';say(r.message||'플러스부터 열 수 있어요');btn.onclick=function(){location.href=(document.body.getAttribute('data-base')||'')+'pricing.html';};return;}
       if (r.error === 'NOT_SEALED') { btn.textContent = '아직 준비 중이에요'; say('심층 리포트는 다음 실행 뒤 열 수 있어요.'); return; }
@@ -737,8 +743,9 @@ export const DEEP_SCRIPT = `<script>
       btn.disabled = false; btn.textContent = cost + '크레딧으로 열기';
       say(bal == null ? '' : '남은 크레딧 ' + bal + '개 · 한 번 열면 계속 볼 수 있어요');
       btn.onclick = function () {
-        btn.disabled = true; btn.textContent = '여는 중…';
+        btn.disabled = true; btn.textContent = '여는 중…'; busy('크레딧을 쓰고 심층 리포트를 여는 중이에요');
         GNM.call('POST', path + '/unlock', {}).then(function (u) {
+          idle();
           if (u.html) { show(u.html); if (GNM.refresh) GNM.refresh(); if (GNM.track) GNM.track('deep_unlock', { symbol: sym }); return; }
           btn.disabled = false; btn.textContent = cost + '크레딧으로 열기'; say(u.message || '열지 못했어요.');
           if (u.error === 'NO_CREDITS' && GNM.openChat) GNM.openChat();

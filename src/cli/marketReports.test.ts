@@ -44,3 +44,23 @@ test('paid market analysis is encrypted in storage and absent from free HTML; mi
   const closed=await savePrivateMarketReport(join(root,'closed.json'),r,'');assert.equal(closed.ai.status,'FAILED');assert.equal(closed.ai.council,undefined);assert.ok(!(await readFile(join(root,'closed.json'),'utf8')).includes('유료 담당자 근거'));
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('a finished market report is kept unless regeneration is asked, and a failed regeneration keeps it',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'gnomon-regen-'));
+ try{
+  await mkdir(join(root,'data','prices'),{recursive:true});
+  await writeFile(join(root,'data','prices','KOSPI.jsonl'),'{"date":"2026-10-06","close":100}\n{"date":"2026-10-07","close":110}\n');
+  await mkdir(join(root,'reports','market'),{recursive:true});
+  const file=join(root,'reports','market','daily-2026-10-07.json');
+  const old={schema:'curia.market-report.v4',date:'2026-10-07',from:'2026-10-07',generatedAt:'2026-10-07T09:30:00Z',period:'daily',groups:[],ai:{status:'OK',summary:{text:'이전 요약',kind:'FACT',refs:['M1']},sealed:'x'}};
+  await writeFile(file,JSON.stringify(old));
+  let calls=0;
+  const client={beta:{messages:{stream:()=>{calls++;return {finalMessage:async()=>({model:'m',stop_reason:'max_tokens',usage:{input_tokens:1,output_tokens:1},content:[{type:'text',text:'{'}]})};}}}} as unknown as Anthropic;
+  await writeMarketReports(root,new Date('2026-10-07T09:30:00Z'),[],undefined,client,new AiBudget(root,'2026-10',25,0),false);
+  assert.equal(calls,0);
+  await writeMarketReports(root,new Date('2026-10-07T12:30:00Z'),[],undefined,client,new AiBudget(root,'2026-10',25,0),true);
+  assert.equal(calls,1);
+  const kept=JSON.parse(await readFile(file,'utf8'));
+  assert.equal(kept.ai.status,'OK');assert.equal(kept.ai.summary.text,'이전 요약');
+ }finally{await rm(root,{recursive:true,force:true});}
+});
