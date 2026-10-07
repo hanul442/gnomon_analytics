@@ -5710,11 +5710,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "058400",
-  "name": "KNN",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "058430",
   "name": "포스코스틸리온",
   "market": "KOSPI"
@@ -9950,6 +9945,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "225530",
+  "name": "HC보광산업",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "225570",
   "name": "넥슨게임즈",
   "market": "KOSDAQ"
@@ -11142,6 +11142,11 @@
  {
   "symbol": "303360",
   "name": "프로티아",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "303530",
+  "name": "이노뎁",
   "market": "KOSDAQ"
  },
  {
@@ -12737,11 +12742,6 @@
  {
   "symbol": "420770",
   "name": "기가비스",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "424760",
-  "name": "벨로크",
   "market": "KOSDAQ"
  },
  {
