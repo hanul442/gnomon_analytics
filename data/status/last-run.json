@@ -1,5 +1,5 @@
 {
- "at": "2026-10-07T13:15:59.844Z",
+ "at": "2026-10-07T13:24:39.150Z",
  "selected": null,
  "universe": [
   {
@@ -255,17 +255,17 @@
    "failedSources": []
   },
   {
-   "symbol": "0082N0",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
    "symbol": "900140",
    "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "033780",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "0082N0",
    "report": "EXISTS",
    "failedSources": []
   },
