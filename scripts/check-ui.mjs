@@ -98,6 +98,7 @@ try{
  assert.equal(await page.evaluate(()=>{var s=GNMChart.chart.timeScale().getVisibleLogicalRange();return s!==null;}),true);
  await page.screenshot({path:'test-artifacts/stock-ticks.png'});
  await page.locator('[data-coin-tf="D"]').click();assert.equal(await page.locator('[data-draw="trend"]').isDisabled(),false);
+ await page.goto(origin+'/s/999999.html#tab-chart');await page.locator('[data-sc="ALL"]').waitFor({state:'attached'});
  assert.equal(await page.locator('#sc-layer').isVisible(),false);await page.locator('[data-open="ind-sheet"]').click();await page.locator('[data-sc="ALL"]').click();assert.equal(await page.locator('[data-sc="ALL"]').getAttribute('aria-pressed'),'true');await page.locator('[data-sc=""]').click();assert.equal(await page.locator('[data-sc=""]').getAttribute('aria-pressed'),'true');await page.locator('#ind-sheet .sheet-done').click();
  await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="D"]').waitFor();
  await page.locator('[data-coin-tf="D"]').click();await page.locator('#t-flows').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
