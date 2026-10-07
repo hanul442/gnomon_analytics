@@ -6,8 +6,8 @@ export { scenarioZone };
 import type { DailyReport } from './dailyReport.js';
 import { LOCKED_TEXT } from '../analysis/commentary.js';
 import { esc } from './html.js';
+import { won } from './format.js';
 
-const won = (v: number) => `${v >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}원`;
 const gap = (to: number, from: number) => { const g = (to / from - 1) * 100; return `${g > 0 ? '+' : ''}${g.toFixed(1)}%`; };
 const zone = (z?: [number, number]) => (z ? `${won(z[0])} ~ ${won(z[1])}` : '');
 

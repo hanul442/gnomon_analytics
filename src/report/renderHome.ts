@@ -18,11 +18,9 @@ import { openEvents } from './events.js';
 import { HOME_ORDER } from './persona.js';
 import { FIELD_INDEX, matches, PRESETS } from '../analysis/screenRules.js';
 import { esc } from './html.js';
+import { won, tone, move as signed } from './format.js';
 
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 // G-84: a move always carries its arrow (▲ red up, ▼ blue down) next to the number.
-const signed = (v: number | null, digits = 2) => (v === null ? '—' : `${v > 0 ? '▲ +' : v < 0 ? '▼ ' : ''}${v.toFixed(digits)}%`);
-const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 
 export interface IndexQuote { symbol: string; name: string; date: string; close: number; changePct: number | null; closes: number[] }
 

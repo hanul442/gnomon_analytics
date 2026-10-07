@@ -7,10 +7,9 @@ import type { DailyReport } from './dailyReport.js';
 import { ANALYSTS } from '../analysis/analysts.js';
 import { replyIndex, type ClaimKind, type Commentary, type InsightKey } from '../analysis/commentary.js';
 import { esc } from './html.js';
+import { won, tone } from './format.js';
 
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const pct = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
-const tone = (v: number) => (v > 0 ? 'up' : v < 0 ? 'down' : '');
 
 export const KIND_WORD: Record<ClaimKind, string> = { FACT: '사실', INFERENCE: '해석', ASSUMPTION: '가정' };
 export const kindChip = (kind: ClaimKind | undefined) => (kind ? `<span class="ck ck-${kind}" title="${KIND_WORD[kind]}: ${kind === 'FACT' ? '근거에 그대로 있어요' : kind === 'INFERENCE' ? '근거에서 끌어낸 해석이에요' : '근거로 확인되지 않은 가정이에요'}">${KIND_WORD[kind]}</span>` : '');

@@ -10,10 +10,9 @@ import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { paperPanel } from './renderArena.js';
 import { shell, type HomeEntry } from './renderHtml.js';
 import { esc } from './html.js';
+import { won, tone, pct as fmtPct } from './format.js';
+const pct = (v: number | null, d = 1) => fmtPct(v, d);
 
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
-const pct = (v: number | null, d = 1) => (v === null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(d)}%`);
-const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 
 /** Screener presets' track record (G-53): public to everyone, the losing ones included. */
 function signalCard(rows: readonly SignalBoardRow[]): string {

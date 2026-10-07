@@ -9,10 +9,9 @@ import type { Footprint, StructureSnapshot } from '../analysis/structure.js';
 import type { FinancePeriod, StockSnapshot } from '../types.js';
 import type { FlowSection, MarketSection } from './marketSection.js';
 import { esc } from './html.js';
+import { won, tone, pct as fmtPct } from './format.js';
+const pct = (v: number | null, digits = 1) => fmtPct(v, digits, '없음');
 
-const won = (v: number) => `${(v>=100?Math.round(v):v).toLocaleString('ko-KR',{maximumFractionDigits:8})}원`;
-const pct = (v: number | null, digits = 1) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`);
-const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 /** Shares in 만주 / 억주 so flow numbers stay readable. */
 /** Net buying in KRW, short: +12.3억 / -1,234억 / +4,500만. */
 function krw(v: number | null | undefined): string {
