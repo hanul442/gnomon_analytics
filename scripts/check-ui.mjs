@@ -109,7 +109,7 @@ try{
  await page.locator('[data-coin-tf="15"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'최근 20개'}).waitFor();await page.waitForFunction(()=>{var r=GNMChart.chart.timeScale().getVisibleRange();return r&&r.from>=1791262800;});
  // Coins retain actual trade ticks; stocks expose minute/day/week/month only.
  await page.locator('[data-coin-tf="T"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'최근 체결 30개'}).waitFor();
- await page.goto(origin+'/stock.html?c=999999#tab-chart');await page.locator('[data-minute-menu]').waitFor();
+ await page.setViewportSize({width:375,height:850});await page.goto(origin+'/stock.html?c=999999#tab-chart');await page.locator('[data-minute-menu]').waitFor();
  assert.equal(await page.locator('.coin-tf [data-tf="D"]').count(),1);assert.equal(await page.locator('.seg.tf').count(),0);
  await page.locator('[data-tf="W"]').click();assert.equal(await page.locator('[data-draw="trend"]').isDisabled(),true);assert.equal(await page.evaluate(()=>GNMChart.chart.panes().length),1);assert.ok(await page.evaluate(()=>GNMChart.candle.data().length<GNMChart.bars.length/3));await page.locator('[data-tf="M"]').click();assert.equal(await page.evaluate(()=>GNMChart.chart.panes().length),1);assert.ok((await page.locator('#chart').boundingBox()).height<500);await page.screenshot({path:'test-artifacts/stock-monthly.png'});
  await page.locator('[data-minute-menu]').click();await page.locator('[data-coin-tf="5"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'정규장 5분봉'}).waitFor();
@@ -139,7 +139,7 @@ try{
  await page.screenshot({path:'test-artifacts/reduced-motion-orb.png'});await page.evaluate(()=>fixtureLoading.end());
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');
-  assert.equal(await page.locator('#market-report-cards').count(),0);assert.equal(await page.locator('.find-row #market-daily-link').count(),1);assert.match(await page.locator('#market-daily-link').getAttribute('href'),/market/);
+  assert.equal(await page.locator('#market-report-cards').count(),0);assert.equal(await page.locator('.find-row #market-daily-link').count(),1);if(width===375){const dailyBox=await page.locator('#market-daily-link').boundingBox(),radarBox=await page.locator('.find-row a[href="signals.html"]').boundingBox();assert.ok(Math.abs(dailyBox.y-radarBox.y)<5,'daily stays beside filing radar');await page.screenshot({path:'test-artifacts/home-daily-button.png'});}assert.match(await page.locator('#market-daily-link').getAttribute('href'),/market/);
   assert.ok(await page.evaluate(()=>{const search=document.querySelector('.top-search'),banner=document.getElementById('banner');return !!banner&&!!(search.compareDocumentPosition(banner)&Node.DOCUMENT_POSITION_FOLLOWING);}));
   const ad=page.locator('.bn-hanul');const slide=await ad.getAttribute('data-i');await page.locator('[data-go="'+slide+'"]').click();
   assert.ok(await ad.isVisible());assert.ok(await ad.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0));
@@ -187,7 +187,7 @@ try{
  // G-118: same-theme comparison on the summary tab: cards in a sideways strip, return and PER against the theme.
  await page.goto(origin+'/stock.html?c=999999');await page.locator('#peers .pe-card').first().waitFor();
  assert.equal(await page.locator('#peers .pe-card').count(),4);await page.locator('#peers .pe-per').filter({hasText:'중간값 11.0배보다'}).waitFor();
- assert.match(await page.locator('#peers .pe-sum').innerText(),/4개 중 1위/);
+ assert.match(await page.locator('#peers .pe-sum').innerText(),/4개 중 1위/);await page.locator('[data-pe-sort]').selectOption('return');assert.equal(await page.locator('#peers .pe-card').first().getAttribute('data-sym'),'999999');await page.locator('[data-pe-direction]').click();assert.equal(await page.locator('#peers .pe-card').first().getAttribute('data-sym'),'000002');
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#peers').screenshot({path:'test-artifacts/peers.png'});
  // G-109: a fresh browser takes the account's settings and watchlist, reloads once, and sends later changes.
  sync.on=true;{const fresh=await browser.newContext();await fresh.addInitScript(()=>localStorage.setItem('gnm-session','fixture-only'));const p2=await fresh.newPage();p2.on('pageerror',e=>errors.push(e.message));let loads=0;p2.on('load',()=>loads++);

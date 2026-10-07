@@ -155,7 +155,7 @@ window.addEventListener('DOMContentLoaded', function () {
       saved.forEach(function (x) { x[0].setData(x[2]);x[0].applyOptions({ visible: x[1] }); }); saved = [];if(G.suspendAnalysis)G.suspendAnalysis(false);if(G.showBars)G.showBars(bars); hidden = false; if(window.GNM_scenarioPause)GNM_scenarioPause(false);
       var r = document.querySelector('[data-range][aria-pressed=true]'); if (r) r.click();
     } else {
-      var agg=aggregate(k);candle.setData(agg);if(G.showBars)G.showBars(agg);hidden = true; if(window.GNM_scenarioPause)GNM_scenarioPause(true); var selected=document.querySelector('[data-range][aria-pressed=true]'),n=selected?Number(selected.dataset.range):bars.length,cut=bars[Math.max(0,bars.length-n)].date,visible=agg.filter(function(b){return b.time>=cut;});if(visible.length<2)visible=agg.slice(-2);if(visible.length)chart.timeScale().setVisibleRange({from:visible[0].time,to:visible[visible.length-1].time});
+      var agg=aggregate(k);candle.setData(agg);if(G.showBars)G.showBars(agg);hidden = true; if(window.GNM_scenarioPause)GNM_scenarioPause(true); var selected=document.querySelector('[data-range][aria-pressed=true]'),n=selected?Number(selected.dataset.range):bars.length,cut=(${aggregateBars.toString()})([bars[Math.max(0,bars.length-n)]],k)[0].time,visible=agg.filter(function(b){return b.time>=cut;});if(visible.length<2)visible=agg.slice(-2);if(visible.length)chart.timeScale().setVisibleRange({from:visible[0].time,to:visible[visible.length-1].time});
       say(k === 'W' ? '주봉이에요. 지표·전략·그림은 일봉에서 보여요.' : '월봉이에요. 지표·전략·그림은 일봉에서 보여요.');
     }
     document.querySelectorAll('[data-range]').forEach(function (b) { b.disabled = k !== 'D'; });
