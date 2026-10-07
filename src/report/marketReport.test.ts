@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { periodAsset, weekStart, renderMarketReport, parseMarketCouncil, marketClaimText, type MarketReport } from './marketReport.js';
+import { periodAsset, weekStart, renderMarketReport, marketPoints, parseMarketCouncil, marketClaimText, type MarketReport } from './marketReport.js';
 const bars=[{date:'2026-10-02',close:100},{date:'2026-10-05',close:110},{date:'2026-10-07',close:121},{date:'2026-10-08',close:999}];
 test('weekly uses pre-Monday baseline, filters future prices and deduplicates sessions',()=>{
  assert.equal(weekStart('2026-10-07'),'2026-10-05');
@@ -41,3 +41,14 @@ test('market committee preserves actual experts, reply targets, stances and refe
  });
 
 test('coin sample returns are never presented as an unsupported aggregate index',()=>{assert.equal(marketClaimText('코인 지수는 -1.82~-10.12%'), '수집 코인은 -1.82~-10.12%');});
+
+test('market points read the published numbers: breadth, the index move and the sample ends, with the right particle', () => {
+  const g = (id: string, name: string, up: number, down: number, assets: MarketReport['groups'][number]['assets']) => ({ id, name, source: 's', universe: 10, snapshotDate: '2026-10-07', breadth: { up, down, flat: 0 }, assets });
+  const a = (symbol: string, name: string, returnPct: number) => ({ symbol, name, date: '2026-10-07', close: 100, returnPct, baseline: '2026-10-06', value: null });
+  const r = { schema: 'curia.market-report.v4', date: '2026-10-07', from: '2026-10-07', generatedAt: '', period: 'daily', ai: { status: 'SKIPPED' },
+    groups: [g('M1', '코스피', 30, 70, [a('KOSPI', '코스피', -1.98), a('005930', '삼성전자', -1.8), a('105560', 'KB금융', 0.36)]), g('M4', 'ETF', 20, 80, [a('069500', 'KODEX 200', -1.98), a('X', '반도체', -4)])] } as unknown as MarketReport;
+  const p = marketPoints(r);
+  assert.equal(p[0], '코스피·ETF 모두 내린 종목이 더 많았어요.');
+  assert.match(p[1]!, /^코스피 지수 ▼ -1\.98%, 오른 종목 비중 30% · 표본 중 가장 강한 KB금융 ▲ \+0\.36%, 가장 약한 삼성전자 ▼ -1\.80%\.$/);
+  assert.match(p[2]!, /^ETF는 KODEX 200 ▼ -1\.98%/);
+});

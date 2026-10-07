@@ -55,7 +55,7 @@ export function validCouncil(council: MarketCouncil, groups: readonly MarketGrou
 const pct=(n:number|null)=>n===null?'확인 필요':`${n>0?'+':''}${n.toFixed(2)}%`;
 /** This source contains individual coins, never an aggregate cryptocurrency index. */
 export function marketClaimText(text:string):string {
- return text.replace(/코인\s*지수는/g,'수집 코인은').replace(/코인\s*지수가/g,'수집 코인이').replace(/코인\s*지수를/g,'수집 코인을').replace(/코인\s*지수/g,'수집 코인').replace(/광폭 낙장/g,'광범위한 하락').replace(/ 락 반면/g,' 하락한 반면');
+ return text.replace(/코인\s*지수는/g,'수집 코인은').replace(/코인\s*지수가/g,'수집 코인이').replace(/코인\s*지수를/g,'수집 코인을').replace(/코인\s*지수/g,'수집 코인').replace(/광폭 낙장/g,'광범위한 하락').replace(/ 락 반면/g,' 하락한 반면').replace(/낙장/g,'하락장');
 }
 const claims=(items: readonly z.infer<typeof claim>[])=>`<ul class="market-claims">${items.map(c=>`<li><span class="tag">${c.kind==='FACT'?'사실':c.kind==='INFERENCE'?'해석':'가정'}</span> ${esc(marketClaimText(c.text))} <small>${c.refs.map(r=>`<a href="#${esc(r)}">${esc(r)}</a>`).join(' · ')}</small></li>`).join('')}</ul>`;
 export const marketSymbol=(period:Period)=>`MARKET-${period.toUpperCase()}`;
@@ -70,11 +70,61 @@ export function renderMarketDeep(r:MarketReport):string {
  return `<section class="block" id="council">${ai}</section><details class="card block market-evidence"><summary>판단 근거 · 코스피·코스닥·코인·ETF 데이터</summary>${groupHtml}</details>`;
 
 }
+const MARKET_CSS=`<style>.mk-lead h1{font-size:24px;margin:6px 0 4px}.mk-verdict{font-size:17px;font-weight:800;margin:10px 0 2px;line-height:1.45}.mk-meta{font-size:12.5px;color:var(--muted);margin:4px 0 0}
+.mk-ix{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.mk-ix .card{padding:12px 14px}.mk-ix .pl-k{display:flex;justify-content:space-between;gap:6px}.mk-ix .pl-k small{color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mk-v{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums;margin:2px 0}.mk-c{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}.mk-br{display:flex;height:6px;border-radius:4px;overflow:hidden;margin:8px 0 4px;background:#eef1f5}.mk-br i{display:block}.mk-br .u{background:#e5484d}.mk-br .f{background:#c4cbc9}.mk-br .d{background:#3b7be0}.mk-ix small.n{font-size:11.5px;color:var(--muted)}
+.mk-points{margin:0;padding-left:18px;line-height:1.75;font-size:14.5px}.mk-points li{margin:4px 0}
+.mk-tabs{margin:0 0 12px}.mk-panel[hidden]{display:none}.mk-movers{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mk-movers h3{font-size:13px;color:var(--muted);margin:0 0 6px}.mk-row{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}.mk-row:first-of-type{border-top:0}.mk-row span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mk-row b{font-variant-numeric:tabular-nums;white-space:nowrap}.mk-panel .tmp{margin-bottom:12px}
+.ai-summary .as-list{margin:0;padding-left:18px;line-height:1.8}.ai-summary .as-list li{margin:3px 0}
+@media(max-width:820px){.mk-ix{grid-template-columns:1fr 1fr;gap:8px}.mk-v{font-size:17px}.mk-movers{grid-template-columns:minmax(0,1fr)}}</style>`;
+
+/** The market's headline number: its index for stocks, the most-traded asset for coins and ETFs. */
+const headline=(g:MarketGroup)=>g.assets.find(a=>a.symbol==='KOSPI'||a.symbol==='KOSDAQ')??g.assets[0]??null;
+const isIndex=(a:MarketAsset)=>a.symbol==='KOSPI'||a.symbol==='KOSDAQ';
+const moveText=(v:number|null)=>v==null?'—':`${v>0?'▲ +':v<0?'▼ ':''}${v.toFixed(2)}%`;
+const toneOf=(v:number|null)=>v==null||v===0?'':v>0?'up':'down';
+const topic=(w:string)=>{const c=w.charCodeAt(w.length-1);return w+(c>=0xac00&&c<=0xd7a3&&(c-0xac00)%28?'은':'는');};
+const share=(g:MarketGroup)=>{const t=g.breadth.up+g.breadth.down+g.breadth.flat;return t?g.breadth.up/t*100:null;};
+
+/** Plain-language points from the published numbers only (no AI): breadth, the index move, the best and worst of the sample. */
+export function marketPoints(r:MarketReport):string[] {
+ const out:string[]=[];
+ const leaning=r.groups.map(g=>({g,s:share(g)})).filter(x=>x.s!=null);
+ const down=leaning.filter(x=>x.s!<45).map(x=>x.g.name),up=leaning.filter(x=>x.s!>55).map(x=>x.g.name);
+ if(leaning.length)out.push(down.length===leaning.length?`${down.join('·')} 모두 내린 종목이 더 많았어요.`:up.length===leaning.length?`${up.join('·')} 모두 오른 종목이 더 많았어요.`:`${up.length?topic(up.join('·'))+' 오른 종목이, ':''}${down.length?topic(down.join('·'))+' 내린 종목이 ':''}더 많았고 나머지는 엇갈렸어요.`);
+ for(const g of r.groups){
+  const h=headline(g),s=share(g),rest=g.assets.filter(a=>!isIndex(a)&&a.returnPct!=null).sort((a,b)=>b.returnPct!-a.returnPct!);
+  const best=rest[0],worst=rest.at(-1);
+  const lead=h&&h.returnPct!=null?(isIndex(h)?`${g.name} 지수 ${moveText(h.returnPct)}`:`${topic(g.name)} ${h.name} ${moveText(h.returnPct)}`):g.name;
+  const breadth=s==null?'':`, 오른 종목 비중 ${s.toFixed(0)}%`;
+  const ends=best&&worst&&best!==worst?` · 표본 중 가장 강한 ${best.name} ${moveText(best.returnPct)}, 가장 약한 ${worst.name} ${moveText(worst.returnPct)}`:'';
+  out.push(`${lead}${breadth}${ends}.`);
+ }
+ return out;
+}
+
+/** Overall call in one line, from breadth across the four markets. */
+function verdict(r:MarketReport):string {
+ const s=r.groups.map(share).filter((x):x is number=>x!=null);
+ if(!s.length)return '시장 자료를 모으지 못했어요.';
+ const avg=s.reduce((a,b)=>a+b,0)/s.length;
+ return avg<40?'내린 종목이 뚜렷하게 많은 약세 하루였어요.':avg<47?'내린 종목이 조금 더 많은 하루였어요.':avg>60?'오른 종목이 뚜렷하게 많은 강세 하루였어요.':avg>53?'오른 종목이 조금 더 많은 하루였어요.':'오른 종목과 내린 종목이 비슷하게 엇갈렸어요.';
+}
+
 export function renderMarketReport(r:MarketReport, base=''):string {
  const summary=r.ai.summary??r.ai.council?.summary;
- const body=`<section class="card block market-lead"><a class="ml-back" href="${base}market-reports.html">‹ 시장 데일리 모음</a><h1>${esc(r.date)} 시장 데일리</h1><p class="muted">코스피 · 코스닥 · 코인 · ETF${r.period==='weekly'?' · 주중 누적 집계 (완료된 주간 리포트 아님)':''}</p><details><summary class="muted small">데이터 기준·분석 범위</summary><p class="fine">생성 ${esc(r.generatedAt)} · 한국 증시: 거래일 종가 · 코인: 업비트 원화 일봉(09:00 KST 경계), 당일 봉은 진행 중 가격 스냅샷입니다. 휴장·수집 실패는 각 자산의 실제 기준일로 확인하세요.</p><p class="fine">국내 주식의 시가총액 상위 표본과 수집된 ETF·업비트 원화 코인 기준입니다. ETF 가격 수익률은 분배금을 포함한 총수익률이 아닙니다.</p></details></section><section class="block market-thermals">${r.groups.map(g=>marketTemperature(g.temperature??null,g.breadth,g.name,base+'screener.html'+(g.id==='M3'?'#coin':g.id==='M4'?'#etf':''))).join('')}</section>${aiSummaryCard(marketClaimText(summary?.text??(r.ai.status==='FAILED'?'AI 요약 생성에 실패했습니다. '+(r.ai.error??''):'AI 요약을 준비하고 있어요.')),'시장 AI 요약',r.date)}${deepSlot(marketSymbol(r.period),r.date)}<div class="join-wrap"><div class="card">${gate(joinBox({symbol:marketSymbol(r.period),name:`${r.date} 시장 데일리`}).replace('data-name=',`data-report-date="${esc(r.date)}" data-name=`),{base,what:'시장 위원회에 질문·반론하기',need:'plus'})}</div></div>`;
-
- return shell(base,`${r.date} 시장 리포트 | CURIA`,body,{scripts:EVIDENCE_SCRIPT+DEBATE_FILTER_SCRIPT+DEBATE_PLAY_SCRIPT+DEEP_SCRIPT+`<script>document.addEventListener('click',function(e){var a=e.target.closest('a[href^="#M"]');if(!a)return;var target=document.getElementById(a.getAttribute('href').slice(1));if(target){var p=target.parentElement;while(p){if(p.tagName==='DETAILS')p.open=true;p=p.parentElement;}}});</script>`});
+ const d=new Date(`${r.date}T00:00:00Z`),title=`${d.getUTCMonth()+1}월 ${d.getUTCDate()}일 시장 데일리`;
+ const lead=`<section class="card block market-lead mk-lead"><a class="ml-back" href="${base}market-reports.html">‹ 시장 데일리 모음</a><h1>${esc(title)}</h1><p class="mk-verdict">${esc(verdict(r))}</p><p class="mk-meta">코스피 · 코스닥 · 코인 · ETF · 가격 기준 ${esc(r.date)}${r.period==='weekly'?' · 주중 누적 집계':''}</p><details><summary class="muted small">데이터 기준·분석 범위</summary><p class="fine">생성 ${esc(r.generatedAt)} · 한국 증시: 거래일 종가 · 코인: 업비트 원화 일봉(09:00 KST 경계), 당일 봉은 진행 중 가격 스냅샷입니다. 휴장·수집 실패는 각 자산의 실제 기준일로 확인하세요.</p><p class="fine">국내 주식의 시가총액 상위 표본과 수집된 ETF·업비트 원화 코인 기준입니다. ETF 가격 수익률은 분배금을 포함한 총수익률이 아닙니다.</p></details></section>`;
+ const ix=`<section class="block"><div class="block-head"><h2>지수 한눈에</h2><span class="muted small">막대는 오른·보합·내린 종목 비율</span></div><div class="mk-ix">${r.groups.map(g=>{const h=headline(g),t=g.breadth.up+g.breadth.down+g.breadth.flat||1;
+  return `<div class="card"><div class="pl-k"><span>${esc(g.name)}</span>${h&&!isIndex(h)?`<small>${esc(h.name)}</small>`:''}</div><div class="mk-v">${h?h.close.toLocaleString('ko-KR',{maximumFractionDigits:isIndex(h)?2:4}):'—'}</div><div class="mk-c ${toneOf(h?.returnPct??null)}">${moveText(h?.returnPct??null)}</div><div class="mk-br" aria-hidden="true"><i class="u" style="width:${(g.breadth.up/t*100).toFixed(1)}%"></i><i class="f" style="width:${(g.breadth.flat/t*100).toFixed(1)}%"></i><i class="d" style="width:${(g.breadth.down/t*100).toFixed(1)}%"></i></div><small class="n"><span class="up">▲${g.breadth.up.toLocaleString('ko-KR')}</span> · <span class="down">▼${g.breadth.down.toLocaleString('ko-KR')}</span></small></div>`;}).join('')}</div></section>`;
+ const points=`<section class="card block"><h2>핵심 포인트</h2><ul class="mk-points">${marketPoints(r).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p class="fine">수집한 숫자만으로 정리했어요. 해석은 아래 AI 요약과 위원회 판단을 보세요.</p></section>`;
+ const row=(a:MarketAsset)=>`<div class="mk-row"><span>${esc(a.name)}</span><b class="${toneOf(a.returnPct)}">${moveText(a.returnPct)}</b></div>`;
+ const panels=r.groups.map((g,i)=>{const rest=g.assets.filter(a=>!isIndex(a)&&a.returnPct!=null).sort((a,b)=>b.returnPct!-a.returnPct!);
+  return `<div class="mk-panel" data-mk="${esc(g.id)}"${i?' hidden':''}>${marketTemperature(g.temperature??null,g.breadth,g.name,base+'screener.html'+(g.id==='M3'?'#coin':g.id==='M4'?'#etf':''))}${rest.length>1?`<div class="mk-movers"><div><h3>표본 상승 상위</h3>${rest.slice(0,3).map(row).join('')}</div><div><h3>표본 하락 상위</h3>${rest.slice(-3).reverse().map(row).join('')}</div></div>`:''}<p class="fine">${esc(g.source)} · 표본 ${g.assets.length}개 / 전체 ${g.universe.toLocaleString('ko-KR')}개</p></div>`;}).join('');
+ const markets=`<section class="card block" id="markets"><h2>시장별로 보기</h2><div class="seg mk-tabs" role="group" aria-label="시장">${r.groups.map((g,i)=>`<button type="button" data-mk-tab="${esc(g.id)}" aria-pressed="${i===0}">${esc(g.name)}</button>`).join('')}</div>${panels}</section>`;
+ const ai=aiSummaryCard(marketClaimText(summary?.text??(r.ai.status==='FAILED'?'AI 요약 생성에 실패했습니다. '+(r.ai.error??''):'AI 요약을 준비하고 있어요.')),'AI 위원회 요약',r.date,true);
+ const body=`${MARKET_CSS}${lead}${ix}${points}${ai}${markets}<div class="block-head" style="margin-top:8px"><h2>AI 위원회 판단</h2><span class="muted small">전문가 11명 판단 · 시나리오 · 토론</span></div>${deepSlot(marketSymbol(r.period),r.date)}<div class="join-wrap"><div class="card">${gate(joinBox({symbol:marketSymbol(r.period),name:`${r.date} 시장 데일리`}).replace('data-name=',`data-report-date="${esc(r.date)}" data-name=`),{base,what:'시장 위원회에 질문·반론하기',need:'plus'})}</div></div>`;
+ const tabs=`<script>document.addEventListener('click',function(e){var b=e.target.closest('[data-mk-tab]');if(!b)return;var id=b.getAttribute('data-mk-tab');document.querySelectorAll('[data-mk-tab]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});document.querySelectorAll('.mk-panel').forEach(function(p){p.hidden=p.getAttribute('data-mk')!==id;});});</script>`;
+ return shell(base,`${title} | CURIA`,body,{scripts:EVIDENCE_SCRIPT+DEBATE_FILTER_SCRIPT+DEBATE_PLAY_SCRIPT+DEEP_SCRIPT+tabs+`<script>document.addEventListener('click',function(e){var a=e.target.closest('a[href^="#M"]');if(!a)return;var target=document.getElementById(a.getAttribute('href').slice(1));if(target){var p=target.parentElement;while(p){if(p.tagName==='DETAILS')p.open=true;p=p.parentElement;}}});</script>`});
 }
 
 export function renderMarketReportIndex(reports: readonly MarketReport[]):string {
