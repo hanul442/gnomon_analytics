@@ -2,8 +2,8 @@
 
 import { shell } from './renderHtml.js';
 import { CREDIT_COST } from './plans.js';
+import { esc } from './html.js';
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 export const FAQ: readonly { group: string; items: readonly [string, string][] }[] = [
   { group: '처음 쓰실 때', items: [

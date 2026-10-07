@@ -5,9 +5,9 @@ import { RELEASES, VERSION } from './releases.js';
 
 import type { CreditEvent } from './events.js';
 import { shell } from './renderHtml.js';
+import { esc } from './html.js';
 export { BANNER_CSS } from './ui.js';
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 /** A notice or ad in the home banner (banners.json, edited by hand like promos.json). */
 export type BannerKind = 'notice' | 'event' | 'guide' | 'survey' | 'ad';

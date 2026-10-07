@@ -2,7 +2,7 @@ import {contentMore} from './contentMore.js';
 import {coinFlow} from './coinFlow.js';
 import type { DailyReport } from './dailyReport.js';
 import { flowsPanel, fundamentalsPanel } from './renderMarket.js';
-const esc=(s:string)=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]!));
+import { esc } from './html.js';
 /** Public source data only: never accepts or renders commentary. */
 export function publicPanels(r:DailyReport){
  return {

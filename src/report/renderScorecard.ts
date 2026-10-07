@@ -9,9 +9,8 @@ import { PRESETS } from '../analysis/screenRules.js';
 import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { paperPanel } from './renderArena.js';
 import { shell, type HomeEntry } from './renderHtml.js';
+import { esc } from './html.js';
 
-const esc = (value: string): string =>
-  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const pct = (v: number | null, d = 1) => (v === null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(d)}%`);
 const tone = (v: number | null) => (v === null || v === 0 ? '' : v > 0 ? 'up' : 'down');

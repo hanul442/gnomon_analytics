@@ -4,6 +4,7 @@
 // be switched at the top of the page (gnm-persona). Everything is in the page; CSS decides what shows.
 
 import type { DailyReport } from './dailyReport.js';
+import { esc } from './html.js';
 
 export type Persona = 'beginner' | 'trader' | 'swing' | 'long' | 'all';
 export const PERSONAS: readonly { key: Persona; label: string; question: string }[] = [
@@ -56,7 +57,6 @@ export const PERSONA_JS = `
     if (window.GNM && GNM.track) GNM.track('persona', { p: p });
   });`;
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const won = (v: number) => `${v >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}원`;
 const pct = (v: number | null | undefined) => (v == null ? '—' : `${v > 0 ? '▲ +' : v < 0 ? '▼ ' : ''}${v.toFixed(1)}%`);
 const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');

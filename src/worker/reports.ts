@@ -10,6 +10,7 @@ import { conclusionCard } from '../report/conclusion.js';
 import { parliament } from '../report/renderParliament.js';
 import { debateSection, issuesSection, decisionTrace } from '../report/renderReportExtras.js';
 import { flowsPanel, fundamentalsPanel } from '../report/renderMarket.js';
+import { esc } from '../report/html.js';
 export interface ReportQueue { send(body: { id: string }): Promise<void> }
 export interface ReportJob {
  id:string; user_id:string; symbol:string; kind:string; input_hash:string; input_json:string;
@@ -17,7 +18,6 @@ export interface ReportJob {
  result_json:string|null; error:string|null; created_at:string; updated_at:string;
 }
 export interface ReportDeps { now:()=>Date; fetch:typeof fetch; generate?:(report:DailyReport,tier:CommentaryTier)=>Promise<Commentary>; site?:string }
-const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export async function reportInput(site:string,symbol:string,deps:ReportDeps):Promise<DailyReport>{
  const base=site.replace(/\/$/,'');
  const context=await deps.fetch(`${base}/research/${symbol}.json`,{signal:AbortSignal.timeout(8000)}).catch(()=>null);

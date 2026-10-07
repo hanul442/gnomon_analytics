@@ -5,11 +5,9 @@ import {ORBS} from './ui.js';
 
 import type { DailyReport } from './dailyReport.js';
 import { ANALYSTS } from '../analysis/analysts.js';
-import { VIEW_FOCUS } from './conclusion.js';
 import { replyIndex, type ClaimKind, type Commentary, type InsightKey } from '../analysis/commentary.js';
+import { esc } from './html.js';
 
-const esc = (value: string): string =>
-  value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const pct = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
 const tone = (v: number) => (v > 0 ? 'up' : v < 0 ? 'down' : '');

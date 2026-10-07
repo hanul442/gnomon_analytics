@@ -7,7 +7,6 @@
 // numbers and records; paying shows more of the reasoning.
 
 export type PlanKey = 'free' | 'plus' | 'pro' | 'max';
-export const PLAN_RANK: Record<PlanKey, number> = { free: 0, plus: 1, pro: 2, max: 3 };
 
 export interface Plan {
   key: PlanKey; name: string; price: number; tagline: string; monthlyCredits: number;
