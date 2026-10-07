@@ -152,12 +152,12 @@ function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): 
     const r = e.report, p = r?.price, c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
     const fit = viewFit(e);
-    return `<div class="tp" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' || e.group === 'core' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
+    return `<div class="tp" data-pick-daily="${e.group==='daily'?'1':'0'}" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' || e.group === 'core' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
 <p class="muted small">${esc(e.group==='daily'?`일일 선정 · ${e.pickDate??''}`:e.group==='core'?'고정 추적':'주간 선정')} · ${esc(e.reasons?.[0]??'')}</p><div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 것</h2><a class="more-link" href="reports.html">AI 리포트 모음 ›</a></div>
 <p class="tp-lead">${views.map((v) => `<span class="pw pw-${v}">${VIEW_LEAD[v]}</span>`).join('')} <a href="#" data-open-view>보기 방식 바꾸기</a></p>
-<div class="tp-grid" id="tp-grid">${picks.map(card).join('')}</div><p class="muted small">최근 일일 선정(${esc(last??'확인 필요')})과 고정·주간 추적 종목 가운데 내 보기 방식에 맞는 네 개를 보여 드려요. <a href="reports.html#daily">일일 선정 전체 보기 ›</a> 투자 권유가 아니에요.</p></section>`;
+<div class="tp-grid" id="tp-grid">${picks.map(card).join('')}</div><p class="muted small">최근 일일 선정(${esc(last??'확인 필요')})과 고정·주간 추적 종목 가운데 내 보기 방식에 맞는 네 개를 보여 드려요. 최근 일일 선정과 내 보유·관심 종목을 먼저 보여 드립니다. <a href="reports.html#daily">일일 선정 전체 보기 ›</a> 투자 권유가 아니에요.</p></section>`;
 }
 
 /** Every daily pick of the last week and this week's reports, off the front page (G-64). */
@@ -364,7 +364,7 @@ const TODAY_SCRIPT = `<script>
     var cards = [].slice.call(grid.children);
     // G-85: stocks the reader holds or watches (survey, ☆) come first, marked as theirs.
     var mine = {}; try { (JSON.parse(localStorage.getItem('gnm-watch') || '[]') || []).forEach(function (x) { mine[x] = 1; }); ((JSON.parse(localStorage.getItem('gnm-prefs') || '{}') || {}).tickers || []).forEach(function (t) { mine[t[0]] = 2; }); } catch (e) {}
-    var sc = function (c) { return Number(c.getAttribute('data-s-' + p)) + (mine[c.getAttribute('data-sym')] ? 1000 : 0); };
+    var sc = function (c) { return Number(c.getAttribute('data-s-' + p)) + (c.getAttribute('data-pick-daily')==='1'?100:0) + (mine[c.getAttribute('data-sym')] ? 1000 : 0); };
     cards.forEach(function (c) { var t = c.querySelector('.tp-top'), had = c.querySelector('.t-mine'); if (mine[c.getAttribute('data-sym')] && !had && t) t.insertAdjacentHTML('afterbegin', '<span class="tier t-mine">' + (mine[c.getAttribute('data-sym')] === 2 ? '내 보유' : '내 관심') + '</span>'); });
     cards.sort(function (a, b) { return sc(b) - sc(a); });
     cards.forEach(function (c, i) { grid.appendChild(c); c.hidden = i >= 4; });

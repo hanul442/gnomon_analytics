@@ -63,15 +63,15 @@ export function chooseDailyPicks(input: {
     }
     for (const symbol of shuffle([...pool.keys()], rand).slice(0, DAILY_STOCKS)) {
       const r = rows.get(symbol)!;
-      out.push({ date: input.date, symbol, name: String(r[1]), kind: 'stock', market: r[2] === 'Q' ? 'KOSDAQ' : 'KOSPI', tier: out.length ? 'brief' : 'deep', reason: `스크리너 '${pool.get(symbol)}' 상위` });
+      out.push({ date: input.date, symbol, name: String(r[1]), kind: 'stock', market: r[2] === 'Q' ? 'KOSDAQ' : 'KOSPI', tier: out.length ? 'brief' : 'deep', reason: `스크리너 '${pool.get(symbol)}' 신호 후보`  });
     }
     const etfs = input.etfs.filter((r) => !ETF_SKIP.test(String(r[1])) && !input.exclude.has(String(r[0])) && Number(r[4]) > 0).slice(0, ETF_POOL);
     const etf = shuffle(etfs, rand)[0];
     // Deep for the ETF on Monday, Wednesday and Friday; for the coin on Tuesday and Thursday.
-    if (etf) out.push({ date: input.date, symbol: String(etf[0]), name: String(etf[1]), kind: 'etf', market: 'KOSPI', tier: input.weekday % 2 ? 'deep' : 'brief', reason: '거래대금 상위 ETF' });
+    if (etf) out.push({ date: input.date, symbol: String(etf[0]), name: String(etf[1]), kind: 'etf', market: 'KOSPI', tier: input.weekday % 2 ? 'deep' : 'brief', reason: '거래대금 상위 ETF 후보에서 선정' });
   }
   const coins = input.coins.filter((r) => !STABLE.has(String(r[0]).replace('KRW-', '')) && !r[3] && Number(r[4]) >= 100 && !input.exclude.has(String(r[0]))).slice(0, COIN_POOL);
   const coin = shuffle(coins, rand)[0];
-  if (coin) out.push({ date: input.date, symbol: String(coin[0]), name: String(coin[1]), kind: 'coin', market: 'UPBIT', tier: weekend || input.weekday % 2 === 0 ? 'deep' : 'brief', reason: '24시간 거래대금 상위 코인' });
+  if (coin) out.push({ date: input.date, symbol: String(coin[0]), name: String(coin[1]), kind: 'coin', market: 'UPBIT', tier: weekend || input.weekday % 2 === 0 ? 'deep' : 'brief', reason: '24시간 거래대금 상위 코인 후보에서 선정' });
   return out;
 }

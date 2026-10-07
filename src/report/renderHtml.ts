@@ -17,6 +17,7 @@ import type { Claim } from '../analysis/commentary.js';
 import { apiMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
 import { CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
 import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, miniGauge, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
+import { aiSummaryCard } from './aiSummary.js';
 import { DART_SCRIPT, freshness, freshnessBadge, hero, latestLists, staleAiBar, priceChart } from './appParts.js';
 import { arenaHeadline, arenaPanel } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
@@ -627,7 +628,7 @@ ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 ${report.kind ? '' : peersSlot(report.symbol)}
 <div class="home-lists">${latestLists(report)}</div>`;
-  const chartTab = `${chart.html}<div style="margin-top:16px">${kpis(report)}</div>`;
+  const chartTab = `${chart.html}<section data-generated="chart">${report.commentary?.summary?aiSummaryCard(report.commentary.summary.text,'차트 AI 요약',ctx.commentaryFrom??report.date):''}</section><div style="margin-top:16px">${kpis(report)}</div>`;
   // Free: the 16-indicator summary (public elsewhere too). Plus: our horizon gauges, fair value, forecasts and structure.
   const technical = `${insightLine(report, 'technical', base)}${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
   // Free: the champion's name. Plus: the ranking. Pro: trades, curves, Monte Carlo and chart markers.
@@ -652,7 +653,7 @@ ${report.kind ? '' : peersSlot(report.symbol)}
 ${panel('chart', chartTab)}
 ${panel('technical', technical)}
 ${panel('strategy', strategyTab)}
-${panel('ai', aiTab)}
+${panel('ai', aiTab).replace('role="tabpanel"',`data-ai-date="${escape(report.commentary?.status==='OK'?(ctx.commentaryFrom??report.date):'')}" role="tabpanel"`)}
 ${panel('flows', flowsTab)}
 ${panel('fundamentals', fundTab)}
 ${panel('news', newsTab)}
@@ -720,7 +721,7 @@ export const DEEP_SCRIPT = `<script>
   var slot = document.getElementById('deep-slot'); if (!slot) return;
   var sym = slot.getAttribute('data-symbol'), date = slot.getAttribute('data-date'), btn = document.getElementById('deep-open'), note = document.getElementById('deep-note');
   var path = '/deep/' + encodeURIComponent(sym) + '/' + date;
-  var show = function (html) { slot.innerHTML = html;
+  var show = function (html) { if(!slot.isConnected)return;slot.innerHTML = html;
     // The unlocked conclusion and vote (full scenarios and reasons) take the public ones' places.
     var sw = slot.querySelector('.deep-swap'); if (sw) { [].slice.call(sw.children).forEach(function (n) { var old = n.id && document.getElementById(n.id); if (old && old !== n) old.replaceWith(n); }); sw.remove(); }
     var join=document.querySelector('.join-wrap'), debate=slot.querySelector('#debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); if (window.GNM_debateFilter) window.GNM_debateFilter(); if (window.GNM_debate) window.GNM_debate(); };

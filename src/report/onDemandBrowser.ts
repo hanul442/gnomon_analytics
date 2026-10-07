@@ -8,13 +8,14 @@ export const JOBS_JS = `
  var dialog=null, timer=null;
  var paint=function(r){
   if (!r.fragments || !r.fragments.ai) return false;
+  var createdDay=r.generatedAt?new Date(Date.parse(r.generatedAt)+9*3600000).toISOString().slice(0,10):'',staticDay=(document.getElementById('tab-ai')||{}).dataset?.aiDate||'';
+  if(!new URLSearchParams(location.search).has('job')&&staticDay&&(createdDay||r.dataDate||'')<staticDay)return true;
   document.documentElement.dataset.reportJob='done';
-  document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent='AI 리포트가 준비됐어요';});
+  document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent=(createdDay?createdDay+' 작성 · ':'')+'AI 리포트 준비 완료';});
   var request=document.querySelector('.request-card');if(request){var head=request.querySelector('.lk-head b'),description=request.querySelector('p');if(head)head.textContent='AI 리포트가 준비됐어요';if(description)description.textContent='AI 위원회 탭에서 생성된 리포트를 확인하세요.';request.querySelectorAll('[data-create-report]').forEach(function(b){b.remove();});}
 
   // G-106/G-114: an AI report older than the prices shown says so, with a way to a fresh one, on the summary and the AI tab.
   var sess=((document.querySelector('[data-session]')||{}).dataset||{}).session||((document.getElementById('sp-date')||{}).textContent||'').slice(0,10);
-  var createdDay=r.generatedAt?new Date(Date.parse(r.generatedAt)+9*3600000).toISOString().slice(0,10):'';
   document.querySelectorAll('[data-stale-ai]').forEach(function(x){x.remove();});
   var bar=createdDay<sess&&r.dataDate&&/^\\d{4}-\\d{2}-\\d{2}$/.test(sess)&&r.dataDate<sess?'<div class="stale-ai" data-stale-ai role="note"><span class="sa-ic" aria-hidden="true">🕒</span><div class="sa-tx"><b>더 새로운 데이터가 있어요</b><small>AI 리포트 '+esc(r.dataDate)+' 기준 · 가격 '+esc(sess)+' 기준</small></div><button type="button" class="sa-go" data-create-report data-symbol="'+esc(r.symbol)+'" data-name="'+esc(r.symbol)+'">새 데이터로 다시 분석</button></div>':'';
   Object.keys(r.fragments||{}).forEach(function(key){
