@@ -622,7 +622,7 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   const body = `${bar}${panel('home', home)}
 ${panel('chart', chartTab)}
 ${panel('technical', `${timingInfographic(report)}${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${strategyTab}</section>`)}
-${panel('fundamentals', `${report.kind === 'coin' ? '' : healthInfographic(report.market, report.price?.close ?? null)}${report.kind === 'coin' ? '' : fundTab}${report.kind === 'coin' ? '' : statementsCard(report.market)}<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`)}
+${panel('fundamentals', `${report.kind === 'coin' ? '' : healthInfographic(report.market, report.price?.close ?? null)}${report.kind === 'coin' ? '' : fundTab}${report.kind === 'coin' ? '' : statementsCard(report.market, report.statements)}<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`)}
 ${panel('ai', aiTab).replace('role="tabpanel"',`role="tabpanel" data-ai-date="${escape(report.commentary?.status==='OK'?(ctx.commentaryFrom??report.date):'')}"`)}
 ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>

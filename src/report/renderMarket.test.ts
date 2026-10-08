@@ -6,6 +6,7 @@ import { runDaily } from '../cli/daily.js';
 import { loadTickers } from '../config/tickers.js';
 import { APP_CSS, UI_JS } from './renderHtml.js';
 import { tempDir } from '../testTmp.js';
+import { DART_FS_FIXTURE } from '../sources/dartStatements.test.js';
 
 // One settled run on fixture data, then the page: six tabs and the new panels.
 const FIX = join(process.cwd(), 'test', 'fixtures', 'naver');
@@ -17,6 +18,7 @@ const fakeFetch = (async (url: string | URL | Request) => {
   if (u.includes('timeframe=week')) return new Response(await readFile(join(FIX, 'week.xml'), 'latin1'));
   if (u.includes('timeframe=minute')) return new Response(await readFile(join(FIX, 'minute.xml'), 'latin1'));
   if (u.includes('fchart.stock.naver')) return new Response(await readFile(join(FIX, 'week.xml'), 'latin1')); // 260 bars as "daily" history
+  if (u.includes('fnlttSinglAcntAll')) return new Response(JSON.stringify(DART_FS_FIXTURE));
   if (u.includes('opendart')) return new Response(JSON.stringify({ status: '013' }));
   return new Response('<rss><channel></channel></rss>');
 }) as typeof fetch;
@@ -31,6 +33,8 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-ai', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
   for (const id of ['tab-strategy', 'tab-flows']) assert.match(page, new RegExp(`class="sub-sec" id="${id}"`));
   for (const text of ['타이밍 한눈에', '재무제표']) assert.ok(page.includes(text), text);
+  // G-140: DART statements as tabs with their infographics and every row folded.
+  for (const text of ['손익계산서', '재무상태표', '현금흐름표', '잉여현금(FCF)', '부채비율 43%', '영업이익률 <b>34.8%</b>', '전체 5개 항목 보기']) assert.ok(page.includes(text), text);
   // Horizon gauges on the home and technical tabs; strategies show their stance in the race rows (G-91), not a gauge card.
   assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 5);
   assert.ok(page.includes('class="race-stance') && !page.includes('전략별 현재 신호'));

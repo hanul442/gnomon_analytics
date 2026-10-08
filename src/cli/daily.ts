@@ -46,6 +46,7 @@ import { renderPaper, renderScorecard, renderTerms } from '../report/renderScore
 import { renderScreener, screenerRows } from '../report/renderScreener.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE } from '../sources/opendart.js';
+import { fetchDartStatements, type FullStatements } from '../sources/dartStatements.js';
 import { fetchOwnership } from '../sources/dartOwnership.js';
 import { buildEdge, type EventFiling, type HolderReport, type InsiderReport } from '../analysis/edge.js';
 import { eventOf } from '../analysis/edge.js';
@@ -451,6 +452,15 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
       await appendUnseen(join(root, 'data', 'holders', `${SYMBOL}.jsonl`), own.holders, (r) => `${r.receiptNo}:${r.reporter}`);
     }
   }
+  // G-140: full annual statements, refreshed weekly (they change once a year; best effort, never fatal).
+  if (ticker.dartCorpCode && options.apiKey.trim() && !coin && !ticker.kind) {
+    const stPath = join(root, 'data', 'statements', `${SYMBOL}.json`);
+    const old = await readFile(stPath, 'utf8').then((t) => JSON.parse(t) as FullStatements, () => null);
+    if (!old || now.getTime() - Date.parse(old.retrievedAt) > 7 * 86_400_000) {
+      const fresh = await fetchDartStatements({ apiKey: options.apiKey, corpCode: ticker.dartCorpCode, symbol: SYMBOL, ...fetchOptions }).catch(() => null);
+      if (fresh) { await mkdir(join(root, 'data', 'statements'), { recursive: true }); await writeFile(stPath, `${JSON.stringify(fresh)}\n`); }
+    }
+  }
   // News is best effort: a failed source is recorded and shown, never fatal.
   const newsPath = join(root, 'data', 'news', `${SYMBOL}.jsonl`);
   const { items: news, status: newsStatus } = await collectNews(ticker, options, fetchOptions);
@@ -587,6 +597,8 @@ export async function composeReport(
       insider: (await readLog<InsiderReport>(join(root, 'data', 'insider', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString()),
       holders: (await readLog<HolderReport>(join(root, 'data', 'holders', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString()),
     });
+    const statements = await readFile(join(root, 'data', 'statements', `${SYMBOL}.json`), 'utf8').then((t) => JSON.parse(t) as FullStatements, () => null);
+    if (statements && statements.retrievedAt <= now.toISOString()) built.statements = statements;
   }
   return built;
 }

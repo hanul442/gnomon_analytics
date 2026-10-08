@@ -70,6 +70,8 @@ export interface DailyReport {
   exchange?: 'KOSPI' | 'KOSDAQ' | 'UPBIT';
   /** What most readers miss (G-99): earnings surprises, dividends, buybacks, insider and 5% holder moves. */
   edge?: import('../analysis/edge.js').EdgeSection;
+  /** Full annual statements from DART (G-140): 손익계산서 · 재무상태표 · 현금흐름표, three years. */
+  statements?: import('../sources/dartStatements.js').FullStatements;
   /** AI commentary for "왜?" (docs/DESIGN.md §4.4); written once with the report. */
   commentary?: Commentary;
   /** Daily bars up to and including `date`, oldest first, for the interactive chart. */
