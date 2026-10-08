@@ -1,3 +1,4 @@
+import { renderWatchPage } from '../report/renderWatch.js';
 import { writeMarketReports, publishMarketReports } from './marketReports.js';
 import { publicPanels } from '../report/publicPanels.js';
 // One daily run: for every stock in tickers.json collect, append, write
@@ -740,6 +741,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   // The watchlist's status line (G-85): test prices and what is new, per covered stock.
   await writeFile(join(siteDir, 'watchinfo.json'), JSON.stringify(watchInfo(home)));
   await writeFile(join(siteDir, 'reports.html'), renderReportsPage(homeData));
+  await writeFile(join(siteDir, 'watch.html'), renderWatchPage());
   // Search index: every listed stock, with today's price when the list was fetched this run.
   const covered = new Set([...tickers, ...past].map((t) => t.symbol));
   const items = universe

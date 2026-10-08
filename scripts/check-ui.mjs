@@ -181,6 +181,11 @@ try{
   assert.equal(await page.locator('dialog.rj[open] [data-fun]').count(),1);await page.waitForTimeout(1200);
   await page.screenshot({path:'test-artifacts/job-progress-'+width+'.png'});await page.evaluate(()=>document.querySelector('dialog.rj[open]').close());
  }
+ // G-133: 관심 opens its own page with just the watched names.
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/index.html');await page.evaluate(()=>localStorage.setItem('gnm-watch',JSON.stringify(['999999'])));
+ await page.locator('.bottom-nav a[href$="watch.html"]').click();await page.waitForURL(/watch\.html/);await page.locator('#wp-list .wp-row').first().waitFor();
+ assert.equal(await page.locator('#wp-list .wp-row').count(),1);assert.equal(await page.locator('#wp-n').innerText(),'1');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.screenshot({path:'test-artifacts/watch-390.png'});await page.evaluate(()=>localStorage.removeItem('gnm-watch'));
  // G-125: the 🔔 '관심 종목 새 리포트' link opens the whole day's list with the watched stocks first.
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/reports.html?hl=000660#today');await page.locator('#today-list .rr').first().waitFor();
  assert.equal(await page.locator('#today-list .rr').first().getAttribute('data-sym'),'000660');assert.ok(await page.locator('#today-list .rr').first().locator('.t-mine').count());
@@ -241,7 +246,7 @@ try{
  }
  // G-118: same-theme comparison on the summary tab: cards in a sideways strip, return and PER against the theme.
  await page.goto(origin+'/stock.html?c=999999');await page.locator('#peers .pe-card').first().waitFor();
- assert.equal(await page.locator('#peers .pe-card').count(),4);await page.locator('#peers .pe-per').filter({hasText:'중간값 11.0배보다'}).waitFor();
+ assert.equal(await page.locator('#peers .pe-card').count(),4);await page.locator('#peers .pe-per .pe-cmp').filter({hasText:'11.0배'}).waitFor();
  assert.match(await page.locator('#peers .pe-sum').innerText(),/4개 중 1위/);await page.locator('[data-pe-sort]').selectOption('return');assert.equal(await page.locator('#peers .pe-card').first().getAttribute('data-sym'),'999999');await page.locator('[data-pe-direction]').click();assert.equal(await page.locator('#peers .pe-card').first().getAttribute('data-sym'),'000002');
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#peers').screenshot({path:'test-artifacts/peers.png'});
  // G-109: a fresh browser takes the account's settings and watchlist, reloads once, and sends later changes.

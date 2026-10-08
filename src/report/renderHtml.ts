@@ -315,7 +315,7 @@ function reportNav(tabs:readonly {key:string;label:string}[]):string {
  return `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.filter(t=>!ANALYSIS_KEYS.has(t.key)).map((t,i)=>link(t,i)+(t.key==='chart'&&nested.length?'<button type="button" id="analysis-menu" aria-expanded="false" aria-controls="analysis-tabs">분석<i class="chev" aria-hidden="true"></i></button>':'')).join('')}</div>${nested.length?`<div id="analysis-tabs" class="chips analysis-tabs" role="tablist" aria-label="분석 세부 메뉴" hidden>${nested.map(t=>link(t,1)).join('')}</div>`:''}`;
 }
 
-export function shell(base: string, title: string, body: string, options: { lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean }): string {
+export function shell(base: string, title: string, body: string, options: { lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'watch' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean }): string {
   // The site root lists every covered stock; `base` always points at it.
   const rootHref = `${base}index.html`;
   const tabs = options.tabs ?? [];

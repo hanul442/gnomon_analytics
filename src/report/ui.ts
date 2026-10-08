@@ -150,7 +150,7 @@ export const MENU: readonly { title: string; items: readonly [string, string][] 
 export const TABS: readonly [string, string, string][] = [
   ['홈', 'index.html#top', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'],
   ['검색', 'index.html#search', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'],
-  ['관심', 'index.html#watch', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>'],
+  ['관심', 'watch.html', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>'],
   ['성적표', 'scorecard.html', '<path d="M5 20V10M10 20V4M15 20v-7M20 20v-11"/>'],
 ];
 const ALL_ICON = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>';
