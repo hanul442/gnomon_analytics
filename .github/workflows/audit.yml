@@ -9,6 +9,10 @@ on:
     types: [completed]
 permissions:
   contents: read
+# One at a time: each run ends by deleting the audit sessions, which would log a parallel run out.
+concurrency:
+  group: live-audit
+  cancel-in-progress: false
 jobs:
   audit:
     runs-on: ubuntu-latest
