@@ -73,6 +73,7 @@ test('market numbers: signed returns must come from the data and whole-market co
  const council=(texts:string[])=>({summary:claim(texts[0]!),desks:[],consensus:texts.slice(1).map(claim),disagreements:[],scenarios:[],redTeam:[],watch:[],dataGaps:[]}) as never;
  assert.deepEqual(marketNumberIssues(council(['코스피 -1.98%, SK하이닉스 -3.87%, 하락 506개 상승 365개.']),groups as never),[]);
  const bad=marketNumberIssues(council(['코스피 상위30 중 하락 506개 vs 상승 365개.','평균 -2.40% 하락.']),groups as never);
+ assert.deepEqual(marketNumberIssues(council(['상승 비중이 +2.3%p 늘었어요.']),groups as never),[]);
  assert.equal(bad.length,2);assert.match(bad[0]!,/506개/);assert.match(bad[1]!,/-2\.40%/);
 });
 

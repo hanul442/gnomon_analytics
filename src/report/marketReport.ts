@@ -61,7 +61,7 @@ export function marketNumberIssues(council:MarketCouncil, groups:readonly Market
  const issues:string[]=[];
  for(const c of councilClaims(council)){
   const t=c.text.replace(/−/g,'-');
-  for(const m of t.matchAll(/(?<![\d.~])([+-]\d+(?:\.(\d+))?)%/g)){
+  for(const m of t.matchAll(/(?<![\d.~])([+-]\d+(?:\.(\d+))?)%(?!p)/g)){
    const v=Number(m[1]),tol=(m[2]?.length??0)>=2?0.011:0.051;
    if(!returns.some(r=>Math.abs(r-v)<=tol))issues.push(`자료에 없는 수익률 ${m[1]}%: "${c.text.slice(0,60)}"`);
   }

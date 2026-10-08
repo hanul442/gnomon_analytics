@@ -54,21 +54,23 @@ export const JOBS_JS = `
   dialog.querySelector('.rj-t').textContent=title;if(!dialog.open)dialog.showModal();return dialog;
  };
  var progressHtml=function(){return '<div class="orbs-load">${ORBS}<span data-job-state>작업을 확인하고 있어요</span></div><ol class="job-steps">'+STEPS.map(function(x){return '<li><canvas data-orb="'+x[2]+'" data-size="20" aria-hidden="true"></canvas><span>'+x[1]+'</span></li>';}).join('')+'</ol><div class="job-eta"><div class="job-eta-top"><span>예상 남은 시간</span><b data-eta>계산 중</b></div><div class="job-bar"><i data-eta-bar></i></div><p class="job-fun" data-fun aria-live="polite"></p></div><p class="rj-note">창을 닫아도 작업은 계속돼요. 완성되면 알림으로 알려 드리고, 새로고침 후에도 확인할 수 있어요.</p>';};
+ // The popup may be showing a new request's confirm step; a running job then writes nowhere.
+ var live=function(){return dialog&&dialog.querySelector('.orbs-load')?dialog:null;};
  var watch=function(id,show){
   if(timer)clearTimeout(timer);store(id);
   if(show){ensure(watchTitle);dialog.querySelector('.rj-body').innerHTML=progressHtml();curStage='queued';paintSteps();eta.start();}
   var poll=function(){G.call('GET','/reports/'+id).then(function(r){
-   if(r.error&&typeof r.error==='string'&&!r.status){if(dialog)dialog.querySelector('[data-job-state]').textContent=r.message||'작업을 확인하지 못했어요';if(r.error==='NOT_FOUND'||r.error==='FORBIDDEN'||r.error==='UNAUTHORIZED')return;timer=setTimeout(poll,5000);return;}
+   if(r.error&&typeof r.error==='string'&&!r.status){if(live())dialog.querySelector('[data-job-state]').textContent=r.message||'작업을 확인하지 못했어요';if(r.error==='NOT_FOUND'||r.error==='FORBIDDEN'||r.error==='UNAUTHORIZED')return;timer=setTimeout(poll,5000);return;}
    if(r.kind||r.createdAt)eta.set(r.kind,r.createdAt,r.etaSec);
    if(r.status==='done'){eta.stop();
-    if(!r.fragments || !r.fragments.ai){if(dialog)dialog.querySelector('.orbs-load').innerHTML='<b>완료된 리포트 본문을 불러오지 못했어요</b><p>크레딧을 다시 사용하지 말고 새로고침하거나 문의해 주세요.</p>';if(G.toast)G.toast('완료된 리포트 본문을 불러오지 못했어요. 새로고침하거나 문의해 주세요.','error');return;}
+    if(!r.fragments || !r.fragments.ai){if(live())dialog.querySelector('.orbs-load').innerHTML='<b>완료된 리포트 본문을 불러오지 못했어요</b><p>크레딧을 다시 사용하지 말고 새로고침하거나 문의해 주세요.</p>';if(G.toast)G.toast('완료된 리포트 본문을 불러오지 못했어요. 새로고침하거나 문의해 주세요.','error');return;}
     var current=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||(document.querySelector('[data-symbol]')||{}).dataset?.symbol;
     if(current===r.symbol)paint(r);
     var href=(document.body.dataset.base||'')+(r.symbol.indexOf('KRW-')===0?'coin.html?m=':'stock.html?c=')+encodeURIComponent(r.symbol)+'&job='+id+'#tab-ai';
-    if(dialog)dialog.querySelector('.orbs-load').innerHTML='<b>리포트가 완성됐어요</b><span>데이터 기준 '+esc(r.dataDate||'확인 필요')+' · 생성 '+esc(r.generatedAt||'')+'</span><a class="btn-primary" href="'+href+'">리포트 보기</a>';
+    if(live())dialog.querySelector('.orbs-load').innerHTML='<b>리포트가 완성됐어요</b><span>데이터 기준 '+esc(r.dataDate||'확인 필요')+' · 생성 '+esc(r.generatedAt||'')+'</span><a class="btn-primary" href="'+href+'">리포트 보기</a>';
     if(G.refresh)G.refresh();return;
    }
-   if(r.status==='failed'){eta.stop();if(dialog){dialog.querySelector('.orbs-load').innerHTML='<b>리포트를 만들지 못했어요</b><p>'+esc(r.error||'크레딧은 반환했어요. 다시 요청해 주세요.')+'</p><button type="button" class="btn-primary" data-retry-report>다시 요청</button>';dialog.querySelector('[data-retry-report]').onclick=function(){dialog.close();G.startReport(r.kind==='brief'?'brief':'report',r.symbol,r.symbol);};}if(G.refresh)G.refresh();return;}
+   if(r.status==='failed'){eta.stop();if(live()){dialog.querySelector('.orbs-load').innerHTML='<b>리포트를 만들지 못했어요</b><p>'+esc(r.error||'크레딧은 반환했어요. 다시 요청해 주세요.')+'</p><button type="button" class="btn-primary" data-retry-report>다시 요청</button>';dialog.querySelector('[data-retry-report]').onclick=function(){dialog.close();G.startReport(r.kind==='brief'?'brief':'report',r.symbol,r.symbol);};}if(G.refresh)G.refresh();return;}
    if(dialog){var text=dialog.querySelector('[data-job-state]');if(text)text.textContent=stage[r.stage]||'분석 중이에요';curStage=stage[r.stage]?r.stage:'working';paintSteps();}
    timer=setTimeout(poll,1000);
   });};poll();
