@@ -664,7 +664,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     if (page) {
       // Calculation-page entry points open an existing report in the same template.
       const calcPath=join(siteDir,page.kind==='coin'?'c':'s',ticker.symbol+'.json');
-      try {const raw=JSON.parse(await readFile(calcPath,'utf8'));raw.pageUrl=ticker.symbol+'/index.html';await writeFile(calcPath,JSON.stringify(raw));} catch { /* no shared price file for this covered symbol */ }
+      try {const raw=JSON.parse(await readFile(calcPath,'utf8'));raw.pageUrl=ticker.symbol+'/index.html';raw.research=true;await writeFile(calcPath,JSON.stringify(raw));} catch { /* no shared price file for this covered symbol */ }
       const { commentary: _private, ...input } = page;
       await mkdir(join(siteDir, 'research'), { recursive: true });
       await writeFile(join(siteDir, 'research', ticker.symbol + '.json'), JSON.stringify(input));

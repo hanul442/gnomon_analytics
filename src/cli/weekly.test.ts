@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { runDaily, setDeepKey } from './daily.js';
 import { unseal } from '../report/seal.js';
 import { loadTickers } from '../config/tickers.js';
 import { DEFAULT_SELECTION } from '../analysis/selection.js';
+import { tempDir } from '../testTmp.js';
 
 const FIX = join(process.cwd(), 'test', 'fixtures', 'naver');
 const M_STOCK: [string, string][] = [['/trend', 'trend.json'], ['/integration', 'integration.json'], ['/finance/quarter', 'finance-quarter.json'], ['/finance/annual', 'finance-annual.json']];
@@ -32,7 +32,7 @@ const fake = (async (url: string | URL | Request) => {
 }) as typeof fetch;
 
 test('the first settled run picks the week: core and the largest company get the committee, the rest a brief', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const models: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string }) => { models.push(req.model); return { stop_reason: 'end_turn', model: req.model, usage: { input_tokens: 100, output_tokens: 50 }, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
@@ -80,7 +80,7 @@ test('the first settled run picks the week: core and the largest company get the
 });
 
 test('a requested stock gets one deep committee report, then dashboards only', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const calls: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string; messages: { content: string }[] }) => { calls.push(/"종목": "([^"]+)"/.exec(req.messages[0]!.content)?.[1] ?? '?'); return { stop_reason: 'end_turn', model: req.model, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
@@ -107,7 +107,7 @@ test('a requested stock gets one deep committee report, then dashboards only', a
 });
 
 test('a refresh request writes one new deep report in the current prompt, even on a non-session day', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const calls: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string; messages: { content: string }[] }) => { calls.push(/"종목": "([^"]+)"/.exec(req.messages[0]!.content)?.[1] ?? '?'); return { stop_reason: 'end_turn', model: req.model, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
@@ -131,7 +131,7 @@ test('a refresh request writes one new deep report in the current prompt, even o
 });
 
 test('daily picks (G-56): drawn once a day from the screener, reported once, shown on the front page', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const calls: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string; messages: { content: string }[] }) => { calls.push(/"종목": "([^"]+)"/.exec(req.messages[0]!.content)?.[1] ?? '?'); return { stop_reason: 'end_turn', model: req.model, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
@@ -154,7 +154,7 @@ test('daily picks (G-56): drawn once a day from the screener, reported once, sho
 });
 
 test('the monthly AI budget: core stocks spend it first, the rest skip AI with the reason; every call is in the ledger', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const models: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string }) => { models.push(req.model); return { stop_reason: 'end_turn', model: req.model, usage: { input_tokens: 10_000, output_tokens: 4_000 }, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
@@ -169,7 +169,7 @@ test('the monthly AI budget: core stocks spend it first, the rest skip AI with t
 });
 
 test('sealed deep reports (G-61): the paid part is neither in the repository nor in the page, only sealed next to it', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const anthropic = { beta: { messages: { parse: async (req: { model: string }) => ({ stop_reason: 'end_turn', model: req.model, parsed_output: {
     summary: { text: '공개 결론', evidenceIds: ['P1'] }, bullish: [{ text: '공개 강세', evidenceIds: ['P1'] }, { text: '비밀강세둘', evidenceIds: ['P1'] }], bearish: [], uncertain: [], watch: [{ text: '비밀관찰', evidenceIds: ['P1'] }], dataGaps: [],

@@ -41,7 +41,7 @@ export interface Env {
 }
 export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient; waitUntil?: (promise: Promise<unknown>) => void; generate?: (report: DailyReport, tier: CommentaryTier) => Promise<Commentary> }
 
-interface User { id: string; email: string; plan: string; role: string; created_at: string; disabled: number }
+interface User { id: string; email: string; plan: string; role: string; created_at: string; disabled: number; viewAs?: string }
 
 const RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, max: 3, alpha: 2 };
 const LOGIN_TTL_MIN = 20, SESSION_DAYS = 30, MAX_BODY = 24_000;
@@ -98,7 +98,7 @@ function corsHeaders(req: Request, env: Env): Record<string, string> {
   const origin = req.headers.get('Origin') ?? '';
   const allowed = [new URL(env.SITE_URL).origin, ...(env.ALLOW_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)];
   return allowed.includes(origin)
-    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-View-As', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
     : { Vary: 'Origin' };
 }
 const json = (status: number, body: unknown, headers: Record<string, string>) =>
@@ -161,6 +161,9 @@ async function authed(req: Request, env: Env, now: Date): Promise<User> {
   if (!u) fail(401, 'LOGIN_REQUIRED', '로그인이 끝났어요. 다시 로그인해 주세요.');
   if (u!.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
   if (adminList(env).includes(u!.email)) u!.role = 'admin';
+  // An admin can look at the site as a given plan (X-View-As) to test gates and paid flows; nothing else changes.
+  const viewAs = req.headers.get('X-View-As');
+  if (u!.role === 'admin' && viewAs && ['free', 'plus', 'pro', 'max', 'alpha'].includes(viewAs)) { u!.plan = viewAs; u!.role = 'user'; u!.viewAs = viewAs; }
   await env.DB.prepare('UPDATE users SET last_seen_at = ? WHERE id = ?').bind(iso(now), u!.id).run();
   return u!;
 }
@@ -177,7 +180,7 @@ async function me(env: Env, u: User, now: Date) {
   ]);
   const days = (now.getTime() - Date.parse(u.created_at)) / 86_400_000;
   return {
-    user: { hasPassword: !!(await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>())?.password_hash, email: u.email, plan: u.plan, planName: u.plan === 'alpha' ? ALPHA.name : u.plan, rankAs: u.plan === 'alpha' ? ALPHA.rankAs : u.plan, admin: u.role === 'admin', createdAt: u.created_at },
+    user: { hasPassword: !!(await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>())?.password_hash, email: u.email, plan: u.plan, planName: u.plan === 'alpha' ? ALPHA.name : u.plan, rankAs: u.plan === 'alpha' ? ALPHA.rankAs : u.plan, admin: u.role === 'admin', ...(u.viewAs ? { viewAs: u.viewAs } : {}), createdAt: u.created_at },
     credits: { balance, monthly: u.plan === 'alpha' ? ALPHA.monthlyCredits : 0, maxRequest: ALPHA.maxRequest },
     survey: { onboarding: onboarding ? JSON.parse(onboarding.answers) : null, pulseDue: days >= 3 && (!lastPulse || now.getTime() - Date.parse(lastPulse.created_at) >= 7 * 86_400_000) },
     requests: requests.results,
@@ -596,12 +599,16 @@ route('GET', '/reports/mine', async ({ req, env, now }) => {
 route('GET', '/reports/latest/([^/]+)', async ({ req, env, now, params }) => {
   const u=await authed(req,env,now), symbol=decodeURIComponent(params[0]!);
   if (!DEEP_SYMBOL.test(symbol)) fail(400,'BAD_REPORT','종목코드를 확인해 주세요.');
-  const job=await env.DB.prepare("SELECT id,status,stage,error,kind,user_id FROM report_jobs WHERE symbol=? AND (user_id=? OR (status='done' AND ? >= 2)) ORDER BY created_at DESC LIMIT 1").bind(symbol,u.id,RANK[u.plan]??0).first();
-  return { job:job??null };
+  // The newest report anyone made for this stock: one's own in progress, or a finished one (others' open with credits).
+  const job=await env.DB.prepare("SELECT id,status,stage,error,kind,user_id,symbol FROM report_jobs WHERE symbol=? AND (user_id=? OR status='done') ORDER BY created_at DESC LIMIT 1").bind(symbol,u.id).first<ReportJob>();
+  if (!job) return { job:null };
+  const locked=!(await jobAccess(env.DB,u,job));
+  return { job:{id:job.id,status:job.status,stage:job.stage,error:job.error,kind:job.kind,mine:job.user_id===u.id,...(locked?{locked:true,cost:CREDIT_COST.unlock}:{})} };
 });
 route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
   const u=await authed(req,env,now), job=await env.DB.prepare('SELECT * FROM report_jobs WHERE id=?').bind(params[0]).first<ReportJob>();
-  if (!job || (job.user_id!==u.id && !(job.status==='done' && RANK[u.plan]! >= RANK.pro!))) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
+  if (!job || (job.user_id!==u.id && job.status!=='done')) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
+  if (!(await jobAccess(env.DB,u,job!))) fail(402,'LOCKED',`다른 사용자가 만든 리포트예요. ${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`,{cost:CREDIT_COST.unlock,balance:await balanceOf(env.DB,u.id),id:job!.id,symbol:job!.symbol,kind:job!.kind,createdAt:job!.created_at});
   if (['queued','running'].includes(job!.status) && Date.parse(job!.updated_at)<now.getTime()-15*60000) { await refundJob(env.DB,job!,'작업 시간이 초과되어 크레딧을 반환했어요.',now); job!.status='failed'; job!.stage='failed'; job!.error='작업 시간이 초과됐어요. 다시 요청해 주세요.'; }
   const report=job!.status==='done' && job!.result_json ? JSON.parse(job!.result_json) as DailyReport:null;
   // G-110: the countdown starts from how long this kind actually took lately (70th percentile of the last 20).
@@ -611,6 +618,19 @@ route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
     if (took.length>=3) etaSec=Math.round(took[Math.min(took.length-1,Math.floor(took.length*0.7))]!);
   }
   return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(etaSec?{etaSec}:{}),...(report?{generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report,env.SITE_URL.replace(/\/?$/,'/'))}:{})};
+});
+// Someone else's finished report opens once for CREDIT_COST.unlock credits, then stays open (unlocks row 'job:<id>').
+route('POST', '/reports/([a-f0-9-]+)/unlock', async ({ req, env, now, params }) => {
+  const u=await authed(req,env,now), db=env.DB, job=await db.prepare('SELECT * FROM report_jobs WHERE id=?').bind(params[0]).first<ReportJob>();
+  if (!job || (job.user_id!==u.id && job.status!=='done')) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
+  if (await jobAccess(db,u,job!)) return { charged:0, balance:await balanceOf(db,u.id) };
+  const cost=CREDIT_COST.unlock;
+  if (!(await charge(db,u.id,cost,'unlock',`${job!.symbol} 다른 사용자 리포트 열람`,`unlock:${u.id}:job:${job!.id}`,now))) {
+    if (await jobAccess(db,u,job!)) return { charged:0, balance:await balanceOf(db,u.id) };
+    fail(402,'NO_CREDITS',`크레딧이 모자라요. ${cost}크레딧이 필요해요.`,{cost,balance:await balanceOf(db,u.id)});
+  }
+  await db.prepare('INSERT OR IGNORE INTO unlocks (user_id, symbol, date, credits, created_at) VALUES (?, ?, ?, ?, ?)').bind(u.id,job!.symbol,'job:'+job!.id,cost,iso(now)).run();
+  return { charged:cost, balance:await balanceOf(db,u.id) };
 });
 route('POST', '/screens/compose', async ({req,env,deps,now}) => {
   const u=await authed(req,env,now), b=await body(req), question=str(b.question,600), market=str(b.market,10)||'stock';
@@ -834,8 +854,15 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
 // ---- sealed deep reports (G-61) ----
 // The site holds <symbol>/deep/<date>.txt, sealed with DEEP_KEY. Opening one costs credits once per user
 // and report; admins and whoever requested the stock's report open it free.
+/** Plans that read every finished deep report without unlocking it. Alpha testers unlock with credits like everyone else. */
+const PAID_FULL = new Set(['pro', 'max']);
+/** Reading a generated report: its requester, admins, pro and max; anyone else once they unlock it with credits. */
+async function jobAccess(db: D1, u: User, job: { id: string; user_id: string; symbol: string }): Promise<boolean> {
+  if (job.user_id === u.id || u.role === 'admin' || PAID_FULL.has(u.plan)) return true;
+  return !!(await db.prepare('SELECT 1 FROM unlocks WHERE user_id = ? AND symbol = ? AND date = ?').bind(u.id, job.symbol, 'job:' + job.id).first());
+}
 async function deepAccess(db: D1, u: User, symbol: string, date: string): Promise<boolean> {
-  if (u.role === 'admin' || RANK[u.plan]! >= RANK.pro!) return true;
+  if (u.role === 'admin' || PAID_FULL.has(u.plan)) return true;
   if (await db.prepare('SELECT 1 FROM unlocks WHERE user_id = ? AND symbol = ? AND date = ?').bind(u.id, symbol, date).first()) return true;
   return !!(await db.prepare("SELECT 1 FROM action_requests WHERE user_id = ? AND symbol = ? AND kind IN ('report', 'upgrade') AND status = 'done' AND created_at <= ?").bind(u.id, symbol, `${date}T23:59:59Z`).first());
 }

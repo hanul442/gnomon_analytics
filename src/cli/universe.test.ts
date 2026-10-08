@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { collectUniverse, readListedStocks } from './universe.js';
+import { tempDir } from '../testTmp.js';
 
 const row = (code: string, name: string, kind = 'stock') => ({ itemCode: code, stockName: name, stockEndType: kind, closePrice: '1,000', fluctuationsRatio: '1.00', accumulatedTradingValue: '10', marketValue: '100' });
 const fake = (async (url: string | URL | Request) => {
@@ -14,7 +14,7 @@ const fake = (async (url: string | URL | Request) => {
 }) as typeof fetch;
 
 test('the listed-stock list keeps common stocks only; a failed corp-code fetch is recorded, not thrown', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const out = await collectUniverse(root, { apiKey: 'k', now: new Date('2026-10-05T09:00:00Z'), fetch: fake });
   assert.deepEqual(out.rows!.map((r) => r.symbol), ['005930', '196170']);
   assert.deepEqual(await readListedStocks(root), [{ symbol: '005930', name: '삼성전자', market: 'KOSPI' }, { symbol: '196170', name: '알테오젠', market: 'KOSDAQ' }]);

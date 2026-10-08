@@ -42,6 +42,7 @@ export const ALPHA_SCRIPT = `<script>
   G.call = function (method, path, body) {
     var s = get(SK), h = { 'Content-Type': 'application/json' };
     if (s) h.Authorization = 'Bearer ' + s;
+    var va = get('gnm-view-as'); if (s && va) h['X-View-As'] = va;
     return fetch(API + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined, keepalive: method === 'POST' && path === '/events' }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         j = j || {}; j._status = r.status;

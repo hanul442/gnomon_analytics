@@ -184,6 +184,7 @@ export const LIVE_JS = `
       var prev = last[sym]; last[sym] = q;
       document.querySelectorAll('[data-live="' + sym + '"]').forEach(function (el) {
         var f = el.getAttribute('data-live-f'), t = q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : '';
+        if (f === 'nowlabel') { el.textContent = q.open ? '지금' : '현재가'; return; }
         if (f === 'tag') { el.hidden = false; el.textContent = q.open ? '● 실시간' : '장 마감'; el.classList.toggle('on', !!q.open); return; }
         if (f === 'price') el.textContent = won(q.price);
         else if (f === 'pct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
@@ -229,6 +230,8 @@ export const LIVE_JS = `
         C.candle.update({ time: today, open: same ? b.open : px, high: same ? Math.max(b.high, px) : px, low: same ? Math.min(b.low, px) : px, close: px });
       } catch (x) {}
     });
+    // Parts drawn later (AI fragments, the unlocked deep report) get the last known price right away.
+    var again = null; new MutationObserver(function (list) { if (again || !list.some(function (m) { return [].some.call(m.addedNodes, function (n) { return n.nodeType === 1 && (n.matches('[data-live]') || n.querySelector('[data-live]')); }); })) return; again = setTimeout(function () { again = null; Object.keys(last).forEach(function (sym) { paint(sym, last[sym]); }); }, 100); }).observe(document.body, { childList: true, subtree: true });
     window.GNM_live = { tick: tick, last: last };
     setTimeout(tick, 300);
   })();`;

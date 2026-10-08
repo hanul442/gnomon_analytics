@@ -207,7 +207,14 @@ export function renderAccount(): string {
     GNM.refresh().then(function (me) {
       if (!me) { location.replace('login.html?return=account.html'); return; }
       document.getElementById('acc-email').textContent = me.user.email;
-      document.getElementById('acc-line').textContent = me.user.planName + ' 요금제 · ' + new Date(me.user.createdAt).toLocaleDateString('ko-KR') + ' 가입 · 알파 동안 프로 기능을 모두 써요';
+      document.getElementById('acc-line').textContent = me.user.planName + ' 요금제 · ' + new Date(me.user.createdAt).toLocaleDateString('ko-KR') + ' 가입' + (me.user.viewAs ? ' · 운영자 미리보기 중' : ' · 알파 동안 프로 기능을 써요(심층 리포트는 크레딧으로 열어요)');
+      // Admins: look at the site as another plan to test gates and paid unlocks (sent as X-View-As).
+      if (me.user.admin || me.user.viewAs) {
+        var cur = ''; try { cur = localStorage.getItem('gnm-view-as') || ''; } catch (e) {}
+        var box = document.createElement('section'); box.className = 'block'; box.innerHTML = '<div class="card"><h2>요금제로 보기 (운영자)</h2><p class="muted small">이 기기에서만 다른 요금제처럼 보고 써요. 잠금·크레딧 열기·질문 한도를 그대로 시험할 수 있어요. 운영 화면은 끄고 들어가세요.</p><div class="seg" role="group" aria-label="요금제로 보기">' + [['', '운영자'], ['free', '무료'], ['plus', '플러스'], ['alpha', '알파'], ['pro', '프로'], ['max', '맥스']].map(function (o) { return '<button type="button" data-view-as="' + o[0] + '" aria-pressed="' + (o[0] === cur) + '">' + o[1] + '</button>'; }).join('') + '</div></div>';
+        document.querySelector('main, #main, body').appendChild(box);
+        box.querySelectorAll('[data-view-as]').forEach(function (b) { b.onclick = function () { try { var v = b.getAttribute('data-view-as'); if (v) localStorage.setItem('gnm-view-as', v); else localStorage.removeItem('gnm-view-as'); } catch (e) {} location.reload(); }; });
+      }
       document.getElementById('acc-asks').textContent = me.asks.today + ' / ' + me.asks.limit;
       document.getElementById('pw-state').textContent = me.user.hasPassword ? '설정돼 있어요' : '아직 없어요 · 정해 두면 링크 없이 로그인해요';
       document.getElementById('pw-cur-f').hidden = !me.user.hasPassword;
