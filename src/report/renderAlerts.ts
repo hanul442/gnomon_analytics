@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
     G.call('GET', '/alerts/price').then(function (r) {
       if (r.error) return; var items = r.items || [];
       $('al-prices').innerHTML = items.length ? items.map(function (a) { return '<div class="al-item' + (a.fired_at ? ' al-done' : '') + '"><div><a href="' + href(a.symbol) + '">' + esc(a.name || a.symbol) + '</a> ' + price(a.price, a.symbol) + ' ' + (a.op === '>=' ? '이상' : '이하') + '<small>' + (a.fired_at ? '도달 · ' + price(a.fired_price, a.symbol) + ' · ' + new Date(a.fired_at).toLocaleString('ko-KR') : (a.note ? esc(a.note) + ' · ' : '') + '기다리는 중') + '</small></div><button type="button" data-del="' + a.id + '">지우기</button></div>'; }).join('') : '<p class="muted small">걸어 둔 가격 알림이 없어요.</p>';
-      $('al-prices').querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { G.call('POST', '/alerts/price/' + b.getAttribute('data-del') + '/delete').then(loadPrices); }; });
+      $('al-prices').querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { var row = b.closest('.al-item'), what = row ? row.querySelector('div').firstChild.textContent + ' ' + (row.querySelector('div').childNodes[1] || {}).textContent : '이'; if (!confirm('“' + String(what).trim() + '” 가격 알림을 지울까요?')) return; G.call('POST', '/alerts/price/' + b.getAttribute('data-del') + '/delete').then(loadPrices); }; });
     });
   };
   var start = function (me) {
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
     G.call('GET', '/notify/prefs').then(function (r) {
       if (r.error) return;
       var L = r.limits || {}, planName = { free: '무료', plus: '플러스', pro: '프로', max: '맥스', alpha: '알파' }[r.plan] || r.plan;
-      $('al-plan').hidden = false;
+      $('al-plan').hidden = !(r.plan && L.priceAlerts != null);
       $('al-plan').innerHTML = '<b>' + esc(planName) + ' 요금제 알림</b><span>휴대폰 ' + (L.push ? '✓' : '—') + '</span><span>가격 알림 ' + L.priceAlerts + '개</span><span>스크리너 ' + (L.screenAlerts || '—') + (L.screenAlerts ? '개' : '') + '</span><span>장중 급변 ' + (L.intraday ? '✓' : '—') + '</span>' + (r.plan === 'free' || r.plan === 'plus' ? '<a href="pricing.html">요금제별 알림 비교 ›</a>' : '');
       if (!L.push) { G.pushLocked = true; $('al-on').hidden = true; $('al-state').textContent = '휴대폰 알림은 플러스부터예요. 지금은 🔔 알림함으로 받아요.'; }
       if (!L.watchReport) { var w = document.querySelector('[data-pref=watchReport]'); w.disabled = true; w.checked = false; w.closest('.al-row').classList.add('al-lock'); }
