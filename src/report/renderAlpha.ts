@@ -5,7 +5,7 @@ import { shell } from './renderHtml.js';
 import { ALPHA } from './plans.js';
 
 const PAGE_CSS = `<style>
-.form-card{max-width:520px;margin:24px auto}.form-card h1{font-size:26px;margin:0 0 6px}.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}.fld label{font-weight:700;font-size:14px}
+.form-card{max-width:520px;margin:24px auto}.fld-err{display:block;color:#b4232b;font-size:13px;margin-top:4px}[aria-invalid=true]{border-color:#d1373d!important}.form-card h1{font-size:26px;margin:0 0 6px}.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}.fld label{font-weight:700;font-size:14px}
 .fld input,.fld select,.fld textarea{border:1px solid var(--line-strong);border-radius:12px;padding:11px 12px;font:inherit;font-size:15px}.fld small{color:var(--muted)}
 .chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:14px}.form-card .btn-primary{width:100%;justify-content:center;margin-top:16px}
 .msg-ok{background:#e7f5ec;color:#1d6b3a;border-radius:12px;padding:12px 14px;margin-top:14px}.msg-err{background:#fde8e8;color:#9b1c1c;border-radius:12px;padding:12px 14px;margin-top:14px}
@@ -43,6 +43,10 @@ export function renderLogin(): string {
   const script = `<script>
 (function () {
   var out = document.getElementById('out'), form = document.getElementById('login'), qs = new URLSearchParams(location.search), mode = 'login';
+  // G-155: each field says what is wrong when the reader leaves it, and the note goes away as soon as they edit.
+  var fieldNote = function (el, text) { var f = el.closest('.fld'); if (!f) return; var n = f.querySelector('.fld-err'); if (!text) { if (n) n.remove(); el.removeAttribute('aria-invalid'); return; } if (!n) { n = document.createElement('small'); n.className = 'fld-err'; n.setAttribute('role', 'alert'); f.appendChild(n); } n.textContent = text; el.setAttribute('aria-invalid', 'true'); };
+  var why = function (el) { if (!el.value) return ''; if (el.id === 'email' && !el.validity.valid) return '이메일 주소 형식으로 적어 주세요. 예: you@example.com'; if (el.id === 'pw' && mode !== 'login' && (el.value.length < 8 || !/[A-Za-z]/.test(el.value) || !/\d/.test(el.value))) return '8자 이상, 영문과 숫자를 함께 넣어 주세요.'; if (el.id === 'pw2' && el.value !== (document.getElementById('pw') || {}).value) return '위 비밀번호와 똑같이 적어 주세요.'; return ''; };
+  ['email', 'pw', 'pw2'].forEach(function (id) { var el = document.getElementById(id); if (!el) return; el.addEventListener('blur', function () { fieldNote(el, why(el)); }); el.addEventListener('input', function () { fieldNote(el, ''); }); });
   var show = function (cls, text) { out.innerHTML = '<div class="' + cls + '"></div>'; out.firstChild.textContent = text; };
   var setMode = function (m) {
     mode = m; out.innerHTML = '';

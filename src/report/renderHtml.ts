@@ -985,7 +985,9 @@ export interface HomeEntry {
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
 const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
-export const APP_CSS = `/* G-154: lists that show part first */
+export const APP_CSS = `/* G-155: readers who ask for less motion get none: animations and transitions finish at once, site-wide. */
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+/* G-154: lists that show part first */
 .more-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;margin:10px 0 4px;border:1px solid var(--line-strong);border-radius:12px;background:#fff;font:inherit;font-size:14.5px;font-weight:800;color:var(--fg);cursor:pointer}.more-btn small{font-weight:500;color:var(--muted)}
 /* G-154: taps of at least 32px on small links and buttons (audit: smallTargets); the look stays the same. */
 .more-link,.qi-more,.si-more,.flt-btn,.version-banner a,.theme-chip,.fb-row button,.ml-back{display:inline-flex;align-items:center;min-height:32px}.version-banner [data-dismiss-version]{min-width:36px;min-height:36px}.bell-btn{min-width:36px;min-height:36px}
