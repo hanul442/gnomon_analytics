@@ -35,3 +35,23 @@ jobs:
             curl -s -m 10 -A "Mozilla/5.0" "https://polling.finance.naver.com/api/realtime/domestic/stock/$s" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify(d,null,1).slice(0,3500))"
           done
           date -u
+      - name: Detail data sources shape (public data, no secrets)
+        run: |
+          probe() { echo "=== $1"; code=$(curl -s -m 15 -A "Mozilla/5.0" -o /tmp/p.txt -w "%{http_code}" "${@:2}"); echo "HTTP $code"; head -c 1500 /tmp/p.txt; echo; }
+          probe binance-premium "https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT"
+          probe binance-oihist "https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1d&limit=3"
+          probe okx-funding "https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP"
+          probe okx-oi "https://www.okx.com/api/v5/public/open-interest?instType=SWAP&instId=BTC-USDT-SWAP"
+          probe okx-oi-hist "https://www.okx.com/api/v5/rubik/stat/contracts/open-interest-volume?ccy=BTC&period=1D"
+          probe okx-liq "https://www.okx.com/api/v5/public/liquidation-orders?instType=SWAP&uly=BTC-USDT&state=filled&limit=2"
+          probe okx-lsr "https://www.okx.com/api/v5/rubik/stat/contracts/long-short-account-ratio?ccy=BTC&period=1D"
+          probe bybit "https://api.bybit.com/v5/market/tickers?category=linear&symbol=BTCUSDT"
+          probe krx-short -X POST "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd" -H "Referer: https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd" -d "bld=dbms/MDC/STAT/srt/MDCSTAT30102&isuCd=KR7005930003&strtDd=20260901&endDd=20261007"
+          probe daum-quote "https://finance.daum.net/api/quotes/A005930?summary=false&changeStatistics=true" -H "Referer: https://finance.daum.net/quotes/A005930"
+          probe naver-world-basic "https://api.stock.naver.com/stock/AAPL.O/basic"
+          probe naver-world-integration "https://api.stock.naver.com/stock/AAPL.O/integration"
+          probe naver-world-chart "https://api.stock.naver.com/chart/foreign/item/AAPL.O/day?startDateTime=202609010000&endDateTime=202610080000"
+          probe naver-world-poll "https://polling.finance.naver.com/api/realtime/worldstock/stock/AAPL.O"
+          probe naver-world-finance "https://api.stock.naver.com/stock/AAPL.O/finance/annual"
+          probe yahoo-chart "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=5d&interval=1d"
+          date -u
