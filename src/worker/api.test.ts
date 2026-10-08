@@ -313,15 +313,15 @@ test('deep reports (G-61): locked until unlocked once with credits; requester an
   const u = await t.login('d@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
   const path = '/deep/000660/2026-10-02';
   // Alpha testers unlock with credits like everyone else; pro and max read without unlocking.
-  assert.equal((await t.call('GET',path,undefined,u.session)).status,402);
+  assert.equal((await t.call('GET',path,undefined,u.session)).body.locked,true);
   await t.env.DB.prepare("UPDATE users SET plan='pro' WHERE email='d@example.com'").run();
   assert.equal((await t.call('GET',path,undefined,u.session)).status,200);
   // An admin looking as a plan (X-View-As) gets that plan's gate.
   const asPlus = await handle(new Request('https://api.test'+path,{headers:{Origin:'https://hanul442.github.io',Authorization:`Bearer ${boss.session}`,'X-View-As':'plus'}}),t.env,t.deps);
-  assert.equal(asPlus.status,402);
+  assert.equal(((await asPlus.json()) as {locked?:boolean}).locked,true);
   await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='d@example.com'").run();
   const locked = await t.call('GET', path, undefined, u.session);
-  assert.deepEqual([locked.status, locked.body.error, locked.body.cost, locked.body.balance], [402, 'LOCKED', CREDIT_COST.unlock, ALPHA.monthlyCredits]);
+  assert.deepEqual([locked.status, locked.body.error, locked.body.cost, locked.body.balance], [200, 'LOCKED', CREDIT_COST.unlock, ALPHA.monthlyCredits]);
   // A report with no sealed file costs nothing.
   const missing = await t.call('POST', '/deep/005930/2026-10-02/unlock', {}, u.session);
   assert.deepEqual([missing.status, missing.body.error], [404, 'NOT_SEALED']);
@@ -417,7 +417,7 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, o
  const other=await t.login('other@example.com',(await t.call('POST','/admin/invites',{},t.boss.session)).body.code);
  // Someone else's report opens once for the unlock price, then stays open without charging again.
  const lockedJob=await t.call('GET','/reports/'+a.body.id,undefined,other.session);
- assert.deepEqual([lockedJob.status,lockedJob.body.error,lockedJob.body.cost],[402,'LOCKED',CREDIT_COST.unlock]);
+ assert.deepEqual([lockedJob.status,lockedJob.body.error,lockedJob.body.cost],[200,'LOCKED',CREDIT_COST.unlock]);
  assert.doesNotMatch(JSON.stringify(lockedJob.body),/비공개 분석 본문/);
  const latest=(await t.call('GET','/reports/latest/000660',undefined,other.session)).body.job;
  assert.deepEqual([latest.id,latest.locked,latest.cost],[a.body.id,true,CREDIT_COST.unlock]);
@@ -429,7 +429,7 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, o
   await t.env.DB.prepare("UPDATE users SET plan='pro' WHERE email='other@example.com'").run();
   assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,200);
  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='other@example.com'").run();
- const blocked=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(blocked.status,402);assert.doesNotMatch(JSON.stringify(blocked.body),/비공개 분석 본문/);
+ const blocked=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(blocked.body.locked,true);assert.doesNotMatch(JSON.stringify(blocked.body),/비공개 분석 본문/);
  assert.equal((await t.call('GET','/reports/'+a.body.id)).status,401);
  const mine=(await t.call('GET','/reports/mine',undefined,t.user.session)).body;assert.equal(mine.jobs.length,1);assert.equal(mine.jobs[0].status,'done');assert.equal(mine.jobs[0].symbol,'000660');
  assert.deepEqual((await t.call('GET','/reports/mine',undefined,other.session)).body.jobs,[],'someone else\'s reports never show in my list');

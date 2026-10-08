@@ -60,7 +60,7 @@ export const JOBS_JS = `
   if(timer)clearTimeout(timer);store(id);
   if(show){ensure(watchTitle);dialog.querySelector('.rj-body').innerHTML=progressHtml();curStage='queued';paintSteps();eta.start();}
   var poll=function(){G.call('GET','/reports/'+id).then(function(r){
-   if(r.error==='LOCKED'){if(live())dialog.close();locked(id,r);return;}
+   if(r.locked||r.error==='LOCKED'){if(live())dialog.close();locked(id,r);return;}
    if(r.error&&typeof r.error==='string'&&!r.status){if(live())dialog.querySelector('[data-job-state]').textContent=r.message||'작업을 확인하지 못했어요';if(r.error==='NOT_FOUND'||r.error==='FORBIDDEN'||r.error==='UNAUTHORIZED')return;timer=setTimeout(poll,5000);return;}
    if(r.kind||r.createdAt)eta.set(r.kind,r.createdAt,r.etaSec);
    if(r.status==='done'){eta.stop();

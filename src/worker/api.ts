@@ -608,7 +608,7 @@ route('GET', '/reports/latest/([^/]+)', async ({ req, env, now, params }) => {
 route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
   const u=await authed(req,env,now), job=await env.DB.prepare('SELECT * FROM report_jobs WHERE id=?').bind(params[0]).first<ReportJob>();
   if (!job || (job.user_id!==u.id && job.status!=='done')) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
-  if (!(await jobAccess(env.DB,u,job!))) fail(402,'LOCKED',`다른 사용자가 만든 리포트예요. ${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`,{cost:CREDIT_COST.unlock,balance:await balanceOf(env.DB,u.id),id:job!.id,symbol:job!.symbol,kind:job!.kind,createdAt:job!.created_at});
+  if (!(await jobAccess(env.DB,u,job!))) return {locked:true,error:'LOCKED',message:`다른 사용자가 만든 리포트예요. ${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`,cost:CREDIT_COST.unlock,balance:await balanceOf(env.DB,u.id),id:job!.id,symbol:job!.symbol,kind:job!.kind,createdAt:job!.created_at};
   if (['queued','running'].includes(job!.status) && Date.parse(job!.updated_at)<now.getTime()-15*60000) { await refundJob(env.DB,job!,'작업 시간이 초과되어 크레딧을 반환했어요.',now); job!.status='failed'; job!.stage='failed'; job!.error='작업 시간이 초과됐어요. 다시 요청해 주세요.'; }
   const report=job!.status==='done' && job!.result_json ? JSON.parse(job!.result_json) as DailyReport:null;
   // G-110: the countdown starts from how long this kind actually took lately (70th percentile of the last 20).
@@ -882,7 +882,8 @@ const deepParams = (params: string[]) => {
 route('GET', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})', async ({ req, env, deps, now, params }) => {
   const u = await authed(req, env, now), { symbol, date } = deepParams(params);
   if(symbol.startsWith('MARKET-')&&RANK[u.plan]!<RANK.plus!&&u.role!=='admin')fail(403,'PLAN_REQUIRED','시장 상세 리포트는 플러스부터 열 수 있어요. 무료는 요약을 볼 수 있어요.');
-  if (!(await deepAccess(env.DB, u, symbol, date))) fail(402, 'LOCKED', `${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`, { cost: CREDIT_COST.unlock, balance: await balanceOf(env.DB, u.id) });
+  // Locked is an answer, not an error (G-124): the page shows the unlock button without a failed request in the console.
+  if (!(await deepAccess(env.DB, u, symbol, date))) return { locked: true, error: 'LOCKED', message: `${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`, cost: CREDIT_COST.unlock, balance: await balanceOf(env.DB, u.id) };
   return { html: await deepHtml(env, deps, symbol, date) };
 });
 
