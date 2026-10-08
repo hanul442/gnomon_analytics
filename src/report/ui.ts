@@ -139,19 +139,21 @@ export const UI_SCRIPT = `<script>
 // The ☰ menu (docs/DESIGN.md §5.20, G-58): every page, all sections in one drawer.
 const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 /** Menu groups: [label, href]. Hrefs are relative to the site root. */
-export const MENU: readonly { title: string; items: readonly [string, string][] }[] = [
-  // G-119: grouped by what people come for — finding stocks, their own things, then help and the account.
-  { title: '찾아보기', items: [['필터로 종목 찾기', 'screener.html'], ['테마별 종목', 'themes.html'], ['공시 레이더 (숨은 신호)', 'signals.html'], ['시장 데일리', 'market-reports.html'], ['AI 리포트 모음', 'reports.html'], ['ETF', 'etfs.html'], ['코인', 'coins.html']] },
-  { title: '내 활동', items: [['📄 내 리포트', 'myreports.html'], ['💬 내 토론 기록', 'mydebates.html'], ['🔔 알림 설정', 'alerts.html']] },
-  { title: '도움말', items: [['사용법', 'guide.html'], ['자주 묻는 질문 (FAQ)', 'faq.html'], ['1:1 문의 · Q&A', 'faq.html#ask'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly']] },
-  { title: '계정', items: [['요금제·크레딧', 'pricing.html'], ['이용약관·면책', 'terms.html'], ['HANUL 프로젝트 소개', 'hanul.html']] },
+export const MENU: readonly { title: string; items: readonly [string, string, string][] }[] = [
+  // G-138: grouped by what people come for, each item a tile with an icon: the market, finding and AI,
+  // their own things, then help and the account.
+  { title: '시장', items: [['📊', '시장 데일리', 'market-reports.html'], ['🧭', '테마별 종목', 'themes.html'], ['📡', '공시 레이더', 'signals.html'], ['🧺', 'ETF', 'etfs.html'], ['🪙', '코인', 'coins.html']] },
+  { title: '찾기·AI 리포트', items: [['🔎', '자세히 검색', 'screener.html'], ['🗂️', 'AI 리포트 모음', 'reports.html'], ['🆕', '오늘 나온 리포트', 'reports.html#today'], ['🎯', '성적표', 'scorecard.html']] },
+  { title: '내 것', items: [['⭐', '관심 종목', 'watch.html'], ['🔔', '알림함', 'inbox.html'], ['📄', '내 리포트', 'myreports.html'], ['💬', '내 토론 기록', 'mydebates.html'], ['⚙️', '알림 설정', 'alerts.html']] },
+  { title: '도움말', items: [['📘', '사용법', 'guide.html'], ['❓', 'FAQ', 'faq.html'], ['✉️', '1:1 문의', 'faq.html#ask'], ['✨', '업데이트 기록', 'updates.html'], ['📝', '이번 주 설문', 'survey.html?k=weekly']] },
+  { title: '계정', items: [['💳', '요금제·크레딧', 'pricing.html'], ['📜', '이용약관·면책', 'terms.html'], ['🏢', 'HANUL 소개', 'hanul.html']] },
 ];
 /** The app's tabs (G-95): the bottom bar on phones, the same links in the top bar on wide screens. 전체 opens the sheet. */
 export const TABS: readonly [string, string, string][] = [
   ['홈', 'index.html#top', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'],
-  ['검색', 'index.html#search', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'],
-  ['관심', 'index.html#watch', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>'],
-  ['성적표', 'scorecard.html', '<path d="M5 20V10M10 20V4M15 20v-7M20 20v-11"/>'],
+  ['찾기', 'screener.html', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'],
+  ['관심', 'watch.html', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>'],
+  ['리포트', 'reports.html', '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>'],
 ];
 const ALL_ICON = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>';
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -165,7 +167,7 @@ export function tabBar(base: string, where: 'top' | 'bottom'): string {
 export function menuHtml(base: string, archiveHref?: string): { button: string; drawer: string } {
   return {
     button: tabBar(base, 'top'),
-    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체</b><button type="button" class="sm-close" aria-label="닫기">×</button></div><div class="sm-group sm-acct"><a href="${base}pricing.html" data-acct-tab="1"><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></a><button type="button" class="sm-install" data-install hidden><b>📲 그노몬 앱 설치</b><small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div class="sm-group sm-view" id="sm-view"><div class="sm-title">내 보기 방식</div>${PERSONA_BAR}<p class="sm-hint">고르면 홈의 '오늘 볼 것'과 종목 화면이 바뀌어요.</p><a href="${base}onboarding.html">설문 다시 하기</a></div><div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
+    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체</b><button type="button" class="sm-close" aria-label="닫기">×</button></div><div class="sm-group sm-acct"><a href="${base}pricing.html" data-acct-tab="1"><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></a><button type="button" class="sm-install" data-install hidden><b>📲 그노몬 앱 설치</b><small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div class="sm-group sm-view" id="sm-view"><div class="sm-title">내 보기 방식</div>${PERSONA_BAR}<p class="sm-hint">고르면 홈의 '오늘 볼 것'과 종목 화면이 바뀌어요.</p><a href="${base}onboarding.html">설문 다시 하기</a></div><div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div><div class="sm-grid">${g.items.map(([icon, label, href]) => `<a class="sm-tile" href="${base}${href}"><span class="sm-ic" aria-hidden="true">${icon}</span><span>${escM(label)}</span></a>`).join('')}</div></div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
   };
 }
 
@@ -218,6 +220,7 @@ export const FS_JS = `
       ['section.chat:not([hidden])', function (e) { var x = e.querySelector('.chat-x'); if (x) x.click(); }],
       ['.side-menu:not([hidden])', function (e) { var x = e.querySelector('.sm-close'); if (x) x.click(); }],
       ['.ins-pop', function (e) { e.remove(); }],
+      ['.db-room:not([hidden])', function (e) { var x = e.querySelector('[data-room-close]'); if (x) x.click(); }],
       ['.pop-wrap', function (e) { var x = e.querySelector('[data-p=later]'); if (x) x.click(); else e.remove(); }]
     ];
     var open = function () { var out = []; L.forEach(function (l) { document.querySelectorAll(l[0]).forEach(function (e) { if (e.offsetParent !== null || getComputedStyle(e).position === 'fixed') out.push([e, l[1]]); }); }); return out; };
@@ -386,15 +389,15 @@ export const TOUR_JS = `
         ['.ix-row', '시장 한눈에', '코스피·코스닥과 시장 온도예요. 시장 온도는 전 종목의 기술 신호를 모은 거예요.'],
         ['#watch', '관심 종목', '어디서든 ☆를 누르면 여기에 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
         ['#today', '오늘 볼 것', '내 보기 방식(초보·단타·스윙·장기)에 맞춰 오늘 볼 종목 네 개를 골라 이유와 함께 보여 줘요.'],
-        ['.bottom-nav', '아래 탭', '홈 · 검색 · 관심 · 성적표, 그리고 전체에서 내 계정·보기 방식·사용법·FAQ로 가요.'],
-        ['.top-tabs', '위쪽 탭', '홈 · 검색 · 관심 · 성적표, 그리고 전체에서 내 계정·보기 방식·사용법·FAQ로 가요.'],
+        ['.bottom-nav', '아래 탭', '홈 · 찾기 · 관심 · 리포트, 그리고 전체에서 시장·내 것·도움말·계정 메뉴로 가요.'],
+        ['.top-tabs', '위쪽 탭', '홈 · 찾기 · 관심 · 리포트, 그리고 전체에서 시장·내 것·도움말·계정 메뉴로 가요.'],
       ],
       report: [
-        ['.chips', '여덟 탭', '요약 · 차트 · 기술 · 전략 · AI 위원회 · 수급 · 실적 · 뉴스·공시가 같은 위치에 있어요. 리포트가 없으면 AI 분석은 잠금으로 표시돼요.'],
+        ['.chips', '다섯 탭', '요약 · 타이밍(기술 신호와 전략) · 기업 체력(종목정보·재무제표·수급) · AI 위원회 · 뉴스·공시가 같은 위치에 있어요. 차트는 요약의 작은 차트를 누르면 전체 화면으로 열려요. 리포트가 없으면 AI 분석은 잠금으로 보여요.'],
         ['#home-conclusion', '조건 가격', '큰 가격은 강세·약세 전개를 검토하는 조건이에요. 전망 범위와는 달라요. 분석 날짜·당시 종가와 조건 출처도 확인하세요.', 'home'],
-        ['#tab-chart', '차트에서 전망 비교', '시나리오 레이어를 켜면 강세·기본·약세 전망 범위를 차트 안에서 비교해요. 위원회·목표가·변동성 중 범위의 출처를 확인하세요.', 'chart'],
+        ['.hero-chart', '차트 자세히 보기', '작은 차트를 누르면 전체 화면 차트가 열려요. 캔들·하이킨아시·바·라인·영역·기준선, 지표, 그리기, 지수 비교, 최고·최저 표시를 쓸 수 있고 ‹나 뒤로 가기로 닫아요.', 'home'],
         ['#tab-technical', '지표 선택', '피보나치·RSI 등 지표 본문에서 차트 연결을 누르면 해당 지표만 켜져요. 기술로 돌아가기로 보던 위치에 복귀해요.', 'technical'],
-        ['#tab-strategy', '전략 대결', '챔피언 레이스에서 전략별 강세·약세 판단과 성과를 함께 확인하세요.', 'strategy'],
+        ['#tab-fundamentals', '기업 체력', '성장·수익성·안정성·수급·가치를 한눈에 보고, 재무제표와 수급을 이어서 확인해요.', 'fundamentals'],
         ['#tab-ai', '토론과 질문', '전체 토론은 2초 생각 → 발언 → 2초 쉼으로 재생돼요. 바로 아래 입력창에서 질문하고 +로 답변자나 내 전문가를 고르세요. 전송 전 작은 크레딧 안내를 확인하세요.', 'ai'],
         ['#tab-news', '뉴스·공시', '제목으로 원문을 확인하고 더 보기로 나머지를 펼쳐요. 기업 이벤트와 테마 확장은 준비 중이에요.', 'news'],
       ],
@@ -436,7 +439,9 @@ export const TOUR_JS = `
       window.addEventListener('resize', place); window.addEventListener('scroll', place, { passive: true }); window.addEventListener('keydown', escapeTour);
       show();
     };
-    setTimeout(start, forced ? 300 : 1200);
+    // Not over a full-screen chart or layer: wait until the reader is back on the page.
+    var later = function () { if (/(^| )(chart-fs|layer-open)( |$)/.test(document.documentElement.className)) return setTimeout(later, 1000); start(); };
+    setTimeout(later, forced ? 300 : 1200);
     };
     // G-112: a signed-in visitor on a new device first takes the account's settings (tours already seen
     // come with them), so the tour waits for that before deciding to start.
@@ -492,7 +497,7 @@ export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);bac
 .sm-acct a{display:flex!important;justify-content:space-between;align-items:center;background:#f3f6fb;border-radius:12px!important;padding:14px 14px!important}.sm-acct small{font-size:12.5px;color:var(--muted);font-weight:600}.sm-acct{border-top:0!important;padding-top:4px!important}
 .menu-scrim{position:fixed;inset:0;background:rgba(10,20,35,.42);z-index:90}.side-menu{position:fixed;top:0;right:0;bottom:0;width:min(300px,86vw);background:#fff;z-index:91;overflow-y:auto;padding:14px 16px 24px;box-shadow:-12px 0 32px rgba(10,20,35,.18);animation:sm-in .18s ease-out}
 @keyframes sm-in{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}.sm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.sm-head b{font-size:17px}.sm-close{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);width:38px;height:38px}
-.sm-group{border-top:1px solid var(--line);padding:10px 0 6px}.sm-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:2px}.side-menu a{display:block;padding:10px 6px;border-radius:10px;text-decoration:none;color:var(--fg);font-weight:600;font-size:15px}.side-menu a:hover,.side-menu a[aria-current=page]{background:#eef3fb;color:var(--accent-strong)}.sm-foot{font-size:12px;color:var(--muted);margin-top:12px}.sm-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 10px}.side-menu .sm-quick a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border:1px solid var(--line);border-radius:12px;font-size:13px}.sm-quick svg{width:22px;height:22px}
+.sm-group{border-top:1px solid var(--line);padding:10px 0 6px}.sm-title{font-size:12px;font-weight:800;color:var(--muted);margin:2px 2px 8px}.sm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.side-menu .sm-tile{display:flex!important;flex-direction:column!important;align-items:center;justify-content:center;gap:5px;min-height:74px;padding:10px 6px;border-radius:14px;background:#f5f7fb;text-decoration:none;color:var(--fg);font-size:13px;font-weight:700;text-align:center;line-height:1.3}.side-menu .sm-tile:hover{background:var(--accent-soft)}.sm-ic{font-size:22px;line-height:1}@media(min-width:821px){.sm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}.side-menu a{display:block;padding:10px 6px;border-radius:10px;text-decoration:none;color:var(--fg);font-weight:600;font-size:15px}.side-menu a:hover,.side-menu a[aria-current=page]{background:#eef3fb;color:var(--accent-strong)}.sm-foot{font-size:12px;color:var(--muted);margin-top:12px}.sm-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 10px}.side-menu .sm-quick a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border:1px solid var(--line);border-radius:12px;font-size:13px}.sm-quick svg{width:22px;height:22px}
 html.menu-open{overflow:hidden}.sm-view .persona-bar{margin:6px 0 4px}.sm-view .persona-bar .lbl{display:none}.sm-hint{font-size:12px;color:var(--muted);margin:4px 2px}
 @media(max-width:820px){.side-menu{top:auto;bottom:0;right:0;top:auto;left:0;width:auto;max-height:82vh;border-radius:20px 20px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom));animation:sm-up .2s ease-out}}@keyframes sm-up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}`;
 

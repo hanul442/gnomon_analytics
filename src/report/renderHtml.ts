@@ -16,8 +16,8 @@ import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim } from '../analysis/commentary.js';
 import { apiMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
 import { CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
-import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, STOCK_INFO_CSS, STOCK_INFO_TOGGLE_JS, miniGauge, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
-import { aiSummaryCard } from './aiSummary.js';
+import { timingInfographic, healthInfographic, statementsCard, INFOGRAPHIC_CSS, INFOGRAPHIC_JS } from './infographics.js';
+import { chartOverlays, quickInfoCard, flowsPanel, forecastCard, fundamentalsPanel, STOCK_INFO_CSS, STOCK_INFO_TOGGLE_JS, miniGauge, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { DART_SCRIPT, freshness, freshnessBadge, hero, latestLists, staleAiBar, priceChart } from './appParts.js';
 import { arenaHeadline, arenaPanel } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
@@ -27,6 +27,8 @@ import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, parliamentViewNote, SEAT
 import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
+import { CHART_PRO_CSS, CHART_PRO_JS, HERO_RANGE_JS } from './chartPro.js';
+import { derivSlot, DERIV_CSS, DERIV_JS } from './deriv.js';
 import { adStrip, AD_CSS, AD_JS } from './ads.js';
 import { edgeCard, edgeEvents, edgeFlows, edgeFundamentals, EDGE_CSS } from './renderEdge.js';
 import { ALERTS_CSS, PRICE_ALERT_JS, PUSH_JS } from './pushParts.js';
@@ -45,24 +47,6 @@ const MIX_COLORS = ['#243659', '#34496f', '#8fa5c3', '#becbdc', '#6b6f78', '#dde
 /** Meta details as separate items (spacing, not "·" chains). */
 const meta = (parts: readonly string[], cls = 'meta'): string => `<span class="${cls}">${parts.filter(Boolean).map((part) => `<span>${part}</span>`).join('')}</span>`;
 
-const ICON = {
-  logo: '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M16 16 L16 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M16 16 L25 21" stroke="#8fb0e8" stroke-width="2.4" stroke-linecap="round"/></svg>',
-  dashboard: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 12l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-  archive: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-  filing: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 12h6M10 16h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-  why: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 16.6v.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-  news: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h11v14H7a2 2 0 0 1-2-2zM16 9h3v8a2 2 0 0 1-2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h5M8 12h5M8 15h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-  flow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l4-4 4 3 8-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-  fundamentals: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="4" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="10" y="7" width="4" height="13" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="16" y="4" width="4" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
-  chart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 4v16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="5" y="8" width="4" height="7" rx="1" fill="currentColor"/><rect x="15" y="6" width="4" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
-  source: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6M12 7.5v.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-  price: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 4 3 7-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  week: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16M9 3v4M15 3v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-  month: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M10 19V5M15 19v-7M20 19v-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
-  volume: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16M7 16v-4M12 16V8M17 16v-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
-  up: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l6-6 4 4 6-7M15 8h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  down: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7l6 6 4-4 6 7M15 16h5v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-};
 
 
 const STYLE = `
@@ -315,25 +299,25 @@ footer{padding:0 16px 32px}}
 
 // Keep chart, technical analysis and strategy in independent tabs.
 type TabKey = 'home' | 'chart' | 'technical' | 'strategy' | 'ai' | 'flows' | 'fundamentals' | 'news';
+// G-129: 기술 + 전략 → 타이밍, 수급 + 종목정보 → 기업 체력. The old tab ids stay as sections inside them,
+// so links to #tab-strategy or #tab-flows still land on the right part.
 export const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'home', label: '요약' },
   { key: 'chart', label: '차트' },
-  { key: 'technical', label: '기술' },
-  { key: 'strategy', label: '전략' },
+  { key: 'technical', label: '타이밍' },
+  { key: 'fundamentals', label: '기업 체력' },
   { key: 'ai', label: 'AI 위원회' },
-  { key: 'flows', label: '수급' },
-  { key: 'fundamentals', label: '종목정보' },
   { key: 'news', label: '뉴스·공시' },
 ];
 
-const ANALYSIS_KEYS = new Set(['technical','strategy','flows','fundamentals']);
+const ANALYSIS_KEYS = new Set<string>();
 function reportNav(tabs:readonly {key:string;label:string}[]):string {
  const link=(t:{key:string;label:string},i:number)=>`<a role="tab" id="t-${t.key}" href="#tab-${t.key}" aria-controls="tab-${t.key}" aria-selected="${i===0}"${i?' tabindex="-1"':''}>${t.label}</a>`;
  const nested=tabs.filter(t=>ANALYSIS_KEYS.has(t.key));
- return `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.filter(t=>!ANALYSIS_KEYS.has(t.key)).map((t,i)=>link(t,i)+(t.key==='chart'&&nested.length?'<button type="button" id="analysis-menu" aria-expanded="false" aria-controls="analysis-tabs">분석<i class="chev" aria-hidden="true"></i></button>':'')).join('')}</div>${nested.length?`<div id="analysis-tabs" class="chips analysis-tabs" role="tablist" aria-label="분석 세부 메뉴" hidden>${nested.map(t=>link(t,1)).join('')}</div>`:''}`;
+ return `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.filter(t=>!ANALYSIS_KEYS.has(t.key)&&t.key!=='chart').map((t,i)=>link(t,i)+(t.key==='chart'&&nested.length?'<button type="button" id="analysis-menu" aria-expanded="false" aria-controls="analysis-tabs">분석<i class="chev" aria-hidden="true"></i></button>':'')).join('')}</div>${nested.length?`<div id="analysis-tabs" class="chips analysis-tabs" role="tablist" aria-label="분석 세부 메뉴" hidden>${nested.map(t=>link(t,1)).join('')}</div>`:''}`;
 }
 
-export function shell(base: string, title: string, body: string, options: { lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean }): string {
+export function shell(base: string, title: string, body: string, options: { lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'watch' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean }): string {
   // The site root lists every covered stock; `base` always points at it.
   const rootHref = `${base}index.html`;
   const tabs = options.tabs ?? [];
@@ -396,7 +380,8 @@ function signalSection(report: DailyReport): string {
   if (!t) return '';
   const tone = t.score === null ? '' : t.score >= 0.1 ? 'up' : t.score <= -0.1 ? 'down' : '';
   const trendMark = { UP: '▲', FLAT: '■', DOWN: '▼' } as const;
-  const trendWord = { UP: '상승', FLAT: '보합', DOWN: '하락' } as const;
+  // One vocabulary for direction everywhere (G-131): 강세·중립·약세.
+  const trendWord = { UP: '강세', FLAT: '중립', DOWN: '약세' } as const;
   const momentumScale = Math.max(20, Math.ceil(Math.max(0, ...(report.momentum ?? []).map(m => Math.abs(m.returnPct ?? 0))) / 10) * 10);
   // Same card as the horizon gauges (G-124): title and window on top, the gauge, the call under it, the return below.
   const momentum = (report.momentum ?? []).map((m) => `<div class="mom hz"><div class="hz-top"><b>${escape(m.label)}</b><span>${m.days}거래일</span></div>
@@ -412,29 +397,11 @@ ${gaugeSvg(t)}<div class="signal-label ${tone}">${escape(t.label)}</div>
 <p class="fine">기술적 지표 ${t.votes.length}개의 요약이에요. 오를 확률이 아니고, 투자 권유가 아니에요.</p></div>
 <div class="card"><div class="head"><h2>모멘텀</h2></div><div class="moms">${momentum}</div>
 ${groupBars(t)}
-<p class="fine" style="margin:8px 0 0">바늘은 각 기간의 실제 수익률이에요(세 게이지 모두 끝이 ±${momentumScale}%). 단기 5거래일 ±2%, 중기 20거래일 ±5%, 장기 120거래일 ±10% 안이면 보합이에요.</p>
+<p class="fine" style="margin:8px 0 0">바늘은 각 기간의 실제 수익률이에요(세 게이지 모두 끝이 ±${momentumScale}%). 단기 5거래일 ±2%, 중기 20거래일 ±5%, 장기 120거래일 ±10% 안이면 중립이에요.</p>
 <details class="votes" id="votes"><summary>지표별 투표 보기</summary><div class="table-wrap"><table><thead><tr><th>지표</th><th>값</th><th>투표</th><th class="why">규칙</th></tr></thead><tbody>${rows}</tbody></table></div></details></div></div>`;
 }
 
-function kpi(icon: string, color: string, label: string, value: string, valueTone: string, hint: string): string {
-  const arrow = valueTone === 'up' ? ICON.up : valueTone === 'down' ? ICON.down : '';
-  return `<div class="card kpi"><div class="row"><div class="ico" style="background:${color}">${icon}</div>
-<div><div class="label">${escape(label)}</div><div class="value ${valueTone}">${escape(value)}${arrow}</div></div></div>
-<div class="hint">${escape(hint)}</div></div>`;
-}
 
-function kpis(report: DailyReport): string {
-  const p = report.price;
-  if (!p) return '<div class="card empty">아직 가격 기록이 없어요.</div>';
-  const day = p.sessionDate ?? report.date;
-  const vol = p.volumeRatio20;
-  return `<div class="kpis" id="kpis">
-${kpi(ICON.price, '#1f7a74', `종가 (${day})`, won(p.close), '', p.changePct === null ? '전일 기록 없음' : `전일 대비 ${pct(p.changePct)} (${p.change! > 0 ? '+' : ''}${Math.round(p.change!).toLocaleString('ko-KR')}원)`)}
-${kpi(ICON.week, '#2b6fd6', '5거래일 수익률', pct(p.return5dPct), tone(p.return5dPct), '최근 일주일 흐름')}
-${kpi(ICON.month, '#7a4fb3', '20거래일 수익률', pct(p.return20dPct), tone(p.return20dPct), `20일 범위 ${won(p.low20)} ~ ${won(p.high20)}`)}
-${kpi(ICON.volume, '#1c3055', '거래량', `${Math.round(p.volume).toLocaleString('ko-KR')}주`, '', vol === null ? '20일 평균 정보 없음' : `20일 평균 대비 ${vol.toFixed(2)}배`)}
-</div>`;
-}
 
 function mixCard(filings: readonly ReportedFiling[]): string {
   const counts = new Map<string, number>();
@@ -557,6 +524,7 @@ export const TAB_SCRIPT = `<script>
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role=tab]'));
   function show(id, focus) {
     var panel = document.getElementById(id);
+    if (panel && panel.getAttribute('role') !== 'tabpanel' && /^tab-/.test(id)) { var host = panel.closest('[role=tabpanel]'), part = panel; if (host && show(host.id, focus)) { setTimeout(function () { part.scrollIntoView({ block: 'start' }); }, 0); return true; } }
     if (!panel || panel.getAttribute('role') !== 'tabpanel') return false;
     var nested = ['tab-technical','tab-strategy','tab-flows','tab-fundamentals'].indexOf(id)>=0;
     var menu=document.getElementById('analysis-menu'),sub=document.getElementById('analysis-tabs');
@@ -625,12 +593,13 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const panel = (key: TabKey, html: string) => `<section class="panel" id="tab-${key}" role="tabpanel" aria-labelledby="t-${key}" tabindex="-1"><h2 class="panel-title">${TABS.find((t) => t.key === key)!.label}</h2>${html}</section>`;
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   // G-71: the conclusion (scenarios that open on tap) heads the summary tab, above everything else.
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${ctx.commentaryFrom && ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? staleAiBar(report, ctx.commentaryFrom) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${ctx.commentaryFrom && ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? staleAiBar(report, ctx.commentaryFrom) : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : quickInfoCard(m, report.price?.close ?? null, report.recentBars ?? [])}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 ${report.kind ? '' : peersSlot(report.symbol)}
 <div class="home-lists">${latestLists(report)}</div>`;
-  const chartTab = `${chart.html}<section data-generated="chart">${report.commentary?.summary?aiSummaryCard(report.commentary.summary.text,'차트 AI 요약',ctx.commentaryFrom??report.date):''}</section><div style="margin-top:16px">${kpis(report)}</div>`;
+  // G-130: the chart alone (the AI summary and the four number cards under it are gone).
+  const chartTab = chart.html;
   // Free: the 16-indicator summary (public elsewhere too). Plus: our horizon gauges, fair value, forecasts and structure.
   const technical = `${insightLine(report, 'technical', base)}${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
   // Free: the champion's name. Plus: the ranking. Pro: trades, curves, Monte Carlo and chart markers.
@@ -653,11 +622,9 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
   const body = `${bar}${panel('home', home)}
 ${panel('chart', chartTab)}
-${panel('technical', technical)}
-${panel('strategy', strategyTab)}
+${panel('technical', `${timingInfographic(report)}${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${strategyTab}</section>`)}
+${panel('fundamentals', `${report.kind === 'coin' ? '' : healthInfographic(report.market, report.price?.close ?? null)}${report.kind === 'coin' ? '' : fundTab}${report.kind === 'coin' ? '' : statementsCard(report.market, report.statements)}<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`)}
 ${panel('ai', aiTab).replace('role="tabpanel"',`role="tabpanel" data-ai-date="${escape(report.commentary?.status==='OK'?(ctx.commentaryFrom??report.date):'')}"`)}
-${panel('flows', flowsTab)}
-${panel('fundamentals', fundTab)}
 ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
@@ -883,7 +850,7 @@ export function renderStockPage(coin = false): string {
   const forecast = `<section class="block"><div class="block-head"><h2>예측 가격 범위 (10~90%)</h2></div><div class="card"><div id="sp-fc"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div><p class="fine">최근 변동성으로 계산한 범위예요. 확률이나 목표가가 아니에요.</p></div></section>`;
   let body = `${priceBar({ name: '<span id="pb-name"></span>', symbol: '<span id="pb-code"></span>', price: '<span id="pb-price"></span>', change: '<span id="pb-change"></span>', tone: '', badge: '' })}<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span data-report-state>AI 리포트 확인 중</span></div>
 <div class="h1-row"><h1 id="sp-name" class="skel">종목 이름</h1>${starButton('', '이 종목', 'sp-star')}</div><div class="hero-price" id="sp-price"></div><div class="hero-sub" id="sp-date"></div></div>
-${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산</b></div><p>업비트 원화 마켓 일봉으로 주식과 같은 지표 16개, 기간별 등락, 기술적 적정가를 계산해요. 코인 AI 리포트는 매일 거래대금 상위 코인 가운데 하나씩 써요.</p><p class="fine">코인은 24시간 거래돼서 일봉은 매일 09:00(KST)에 끊어요. 변동성이 커서 예측 범위가 넓어요.</p></div>' : `<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 바로 분석을 시작해요. 최신으로 확보된 데이터 기준으로 작성합니다. 크레딧 요청은 플러스부터예요.</p>
+${coin ? derivSlot('') : ''}${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산</b></div><p>업비트 원화 마켓 일봉으로 주식과 같은 지표 16개, 기간별 등락, 기술적 적정가를 계산해요. 코인 AI 리포트는 매일 거래대금 상위 코인 가운데 하나씩 써요.</p><p class="fine">코인은 24시간 거래돼서 일봉은 매일 09:00(KST)에 끊어요. 변동성이 커서 예측 범위가 넓어요.</p></div>' : `<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>요청하면 바로 분석을 시작해요. 최신으로 확보된 데이터 기준으로 작성합니다. 크레딧 요청은 플러스부터예요.</p>
 <span class="req-btns"><button type="button" class="credit-btn ghost" data-spend="brief" id="sp-request-brief">요약 리포트 <small>${CREDIT_COST.brief}크레딧</small></button><button type="button" class="credit-btn" data-spend="report" id="sp-request-credit">심층 리포트 <small>${CREDIT_COST.report}크레딧</small></button></span>
 <p class="fine">남은 크레딧 <b data-credits>0</b>개 · <a href="pricing.html#credits">충전</a> · <a id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">운영 문의</a></p></div>`}</section>
 ${coin ? '' : peersSlot('')}<section class="block"><div class="card sp-one"><div class="sp-one-head"><span class="pl-k">한 줄 요약</span><b id="sp-signal" class="sp-signal">계산 중</b></div><p class="headline skel" id="sp-line">이 종목의 계산 결과를 불러오는 중이에요.</p><div class="pl-tally" id="sp-tally" aria-hidden="true"></div><p class="muted small" id="sp-counts"></p></div></section>
@@ -899,7 +866,7 @@ ${coin ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트�
   const techAt=body.indexOf('<section class="block"><div class="grid-eq">',split);
   const head=body.slice(0,split), chart=body.slice(split,techAt), technical=body.slice(techAt,ending);
   const missing=(label:string)=>`<section class="block" data-missing><h2>${label}</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 생성되지 않은 분석이에요</b><p>리포트를 생성하면 이 영역에서 확인할 수 있어요.</p><button type="button" class="btn-primary" data-create-report>심층 리포트 생성하기</button></div></div></section>`;
-  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}</section><section class="panel" id="tab-strategy" role="tabpanel" aria-labelledby="t-strategy" hidden>${missing('전략 대결 · 모의투자')}</section>${[{key:'ai',label:'AI 위원회'},{key:'flows',label:'수급'},{key:'fundamentals',label:'종목정보'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${missing(t.label)}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
+  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${missing('전략 대결 · 모의투자')}</section></section>${[{key:'fundamentals',label:'기업 체력'},{key:'ai',label:'AI 위원회'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${missing(t.label)}${t.key==='fundamentals'?`<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${missing('수급')}</section>`:''}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
   return shell('', coin ? '코인 차트 | GNOMON' : '종목 차트 | GNOMON', body, { tabs: TABS, bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(coin)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}${PARLIAMENT_SCRIPT}` });
 }
 
@@ -937,9 +904,10 @@ const stockScript = (coin: boolean) => `<script>
         var lo = Math.min.apply(null, hp.map(function (b) { return b.close; })), hi = Math.max.apply(null, hp.map(function (b) { return b.close; })), sp = hi - lo || 1;
         var pts = hp.map(function (b, i) { return (i / (hp.length - 1) * 320).toFixed(1) + ',' + (68 - (b.close - lo) / sp * 62).toFixed(1); }).join(' ');
         var g = (hp[hp.length - 1].close / hp[0].close - 1) * 100, col = g >= 0 ? '#d1373d' : '#2a62c9';
-        var hc = document.createElement('a'); hc.className = 'hero-chart'; hc.href = '#tab-chart'; hc.setAttribute('aria-label', '최근 3개월 차트, 눌러서 차트 탭 열기');
-        hc.innerHTML = '<svg viewBox="0 0 320 72" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,72 ' + pts + ' 320,72" fill="' + col + '" fill-opacity=".12"/><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><span class="hc-meta"><span>3개월 <b class="' + (g > 0 ? 'up' : g < 0 ? 'down' : '') + '">' + (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '') + g.toFixed(1) + '%</b> · 최고 ' + won(hi) + ' · 최저 ' + won(lo) + '</span><span class="hc-go">차트 크게 보기 ›</span></span>';
-        $('sp-date').after(hc);
+        var hc = document.createElement('a'); hc.className = 'hero-chart'; hc.href = '#tab-chart'; hc.setAttribute('aria-label', '최근 3개월 차트, 눌러서 전체 화면 차트 열기');
+        hc.innerHTML = '<svg viewBox="0 0 320 72" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,72 ' + pts + ' 320,72" fill="' + col + '" fill-opacity=".12"/><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><span class="hc-meta"><span>3개월 <b class="' + (g > 0 ? 'up' : g < 0 ? 'down' : '') + '">' + (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '') + g.toFixed(1) + '%</b> · 최고 ' + won(hi) + ' · 최저 ' + won(lo) + '</span><span class="hc-go">차트 자세히 보기 ›</span></span>';
+        hc.setAttribute('data-c', JSON.stringify(bars.slice(-250).map(function (b) { return b.close; })));
+        $('sp-date').after(hc); if (window.GNM_heroRange) GNM_heroRange(hc);
       }
       $('pb-name').textContent = d.name; $('pb-code').textContent = d.symbol; $('pb-price').textContent = won(last.close);
       $('pb-price').parentElement.setAttribute('data-live',code);$('pb-change').parentElement.setAttribute('data-live',code);
@@ -1012,14 +980,14 @@ export interface HomeEntry {
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
 const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script>\s*$/, '');
-export const APP_CSS = `${STOCK_INFO_CSS}${PEERS_CSS}${THEME_CHIPS_CSS}${EDGE_CSS}${ALERTS_CSS}${AD_CSS}${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}
+export const APP_CSS = `${CHART_PRO_CSS}${DERIV_CSS}${INFOGRAPHIC_CSS}${STOCK_INFO_CSS}${PEERS_CSS}${THEME_CHIPS_CSS}${EDGE_CSS}${ALERTS_CSS}${AD_CSS}${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}
 .chips button{font:inherit;font-weight:700;color:#c5d1e4;border:0;border-radius:24px;background:transparent;padding:8px 16px;white-space:nowrap;cursor:pointer}.chips button.active,.chips button[aria-expanded=true]{background:#fff;color:var(--accent-strong)}.chev{display:inline-block;width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg);margin-left:7px;transition:transform .15s}[aria-expanded=true]>.chev{transform:translateY(1px) rotate(-135deg)}.analysis-tabs{border-top:1px solid #ffffff16;background:#0b203e;gap:2px!important}.analysis-tabs a{font-size:13px;font-weight:700;padding:9px 12px!important;border-radius:0!important;background:transparent!important;color:#9fb0c8!important;border-bottom:2px solid transparent}.analysis-tabs a[aria-selected=true]{color:#fff!important;border-bottom-color:#fff}.analysis-tabs[hidden]{display:none}.analysis-tabs a{display:block!important}.momentum-axis span{white-space:nowrap;font-variant-numeric:tabular-nums}.mom.hz{min-width:0;text-align:center}.mom .v{font-size:15px}.momentum-gauge svg{max-width:220px}.moms{grid-template-columns:repeat(3,minmax(0,1fr))}.race-entry{border-bottom:1px solid var(--line)}.race-entry>summary{list-style:none;cursor:pointer;border-bottom:0}.race-entry>summary::-webkit-details-marker{display:none}.race-entry>summary .race-name b{display:flex;align-items:center;gap:8px;min-width:0}.race-name b:after{content:'';flex:none;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-2px) rotate(45deg);transition:transform .15s}.race-entry[open]>summary .race-name b:after{transform:translateY(2px) rotate(-135deg)}.race-detail{padding:8px 0 16px}.ai-summary{background:linear-gradient(135deg,#edf3ff,#f8f9fe);border:1px solid #d5e1f5;border-left:4px solid #5276bd}.ai-summary .as-kicker{font-size:11px;letter-spacing:.08em;color:#526d9a;font-weight:800}.ai-summary h2{margin:6px 0 14px}.ai-summary p{line-height:1.85;margin:0}.ai-summary strong{font-variant-numeric:tabular-nums}.market-thermals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.market-thermals .tmp,.mk-panel .tmp{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit}.market-thermals .tmp-v,.mk-panel .tmp-v{font-size:20px}.market-thermals .tmp-n,.mk-panel .tmp-n{display:flex;justify-content:space-between;font-size:12px;font-weight:800}.market-thermals .pulse-bar,.market-thermals .br-bar,.mk-panel .pulse-bar,.mk-panel .br-bar{display:flex;height:14px;gap:3px;border-radius:8px;overflow:hidden}.market-thermals .s-bull,.mk-panel .s-bull{background:#e5484d}.market-thermals .s-neutral,.mk-panel .s-neutral{background:#c4cbc9}.market-thermals .s-bear,.mk-panel .s-bear{background:#3b7be0}.mk-panel .tmp{border:0;padding:0;box-shadow:none;background:none;margin-bottom:12px}.market-scenarios{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.market-scenario{border-top:3px solid #7d8da5;background:#f5f7fb}.market-scenario.bull{border-color:#cd454d;background:#fff4f4}.market-scenario.bear{border-color:#467bc4;background:#f0f5ff}.market-scenario h3{margin-top:0}.market-scenario h4{font-size:12px;color:var(--muted);margin-bottom:4px}.market-claims{list-style:none;padding:0}.market-claims li{margin:12px 0;line-height:1.8}.market-claims .tag{font-size:10px}.market-lead h1{font-size:24px}.market-lead .ml-back{font-size:13px;font-weight:700;color:var(--muted);text-decoration:none}.market-lead p{margin:6px 0}.market-evidence>summary{font-weight:800;cursor:pointer}.coin-tf{flex-wrap:wrap;overflow:visible}.minute-options{flex-basis:100%;display:flex;gap:8px;padding:10px;margin-top:8px;background:var(--soft);border:1px solid var(--line);border-radius:12px}.minute-options[hidden]{display:none}.minute-options button{border:1px solid var(--line);border-radius:18px;padding:8px 14px;background:#fff;color:var(--fg)}.coin-tf{position:relative}
 @media(max-width:820px){.moms{grid-template-columns:repeat(2,minmax(0,1fr))}.momentum-axis{font-size:10px;gap:0}.market-scenarios{grid-template-columns:minmax(0,1fr)}.market-thermals{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 0 8px;scrollbar-width:none}.market-thermals::-webkit-scrollbar{display:none}.market-thermals>*{flex:0 0 84%;scroll-snap-align:start}.topbar.scrolled .gnomon-mark{width:28px;height:28px}.topbar.scrolled .price-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 7px;font-size:12px;overflow:visible;line-height:1.5}.price-bar>b{overflow:hidden;text-overflow:ellipsis;grid-column:1;grid-row:1/3}.price-bar .pb-price{grid-column:2;grid-row:1;white-space:nowrap}.price-bar [data-live-f=arrowpct]{grid-column:2;grid-row:2;text-align:right;white-space:nowrap}.price-bar .pb-code,.price-bar .freshness-badge{display:none}.topbar-in{gap:8px}.top-links,.topbar-in>.menu-button{flex:none}.chips button{padding:6px 12px;font-size:13px}.analysis-tabs{padding-top:0}.chips{gap:4px}}
 ${FS_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)};\n${FORMAT_JS}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${STOCK_INFO_TOGGLE_JS}\n${INSTALL_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}`;
+export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${STOCK_INFO_TOGGLE_JS}\n${INFOGRAPHIC_JS}\n${INSTALL_JS}\n${DERIV_JS}\n${HERO_RANGE_JS}\n${CHART_PRO_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}`;
 /** Two FNV-1a passes give a short, stable content hash without node:crypto (this module also runs in the Worker). */
 const contentHash = (text: string): string => {
   let a = 0x811c9dc5, b = 0x01000193 ^ text.length;

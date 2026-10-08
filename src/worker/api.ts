@@ -1,4 +1,5 @@
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
+import { fetchOkxDeriv, type DerivSnapshot } from '../sources/okxDeriv.js';
 import { UNLOCK, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
 import { fetchUpbitMinutes, fetchUpbitTicks } from '../sources/upbit.js';
@@ -306,6 +307,20 @@ route('GET', '/quote', async ({ req, deps, now }) => {
   if (quoteCache.size > 500) quoteCache.clear();
   quoteCache.set(key, { at: now.getTime(), quotes });
   return { quotes };
+});
+
+// G-142: coin derivatives (OKX funding, open interest, long/short, liquidations). Public, cached a minute.
+const derivCache = new Map<string, { at: number; snap: DerivSnapshot }>();
+route('GET', '/deriv', async ({ req, deps, now }) => {
+  const ccy = (new URL(req.url).searchParams.get('ccy') ?? '').toUpperCase().replace(/^KRW-/, '');
+  if (!/^[A-Z0-9]{2,10}$/.test(ccy)) fail(400, 'BAD_CCY', '코인 기호를 보내 주세요.');
+  const hit = derivCache.get(ccy);
+  if (hit && now.getTime() - hit.at < 60_000) return { deriv: hit.snap, cached: true };
+  const snap = await fetchOkxDeriv(ccy, deps.fetch, now);
+  if (!snap.funding && !snap.oi) fail(404, 'NO_PERP', '이 코인은 선물 지표가 없어요.');
+  if (derivCache.size > 200) derivCache.clear();
+  derivCache.set(ccy, { at: now.getTime(), snap });
+  return { deriv: snap };
 });
 
 route('POST', '/auth/start', async ({ req, env, deps, now }) => {

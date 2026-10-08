@@ -84,7 +84,9 @@ export function heroChart(report: DailyReport): string {
   const xy = pts.map((x, i) => [(i / (pts.length - 1)) * w, h - 4 - ((x.close - lo) / span) * (h - 10)] as const);
   const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const chg = (pts.at(-1)!.close / pts[0]!.close - 1) * 100, color = chg >= 0 ? '#d1373d' : '#2a62c9';
-  return `<a class="hero-chart" href="#tab-chart" aria-label="최근 3개월 차트, 눌러서 차트 탭 열기"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".22"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><polygon points="0,${h} ${line} ${w},${h}" fill="url(#hc-g)"/><polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg><span class="hc-meta"><span>3개월 <b class="${chg > 0 ? 'up' : chg < 0 ? 'down' : ''}">${chg > 0 ? '▲ +' : chg < 0 ? '▼ ' : ''}${chg.toFixed(1)}%</b> · 최고 ${esc(won(hi))} · 최저 ${esc(won(lo))}</span><span class="hc-go">차트 크게 보기 ›</span></span></a>`;
+  // G-141: closes for the period chips under the mini chart (1주·1달·3달·6달·1년), drawn in the browser.
+  const series = (report.recentBars?.length ? report.recentBars.map((b) => b.close) : (report.recentCloses ?? []).map((x) => x.close)).slice(-250);
+  return `<a class="hero-chart" href="#tab-chart" data-c="${esc(JSON.stringify(series))}" aria-label="최근 3개월 차트, 눌러서 전체 화면 차트 열기"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".22"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><polygon points="0,${h} ${line} ${w},${h}" fill="url(#hc-g)"/><polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg><span class="hc-meta"><span>3개월 <b class="${chg > 0 ? 'up' : chg < 0 ? 'down' : ''}">${chg > 0 ? '▲ +' : chg < 0 ? '▼ ' : ''}${chg.toFixed(1)}%</b> · 최고 ${esc(won(hi))} · 최저 ${esc(won(lo))}</span><span class="hc-go">차트 자세히 보기 ›</span></span></a>`;
 }
 
 export function hero(report: DailyReport, options: { live: boolean; asOf: string }): string {
@@ -119,11 +121,11 @@ export function latestLists(report: DailyReport): string {
   const filings = (report.recentFilings ?? report.filings).slice(0, 5);
   const IMP = { HIGH: '중요', MEDIUM: '보통', LOW: '참고' } as const;
   return `<div class="grid-eq">
-<section class="block"><div class="block-head"><h2>최근 뉴스</h2><a href="#tab-news" class="more-link">전체 보기 ›</a></div><div class="card list">
-${news.length ? news.map((c) => `<div class="row-item"><span class="badge b-${c.importance}">${IMP[c.importance]}</span><div class="ri-main"><a href="${esc(c.url)}" rel="noopener" target="_blank">${esc(c.title)}</a><div class="muted small">${esc(c.publisher)} ${esc(kstTime(c.firstAt))}${c.articles.length > 1 ? `  같은 내용 ${c.articles.length}건` : ''}</div></div></div>`).join('') : '<p class="empty">최근 7일 관련 뉴스가 없어요.</p>'}
+<section class="block"><div class="block-head"><h2>최신 뉴스</h2><a href="#tab-news" class="more-link">전체 보기 ›</a></div><div class="card list" data-slot="homeNews"${news.length ? '' : ' data-empty'}>
+${news.length ? news.map((c) => `<div class="row-item"><span class="badge b-${c.importance}">${IMP[c.importance]}</span><div class="ri-main"><a href="${esc(c.url)}" rel="noopener" target="_blank">${esc(c.title)}</a><div class="muted small">${esc(c.publisher)} ${esc(kstTime(c.firstAt))}${c.articles.length > 1 ? `  같은 내용 ${c.articles.length}건` : ''}</div></div></div>`).join('') : '<p class="empty">최신 뉴스를 불러오고 있어요.</p>'}
 </div></section>
-<section class="block"><div class="block-head"><h2>최근 공시</h2><a href="#tab-news" class="more-link">전체 보기 ›</a></div><div class="card list">
-${filings.length ? filings.map((f) => `<div class="row-item"><span class="badge b-${f.importance}">${IMP[f.importance]}</span><div class="ri-main">${dartLink(f)}<div class="muted small">${esc(f.filedDate)}  ${esc(f.category)}</div></div></div>`).join('') : '<p class="empty">최근 30일 공시가 없어요.</p>'}
+<section class="block"><div class="block-head"><h2>최신 공시</h2><a href="#tab-news" class="more-link">전체 보기 ›</a></div><div class="card list" data-slot="homeFilings"${filings.length ? '' : ' data-empty'}>
+${filings.length ? filings.map((f) => `<div class="row-item"><span class="badge b-${f.importance}">${IMP[f.importance]}</span><div class="ri-main">${dartLink(f)}<div class="muted small">${esc(f.filedDate)}  ${esc(f.category)}</div></div></div>`).join('') : '<p class="empty">최신 공시를 불러오고 있어요.</p>'}
 </div></section></div>`;
 }
 
@@ -171,7 +173,6 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
   const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
   // G-90: the scenarios live on the chart as a layer (where each would take the price in ~20 sessions), not in a separate card.
   const scen = scenarioLayer(report);
-  const scBar = '<div class="sc-layer" id="sc-layer" role="group" aria-label="차트 위 시나리오 전망" hidden></div>';
   const opt = (group: string, key: string, label: string, on: boolean, desc = DESC[key] ?? '') => `<button type="button" class="opt" data-${group}="${key}" aria-pressed="${on}"><span class="opt-t"><b>${esc(label)}</b>${desc ? `<small>${esc(desc)}</small>` : ''}</span><i class="tog" aria-hidden="true"></i></button>`;
   const html = `<section class="card chart-card" id="chart-card" data-symbol="${esc(report.symbol)}">
 <div class="chart-head"><div><div class="muted small">현재가 (${esc(last?.date ?? '')} 종가)</div>
@@ -185,7 +186,7 @@ ${chartToolbar(!!report.market?.benchmarks.some((b) => b.series?.length))}
 <div class="sheet" id="ind-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="ind-sheet-t"><div class="sheet-head"><b id="ind-sheet-t">지표·레이어</b><button type="button" class="sheet-done" data-close>완료</button></div>
 <p class="muted small" style="margin:0 0 6px">켜고 끈 지표는 이 기기에 저장돼서 다른 종목에서도 그대로 보여요.</p><div class="opt-group"><div class="opt-k">가격 위에 겹치기</div>${OVERLAYS.map(([k, l, on]) => opt('ov', k, l, on)).join('')}</div>
 <div class="opt-group"><div class="opt-k">아래 창</div>${PANES.map(([k, l, on]) => opt('pane', k, l, on)).join('')}</div>
-<div class="opt-group"><div class="opt-k">시나리오 전망</div>${scBar}</div><div class="opt-group"><div class="opt-k">차트 위 표시</div>${opt('vl', 'filing', '공시', true, '공시가 나온 날 문서 아이콘과 점선')}${opt('vl', 'news', '뉴스', true, '중요도 보통 이상 뉴스가 나온 날 아이콘')}</div></div></div>
+<div class="opt-group"><div class="opt-k">차트 위 표시</div>${opt('vl', 'filing', '공시', true, '공시가 나온 날 문서 아이콘과 점선')}${opt('vl', 'news', '뉴스', true, '중요도 보통 이상 뉴스가 나온 날 아이콘')}</div></div></div>
 ${strategies.length ? `<div class="sheet" id="strat-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="strat-sheet-t"><div class="sheet-head"><b id="strat-sheet-t">전략 매매 시점 보기</b><button type="button" class="sheet-done" data-close>닫기</button></div>
 <p class="muted small" style="margin:0 0 6px">고른 전략의 과거 매수(▲)·매도(▼) 시점을 차트에 표시해요. 순위는 검증 구간 샤프 순이에요.</p>
 <button type="button" class="opt" data-strategy="" aria-pressed="true"><span class="opt-t"><b>끄기</b><small>매매 시점을 표시하지 않아요</small></span><i class="radio" aria-hidden="true"></i></button>
@@ -286,7 +287,8 @@ window.addEventListener('DOMContentLoaded', function () {
   };
 
   // ---- AI scenarios: a fan from today's close to each scenario's 20-session range ----
-  var scen = JSON.parse((document.getElementById('scen') || {}).textContent || '[]') || [], scBuilt = [], scExtra = 0;
+  // G-130: the scenario boxes are off the chart (#scen still feeds the price-alert picks).
+  var scen = [], scBuilt = [], scExtra = 0;
   var SC = { BULL: [UP, '강세'], BASE: ['#5b6b80', '기본'], BEAR: [DOWN, '약세'] };
   // G-96: each scenario's 20-session range is a box from today to twenty sessions ahead, labelled with what it means.
   // An invisible anchor series puts those future sessions on the time scale and keeps the boxes inside the price scale.
@@ -348,7 +350,7 @@ window.addEventListener('DOMContentLoaded', function () {
   // A report made on request brings its scenarios after the page loaded.
   // Intraday candles (coins) use their own time scale: the daily fan steps aside and comes back with the daily view.
   window.GNM_scenarioPause = function (off) { drawScen(off ? '' : scPick, true); };
-  window.GNM_scenarios = function (list) { scen = list || []; scButtons(); drawScen(scPick); setRange(currentRange, scExtra); };
+  window.GNM_scenarios = function () {};
 
   // ---- panes (below the price) ----
   var paneMakers = {

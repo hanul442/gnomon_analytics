@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { DEFAULT_PREFS, notifyUser, runDailyNotify, runPriceAlerts } from './notify.js';
+import { DEFAULT_PREFS, notifyUser, runDailyNotify, runPriceAlerts, runUpdateNotify } from './notify.js';
 import { b64u, encryptPayload, unb64u, vapid, vapidHeader } from './push.js';
 import { testDb } from './testDb.js';
 
@@ -103,4 +103,17 @@ test('plans: free hears the day in 🔔 only (no phone, no watched-stock note); 
   assert.deepEqual(n.results.map((x) => x.kind), ['daily'], 'the day, not the watched-stock note');
   assert.equal(sent.filter((s) => s.url.startsWith('https://push.test/')).length, 0, 'no phone push on free');
   assert.equal(await notifyUser(ctx, 'u1', 'intraday', { title: 't', body: '', link: '' }), false, 'intraday is Pro');
+});
+
+test('update note (G-137): the first version seen is the baseline; a new one reaches every user once', async () => {
+  const { db, ctx } = await world();
+  let version = '2.12.0';
+  const base = ctx.fetch;
+  ctx.fetch = (async (url: string, init?: RequestInit) => (String(url).endsWith('/version.json') ? Response.json({ version, note: '종목정보 탭이 생겼어요.' }) : base(url, init))) as typeof fetch;
+  assert.deepEqual(await runUpdateNotify(ctx), { version: '2.12.0', sent: 0 });
+  version = '2.13.0';
+  assert.deepEqual(await runUpdateNotify(ctx), { version: '2.13.0', sent: 2 });
+  assert.deepEqual(await runUpdateNotify(ctx), { version: '2.13.0', sent: 0 }, 'once');
+  const rows = (await db.prepare("SELECT title, link FROM notifications WHERE kind = 'update'").all<{ title: string; link: string }>()).results;
+  assert.equal(rows.length, 2); assert.match(rows[0]!.title, /v2\.13\.0/); assert.equal(rows[0]!.link, 'updates.html');
 });

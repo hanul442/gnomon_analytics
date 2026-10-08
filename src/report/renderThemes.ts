@@ -84,15 +84,27 @@ export function renderThemesPage(): string {
 
 export function renderSignalsPage(): string {
   const body = `${PAGE_CSS}<div class="tm"><section class="card tm-hero"><div class="pl-k">숨은 신호</div><h1>공시 레이더</h1><p>뉴스에 잘 안 나오지만 주가에 영향을 줄 수 있는 공시를 전 종목에서 모았어요. 실적 발표, 배당, 자사주, 임원·주요주주 지분 변화, 5% 대량보유, 수주 계약을 최근 2주 동안 보여 줘요.</p></section>
-<div class="sg-chips" id="sg-chips" role="group" aria-label="종류"></div><p class="sg-why" id="sg-why"></p><div id="sg-list"><p class="muted">불러오는 중…</p></div>
+<div class="sg-chips" id="sg-chips" role="group" aria-label="종류"></div><p class="sg-why" id="sg-why"></p>
+<div class="sg-tools"><input id="sg-q" type="search" placeholder="종목이나 공시 제목" aria-label="종목이나 공시 제목으로 찾기"><label class="sc-inline">기간<select id="sg-days" aria-label="기간"><option value="14">2주</option><option value="7">1주</option><option value="3">3일</option><option value="1">오늘</option></select></label><label class="sc-inline">주가<select id="sg-move" aria-label="오늘 주가"><option value="">전체</option><option value="up">오른 종목</option><option value="down">내린 종목</option></select></label><label class="sc-inline">정렬<select id="sg-sort" aria-label="정렬"><option value="new">최신 순</option><option value="old">오래된 순</option><option value="up">오늘 많이 오른 순</option><option value="down">오늘 많이 내린 순</option><option value="name">종목 이름</option></select></label><span class="muted small" id="sg-n"></span></div>
+<div id="sg-list"><p class="muted">불러오는 중…</p></div>
+<style>.sg-tools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:4px 0 12px}.sg-tools input{flex:1 1 200px;min-width:0;font:inherit;font-size:14px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px}.sg-tools select{font:inherit;font-size:14px;border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:#fff}.sg-tools #sg-n{margin-left:auto}</style>
 <p class="fine">OpenDART 공시 목록 기준이에요. 제목을 누르면 원문이 열려요. 지분 변화는 매매뿐 아니라 증여·보상 등일 수 있어 원문에서 사유를 확인하세요. 투자 권유가 아니에요.</p></div>
 <script>
 (function(){${COMMON_JS}
  var data=null,kind=location.hash.slice(1)||'all';
- var paint=function(){var items=data.items.filter(function(x){return kind==='all'||x[1]===kind;});var lab=data.labels;
+ // G-134: search, period, today's move and the order; the choice is kept in this browser.
+ var $=function(id){return document.getElementById(id);},prefs={};try{prefs=JSON.parse(localStorage.getItem('gnm-signals')||'{}')||{};}catch(e){}
+ ['sg-days','sg-move','sg-sort'].forEach(function(id){if(prefs[id])$(id).value=prefs[id];$(id).addEventListener('change',function(){prefs[id]=$(id).value;try{localStorage.setItem('gnm-signals',JSON.stringify(prefs));}catch(e){}if(data)paint();});});
+ $('sg-q').addEventListener('input',function(){if(data)paint();});
+ var paint=function(){var q=$('sg-q').value.trim().toLowerCase(),days=Number($('sg-days').value),mv=$('sg-move').value,sort=$('sg-sort').value;
+  var dates=data.items.map(function(x){return x[0];}).sort(),lastDay=dates[dates.length-1]||'',from=lastDay?new Date(Date.parse(lastDay)-(days-1)*864e5).toISOString().slice(0,10):'';
+  var items=data.items.filter(function(x){return (kind==='all'||x[1]===kind)&&x[0]>=from&&(!q||String(x[3]).toLowerCase().indexOf(q)>=0||String(x[4]).toLowerCase().indexOf(q)>=0||String(x[2]).indexOf(q)>=0)&&(!mv||(mv==='up'?x[6]>0:x[6]<0));});var lab=data.labels;
+  var num=function(v,d){return v==null?d:v;};
+  if(sort==='old')items.sort(function(a,b){return a[0]<b[0]?-1:a[0]>b[0]?1:0;});else if(sort==='up')items.sort(function(a,b){return num(b[6],-999)-num(a[6],-999);});else if(sort==='down')items.sort(function(a,b){return num(a[6],999)-num(b[6],999);});else if(sort==='name')items.sort(function(a,b){return String(a[3]).localeCompare(String(b[3]),'ko');});else items.sort(function(a,b){return a[0]<b[0]?1:a[0]>b[0]?-1:0;});
+  $('sg-n').textContent=items.length+'건';
   document.getElementById('sg-why').textContent=kind!=='all'&&lab[kind]?lab[kind][1]:'';
-  var days={},order=[];items.slice(0,400).forEach(function(x){if(!days[x[0]]){days[x[0]]=[];order.push(x[0]);}days[x[0]].push(x);});
-  document.getElementById('sg-list').innerHTML=order.length?order.map(function(d){return '<div class="sg-day">'+esc(d)+' · '+days[d].length+'건</div>'+days[d].map(function(x){return '<div class="sg-item"><span class="sg-tag edge-tag t-'+esc(x[1])+'">'+esc(lab[x[1]]?lab[x[1]][0]:x[1])+'</span><a class="nm" href="'+href(x[2])+'">'+esc(x[3])+'</a><span class="'+cls(x[6])+'">'+(x[6]==null?'':pct(x[6]))+'</span><span class="ti"><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo='+esc(x[5])+'" target="_blank" rel="noopener">'+esc(x[4])+' ↗</a></span></div>';}).join('');}).join(''):'<p class="muted">이 종류의 공시가 최근 2주에 없어요.</p>';
+  var byDay=sort==='new'||sort==='old',days={},order=[];items.slice(0,400).forEach(function(x){var k=byDay?x[0]:'_';if(!days[k]){days[k]=[];order.push(k);}days[k].push(x);});
+  document.getElementById('sg-list').innerHTML=order.length?order.map(function(d){return (d==='_'?'':'<div class="sg-day">'+esc(d)+' · '+days[d].length+'건</div>')+days[d].map(function(x){return '<div class="sg-item"><span class="sg-tag edge-tag t-'+esc(x[1])+'">'+esc(lab[x[1]]?lab[x[1]][0]:x[1])+'</span><a class="nm" href="'+href(x[2])+'">'+esc(x[3])+'</a><span class="'+cls(x[6])+'">'+(x[6]==null?'':pct(x[6]))+'</span><span class="ti"><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo='+esc(x[5])+'" target="_blank" rel="noopener">'+esc(x[4])+' ↗</a></span></div>';}).join('');}).join(''):'<p class="muted">조건에 맞는 공시가 없어요. 기간을 늘리거나 검색어를 지워 보세요.</p>';
  };
  fetch('signals.json').then(function(r){return r.json();}).then(function(j){data=j;var counts={};j.items.forEach(function(x){counts[x[1]]=(counts[x[1]]||0)+1;});
   document.getElementById('sg-chips').innerHTML='<button type="button" data-k="all">전체 '+j.items.length+'</button>'+Object.keys(j.labels).filter(function(k){return counts[k];}).map(function(k){return '<button type="button" data-k="'+k+'">'+esc(j.labels[k][0])+' '+counts[k]+'</button>';}).join('');

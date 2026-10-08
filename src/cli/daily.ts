@@ -1,3 +1,5 @@
+import { VERSION, RELEASES } from '../report/releases.js';
+import { renderWatchPage } from '../report/renderWatch.js';
 import { writeMarketReports, publishMarketReports } from './marketReports.js';
 import { publicPanels } from '../report/publicPanels.js';
 // One daily run: for every stock in tickers.json collect, append, write
@@ -33,7 +35,7 @@ import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderSto
 import { renderHome, renderReportsPage, type IndexQuote } from '../report/renderHome.js';
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
-import { MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
+import { renderInbox, MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
 import { renderMyReports } from '../report/renderMyReports.js';
 import { renderMyDebates } from '../report/renderMyDebates.js';
 import { renderSignalsPage, renderThemesPage, signalData, themeData } from '../report/renderThemes.js';
@@ -44,6 +46,7 @@ import { renderPaper, renderScorecard, renderTerms } from '../report/renderScore
 import { renderScreener, screenerRows } from '../report/renderScreener.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE } from '../sources/opendart.js';
+import { fetchDartStatements, type FullStatements } from '../sources/dartStatements.js';
 import { fetchOwnership } from '../sources/dartOwnership.js';
 import { buildEdge, type EventFiling, type HolderReport, type InsiderReport } from '../analysis/edge.js';
 import { eventOf } from '../analysis/edge.js';
@@ -449,6 +452,15 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
       await appendUnseen(join(root, 'data', 'holders', `${SYMBOL}.jsonl`), own.holders, (r) => `${r.receiptNo}:${r.reporter}`);
     }
   }
+  // G-140: full annual statements, refreshed weekly (they change once a year; best effort, never fatal).
+  if (ticker.dartCorpCode && options.apiKey.trim() && !coin && !ticker.kind) {
+    const stPath = join(root, 'data', 'statements', `${SYMBOL}.json`);
+    const old = await readFile(stPath, 'utf8').then((t) => JSON.parse(t) as FullStatements, () => null);
+    if (!old || now.getTime() - Date.parse(old.retrievedAt) > 7 * 86_400_000) {
+      const fresh = await fetchDartStatements({ apiKey: options.apiKey, corpCode: ticker.dartCorpCode, symbol: SYMBOL, ...fetchOptions }).catch(() => null);
+      if (fresh) { await mkdir(join(root, 'data', 'statements'), { recursive: true }); await writeFile(stPath, `${JSON.stringify(fresh)}\n`); }
+    }
+  }
   // News is best effort: a failed source is recorded and shown, never fatal.
   const newsPath = join(root, 'data', 'news', `${SYMBOL}.jsonl`);
   const { items: news, status: newsStatus } = await collectNews(ticker, options, fetchOptions);
@@ -585,6 +597,8 @@ export async function composeReport(
       insider: (await readLog<InsiderReport>(join(root, 'data', 'insider', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString()),
       holders: (await readLog<HolderReport>(join(root, 'data', 'holders', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString()),
     });
+    const statements = await readFile(join(root, 'data', 'statements', `${SYMBOL}.json`), 'utf8').then((t) => JSON.parse(t) as FullStatements, () => null);
+    if (statements && statements.retrievedAt <= now.toISOString()) built.statements = statements;
   }
   return built;
 }
@@ -706,6 +720,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await copyFile(new URL('../../assets/hanul-logo.jpg', import.meta.url), join(siteDir, 'assets', 'hanul-logo.jpg'));
   await writeFile(join(siteDir, 'guide.html'), renderGuide());
   await writeFile(join(siteDir, 'updates.html'), renderUpdates());
+  // G-137: what the API's update note reads after each deploy.
+  await writeFile(join(siteDir, 'version.json'), JSON.stringify({ version: VERSION, date: RELEASES[0]?.[1] ?? '', note: RELEASES[0]?.[2] ?? '' }));
   // Guide screenshots (G-74) live in docs/guide and are published next to the page.
   await cp(join(root, 'docs', 'guide'), join(siteDir, 'guide'), { recursive: true }).catch(() => {});
   await writeFile(join(siteDir, 'survey.html'), renderSurvey());
@@ -740,6 +756,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   // The watchlist's status line (G-85): test prices and what is new, per covered stock.
   await writeFile(join(siteDir, 'watchinfo.json'), JSON.stringify(watchInfo(home)));
   await writeFile(join(siteDir, 'reports.html'), renderReportsPage(homeData));
+  await writeFile(join(siteDir, 'watch.html'), renderWatchPage());
+  await writeFile(join(siteDir, 'inbox.html'), renderInbox());
   // Search index: every listed stock, with today's price when the list was fetched this run.
   const covered = new Set([...tickers, ...past].map((t) => t.symbol));
   const items = universe

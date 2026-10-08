@@ -35,3 +35,14 @@ jobs:
             curl -s -m 10 -A "Mozilla/5.0" "https://polling.finance.naver.com/api/realtime/domestic/stock/$s" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify(d,null,1).slice(0,3500))"
           done
           date -u
+      - name: US universe sources (public data, no secrets)
+        run: |
+          probe() { echo "=== $1"; code=$(curl -s -m 15 -A "Mozilla/5.0" -o /tmp/p.txt -w "%{http_code}" "${@:2}"); echo "HTTP $code"; head -c 1200 /tmp/p.txt; echo; }
+          probe nasdaq-mv "https://api.stock.naver.com/stock/exchange/NASDAQ/marketValue?page=1&pageSize=2"
+          probe nyse-mv "https://api.stock.naver.com/stock/exchange/NYSE/marketValue?page=1&pageSize=2"
+          probe amex-mv "https://api.stock.naver.com/stock/exchange/AMEX/marketValue?page=1&pageSize=2"
+          probe etf-usa "https://api.stock.naver.com/etf/USA/marketValue?page=1&pageSize=2"
+          probe ac-spy "https://ac.stock.naver.com/ac?q=SPY&target=stock"
+          probe nasdaq-up "https://api.stock.naver.com/stock/exchange/NASDAQ/up?page=1&pageSize=2"
+          probe us-index "https://polling.finance.naver.com/api/realtime/worldstock/index/.IXIC"
+          date -u

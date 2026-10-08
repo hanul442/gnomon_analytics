@@ -315,12 +315,6 @@ const SIGNALS_SCRIPT = `<script>
 const WATCH = `<section class="block" id="watch"><div class="block-head"><h2>관심 종목</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div></section>`;
 
 /** The filter menu (G-94): presets grouped by what the reader is looking for, each with its one-line meaning. */
-const FILTER_GROUPS: readonly { icon: string; title: string; keys: readonly string[] }[] = [
-  { icon: '📈', title: '추세·신호', keys: ['top', 'breakout', 'large'] },
-  { icon: '🔊', title: '거래량·수급', keys: ['volsurge', 'bottomvol', 'accum'] },
-  { icon: '💰', title: '가격과 적정가', keys: ['value', 'rebound', 'hot'] },
-  { icon: '⚠️', title: '위험 점검', keys: ['risky'] },
-];
 
 
 
@@ -333,10 +327,7 @@ export function renderHome(data: HomeData): string {
   const covered = new Set(data.entries.map((e) => e.symbol));
   const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
-<div class="find-row"><button type="button" class="flt-btn" aria-expanded="false" aria-controls="flt">⚙︎ 필터</button><a class="find-link" href="themes.html">🧭 테마별 종목</a><a class="find-link" href="signals.html">📡 공시 레이더</a></div>
-<div class="card flt" id="flt" hidden><div class="flt-seg" role="group" aria-label="찾을 곳"><a href="screener.html">국내 주식</a><a href="screener.html#etf">ETF</a><a href="screener.html#coin">코인</a><a href="reports.html">AI 리포트</a></div>
-${FILTER_GROUPS.map((g) => `<div class="flt-k">${g.icon} ${g.title}</div><div class="flt-list">${g.keys.map((k) => PRESETS.find((x) => x.key === k)).filter((x) => x).map((x) => `<a href="screener.html#${x!.key}"><b>${esc(x!.label)}</b><small>${esc(x!.hint)}</small></a>`).join('')}</div>`).join('')}
-<div class="flt-actions"><a class="flt-more" href="screener.html#build">⚙︎ 조건 직접 만들기</a><a class="flt-more ai" href="screener.html#build">✦ AI에게 말로 찾기</a></div><p class="flt-foot">누르면 이 화면 위에 필터 창이 열려요. 결과는 계산값이고 투자 권유가 아니에요.</p></div></div></section>
+<div class="find-row"><a class="flt-btn" href="screener.html">⚙︎ 필터</a><a class="find-link" href="themes.html">🧭 테마별 종목</a><a class="find-link" href="signals.html">📡 공시 레이더</a></div></div></section>
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 ${indexStrip(data.indices, data.universe, data.pulse, latestDaily(data))}
 
@@ -345,7 +336,7 @@ ${MY_SCREENS}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <div class="show-more"><button type="button" class="btn-ghost" id="show-all">더 보기</button></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', scripts: THEMES_TOP_SCRIPT + SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + FILTER_SCRIPT + SIGNALS_SCRIPT });
+  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', scripts: THEMES_TOP_SCRIPT + SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + SIGNALS_SCRIPT });
 }
 
 /** My feed (G-46): from the onboarding survey, kept in this browser. Leads with my stocks and puts first what I said I want to see. */
@@ -376,25 +367,6 @@ const FEED_SCRIPT = `<script>
   document.getElementById('feed-chips').innerHTML = chips.join('');
   box.hidden = false;
   if (location.hash === '#feed') box.scrollIntoView({ block: 'start' });
-})();
-</script>`;
-
-/** G-81: the filters open as a pop-up over the home page (the detailed search in a frame), not a new page. */
-const FILTER_SCRIPT = `<script>
-(function () { var b = document.querySelector('.flt-btn'), p = document.getElementById('flt'); if (!b || !p) return;
-  b.addEventListener('click', function () { var o = p.hidden; p.hidden = !o; b.setAttribute('aria-expanded', String(o)); });
-  var pop = null;
-  var close = function () { if (pop) { pop.remove(); pop = null; document.documentElement.classList.remove('menu-open'); } };
-  p.addEventListener('click', function (e) {
-    var a = e.target.closest && e.target.closest('a[href^="screener.html"]'); if (!a) return;
-    e.preventDefault();
-    var h = a.getAttribute('href'), i = h.indexOf('#'), src = (i < 0 ? h : h.slice(0, i)) + '?embed=1' + (i < 0 ? '' : h.slice(i));
-    pop = document.createElement('div'); pop.className = 'flt-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); pop.setAttribute('aria-label', '필터로 찾기');
-    pop.innerHTML = '<div class="flt-sheet"><div class="flt-top"><b>필터로 찾기</b><button type="button" class="flt-x" aria-label="닫기">×</button></div><div class="orbs-load flt-wait">${ORBS}<span>필터를 여는 중이에요</span></div><iframe title="필터로 찾기" src="' + src + '" onload="this.previousSibling.remove()"></iframe></div>';
-    pop.addEventListener('click', function (ev) { if (ev.target === pop || (ev.target.classList && ev.target.classList.contains('flt-x'))) close(); });
-    document.body.appendChild(pop); document.documentElement.classList.add('menu-open');
-  });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
 })();
 </script>`;
 

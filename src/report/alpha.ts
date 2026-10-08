@@ -104,47 +104,12 @@ export const ALPHA_SCRIPT = `<script>
     if (!G.me || !acct || document.getElementById('bell')) return;
     var b = document.createElement('button'); b.type = 'button'; b.id = 'bell'; b.className = 'bell-btn'; b.setAttribute('aria-label', '알림'); b.innerHTML = '🔔';
     nav.insertBefore(b, acct);
-    var pop = null;
+    // G-135: the bell opens 알림함 (a page), not a popup over the screen.
+    b.addEventListener('click', function () { G.track('bell_open', {}); location.href = base + 'inbox.html'; });
     G.call('GET', '/notifications').then(function (r) {
       if (r.error) return;
       if (r.unread) b.insertAdjacentHTML('beforeend', '<i>' + r.unread + '</i>');
       if (G.push && G.push.supported) G.push.state().then(function (st) { if (st.on) b.classList.add('push-on'); });
-      b.addEventListener('click', function () {
-        if (pop) { pop.remove(); pop = null; return; }
-        pop = document.createElement('div'); pop.className = 'bell-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '알림');
-        var EMPTY = '<p class="muted small bell-empty" style="padding:10px">알림이 없어요. 새 리포트, 스크리너 조건, 가격 알림, 요청한 리포트가 여기와 휴대폰으로 와요.</p>';
-        pop.innerHTML = r.items.length ? '<div class="bell-head"><b>알림 ' + r.items.length + '개</b><button type="button" data-bell-clear>모두 지우기</button></div>' + r.items.map(function (n) { return '<div class="bell-item" data-nid="' + n.id + '"><a class="' + (n.read_at ? '' : 'unread') + '" href="' + base + esc(n.link || '') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small></a><button type="button" class="bell-x" data-bell-del="' + n.id + '" aria-label="이 알림 지우기">×</button></div>'; }).join('') : EMPTY;
-        // G-105: clear one or all; the list updates right away and the server follows.
-        pop.addEventListener('click', function (e) {
-          var del = e.target.closest('[data-bell-del]'), all = e.target.closest('[data-bell-clear]');
-          if (!del && !all) return;
-          e.preventDefault();
-          if (all) { r.items = []; pop.querySelectorAll('.bell-item,.bell-head').forEach(function (x) { x.remove(); }); var bpush = pop.querySelector('.bell-push'); if (bpush) bpush.insertAdjacentHTML('afterend', EMPTY); else pop.insertAdjacentHTML('afterbegin', EMPTY); G.call('POST', '/notifications/clear', {}).then(function (x) { if (x.error) toast(x.message || '지우지 못했어요.'); else toast('알림을 모두 지웠어요.'); }); return; }
-          var id = Number(del.getAttribute('data-bell-del')); r.items = r.items.filter(function (n) { return n.id !== id; });
-          var row = del.closest('.bell-item'); if (row) row.remove();
-          var head = pop.querySelector('.bell-head b'); if (head) head.textContent = '알림 ' + r.items.length + '개';
-          if (!r.items.length) { var h = pop.querySelector('.bell-head'); if (h) { h.insertAdjacentHTML('afterend', EMPTY); h.remove(); } }
-          G.call('POST', '/notifications/clear', { id: id }).then(function (x) { if (x.error) toast(x.message || '지우지 못했어요.'); });
-        });
-        pop.insertAdjacentHTML('beforeend', '<a class="bell-set" href="' + base + 'alerts.html"><b>⚙︎ 알림 설정</b></a>');
-        // G-101: the phone switch comes first — one tap asks the browser, the result shows right there.
-        pop.insertAdjacentHTML('afterbegin', '<div class="bell-push" hidden></div>');
-        var bp = pop.querySelector('.bell-push'), paintPush = function () {
-          if (!G.push || !G.push.supported) { bp.hidden = false; bp.innerHTML = '<span>' + (G.push && G.push.ios && !G.push.standalone ? '아이폰은 공유 → 홈 화면에 추가 후 그 아이콘으로 열면 휴대폰 알림을 켤 수 있어요.' : '이 브라우저는 휴대폰 알림을 지원하지 않아요. 🔔 알림함으로 받아요.') + '</span>'; return; }
-          G.push.state().then(function (st) {
-            bp.hidden = false;
-            if (st.on) { bp.className = 'bell-push on'; bp.innerHTML = '<span>✓ 이 기기로 휴대폰 알림을 받고 있어요</span><button type="button" data-push-test>테스트</button>'; bp.querySelector('[data-push-test]').onclick = function () { G.call('POST', '/push/test').then(function (x) { toast(x.error ? x.message : '테스트 알림을 보냈어요.'); }); }; return; }
-            bp.className = 'bell-push';
-            bp.innerHTML = st.permission === 'denied' ? '<span>알림이 차단돼 있어요. 브라우저 주소창의 사이트 설정에서 알림을 허용해 주세요.</span>' : '<button type="button" class="bell-allow" data-push-on>📲 휴대폰 알림 허용하기</button><small>새 리포트·가격 도달·요청한 리포트를 바로 알려 드려요</small>';
-            var on = bp.querySelector('[data-push-on]');
-            if (on) on.onclick = function () { on.disabled = true; on.textContent = '허용 창을 확인해 주세요…'; G.push.on().then(function () { toast('휴대폰 알림을 켰어요.'); G.call('POST', '/push/test'); paintPush(); paintHomeAlerts(); }).catch(function (e) { toast(e.message || '켜지 못했어요.'); paintPush(); }); };
-          });
-        };
-        paintPush();
-        document.querySelector('.topbar').appendChild(pop);
-        if (r.unread) { G.call('POST', '/notifications/read'); var i = b.querySelector('i'); if (i) i.remove(); r.unread = 0; }
-        G.track('bell_open', {});
-      });
     });
   };
   // Watchlist sync (G-52): the newer side wins; local changes are pushed as they happen.

@@ -123,7 +123,7 @@ export function forecastCard(forecasts: readonly PriceForecast[], scores: readon
 <p class="fine">최근 변동성으로 그린 가격 범위예요. 열 번 중 여덟 번 정도 이 안에 들어오도록 만들었고, 실제로 그런지 매일 채점해요. 방향은 최근 추세의 4분의 1만 반영해요. 투자 권유가 아니에요.</p></div>`;
 }
 
-const BIAS = { BULLISH: '상승 구조', BEARISH: '하락 구조', NEUTRAL: '구조 없음' } as const;
+const BIAS = { BULLISH: '강세 구조', BEARISH: '약세 구조', NEUTRAL: '구조 없음' } as const;
 const ZONE = { DISCOUNT: '하단 구간', EQUILIBRIUM: '중간 구간', PREMIUM: '상단 구간' } as const;
 const FIB = { SHALLOW: '얕은 되돌림', PREFERRED: '적정 되돌림', DEEP: '깊은 되돌림', EXTENDED: '과도한 되돌림' } as const;
 
@@ -229,9 +229,37 @@ function rangeBar(label: string, low: number, high: number, now: number, note = 
   const at = high > low ? Math.min(100, Math.max(0, ((now - low) / (high - low)) * 100)) : 50;
   return `<div class="si-range"><div class="si-rk">${esc(label)}${note ? `<small>${esc(note)}</small>` : ''}</div><div class="si-rbar"><i style="left:${at.toFixed(1)}%"></i></div><div class="si-rv"><span>${ends[0]} <b>${won(low)}</b></span><span>${ends[1]} <b>${won(high)}</b></span></div></div>`;
 }
-const cell = (k: string, v: string, hint = '') => `<div class="si-c"><span>${esc(k)}${hint ? ` <i class="tip" data-term="${esc(hint)}" tabindex="0" role="button" aria-label="${esc(hint)} 설명">?</i>` : ''}</span><b>${v}</b></div>`;
+const cell = (k: string, v: string, _hint = '') => `<div class="si-c"><span>${esc(k)}</span><b>${v}</b></div>`;
 const eok = (v: number | null | undefined) => (v == null ? '없음' : v >= 1e12 ? `${(v / 1e12).toFixed(v >= 1e14 ? 0 : 1)}조원` : `${Math.round(v / 1e8).toLocaleString('ko-KR')}억원`);
 const num = (v: number | null | undefined, unit: string, d = 2) => (v == null || !Number.isFinite(v) ? '없음' : `${v.toFixed(d)}${unit}`);
+
+/**
+ * G-141: 요약's quick stock info, Toss-style, right under the price: today's and the year's range, the six
+ * numbers people check first, and who bought over the last five sessions. The full cards live in 기업 체력.
+ */
+export function quickInfoCard(market: MarketSection | undefined, close: number | null, bars: readonly Bar[] = []): string {
+  if (!market) return '';
+  const s = market.snapshot, last = bars.at(-1), now = close ?? last?.close ?? null;
+  const year = last ? bars.filter((b) => b.date >= new Date(Date.parse(last.date) - 365 * 864e5).toISOString().slice(0, 10)) : [];
+  const hi52 = year.length > 100 ? Math.max(...year.map((b) => b.high)) : s?.high52w ?? null, lo52 = year.length > 100 ? Math.min(...year.map((b) => b.low)) : s?.low52w ?? null;
+  const ranges = now ? `${last ? rangeBar('오늘', last.low, last.high, now, last.date.slice(5).replace('-', '/'), ['저가', '고가']) : ''}${hi52 && lo52 ? rangeBar('1년', lo52, hi52, now, `최고가 대비 ${pct((now / hi52 - 1) * 100)}`) : ''}` : '';
+  const hold = market.flows?.days.at(-1)?.foreignHoldRatio ?? null;
+  const cells = [
+    s?.marketCap != null ? cell('시가총액', eok(s.marketCap)) : '',
+    s?.per != null ? cell('PER', num(s.per, '배')) : '',
+    s?.pbr != null ? cell('PBR', num(s.pbr, '배')) : '',
+    s?.dividendYield != null ? cell('배당수익률', num(s.dividendYield, '%')) : '',
+    hold != null ? cell('외국인 보유', num(hold, '%')) : '',
+    last ? cell('거래대금', eok(last.volume * last.close)) : '',
+  ].filter(Boolean);
+  const f5 = market.flows?.sums.find((x) => x.days === 5);
+  const who = f5 ? ([['외국인', 'foreign'], ['기관', 'institution'], ['개인', 'individual']] as const).map(([l, k]) => {
+    const v = f5[`${k}Value` as 'foreignValue'] ?? null, n = f5[k] ?? null;
+    return `<span class="qi-who"><small>${l}</small><b class="${tone(v ?? n)}">${v != null ? krw(v) : shares(n)}</b></span>`;
+  }).join('') : '';
+  if (!ranges && !cells.length && !who) return '';
+  return `<section class="card qi-card" id="quick-info"><div class="head"><h2>종목 정보</h2><a class="qi-more" href="#tab-fundamentals">기업 체력 ›</a></div>${ranges}${cells.length ? `<div class="si-grid qi-grid">${cells.join('')}</div>` : ''}${who ? `<div class="qi-flow"><span class="qi-k">최근 5일 순매수</span>${who}</div>` : ''}</section>`;
+}
 
 /**
  * 종목정보 (G-127, 토스 순서): 시세 → 투자자 동향 → 투자 지표 → 재무 → 안정성 → 배당 → 애널리스트 의견 → 시장 대비·증권사 리포트.
@@ -279,7 +307,14 @@ export function stockInfoCards(market: MarketSection, close: number | null, name
   // 안정성
   const st = q.filter((p) => p.metrics['부채비율'] != null || p.metrics['당좌비율'] != null).slice(-6);
   if (st.length >= 2) {
-    const bars2 = (k: string, good: 'low' | 'high') => { const vs = st.map((p) => p.metrics[k] ?? null), mx = Math.max(1, ...vs.map((v) => v ?? 0)); return `<div class="si-stab"><div class="si-sk">${k}<small>${good === 'low' ? '낮을수록 빚 부담이 적어요' : '높을수록 단기 지급 여력이 커요'}</small></div><div class="si-cols">${st.map((p, i) => `<div><i style="height:${vs[i] == null ? 0 : Math.max(4, (vs[i]! / mx) * 100).toFixed(0)}%" title="${p.period.slice(2, 4)}.${p.period.slice(4)} ${vs[i] == null ? '없음' : vs[i]!.toFixed(1) + '%'}"></i><small>${p.period.slice(2, 4)}.${p.period.slice(4)}</small></div>`).join('')}</div><b>${vs.at(-1) == null ? '없음' : vs.at(-1)!.toFixed(1) + '%'}</b></div>`; };
+    // Bars on a common scale with the value on each and a dashed reference (부채비율 100% 이하·당좌비율 100% 이상이 무난).
+    const bars2 = (k: string, good: 'low' | 'high') => {
+      const vs = st.map((p) => p.metrics[k] ?? null), ref = 100, top = Math.max(ref * 1.25, ...vs.map((v) => v ?? 0)) * 1.08;
+      const ok = (v: number) => (good === 'low' ? v <= ref : v >= ref), last = vs.at(-1);
+      return `<div class="si-stab"><div class="si-sk"><b>${k}</b><span class="${last == null ? '' : ok(last) ? 'si-ok' : 'si-warn'}">${last == null ? '없음' : `${last.toFixed(1)}% · ${ok(last) ? '무난' : '주의'}`}</span></div>
+<div class="si-cols" style="--ref:${(ref / top).toFixed(3)}"><em>${ref}%</em>${st.map((p, i2) => { const v = vs[i2]; return `<div><span>${v == null ? '-' : v.toFixed(0)}</span><i class="${v == null ? '' : ok(v) ? 'ok' : 'warn'}" style="height:${v == null ? 0 : Math.max(3, (v / top) * 100).toFixed(1)}%"></i><small>${p.period.slice(2, 4)}.${p.period.slice(4)}</small></div>`; }).join('')}</div>
+<p class="si-note">${good === 'low' ? '빚 ÷ 자기자본. 낮을수록 빚 부담이 적어요.' : '현금성 자산 ÷ 단기 부채. 높을수록 단기 지급 여력이 커요.'}</p></div>`;
+    };
     card('안정성', bars2('부채비율', 'low') + bars2('당좌비율', 'high'), '최근 분기');
   }
   // 배당
@@ -297,14 +332,15 @@ export function stockInfoCards(market: MarketSection, close: number | null, name
   return `<div class="si-wrap">${out.join('')}</div>`;
 }
 
-export const STOCK_INFO_CSS = `.si-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px}.si-card{min-width:0}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:17px;margin:0 0 10px}
+export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:flex;justify-content:space-between;align-items:baseline}.qi-card h2{font-size:17px;margin:0 0 4px}.qi-more{font-size:13.5px;font-weight:800;color:var(--accent-strong);text-decoration:none}.qi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.qi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}.qi-k{color:var(--fg2);font-weight:700;margin-right:auto}.qi-who{display:inline-flex;gap:6px;align-items:baseline}.qi-who small{color:var(--muted)}@media (max-width:520px){.qi-k{width:100%}}
+.si-wrap{columns:2;column-gap:14px;margin-bottom:16px}.si-card{min-width:0;break-inside:avoid;margin:0 0 14px;display:block}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:17px;margin:0 0 10px}
 .si-range{margin:6px 0 14px}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
 .si-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.si-c{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.si-c span{color:var(--fg2)}.si-c b{font-variant-numeric:tabular-nums;text-align:right}
 .si-seg{margin-bottom:8px;width:max-content}.si-flow{display:grid;grid-template-columns:56px minmax(0,1fr) 84px;align-items:center;gap:8px;padding:7px 0;font-size:14px}.si-flow b{text-align:right;font-variant-numeric:tabular-nums}.si-fbar{position:relative;height:10px;background:#f1f3f7;border-radius:4px}.si-fbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}.si-fbar i{position:absolute;top:0;bottom:0;border-radius:3px}.si-fbar i.pos{background:#e5484d}.si-fbar i.neg{background:#3e63dd}
-.si-stab{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:end;margin:8px 0 14px}.si-sk{grid-column:1/-1;font-weight:700;font-size:14px;display:flex;justify-content:space-between;gap:8px}.si-sk small{font-weight:500;color:var(--muted);font-size:12px}.si-cols{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;height:64px;align-items:end}.si-cols div{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:3px}.si-cols i{display:block;width:70%;background:#9fb3d9;border-radius:3px 3px 0 0}.si-cols div:last-child i{background:var(--navy,#13294b)}.si-cols small{font-size:10px;color:var(--muted)}.si-stab>b{font-size:18px;font-variant-numeric:tabular-nums}
+.si-stab{margin:6px 0 16px}.si-sk{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;margin-bottom:6px}.si-sk span{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.si-ok{color:#1d6b3a}.si-warn{color:#b4232b}.si-cols{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;height:110px;align-items:end;padding:0 0 18px;border-bottom:1px solid var(--line)}.si-cols::before{content:"";position:absolute;left:0;right:0;bottom:calc(18px + var(--ref) * 92px);border-top:1.5px dashed #9aa6b8}.si-cols em{position:absolute;right:0;bottom:calc(20px + var(--ref) * 92px);font-size:10.5px;font-style:normal;color:var(--muted)}.si-cols div{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}.si-cols div span{font-size:11.5px;font-weight:700;color:var(--fg2);margin-bottom:3px}.si-cols i{display:block;width:62%;max-width:34px;border-radius:5px 5px 0 0;background:#9fb3d9}.si-cols i.ok{background:#7fb38f}.si-cols i.warn{background:#e58a8d}.si-cols div:last-child i{filter:saturate(1.4) brightness(.85)}.si-cols small{position:absolute;bottom:-17px;font-size:10.5px;color:var(--muted)}.si-note{font-size:12px;color:var(--muted);margin:22px 0 0}
 .si-dps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.si-dps span{display:flex;flex-direction:column;font-size:12px;color:var(--muted);background:#f5f7fb;border-radius:10px;padding:6px 10px}.si-dps b{color:var(--fg);font-size:14px}
 .si-target{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.si-target div{display:flex;flex-direction:column;gap:2px}.si-target span{font-size:13px;color:var(--fg2)}.si-target b{font-size:22px;font-variant-numeric:tabular-nums}.si-target small{font-size:13px}
-@media (max-width:820px){.si-wrap{grid-template-columns:minmax(0,1fr)}}`;
+@media (max-width:820px){.si-wrap{columns:1}}`;
 
 /** Toggle of the investor-trend period inside 종목정보. */
 export const STOCK_INFO_TOGGLE_JS = `document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-si-f]');if(!b)return;var c=b.closest('.si-card');c.querySelectorAll('[data-si-f]').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});c.querySelectorAll('[data-si-fl]').forEach(function(x){x.hidden=x.getAttribute('data-si-fl')!==b.getAttribute('data-si-f');});});`;
