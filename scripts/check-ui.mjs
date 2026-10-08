@@ -210,7 +210,7 @@ try{
  await page.waitForTimeout(100);await page.goBack();await page.locator('#chat').waitFor({state:'hidden'});assert.equal(page.url(),here);
  await page.locator('[data-all-menu]').last().click();await page.locator('.side-menu:not([hidden])').waitFor();assert.ok((await page.locator('.side-menu').boundingBox()).height>=840);
  await page.waitForTimeout(100);await page.goBack();await page.locator('.side-menu').waitFor({state:'hidden'});assert.equal(page.url(),here);
- await page.locator('[data-all-menu]').last().click();await page.locator('.side-menu:not([hidden])').waitFor();await page.locator('.side-menu .sm-close').click();await page.locator('.side-menu').waitFor({state:'hidden'});await page.waitForTimeout(150);assert.equal(page.url(),here);
+ await page.locator('[data-all-menu]').last().click();await page.locator('.side-menu:not([hidden])').waitFor();assert.ok(await page.locator('.side-menu .sm-tile').count()>=20);await page.screenshot({path:'test-artifacts/menu-390.png'});await page.locator('.side-menu .sm-close').click();await page.locator('.side-menu').waitFor({state:'hidden'});await page.waitForTimeout(150);assert.equal(page.url(),here);
  // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.
  for (const width of [375,1280]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');await page.waitForLoadState('load');
