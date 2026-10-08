@@ -175,6 +175,67 @@ export function menuHtml(base: string, archiveHref?: string): { button: string; 
  * while the page is visible (every 60 outside trading hours); coins stream from Upbit's public WebSocket.
  * Lists drawn later (the watchlist, 찾기) are picked up on the next tick.
  */
+/**
+ * Full-screen layers (G-121): what used to open as a small popup now takes the whole phone screen like a page
+ * (a fixed top bar, content below) and a tall centred panel on wide screens. The phone's back button closes the
+ * top layer instead of leaving the page. Small explanations (용어 풀이, 근거 칩) stay as tooltips.
+ */
+export const FS_CSS = `@media (max-width:820px){
+dialog.v2-dialog[open]{position:fixed!important;inset:0!important;margin:0!important;width:100%!important;max-width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;padding:0 16px calc(16px + env(safe-area-inset-bottom))!important}
+dialog.v2-dialog.rj[open]{padding:0!important}
+dialog.v2-dialog>header{position:sticky;top:0;z-index:3;background:#fff;margin:0 -16px 10px!important;padding:14px 16px 12px!important;border-bottom:1px solid var(--line)}
+dialog.v2-dialog.rj>header{margin:0!important}
+.bell-pop{position:fixed!important;inset:0!important;width:100%!important;max-height:none!important;height:100dvh;border:0!important;border-radius:0!important;box-shadow:none!important;z-index:200!important;padding:0 8px calc(12px + env(safe-area-inset-bottom))!important}
+.bell-pop .bell-head{position:sticky;top:0;background:#fff;z-index:2;padding:14px 8px 12px!important;border-bottom:1px solid var(--line);margin-bottom:6px}
+.flt-pop{padding:0!important;place-items:stretch!important}.flt-sheet{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
+.sheet{align-items:stretch!important}.sheet-body{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;padding-top:0!important}.sheet-head{top:0!important;margin:0 -18px 8px!important;padding:14px 18px 12px!important;border-bottom:1px solid var(--line)}
+.chat{inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;max-width:100%!important;height:100dvh!important;border-radius:0!important}
+.side-menu{top:0!important;max-height:none!important;height:100dvh;border-radius:0!important;animation:sm-in .18s ease-out}
+dialog.v2-dialog>header>.dialog-x,dialog.v2-dialog .rj-head .dialog-x,.flt-top .flt-x,.chat-head .chat-x,.sm-head .sm-close{order:-1;font-size:0!important;width:36px;height:36px;margin:-6px 4px -6px -8px;display:inline-flex;align-items:center;justify-content:center;border:0;background:none;color:var(--fg)}
+dialog.v2-dialog>header>.dialog-x::before,dialog.v2-dialog .rj-head .dialog-x::before,.flt-top .flt-x::before,.chat-head .chat-x::before,.sm-head .sm-close::before{content:"‹";font-size:34px;line-height:1;font-weight:300;margin-top:-4px}
+dialog.v2-dialog>header,.flt-top,.sm-head{justify-content:flex-start!important;gap:4px!important}.chat-head{gap:6px}.chat-head .chat-x{color:#fff!important}
+.ins-pop{align-items:stretch!important}.ins-pop .ins-card{border-radius:0!important;max-width:none!important;display:flex;flex-direction:column;justify-content:center}
+.pop-wrap{padding:0!important;place-items:stretch!important}.pop-wrap .pop{width:100%!important;border-radius:0!important;display:flex;flex-direction:column;justify-content:center;align-items:center}
+}
+@media (min-width:821px){
+dialog.v2-dialog[open]{width:min(760px,calc(100% - 48px))!important;height:calc(100dvh - 48px)!important;max-height:none!important}
+dialog.v2-dialog>header{position:sticky;top:-20px;z-index:3;background:#fff;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:10px}
+dialog.v2-dialog.rj>header{top:0}
+.sheet-body{width:min(760px,94vw)!important;height:calc(100dvh - 48px)!important;max-height:none!important}
+.flt-sheet{width:min(1180px,100%)!important;height:calc(100dvh - 40px)!important}
+}
+html.layer-open{overflow:hidden}`;
+
+/** Back button and scroll lock for the full-screen layers. */
+export const FS_JS = `
+  (function () {
+    var L = [
+      ['dialog.v2-dialog[open]', function (e) { e.close(); }],
+      ['.bell-pop', function () { var b = document.getElementById('bell'); if (b) b.click(); }],
+      ['.flt-pop', function (e) { var x = e.querySelector('.flt-x'); if (x) x.click(); }],
+      ['.sheet:not([hidden])', function (e) { var x = e.querySelector('[data-close]'); if (x) x.click(); }],
+      ['section.chat:not([hidden])', function (e) { var x = e.querySelector('.chat-x'); if (x) x.click(); }],
+      ['.side-menu:not([hidden])', function (e) { var x = e.querySelector('.sm-close'); if (x) x.click(); }],
+      ['.ins-pop', function (e) { e.remove(); }],
+      ['.pop-wrap', function (e) { var x = e.querySelector('[data-p=later]'); if (x) x.click(); else e.remove(); }]
+    ];
+    var open = function () { var out = []; L.forEach(function (l) { document.querySelectorAll(l[0]).forEach(function (e) { if (e.offsetParent !== null || getComputedStyle(e).position === 'fixed') out.push([e, l[1]]); }); }); return out; };
+    // Each open layer adds one history entry. Closing with × leaves its entry behind; history only moves when the
+    // reader presses back (so it never races a link they tap next), and a press that lands on a stale entry skips it.
+    var t = null, lvl = function () { return (history.state && history.state.gnmLayer) || 0; };
+    var sync = function () {
+      t = null; var n = open().length;
+      document.documentElement.classList.toggle('layer-open', n > 0);
+      if (n > lvl()) history.pushState({ gnmLayer: n }, '');
+    };
+    new MutationObserver(function () { if (!t) t = setTimeout(sync, 30); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'open'] });
+    window.addEventListener('popstate', function () {
+      var o = open();
+      if (o.length > lvl()) { var top = o[o.length - 1]; top[1](top[0]); }
+      setTimeout(function () { if (lvl() > open().length) history.back(); }, 60);
+    });
+  })();`;
+
 /** Captures the browser's install offer as early as possible (it can fire before ui.js loads). */
 export const INSTALL_BOOT = `<script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__gnmInstall=e;window.dispatchEvent(new Event('gnm-installable'));});</script>`;
 

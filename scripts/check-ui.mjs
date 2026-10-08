@@ -164,6 +164,14 @@ try{
  await page.goto(origin+'/myreports.html');await page.locator('#mr-list .mr-item').first().waitFor();assert.equal(await page.locator('#mr-list .mr-item').count(),2);
  await page.locator('.mr-tabs [data-f=failed]').click();assert.equal(await page.locator('#mr-list .mr-item').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('.mr-tabs [data-f=""]').click();await page.screenshot({path:'test-artifacts/myreports.png',fullPage:true});
+ // G-121: popups open full screen on phones and the back button closes them without leaving the page.
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/screener.html');await page.waitForLoadState('load');
+ const here=page.url();await page.locator('[data-open-chat]').first().click();await page.locator('#chat:not([hidden])').waitFor();
+ const box=await page.locator('#chat').boundingBox();assert.ok(box.width>=389&&box.height>=840,'chat fills the phone screen: '+JSON.stringify(box));
+ await page.waitForTimeout(100);await page.goBack();await page.locator('#chat').waitFor({state:'hidden'});assert.equal(page.url(),here);
+ await page.locator('[data-all-menu]').last().click();await page.locator('.side-menu:not([hidden])').waitFor();assert.ok((await page.locator('.side-menu').boundingBox()).height>=840);
+ await page.waitForTimeout(100);await page.goBack();await page.locator('.side-menu').waitFor({state:'hidden'});assert.equal(page.url(),here);
+ await page.locator('[data-all-menu]').last().click();await page.locator('.side-menu:not([hidden])').waitFor();await page.locator('.side-menu .sm-close').click();await page.locator('.side-menu').waitFor({state:'hidden'});await page.waitForTimeout(150);assert.equal(page.url(),here);
  // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.
  for (const width of [375,1280]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');await page.waitForLoadState('load');
