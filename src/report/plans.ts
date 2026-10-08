@@ -75,9 +75,9 @@ export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 10
  * Opening reports (G-126, 한서님 결정 10/8): plans that unlock pay CREDIT_COST.unlock per report after a monthly
  * allowance of free opens; reports older than UNLOCK.freeAfterDays open free for everyone signed in; and when
  * someone pays to open a report another user generated, its maker gets UNLOCK.makerShare credits back, up to
- * what they paid for it (UNLOCK.makerCap).
+ * half of what they paid for it (UNLOCK.makerCap).
  */
-export const UNLOCK = { monthlyFree: { free: 0, plus: 5, alpha: 10, pro: 0, max: 0 } as Record<string, number>, freeAfterDays: 7, makerShare: 2, makerCap: 80 } as const;
+export const UNLOCK = { monthlyFree: { free: 0, plus: 5, alpha: 10, pro: 0, max: 0 } as Record<string, number>, freeAfterDays: 7, makerShare: 2, makerCap: 40 } as const;
 export const CREDIT_COST = { report: 80, brief: 30, upgrade: 50, invite: 40, idea: 20, deep: 15, standard: 10, question: 5, unlock: 10 } as const;
 export type CreditAction = keyof typeof CREDIT_COST;
 export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail: string; min: Exclude<PlanKey, 'free'> }[] = [

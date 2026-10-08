@@ -32,7 +32,7 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 5);
   assert.ok(page.includes('class="race-stance') && !page.includes('전략별 현재 신호'));
   assert.ok(page.includes('전략 대결') && page.includes('챔피언 레이스'));
-  for (const text of ['기술적 적정가', '예측 범위', '누적 순매수', '수급 흔적', '분기 실적', '증권가 평균 목표가', '가격 구조', '시장 대비 수익률']) assert.ok(page.includes(text), text);
+  for (const text of ['기술적 적정가', '예측 범위', '누적 순매수', '수급 흔적', '투자 지표', '평균 목표가', '가격 구조', '시장 대비 수익률']) assert.ok(page.includes(text), text);
   assert.ok(page.includes('data-ov="forecast"'));
   for (const key of ['rsi', 'macd', 'stoch', 'volume']) assert.ok(page.includes(`data-pane="${key}"`), key);
   // Strategy chips put buy/sell points on the chart; filings and news are dashed vertical lines.

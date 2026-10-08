@@ -299,7 +299,7 @@ route('GET', '/quote', async ({ req, deps, now }) => {
   const codes = [...new Set((new URL(req.url).searchParams.get('s') ?? '').split(',').map((x) => x.trim().toUpperCase()).filter((x) => /^[0-9A-Z]{6}$/.test(x)))].slice(0, 40).sort();
   if (!codes.length) fail(400, 'NO_CODES', '종목 코드를 6자리로 보내 주세요.');
   const key = codes.join(','), hit = quoteCache.get(key);
-  if (hit && now.getTime() - hit.at < 8000) return { quotes: hit.quotes, cached: true };
+  if (hit && now.getTime() - hit.at < 3000) return { quotes: hit.quotes, cached: true };
   const r = await deps.fetch(quoteUrl(codes), { signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).catch(() => null);
   if (!r || !r.ok) fail(502, 'UPSTREAM', '실시간 시세를 가져오지 못했어요.');
   const quotes = parseNaverQuotes(await r!.json().catch(() => null));

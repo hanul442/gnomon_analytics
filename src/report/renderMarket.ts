@@ -6,7 +6,7 @@
 import type { HorizonGauge } from '../analysis/horizons.js';
 import type { ForecastScore, PriceForecast, TechnicalFairValue } from '../analysis/valuation.js';
 import type { Footprint, StructureSnapshot } from '../analysis/structure.js';
-import type { FinancePeriod, StockSnapshot } from '../types.js';
+import type { FinancePeriod } from '../types.js';
 import type { FlowSection, MarketSection } from './marketSection.js';
 import { esc } from './html.js';
 import { won, tone, pct as fmtPct } from './format.js';
@@ -222,21 +222,94 @@ function earningsChart(quarters: readonly FinancePeriod[]): string {
 <line x1="10" x2="${W - 10}" y1="${H - padB}" y2="${H - padB}" class="zero"/>${bars}</svg>`;
 }
 
-export function fundamentalsPanel(market: MarketSection, close: number | null, name = '이 종목'): string {
-  const s: StockSnapshot | null = market.snapshot;
-  const kpi = (label: string, value: string, hint = '') => `<div class="card kpi"><div class="label">${esc(label)}</div><div class="value">${value}</div>${hint ? `<div class="hint">${esc(hint)}</div>` : ''}</div>`;
-  const x = (v: number | null, unit: string, d = 2) => (v === null ? '없음' : `${v.toFixed(d)}${unit}`);
+type Bar = { date: string; open: number; high: number; low: number; close: number; volume: number };
+
+/** A Toss-style range: low and high at the ends, a dot where the price is now. */
+function rangeBar(label: string, low: number, high: number, now: number, note = '', ends: [string, string] = ['최저', '최고']): string {
+  const at = high > low ? Math.min(100, Math.max(0, ((now - low) / (high - low)) * 100)) : 50;
+  return `<div class="si-range"><div class="si-rk">${esc(label)}${note ? `<small>${esc(note)}</small>` : ''}</div><div class="si-rbar"><i style="left:${at.toFixed(1)}%"></i></div><div class="si-rv"><span>${ends[0]} <b>${won(low)}</b></span><span>${ends[1]} <b>${won(high)}</b></span></div></div>`;
+}
+const cell = (k: string, v: string, hint = '') => `<div class="si-c"><span>${esc(k)}${hint ? ` <i class="tip" data-term="${esc(hint)}" tabindex="0" role="button" aria-label="${esc(hint)} 설명">?</i>` : ''}</span><b>${v}</b></div>`;
+const eok = (v: number | null | undefined) => (v == null ? '없음' : v >= 1e12 ? `${(v / 1e12).toFixed(v >= 1e14 ? 0 : 1)}조원` : `${Math.round(v / 1e8).toLocaleString('ko-KR')}억원`);
+const num = (v: number | null | undefined, unit: string, d = 2) => (v == null || !Number.isFinite(v) ? '없음' : `${v.toFixed(d)}${unit}`);
+
+/**
+ * 종목정보 (G-127, 토스 순서): 시세 → 투자자 동향 → 투자 지표 → 재무 → 안정성 → 배당 → 애널리스트 의견 → 시장 대비·증권사 리포트.
+ * Every card shows only what the data has; a missing card is left out rather than filled with dashes.
+ */
+export function stockInfoCards(market: MarketSection, close: number | null, name: string, bars: readonly Bar[] = []): string {
+  const s = market.snapshot, out: string[] = [];
+  const card = (title: string, body: string, sub = '') => out.push(`<section class="card si-card"><div class="head"><h2>${esc(title)}</h2>${sub ? `<span class="sub">${sub}</span>` : ''}</div>${body}</section>`);
+  // 시세
+  const last = bars.at(-1), year = bars.filter((b) => b.date >= (last ? new Date(Date.parse(last.date) - 365 * 864e5).toISOString().slice(0, 10) : ''));
+  const now = close ?? last?.close ?? null;
+  if (now && (last || s)) {
+    const hi52 = year.length > 100 ? Math.max(...year.map((b) => b.high)) : s?.high52w ?? null, lo52 = year.length > 100 ? Math.min(...year.map((b) => b.low)) : s?.low52w ?? null;
+    card('시세', `${last ? rangeBar('1일 범위', last.low, last.high, now, last.date.slice(5).replace('-', '/')) : ''}${hi52 && lo52 ? rangeBar('1년 범위', lo52, hi52, now, `최고가 대비 ${pct((now / hi52 - 1) * 100)}`) : ''}
+<div class="si-grid">${last ? cell('시가', won(last.open)) + cell('종가', won(last.close)) + cell('거래량', `${last.volume.toLocaleString('ko-KR')}주`) + cell('거래대금(추정)', eok(last.volume * last.close)) : ''}</div>`);
+  }
+  // 투자자 동향
+  const f = market.flows, f20 = f?.sums.find((x) => x.days === 20), f5 = f?.sums.find((x) => x.days === 5);
+  if (f && (f20 || f5)) {
+    const rows = ([['개인', 'individual'], ['외국인', 'foreign'], ['기관', 'institution']] as const);
+    // Amounts when the report has them (shares × close); older reports only kept shares.
+    const byValue = [f20, f5].some((x) => x && rows.some(([, k]) => x[`${k}Value` as 'foreignValue'] != null));
+    const val = (x: typeof f20, k: (typeof rows)[number][1]) => (x ? (byValue ? x[`${k}Value` as 'foreignValue'] ?? null : x[k] ?? null) : null);
+    const max = Math.max(1, ...rows.flatMap(([, k]) => [Math.abs(val(f20, k) ?? 0), Math.abs(val(f5, k) ?? 0)]));
+    const line = (x: typeof f20) => rows.map(([l, k]) => { const v = val(x, k); const w = v == null ? 0 : Math.abs(v) / max * 50; return `<div class="si-flow"><span>${l}</span><div class="si-fbar"><i class="${v != null && v < 0 ? 'neg' : 'pos'}" style="width:${w.toFixed(1)}%;${v != null && v < 0 ? `right:50%` : 'left:50%'}"></i></div><b class="${tone(v)}">${byValue ? krw(v) : shares(v)}</b></div>`; }).join('');
+    const hold = f.days.at(-1)?.foreignHoldRatio;
+    card('투자자 동향', `<div class="seg si-seg" role="tablist" aria-label="기간"><button type="button" data-si-f="20" aria-selected="true">20일</button><button type="button" data-si-f="5" aria-selected="false">5일</button></div><div data-si-fl="20">${line(f20)}</div><div data-si-fl="5" hidden>${line(f5)}</div>${hold != null ? `<p class="fine">외국인 보유율 ${hold.toFixed(2)}%${f.holdRatioChange20 != null ? ` · 20일 ${f.holdRatioChange20 > 0 ? '+' : ''}${f.holdRatioChange20.toFixed(2)}%p` : ''}. ${byValue ? '순매수 금액은 수량 × 종가로 어림한 값이에요.' : ''}</p>` : ''}`, byValue ? '순매수 금액' : '순매수 수량');
+  }
+  // 투자 지표
+  const q = market.quarters.filter((p) => !p.isEstimate), y = market.years.filter((p) => !p.isEstimate);
+  const sales4 = q.length >= 4 ? q.slice(-4).reduce((a, p) => a + (p.metrics['매출액'] ?? NaN), 0) : null;
+  const roe = y.at(-1)?.metrics['ROE'] ?? q.at(-1)?.metrics['ROE'] ?? null;
+  if (s || q.length) {
+    const cap = s?.marketCap ?? null, psr = cap && sales4 && Number.isFinite(sales4) && sales4 > 0 ? cap / (sales4 * 1e8) : null;
+    const hold = market.flows?.days.at(-1)?.foreignHoldRatio ?? null;
+    card('투자 지표', `<div class="si-grid">${cell('시가총액', eok(cap))}${cell('PER', num(s?.per, '배'), 'PER')}${cell('추정 PER', num(s?.estimatedPer, '배'))}${cell('PBR', num(s?.pbr, '배'), 'PBR')}${cell('ROE', num(roe, '%'), 'ROE')}${cell('PSR', num(psr, '배'), 'PSR')}${cell('EPS', s?.eps == null ? '없음' : won(s.eps))}${cell('BPS', s?.bps == null ? '없음' : won(s.bps))}${cell('배당수익률', num(s?.dividendYield, '%'))}${cell('외국인 보유율', num(hold, '%'))}</div>
+<p class="fine">PER·PBR·배당수익률은 네이버 증권, ROE는 최근 결산${y.at(-1) ? `(${y.at(-1)!.period.slice(0, 4)})` : ''}, PSR은 시가총액 ÷ 최근 4분기 매출액이에요.</p>`);
+  }
+  // 재무
+  if (market.quarters.length) {
+    card('재무', `${earningsChart(market.quarters)}
+<details class="more"><summary>표로 보기</summary><div class="table-wrap"><table class="compact"><thead><tr><th>분기</th><th class="num">매출액</th><th class="num">영업이익</th><th class="num">영업이익률</th><th class="num">순이익</th></tr></thead><tbody>${market.quarters.map((p) => `<tr><td class="nowrap">${p.period.slice(0, 4)}.${p.period.slice(4)}${p.isEstimate ? ' <span class="badge b-LOW">추정</span>' : ''}</td><td class="num">${fmt(p.metrics['매출액'])}</td><td class="num">${fmt(p.metrics['영업이익'])}</td><td class="num">${p.metrics['영업이익률'] == null ? '없음' : `${p.metrics['영업이익률']!.toFixed(1)}%`}</td><td class="num">${fmt(p.metrics['당기순이익'])}</td></tr>`).join('')}</tbody></table></div></details>
+<p class="fine">단위 억원. 출처: 네이버 증권(기업 실적 분석). 추정은 증권사 컨센서스예요.</p>`, '<span class="legend-inline"><span><i class="sw-rev"></i>매출액</span><span><i class="sw-op"></i>영업이익</span><span><i class="sw-est"></i>추정</span></span>');
+  }
+  // 안정성
+  const st = q.filter((p) => p.metrics['부채비율'] != null || p.metrics['당좌비율'] != null).slice(-6);
+  if (st.length >= 2) {
+    const bars2 = (k: string, good: 'low' | 'high') => { const vs = st.map((p) => p.metrics[k] ?? null), mx = Math.max(1, ...vs.map((v) => v ?? 0)); return `<div class="si-stab"><div class="si-sk">${k}<small>${good === 'low' ? '낮을수록 빚 부담이 적어요' : '높을수록 단기 지급 여력이 커요'}</small></div><div class="si-cols">${st.map((p, i) => `<div><i style="height:${vs[i] == null ? 0 : Math.max(4, (vs[i]! / mx) * 100).toFixed(0)}%" title="${p.period.slice(2, 4)}.${p.period.slice(4)} ${vs[i] == null ? '없음' : vs[i]!.toFixed(1) + '%'}"></i><small>${p.period.slice(2, 4)}.${p.period.slice(4)}</small></div>`).join('')}</div><b>${vs.at(-1) == null ? '없음' : vs.at(-1)!.toFixed(1) + '%'}</b></div>`; };
+    card('안정성', bars2('부채비율', 'low') + bars2('당좌비율', 'high'), '최근 분기');
+  }
+  // 배당
+  const dps = y.filter((p) => p.metrics['주당배당금'] != null).slice(-4);
+  if (dps.length || s?.dividendYield) {
+    card('배당', `<div class="si-grid">${cell('배당수익률', num(s?.dividendYield, '%'))}${dps.length ? cell(`주당배당금 (${dps.at(-1)!.period.slice(0, 4)})`, won(dps.at(-1)!.metrics['주당배당금']!)) : ''}</div>${dps.length > 1 ? `<div class="si-dps">${dps.map((p) => `<span>${p.period.slice(0, 4)}<b>${won(p.metrics['주당배당금']!)}</b></span>`).join('')}</div>` : ''}<p class="fine">연간 결산 기준이에요. 지급 시기와 횟수는 공시 원문에서 확인해 주세요.</p>`);
+  }
+  // 애널리스트 의견
   const cons = s?.consensus;
-  const upside = cons?.targetPriceMean && close ? (cons.targetPriceMean / close - 1) * 100 : null;
-  const kpis = s ? `<div class="kpis">
-${kpi('PER (최근 4분기)', x(s.per, '배'), s.eps === null ? '' : `EPS ${won(s.eps)}`)}
-${kpi('추정 PER', x(s.estimatedPer, '배'), s.estimatedEps === null ? '' : `추정 EPS ${won(s.estimatedEps)}`)}
-${kpi('PBR', x(s.pbr, '배'), s.bps === null ? '' : `BPS ${won(s.bps)}`)}
-${kpi('증권가 평균 목표가', cons?.targetPriceMean ? won(cons.targetPriceMean) : '없음', cons ? `${cons.date} 기준, 현재가 대비 ${pct(upside)}` : '')}
-</div>` : `<div class="kpis">${['PER (최근 4분기)','PBR','증권가 평균 목표가'].map(label=>kpi(label,'—','자료 미수집')).join('')}</div>`;
-  const q = market.quarters;
-  const qRows = q.map((p) => `<tr><td class="nowrap">${p.period.slice(0, 4)}.${p.period.slice(4)}${p.isEstimate ? ' <span class="badge b-LOW">추정</span>' : ''}</td>
-<td class="num">${fmt(p.metrics['매출액'])}</td><td class="num">${fmt(p.metrics['영업이익'])}</td><td class="num">${p.metrics['영업이익률'] == null ? '없음' : `${p.metrics['영업이익률']!.toFixed(1)}%`}</td><td class="num">${fmt(p.metrics['당기순이익'])}</td></tr>`).join('');
+  if (cons?.targetPriceMean && now) {
+    const up = (cons.targetPriceMean / now - 1) * 100, rec = cons.recommendationMean;
+    const recLabel = rec == null ? '' : rec >= 4.5 ? '강력 매수' : rec >= 3.5 ? '매수' : rec >= 2.5 ? '중립' : rec >= 1.5 ? '매도' : '강력 매도';
+    card('애널리스트 의견', `<div class="si-target"><div><span>평균 목표가</span><b>${won(cons.targetPriceMean)}</b><small class="${tone(up)}">현재가 대비 ${pct(up)}</small></div>${rec != null ? `<div><span>투자의견 평균</span><b>${recLabel}</b><small>${rec.toFixed(2)} / 5</small></div>` : ''}</div>${now <= cons.targetPriceMean ? rangeBar('현재가 → 목표가', now, cons.targetPriceMean, now, '', ['현재가', '목표가']) : rangeBar('목표가 → 현재가', cons.targetPriceMean, now, now, '목표가보다 위', ['목표가', '현재가'])}<p class="fine">증권사 컨센서스(${esc(cons.date)})예요. 우리 판단이 아니에요.</p>`);
+  }
+  return `<div class="si-wrap">${out.join('')}</div>`;
+}
+
+export const STOCK_INFO_CSS = `.si-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px}.si-card{min-width:0}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:17px;margin:0 0 10px}
+.si-range{margin:6px 0 14px}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
+.si-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.si-c{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.si-c span{color:var(--fg2)}.si-c b{font-variant-numeric:tabular-nums;text-align:right}
+.si-seg{margin-bottom:8px;width:max-content}.si-flow{display:grid;grid-template-columns:56px minmax(0,1fr) 84px;align-items:center;gap:8px;padding:7px 0;font-size:14px}.si-flow b{text-align:right;font-variant-numeric:tabular-nums}.si-fbar{position:relative;height:10px;background:#f1f3f7;border-radius:4px}.si-fbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}.si-fbar i{position:absolute;top:0;bottom:0;border-radius:3px}.si-fbar i.pos{background:#e5484d}.si-fbar i.neg{background:#3e63dd}
+.si-stab{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:end;margin:8px 0 14px}.si-sk{grid-column:1/-1;font-weight:700;font-size:14px;display:flex;justify-content:space-between;gap:8px}.si-sk small{font-weight:500;color:var(--muted);font-size:12px}.si-cols{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;height:64px;align-items:end}.si-cols div{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:3px}.si-cols i{display:block;width:70%;background:#9fb3d9;border-radius:3px 3px 0 0}.si-cols div:last-child i{background:var(--navy,#13294b)}.si-cols small{font-size:10px;color:var(--muted)}.si-stab>b{font-size:18px;font-variant-numeric:tabular-nums}
+.si-dps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.si-dps span{display:flex;flex-direction:column;font-size:12px;color:var(--muted);background:#f5f7fb;border-radius:10px;padding:6px 10px}.si-dps b{color:var(--fg);font-size:14px}
+.si-target{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.si-target div{display:flex;flex-direction:column;gap:2px}.si-target span{font-size:13px;color:var(--fg2)}.si-target b{font-size:22px;font-variant-numeric:tabular-nums}.si-target small{font-size:13px}
+@media (max-width:820px){.si-wrap{grid-template-columns:minmax(0,1fr)}}`;
+
+/** Toggle of the investor-trend period inside 종목정보. */
+export const STOCK_INFO_TOGGLE_JS = `document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-si-f]');if(!b)return;var c=b.closest('.si-card');c.querySelectorAll('[data-si-f]').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});c.querySelectorAll('[data-si-fl]').forEach(function(x){x.hidden=x.getAttribute('data-si-fl')!==b.getAttribute('data-si-f');});});`;
+
+export function fundamentalsPanel(market: MarketSection, close: number | null, name = '이 종목', bars: readonly Bar[] = []): string {
   const bench = market.benchmarks.map((b) => `<tr><td>${esc(b.name)}</td>${b.returns.map((r) => {
     const raw = r.stock !== null && r.benchmark !== null ? r.stock - r.benchmark : null;
     const diff = raw === null ? null : Math.abs(raw) < 0.05 ? 0 : raw;
@@ -245,14 +318,10 @@ ${kpi('증권가 평균 목표가', cons?.targetPriceMean ? won(cons.targetPrice
   const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
   // G-117: each report opens on Naver (summary and the broker's PDF) in a new tab.
   const research = market.research.map((r) => `<li><span class="why">${esc(r.date)} ${esc(r.broker)}</span> ${/^\d+$/.test(r.id) ? `<a href="https://m.stock.naver.com/research/company/${esc(r.id)}" target="_blank" rel="noopener">${esc(r.title)} ↗</a>` : esc(r.title)}</li>`).join('');
-  return `${kpis}
-<div class="grid2 tight" style="margin-top:16px"><div class="card"><div class="head"><h2>분기 실적</h2><div class="legend-inline"><span><i class="sw-rev"></i>매출액</span><span><i class="sw-op"></i>영업이익</span><span><i class="sw-est"></i>추정치</span></div></div>
-${earningsChart(q)}
-<details class="more"><summary>표로 보기</summary><div class="table-wrap"><table class="compact"><thead><tr><th>분기</th><th class="num">매출액</th><th class="num">영업이익</th><th class="num">영업이익률</th><th class="num">순이익</th></tr></thead><tbody>${qRows}</tbody></table></div></details>
-<p class="fine">단위 억원. 출처: 네이버 증권(기업 실적 분석). 추정치는 증권사 컨센서스예요.</p></div>
-<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5거래일</th><th class="num">20거래일</th><th class="num">60거래일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
-<p class="fine">차이는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 값이에요.</p>
-<h3 class="why-h">최근 증권사 리포트</h3>${research ? `<ul class="plain research">${research}</ul>` : '<p class="empty">아직 없어요.</p>'}
+  return `${stockInfoCards(market, close, name, bars)}
+<div class="grid2 tight"><div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5거래일</th><th class="num">20거래일</th><th class="num">60거래일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
+<p class="fine">차이는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 값이에요.</p></div>
+<div class="card"><div class="head"><h2>최근 증권사 리포트</h2></div>${research ? `<ul class="plain research">${research}</ul>` : '<p class="empty">아직 없어요.</p>'}
 <p class="fine">제목과 증권사, 날짜만 모아요. 본문은 저장하지 않아요.</p></div></div>`;
 }
 

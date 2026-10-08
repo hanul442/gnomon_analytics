@@ -7,7 +7,7 @@ import { esc } from './html.js';
 export function publicPanels(r:DailyReport){
  return {
   flows:r.kind==='coin'?coinFlow(r):r.market?.flows||r.market?.footprint?flowsPanel(r.market.flows,r.market.footprint):'',
-  fundamentals:r.market?fundamentalsPanel(r.market,r.price?.close??null,r.name):'',
+  fundamentals:r.market?fundamentalsPanel(r.market,r.price?.close??null,r.name,r.recentBars??[]):'',
   news:r.filings.length||r.news?.clusters.length?`<section class="card block"><h2>뉴스·공시</h2>${contentMore(r.filings.map(f=>`<p>${esc(f.filedDate)} · ${esc(f.title)}</p>`),'공시')}${contentMore((r.news?.clusters??[]).map(n=>`<p>${esc(n.title)}</p>`),'뉴스')}</section>`:'',
  };
 }

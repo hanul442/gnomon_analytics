@@ -164,6 +164,23 @@ try{
  await page.goto(origin+'/myreports.html');await page.locator('#mr-list .mr-item').first().waitFor();assert.equal(await page.locator('#mr-list .mr-item').count(),2);
  await page.locator('.mr-tabs [data-f=failed]').click();assert.equal(await page.locator('#mr-list .mr-item').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('.mr-tabs [data-f=""]').click();await page.screenshot({path:'test-artifacts/myreports.png',fullPage:true});
+ // G-127: 종목정보 in Toss order (시세 → 투자자 동향 → 투자 지표 → 재무 …) and no sideways scroll on a phone.
+ for (const width of [390,1280]) {
+  await page.setViewportSize({width,height:844});await page.goto(origin+'/stock.html?c=999999');await page.locator('#main[aria-busy]').waitFor({state:'detached'});
+  await page.evaluate(()=>{const t=document.querySelector('[aria-controls=tab-fundamentals]');if(t)t.click();});await page.locator('#tab-fundamentals .si-card').first().waitFor();
+  const heads=await page.$$eval('#tab-fundamentals .si-card h2',x=>x.map(e=>e.textContent));assert.equal(heads[0],'시세',heads.join(','));
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/stock-info-'+width+'.png',fullPage:true});
+  // Scenario rows line their title column up whatever the price text's length.
+  await page.evaluate(()=>{const t=document.querySelector('[aria-controls=tab-home]');if(t)t.click();});
+  const xs=await page.$$eval('#tab-home .cl-row .cl-what',x=>x.map(e=>Math.round(e.getBoundingClientRect().left)));if(xs.length>1)assert.equal(new Set(xs).size,1,'scenario titles aligned: '+xs.join(','));
+  const cl=page.locator('#tab-home .cl-card').first();if(await cl.count())await cl.screenshot({path:'test-artifacts/scenario-rows-'+width+'.png'});
+  // The generation progress: content-sized on desktop, full screen on a phone; the fun line is the status.
+  await page.evaluate(()=>{const G=window.GNM;G.call=function(){return new Promise(function(){});};G.showReport('ui-progress',true);});
+  await page.locator('dialog.rj[open] .rj-status').waitFor();const box=await page.locator('dialog.rj[open]').boundingBox();
+  if(width>800)assert.ok(box.height<700,'progress dialog fits its content: '+box.height);else assert.ok(box.height>=840);
+  assert.equal(await page.locator('dialog.rj[open] [data-fun]').count(),1);await page.waitForTimeout(1200);
+  await page.screenshot({path:'test-artifacts/job-progress-'+width+'.png'});await page.evaluate(()=>document.querySelector('dialog.rj[open]').close());
+ }
  // G-125: the 🔔 '관심 종목 새 리포트' link opens the whole day's list with the watched stocks first.
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/reports.html?hl=000660#today');await page.locator('#today-list .rr').first().waitFor();
  assert.equal(await page.locator('#today-list .rr').first().getAttribute('data-sym'),'000660');assert.ok(await page.locator('#today-list .rr').first().locator('.t-mine').count());
