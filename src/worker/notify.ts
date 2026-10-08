@@ -6,10 +6,10 @@ import { pushTo } from './push.js';
 import { quoteUrl, parseNaverQuotes } from '../sources/naverQuote.js';
 import { notifyLimit } from '../report/plans.js';
 
-export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'test';
-export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; push: boolean }
-export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, push: true };
-const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', test: null };
+export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'test';
+export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; push: boolean }
+export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, push: true };
+const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', test: null };
 
 export async function prefsOf(db: D1, userId: string): Promise<Prefs> {
   const r = await db.prepare('SELECT prefs FROM notify_prefs WHERE user_id = ?').bind(userId).first<{ prefs: string }>();
@@ -41,6 +41,29 @@ export async function notifyUser(ctx: Ctx, userId: string, kind: NotifyKind, not
 const once = async (db: D1, key: string, now: Date) => ((await db.prepare('INSERT OR IGNORE INTO notify_log (key, created_at) VALUES (?, ?)').bind(key, iso(now)).run()).meta?.changes ?? 0) === 1;
 const kstDate = (d: Date) => new Date(d.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
 const reportLink = (s: string) => `${encodeURIComponent(s)}/index.html`;
+
+/**
+ * G-137: a new release tells everyone once (🔔, and the phone for those with push on): the site publishes
+ * version.json with each build; the first check after a new version notes it for every active user.
+ */
+export async function runUpdateNotify(ctx: Ctx): Promise<{ version: string | null; sent: number }> {
+  const r = await ctx.fetch(`${ctx.site.replace(/\/$/, '')}/version.json`, { signal: AbortSignal.timeout(10_000) }).catch(() => null);
+  if (!r?.ok) return { version: null, sent: 0 };
+  const v = await r.json().catch(() => null) as { version?: string; title?: string; note?: string } | null;
+  if (!v?.version || !/^\d+\.\d+\.\d+$/.test(v.version)) return { version: null, sent: 0 };
+  // The first version a server sees is the baseline, not news.
+  if (await once(ctx.db, 'update-seen-any', ctx.now)) { await once(ctx.db, `update-done:${v.version}`, ctx.now); return { version: v.version, sent: 0 }; }
+  if (await ctx.db.prepare('SELECT 1 FROM notify_log WHERE key = ?').bind(`update-done:${v.version}`).first()) return { version: v.version, sent: 0 };
+  const users = (await ctx.db.prepare('SELECT id FROM users WHERE disabled = 0').all<{ id: string }>()).results;
+  const note = String(v.note ?? '').trim(), body = note.length > 110 ? `${note.slice(0, 110)}…` : note;
+  let sent = 0;
+  for (const u of users) {
+    if (!(await once(ctx.db, `update:${v.version}:${u.id}`, ctx.now))) continue;
+    if (await notifyUser(ctx, u.id, 'update', { title: `업데이트 v${v.version}${v.title ? ` · ${v.title}` : ''}`, body: body || '새 기능과 바뀐 점을 확인해 보세요.', link: 'updates.html' })) sent += 1;
+  }
+  await once(ctx.db, `update-done:${v.version}`, ctx.now);
+  return { version: v.version, sent };
+}
 
 /**
  * After the daily build: tell each user about the new reports. Their watched stocks first (one note naming

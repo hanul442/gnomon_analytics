@@ -1,3 +1,4 @@
+import { VERSION, RELEASES } from '../report/releases.js';
 import { renderWatchPage } from '../report/renderWatch.js';
 import { writeMarketReports, publishMarketReports } from './marketReports.js';
 import { publicPanels } from '../report/publicPanels.js';
@@ -707,6 +708,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await copyFile(new URL('../../assets/hanul-logo.jpg', import.meta.url), join(siteDir, 'assets', 'hanul-logo.jpg'));
   await writeFile(join(siteDir, 'guide.html'), renderGuide());
   await writeFile(join(siteDir, 'updates.html'), renderUpdates());
+  // G-137: what the API's update note reads after each deploy.
+  await writeFile(join(siteDir, 'version.json'), JSON.stringify({ version: VERSION, date: RELEASES[0]?.[1] ?? '', note: RELEASES[0]?.[2] ?? '' }));
   // Guide screenshots (G-74) live in docs/guide and are published next to the page.
   await cp(join(root, 'docs', 'guide'), join(siteDir, 'guide'), { recursive: true }).catch(() => {});
   await writeFile(join(siteDir, 'survey.html'), renderSurvey());

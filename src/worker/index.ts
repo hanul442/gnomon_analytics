@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { handle, runAlerts, runIntraday, type Env } from './api.js';
 import { writeCommentary } from '../analysis/commentary.js';
 import { runReportJob } from './reports.js';
-import { runDailyNotify, runPriceAlerts } from './notify.js';
+import { runDailyNotify, runPriceAlerts, runUpdateNotify } from './notify.js';
 import type { AskClient } from './ask.js';
 
 export default {
@@ -21,7 +21,7 @@ export default {
     const nctx = { db: env.DB, fetch: deps.fetch, site: env.SITE_URL, now: deps.now() };
     // Every 10 minutes: the intraday scan (session only) and price alerts; the evening triggers: screener alerts and the daily report note.
     const job = event.cron.startsWith('*/10')
-      ? Promise.all([runIntraday(env, deps), runPriceAlerts(nctx)])
+      ? Promise.all([runIntraday(env, deps), runPriceAlerts(nctx), runUpdateNotify(nctx)])
       : Promise.all([runAlerts(env, deps), runDailyNotify(nctx)]);
     ctx.waitUntil(job.then((r) => console.log(event.cron, JSON.stringify(r))));
   },

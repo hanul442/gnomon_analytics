@@ -11,6 +11,7 @@ export function renderAlerts(): string {
     ['screen', '스크리너 조건', '저장한 조건에 새로 걸린 종목이 생기면 (조건별 켜기는 아래에서)'],
     ['price', '가격 알림 · 장중 급변', '내가 건 가격에 닿거나, 관심 종목이 장중 크게 움직이면'],
     ['request', '요청한 리포트', '즉시 생성하거나 요청한 리포트가 완성되면(실패하면 그 이유도)'],
+    ['update', '업데이트 소식', '새 기능이나 바뀐 점이 배포되면 한 번 알려요'],
   ];
   const body = `<style>
 .al{max-width:760px;margin:16px auto 32px}.al .card{padding:18px;margin-bottom:12px}.al h1{font-size:23px;margin:2px 0 6px}.al h2{font-size:17px;margin:0 0 8px}.al p{line-height:1.6}
