@@ -54,4 +54,11 @@ jobs:
           probe naver-world-poll "https://polling.finance.naver.com/api/realtime/worldstock/stock/AAPL.O"
           probe naver-world-finance "https://api.stock.naver.com/stock/AAPL.O/finance/annual"
           probe yahoo-chart "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=5d&interval=1d"
+          echo "=== daum-quote keys"; curl -s -m 15 -A "Mozilla/5.0" -H "Referer: https://finance.daum.net/quotes/A005930" "https://finance.daum.net/api/quotes/A005930?summary=false&changeStatistics=true" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(Object.keys(d).join(','))"
+          probe daum-investor "https://finance.daum.net/api/investor/days?symbolCode=A005930&page=1&perPage=3" -H "Referer: https://finance.daum.net/quotes/A005930"
+          probe daum-credit "https://finance.daum.net/api/quote/A005930/credit?page=1&perPage=3" -H "Referer: https://finance.daum.net/quotes/A005930"
+          probe daum-short "https://finance.daum.net/api/quote/A005930/short_selling?page=1&perPage=3" -H "Referer: https://finance.daum.net/quotes/A005930"
+          probe naver-short "https://m.stock.naver.com/api/stock/005930/shortSelling"
+          probe naver-credit "https://m.stock.naver.com/api/stock/005930/creditTrend"
+          probe krx-open-short "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd?bld=dbms/MDC/STAT/srt/MDCSTAT30001&mktId=STK&trdDd=20261007"
           date -u
