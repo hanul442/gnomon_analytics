@@ -206,7 +206,7 @@ try{
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('.mr-tabs [data-f=""]').click();await page.screenshot({path:'test-artifacts/myreports.png',fullPage:true});
  // G-148: 기업 체력 in order (한눈에 → 투자 지표 → 재무제표 → 애널리스트 의견) and no sideways scroll on a phone.
  for (const width of [390,1280]) {
-  await page.setViewportSize({width,height:844});await page.goto(origin+'/stock.html?c=999999');await page.locator('#main[aria-busy]').waitFor({state:'detached'});
+  await page.setViewportSize({width,height:844});await page.goto(origin+'/stock.html?c=999999');if(width===390){const t0=Date.now();await page.waitForFunction(()=>!document.querySelector('.boot-veil'),null,{timeout:1500});assert.ok(Date.now()-t0<1500,'the opening cover lifts within a second (G-150)');}await page.locator('#main[aria-busy]').waitFor({state:'detached'});
   await page.evaluate(()=>{const t=document.querySelector('[aria-controls=tab-fundamentals]');if(t)t.click();});await page.locator('#tab-fundamentals .si-card').first().waitFor();
   const heads=await page.$$eval('#tab-fundamentals .si-card h2',x=>x.map(e=>e.textContent));assert.equal(heads[0],'투자 지표',heads.join(','));assert.ok(!heads.includes('시세')&&!heads.includes('안정성')&&!heads.includes('배당'),'no card repeats another (G-148): '+heads.join(','));
   // G-148: 기업 체력 한눈에 on pages without a report too; 재무제표 simple, every table in a full-screen layer.
