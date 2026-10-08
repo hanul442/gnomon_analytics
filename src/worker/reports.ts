@@ -25,11 +25,27 @@ export interface ReportDeps { now:()=>Date; fetch:typeof fetch; generate?:(repor
 export async function reportInput(site:string,symbol:string,deps:ReportDeps):Promise<DailyReport>{
  const base=site.replace(/\/$/,'');
  const context=await deps.fetch(`${base}/research/${symbol}.json`,{signal:AbortSignal.timeout(8000)}).catch(()=>null);
- if(context?.ok){const r=await context.json() as DailyReport;if(r.symbol===symbol&&r.price){delete r.commentary;return r;}}
+ const research=context?.ok?await context.json().catch(()=>null) as DailyReport|null:null;
  const us=isUsSymbol(symbol);
- const r=await deps.fetch(`${base}/${symbol.startsWith('KRW-')?'c':us?'u':'s'}/${symbol}.json`,{signal:AbortSignal.timeout(8000)});
- if(!r.ok)throw new Error('분석에 필요한 데이터가 없어요. 데이터 갱신 뒤 다시 요청해 주세요.');
- const d=await r.json() as {name:string;ticker?:string;market?:string;kind?:string;bars:[string,number,number,number,number,number][]};
+ const r=await deps.fetch(`${base}/${symbol.startsWith('KRW-')?'c':us?'u':'s'}/${symbol}.json`,{signal:AbortSignal.timeout(8000)}).catch(()=>null);
+ const d=r?.ok?await r.json().catch(()=>null) as {name:string;ticker?:string;market?:string;kind?:string;bars:[string,number,number,number,number,number][]}|null:null;
+ // G-153: the research context is built with the daily report run (weekly for many stocks), so its prices can be days
+ // behind the stock's own daily file. Use it as is only when it is as fresh; otherwise build from the newest prices
+ // and keep its fundamentals, flows, news and filings, or a "new data" request would make the same old report again.
+ const lastBar=d?.bars?.at(-1)?.[0];
+ const usable=!!(research&&research.symbol===symbol&&research.price);
+ if(usable&&(!lastBar||research!.price!.sessionDate>=lastBar||!Array.isArray(d?.bars)||d!.bars.length<20)){delete research!.commentary;return research!;}
+ if(!d)throw new Error('분석에 필요한 데이터가 없어요. 데이터 갱신 뒤 다시 요청해 주세요.');
+ const fresh=await buildFromBars(symbol,d,us,deps);
+ if(research&&research.symbol===symbol){
+  if(research.market&&fresh.market)fresh.market={...fresh.market,flows:research.market.flows,footprint:research.market.footprint,snapshot:research.market.snapshot,quarters:research.market.quarters,years:research.market.years,research:research.market.research,benchmarks:research.market.benchmarks};
+  for(const k of ['filings','recentFilings','news','edge','statements','exchange'] as const)if(research[k]!==undefined)(fresh as unknown as Record<string,unknown>)[k]=research[k];
+  fresh.notes=fresh.notes.filter(n=>!/공개 가격 기록 기준/.test(n));
+  fresh.notes.push(`가격은 ${fresh.price?.sessionDate??''} 종가까지 반영했어요. 수급·실적·뉴스는 ${research.price?.sessionDate??research.date} 리포트 기준이에요.`);
+ }
+ return fresh;
+}
+async function buildFromBars(symbol:string,d:{name:string;ticker?:string;market?:string;kind?:string;bars:[string,number,number,number,number,number][]},us:boolean,deps:ReportDeps):Promise<DailyReport>{
  if(!Array.isArray(d.bars)||d.bars.length<20)throw new Error('가격 기록이 부족해서 리포트를 만들 수 없어요.');
  const now=deps.now(), bars=d.bars.map(b=>({symbol,date:b[0],open:b[1],high:b[2],low:b[3],close:b[4],volume:b[5],source:symbol.startsWith('KRW-')?'upbit':us?'naver:world':'naver',retrievedAt:now.toISOString()}));
  if(bars.some(b=>!/^\d{4}-\d{2}-\d{2}$/.test(b.date)||![b.open,b.high,b.low,b.close,b.volume].every(Number.isFinite)||b.close<=0))throw new Error('가격 데이터 형식을 확인하지 못했어요.');

@@ -233,7 +233,11 @@ export const ALPHA_SCRIPT = `<script>
   // G-80: asking in the debate. The committee or an invited expert answers right away, as a new turn
   // at the bottom of the debate ('작성 중…' while it thinks). Experts cost the invite price (Pro).
   var md = function (t) { return esc(t).replace(/\\*\\*([^*]+)\\*\\*/g, '<b>$1</b>').split(/\\n{2,}/).map(function (p) { return '<p>' + p.replace(/\\n/g, '<br>') + '</p>'; }).join(''); };
-  document.querySelectorAll('form.join').forEach(function (f) {
+  // G-153: every question form gets its handlers once, including forms a generated report brings in later;
+  // an unbound form must never fall back to a plain submit (that reloads the page and leaves the room).
+  document.addEventListener('submit', function (e) { var f = e.target; if (f && f.matches && f.matches('form.join') && !f.__gnmJoin) { e.preventDefault(); bindJoin(f); } }, true);
+  var bindJoin = function (f) {
+    if (f.__gnmJoin) return; f.__gnmJoin = 1;
     var dlg=f.querySelector('dialog'), chooser=f.querySelector('[data-pick-expert]');
     var custom=[],selectedKey='committee';
     var picked=function(){var r=f.querySelector('input[name=expert]:checked');return {key:r?r.value:'committee',name:r?r.closest('label').querySelector('b').textContent:'위원회 전체'};};
@@ -295,7 +299,9 @@ export const ALPHA_SCRIPT = `<script>
         G.track('debate_ask', { expert: key }); G.refresh();
       }).catch(function(){btn.disabled=false;wait.remove();toast('연결이 끊겼어요. 다시 확인해 주세요.');});
     });
-  });
+  };
+  document.querySelectorAll('form.join').forEach(bindJoin);
+  new MutationObserver(function () { document.querySelectorAll('form.join').forEach(function (f) { if (!f.__gnmJoin) bindJoin(f); }); }).observe(document.body, { childList: true, subtree: true });
   // In-place feedback under each report tab (and once per other page).
   var feedback = function () {
     if (!G.me || document.querySelector('.fb-row')) return;
