@@ -6,7 +6,7 @@ import { clusterNews, type NewsCluster } from '../analysis/news.js';
 import type { Commentary } from '../analysis/commentary.js';
 import { horizonMomentum, summarizeTechnicals, technicalReason, type HorizonMomentum, type TechnicalSummary } from '../analysis/technicals.js';
 import { readFilingTitle, type Importance } from './classify.js';
-import { won } from './format.js';
+import { won, withCurrency } from './format.js';
 
 export const REPORT_SCHEMA = 'gnm.daily-report.v0';
 
@@ -66,8 +66,10 @@ export interface DailyReport {
   news?: NewsSection;
   /** Horizon gauges, fair value, forecasts, flows, valuation, financials (docs/DESIGN.md §5). */
   market?: MarketSection;
-  /** Where it trades: KOSPI, KOSDAQ or UPBIT (shown next to the code). */
-  exchange?: 'KOSPI' | 'KOSDAQ' | 'UPBIT';
+  /** Where it trades: KOSPI, KOSDAQ or UPBIT (shown next to the code), or a US exchange (G-152). */
+  exchange?: 'KOSPI' | 'KOSDAQ' | 'UPBIT' | 'NASDAQ' | 'NYSE' | 'AMEX';
+  /** USD for a US stock (G-152); absent means won. */
+  currency?: 'USD';
   /** What most readers miss (G-99): earnings surprises, dividends, buybacks, insider and 5% holder moves. */
   edge?: import('../analysis/edge.js').EdgeSection;
   /** Full annual statements from DART (G-140): 손익계산서 · 재무상태표 · 현금흐름표, three years. */
@@ -139,11 +141,18 @@ function priceSection(history: readonly PriceBar[]): PriceSection {
   };
 }
 
-export function buildDailyReport(input: {
+type ReportInput = Parameters<typeof buildReport>[0];
+/** A US stock's text prices in dollars (G-152). */
+export function buildDailyReport(input: ReportInput): DailyReport {
+  return withCurrency(input.currency, () => buildReport(input));
+}
+
+function buildReport(input: {
   symbol: string;
   name: string;
   kind?: 'etf' | 'coin';
-  exchange?: 'KOSPI' | 'KOSDAQ' | 'UPBIT';
+  exchange?: 'KOSPI' | 'KOSDAQ' | 'UPBIT' | 'NASDAQ' | 'NYSE' | 'AMEX';
+  currency?: 'USD';
   /** KST date being reported, YYYY-MM-DD. */
   date: string;
   generatedAt: Date;
@@ -219,6 +228,7 @@ export function buildDailyReport(input: {
     name: input.name,
     ...(input.kind ? { kind: input.kind } : {}),
     ...(input.exchange ? { exchange: input.exchange } : {}),
+    ...(input.currency ? { currency: input.currency } : {}),
     date: input.date,
     generatedAt: input.generatedAt.toISOString(),
     status: session ? 'SESSION' : 'NO_SESSION',

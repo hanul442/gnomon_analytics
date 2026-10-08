@@ -592,3 +592,19 @@ test('stockinfo (G-120): a stock without a report gets valuation, news and filin
   assert.equal(r.body.flows, '');
   assert.equal((await t.call('GET', '/stockinfo/xyz')).status, 404);
 });
+
+test('US stocks (G-152): a report request builds a dollar report from site/u, a price alert takes AAPL.O', async () => {
+ const t=await reportSetup();
+ const bars=Array.from({length:40},(_,i)=>[new Date(Date.UTC(2026,7,20+i)).toISOString().slice(0,10),200+i,203+i,198+i,201.5+i,5e7]);
+ const real=t.deps.fetch!;
+ t.deps.fetch=(async (url: RequestInfo|URL, init?:RequestInit)=>String(url).endsWith('/u/AAPL.O.json')?Response.json({symbol:'AAPL.O',ticker:'AAPL',name:'애플',market:'NASDAQ',kind:'stock',currency:'USD',bars}):real(url,init)) as typeof fetch;
+ const r=await t.call('POST','/reports',{symbol:'AAPL.O',kind:'report'},t.user.session);
+ assert.equal(r.status,200,JSON.stringify(r.body));
+ const job=await t.env.DB.prepare('SELECT input_json FROM report_jobs WHERE id=?').bind(r.body.id).first<{input_json:string}>();
+ const input=JSON.parse(job!.input_json);
+ assert.equal(input.currency,'USD');assert.equal(input.exchange,'NASDAQ');
+ assert.match(input.headline,/\$240\.50/,'prices in dollars');assert.doesNotMatch(input.headline,/원/);
+ const {buildEvidence}=await import('../analysis/commentary.js');
+ assert.match(buildEvidence(input).find((e:{id:string})=>e.id==='P1')!.detail,/종가 \$240\.50/);
+ assert.equal((await t.call('POST','/alerts/price',{symbol:'AAPL.O',name:'애플',op:'>=',price:250.5},t.user.session)).status,200);
+});

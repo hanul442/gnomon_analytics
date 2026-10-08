@@ -63,10 +63,12 @@ export const PRICE_ALERT_JS = `
   var star = document.querySelector('.hero .star, #sp-star'); if (!star) return;
   var G = window.GNM || {}, base = document.body.getAttribute('data-base') || '';
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var won = function (v) { return v >= 100 ? Math.round(v).toLocaleString('ko-KR') + '원' : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + '원'; };
+  // G-152: a US stock's alert is in dollars.
+  var US = !!new URLSearchParams(location.search).get('s') && /us\\.html$/.test(location.pathname);
+  var won = function (v) { return US ? '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v >= 100 ? Math.round(v).toLocaleString('ko-KR') + '원' : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + '원'; };
   var b = document.createElement('button'); b.type = 'button'; b.className = 'pa-btn'; b.innerHTML = '🔔'; b.title = '가격 알림 걸기'; b.setAttribute('aria-label', '가격 알림 걸기');
   star.after(b);
-  var symbol = function () { return star.getAttribute('data-star') || new URLSearchParams(location.search).get('c') || new URLSearchParams(location.search).get('m') || ''; };
+  var symbol = function () { return star.getAttribute('data-star') || new URLSearchParams(location.search).get('c') || new URLSearchParams(location.search).get('m') || new URLSearchParams(location.search).get('s') || ''; };
   var name = function () { var h = document.querySelector('.hero h1, #sp-name'); return h ? h.textContent.trim() : symbol(); };
   var price = function () {
     var live = document.querySelector('[data-live-f="price"]'), t = live && live.textContent.replace(/[^0-9.]/g, '');
@@ -83,7 +85,7 @@ export const PRICE_ALERT_JS = `
     d.innerHTML = '<header><b>' + esc(name()) + ' 가격 알림</b><button type="button" class="dialog-x" aria-label="닫기">×</button></header>' +
       '<p class="muted small">지금 ' + (now ? won(now) : '가격 확인 중') + ' · 닿으면 🔔과 휴대폰으로 한 번 알려 드려요.</p>' +
       '<div class="pa-picks">' + picks.map(function (p, i) { return '<button type="button" data-pick="' + i + '"><b>' + esc(p[2]) + '</b><span>' + won(p[1]) + ' ' + (p[0] === '>=' ? '이상' : '이하') + '</span></button>'; }).join('') + '</div>' +
-      '<form class="pa-own"><label>직접 정하기<input name="price" inputmode="decimal" placeholder="가격(원)" value="' + (now ? Math.round(now) : '') + '"></label><select name="op"><option value=">=">이상이 되면</option><option value="<=">이하가 되면</option></select><button type="submit">알림 걸기</button></form>' +
+      '<form class="pa-own"><label>직접 정하기<input name="price" inputmode="decimal" placeholder="' + (US ? '가격(달러)' : '가격(원)') + '" value="' + (now ? (US ? now.toFixed(2) : Math.round(now)) : '') + '"></label><select name="op"><option value=">=">이상이 되면</option><option value="<=">이하가 되면</option></select><button type="submit">알림 걸기</button></form>' +
       '<p class="pa-msg muted small" role="status"></p><a class="pa-all" href="' + base + 'alerts.html">내 알림 모두 보기 · 휴대폰 알림 켜기 ›</a>';
     document.body.appendChild(d); d.showModal();
     var msg = d.querySelector('.pa-msg');

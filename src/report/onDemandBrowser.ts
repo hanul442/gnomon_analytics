@@ -66,7 +66,7 @@ export const JOBS_JS = `
    if(r.kind||r.createdAt)eta.set(r.kind,r.createdAt,r.etaSec);
    if(r.status==='done'){eta.stop();
     if(!r.fragments || !r.fragments.ai){if(live())dialog.querySelector('.orbs-load').innerHTML='<b>완료된 리포트 본문을 불러오지 못했어요</b><p>크레딧을 다시 사용하지 말고 새로고침하거나 문의해 주세요.</p>';if(G.toast)G.toast('완료된 리포트 본문을 불러오지 못했어요. 새로고침하거나 문의해 주세요.','error');return;}
-    var current=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||(document.querySelector('[data-symbol]')||{}).dataset?.symbol;
+    var current=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||new URLSearchParams(location.search).get('s')||(document.querySelector('[data-symbol]')||{}).dataset?.symbol;
     if(current===r.symbol)paint(r);
     var href=(document.body.dataset.base||'')+(r.symbol.indexOf('KRW-')===0?'coin.html?m=':'stock.html?c=')+encodeURIComponent(r.symbol)+'&job='+id+'#tab-ai';
     if(live())dialog.querySelector('.orbs-load').innerHTML='<b>리포트가 완성됐어요</b><span>데이터 기준 '+esc(r.dataDate||'확인 필요')+' · 생성 '+esc(r.generatedAt||'')+'</span><a class="btn-primary" href="'+href+'">리포트 보기</a>';
@@ -117,11 +117,11 @@ export const JOBS_JS = `
   });
  };
  G.showReport=watch;
- document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-create-report]');if(b){var symbol=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||b.dataset.symbol;G.startReport('report',symbol,b.dataset.name||symbol);}});
+ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-create-report]');if(b){var symbol=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||new URLSearchParams(location.search).get('s')||b.dataset.symbol;G.startReport('report',symbol,b.dataset.name||symbol);}});
  (G.ready||Promise.resolve()).then(function(){
   if(!G.me){document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent='로그인 후 AI 리포트 확인';});return;}var id=new URLSearchParams(location.search).get('job');
   if(id){watch(id,false);return;}
-  var symbol=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||(document.querySelector('[data-symbol]')||{}).dataset?.symbol;
+  var symbol=new URLSearchParams(location.search).get('c')||new URLSearchParams(location.search).get('m')||new URLSearchParams(location.search).get('s')||(document.querySelector('[data-symbol]')||{}).dataset?.symbol;
   if(symbol)G.call('GET','/reports/latest/'+encodeURIComponent(symbol)).then(function(r){if(r.job)watch(r.job.id,r.job.status!=='done');else document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent=r.error?'AI 리포트 조회 실패':'AI 리포트 없음';});});
   else{try{id=localStorage.getItem('gnm-report-job');}catch(e){}if(id)G.call('GET','/reports/'+id).then(function(r){if(['queued','running'].indexOf(r.status)>=0)watch(id,true);});}
  });

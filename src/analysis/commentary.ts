@@ -10,6 +10,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import type { DailyReport } from '../report/dailyReport.js';
+import { won, withCurrency } from '../report/format.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystId } from './analysts.js';
 
 export const COMMENTARY_MODEL = 'claude-opus-5-5';
@@ -119,11 +120,13 @@ export function publicCommentary(c: Commentary): Commentary {
   };
 }
 
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 const pct = (v: number | null | undefined) => (v == null ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`);
 
 /** The numbered evidence list Claude may cite; built only from the report itself. */
 export function buildEvidence(report: DailyReport): EvidenceItem[] {
+  return withCurrency(report.currency, () => evidenceOf(report));
+}
+function evidenceOf(report: DailyReport): EvidenceItem[] {
   const items: EvidenceItem[] = [];
   const p = report.price;
   if (p) {
@@ -324,6 +327,9 @@ export function jsonOf(text: string): unknown {
 }
 
 
+/** A US stock (G-152): dollars, US dates, and no Korean flows, DART filings or Korean brokers' estimates. */
+export const US_RULE = '\n- 이 종목은 미국 시장(나스닥·뉴욕·아멕스) 종목이에요. 가격은 달러, 날짜는 미국 현지 날짜예요. 시나리오 가격대·trigger·분석가 예상 가격도 모두 달러로 씁니다. 투자자별 수급·DART 공시·국내 증권가 근거는 없으니 FLOW·FUNDAMENTAL 데스크는 근거가 없으면 INSUFFICIENT_DATA로 둡니다. 환율이나 원화 환산은 말하지 않습니다.';
+
 /** Extra rules for an ETF or a coin (G-56); a stock's prompt is unchanged. */
 export const kindRule = (kind?: 'etf' | 'coin') => !kind ? '' : kind === 'etf'
   ? '\n- 이 종목은 ETF예요. 개별 기업의 실적·공시·증권가 목표가 근거는 없고, 기초지수 구성·괴리율·총보수 정보도 받지 않았어요. 가격·거래량·기술·수급·뉴스 근거로만 판단하고, 없는 정보는 dataGaps에 적습니다. FUNDAMENTAL 데스크는 근거가 없으면 INSUFFICIENT_DATA로 둡니다.'
@@ -438,7 +444,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
   };
   try {
     // Compact JSON (no indentation) saves about a fifth of the input tokens; the model reads it the same.
-    const extra = kindRule(report.kind).trim();
+    const extra = `${kindRule(report.kind)}${report.currency === 'USD' ? US_RULE : ''}`.trim();
     const user = { role: 'user' as const, content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.${extra ? `\n\n이 종목 추가 규칙:\n${extra}` : ''}\n\n${JSON.stringify(input)}` };
     const cached = (text: string) => [{ type: 'text' as const, text, cache_control: { type: 'ephemeral' as const } }];
     // Deep: the full committee on the large model, with the server-side fallback for safety declines.

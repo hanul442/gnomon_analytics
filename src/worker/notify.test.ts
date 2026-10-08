@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { DEFAULT_PREFS, notifyUser, runDailyNotify, runPriceAlerts, runUpdateNotify } from './notify.js';
+import { cleanPrefs, DEFAULT_PREFS, inQuiet, notifyUser, runDailyNotify, runPriceAlerts, runUpdateNotify } from './notify.js';
 import { b64u, encryptPayload, unb64u, vapid, vapidHeader } from './push.js';
 import { testDb } from './testDb.js';
 
@@ -116,4 +116,35 @@ test('update note (G-137): the first version seen is the baseline; a new one rea
   assert.deepEqual(await runUpdateNotify(ctx), { version: '2.13.0', sent: 0 }, 'once');
   const rows = (await db.prepare("SELECT title, link FROM notifications WHERE kind = 'update'").all<{ title: string; link: string }>()).results;
   assert.equal(rows.length, 2); assert.match(rows[0]!.title, /v2\.13\.0/); assert.equal(rows[0]!.link, 'updates.html');
+});
+
+test('quiet hours (G-152): no phone push inside the window, which may cross midnight; 🔔 still keeps the note', async () => {
+  const q = { ...DEFAULT_PREFS, quiet: true, quietFrom: '23:00', quietTo: '07:00' };
+  assert.equal(inQuiet(q, new Date('2026-10-06T15:30:00Z')), true, '00:30 KST');
+  assert.equal(inQuiet(q, new Date('2026-10-06T22:30:00Z')), false, '07:30 KST');
+  assert.equal(inQuiet({ ...q, quiet: false }, new Date('2026-10-06T15:30:00Z')), false);
+  assert.equal(inQuiet({ ...q, quietFrom: '13:00', quietTo: '14:00' }, new Date('2026-10-06T04:30:00Z')), true, 'same-day window');
+  assert.deepEqual(cleanPrefs({ quiet: true, quietFrom: '22:30', quietTo: '7:00', push: 'yes' }), { quiet: true, quietFrom: '22:30' }, 'bad times and types are dropped');
+  const { db, sent, ctx } = await world();
+  await db.prepare('INSERT INTO push_subs (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?)').bind('https://push.test/ok', 'u1', b64u(new Uint8Array(65)), b64u(new Uint8Array(16)), ctx.now.toISOString()).run();
+  await db.prepare('INSERT INTO notify_prefs (user_id, prefs, updated_at) VALUES (?, ?, ?)').bind('u1', JSON.stringify({ ...q, quietFrom: '10:00', quietTo: '12:00' }), ctx.now.toISOString()).run();
+  assert.equal(await notifyUser(ctx, 'u1', 'price', { title: 'quiet', body: 'b', link: '' }), true); // 11:00 KST
+  assert.equal(sent.filter((x) => x.url.startsWith('https://push.test/')).length, 0, 'held back from the phone');
+  assert.equal((await db.prepare("SELECT COUNT(*) AS n FROM notifications WHERE user_id = 'u1'").first<{ n: number }>())!.n, 1, 'kept in 🔔');
+});
+
+test('US price alerts (G-152) use the world-stock quote, pre/after-market included, and speak dollars', async () => {
+  const { db, ctx } = await world();
+  const quote = (over: boolean) => ({ datas: [{ reutersCode: 'AAPL.O', closePrice: '230.10', compareToPreviousClosePrice: '1.0', fluctuationsRatio: '0.4', marketStatus: 'CLOSE', localTradedAt: '2026-10-05T16:00:00-04:00', ...(over ? { overMarketPriceInfo: { overMarketStatus: 'OPEN', tradingSessionType: 'PRE_MARKET', overPrice: '241.50', compareToPreviousClosePrice: '11.4', fluctuationsRatio: '4.9', localTradedAt: '2026-10-06T05:00:00-04:00' } } : {}) }] });
+  let over = true;
+  const fetcher = (async (url: string, init?: RequestInit) => (String(url).includes('/worldstock/stock/AAPL.O') ? Response.json(quote(over)) : ctx.fetch(url, init))) as typeof fetch;
+  const c = { ...ctx, fetch: fetcher };
+  await db.prepare('INSERT INTO price_alerts (user_id, symbol, name, op, price, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind('u1', 'AAPL.O', '애플', '>=', 240, ctx.now.toISOString()).run();
+  over = false;
+  assert.equal((await runPriceAlerts(c)).fired, 0, 'a closed market has no live price');
+  over = true;
+  assert.equal((await runPriceAlerts(c)).fired, 1);
+  const n = await db.prepare("SELECT title, link FROM notifications WHERE user_id = 'u1'").first<{ title: string; link: string }>();
+  assert.match(n!.title, /애플 \$241\.50 · \$240\.00 이상 도달/);
+  assert.equal(n!.link, 'us.html?s=AAPL.O');
 });
