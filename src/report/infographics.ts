@@ -71,21 +71,21 @@ ${[0.33, 0.66, 1].map((v) => `<polygon points="${ring(v)}" class="grid"/>`).join
 <polygon points="${shape}" class="area"/>${axes.map((a, i) => a.score == null ? '' : (() => { const [x, y] = pt(i, a.score / 100); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" class="dot"><title>${esc(a.label)} ${Math.round(a.score)}점</title></circle>`; })()).join('')}${labels}</svg>`;
 }
 
-/** 기업 체력 한눈에: the radar and one tile per axis with its number and verdict. */
+/** 기업 체력 한눈에 (G-148): the radar beside one short line per axis; the thresholds sit in each line's title. */
 export function healthInfographic(m: MarketSection | undefined, close: number | null): string {
   if (!m) return '';
   const axes = healthAxes(m, close);
   if (axes.every((a) => a.score == null)) return '';
   const verdict = (s: number | null) => (s == null ? ['na', '자료 없음'] : s >= 67 ? ['good', '좋음'] : s >= 34 ? ['mid', '보통'] : ['warn', '주의']);
-  return `<section class="block"><div class="card ig-card"><div class="head"><h2>기업 체력 한눈에</h2><span class="sub">성장·수익성·안정성·수급·가치</span></div>
-<div class="ig-health">${radar(axes)}<div class="ig-tiles">${axes.map((a) => { const [cls, word] = verdict(a.score); return `<div class="ig-tile"><div><b>${esc(a.label)}</b><span class="ig-v ${cls}">${word}</span></div><strong>${esc(a.value)}</strong><small>${esc(a.note)}</small></div>`; }).join('')}</div></div>
-<p class="fine">점수는 위 기준으로 단순 환산한 참고값이에요. 업종마다 적정 수준이 달라서 같은 업종끼리 비교해 보세요.</p></div></section>`;
+  return `<section class="card ig-card ig-hc"><div class="head"><h2>기업 체력 한눈에</h2></div>
+<div class="ig-health">${radar(axes)}<ul class="ig-hl">${axes.map((a) => { const [cls, word] = verdict(a.score); return `<li title="${esc(a.note)}"><b>${esc(a.label)}</b><span class="ig-v ${cls}">${word}</span><em>${esc(a.value)}</em></li>`; }).join('')}</ul></div>
+<p class="fine">단순 기준으로 환산한 참고값이에요(영업이익률 20%·부채비율 0%면 만점). 같은 업종끼리 비교해 보세요.</p></section>`;
 }
 
 const ROWS: readonly [string, string][] = [['매출액', '억원'], ['영업이익', '억원'], ['당기순이익', '억원'], ['지배주주순이익', '억원'], ['영업이익률', '%'], ['순이익률', '%'], ['ROE', '%'], ['부채비율', '%'], ['당좌비율', '%'], ['유보율', '%'], ['EPS', '원'], ['BPS', '원'], ['주당배당금', '원']];
 
 /** 재무제표 (요약): every headline line Naver gives, by year and by quarter, estimates marked. */
-type StKind = 'IS' | 'BS' | 'CF';
+export type StKind = 'IS' | 'BS' | 'CF';
 // Key rows first (by XBRL id, then by name); the rest of each statement folds under "전체 항목".
 const KEY_ROWS: Record<StKind, readonly [string, RegExp, string?][]> = {
   IS: [['ifrs-full_Revenue', /^(매출액|수익\(매출액\)|영업수익|매출)$/], ['ifrs-full_CostOfSales', /^매출원가$/], ['ifrs-full_GrossProfit', /^매출총이익$/], ['dart_OperatingIncomeLoss', /^영업이익(\(손실\))?$/], ['ifrs-full_ProfitLossBeforeTax', /^법인세비용차감전/], ['ifrs-full_ProfitLoss', /^(당기순이익|당기순이익\(손실\))$/], ['ifrs-full_ProfitLossAttributableToOwnersOfParent', /지배기업.*소유주/], ['ifrs-full_BasicEarningsLossPerShare', /^기본주당/, '원']],
@@ -111,14 +111,11 @@ function bars(years: readonly string[], series: readonly { label: string; color:
   return `<figure class="ig-bars"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map((x) => x.label).join('·'))} 연도별 막대"><line x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}" class="ig-b0"/>${rects}</svg><figcaption>${series.map((x) => `<span><i style="background:${x.color}"></i>${esc(x.label)}</span>`).join('')}</figcaption></figure>`;
 }
 
-/** One DART statement: an infographic, the key rows, then every row folded. */
-function statementPanel(st: FullStatements, kind: StKind): string {
+/** The infographic of one DART statement (G-148: also the simple 재무제표 card's picture). */
+export function statementChart(st: FullStatements, kind: StKind): string {
   const rows = st.statements[kind];
-  if (!rows.length) return '<p class="muted">DART에 이 표가 없어요.</p>';
-  const keys = KEY_ROWS[kind].map(([id, re, unit]) => [findRow(rows, id, re), unit ?? '억원'] as const).filter((x): x is readonly [StatementRow, string] => !!x[0]);
+  if (!rows.length) return '';
   const val = (id: string, re: RegExp) => findRow(rows, id, re)?.values ?? st.years.map(() => null);
-  const head = `<thead><tr><th>항목</th>${st.years.map((y) => `<th class="num">${esc(y)}</th>`).join('')}</tr></thead>`;
-  const tr = (r: StatementRow, unit = '억원', strong = false) => `<tr${strong ? ' class="ig-key"' : ''}><th scope="row">${esc(r.name)}${unit === '억원' ? '' : `<small>${unit}</small>`}</th>${r.values.map((v) => v == null ? '<td class="num muted">-</td>' : `<td class="num${v < 0 ? ' down' : ''}">${unit === '억원' ? eok(v) : Math.round(v).toLocaleString('ko-KR')}</td>`).join('')}</tr>`;
   let chart = '', note = '';
   if (kind === 'IS') {
     const rev = val('ifrs-full_Revenue', KEY_ROWS.IS[0]![1]), op = val('dart_OperatingIncomeLoss', KEY_ROWS.IS[3]![1]), net = val('ifrs-full_ProfitLoss', KEY_ROWS.IS[5]![1]);
@@ -135,9 +132,19 @@ function statementPanel(st: FullStatements, kind: StKind): string {
     chart = bars(st.years, [{ label: '영업', color: '#2e4268', values: ocf }, { label: '투자', color: '#8a96a8', values: inv }, { label: '재무', color: '#c9a227', values: fin }, ...(fcf.some((v) => v != null) ? [{ label: '잉여현금(FCF)', color: '#16a34a', values: fcf }] : [])]);
     note = '영업으로 번 현금에서 설비 투자(유형자산 취득)를 뺀 것이 잉여현금흐름(FCF)이에요.';
   }
+  return `${chart}${note ? `<p class="ig-note">${note}</p>` : ''}`;
+}
+
+/** One DART statement: an infographic, the key rows, then every row folded. */
+function statementPanel(st: FullStatements, kind: StKind): string {
+  const rows = st.statements[kind];
+  if (!rows.length) return '<p class="muted">DART에 이 표가 없어요.</p>';
+  const keys = KEY_ROWS[kind].map(([id, re, unit]) => [findRow(rows, id, re), unit ?? '억원'] as const).filter((x): x is readonly [StatementRow, string] => !!x[0]);
+  const head = `<thead><tr><th>항목</th>${st.years.map((y) => `<th class="num">${esc(y)}</th>`).join('')}</tr></thead>`;
+  const tr = (r: StatementRow, unit = '억원', strong = false) => `<tr${strong ? ' class="ig-key"' : ''}><th scope="row">${esc(r.name)}${unit === '억원' ? '' : `<small>${unit}</small>`}</th>${r.values.map((v) => v == null ? '<td class="num muted">-</td>' : `<td class="num${v < 0 ? ' down' : ''}">${unit === '억원' ? eok(v) : Math.round(v).toLocaleString('ko-KR')}</td>`).join('')}</tr>`;
   const keyIds = new Set(keys.map(([r]) => r));
   const rest = rows.filter((r) => !keyIds.has(r));
-  return `${chart}${note ? `<p class="ig-note">${note}</p>` : ''}<div class="table-wrap ig-fs ig-dart"><table class="compact">${head}<tbody>${keys.map(([r, u]) => tr(r, u, true)).join('')}</tbody></table></div>${rest.length ? `<details class="ig-all"><summary>전체 ${rows.length}개 항목 보기</summary><div class="table-wrap ig-fs ig-dart"><table class="compact">${head}<tbody>${rows.map((r) => tr(r, /주당/.test(r.name) ? '원' : '억원', keyIds.has(r))).join('')}</tbody></table></div></details>` : ''}`;
+  return `${statementChart(st, kind)}<div class="table-wrap ig-fs ig-dart"><table class="compact">${head}<tbody>${keys.map(([r, u]) => tr(r, u, true)).join('')}</tbody></table></div>${rest.length ? `<details class="ig-all"><summary>전체 ${rows.length}개 항목 보기</summary><div class="table-wrap ig-fs ig-dart"><table class="compact">${head}<tbody>${rows.map((r) => tr(r, /주당/.test(r.name) ? '원' : '억원', keyIds.has(r))).join('')}</tbody></table></div></details>` : ''}`;
 }
 
 export function statementsCard(m: MarketSection | undefined, st?: FullStatements): string {
@@ -153,10 +160,10 @@ export function statementsCard(m: MarketSection | undefined, st?: FullStatements
   if (quarters.length) tabs.push(['q', '분기 요약', table(quarters, (p) => `${p.period.slice(2, 4)}.${p.period.slice(4)}`)]);
   if (st) (['IS', 'BS', 'CF'] as const).forEach((k) => { if (st.statements[k].length) tabs.push([k.toLowerCase(), k === 'IS' ? '손익계산서' : k === 'BS' ? '재무상태표' : '현금흐름표', statementPanel(st, k)]); });
   const src = [years.length || quarters.length ? '요약: 네이버 증권(기업 실적 분석, IFRS 연결). 추정은 증권사 컨센서스예요.' : '', st ? `손익계산서·재무상태표·현금흐름표: DART ${esc(st.years[st.years.length - 1] ?? '')} 사업보고서(${st.basis === 'CFS' ? '연결' : '별도'}), 단위 억원. <a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${encodeURIComponent(st.receiptNo)}" target="_blank" rel="noopener">원문 보기</a>` : '재무상태표·현금흐름표 전체는 DART 공시를 받은 종목부터 보여요.'].filter(Boolean).join(' ');
-  return `<section class="block" id="statements"><div class="card"><div class="head"><h2>재무제표</h2><span class="sub">${st ? '요약 · 손익 · 재무상태 · 현금흐름' : '요약 손익·재무비율'}</span></div>
+  return `<div class="card fs-full" id="statements">
 <div class="seg ig-seg" role="tablist" aria-label="재무제표 종류">${tabs.map(([k, l], i) => `<button type="button" data-fs="${k}" aria-selected="${i === 0}">${l}</button>`).join('')}</div>
 ${tabs.map(([k, , html], i) => `<div data-fsl="${k}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
-<p class="fine">${src}</p></div></section>`;
+<p class="fine">${src}</p></div>`;
 }
 
 export const INFOGRAPHIC_CSS = `.ig-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.ig-card h2{font-size:17px;margin:0 0 6px}
@@ -165,7 +172,7 @@ export const INFOGRAPHIC_CSS = `.ig-card .head{display:flex;justify-content:spac
 .ig-stack{display:flex;height:12px;border-radius:99px;overflow:hidden;background:#e9edf3}.ig-stack i{display:block}.ig-bullish{background:#e5484d}.ig-neutral{background:#c4cbc9}.ig-bearish{background:#3e63dd}.ig-legend{display:flex;justify-content:space-between;gap:6px;font-size:12px;color:var(--muted);margin-top:6px}.ig-legend b{color:var(--fg)}
 .ig-cn{display:flex;align-items:center;gap:8px;min-width:0}.ig-cn b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ig-pos{flex:none;font-size:12px;font-weight:800;border-radius:99px;padding:2px 9px;background:#e9edf3;color:var(--fg2)}.ig-pos.on{background:#fde8e8;color:#b4232b}.ig-champ small{display:block;font-size:12px;color:var(--muted);margin-top:6px}
 .ig-fbar{position:relative;height:12px;border-radius:99px;background:#e9edf3}.ig-fbar span{position:absolute;top:0;bottom:0;background:#b9cbea;border-radius:99px}.ig-fbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.ig-health{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;align-items:center}.ig-radar{width:100%;max-width:260px;margin:0 auto;display:block}.ig-radar .grid{fill:none;stroke:#dfe5ee;stroke-width:1}.ig-radar .area{fill:rgba(19,41,75,.16);stroke:var(--navy,#13294b);stroke-width:2;stroke-linejoin:round}.ig-radar .dot{fill:var(--navy,#13294b)}.ig-radar text{font-size:12px;font-weight:700;fill:var(--fg2)}.ig-radar text.na{fill:#aab3c2}
+.ig-health{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:center}.ig-hc{margin:0 0 14px}.ig-hl{list-style:none;margin:0;padding:0;max-width:560px;display:flex;flex-direction:column;gap:2px}.ig-hl li{display:grid;grid-template-columns:3.4em auto minmax(0,1fr);align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}.ig-hl li:last-child{border-bottom:0}.ig-hl .ig-v{justify-self:start}.ig-hl em{font-style:normal;font-size:13px;color:var(--fg2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ig-radar{width:100%;max-width:260px;margin:0 auto;display:block}.ig-radar .grid{fill:none;stroke:#dfe5ee;stroke-width:1}.ig-radar .area{fill:rgba(19,41,75,.16);stroke:var(--navy,#13294b);stroke-width:2;stroke-linejoin:round}.ig-radar .dot{fill:var(--navy,#13294b)}.ig-radar text{font-size:12px;font-weight:700;fill:var(--fg2)}.ig-radar text.na{fill:#aab3c2}
 .ig-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.ig-tile{background:#f6f8fc;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}.ig-tile>div{display:flex;justify-content:space-between;align-items:center;gap:6px}.ig-tile strong{font-size:14px}.ig-tile small{font-size:11.5px;color:var(--muted)}.ig-v{font-size:11.5px;font-weight:800;border-radius:99px;padding:1px 8px}.ig-v.good{background:#e6f4ea;color:#1d6b3a}.ig-v.mid{background:#eef1f5;color:var(--fg2)}.ig-v.warn{background:#fde8e8;color:#9b1c1c}.ig-v.na{background:#f1f3f6;color:#9aa4b2}
 .ig-seg{margin:2px 0 10px;width:max-content}.ig-fs td.num,.ig-fs th.num{text-align:right;font-variant-numeric:tabular-nums}.ig-fs table{min-width:520px}.ig-fs th[scope=row]{position:sticky;left:0;background:#fff;white-space:nowrap;text-align:left;font-weight:700}.ig-fs th small,.ig-fs th[scope=row] small{display:block;font-size:10.5px;font-weight:500;color:var(--muted)}
 .ig-seg.seg{max-width:100%;overflow-x:auto;flex-wrap:nowrap!important;scrollbar-width:none}.ig-dart table{min-width:0!important;width:100%}.ig-dart th[scope=row]{white-space:normal!important;min-width:84px}.ig-dart th,.ig-dart td{padding:8px 5px!important;font-size:13px}.ig-dart td.num{letter-spacing:-.2px}.ig-seg button{flex:none;white-space:nowrap}
@@ -173,7 +180,7 @@ export const INFOGRAPHIC_CSS = `.ig-card .head{display:flex;justify-content:spac
 .ig-bs{display:flex;flex-direction:column;gap:8px;margin:4px 0 8px}.ig-bs-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13px}.ig-bs-bar{display:flex;height:26px;border-radius:8px;overflow:hidden;background:#e9edf3}.ig-bs-bar i{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden}.ig-bs-bar .d{background:#d1676b}.ig-bs-bar .e{background:#2e4268}.ig-bs-row b{font-size:12.5px;white-space:nowrap}
 .ig-note{font-size:13px;color:var(--fg2);margin:2px 0 8px}.ig-key th,.ig-key td{font-weight:700}.ig-all{margin-top:8px}.ig-all summary{cursor:pointer;font-weight:700;font-size:14px;color:var(--accent-strong);padding:8px 0}
 .sub-sec{margin-top:28px;padding-top:18px;border-top:2px solid var(--line)}.sub-sec>.sub-h{font-size:19px;margin:0 0 10px}
-@media (max-width:820px){.ig-row{grid-template-columns:minmax(0,1fr)}.ig-health{grid-template-columns:minmax(0,1fr)}.ig-gauges{gap:2px}}`;
+@media (max-width:820px){.ig-row{grid-template-columns:minmax(0,1fr)}.ig-health{grid-template-columns:150px minmax(0,1fr);gap:10px}.ig-health .ig-radar{max-width:150px}.ig-health .ig-radar text{font-size:17px}.ig-hl li{grid-template-columns:auto 1fr;gap:1px 6px;padding:4px 0;font-size:13px}.ig-hl em{grid-column:1/-1;text-align:left;font-size:12px}.ig-gauges{gap:2px}}`;
 
 /** Period switch of the 재무제표 card. */
 export const INFOGRAPHIC_JS = `document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-fs]');if(!b)return;var c=b.closest('.card');c.querySelectorAll('[data-fs]').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});c.querySelectorAll('[data-fsl]').forEach(function(x){x.hidden=x.getAttribute('data-fsl')!==b.getAttribute('data-fs');});});`;

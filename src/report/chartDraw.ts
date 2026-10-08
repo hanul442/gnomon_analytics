@@ -417,6 +417,8 @@ export const CHART_DRAW_JS = `
  */
 export const IND_LIMIT_JS = `
 document.addEventListener('click', function (e) {
+  // Only a reader's own tap: indicators restored from saved settings click by script and must not toast on load.
+  if (!e.isTrusted) return;
   var b = e.target.closest && e.target.closest('#ind-sheet [data-ov], #ind-sheet [data-pane]'); if (!b || b.getAttribute('aria-pressed') === 'true') return;
   var plan = document.documentElement.getAttribute('data-plan') || 'free'; if (plan !== 'free') return;
   var BASIC = /^(ma5|ma20|ma60|ma120|volume)$/, key = function (x) { return x.getAttribute('data-ov') || x.getAttribute('data-pane'); };
