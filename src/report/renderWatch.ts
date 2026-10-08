@@ -20,19 +20,20 @@ const SCRIPT = `<script>
   var KEY = 'gnm-watch', box = document.getElementById('wp-list'), sortSel = document.getElementById('wp-sort');
   var read = function () { try { return JSON.parse(localStorage.getItem(KEY) || '[]') || []; } catch (e) { return []; } };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var won = function (p) { return (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
+  var isUs = function (s) { return /^(?!KRW-)[A-Z][A-Z0-9-]{0,9}(\\.[A-Z])?$/.test(s); };
+  var won = function (p, s) { if (s && isUs(s)) return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
   var items = null, info = null, live = {};
   try { sortSel.value = localStorage.getItem('gnm-watch-sort') || 'added'; } catch (e) {}
   var row = function (sym, i) {
     var it = (items || []).find(function (x) { return x[0] === sym; }) || [sym, sym, '', null, null, 0];
-    var coin = sym.indexOf('KRW-') === 0, href = it[5] ? sym + '/index.html' : coin ? 'coin.html?m=' + sym : 'stock.html?c=' + sym;
+    var coin = sym.indexOf('KRW-') === 0, us = isUs(sym), href = it[5] ? sym + '/index.html' : coin ? 'coin.html?m=' + sym : us ? 'us.html?s=' + encodeURIComponent(sym) : 'stock.html?c=' + sym;
     var q = live[sym], p = q ? q.price : it[3], ch = q ? q.changePct : it[4], wi = info && info[sym], tags = [];
     if (wi && wi.d) tags.push('<span class="rep">리포트 ' + esc(wi.d.slice(5).replace('-', '/')) + '</span>');
     if (wi && wi.f) tags.push('<span class="new">새 공시 ' + wi.f + '</span>');
     if (wi && wi.n) tags.push('<span class="new">새 뉴스 ' + wi.n + '</span>');
-    if (wi && p) { [['▲', wi.up], ['▼', wi.dn]].forEach(function (x) { if (x[1]) tags.push('<span class="' + (x[0] === '▲' ? 'up' : 'down') + '">' + x[0] + ' ' + won(x[1]) + ' (' + ((x[1] / p - 1) * 100 > 0 ? '+' : '') + ((x[1] / p - 1) * 100).toFixed(1) + '%)</span>'); }); }
-    return '<div class="wp-row" data-i="' + i + '"><a class="wp-main" href="' + href + '"><div class="wp-name"><b>' + esc(it[1]) + '</b><small>' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : sym + (it[2] === 'ETF' ? ' · ETF' : '')) + '</small></div>' + (tags.length ? '<div class="wp-tags">' + tags.join('') + '</div>' : '') + '</a>' +
-      '<div class="wp-px">' + (p == null ? '<span class="muted">가격 확인 중</span>' : '<b data-live="' + esc(sym) + '" data-live-f="price">' + won(p) + '</b>') + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</div>' +
+    if (wi && p) { [['▲', wi.up], ['▼', wi.dn]].forEach(function (x) { if (x[1]) tags.push('<span class="' + (x[0] === '▲' ? 'up' : 'down') + '">' + x[0] + ' ' + won(x[1], sym) + ' (' + ((x[1] / p - 1) * 100 > 0 ? '+' : '') + ((x[1] / p - 1) * 100).toFixed(1) + '%)</span>'); }); }
+    return '<div class="wp-row" data-i="' + i + '"><a class="wp-main" href="' + href + '"><div class="wp-name"><b>' + esc(it[1]) + '</b><small>' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : us ? sym.split('.')[0] + ' · 미국' : sym + (it[2] === 'ETF' ? ' · ETF' : '')) + '</small></div>' + (tags.length ? '<div class="wp-tags">' + tags.join('') + '</div>' : '') + '</a>' +
+      '<div class="wp-px">' + (p == null ? '<span class="muted">가격 확인 중</span>' : '<b data-live="' + esc(sym) + '" data-live-f="price">' + won(p, sym) + '</b>') + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</div>' +
       '<button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
   };
   var draw = function () {
@@ -56,9 +57,9 @@ const SCRIPT = `<script>
   window.addEventListener('gnm-quote', function (e) { var d = e.detail; live[d.symbol] = d.quote; });
   draw();
   var list = function (url, kind) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { return (d.rows || []).map(function (x) { return [x[0], x[1], kind, x[4], x[5], 0]; }); }).catch(function () { return []; }); };
-  Promise.all([fetch('search.json').then(function (r) { return r.json(); }).then(function (d) { return d.items; }).catch(function () { return []; }), list('etfs.json', 'ETF'), list('coins.json', 'COIN'), fetch('watchinfo.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (all) {
-    var seen = {}; items = []; info = all[3];
-    all.slice(0, 3).forEach(function (xs) { (xs || []).forEach(function (x) { if (!seen[x[0]]) { seen[x[0]] = 1; items.push(x); } }); });
+  Promise.all([fetch('search.json').then(function (r) { return r.json(); }).then(function (d) { return d.items; }).catch(function () { return []; }), list('etfs.json', 'ETF'), list('coins.json', 'COIN'), list('usstocks.json', 'US'), fetch('watchinfo.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (all) {
+    var seen = {}; items = []; info = all[4];
+    all.slice(0, 4).forEach(function (xs) { (xs || []).forEach(function (x) { if (!seen[x[0]]) { seen[x[0]] = 1; items.push(x); } }); });
     draw();
   });
 })();

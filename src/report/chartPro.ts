@@ -58,7 +58,7 @@ export const CHART_PRO_BAR = `<div class="pro-bar" role="toolbar" aria-label="�
 /** G-141: period chips under the 요약 mini chart, Toss-style; the chart itself still opens the full-screen one. */
 export const HERO_RANGE_JS = `
 (function () {
-  var won = function (v) { return (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
+  var won = function (v) { if (document.documentElement.getAttribute('data-ccy') === 'USD') return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
   var P = [['1주', 5], ['1달', 21], ['3달', 63], ['6달', 126], ['1년', 250]], n0 = 63;
   try { n0 = Number(localStorage.getItem('gnm-hero-range')) || 63; } catch (e) {}
   var draw = function (a, n) {

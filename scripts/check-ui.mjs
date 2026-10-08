@@ -27,6 +27,11 @@ for(const [dir,symbol,name,kind] of [['s','999999','UI 테스트','stock'],['c',
  await mkdir(root+'/site/'+dir,{recursive:true});await writeFile(root+'/site/'+dir+'/'+symbol+'.json',JSON.stringify({pageUrl:dir+'/'+symbol+'.html',symbol,name,kind,market:'KOSPI',bars:bars.map(b=>[b.date,b.open,b.high,b.low,b.close,b.volume]),calc:quickCalc(symbol,bars,new Date())}));
  await writeFile(root+'/site/'+dir+'/'+symbol+'.html',renderCalculationPage({symbol,name,...(kind==='coin'?{kind:'coin'}:{}),bars:bars.map(b=>({...b,symbol,source:'fixture',retrievedAt:new Date().toISOString()})),now:new Date()}));
 }
+// 3.0 (G-143): one US stock in dollars, for us.html, the 미국 주식 tab and search.
+{const usBars=bars.map((b,i)=>[b.date,+(b.open*2).toFixed(2),+(b.high*2).toFixed(2),+(b.low*2).toFixed(2),+(b.close*2).toFixed(2),b.volume*1000]);await mkdir(root+'/site/u',{recursive:true});
+ const usCalc=quickCalc('AAPL.O',usBars.map(b=>({date:b[0],open:b[1],high:b[2],low:b[3],close:b[4],volume:b[5],symbol:'AAPL.O',source:'fixture',retrievedAt:new Date().toISOString()})),new Date());
+ await writeFile(root+'/site/u/AAPL.O.json',JSON.stringify({symbol:'AAPL.O',ticker:'AAPL',name:'애플',english:'Apple Inc.',market:'NASDAQ',kind:'stock',currency:'USD',bars:usBars,calc:usCalc}));
+ await writeFile(root+'/site/usstocks.json',JSON.stringify({date:'2026-10-08',currency:'USD',rows:[['AAPL.O','애플','AAPL · NASDAQ · Apple Inc.',0,usBars.at(-1)[4],0.91,'BULLISH',40,1,2,3,1.1,11500,2.5,'I',-3]]}));}
 const forecastBars=Array.from({length:160},(_,i)=>({...bars[i%bars.length],date:new Date(Date.UTC(2026,0,1+i)).toISOString().slice(0,10),symbol:'999998',source:'fixture',retrievedAt:new Date().toISOString()}));
 await writeFile(root+'/site/s/999998.html',renderCalculationPage({symbol:'999998',name:'시나리오 메뉴 테스트',bars:forecastBars,now:new Date()}));
 await writeFile(root+'/site/theme-index.json',JSON.stringify({'999999':[['1','테스트 테마'],['2','두 번째 테마']]}));await mkdir(root+'/site/theme',{recursive:true});
@@ -47,6 +52,7 @@ marketFixture.ai.council.experts=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL',
 await writeFile(root+'/site/market-fixture.html',renderMarketReport(marketFixture));let marketPlan='alpha';
 const api=async(path,req,res)=>{
  res.setHeader('Content-Type','application/json');
+ if(path==='/api/quote'){const u=new URL(req.url,origin).searchParams.get('u');return res.end(JSON.stringify({quotes:u&&u.includes('AAPL.O')?[{symbol:'AAPL.O',price:340.5,change:3.83,changePct:1.14,open:true,at:'2026-10-08T12:47:25.000Z',session:'pre'}]:[]}));}
  if(path==='/api/deriv')return res.end(JSON.stringify({deriv:parseOkxDeriv('BTC',OKX_PARTS,new Date('2026-10-08T12:47:47Z'))}));
  if(path==='/api/deep/MARKET-DAILY/2026-10-07')return res.end(JSON.stringify(marketPlan==='free'?{error:'PLAN_REQUIRED',message:'플러스부터 열 수 있어요'}:{html:renderMarketDeep(marketFixture)}));
  if(path==='/api/admin/overview')return res.end(JSON.stringify({users:[],creditRequests:[],actions:[{id:'fixture-action',created_at:'2026-10-06T08:00:00Z',email:'long-mobile-test@example.test',kind:'report',symbol:'005500',detail:'모바일에서 확인할 리포트 요청 내용',credits:100,status:'pending'}],invites:[],pulses:[],feedback:[],questions:[],events:[],spend:{today:0,month:0,dailyCap:5}}));
@@ -71,7 +77,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/reports/fixture-done')return res.end(JSON.stringify({status:'done',symbol:'999999',dataDate:'2026-09-01',...(String(req.headers.referer||'').includes('fresh=1')?{generatedAt:'2026-10-07T09:30:00Z'}:{}),fragments:{scenarios:scenarioPanel(scenarioReport),ai:'<section id="debate"><button type="button" class="card db-preview" data-room-open aria-controls="db-room">토론방 입장</button><div class="db-room" id="db-room" hidden><header class="db-room-h"><button type="button" class="db-room-x" data-room-close>‹</button></header><div class="db-room-body"><div class="card debate"><div class="db-chips"></div><div class="db-turn" data-speaker="MARKET"><div class="db-who"><b>시장 데스크</b></div><div class="db-bubble">테스트 토론</div></div><details class="db-ev"><summary>근거</summary></details></div></div></div></section>'}}));
  return res.end(JSON.stringify({items:[],rows:[]}));
 };
-const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|deep|questions|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|valuation|experts|admin|alerts|notify|push|deriv)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
+const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|deep|questions|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|valuation|experts|admin|alerts|notify|push|deriv|quote)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(8765,'localhost',r));
 let browser;const errors=[];
 try{
@@ -132,6 +138,10 @@ try{
  await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="D"]').waitFor();
  await page.locator('[data-coin-tf="D"]').click();await page.locator('.cfs-back').click();await page.locator('#t-fundamentals').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
  await page.goto(origin+'/coin.html?m=KRW-BTC');await page.locator('.dv-card:not([hidden]) .dv-grid').waitFor();{const t=await page.locator('.dv-card').innerText();for(const k of ['펀딩비','미결제약정','롱/숏 계정 비율','최근 청산 3건'])assert.ok(t.includes(k),k);}await page.locator('.dv-card').screenshot({path:'test-artifacts/coin-deriv.png'});
+ await page.goto(origin+'/us.html?s=AAPL.O');await page.locator('#sp-name').filter({hasText:'애플'}).waitFor();assert.match(await page.locator('#sp-market').innerText(),/미국 · NASDAQ/);assert.match(await page.locator('#sp-price').innerText(),/^\$\d/);
+ await page.locator('.pb-price[data-live="AAPL.O"]').filter({hasText:'$340.50'}).waitFor({state:'attached'});assert.equal(await page.locator('#sp-line').evaluate(e=>e.classList.contains('skel')),false);await page.screenshot({path:'test-artifacts/us-stock.png'});
+ await page.goto(origin+'/screener.html#us');await page.locator('#sc-body a[href^="us.html?s=AAPL.O"]').waitFor();assert.match(await page.locator('#sc-body tr').first().innerText(),/\$\d/);
+ await page.goto(origin+'/index.html');await page.locator('#q, input[type=search]').first().fill('AAPL');await page.locator('a.sr-go[href^="us.html?s=AAPL.O"]').waitFor();
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/admin.html');await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
