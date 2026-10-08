@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T15:15:06.233Z",
+ "at": "2026-10-08T16:50:50.615Z",
  "selected": null,
  "universe": [
   {
@@ -37,12 +37,17 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 799
+   "count": 408
   }
  ],
  "stocks": [
   {
    "symbol": "000660",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "005930",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -77,12 +82,12 @@
    "failedSources": []
   },
   {
-   "symbol": "043260",
+   "symbol": "353200",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
-   "symbol": "353200",
+   "symbol": "098460",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -132,6 +137,11 @@
    "failedSources": []
   },
   {
+   "symbol": "316140",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
    "symbol": "000270",
    "report": "NOT_SETTLED",
    "failedSources": []
@@ -158,6 +168,11 @@
   },
   {
    "symbol": "096770",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "178320",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -234,23 +249,11 @@
  ],
  "failed": [
   {
-   "symbol": "005930",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "098460",
+   "symbol": "043260",
    "error": "fetch failed"
   },
   {
    "symbol": "010060",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "316140",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "178320",
    "error": "fetch failed"
   }
  ]
