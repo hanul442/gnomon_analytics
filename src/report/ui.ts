@@ -180,7 +180,8 @@ export function menuHtml(base: string, archiveHref?: string): { button: string; 
  * (a fixed top bar, content below) and a tall centred panel on wide screens. The phone's back button closes the
  * top layer instead of leaving the page. Small explanations (용어 풀이, 근거 칩) stay as tooltips.
  */
-export const FS_CSS = `@media (max-width:820px){
+export const FS_CSS = `.tap-card{cursor:pointer;-webkit-tap-highlight-color:rgba(19,41,75,.06)}.tap-card:active{background-color:rgba(19,41,75,.03)}@media (hover:hover){tr.tap-card:hover,li.tap-card:hover{background:var(--accent-soft)}}
+@media (max-width:820px){
 dialog.v2-dialog[open]{position:fixed!important;inset:0!important;margin:0!important;width:100%!important;max-width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;padding:0 16px calc(16px + env(safe-area-inset-bottom))!important}
 dialog.v2-dialog.rj[open]{padding:0!important}
 dialog.v2-dialog>header{position:sticky;top:0;z-index:3;background:#fff;margin:0 -16px 10px!important;padding:14px 16px 12px!important;border-bottom:1px solid var(--line)}
@@ -234,6 +235,43 @@ export const FS_JS = `
       if (o.length > lvl()) { var top = o[o.length - 1]; top[1](top[0]); }
       setTimeout(function () { if (lvl() > open().length) history.back(); }, 60);
     });
+  })();`;
+
+/**
+ * Whole-card taps (G-123): a card, list row or table row that leads to exactly one place opens it wherever it is
+ * tapped, not only on its small link. Rows with several destinations, forms, charts or their own buttons keep
+ * their parts. Applied again when parts of the page are drawn later.
+ */
+export const TAP_JS = `
+  (function () {
+    var BOX = '.card, .tp-card, .mi-card, .tm-item, .tm-row, .bell-item, .feed-item, .list-row, li, tr, .st-item, .row-link, [data-tap]';
+    var SKIP = 'canvas, svg.chart, form, input, select, textarea, .tv-lightweight-charts, .chart-wrap, dialog, .sheet, .chat, .side-menu';
+    var hrefs = function (el) { var s = {}; el.querySelectorAll('a[href]').forEach(function (a) { var h = a.getAttribute('href'); if (h && h.charAt(0) !== '#' && !/^(javascript|mailto|tel):/.test(h)) s[a.href] = a; }); return s; };
+    var mark = function () {
+      document.querySelectorAll(BOX).forEach(function (el) {
+        if (el.hasAttribute('data-tap-done')) return; var hh = el.getBoundingClientRect().height; if (!hh) return; el.setAttribute('data-tap-done', '');
+        if (el.querySelector(SKIP) || el.closest('dialog, .sheet, .chat, .side-menu, .bell-pop, nav')) return;
+        var h = hrefs(el), keys = Object.keys(h);
+        if (keys.length !== 1 || el.querySelectorAll('button').length > 1) return;
+        // A card holding other cards is a list: its rows decide.
+        if (el.querySelector('.card, li, tr') && el.querySelectorAll('.card, li, tr').length > 1) return;
+        // Only when that link is what the box is about: it holds the box's name, or the box is a short row.
+        var link = h[keys[0]], named = !!link.querySelector('b, strong, h2, h3, h4, .name, .tp-name') || /^(B|STRONG|H2|H3|H4)$/.test((link.firstElementChild || {}).tagName || '');
+        if (!named && hh > 180) return;
+        el.classList.add('tap-card'); el.setAttribute('data-tap-href', keys[0]);
+      });
+    };
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0) return;
+      var el = e.target.closest && e.target.closest('.tap-card'); if (!el) return;
+      if (e.target.closest('a, button, input, select, textarea, label, summary, details > *:not(summary) a, [role=button], [role=tab], [contenteditable]')) return;
+      if (window.getSelection && String(window.getSelection()).length > 2) return;
+      var a = el.querySelector('a[href]'); var url = el.getAttribute('data-tap-href');
+      if (e.metaKey || e.ctrlKey) { window.open(url, '_blank'); return; }
+      if (a && a.target === '_blank') window.open(url, '_blank', 'noopener'); else location.href = url;
+    });
+    var t = null; new MutationObserver(function () { if (!t) t = setTimeout(function () { t = null; mark(); }, 120); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    mark();
   })();`;
 
 /** Captures the browser's install offer as early as possible (it can fire before ui.js loads). */

@@ -164,6 +164,11 @@ try{
  await page.goto(origin+'/myreports.html');await page.locator('#mr-list .mr-item').first().waitFor();assert.equal(await page.locator('#mr-list .mr-item').count(),2);
  await page.locator('.mr-tabs [data-f=failed]').click();assert.equal(await page.locator('#mr-list .mr-item').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('.mr-tabs [data-f=""]').click();await page.screenshot({path:'test-artifacts/myreports.png',fullPage:true});
+ // G-123: a row that leads to one place opens from anywhere on it, not only its small link.
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/screener.html');await page.locator('#sc-body tr.tap-card').first().waitFor();
+ await page.locator('#sc-body tr.tap-card td:nth-child(2)').first().click();await page.waitForURL(/(stock\.html\?c=|\/index\.html)/);
+ await page.goto(origin+'/pricing.html');await page.locator('.pr-tabs [data-pr=plus]').click();assert.equal(await page.locator('.plan[data-key=plus]').isVisible(),true);assert.equal(await page.locator('.plan[data-key=pro]').isVisible(),false);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  // G-121: popups open full screen on phones and the back button closes them without leaving the page.
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/screener.html');await page.waitForLoadState('load');
  const here=page.url();await page.locator('[data-open-chat]').first().click();await page.locator('#chat:not([hidden])').waitFor();
