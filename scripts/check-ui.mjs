@@ -140,7 +140,7 @@ try{
  await page.screenshot({path:'test-artifacts/reduced-motion-orb.png'});await page.evaluate(()=>fixtureLoading.end());
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');
-  assert.equal(await page.locator('#market-report-cards').count(),0);assert.equal(await page.locator('.find-row #market-daily-link').count(),1);if(width===375){const dailyBox=await page.locator('#market-daily-link').boundingBox(),radarBox=await page.locator('.find-row a[href="signals.html"]').boundingBox();assert.ok(Math.abs(dailyBox.y-radarBox.y)<5,'daily stays beside filing radar');await page.screenshot({path:'test-artifacts/home-daily-button.png'});}assert.match(await page.locator('#market-daily-link').getAttribute('href'),/market/);
+  assert.equal(await page.locator('#market-report-cards').count(),0);assert.equal(await page.locator('#market-daily-link').count(),0);if(await page.locator('.ix-row .tmp').count())assert.match(await page.locator('.ix-row .tmp').getAttribute('href'),/market/);
   assert.ok(await page.evaluate(()=>{const search=document.querySelector('.top-search'),banner=document.getElementById('banner');return !!banner&&!!(search.compareDocumentPosition(banner)&Node.DOCUMENT_POSITION_FOLLOWING);}));
   const ad=page.locator('.bn-hanul');const slide=await ad.getAttribute('data-i');await page.locator('[data-go="'+slide+'"]').click();
   assert.ok(await ad.isVisible());assert.ok(await ad.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0));

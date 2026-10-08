@@ -398,9 +398,11 @@ function signalSection(report: DailyReport): string {
   const trendMark = { UP: '▲', FLAT: '■', DOWN: '▼' } as const;
   const trendWord = { UP: '상승', FLAT: '보합', DOWN: '하락' } as const;
   const momentumScale = Math.max(20, Math.ceil(Math.max(0, ...(report.momentum ?? []).map(m => Math.abs(m.returnPct ?? 0))) / 10) * 10);
-  const momentum = (report.momentum ?? []).map((m) => `<div class="mom hz"><div class="k">${escape(m.label)}</div>
-<div class="v ${m.trend === 'UP' ? 'up' : m.trend === 'DOWN' ? 'down' : ''}">${m.trend ? `${trendMark[m.trend]} ${trendWord[m.trend]}` : '판단 보류'}</div>
-<div class="momentum-gauge">${miniGauge(m.returnPct === null ? null : m.returnPct / momentumScale, `${m.label} ${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}`)}<div class="momentum-axis"><span>−${momentumScale}%</span><span>0%</span><span>+${momentumScale}%</span></div></div><div class="k">${m.days}거래일 <b>${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}</b></div></div>`).join('');
+  // Same card as the horizon gauges (G-124): title and window on top, the gauge, the call under it, the return below.
+  const momentum = (report.momentum ?? []).map((m) => `<div class="mom hz"><div class="hz-top"><b>${escape(m.label)}</b><span>${m.days}거래일</span></div>
+${miniGauge(m.returnPct === null ? null : m.returnPct / momentumScale, `${m.label} ${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}`)}
+<div class="hz-label ${m.trend === 'UP' ? 'up' : m.trend === 'DOWN' ? 'down' : ''}">${m.trend ? `${trendMark[m.trend]} ${trendWord[m.trend]}` : '판단 보류'}</div>
+<div class="hz-meta"><span>수익률 <b class="${m.returnPct === null ? '' : m.returnPct > 0 ? 'up' : m.returnPct < 0 ? 'down' : ''}">${m.returnPct === null ? '기록 부족' : pct(m.returnPct)}</b></span></div></div>`).join('');
   const rows = t.votes.map((v) => `<tr><td class="term-cell">${indicatorKey(v.label)?`<button type="button" class="indicator-link" data-chart-indicator="${indicatorKey(v.label)}" title="차트에서 보기">${escape(v.label)} ↗</button>`:escape(v.label)}</td><td class="num">${v.value === null ? '없음' : Math.abs(v.value) >= 1000 ? Math.round(v.value).toLocaleString('ko-KR') : v.value.toFixed(2)}</td>
 <td>${v.vote ? `<span class="badge v-${v.vote}">${VOTE_LABEL[v.vote]}</span>` : '<span class="badge b-LOW">계산 불가</span>'}</td><td class="why">${escape(v.rule)}</td></tr>`).join('');
   return `<div class="grid-signal" id="signal"><div class="card signal"><div class="head"><h2>기술적 신호</h2><span class="sub" style="margin:0">${escape(t.sessionDate)} 종가 기준</span></div>
@@ -410,7 +412,7 @@ ${gaugeSvg(t)}<div class="signal-label ${tone}">${escape(t.label)}</div>
 <p class="fine">기술적 지표 ${t.votes.length}개의 요약이에요. 오를 확률이 아니고, 투자 권유가 아니에요.</p></div>
 <div class="card"><div class="head"><h2>모멘텀</h2></div><div class="moms">${momentum}</div>
 ${groupBars(t)}
-<p class="fine" style="margin:8px 0 0">게이지는 실제 기간 수익률이며 세 기간의 눈금은 동일합니다. 단기 5거래일 ±2%, 중기 20거래일 ±5%, 장기 120거래일 ±10% 안이면 보합이에요.</p>
+<p class="fine" style="margin:8px 0 0">바늘은 각 기간의 실제 수익률이에요(세 게이지 모두 끝이 ±${momentumScale}%). 단기 5거래일 ±2%, 중기 20거래일 ±5%, 장기 120거래일 ±10% 안이면 보합이에요.</p>
 <details class="votes" id="votes"><summary>지표별 투표 보기</summary><div class="table-wrap"><table><thead><tr><th>지표</th><th>값</th><th>투표</th><th class="why">규칙</th></tr></thead><tbody>${rows}</tbody></table></div></details></div></div>`;
 }
 
