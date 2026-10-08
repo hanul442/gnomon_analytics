@@ -58,7 +58,7 @@ export function renderScreener(): string {
 <style>/* G-151: on a phone the results come right after the quick chips (conditions follow), and each result is a two-line row: name and price, code and change, then the signal and volume. */
 @media (max-width:600px){#find-stock{display:flex;flex-direction:column}#find-stock>.block{order:3}#find-stock>.block:first-of-type{order:1}#find-stock>.sc-results{order:2}#find-stock>#sc-kind-note{order:0}
 .sc-table{min-width:0!important;width:100%}.sc-table thead{display:none}.sc-table,.sc-table tbody{display:block}.sc-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n p" "n c" "s v";gap:3px 12px;padding:12px 2px;border-bottom:1px solid var(--line)}.sc-table td{border:0!important;padding:0!important;min-width:0}
-.sc-table td:nth-child(1){grid-area:n}.sc-table td:nth-child(1) b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}.sc-table td:nth-child(2){grid-area:p;font-weight:800;font-size:15px}.sc-table td:nth-child(3){grid-area:c;font-size:13.5px;display:block!important;text-align:right}.sc-table td:nth-child(2){text-align:right}.sc-table td:nth-child(4){grid-area:s;font-size:12.5px}.sc-table td:nth-child(5){grid-area:v;font-size:12.5px;color:var(--fg2)}.sc-table td:nth-child(5) .sub-sh{display:none}.sc-table td:nth-child(n+6){display:none}.sc-table td.empty{grid-column:1/-1}}
+.sc-table td:nth-child(1){grid-area:n}.sc-table td:nth-child(1) b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}.sc-table td:nth-child(2){grid-area:p;font-weight:800;font-size:15px}.sc-table td:nth-child(3){grid-area:c;font-size:13.5px;display:block!important;text-align:right}.sc-table td:nth-child(2){text-align:right}.sc-table td:nth-child(4){grid-area:s;font-size:12.5px}.sc-table td:nth-child(5){grid-area:v;font-size:12.5px;color:var(--fg2)}.sc-table td:nth-child(5) .sub-sh{display:none}.sc-table td:nth-child(n+6){display:none}.sc-table td.empty{grid-column:1/-1}.sc-table tr.sc-more-row{display:block;border:0;padding:4px 0}.sc-table tr.sc-more-row td{display:block!important}}
 .sc-top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}.sc-top b{font-size:15px}.sc-inline{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--fg2)}
 .sc-form select,.sc-form input:not([type=checkbox]){font:inherit;font-size:14px;color:var(--fg);border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:#fff;min-width:0}
 .rules{display:flex;flex-direction:column;gap:8px;margin:12px 0}.rule{display:grid;grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr) 32px;gap:6px;align-items:center}.rule>*{min-width:0}.rule select,.rule input{width:100%;box-sizing:border-box}.rule .x{border:0;background:none;font-size:18px;color:var(--muted);cursor:pointer}.rule small{grid-column:1/-1;color:var(--muted);margin-top:-4px}
@@ -143,10 +143,14 @@ const SCREENER_SCRIPT = `<script>
     el('match').value = sc.match || 'all'; el('norisk').checked = !!sc.maxRisk; draw();
   };
   var changed = function () { preset = ''; document.querySelectorAll('[data-preset]').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); }); draw(); };
+  // G-154: 50 results at a time (200 at once ran 24 phone screens); a new condition starts from 50 again.
+  var scShown = 50, lastKey = '';
+  document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-sc-more]')) { scShown += 50; drawNow(); } });
   var draw = function () { drawNow(); };
   var drawNow = function () {
     var sc = free() ? PRESETS.top : current();
     var out = rows.filter(function (r) { return matches(r, sc, IDX); }), total = out.length;
+    var key = JSON.stringify(sc) + '|' + rows.length; if (key !== lastKey) { lastKey = key; scShown = 50; }
     // G-119: any result list sorts by any column, both directions; missing values always go last.
     var col = SORT_COL[sortKey], sorted = function (list) { return list.slice().sort(function (a, b) {
       var x = a[col], y = b[col];
@@ -156,7 +160,7 @@ const SCREENER_SCRIPT = `<script>
     // Free sees the five best by signal score, in the order they picked.
     if (free()) { col = SORT_COL.score; var asc0 = sortAsc, k0 = sortKey; sortKey = 'score'; sortAsc = false; out = sorted(out).slice(0, 5); sortKey = k0; sortAsc = asc0; col = SORT_COL[sortKey]; }
     out = sorted(out); paintSort();
-    var shown = out.slice(0, 200);
+    var shown = out.slice(0, Math.min(200, scShown));
     $('sc-n').textContent = '결과 ' + total.toLocaleString('ko-KR') + '개' + (shown.length < total ? ' · ' + shown.length + '개 표시' : '');
     $('sc-count').textContent = rows.length.toLocaleString('ko-KR') + '종목 중 ' + total.toLocaleString('ko-KR') + '개';
     $('sc-desc').textContent = sc.rules.length + '개 조건' + (sc.maxRisk ? ' · 공시 위험 제외' : '');
@@ -166,6 +170,7 @@ const SCREENER_SCRIPT = `<script>
       var flow = r[18] === 'A' ? ' <span class="fl-a">매집</span>' : r[18] === 'D' ? ' <span class="fl-d">분산</span>' : '';
       return '<tr><td><a href="' + href + '"><b>' + esc(r[1]) + '</b></a>' + risk + '<div class="muted small">' + (r[2] === 'C' ? r[0].replace('KRW-', '') : r[2] === 'U' ? r[0].split('.')[0] : r[0]) + ' · ' + ({ P: '코스피', Q: '코스닥', E: 'ETF', C: '코인', U: '미국' }[r[2]] || '') + '</div></td><td class="num">' + (r[2] === 'U' ? '$' + r[4].toFixed(2) : Math.round(r[4]).toLocaleString('ko-KR')) + '</td><td class="num ' + tone(r[5]) + '">' + pct(r[5]) + '</td><td><span class="sig ' + (BULL.indexOf(r[6]) >= 0 ? 'up' : BEAR.indexOf(r[6]) >= 0 ? 'down' : '') + '">' + LEVEL[r[6]] + '</span></td><td class="num">' + (r[14] == null ? '—' : r[14].toFixed(1) + '배') + flow + (r[19] == null ? '' : '<small class="sub-sh">' + (r[2] === 'U' ? '$' + r[19].toLocaleString('en-US') + 'M' : r[19].toLocaleString('ko-KR') + '억') + (r[24] == null ? '' : ' · ' + r[24].toFixed(1) + '배') + '</small>') + '</td><td class="num ' + tone(r[9]) + '">' + pct(r[9]) + '</td><td class="num">' + pct(r[11]) + '</td><td class="num">' + (r[3] == null ? '—' : r[3] >= 10000 ? (r[3] / 10000).toFixed(1) + '조' : r[3].toLocaleString('ko-KR') + '억') + '</td></tr>';
     }).join('') : '<tr><td colspan="8" class="empty">조건에 맞는 종목이 없어요.</td></tr>';
+    if (!free() && shown.length < Math.min(total, 200)) $('sc-body').insertAdjacentHTML('beforeend', '<tr class="sc-more-row"><td colspan="8"><button type="button" class="more-btn" data-sc-more>' + Math.min(50, Math.min(total, 200) - shown.length) + '개 더 보기 <small>' + shown.length + ' / ' + Math.min(total, 200) + '</small></button></td></tr>');
     var more = $('sc-more'); more.hidden = !(free() && total > 5); $('sc-total').textContent = (total - 5).toLocaleString('ko-KR');
   };
   document.querySelectorAll('[data-preset]').forEach(function (b, i) {

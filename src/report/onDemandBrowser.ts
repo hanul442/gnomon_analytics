@@ -22,6 +22,9 @@ export const JOBS_JS = `
    if(key==='chart')return;
    if(key==='scenarios'){try{var list=JSON.parse(r.fragments[key]);if(window.GNM_scenarios)window.GNM_scenarios(list);}catch(e){}return;}
    var panel=document.getElementById('tab-'+key);if(!panel)return;
+   // G-154: a tab that already shows this data (a report page's own 기업 체력·수급) keeps it; a placeholder slot takes
+   // the generated panel in place. Prepending a second copy repeated whole sections.
+   if(key==='fundamentals'||key==='flows'){var slot=panel.querySelector('[data-slot="'+key+'"]');if(slot){if(!slot.querySelector('.empty,[data-missing]')&&slot.textContent.trim().length>40)return;if(r.fragments[key]){slot.innerHTML=r.fragments[key];slot.setAttribute('data-filled','');}return;}}
    var composer=key==='ai'?panel.querySelector('.db-join'):null;if(composer)composer.remove();
    var target=panel.querySelector('[data-generated]');
    if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var title=panel.querySelector('.panel-title');panel.innerHTML='';if(title)panel.appendChild(title);panel.appendChild(target);}else if(key==='home'){var heroEl=panel.querySelector('.hero');while(heroEl&&heroEl.parentElement&&heroEl.parentElement!==panel)heroEl=heroEl.parentElement;if(heroEl&&heroEl.parentElement===panel)heroEl.after(target);else panel.prepend(target);}else panel.prepend(target);}
