@@ -1,0 +1,21 @@
+name: Live audit
+# Opens the deployed site at phone and desktop widths and lists what looks broken (read-only, no login).
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['Daily report']
+    types: [completed]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/live-audit.mjs

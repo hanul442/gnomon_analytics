@@ -62,7 +62,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   };
   const rows = [
     row('cl-up', bull, '강세', px('BULL', '▲'), '성립 근거와 무효화 조건 함께 확인'),
-    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small>지금</small></div>`, '현재 근거에서 가장 그럴듯한 전개'),
+    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small data-live="${esc(report.symbol)}" data-live-f="nowlabel">${esc((p.sessionDate ?? report.date).slice(5).replace('-', '/'))} 종가</small></div>`, '현재 근거에서 가장 그럴듯한 전개'),
     row('cl-down', bear, '약세', px('BEAR', '▼'), '성립 근거와 무효화 조건 함께 확인'),
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');

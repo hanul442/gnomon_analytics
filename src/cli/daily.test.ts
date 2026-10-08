@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { kstParts, runDaily } from './daily.js';
 import { loadTickers } from '../config/tickers.js';
 import type { DailyReport } from '../report/dailyReport.js';
+import { tempDir } from '../testTmp.js';
 
 const FEED = `<chartdata symbol="000660">
 <item data="20261001|309000|314000|308000|311000|2900000" />
@@ -36,7 +36,7 @@ test('KST date and hour', () => {
 });
 
 test('a daily run before 18:00 KST collects but does not freeze a report', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const result = await run({ root, now: new Date('2026-10-02T05:00:00Z'), apiKey: 'k', fetch: fakeFetch, naver });
   assert.deepEqual({ ...result, newsStatus: undefined, marketStatus: undefined }, { symbol: '000660', addedBars: 2, addedFilings: 1, addedNews: 2, newsStatus: undefined, marketStatus: undefined, report: 'NOT_SETTLED' });
   assert.deepEqual(result.newsStatus.map((st) => st.ok), [true, true, true]);
@@ -48,7 +48,7 @@ test('a daily run before 18:00 KST collects but does not freeze a report', async
 });
 
 test('a settled run writes the report once and renders the site', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const first = await run({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, naver });
   assert.equal(first.report, 'WRITTEN');
   const stored = await readFile(join(root, 'reports', '000660', '2026-10-02.json'), 'utf8');
@@ -81,7 +81,7 @@ test('a settled run writes the report once and renders the site', async () => {
 });
 
 test('a holiday keeps no dated report and spends no AI call', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   let calls = 0;
   const anthropic = { beta: { messages: { parse: async () => { calls += 1; throw new Error('should not be called'); } } } } as never;
   // Saturday 10/3: the last session is Friday 10/2.
@@ -92,7 +92,7 @@ test('a holiday keeps no dated report and spends no AI call', async () => {
 });
 
 test('one stock failing does not stop the others', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const broken = { ...tickers[0]!, symbol: '999990', name: '없는종목' };
   const failing = (async (url: string | URL | Request) => (String(url).includes('999990') ? new Response('', { status: 500 }) : fakeFetch(url))) as typeof fetch;
   const out = await runDaily({ root, now: new Date('2026-10-02T05:00:00Z'), apiKey: 'k', fetch: failing, naver, tickers: [broken, ...tickers] });
@@ -104,7 +104,7 @@ test('one stock failing does not stop the others', async () => {
 });
 
 test('analyst calls from the AI committee are logged once with the report', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const anthropic = { beta: { messages: { parse: async () => ({
     stop_reason: 'end_turn', model: 'm',
     parsed_output: {
@@ -127,7 +127,7 @@ test('the API address is set before any page is written (stock and coin pages co
   const { SITE_CONFIG } = await import('../report/alpha.js');
   const { renderCalculationPage } = await import('../report/calculationPage.js');
   const { writeFile } = await import('node:fs/promises');
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   await writeFile(join(root, 'gnm.config.json'), JSON.stringify({ apiUrl: 'https://api.example.test' }));
   const before = process.env.GNM_API_URL; delete process.env.GNM_API_URL;
   SITE_CONFIG.apiUrl = '';

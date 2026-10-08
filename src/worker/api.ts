@@ -41,7 +41,7 @@ export interface Env {
 }
 export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient; waitUntil?: (promise: Promise<unknown>) => void; generate?: (report: DailyReport, tier: CommentaryTier) => Promise<Commentary> }
 
-interface User { id: string; email: string; plan: string; role: string; created_at: string; disabled: number }
+interface User { id: string; email: string; plan: string; role: string; created_at: string; disabled: number; viewAs?: string }
 
 const RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, max: 3, alpha: 2 };
 const LOGIN_TTL_MIN = 20, SESSION_DAYS = 30, MAX_BODY = 24_000;
@@ -98,7 +98,7 @@ function corsHeaders(req: Request, env: Env): Record<string, string> {
   const origin = req.headers.get('Origin') ?? '';
   const allowed = [new URL(env.SITE_URL).origin, ...(env.ALLOW_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean)];
   return allowed.includes(origin)
-    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
+    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS', 'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-View-As', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
     : { Vary: 'Origin' };
 }
 const json = (status: number, body: unknown, headers: Record<string, string>) =>
@@ -161,6 +161,9 @@ async function authed(req: Request, env: Env, now: Date): Promise<User> {
   if (!u) fail(401, 'LOGIN_REQUIRED', '로그인이 끝났어요. 다시 로그인해 주세요.');
   if (u!.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
   if (adminList(env).includes(u!.email)) u!.role = 'admin';
+  // An admin can look at the site as a given plan (X-View-As) to test gates and paid flows; nothing else changes.
+  const viewAs = req.headers.get('X-View-As');
+  if (u!.role === 'admin' && viewAs && ['free', 'plus', 'pro', 'max', 'alpha'].includes(viewAs)) { u!.plan = viewAs; u!.role = 'user'; u!.viewAs = viewAs; }
   await env.DB.prepare('UPDATE users SET last_seen_at = ? WHERE id = ?').bind(iso(now), u!.id).run();
   return u!;
 }
@@ -177,7 +180,7 @@ async function me(env: Env, u: User, now: Date) {
   ]);
   const days = (now.getTime() - Date.parse(u.created_at)) / 86_400_000;
   return {
-    user: { hasPassword: !!(await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>())?.password_hash, email: u.email, plan: u.plan, planName: u.plan === 'alpha' ? ALPHA.name : u.plan, rankAs: u.plan === 'alpha' ? ALPHA.rankAs : u.plan, admin: u.role === 'admin', createdAt: u.created_at },
+    user: { hasPassword: !!(await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>())?.password_hash, email: u.email, plan: u.plan, planName: u.plan === 'alpha' ? ALPHA.name : u.plan, rankAs: u.plan === 'alpha' ? ALPHA.rankAs : u.plan, admin: u.role === 'admin', ...(u.viewAs ? { viewAs: u.viewAs } : {}), createdAt: u.created_at },
     credits: { balance, monthly: u.plan === 'alpha' ? ALPHA.monthlyCredits : 0, maxRequest: ALPHA.maxRequest },
     survey: { onboarding: onboarding ? JSON.parse(onboarding.answers) : null, pulseDue: days >= 3 && (!lastPulse || now.getTime() - Date.parse(lastPulse.created_at) >= 7 * 86_400_000) },
     requests: requests.results,
@@ -596,12 +599,12 @@ route('GET', '/reports/mine', async ({ req, env, now }) => {
 route('GET', '/reports/latest/([^/]+)', async ({ req, env, now, params }) => {
   const u=await authed(req,env,now), symbol=decodeURIComponent(params[0]!);
   if (!DEEP_SYMBOL.test(symbol)) fail(400,'BAD_REPORT','종목코드를 확인해 주세요.');
-  const job=await env.DB.prepare("SELECT id,status,stage,error,kind,user_id FROM report_jobs WHERE symbol=? AND (user_id=? OR (status='done' AND ? >= 2)) ORDER BY created_at DESC LIMIT 1").bind(symbol,u.id,RANK[u.plan]??0).first();
+  const job=await env.DB.prepare("SELECT id,status,stage,error,kind,user_id FROM report_jobs WHERE symbol=? AND (user_id=? OR (status='done' AND ? >= 2)) ORDER BY created_at DESC LIMIT 1").bind(symbol,u.id,u.role==='admin'||PAID_FULL.has(u.plan)?2:0).first();
   return { job:job??null };
 });
 route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
   const u=await authed(req,env,now), job=await env.DB.prepare('SELECT * FROM report_jobs WHERE id=?').bind(params[0]).first<ReportJob>();
-  if (!job || (job.user_id!==u.id && !(job.status==='done' && RANK[u.plan]! >= RANK.pro!))) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
+  if (!job || (job.user_id!==u.id && !(job.status==='done' && (u.role==='admin'||PAID_FULL.has(u.plan))))) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
   if (['queued','running'].includes(job!.status) && Date.parse(job!.updated_at)<now.getTime()-15*60000) { await refundJob(env.DB,job!,'작업 시간이 초과되어 크레딧을 반환했어요.',now); job!.status='failed'; job!.stage='failed'; job!.error='작업 시간이 초과됐어요. 다시 요청해 주세요.'; }
   const report=job!.status==='done' && job!.result_json ? JSON.parse(job!.result_json) as DailyReport:null;
   // G-110: the countdown starts from how long this kind actually took lately (70th percentile of the last 20).
@@ -834,8 +837,10 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
 // ---- sealed deep reports (G-61) ----
 // The site holds <symbol>/deep/<date>.txt, sealed with DEEP_KEY. Opening one costs credits once per user
 // and report; admins and whoever requested the stock's report open it free.
+/** Plans that read every finished deep report without unlocking it. Alpha testers unlock with credits like everyone else. */
+const PAID_FULL = new Set(['pro', 'max']);
 async function deepAccess(db: D1, u: User, symbol: string, date: string): Promise<boolean> {
-  if (u.role === 'admin' || RANK[u.plan]! >= RANK.pro!) return true;
+  if (u.role === 'admin' || PAID_FULL.has(u.plan)) return true;
   if (await db.prepare('SELECT 1 FROM unlocks WHERE user_id = ? AND symbol = ? AND date = ?').bind(u.id, symbol, date).first()) return true;
   return !!(await db.prepare("SELECT 1 FROM action_requests WHERE user_id = ? AND symbol = ? AND kind IN ('report', 'upgrade') AND status = 'done' AND created_at <= ?").bind(u.id, symbol, `${date}T23:59:59Z`).first());
 }

@@ -1,17 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import type Anthropic from '@anthropic-ai/sdk';
 import { writeMarketReports, savePrivateMarketReport } from './marketReports.js';
 import { AiBudget } from './aiBudget.js';
 import { renderMarketReport, renderMarketDeep, type MarketReport } from '../report/marketReport.js';
 import { unseal } from '../report/seal.js';
+import { tempDir } from '../testTmp.js';
 const noNews=(async()=>new Response('',{status:404})) as unknown as typeof fetch;
 
 test('truncated market analysis records billed tokens of both tries and leaves a retryable failure', async()=>{
- const root=await mkdtemp(join(tmpdir(),'gnomon-market-'));
+ const root=await tempDir('gnomon-market-');
  try {
   await mkdir(join(root,'data','prices'),{recursive:true});
   await writeFile(join(root,'data','prices','KOSPI.jsonl'),'{"date":"2026-10-06","close":100}\n{"date":"2026-10-07","close":110}\n');
@@ -33,7 +33,7 @@ test('truncated market analysis records billed tokens of both tries and leaves a
 });
 
 test('paid market analysis is encrypted in storage and absent from free HTML; missing key fails closed',async()=>{
- const root=await mkdtemp(join(tmpdir(),'curia-private-'));
+ const root=await tempDir('curia-private-');
  const summary={text:'공개 요약',kind:'FACT' as const,refs:['M1']};
  const r:MarketReport={schema:'curia.market-report.v2',date:'2026-10-07',from:'2026-10-07',generatedAt:'2026-10-07T09:30:00Z',period:'daily',groups:[],ai:{status:'OK',council:{summary,desks:[{name:'코스피',view:'중립',claims:[{...summary,text:'유료 담당자 근거'}]}],consensus:[],disagreements:[],scenarios:[],redTeam:[],watch:[],dataGaps:[]}}};
  try{
@@ -47,7 +47,7 @@ test('paid market analysis is encrypted in storage and absent from free HTML; mi
 });
 
 test('a finished market report is kept unless regeneration is asked, and a failed regeneration keeps it',async()=>{
- const root=await mkdtemp(join(tmpdir(),'gnomon-regen-'));
+ const root=await tempDir('gnomon-regen-');
  try{
   await mkdir(join(root,'data','prices'),{recursive:true});
   await writeFile(join(root,'data','prices','KOSPI.jsonl'),'{"date":"2026-10-06","close":100}\n{"date":"2026-10-07","close":110}\n');

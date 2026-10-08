@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { runDaily } from '../cli/daily.js';
 import { loadTickers } from '../config/tickers.js';
 import { APP_CSS, UI_JS } from './renderHtml.js';
+import { tempDir } from '../testTmp.js';
 
 // One settled run on fixture data, then the page: six tabs and the new panels.
 const FIX = join(process.cwd(), 'test', 'fixtures', 'naver');
@@ -22,7 +22,7 @@ const fakeFetch = (async (url: string | URL | Request) => {
 }) as typeof fetch;
 
 test('report pages have eight separate tabs with gauges, fair value, forecasts, flows and fundamentals; the front page is live', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'gnm-'));
+  const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, tickers });
   const page = await readFile(join(root, 'site', '000660', 'reports', '2026-10-02.html'), 'utf8');

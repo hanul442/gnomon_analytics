@@ -312,7 +312,13 @@ test('deep reports (G-61): locked until unlocked once with credits; requester an
   const boss = await t.login('boss@example.com');
   const u = await t.login('d@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
   const path = '/deep/000660/2026-10-02';
+  // Alpha testers unlock with credits like everyone else; pro and max read without unlocking.
+  assert.equal((await t.call('GET',path,undefined,u.session)).status,402);
+  await t.env.DB.prepare("UPDATE users SET plan='pro' WHERE email='d@example.com'").run();
   assert.equal((await t.call('GET',path,undefined,u.session)).status,200);
+  // An admin looking as a plan (X-View-As) gets that plan's gate.
+  const asPlus = await handle(new Request('https://api.test'+path,{headers:{Origin:'https://hanul442.github.io',Authorization:`Bearer ${boss.session}`,'X-View-As':'plus'}}),t.env,t.deps);
+  assert.equal(asPlus.status,402);
   await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='d@example.com'").run();
   const locked = await t.call('GET', path, undefined, u.session);
   assert.deepEqual([locked.status, locked.body.error, locked.body.cost, locked.body.balance], [402, 'LOCKED', CREDIT_COST.unlock, ALPHA.monthlyCredits]);
@@ -409,7 +415,9 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, P
  const done=await t.call('GET','/reports/'+a.body.id,undefined,t.user.session);
  assert.equal(done.body.status,'done');assert.match(done.body.fragments.home,/비공개 분석 본문/);assert.match(done.body.fragments.ai,/class="[^"]*parliament/,'the committee seats come with a generated report');assert.doesNotMatch(done.body.fragments.ai,/위원별 판단/,'one committee section: the seats carry each member\'s view');
  const other=await t.login('other@example.com',(await t.call('POST','/admin/invites',{},t.boss.session)).body.code);
- assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,200);
+ assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,404,'alpha testers read only their own generated reports');
+  await t.env.DB.prepare("UPDATE users SET plan='pro' WHERE email='other@example.com'").run();
+  assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,200);
  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='other@example.com'").run();
  const blocked=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(blocked.status,404);assert.doesNotMatch(JSON.stringify(blocked.body),/비공개 분석 본문/);
  assert.equal((await t.call('GET','/reports/'+a.body.id)).status,401);

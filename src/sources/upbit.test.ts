@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { fetchUpbitDaysLong, parseUpbitDays, parseUpbitMarkets, parseUpbitTicks } from './upbit.js';
 import { writeCoinPages } from '../cli/coins.js';
+import { tempDir } from '../testTmp.js';
 
 const candle = (i: number, close: number) => ({ market: 'KRW-BTC', candle_date_time_kst: new Date(Date.UTC(2026, 3, 1) + i * 86_400_000).toISOString().slice(0, 10) + 'T09:00:00', opening_price: close, high_price: close * 1.01, low_price: close * 0.99, trade_price: close, candle_acc_trade_volume: 100 + i });
 
@@ -17,7 +17,7 @@ test('upbit: KRW markets with their warning flag; candles oldest first', () => {
 });
 
 test('coin pages: every KRW market gets a chart file and a list row; small prices keep decimals', async () => {
-  const site = await mkdtemp(join(tmpdir(), 'gnm-coins-'));
+  const site = await tempDir('gnm-coins-');
   const fake = (async (url: string) => {
     const u = String(url);
     if (u.includes('/market/all')) return Response.json([{ market: 'KRW-BTC', korean_name: '비트코인', english_name: 'Bitcoin' }, { market: 'KRW-PEPE', korean_name: '페페', english_name: 'Pepe', market_warning: 'CAUTION' }]);
