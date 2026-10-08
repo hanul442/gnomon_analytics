@@ -27,7 +27,10 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fakeFetch, tickers });
   const page = await readFile(join(root, 'site', '000660', 'reports', '2026-10-02.html'), 'utf8');
   // G-71: four tabs; the old tab names live on as parts of them.
-  for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-strategy', 'tab-ai', 'tab-flows', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
+  // G-129: 타이밍 (기술 + 전략) and 기업 체력 (수급 + 종목정보); the old ids live on as sections inside them.
+  for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-ai', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
+  for (const id of ['tab-strategy', 'tab-flows']) assert.match(page, new RegExp(`class="sub-sec" id="${id}"`));
+  for (const text of ['타이밍 한눈에', '재무제표']) assert.ok(page.includes(text), text);
   // Horizon gauges on the home and technical tabs; strategies show their stance in the race rows (G-91), not a gauge card.
   assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 5);
   assert.ok(page.includes('class="race-stance') && !page.includes('전략별 현재 신호'));

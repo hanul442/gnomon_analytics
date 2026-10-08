@@ -83,7 +83,7 @@ try{
  for(const width of [375,390,768,1280]){console.log('Checking viewport',width);
   await page.setViewportSize({width,height:850});await page.goto(origin+'/stock.html?c=999999');
   await page.locator('h1').filter({hasText:'UI 테스트'}).waitFor();await page.locator('#main[aria-busy]').waitFor({state:'detached'});await page.waitForFunction(()=>document.documentElement.dataset.reportJob==='done');if(width===390){await page.locator('#tab-ai [data-stale-ai] .sa-go').waitFor({state:'attached'});}assert.equal(await page.locator('#tab-ai [data-generated=ai]').count(),1);assert.doesNotMatch(await page.locator('#tab-ai').innerText(),/아직 위원회 리포트가 없어요/);
-  assert.equal(await page.locator('[role=tab][aria-controls]:visible').count(),4);await page.locator('#analysis-menu').click();assert.equal(await page.locator('#analysis-tabs [role=tab]:visible').count(),4);
+  assert.equal(await page.locator('[role=tab][aria-controls]:visible').count(),6);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   const beforeIndicators=await page.locator('#ind-sheet [aria-pressed=true][data-ov],#ind-sheet [aria-pressed=true][data-pane]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-ov')||n.getAttribute('data-pane')));const beforeSaved=await page.evaluate(()=>localStorage.getItem('gnm-ind'));await page.locator('#t-technical').click();assert.equal(await page.locator('[aria-label="기술 지표 차트 바로 보기"]').count(),0);await page.locator('[data-chart-indicator=fib]').first().click();assert.equal(await page.locator('[data-ov=fib]').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('#t-chart').getAttribute('aria-selected'),'true');assert.equal(await page.locator('#ind-sheet [aria-pressed=true][data-ov],#ind-sheet [aria-pressed=true][data-pane]').count(),1);assert.ok(await page.locator('#overlays').evaluate(el=>JSON.parse(el.textContent).fib.length>0));if(width===375)await page.screenshot({path:'test-artifacts/indicator-chart.png'});await page.locator('#chart-context button').click();assert.equal(await page.locator('#t-technical').getAttribute('aria-selected'),'true');assert.deepEqual(await page.locator('#ind-sheet [aria-pressed=true][data-ov],#ind-sheet [aria-pressed=true][data-pane]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-ov')||n.getAttribute('data-pane'))),beforeIndicators);assert.equal(await page.evaluate(()=>localStorage.getItem('gnm-ind')),beforeSaved);
   await page.locator('#t-ai').click();assert.equal(await page.locator('#tab-ai .gnm-loading').count(),0);
@@ -115,10 +115,10 @@ try{
  await page.locator('[data-minute-menu]').click();await page.locator('[data-coin-tf="5"]').click();await page.locator('.coin-tf+ .fine').filter({hasText:'정규장 5분봉'}).waitFor();
  assert.equal(await page.locator('[data-coin-tf="T"]').count(),0);assert.equal(await page.evaluate(()=>GNMChart.chart.panes().length),1);await page.screenshot({path:'test-artifacts/stock-minutes.png'});
  await page.locator('[data-coin-tf="D"]').click();assert.equal(await page.locator('[data-draw="trend"]').isDisabled(),false);
- await page.goto(origin+'/s/999998.html#tab-chart');await page.locator('[data-sc="ALL"]').waitFor({state:'attached'});
- assert.equal(await page.locator('#sc-layer').isVisible(),false);await page.locator('[data-open="ind-sheet"]').click();await page.locator('[data-sc="ALL"]').click();assert.equal(await page.locator('[data-sc="ALL"]').getAttribute('aria-pressed'),'true');await page.locator('[data-sc=""]').click();assert.equal(await page.locator('[data-sc=""]').getAttribute('aria-pressed'),'true');await page.locator('#ind-sheet .sheet-done').click();
+ await page.goto(origin+'/s/999998.html#tab-chart');await page.locator('#chart-card').waitFor({state:'attached'});
+ assert.equal(await page.locator('[data-sc]').count(),0,'no scenario layer on the chart (G-130)');
  await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="D"]').waitFor();
- await page.locator('[data-coin-tf="D"]').click();await page.locator('#analysis-menu').click();await page.locator('#t-flows').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
+ await page.locator('[data-coin-tf="D"]').click();await page.locator('#t-fundamentals').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/admin.html');await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
@@ -231,7 +231,7 @@ try{
  // Forced tours traverse hidden report panels and restore the original tab on exit.
  for (const width of [375,1280]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+'/s/999999.html?tour=1');await page.locator('.tr-tip').waitFor();
-  for (const key of ['chart','technical','strategy','ai','news']) {
+  for (const key of ['chart','technical','fundamentals','ai','news']) {
    for (let step=0;await page.locator('#t-'+key).getAttribute('aria-selected') !== 'true' && step<8;step++) await page.locator('.tr-tip [data-t=n]').click();
    assert.equal(await page.locator('#tab-'+key).isVisible(),true);
    assert.equal(await page.locator('.tr-tip').evaluate(el=>el.getBoundingClientRect().right<=innerWidth),true);

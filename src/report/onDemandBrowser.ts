@@ -19,6 +19,7 @@ export const JOBS_JS = `
   document.querySelectorAll('[data-stale-ai]').forEach(function(x){x.remove();});
   var bar=createdDay<sess&&r.dataDate&&/^\\d{4}-\\d{2}-\\d{2}$/.test(sess)&&r.dataDate<sess?'<div class="stale-ai" data-stale-ai role="note"><span class="sa-ic" aria-hidden="true">🕒</span><div class="sa-tx"><b>더 새로운 데이터가 있어요</b><small>AI 리포트 '+esc(r.dataDate)+' 기준 · 가격 '+esc(sess)+' 기준</small></div><button type="button" class="sa-go" data-create-report data-symbol="'+esc(r.symbol)+'" data-name="'+esc(r.symbol)+'">새 데이터로 다시 분석</button></div>':'';
   Object.keys(r.fragments||{}).forEach(function(key){
+   if(key==='chart')return;
    if(key==='scenarios'){try{var list=JSON.parse(r.fragments[key]);if(window.GNM_scenarios)window.GNM_scenarios(list);}catch(e){}return;}
    var panel=document.getElementById('tab-'+key);if(!panel)return;
    var composer=key==='ai'?panel.querySelector('.db-join'):null;if(composer)composer.remove();

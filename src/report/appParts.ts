@@ -171,7 +171,6 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
   const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
   // G-90: the scenarios live on the chart as a layer (where each would take the price in ~20 sessions), not in a separate card.
   const scen = scenarioLayer(report);
-  const scBar = '<div class="sc-layer" id="sc-layer" role="group" aria-label="차트 위 시나리오 전망" hidden></div>';
   const opt = (group: string, key: string, label: string, on: boolean, desc = DESC[key] ?? '') => `<button type="button" class="opt" data-${group}="${key}" aria-pressed="${on}"><span class="opt-t"><b>${esc(label)}</b>${desc ? `<small>${esc(desc)}</small>` : ''}</span><i class="tog" aria-hidden="true"></i></button>`;
   const html = `<section class="card chart-card" id="chart-card" data-symbol="${esc(report.symbol)}">
 <div class="chart-head"><div><div class="muted small">현재가 (${esc(last?.date ?? '')} 종가)</div>
@@ -185,7 +184,7 @@ ${chartToolbar(!!report.market?.benchmarks.some((b) => b.series?.length))}
 <div class="sheet" id="ind-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="ind-sheet-t"><div class="sheet-head"><b id="ind-sheet-t">지표·레이어</b><button type="button" class="sheet-done" data-close>완료</button></div>
 <p class="muted small" style="margin:0 0 6px">켜고 끈 지표는 이 기기에 저장돼서 다른 종목에서도 그대로 보여요.</p><div class="opt-group"><div class="opt-k">가격 위에 겹치기</div>${OVERLAYS.map(([k, l, on]) => opt('ov', k, l, on)).join('')}</div>
 <div class="opt-group"><div class="opt-k">아래 창</div>${PANES.map(([k, l, on]) => opt('pane', k, l, on)).join('')}</div>
-<div class="opt-group"><div class="opt-k">시나리오 전망</div>${scBar}</div><div class="opt-group"><div class="opt-k">차트 위 표시</div>${opt('vl', 'filing', '공시', true, '공시가 나온 날 문서 아이콘과 점선')}${opt('vl', 'news', '뉴스', true, '중요도 보통 이상 뉴스가 나온 날 아이콘')}</div></div></div>
+<div class="opt-group"><div class="opt-k">차트 위 표시</div>${opt('vl', 'filing', '공시', true, '공시가 나온 날 문서 아이콘과 점선')}${opt('vl', 'news', '뉴스', true, '중요도 보통 이상 뉴스가 나온 날 아이콘')}</div></div></div>
 ${strategies.length ? `<div class="sheet" id="strat-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="strat-sheet-t"><div class="sheet-head"><b id="strat-sheet-t">전략 매매 시점 보기</b><button type="button" class="sheet-done" data-close>닫기</button></div>
 <p class="muted small" style="margin:0 0 6px">고른 전략의 과거 매수(▲)·매도(▼) 시점을 차트에 표시해요. 순위는 검증 구간 샤프 순이에요.</p>
 <button type="button" class="opt" data-strategy="" aria-pressed="true"><span class="opt-t"><b>끄기</b><small>매매 시점을 표시하지 않아요</small></span><i class="radio" aria-hidden="true"></i></button>
@@ -286,7 +285,8 @@ window.addEventListener('DOMContentLoaded', function () {
   };
 
   // ---- AI scenarios: a fan from today's close to each scenario's 20-session range ----
-  var scen = JSON.parse((document.getElementById('scen') || {}).textContent || '[]') || [], scBuilt = [], scExtra = 0;
+  // G-130: the scenario boxes are off the chart (#scen still feeds the price-alert picks).
+  var scen = [], scBuilt = [], scExtra = 0;
   var SC = { BULL: [UP, '강세'], BASE: ['#5b6b80', '기본'], BEAR: [DOWN, '약세'] };
   // G-96: each scenario's 20-session range is a box from today to twenty sessions ahead, labelled with what it means.
   // An invisible anchor series puts those future sessions on the time scale and keeps the boxes inside the price scale.
@@ -348,7 +348,7 @@ window.addEventListener('DOMContentLoaded', function () {
   // A report made on request brings its scenarios after the page loaded.
   // Intraday candles (coins) use their own time scale: the daily fan steps aside and comes back with the daily view.
   window.GNM_scenarioPause = function (off) { drawScen(off ? '' : scPick, true); };
-  window.GNM_scenarios = function (list) { scen = list || []; scButtons(); drawScen(scPick); setRange(currentRange, scExtra); };
+  window.GNM_scenarios = function () {};
 
   // ---- panes (below the price) ----
   var paneMakers = {
