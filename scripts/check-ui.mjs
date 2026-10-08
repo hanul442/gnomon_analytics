@@ -164,6 +164,9 @@ try{
  await page.goto(origin+'/myreports.html');await page.locator('#mr-list .mr-item').first().waitFor();assert.equal(await page.locator('#mr-list .mr-item').count(),2);
  await page.locator('.mr-tabs [data-f=failed]').click();assert.equal(await page.locator('#mr-list .mr-item').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('.mr-tabs [data-f=""]').click();await page.screenshot({path:'test-artifacts/myreports.png',fullPage:true});
+ // G-125: the 🔔 '관심 종목 새 리포트' link opens the whole day's list with the watched stocks first.
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/reports.html?hl=000660#today');await page.locator('#today-list .rr').first().waitFor();
+ assert.equal(await page.locator('#today-list .rr').first().getAttribute('data-sym'),'000660');assert.ok(await page.locator('#today-list .rr').first().locator('.t-mine').count());
  // G-123: a row that leads to one place opens from anywhere on it, not only its small link.
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/screener.html');await page.locator('#sc-body tr.tap-card').first().waitFor();
  await page.locator('#sc-body tr.tap-card td:nth-child(2)').first().click();await page.waitForURL(/(stock\.html\?c=|\/index\.html)/);
