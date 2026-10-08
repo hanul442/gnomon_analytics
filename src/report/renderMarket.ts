@@ -123,7 +123,7 @@ export function forecastCard(forecasts: readonly PriceForecast[], scores: readon
 <p class="fine">최근 변동성으로 그린 가격 범위예요. 열 번 중 여덟 번 정도 이 안에 들어오도록 만들었고, 실제로 그런지 매일 채점해요. 방향은 최근 추세의 4분의 1만 반영해요. 투자 권유가 아니에요.</p></div>`;
 }
 
-const BIAS = { BULLISH: '상승 구조', BEARISH: '하락 구조', NEUTRAL: '구조 없음' } as const;
+const BIAS = { BULLISH: '강세 구조', BEARISH: '약세 구조', NEUTRAL: '구조 없음' } as const;
 const ZONE = { DISCOUNT: '하단 구간', EQUILIBRIUM: '중간 구간', PREMIUM: '상단 구간' } as const;
 const FIB = { SHALLOW: '얕은 되돌림', PREFERRED: '적정 되돌림', DEEP: '깊은 되돌림', EXTENDED: '과도한 되돌림' } as const;
 
