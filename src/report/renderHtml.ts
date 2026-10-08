@@ -17,7 +17,7 @@ import type { Claim } from '../analysis/commentary.js';
 import { apiMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
 import { CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
 import { timingInfographic, healthInfographic, statementsCard, INFOGRAPHIC_CSS, INFOGRAPHIC_JS } from './infographics.js';
-import { chartOverlays, flowsPanel, forecastCard, fundamentalsPanel, STOCK_INFO_CSS, STOCK_INFO_TOGGLE_JS, miniGauge, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
+import { chartOverlays, quickInfoCard, flowsPanel, forecastCard, fundamentalsPanel, STOCK_INFO_CSS, STOCK_INFO_TOGGLE_JS, miniGauge, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { DART_SCRIPT, freshness, freshnessBadge, hero, latestLists, staleAiBar, priceChart } from './appParts.js';
 import { arenaHeadline, arenaPanel } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
@@ -27,7 +27,7 @@ import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, parliamentViewNote, SEAT
 import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
-import { CHART_PRO_CSS, CHART_PRO_JS } from './chartPro.js';
+import { CHART_PRO_CSS, CHART_PRO_JS, HERO_RANGE_JS } from './chartPro.js';
 import { adStrip, AD_CSS, AD_JS } from './ads.js';
 import { edgeCard, edgeEvents, edgeFlows, edgeFundamentals, EDGE_CSS } from './renderEdge.js';
 import { ALERTS_CSS, PRICE_ALERT_JS, PUSH_JS } from './pushParts.js';
@@ -592,7 +592,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const panel = (key: TabKey, html: string) => `<section class="panel" id="tab-${key}" role="tabpanel" aria-labelledby="t-${key}" tabindex="-1"><h2 class="panel-title">${TABS.find((t) => t.key === key)!.label}</h2>${html}</section>`;
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   // G-71: the conclusion (scenarios that open on tap) heads the summary tab, above everything else.
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${ctx.commentaryFrom && ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? staleAiBar(report, ctx.commentaryFrom) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${ctx.commentaryFrom && ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? staleAiBar(report, ctx.commentaryFrom) : ''}${report.kind === 'coin' ? '' : quickInfoCard(m, report.price?.close ?? null, report.recentBars ?? [])}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 ${report.kind ? '' : peersSlot(report.symbol)}
@@ -905,7 +905,8 @@ const stockScript = (coin: boolean) => `<script>
         var g = (hp[hp.length - 1].close / hp[0].close - 1) * 100, col = g >= 0 ? '#d1373d' : '#2a62c9';
         var hc = document.createElement('a'); hc.className = 'hero-chart'; hc.href = '#tab-chart'; hc.setAttribute('aria-label', '최근 3개월 차트, 눌러서 전체 화면 차트 열기');
         hc.innerHTML = '<svg viewBox="0 0 320 72" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,72 ' + pts + ' 320,72" fill="' + col + '" fill-opacity=".12"/><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><span class="hc-meta"><span>3개월 <b class="' + (g > 0 ? 'up' : g < 0 ? 'down' : '') + '">' + (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '') + g.toFixed(1) + '%</b> · 최고 ' + won(hi) + ' · 최저 ' + won(lo) + '</span><span class="hc-go">차트 자세히 보기 ›</span></span>';
-        $('sp-date').after(hc);
+        hc.setAttribute('data-c', JSON.stringify(bars.slice(-250).map(function (b) { return b.close; })));
+        $('sp-date').after(hc); if (window.GNM_heroRange) GNM_heroRange(hc);
       }
       $('pb-name').textContent = d.name; $('pb-code').textContent = d.symbol; $('pb-price').textContent = won(last.close);
       $('pb-price').parentElement.setAttribute('data-live',code);$('pb-change').parentElement.setAttribute('data-live',code);
@@ -985,7 +986,7 @@ ${FS_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)};\n${FORMAT_JS}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${STOCK_INFO_TOGGLE_JS}\n${INFOGRAPHIC_JS}\n${INSTALL_JS}\n${CHART_PRO_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}`;
+export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${STOCK_INFO_TOGGLE_JS}\n${INFOGRAPHIC_JS}\n${INSTALL_JS}\n${HERO_RANGE_JS}\n${CHART_PRO_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}`;
 /** Two FNV-1a passes give a short, stable content hash without node:crypto (this module also runs in the Worker). */
 const contentHash = (text: string): string => {
   let a = 0x811c9dc5, b = 0x01000193 ^ text.length;

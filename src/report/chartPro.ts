@@ -9,6 +9,7 @@
 // Choices are remembered on this device.
 
 export const CHART_PRO_CSS = `
+.hc-range{margin:6px 0 0;max-width:520px;width:100%;display:flex}.hc-range button{flex:1}
 html.chart-fs,html.chart-fs body{overflow:hidden}
 html.chart-fs #tab-chart{position:fixed;inset:0;z-index:75;background:var(--bg,#f4f6fa);overflow-y:auto;overscroll-behavior:contain;margin:0;padding:0 0 calc(16px + env(safe-area-inset-bottom));max-width:none;width:auto}
 html.chart-fs #tab-chart>.panel-title{display:none}
@@ -53,6 +54,39 @@ const TYPES: readonly [string, string][] = [['candle', '캔들'], ['ha', '하이
 export const CHART_PRO_BAR = `<div class="pro-bar" role="toolbar" aria-label="차트 보기 도구"><div class="seg ct" role="group" aria-label="차트 종류">${TYPES.map(([k, l]) => `<button type="button" data-ct="${k}" aria-pressed="${k === 'candle'}" title="${l}"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg><span>${l}</span></button>`).join('')}</div>
 <div class="seg" role="group" aria-label="가격 축"><button type="button" data-scale="0" aria-pressed="true">가격</button><button type="button" data-scale="1" aria-pressed="false" title="로그 눈금: 오래 오른 종목을 비율로 봐요">로그</button><button type="button" data-scale="2" aria-pressed="false" title="화면 왼쪽 첫 봉 대비 %">%</button></div>
 <button type="button" class="chip-toggle" data-hilo aria-pressed="true">최고·최저</button><button type="button" class="chip-toggle" data-magnet aria-pressed="false" title="십자선이 봉의 종가에 붙어요">자석 십자선</button><button type="button" class="chip-toggle" data-shot>사진 저장</button><button type="button" class="chip-toggle" data-land>가로로 보기</button></div>`;
+
+/** G-141: period chips under the 요약 mini chart, Toss-style; the chart itself still opens the full-screen one. */
+export const HERO_RANGE_JS = `
+(function () {
+  var won = function (v) { return (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
+  var P = [['1주', 5], ['1달', 21], ['3달', 63], ['6달', 126], ['1년', 250]], n0 = 63;
+  try { n0 = Number(localStorage.getItem('gnm-hero-range')) || 63; } catch (e) {}
+  var draw = function (a, n) {
+    var all = []; try { all = JSON.parse(a.getAttribute('data-c') || '[]'); } catch (e) {}
+    var c = all.slice(-n); if (c.length < 3) return;
+    var lo = Math.min.apply(null, c), hi = Math.max.apply(null, c), sp = hi - lo || 1, w = 320, h = 72;
+    var pts = c.map(function (v, i) { return (i / (c.length - 1) * w).toFixed(1) + ',' + (h - 4 - (v - lo) / sp * (h - 10)).toFixed(1); }).join(' ');
+    var g = (c[c.length - 1] / c[0] - 1) * 100, col = g >= 0 ? '#d1373d' : '#2a62c9', id = 'hcg' + Math.random().toString(36).slice(2, 7);
+    var label = (P.filter(function (p) { return p[1] === n; })[0] || ['', 0])[0];
+    a.querySelector('svg').innerHTML = '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".22"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs><polygon points="0,' + h + ' ' + pts + ' ' + w + ',' + h + '" fill="url(#' + id + ')"/><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>';
+    var meta = a.querySelector('.hc-meta > span'); if (meta) meta.innerHTML = label + ' <b class="' + (g > 0 ? 'up' : g < 0 ? 'down' : '') + '">' + (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '') + g.toFixed(1) + '%</b> · 최고 ' + won(hi) + ' · 최저 ' + won(lo);
+    a.setAttribute('aria-label', '최근 ' + label + ' 차트, 눌러서 전체 화면 차트 열기');
+  };
+  window.GNM_heroRange = function (a) {
+    if (!a || a.nextElementSibling && a.nextElementSibling.classList.contains('hc-range')) return;
+    var len = 0; try { len = JSON.parse(a.getAttribute('data-c') || '[]').length; } catch (e) {}
+    var ps = P.filter(function (p) { return len >= Math.min(p[1], 5) && (p[1] <= len || p[1] - len < p[1] * 0.2); }); if (ps.length < 2) return;
+    var n = ps.some(function (p) { return p[1] === n0; }) ? n0 : 63;
+    var box = document.createElement('div'); box.className = 'seg hc-range'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', '미니 차트 기간');
+    box.innerHTML = ps.map(function (p) { return '<button type="button" data-hc="' + p[1] + '" aria-pressed="' + (p[1] === n) + '">' + p[0] + '</button>'; }).join('');
+    a.insertAdjacentElement('afterend', box);
+    box.addEventListener('click', function (e) { var b = e.target.closest('[data-hc]'); if (!b) return; var k = Number(b.getAttribute('data-hc')); box.querySelectorAll('[data-hc]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); try { localStorage.setItem('gnm-hero-range', String(k)); } catch (x) {} draw(a, k); });
+    if (n !== 63) draw(a, n);
+  };
+  var boot = function () { document.querySelectorAll('.hero-chart[data-c]').forEach(window.GNM_heroRange); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+`;
 
 export const CHART_PRO_JS = `
 (function () {

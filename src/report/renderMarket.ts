@@ -234,6 +234,34 @@ const eok = (v: number | null | undefined) => (v == null ? '없음' : v >= 1e12 
 const num = (v: number | null | undefined, unit: string, d = 2) => (v == null || !Number.isFinite(v) ? '없음' : `${v.toFixed(d)}${unit}`);
 
 /**
+ * G-141: 요약's quick stock info, Toss-style, right under the price: today's and the year's range, the six
+ * numbers people check first, and who bought over the last five sessions. The full cards live in 기업 체력.
+ */
+export function quickInfoCard(market: MarketSection | undefined, close: number | null, bars: readonly Bar[] = []): string {
+  if (!market) return '';
+  const s = market.snapshot, last = bars.at(-1), now = close ?? last?.close ?? null;
+  const year = last ? bars.filter((b) => b.date >= new Date(Date.parse(last.date) - 365 * 864e5).toISOString().slice(0, 10)) : [];
+  const hi52 = year.length > 100 ? Math.max(...year.map((b) => b.high)) : s?.high52w ?? null, lo52 = year.length > 100 ? Math.min(...year.map((b) => b.low)) : s?.low52w ?? null;
+  const ranges = now ? `${last ? rangeBar('오늘', last.low, last.high, now, last.date.slice(5).replace('-', '/'), ['저가', '고가']) : ''}${hi52 && lo52 ? rangeBar('1년', lo52, hi52, now, `최고가 대비 ${pct((now / hi52 - 1) * 100)}`) : ''}` : '';
+  const hold = market.flows?.days.at(-1)?.foreignHoldRatio ?? null;
+  const cells = [
+    s?.marketCap != null ? cell('시가총액', eok(s.marketCap)) : '',
+    s?.per != null ? cell('PER', num(s.per, '배')) : '',
+    s?.pbr != null ? cell('PBR', num(s.pbr, '배')) : '',
+    s?.dividendYield != null ? cell('배당수익률', num(s.dividendYield, '%')) : '',
+    hold != null ? cell('외국인 보유', num(hold, '%')) : '',
+    last ? cell('거래대금', eok(last.volume * last.close)) : '',
+  ].filter(Boolean);
+  const f5 = market.flows?.sums.find((x) => x.days === 5);
+  const who = f5 ? ([['외국인', 'foreign'], ['기관', 'institution'], ['개인', 'individual']] as const).map(([l, k]) => {
+    const v = f5[`${k}Value` as 'foreignValue'] ?? null, n = f5[k] ?? null;
+    return `<span class="qi-who"><small>${l}</small><b class="${tone(v ?? n)}">${v != null ? krw(v) : shares(n)}</b></span>`;
+  }).join('') : '';
+  if (!ranges && !cells.length && !who) return '';
+  return `<section class="card qi-card" id="quick-info"><div class="head"><h2>종목 정보</h2><a class="qi-more" href="#tab-fundamentals">기업 체력 ›</a></div>${ranges}${cells.length ? `<div class="si-grid qi-grid">${cells.join('')}</div>` : ''}${who ? `<div class="qi-flow"><span class="qi-k">최근 5일 순매수</span>${who}</div>` : ''}</section>`;
+}
+
+/**
  * 종목정보 (G-127, 토스 순서): 시세 → 투자자 동향 → 투자 지표 → 재무 → 안정성 → 배당 → 애널리스트 의견 → 시장 대비·증권사 리포트.
  * Every card shows only what the data has; a missing card is left out rather than filled with dashes.
  */
@@ -304,7 +332,8 @@ export function stockInfoCards(market: MarketSection, close: number | null, name
   return `<div class="si-wrap">${out.join('')}</div>`;
 }
 
-export const STOCK_INFO_CSS = `.si-wrap{columns:2;column-gap:14px;margin-bottom:16px}.si-card{min-width:0;break-inside:avoid;margin:0 0 14px;display:block}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:17px;margin:0 0 10px}
+export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:flex;justify-content:space-between;align-items:baseline}.qi-card h2{font-size:17px;margin:0 0 4px}.qi-more{font-size:13.5px;font-weight:800;color:var(--accent-strong);text-decoration:none}.qi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.qi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}.qi-k{color:var(--fg2);font-weight:700;margin-right:auto}.qi-who{display:inline-flex;gap:6px;align-items:baseline}.qi-who small{color:var(--muted)}@media (max-width:520px){.qi-k{width:100%}}
+.si-wrap{columns:2;column-gap:14px;margin-bottom:16px}.si-card{min-width:0;break-inside:avoid;margin:0 0 14px;display:block}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:17px;margin:0 0 10px}
 .si-range{margin:6px 0 14px}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
 .si-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.si-c{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.si-c span{color:var(--fg2)}.si-c b{font-variant-numeric:tabular-nums;text-align:right}
 .si-seg{margin-bottom:8px;width:max-content}.si-flow{display:grid;grid-template-columns:56px minmax(0,1fr) 84px;align-items:center;gap:8px;padding:7px 0;font-size:14px}.si-flow b{text-align:right;font-variant-numeric:tabular-nums}.si-fbar{position:relative;height:10px;background:#f1f3f7;border-radius:4px}.si-fbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}.si-fbar i{position:absolute;top:0;bottom:0;border-radius:3px}.si-fbar i.pos{background:#e5484d}.si-fbar i.neg{background:#3e63dd}
