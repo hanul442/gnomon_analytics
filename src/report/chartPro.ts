@@ -106,7 +106,12 @@ export const CHART_PRO_JS = `
   panel.insertBefore(head, panel.firstChild);
   var panels = Array.prototype.slice.call(document.querySelectorAll('[role=tabpanel]'));
   var lastTab = 'tab-home', isOpen = false;
-  var close = function () { history.back(); setTimeout(function () { if (!panel.hidden && window.GNM_showTab) GNM_showTab(lastTab.replace('tab-', '')); }, 250); };
+  // Back is the way out; only when it never arrives (no entry to go back to) is the tab switched directly.
+  var close = function () {
+    var moved = false, mark = function () { moved = true; }; window.addEventListener('popstate', mark, { once: true });
+    history.back();
+    setTimeout(function () { window.removeEventListener('popstate', mark); if (!moved && !panel.hidden && window.GNM_showTab) GNM_showTab(lastTab.replace('tab-', '')); }, 1500);
+  };
   head.querySelector('.cfs-back').addEventListener('click', close);
   var watch = function () {
     var on = !panel.hidden;

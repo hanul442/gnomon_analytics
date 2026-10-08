@@ -9,6 +9,8 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {createServer} from 'node:http';
 import {resolve,extname} from 'node:path';
 import {chromium} from 'playwright';
+import {parseOkxDeriv} from '../dist/sources/okxDeriv.js';
+const OKX_PARTS=JSON.parse(await readFile(new URL('../test/fixtures/okx.json',import.meta.url),'utf8'));
 import {renderSite} from '../dist/cli/daily.js';
 import {loadTickers} from '../dist/config/tickers.js';
 import {quickCalc} from '../dist/analysis/quickCalc.js';
@@ -45,6 +47,7 @@ marketFixture.ai.council.experts=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL',
 await writeFile(root+'/site/market-fixture.html',renderMarketReport(marketFixture));let marketPlan='alpha';
 const api=async(path,req,res)=>{
  res.setHeader('Content-Type','application/json');
+ if(path==='/api/deriv')return res.end(JSON.stringify({deriv:parseOkxDeriv('BTC',OKX_PARTS,new Date('2026-10-08T12:47:47Z'))}));
  if(path==='/api/deep/MARKET-DAILY/2026-10-07')return res.end(JSON.stringify(marketPlan==='free'?{error:'PLAN_REQUIRED',message:'플러스부터 열 수 있어요'}:{html:renderMarketDeep(marketFixture)}));
  if(path==='/api/admin/overview')return res.end(JSON.stringify({users:[],creditRequests:[],actions:[{id:'fixture-action',created_at:'2026-10-06T08:00:00Z',email:'long-mobile-test@example.test',kind:'report',symbol:'005500',detail:'모바일에서 확인할 리포트 요청 내용',credits:100,status:'pending'}],invites:[],pulses:[],feedback:[],questions:[],events:[],spend:{today:0,month:0,dailyCap:5}}));
  if(path==='/api/me')return res.end(JSON.stringify({user:{email:'fixture@example.test',rankAs:marketPlan==='alpha'?'pro':marketPlan,plan:marketPlan,planName:marketPlan==='alpha'?'알파':marketPlan},credits:{balance:400},costs:CREDIT_COST,survey:{onboarding:true,pulseDue:false}}));
@@ -68,7 +71,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/reports/fixture-done')return res.end(JSON.stringify({status:'done',symbol:'999999',dataDate:'2026-09-01',...(String(req.headers.referer||'').includes('fresh=1')?{generatedAt:'2026-10-07T09:30:00Z'}:{}),fragments:{scenarios:scenarioPanel(scenarioReport),ai:'<section id="debate"><button type="button" class="card db-preview" data-room-open aria-controls="db-room">토론방 입장</button><div class="db-room" id="db-room" hidden><header class="db-room-h"><button type="button" class="db-room-x" data-room-close>‹</button></header><div class="db-room-body"><div class="card debate"><div class="db-chips"></div><div class="db-turn" data-speaker="MARKET"><div class="db-who"><b>시장 데스크</b></div><div class="db-bubble">테스트 토론</div></div><details class="db-ev"><summary>근거</summary></details></div></div></div></section>'}}));
  return res.end(JSON.stringify({items:[],rows:[]}));
 };
-const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|deep|questions|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|valuation|experts|admin|alerts|notify|push)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
+const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|deep|questions|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|valuation|experts|admin|alerts|notify|push|deriv)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(8765,'localhost',r));
 let browser;const errors=[];
 try{
@@ -128,6 +131,7 @@ try{
  if(await page.locator('.hero-chart').count()){await page.locator('.hero-chart').click();await page.waitForFunction(()=>document.documentElement.classList.contains('chart-fs'));await page.goBack();await page.waitForFunction(()=>!document.documentElement.classList.contains('chart-fs')&&!document.getElementById('tab-home').hidden);}
  await page.goto(origin+'/coin.html?m=KRW-BTC#tab-chart');await page.locator('[data-coin-tf="D"]').waitFor();
  await page.locator('[data-coin-tf="D"]').click();await page.locator('.cfs-back').click();await page.locator('#t-fundamentals').click();await page.locator('#tab-flows .gnm-loading').waitFor({state:'detached'});assert.match(await page.locator('#tab-flows').innerText(),/OBV/);
+ await page.goto(origin+'/coin.html?m=KRW-BTC');await page.locator('.dv-card:not([hidden]) .dv-grid').waitFor();{const t=await page.locator('.dv-card').innerText();for(const k of ['펀딩비','미결제약정','롱/숏 계정 비율','최근 청산 3건'])assert.ok(t.includes(k),k);}await page.locator('.dv-card').screenshot({path:'test-artifacts/coin-deriv.png'});
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/admin.html');await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
