@@ -19,6 +19,7 @@ import {conclusionCard,CONCLUSION_CSS,CONCLUSION_JS} from '../dist/report/conclu
 import {buildDailyReport} from '../dist/report/dailyReport.js';
 import {renderCalculationPage} from '../dist/report/calculationPage.js';
 import {CREDIT_COST} from '../dist/report/plans.js';
+import {stockInfoFragments} from '../dist/report/stockInfo.js';
 const root=process.cwd(),origin='http://localhost:8765';
 process.env.GNM_API_URL=origin;
 await renderSite(root,await loadTickers(root+'/tickers.json'));
@@ -66,6 +67,8 @@ const api=async(path,req,res)=>{
  if(path==='/api/alerts/price'){if(req.method==='POST'){let b='';for await(const x of req)b+=x;priceAlerts.push(JSON.parse(b));return res.end(JSON.stringify({id:priceAlerts.length}));}return res.end(JSON.stringify({items:priceAlerts.map((a,i)=>({id:i+1,...a,created_at:'2026-10-06T00:00:00Z',fired_at:null}))}));}
  if(path==='/api/screens/compose')return res.end(JSON.stringify({name:'거래량 증가',explanation:'테스트 조건',screen:{match:'all',rules:[{f:'vol1',op:'>=',v:3}]}}));
  if(path==='/api/valuation')return res.end(JSON.stringify({items:{'999999':{per:15,estimatedPer:12,pbr:1.2},'000001':{per:10,estimatedPer:9,pbr:1},'000002':{per:-3,estimatedPer:null,pbr:0.8},'000003':{per:12,estimatedPer:11,pbr:1.1}}}));
+// G-148: a stock without a report fills 기업 체력 from /stockinfo (Naver data in production).
+ if(path.startsWith('/api/stockinfo/')){const Q=['202506','202509','202512','202603','202606'],R='fixture',at='2026-10-06T00:00:00Z';const finance=[...Q.map((p,i)=>({symbol:'999999',periodType:'QUARTER',period:p,isEstimate:false,metrics:{매출액:1000+i*120,영업이익:80+i*20,당기순이익:60+i*15,영업이익률:8+i,부채비율:120-i*8,당좌비율:90+i*6}})),...['2023','2024','2025'].map((y,i)=>({symbol:'999999',periodType:'ANNUAL',period:y+'12',isEstimate:false,metrics:{매출액:3800+i*400,영업이익:300+i*60,ROE:8+i,주당배당금:300+i*50}}))];return res.end(JSON.stringify(stockInfoFragments({symbol:'999999',name:'UI 테스트',close:175,now:new Date(),snapshot:{symbol:'999999',date:'2026-10-06',per:12,eps:14,estimatedPer:10,estimatedEps:17,pbr:1.1,bps:160,dividendYield:2.1,marketCap:5e11,high52w:190,low52w:120,consensus:{date:'2026-10-01',targetPriceMean:220,recommendationMean:4}},finance,research:[],flows:Array.from({length:25},(_,i)=>({symbol:'999999',date:'2026-09-'+String(i+1).padStart(2,'0'),foreignNet:1000*Math.sin(i),institutionNet:500,individualNet:-1500,foreignHoldRatio:12,close:170,volume:1e5,source:R,retrievedAt:at})),news:[],disclosures:[]})));}
  if(path.startsWith('/api/ticks/'))return res.end(JSON.stringify({kind:path.includes('KRW-')?'trades':'minuteCloses',points:Array.from({length:30},(_,i)=>({time:1791262800+i*60,price:150+Math.sin(i)*2,volume:10}))}));
  if(path.startsWith('/api/candles/'))return res.end(JSON.stringify({bars:bars.slice(-20).map((b,i)=>({...b,time:1791262800+i*900}))}));
  if(path==='/api/questions/mine'){const symbol=new URL(req.url,origin).searchParams.get('symbol');return res.end(JSON.stringify({items:questionHistory.filter(x=>!symbol||x.symbol===symbol).slice().reverse()}));}
@@ -77,7 +80,7 @@ const api=async(path,req,res)=>{
  if(path==='/api/reports/fixture-done')return res.end(JSON.stringify({status:'done',symbol:'999999',dataDate:'2026-09-01',...(String(req.headers.referer||'').includes('fresh=1')?{generatedAt:'2026-10-07T09:30:00Z'}:{}),fragments:{scenarios:scenarioPanel(scenarioReport),ai:'<section id="debate"><button type="button" class="card db-preview" data-room-open aria-controls="db-room">토론방 입장</button><div class="db-room" id="db-room" hidden><header class="db-room-h"><button type="button" class="db-room-x" data-room-close>‹</button></header><div class="db-room-body"><div class="card debate"><div class="db-chips"></div><div class="db-turn" data-speaker="MARKET"><div class="db-who"><b>시장 데스크</b></div><div class="db-bubble">테스트 토론</div></div><details class="db-ev"><summary>근거</summary></details></div></div></div></section>'}}));
  return res.end(JSON.stringify({items:[],rows:[]}));
 };
-const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|deep|questions|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|valuation|experts|admin|alerts|notify|push|deriv|quote)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
+const server=createServer(async(req,res)=>{try{const url=new URL(req.url,origin);if(/^\/(?:me|deep|questions|screens|candles|ask|reports|events|notifications|watchlist|watch|ticks|valuation|experts|admin|alerts|notify|push|deriv|quote|stockinfo)(?:\/|$)/.test(url.pathname))return api('/api'+url.pathname,req,res);const file=resolve(root+'/site','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+'/site/')){res.writeHead(403);return res.end();}const content=await readFile(file);res.setHeader('Content-Type',({'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.webp':'image/webp','.jpg':'image/jpeg'})[extname(file)]||'application/octet-stream');res.end(content);}catch{res.writeHead(404);res.end();}});
 await new Promise(r=>server.listen(8765,'localhost',r));
 let browser;const errors=[];
 try{
@@ -201,11 +204,13 @@ try{
  await page.goto(origin+'/myreports.html');await page.locator('#mr-list .mr-item').first().waitFor();assert.equal(await page.locator('#mr-list .mr-item').count(),2);
  await page.locator('.mr-tabs [data-f=failed]').click();assert.equal(await page.locator('#mr-list .mr-item').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('.mr-tabs [data-f=""]').click();await page.screenshot({path:'test-artifacts/myreports.png',fullPage:true});
- // G-127: 종목정보 in Toss order (시세 → 투자자 동향 → 투자 지표 → 재무 …) and no sideways scroll on a phone.
+ // G-148: 기업 체력 in order (한눈에 → 투자 지표 → 재무제표 → 애널리스트 의견) and no sideways scroll on a phone.
  for (const width of [390,1280]) {
   await page.setViewportSize({width,height:844});await page.goto(origin+'/stock.html?c=999999');await page.locator('#main[aria-busy]').waitFor({state:'detached'});
   await page.evaluate(()=>{const t=document.querySelector('[aria-controls=tab-fundamentals]');if(t)t.click();});await page.locator('#tab-fundamentals .si-card').first().waitFor();
-  const heads=await page.$$eval('#tab-fundamentals .si-card h2',x=>x.map(e=>e.textContent));assert.equal(heads[0],'시세',heads.join(','));
+  const heads=await page.$$eval('#tab-fundamentals .si-card h2',x=>x.map(e=>e.textContent));assert.equal(heads[0],'투자 지표',heads.join(','));assert.ok(!heads.includes('시세')&&!heads.includes('안정성')&&!heads.includes('배당'),'no card repeats another (G-148): '+heads.join(','));
+  // G-148: 기업 체력 한눈에 on pages without a report too; 재무제표 simple, every table in a full-screen layer.
+  await page.locator('#tab-fundamentals .ig-hc').waitFor();if(await page.locator('[data-dlg-open=fs-detail]').count()){await page.locator('[data-dlg-open=fs-detail]').click();await page.locator('dialog#fs-detail[open]').waitFor();const db=await page.locator('dialog#fs-detail').boundingBox();if(width===390)assert.ok(db.width>=389,'재무제표 자세히 is full screen on a phone');await page.goBack();await page.locator('dialog#fs-detail[open]').waitFor({state:'detached'});}
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/stock-info-'+width+'.png',fullPage:true});
   // Scenario rows line their title column up whatever the price text's length.
   await page.evaluate(()=>{const t=document.querySelector('[aria-controls=tab-home]');if(t)t.click();});

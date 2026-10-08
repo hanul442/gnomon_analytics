@@ -41,11 +41,11 @@ export function edgeFundamentals(report: DailyReport): string {
   const e = report.edge;
   if (!e) return '';
   const sur = e.surprises.length ? `<div class="card"><div class="head"><h2>실적 서프라이즈</h2><span class="sub">발표 전에 저장해 둔 예상치와 비교</span></div><div class="table-wrap"><table class="compact"><thead><tr><th>분기</th><th>항목</th><th class="num">실제</th><th class="num">발표 전 예상</th><th class="num">차이</th></tr></thead><tbody>${e.surprises.map((s) => `<tr><td class="nowrap">${qLabel(s.period)}</td><td>${esc(s.metric)}</td><td class="num">${s.actual.toLocaleString('ko-KR')}억</td><td class="num">${s.estimate.toLocaleString('ko-KR')}억<small class="muted"> (${esc(s.estimatedAt)})</small></td><td class="num ${s.pct > 0 ? 'up' : s.pct < 0 ? 'down' : ''}">${s.pct > 0 ? '+' : ''}${s.pct.toFixed(1)}%</td></tr>`).join('')}</tbody></table></div></div>`
-    : `<div class="card"><div class="head"><h2>실적 서프라이즈</h2></div><p class="muted small">발표 전 예상치를 저장한 분기가 아직 없어요. 지금부터 쌓아서 다음 실적 발표부터 비교해요.</p></div>`;
+    : ''; // G-148: an empty card is left out (it only said there was nothing yet).
   const d = e.dividend;
   const div = d ? `<div class="card"><div class="head"><h2>배당</h2></div><ul class="edge-list">${d.dps != null ? `<li>최근 주당 배당금 <b>${won(d.dps)}</b>${d.yieldPct != null ? ` · 지금 가격 기준 <b>${d.yieldPct.toFixed(2)}%</b>` : ''}${d.payoutPct != null ? ` · 배당성향 ${d.payoutPct.toFixed(0)}%` : ''}</li>` : ''}${d.dpsEst != null ? `<li>올해 예상 <b>${won(d.dpsEst)}</b>${d.yieldEstPct != null ? ` (${d.yieldEstPct.toFixed(2)}%)` : ''} · 증권가 추정</li>` : ''}${d.decision ? `<li>최근 배당 결정 <a href="${dartViewerUrl(d.decision.receiptNo)}" target="_blank" rel="noopener">${esc(d.decision.date)} ${esc(d.decision.title)}</a></li>` : ''}</ul></div>` : '';
   const nx = e.nextEarnings ? `<div class="card"><div class="head"><h2>다음 실적 발표</h2></div><p class="edge-sum"><b>${esc(e.nextEarnings.period)}</b> · ${esc(e.nextEarnings.label)}</p><p class="fine">${esc(e.nextEarnings.basis)}. 정확한 날짜는 회사 공시로 확인하세요.</p></div>` : '';
-  return `<section class="block edge-sec"><div class="block-head"><h2>실적·배당 일정</h2></div><div class="edge-grid">${sur}${div}${nx}</div></section>`;
+  return sur || div || nx ? `<section class="block edge-sec"><div class="block-head"><h2>실적·배당 일정</h2></div><div class="edge-grid">${sur}${div}${nx}</div></section>` : '';
 }
 
 /** 뉴스·공시: every surfaced filing of the last 180 days with what it means. */

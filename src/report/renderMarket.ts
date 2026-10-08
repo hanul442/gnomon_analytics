@@ -8,6 +8,8 @@ import type { ForecastScore, PriceForecast, TechnicalFairValue } from '../analys
 import type { Footprint, StructureSnapshot } from '../analysis/structure.js';
 import type { FinancePeriod } from '../types.js';
 import type { FlowSection, MarketSection } from './marketSection.js';
+import type { FullStatements } from '../sources/dartStatements.js';
+import { healthInfographic, statementChart, statementsCard } from './infographics.js';
 import { esc } from './html.js';
 import { won, tone, pct as fmtPct } from './format.js';
 const pct = (v: number | null, digits = 1) => fmtPct(v, digits, '없음');
@@ -183,24 +185,33 @@ ${hits}</svg>`;
 
 const FOOTPRINT = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' } as const;
 
+/** 투자자 동향 (G-148): who bought over 20 or 5 sessions, one bar each; the head of 수급. */
+function investorTrend(f: FlowSection): string {
+  const f20 = f.sums.find((x) => x.days === 20), f5 = f.sums.find((x) => x.days === 5);
+  if (!f20 && !f5) return '';
+  const rows = ([['개인', 'individual'], ['외국인', 'foreign'], ['기관', 'institution']] as const);
+  // Amounts when the report has them (shares × close); older reports only kept shares.
+  const byValue = [f20, f5].some((x) => x && rows.some(([, k]) => x[`${k}Value` as 'foreignValue'] != null));
+  const val = (x: typeof f20, k: (typeof rows)[number][1]) => (x ? (byValue ? x[`${k}Value` as 'foreignValue'] ?? null : x[k] ?? null) : null);
+  const max = Math.max(1, ...rows.flatMap(([, k]) => [Math.abs(val(f20, k) ?? 0), Math.abs(val(f5, k) ?? 0)]));
+  const line = (x: typeof f20) => rows.map(([l, k]) => { const v = val(x, k); const w = v == null ? 0 : Math.abs(v) / max * 50; return `<div class="si-flow"><span>${l}</span><div class="si-fbar"><i class="${v != null && v < 0 ? 'neg' : 'pos'}" style="width:${w.toFixed(1)}%;${v != null && v < 0 ? `right:50%` : 'left:50%'}"></i></div><b class="${tone(v)}">${byValue ? krw(v) : shares(v)}</b></div>`; }).join('');
+  const hold = f.days.at(-1)?.foreignHoldRatio;
+  return `<section class="card si-card"><div class="head"><h2>투자자 동향</h2><span class="sub">${byValue ? '순매수 금액(어림)' : '순매수 수량'}</span></div><div class="seg si-seg" role="tablist" aria-label="기간"><button type="button" data-si-f="20" aria-selected="true">20일</button><button type="button" data-si-f="5" aria-selected="false">5일</button></div><div data-si-fl="20">${line(f20)}</div><div data-si-fl="5" hidden>${line(f5)}</div>${hold != null ? `<p class="fine">외국인 보유율 ${hold.toFixed(2)}%${f.holdRatioChange20 != null ? ` · 20일 ${f.holdRatioChange20 > 0 ? '+' : ''}${f.holdRatioChange20.toFixed(2)}%p` : ''}</p>` : ''}</section>`;
+}
+
 /** `lockFootprint` wraps our footprint reading (Plus); the investor flows themselves are public data and stay free. */
 export function flowsPanel(flow: FlowSection | null, fp: Footprint, lockFootprint: (html: string) => string = (h) => h): string {
-  if (!flow) return `<div class="grid2 tight"><div class="card"><div class="head"><h2>누적 순매수</h2></div><div class="v2-mask" aria-label="수급 자료 없음"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>아직 수급 자료를 받지 못했어요.</p></div></div><div class="card"><div class="head"><h2>수급 흔적</h2></div><p class="empty">🔒 투자자별 수급 자료가 필요해요.</p></div></div><div class="card" style="margin-top:16px"><h2>기간별 순매수 합계</h2><p class="empty">자료가 준비되면 이 위치에 표시돼요.</p></div>`;
+  if (!flow) return `<div class="card"><div class="head"><h2>투자자 동향</h2></div><div class="v2-mask" aria-label="수급 자료 없음"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>아직 수급 자료를 받지 못했어요.</p></div></div>`;
   const legend = (['foreign', 'institution', 'individual'] as const).map((k) => `<span><i style="background:${FLOW_COLORS[k]}"></i>${{ foreign: '외국인', institution: '기관', individual: '개인' }[k]}</span>`).join('');
-  const sums = flow.sums.map((s) => `<tr><td>최근 ${s.days}거래일</td><td class="num ${tone(s.foreign)}">${both(s.foreignValue, s.foreign)}</td><td class="num ${tone(s.institution)}">${both(s.institutionValue, s.institution)}</td><td class="num ${tone(s.individual)}">${both(s.individualValue, s.individual)}</td></tr>`).join('');
-  const recent = [...flow.days].reverse().slice(0, 10).map((d) => `<tr><td class="nowrap">${esc(d.date)}</td><td class="num ${tone(d.foreignNet)}">${both(d.foreignValue, d.foreignNet)}</td><td class="num ${tone(d.institutionNet)}">${both(d.institutionValue, d.institutionNet)}</td><td class="num ${tone(d.individualNet)}">${both(d.individualValue, d.individualNet)}</td><td class="num">${d.foreignHoldRatio === null ? '없음' : `${d.foreignHoldRatio.toFixed(2)}%`}</td></tr>`).join('');
+  const recent = [...flow.days].reverse().slice(0, 10).map((d) => `<tr><td class="nowrap">${esc(d.date.slice(5))}</td><td class="num ${tone(d.foreignNet)}">${both(d.foreignValue, d.foreignNet)}</td><td class="num ${tone(d.institutionNet)}">${both(d.institutionValue, d.institutionNet)}</td><td class="num ${tone(d.individualNet)}">${both(d.individualValue, d.individualNet)}</td></tr>`).join('');
   const fpTone = fp.state === 'ACCUMULATION_LIKE' ? 'up' : fp.state === 'DISTRIBUTION_LIKE' ? 'down' : '';
-  return `<div class="grid2 tight">
+  return `<div class="grid2 tight">${investorTrend(flow)}
 <div class="card"><div class="head"><h2>누적 순매수</h2><div class="legend-inline">${legend}</div></div>${flowChart(flow)}
-<p class="fine">${flow.days.length}거래일 동안 투자자별 순매수 금액(순매수 주식 수 × 그날 종가, 추정)을 더해 간 선이에요. 선 위에 올리면 그날 숫자가 보여요.</p></div>
+<details class="more"><summary>최근 10거래일 보기</summary><div class="table-wrap"><table class="compact"><thead><tr><th>날짜</th><th class="num">외국인</th><th class="num">기관</th><th class="num">개인</th></tr></thead><tbody>${recent}</tbody></table></div><p class="fine">출처: 네이버 증권 투자자별 매매동향. 기타법인 등은 빠져 있어 세 줄의 합이 0이 아닐 수 있어요.</p></details></div>
 ${lockFootprint(`<div class="card"><div class="head"><h2>수급 흔적</h2></div>
 <div class="signal-label ${fpTone}" style="text-align:left">${FOOTPRINT[fp.state]}</div><div class="tally">점수 ${fp.score > 0 ? '+' : ''}${fp.score} (−100 분산 ~ +100 매집)</div>
 <ul class="plain">${fp.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>
-<div class="facts one"><div><span class="label">외국인 보유율 20일 변화</span><b class="${tone(flow.holdRatioChange20)}">${flow.holdRatioChange20 === null ? '없음' : `${flow.holdRatioChange20 > 0 ? '+' : ''}${flow.holdRatioChange20.toFixed(2)}%p`}</b></div></div>
-<p class="fine">거래량과 투자자별 순매수로 본 흔적이에요. 누가 샀는지는 네이버의 투자자 구분까지만 말하고, 조작의 증거가 아니에요.</p></div>`)}</div>
-<div class="card" style="margin-top:16px"><div class="head"><h2>기간별 순매수 합계</h2></div><div class="table-wrap"><table><thead><tr><th>기간</th><th class="num">외국인</th><th class="num">기관</th><th class="num">개인</th></tr></thead><tbody>${sums}</tbody></table></div>
-<h3 class="why-h">최근 10거래일</h3><div class="table-wrap"><table class="compact"><thead><tr><th>날짜</th><th class="num">외국인</th><th class="num">기관</th><th class="num">개인</th><th class="num">외국인 보유율</th></tr></thead><tbody>${recent}</tbody></table></div>
-<p class="fine">출처: 네이버 증권 투자자별 매매동향. 기타법인 등은 빠져 있어 세 줄의 합이 0이 아닐 수 있어요.</p></div>`;
+<p class="fine">거래량과 투자자별 순매수로 본 흔적이에요. 조작의 증거가 아니에요.</p></div>`)}</div>`;
 }
 
 /** Quarterly revenue and operating profit, estimates hatched. One axis (KRW 100M). */
@@ -261,75 +272,72 @@ export function quickInfoCard(market: MarketSection | undefined, close: number |
   return `<section class="card qi-card" id="quick-info"><div class="head"><h2>종목 정보</h2><a class="qi-more" href="#tab-fundamentals">기업 체력 ›</a></div>${ranges}${cells.length ? `<div class="si-grid qi-grid">${cells.join('')}</div>` : ''}${who ? `<div class="qi-flow"><span class="qi-k">최근 5일 순매수</span>${who}</div>` : ''}</section>`;
 }
 
+/** 재무제표, simple (G-148): one picture per statement under 손익·재무·현금흐름; 자세히 보기 opens every table full screen. */
+function financeCard(market: MarketSection, st?: FullStatements): string {
+  const q = market.quarters.filter((p) => !p.isEstimate);
+  const tabs: [string, string][] = [];
+  // 손익: quarterly sales and operating profit (estimates hatched), or DART's yearly bars.
+  const is = market.quarters.length >= 2 ? `${earningsChart(market.quarters)}<p class="ig-note legend-inline"><span><i class="sw-rev"></i>매출액</span><span><i class="sw-op"></i>영업이익</span><span><i class="sw-est"></i>추정</span><span>분기 · 억원</span></p>` : st ? statementChart(st, 'IS') : '';
+  if (is) tabs.push(['손익', is]);
+  // 재무: debt and quick ratios side by side (부채비율 100% 이하·당좌비율 100% 이상이 무난).
+  const stb = q.filter((p) => p.metrics['부채비율'] != null || p.metrics['당좌비율'] != null).slice(-5);
+  const ratio = (k: string, good: 'low' | 'high') => {
+    const vs = stb.map((p) => p.metrics[k] ?? null), ref = 100, top = Math.max(ref * 1.25, ...vs.map((v) => v ?? 0)) * 1.08;
+    const ok = (v: number) => (good === 'low' ? v <= ref : v >= ref), last = vs.at(-1);
+    if (vs.every((v) => v == null)) return '';
+    return `<div class="si-stab"><div class="si-sk"><b>${k}</b><span class="${last == null ? '' : ok(last) ? 'si-ok' : 'si-warn'}">${last == null ? '없음' : `${last.toFixed(0)}% · ${ok(last) ? '무난' : '주의'}`}</span></div>
+<div class="si-cols" style="--ref:${(ref / top).toFixed(3)}"><em>${ref}%</em>${stb.map((p, i2) => { const v = vs[i2]; return `<div><span>${v == null ? '-' : v.toFixed(0)}</span><i class="${v == null ? '' : ok(v) ? 'ok' : 'warn'}" style="height:${v == null ? 0 : Math.max(3, (v / top) * 100).toFixed(1)}%"></i><small>${p.period.slice(2, 4)}.${p.period.slice(4)}</small></div>`; }).join('')}</div></div>`;
+  };
+  const bs = stb.length >= 2 ? `<div class="si-stabs">${ratio('부채비율', 'low')}${ratio('당좌비율', 'high')}</div><p class="ig-note">부채비율은 빚 ÷ 자기자본(낮을수록 좋음), 당좌비율은 현금성 자산 ÷ 단기 부채(높을수록 좋음)예요.</p>` : st ? statementChart(st, 'BS') : '';
+  if (bs) tabs.push(['재무', bs]);
+  const cf = st ? statementChart(st, 'CF') : '';
+  if (cf) tabs.push(['현금흐름', cf]);
+  if (!tabs.length) return '';
+  const detail = statementsCard(market, st);
+  return `<section class="card si-card fs-simple"><div class="head"><h2>재무제표</h2>${detail ? '<button type="button" class="si-more" data-dlg-open="fs-detail">자세히 보기 ›</button>' : ''}</div>
+<div class="seg ig-seg" role="tablist" aria-label="재무제표 종류">${tabs.map(([l], i) => `<button type="button" data-fs="s${i}" aria-selected="${i === 0}">${l}</button>`).join('')}</div>
+${tabs.map(([, html], i) => `<div data-fsl="s${i}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
+${detail ? `<dialog class="v2-dialog fs-dlg" id="fs-detail" aria-label="재무제표 자세히"><header><button type="button" class="dialog-x" data-dlg-close aria-label="닫기">닫기</button><h2>재무제표</h2></header>${detail}</dialog>` : ''}</section>`;
+}
+
 /**
- * 종목정보 (G-127, 토스 순서): 시세 → 투자자 동향 → 투자 지표 → 재무 → 안정성 → 배당 → 애널리스트 의견 → 시장 대비·증권사 리포트.
- * Every card shows only what the data has; a missing card is left out rather than filled with dashes.
+ * 기업 체력 (G-148, 토스 순서): 한눈에 → 투자 지표 → 재무제표 → 애널리스트 의견(+증권사 리포트) → 시장 대비.
+ * Price ranges live in 요약's 종목 정보 and investor flows in 수급, so neither repeats here. Every card shows
+ * only what the data has; a missing card is left out rather than filled with dashes.
  */
-export function stockInfoCards(market: MarketSection, close: number | null, name: string, bars: readonly Bar[] = []): string {
+export function stockInfoCards(market: MarketSection, close: number | null, _name: string, bars: readonly Bar[] = [], st?: FullStatements): string {
   const s = market.snapshot, out: string[] = [];
   const card = (title: string, body: string, sub = '') => out.push(`<section class="card si-card"><div class="head"><h2>${esc(title)}</h2>${sub ? `<span class="sub">${sub}</span>` : ''}</div>${body}</section>`);
-  // 시세
-  const last = bars.at(-1), year = bars.filter((b) => b.date >= (last ? new Date(Date.parse(last.date) - 365 * 864e5).toISOString().slice(0, 10) : ''));
-  const now = close ?? last?.close ?? null;
-  if (now && (last || s)) {
-    const hi52 = year.length > 100 ? Math.max(...year.map((b) => b.high)) : s?.high52w ?? null, lo52 = year.length > 100 ? Math.min(...year.map((b) => b.low)) : s?.low52w ?? null;
-    card('시세', `${last ? rangeBar('1일 범위', last.low, last.high, now, last.date.slice(5).replace('-', '/')) : ''}${hi52 && lo52 ? rangeBar('1년 범위', lo52, hi52, now, `최고가 대비 ${pct((now / hi52 - 1) * 100)}`) : ''}
-<div class="si-grid">${last ? cell('시가', won(last.open)) + cell('종가', won(last.close)) + cell('거래량', `${last.volume.toLocaleString('ko-KR')}주`) + cell('거래대금(추정)', eok(last.volume * last.close)) : ''}</div>`);
-  }
-  // 투자자 동향
-  const f = market.flows, f20 = f?.sums.find((x) => x.days === 20), f5 = f?.sums.find((x) => x.days === 5);
-  if (f && (f20 || f5)) {
-    const rows = ([['개인', 'individual'], ['외국인', 'foreign'], ['기관', 'institution']] as const);
-    // Amounts when the report has them (shares × close); older reports only kept shares.
-    const byValue = [f20, f5].some((x) => x && rows.some(([, k]) => x[`${k}Value` as 'foreignValue'] != null));
-    const val = (x: typeof f20, k: (typeof rows)[number][1]) => (x ? (byValue ? x[`${k}Value` as 'foreignValue'] ?? null : x[k] ?? null) : null);
-    const max = Math.max(1, ...rows.flatMap(([, k]) => [Math.abs(val(f20, k) ?? 0), Math.abs(val(f5, k) ?? 0)]));
-    const line = (x: typeof f20) => rows.map(([l, k]) => { const v = val(x, k); const w = v == null ? 0 : Math.abs(v) / max * 50; return `<div class="si-flow"><span>${l}</span><div class="si-fbar"><i class="${v != null && v < 0 ? 'neg' : 'pos'}" style="width:${w.toFixed(1)}%;${v != null && v < 0 ? `right:50%` : 'left:50%'}"></i></div><b class="${tone(v)}">${byValue ? krw(v) : shares(v)}</b></div>`; }).join('');
-    const hold = f.days.at(-1)?.foreignHoldRatio;
-    card('투자자 동향', `<div class="seg si-seg" role="tablist" aria-label="기간"><button type="button" data-si-f="20" aria-selected="true">20일</button><button type="button" data-si-f="5" aria-selected="false">5일</button></div><div data-si-fl="20">${line(f20)}</div><div data-si-fl="5" hidden>${line(f5)}</div>${hold != null ? `<p class="fine">외국인 보유율 ${hold.toFixed(2)}%${f.holdRatioChange20 != null ? ` · 20일 ${f.holdRatioChange20 > 0 ? '+' : ''}${f.holdRatioChange20.toFixed(2)}%p` : ''}. ${byValue ? '순매수 금액은 수량 × 종가로 어림한 값이에요.' : ''}</p>` : ''}`, byValue ? '순매수 금액' : '순매수 수량');
-  }
-  // 투자 지표
+  const now = close ?? bars.at(-1)?.close ?? null;
+  // 투자 지표 (the dividend yield only: payout and history are under 실적·배당 and 재무제표 자세히)
   const q = market.quarters.filter((p) => !p.isEstimate), y = market.years.filter((p) => !p.isEstimate);
   const sales4 = q.length >= 4 ? q.slice(-4).reduce((a, p) => a + (p.metrics['매출액'] ?? NaN), 0) : null;
   const roe = y.at(-1)?.metrics['ROE'] ?? q.at(-1)?.metrics['ROE'] ?? null;
   if (s || q.length) {
     const cap = s?.marketCap ?? null, psr = cap && sales4 && Number.isFinite(sales4) && sales4 > 0 ? cap / (sales4 * 1e8) : null;
-    const hold = market.flows?.days.at(-1)?.foreignHoldRatio ?? null;
-    card('투자 지표', `<div class="si-grid">${cell('시가총액', eok(cap))}${cell('PER', num(s?.per, '배'), 'PER')}${cell('추정 PER', num(s?.estimatedPer, '배'))}${cell('PBR', num(s?.pbr, '배'), 'PBR')}${cell('ROE', num(roe, '%'), 'ROE')}${cell('PSR', num(psr, '배'), 'PSR')}${cell('EPS', s?.eps == null ? '없음' : won(s.eps))}${cell('BPS', s?.bps == null ? '없음' : won(s.bps))}${cell('배당수익률', num(s?.dividendYield, '%'))}${cell('외국인 보유율', num(hold, '%'))}</div>
-<p class="fine">PER·PBR·배당수익률은 네이버 증권, ROE는 최근 결산${y.at(-1) ? `(${y.at(-1)!.period.slice(0, 4)})` : ''}, PSR은 시가총액 ÷ 최근 4분기 매출액이에요.</p>`);
+    const cells = [cell('시가총액', eok(cap)), cell('PER', num(s?.per, '배')), s?.estimatedPer != null ? cell('추정 PER', num(s.estimatedPer, '배')) : '', cell('PBR', num(s?.pbr, '배')), roe != null ? cell('ROE', num(roe, '%')) : '', psr != null ? cell('PSR', num(psr, '배')) : '',
+      s?.eps != null ? cell('EPS', won(s.eps)) : '', s?.bps != null ? cell('BPS', won(s.bps)) : '', s?.dividendYield != null ? cell('배당수익률', num(s.dividendYield, '%')) : ''].filter(Boolean);
+    card('투자 지표', `<div class="si-grid">${cells.join('')}</div>
+<p class="fine">네이버 증권 기준. ROE는 최근 결산, PSR은 시가총액 ÷ 최근 4분기 매출액이에요.</p>`);
   }
-  // 재무
-  if (market.quarters.length) {
-    card('재무', `${earningsChart(market.quarters)}
-<details class="more"><summary>표로 보기</summary><div class="table-wrap"><table class="compact"><thead><tr><th>분기</th><th class="num">매출액</th><th class="num">영업이익</th><th class="num">영업이익률</th><th class="num">순이익</th></tr></thead><tbody>${market.quarters.map((p) => `<tr><td class="nowrap">${p.period.slice(0, 4)}.${p.period.slice(4)}${p.isEstimate ? ' <span class="badge b-LOW">추정</span>' : ''}</td><td class="num">${fmt(p.metrics['매출액'])}</td><td class="num">${fmt(p.metrics['영업이익'])}</td><td class="num">${p.metrics['영업이익률'] == null ? '없음' : `${p.metrics['영업이익률']!.toFixed(1)}%`}</td><td class="num">${fmt(p.metrics['당기순이익'])}</td></tr>`).join('')}</tbody></table></div></details>
-<p class="fine">단위 억원. 출처: 네이버 증권(기업 실적 분석). 추정은 증권사 컨센서스예요.</p>`, '<span class="legend-inline"><span><i class="sw-rev"></i>매출액</span><span><i class="sw-op"></i>영업이익</span><span><i class="sw-est"></i>추정</span></span>');
-  }
-  // 안정성
-  const st = q.filter((p) => p.metrics['부채비율'] != null || p.metrics['당좌비율'] != null).slice(-6);
-  if (st.length >= 2) {
-    // Bars on a common scale with the value on each and a dashed reference (부채비율 100% 이하·당좌비율 100% 이상이 무난).
-    const bars2 = (k: string, good: 'low' | 'high') => {
-      const vs = st.map((p) => p.metrics[k] ?? null), ref = 100, top = Math.max(ref * 1.25, ...vs.map((v) => v ?? 0)) * 1.08;
-      const ok = (v: number) => (good === 'low' ? v <= ref : v >= ref), last = vs.at(-1);
-      return `<div class="si-stab"><div class="si-sk"><b>${k}</b><span class="${last == null ? '' : ok(last) ? 'si-ok' : 'si-warn'}">${last == null ? '없음' : `${last.toFixed(1)}% · ${ok(last) ? '무난' : '주의'}`}</span></div>
-<div class="si-cols" style="--ref:${(ref / top).toFixed(3)}"><em>${ref}%</em>${st.map((p, i2) => { const v = vs[i2]; return `<div><span>${v == null ? '-' : v.toFixed(0)}</span><i class="${v == null ? '' : ok(v) ? 'ok' : 'warn'}" style="height:${v == null ? 0 : Math.max(3, (v / top) * 100).toFixed(1)}%"></i><small>${p.period.slice(2, 4)}.${p.period.slice(4)}</small></div>`; }).join('')}</div>
-<p class="si-note">${good === 'low' ? '빚 ÷ 자기자본. 낮을수록 빚 부담이 적어요.' : '현금성 자산 ÷ 단기 부채. 높을수록 단기 지급 여력이 커요.'}</p></div>`;
-    };
-    card('안정성', bars2('부채비율', 'low') + bars2('당좌비율', 'high'), '최근 분기');
-  }
-  // 배당
-  const dps = y.filter((p) => p.metrics['주당배당금'] != null).slice(-4);
-  if (dps.length || s?.dividendYield) {
-    card('배당', `<div class="si-grid">${cell('배당수익률', num(s?.dividendYield, '%'))}${dps.length ? cell(`주당배당금 (${dps.at(-1)!.period.slice(0, 4)})`, won(dps.at(-1)!.metrics['주당배당금']!)) : ''}</div>${dps.length > 1 ? `<div class="si-dps">${dps.map((p) => `<span>${p.period.slice(0, 4)}<b>${won(p.metrics['주당배당금']!)}</b></span>`).join('')}</div>` : ''}<p class="fine">연간 결산 기준이에요. 지급 시기와 횟수는 공시 원문에서 확인해 주세요.</p>`);
-  }
-  // 애널리스트 의견
+  const fin = financeCard(market, st);
+  if (fin) out.push(fin);
+  // 애널리스트 의견 + 최근 증권사 리포트 (one card)
   const cons = s?.consensus;
-  if (cons?.targetPriceMean && now) {
-    const up = (cons.targetPriceMean / now - 1) * 100, rec = cons.recommendationMean;
-    const recLabel = rec == null ? '' : rec >= 4.5 ? '강력 매수' : rec >= 3.5 ? '매수' : rec >= 2.5 ? '중립' : rec >= 1.5 ? '매도' : '강력 매도';
-    card('애널리스트 의견', `<div class="si-target"><div><span>평균 목표가</span><b>${won(cons.targetPriceMean)}</b><small class="${tone(up)}">현재가 대비 ${pct(up)}</small></div>${rec != null ? `<div><span>투자의견 평균</span><b>${recLabel}</b><small>${rec.toFixed(2)} / 5</small></div>` : ''}</div>${now <= cons.targetPriceMean ? rangeBar('현재가 → 목표가', now, cons.targetPriceMean, now, '', ['현재가', '목표가']) : rangeBar('목표가 → 현재가', cons.targetPriceMean, now, now, '목표가보다 위', ['목표가', '현재가'])}<p class="fine">증권사 컨센서스(${esc(cons.date)})예요. 우리 판단이 아니에요.</p>`);
+  // G-117: each report opens on Naver (summary and the broker's PDF) in a new tab.
+  const li = (r: MarketSection['research'][number]) => `<li><span class="why">${esc(r.date.slice(5))} ${esc(r.broker)}</span> ${/^\d+$/.test(r.id) ? `<a href="https://m.stock.naver.com/research/company/${esc(r.id)}" target="_blank" rel="noopener">${esc(r.title)} ↗</a>` : esc(r.title)}</li>`;
+  const rs = market.research;
+  const reports = rs.length ? `<h3 class="si-h3">최근 증권사 리포트</h3><ul class="plain research">${rs.slice(0, 3).map(li).join('')}</ul>${rs.length > 3 ? `<details class="more"><summary>${rs.length - 3}개 더 보기</summary><ul class="plain research">${rs.slice(3).map(li).join('')}</ul></details>` : ''}` : '';
+  if ((cons?.targetPriceMean && now) || reports) {
+    let head = '';
+    if (cons?.targetPriceMean && now) {
+      const up = (cons.targetPriceMean / now - 1) * 100, rec = cons.recommendationMean;
+      const recLabel = rec == null ? '' : rec >= 4.5 ? '강력 매수' : rec >= 3.5 ? '매수' : rec >= 2.5 ? '중립' : rec >= 1.5 ? '매도' : '강력 매도';
+      head = `<div class="si-target"><div><span>평균 목표가</span><b>${won(cons.targetPriceMean)}</b><small class="${tone(up)}">현재가 대비 ${pct(up)}</small></div>${rec != null ? `<div><span>투자의견 평균</span><b>${recLabel}</b><small>${rec.toFixed(2)} / 5</small></div>` : ''}</div>${now <= cons.targetPriceMean ? rangeBar('현재가 → 목표가', now, cons.targetPriceMean, now, '', ['현재가', '목표가']) : rangeBar('목표가 → 현재가', cons.targetPriceMean, now, now, '목표가보다 위', ['목표가', '현재가'])}`;
+    }
+    card('애널리스트 의견', `${head}${reports}<p class="fine">증권사 컨센서스${cons?.date ? `(${esc(cons.date)})` : ''}와 리포트 제목이에요. 우리 판단이 아니에요.</p>`);
   }
-  return `<div class="si-wrap">${out.join('')}</div>`;
+  return out.length ? `<div class="si-wrap">${out.join('')}</div>` : '';
 }
 
 export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:flex;justify-content:space-between;align-items:baseline}.qi-card h2{font-size:17px;margin:0 0 4px}.qi-more{font-size:13.5px;font-weight:800;color:var(--accent-strong);text-decoration:none}.qi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.qi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}.qi-k{color:var(--fg2);font-weight:700;margin-right:auto}.qi-who{display:inline-flex;gap:6px;align-items:baseline}.qi-who small{color:var(--muted)}@media (max-width:520px){.qi-k{width:100%}}
@@ -340,28 +348,27 @@ export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:fle
 .si-stab{margin:6px 0 16px}.si-sk{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;margin-bottom:6px}.si-sk span{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.si-ok{color:#1d6b3a}.si-warn{color:#b4232b}.si-cols{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;height:110px;align-items:end;padding:0 0 18px;border-bottom:1px solid var(--line)}.si-cols::before{content:"";position:absolute;left:0;right:0;bottom:calc(18px + var(--ref) * 92px);border-top:1.5px dashed #9aa6b8}.si-cols em{position:absolute;right:0;bottom:calc(20px + var(--ref) * 92px);font-size:10.5px;font-style:normal;color:var(--muted)}.si-cols div{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}.si-cols div span{font-size:11.5px;font-weight:700;color:var(--fg2);margin-bottom:3px}.si-cols i{display:block;width:62%;max-width:34px;border-radius:5px 5px 0 0;background:#9fb3d9}.si-cols i.ok{background:#7fb38f}.si-cols i.warn{background:#e58a8d}.si-cols div:last-child i{filter:saturate(1.4) brightness(.85)}.si-cols small{position:absolute;bottom:-17px;font-size:10.5px;color:var(--muted)}.si-note{font-size:12px;color:var(--muted);margin:22px 0 0}
 .si-dps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.si-dps span{display:flex;flex-direction:column;font-size:12px;color:var(--muted);background:#f5f7fb;border-radius:10px;padding:6px 10px}.si-dps b{color:var(--fg);font-size:14px}
 .si-target{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.si-target div{display:flex;flex-direction:column;gap:2px}.si-target span{font-size:13px;color:var(--fg2)}.si-target b{font-size:22px;font-variant-numeric:tabular-nums}.si-target small{font-size:13px}
+.si-stabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.si-stabs .si-stab{margin:4px 0 6px}.si-stabs .si-cols{gap:5px}.si-stabs .si-sk{flex-direction:column;gap:2px}.si-stabs .si-sk span{font-size:14px}
+.si-more{border:0;background:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 0}.si-h3{font-size:14px;margin:14px 0 4px}.si-card .research li{margin:6px 0;font-size:13.5px;line-height:1.5}
+dialog.fs-dlg>header{display:flex;align-items:center;gap:6px}dialog.fs-dlg>header h2{font-size:17px;margin:0}dialog.fs-dlg .fs-full{border:0;box-shadow:none;padding:0;margin:0}
+@media (min-width:821px){dialog.v2-dialog.fs-dlg[open]{width:min(920px,calc(100% - 48px))!important}}
 @media (max-width:820px){.si-wrap{columns:1}}`;
 
 /** Toggle of the investor-trend period inside 종목정보. */
-export const STOCK_INFO_TOGGLE_JS = `document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-si-f]');if(!b)return;var c=b.closest('.si-card');c.querySelectorAll('[data-si-f]').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});c.querySelectorAll('[data-si-fl]').forEach(function(x){x.hidden=x.getAttribute('data-si-fl')!==b.getAttribute('data-si-f');});});`;
+export const STOCK_INFO_TOGGLE_JS = `document.addEventListener('click',function(e){var o=e.target.closest&&e.target.closest('[data-dlg-open]');if(o){var d=document.getElementById(o.getAttribute('data-dlg-open'));if(d&&!d.open)d.showModal();return;}var c=e.target.closest&&e.target.closest('[data-dlg-close]');if(c){var dd=c.closest('dialog');if(dd)dd.close();}});document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-si-f]');if(!b)return;var c=b.closest('.si-card');c.querySelectorAll('[data-si-f]').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});c.querySelectorAll('[data-si-fl]').forEach(function(x){x.hidden=x.getAttribute('data-si-fl')!==b.getAttribute('data-si-f');});});`;
 
-export function fundamentalsPanel(market: MarketSection, close: number | null, name = '이 종목', bars: readonly Bar[] = []): string {
+export function fundamentalsPanel(market: MarketSection, close: number | null, name = '이 종목', bars: readonly Bar[] = [], st?: FullStatements): string {
   const bench = market.benchmarks.map((b) => `<tr><td>${esc(b.name)}</td>${b.returns.map((r) => {
     const raw = r.stock !== null && r.benchmark !== null ? r.stock - r.benchmark : null;
     const diff = raw === null ? null : Math.abs(raw) < 0.05 ? 0 : raw;
     return `<td class="num"><span class="${tone(r.benchmark)}">${pct(r.benchmark)}</span><br><small class="${tone(diff)}">차이 ${diff === null ? '없음' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%p`}</small></td>`;
   }).join('')}</tr>`).join('');
   const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
-  // G-117: each report opens on Naver (summary and the broker's PDF) in a new tab.
-  const research = market.research.map((r) => `<li><span class="why">${esc(r.date)} ${esc(r.broker)}</span> ${/^\d+$/.test(r.id) ? `<a href="https://m.stock.naver.com/research/company/${esc(r.id)}" target="_blank" rel="noopener">${esc(r.title)} ↗</a>` : esc(r.title)}</li>`).join('');
-  return `${stockInfoCards(market, close, name, bars)}
-<div class="grid2 tight"><div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5거래일</th><th class="num">20거래일</th><th class="num">60거래일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
-<p class="fine">차이는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 값이에요.</p></div>
-<div class="card"><div class="head"><h2>최근 증권사 리포트</h2></div>${research ? `<ul class="plain research">${research}</ul>` : '<p class="empty">아직 없어요.</p>'}
-<p class="fine">제목과 증권사, 날짜만 모아요. 본문은 저장하지 않아요.</p></div></div>`;
+  const vs = bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
+<p class="fine">차이는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 값이에요.</p></div>` : '';
+  return `${healthInfographic(market, close)}${stockInfoCards(market, close, name, bars, st)}${vs}`;
 }
 
-const fmt = (v: number | null | undefined) => (v == null ? '없음' : Math.round(v).toLocaleString('ko-KR'));
 
 export function marketStatusWarning(market: MarketSection): string {
   const failed = market.status.filter((s) => !s.ok);

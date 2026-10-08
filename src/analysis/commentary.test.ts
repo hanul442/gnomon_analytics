@@ -128,24 +128,30 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
   assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v6');
+  assert.equal(c.promptVersion, 'gnm-committee-v7');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
 
-test('a coin or an ETF gets its own rules and asset line; a stock prompt is unchanged (G-56)', async () => {
+test('a coin or an ETF gets its own rules in the message; the cached system prompt is the same for all (G-56, G-149)', async () => {
   const reply = { stop_reason: 'end_turn', model: COMMENTARY_MODEL, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } };
-  const seen: { system: string; messages: { content: string }[] }[] = [];
+  const seen: { system: { text: string; cache_control?: { type: string } }[]; messages: { content: string }[] }[] = [];
   const coin = buildDailyReport({ symbol: 'KRW-BTC', name: '비트코인', kind: 'coin', date: '2026-09-30', generatedAt: new Date(AT), bars: bars.map((b) => ({ ...b, symbol: 'KRW-BTC' })), disclosures: [], sources: [], news: [], newsStatus: [] });
   await writeCommentary(coin, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT), tier: 'brief' });
   await writeCommentary({ ...report, kind: 'etf' }, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
   await writeCommentary(report, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
-  assert.match(seen[0]!.system, /가상자산\(코인\)/);
-  assert.match(seen[0]!.messages[0]!.content, /"자산_종류": "코인/);
+  await writeCommentary({ ...report, symbol: '005930', name: '삼성전자' }, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
+  assert.match(seen[0]!.messages[0]!.content, /가상자산\(코인\)/);
+  assert.match(seen[0]!.messages[0]!.content, /"자산_종류":"코인/);
   assert.doesNotMatch(coin.headline, /공시/);
-  assert.match(seen[1]!.system, /이 종목은 ETF예요/);
-  assert.doesNotMatch(seen[2]!.system, /ETF예요|가상자산/);
-  assert.doesNotMatch(seen[2]!.messages[0]!.content, /자산_종류/);
+  assert.match(seen[1]!.messages[0]!.content, /이 종목은 ETF예요/);
+  assert.doesNotMatch(seen[2]!.messages[0]!.content, /ETF예요|가상자산|자산_종류/);
+  // One system prompt for every stock and asset kind, marked for the provider's prompt cache.
+  assert.deepEqual(seen[1]!.system, seen[3]!.system);
+  assert.deepEqual(seen[2]!.system, seen[3]!.system);
+  assert.equal(seen[2]!.system[0]!.cache_control?.type, 'ephemeral');
+  assert.doesNotMatch(seen[2]!.system[0]!.text, /삼성전자|SK하이닉스|ETF예요|가상자산\(코인\)이에요/);
+  assert.match(seen[2]!.system[0]!.text, /분량/);
 });
 
 test('scenario probabilities sum to 100 in whole percents, or are left out (G-60)', () => {
@@ -222,8 +228,18 @@ test('deep reports ask for JSON in words (no grammar) and repair small slips bef
  const c=await writeCommentary(report,{client});
  assert.equal(c.status,'OK',c.error);
  assert.equal(seen[0].output_config.format,undefined,'no constrained grammar for the deep schema');
- assert.match(seen[0].system,/JSON 스키마/);
+ assert.match(seen[0].system[0].text,/JSON 스키마/);
  assert.deepEqual(c.desks?.map(d=>[d.desk,d.stance,d.view.kind]),[['TECHNICAL','BULLISH','INFERENCE']]);
  assert.equal(c.scenarios?.find(x=>x.kind==='BULL')?.trigger,1900000);
  assert.deepEqual(c.scenarios?.find(x=>x.kind==='BULL')?.zone,[1850000,2000000]);
+});
+
+test('cached prompt tokens bill at a tenth to read and 1.25× to write (G-149)', async () => {
+  const { usd } = await import('../cli/aiBudget.js');
+  const { usdOf } = await import('../worker/ask.js');
+  // Opus: $4 in, $20 out per million.
+  assert.equal(usd('claude-opus-5-5', 1_000_000, 0), 4);
+  assert.equal(Math.round(usd('claude-opus-5-5', 0, 0, 1_000_000, 0) * 100) / 100, 0.4);
+  assert.equal(usd('claude-opus-5-5', 0, 0, 0, 1_000_000), 5);
+  assert.equal(Math.round(usdOf('claude-opus-5-5', 0, 1_000_000, 1_000_000, 0) * 100) / 100, 20.4);
 });
