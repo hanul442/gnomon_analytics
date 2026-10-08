@@ -142,7 +142,7 @@ const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&
 export const MENU: readonly { title: string; items: readonly [string, string, string][] }[] = [
   // G-138: grouped by what people come for, each item a tile with an icon: the market, finding and AI,
   // their own things, then help and the account.
-  { title: '시장', items: [['📊', '시장 데일리', 'market-reports.html'], ['🧭', '테마별 종목', 'themes.html'], ['📡', '공시 레이더', 'signals.html'], ['🧺', 'ETF', 'etfs.html'], ['🪙', '코인', 'coins.html']] },
+  { title: '시장', items: [['📊', '시장 데일리', 'market-reports.html'], ['🧭', '테마별 종목', 'themes.html'], ['📡', '공시 레이더', 'signals.html'], ['🗽', '미국 주식', 'screener.html#us'], ['🧺', 'ETF', 'etfs.html'], ['🪙', '코인', 'coins.html']] },
   { title: '찾기·AI 리포트', items: [['🔎', '자세히 검색', 'screener.html'], ['🗂️', 'AI 리포트 모음', 'reports.html'], ['🆕', '오늘 나온 리포트', 'reports.html#today'], ['🎯', '성적표', 'scorecard.html']] },
   { title: '내 것', items: [['⭐', '관심 종목', 'watch.html'], ['🔔', '알림함', 'inbox.html'], ['📄', '내 리포트', 'myreports.html'], ['💬', '내 토론 기록', 'mydebates.html'], ['⚙️', '알림 설정', 'alerts.html']] },
   { title: '도움말', items: [['📘', '사용법', 'guide.html'], ['❓', 'FAQ', 'faq.html'], ['✉️', '1:1 문의', 'faq.html#ask'], ['✨', '업데이트 기록', 'updates.html'], ['📝', '이번 주 설문', 'survey.html?k=weekly']] },
@@ -313,7 +313,9 @@ export const INSTALL_JS = `
 export const LIVE_JS = `
   (function () {
     var G = window.GNM || {}, last = {}, ws = null, wsSet = '', timer = 0;
-    var won = function (v) { var a = Math.abs(v); return (a >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: a >= 1 ? 2 : 4 })) + '원'; };
+    // 3.0 (G-143): US codes start with a letter (AAPL.O, TSM); Korean ones with a digit, coins with KRW-.
+    var isUs = function (s) { return /^(?!KRW-)[A-Z][A-Z0-9-]{0,9}(\\.[A-Z])?$/.test(s); };
+    var won = function (v, sym) { var a = Math.abs(v); if (sym && isUs(sym)) return (v < 0 ? '-$' : '$') + a.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: a < 1 ? 4 : 2 }); return (a >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: a >= 1 ? 2 : 4 })) + '원'; };
     var sg = function (v) { return (v > 0 ? '+' : '') + v.toFixed(2) + '%'; };
     var paint = function (sym, q) {
       var prev = last[sym]; last[sym] = q;
@@ -322,8 +324,8 @@ export const LIVE_JS = `
         if (f === 'nowlabel') { el.textContent = q.open ? '지금' : '현재가'; return; }
         // The time of the last trade, so the reader sees how fresh the number is (G-128).
         var hm = q.at ? String(q.at).replace(/^.*T(\\d\\d:\\d\\d(:\\d\\d)?).*$/, '$1') : '';
-        if (f === 'tag') { el.hidden = false; el.textContent = q.open ? (q.session === 'pre' ? '● NXT 프리마켓' : q.session === 'after' ? '● NXT 애프터마켓' : '● 실시간') + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); return; }
-        if (f === 'price') el.textContent = won(q.price);
+        if (f === 'tag') { el.hidden = false; el.textContent = q.open ? (q.session === 'pre' ? (isUs(sym) ? '● 프리마켓' : '● NXT 프리마켓') : q.session === 'after' ? (isUs(sym) ? '● 애프터마켓' : '● NXT 애프터마켓') : '● 실시간') + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); return; }
+        if (f === 'price') el.textContent = won(q.price, sym);
         else if (f === 'pct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
         else if (f === 'arrowpct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
         else if (f === 'full') el.textContent = (q.change > 0 ? '▲' : q.change < 0 ? '▼' : '') + ' ' + Math.abs(q.change).toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + ' (' + sg(q.changePct) + ')';
@@ -334,6 +336,8 @@ export const LIVE_JS = `
     };
     var symbols = function () { var s = {}; document.querySelectorAll('[data-live]').forEach(function (el) { s[el.getAttribute('data-live')] = 1; }); return Object.keys(s); };
     // KRX 09:00–15:30 plus Nextrade's 08:00–20:00 (G-128).
+    // US pre-market 04:00 to after-market 20:00, New York time.
+    var usTrading = function () { try { var p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(new Date()), g = function (t) { return (p.filter(function (x) { return x.type === t; })[0] || {}).value; }; var m = Number(g('hour')) % 24 * 60 + Number(g('minute')); return ['Sat', 'Sun'].indexOf(g('weekday')) < 0 && m >= 240 && m <= 1200; } catch (e) { return true; } };
     var trading = function () { var k = new Date(Date.now() + 9 * 3600e3), d = k.getUTCDay(), m = k.getUTCHours() * 60 + k.getUTCMinutes(); return d > 0 && d < 6 && m >= 475 && m <= 1205; };
     var coins = function (list) {
       var want = list.filter(function (x) { return x.indexOf('KRW-') === 0; }).sort().join(',');
@@ -354,13 +358,17 @@ export const LIVE_JS = `
       if (G.api && codes.length && !document.hidden) {
         fetch(G.api + '/quote?s=' + codes.slice(0, 40).join(',')).then(function (r) { return r.json(); }).then(function (d) { (d.quotes || []).forEach(function (q) { paint(q.symbol, q); }); }).catch(function () {});
       }
-      timer = setTimeout(tick, trading() ? 4000 : 60000);
+      var us = list.filter(isUs);
+      if (G.api && us.length && !document.hidden) {
+        fetch(G.api + '/quote?u=' + us.slice(0, 20).join(',')).then(function (r) { return r.json(); }).then(function (d) { (d.quotes || []).forEach(function (q) { paint(q.symbol, q); }); }).catch(function () {});
+      }
+      timer = setTimeout(tick, trading() || (us.length && usTrading()) ? 4000 : 60000);
     };
     document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
     // The chart's last daily candle follows the live price on a report page (stocks and ETFs, open market).
     window.addEventListener('gnm-quote', function (e) {
       var C = window.GNMChart, d = e.detail, bar = document.getElementById('price-bar');
-      if (!C || !C.candle || !C.bars || !d.quote.open || (d.quote.session && d.quote.session !== 'regular') || !bar || !bar.querySelector('[data-live="' + d.symbol + '"]') || d.symbol.indexOf('KRW-') === 0) return;
+      if (!C || !C.candle || !C.bars || !d.quote.open || (d.quote.session && d.quote.session !== 'regular') || !bar || !bar.querySelector('[data-live="' + d.symbol + '"]') || d.symbol.indexOf('KRW-') === 0 || isUs(d.symbol)) return;
       try {
         var today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), b = C.bars[C.bars.length - 1], px = d.quote.price;
         if (!b || b.date > today) return;

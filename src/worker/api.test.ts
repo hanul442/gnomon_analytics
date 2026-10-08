@@ -24,6 +24,8 @@ function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
       seen.push(String(url));
       if (String(url).startsWith('https://api.resend.com')) { const b = JSON.parse(String(init!.body)); mails.push({ to: b.to[0], text: b.text }); return new Response('{}', { status: 200 }); }
       if (String(url).endsWith('/s/000660.json')) return Response.json({ name: 'SK하이닉스', market: 'KOSPI', bars: [['2026-10-02', 1, 2, 1, 2, 10]] });
+      if (String(url).startsWith('https://polling.finance.naver.com/api/realtime/worldstock/')) return Response.json({ datas: [{ reutersCode: String(url).split('/').pop(), closePrice: '336.67', compareToPreviousClosePrice: '3.04', fluctuationsRatio: '0.91', marketStatus: 'OPEN', localTradedAt: '2026-10-08T10:00:00-04:00' }] });
+      if (String(url).startsWith('https://www.okx.com/')) return Response.json(String(url).includes('XYZ') ? { code: '51001', data: [] } : String(url).includes('funding-rate') ? { code: '0', data: [{ fundingRate: '0.0001', fundingTime: '1791475200000' }] } : String(url).includes('/public/open-interest') ? { code: '0', data: [{ oiUsd: '2500000000' }] } : { code: '0', data: [] });
       if (String(url).startsWith('https://polling.finance.naver.com/')) return Response.json({ datas: [{ itemCode: '000660', closePrice: '1,860,000', compareToPreviousClosePrice: '18,000', fluctuationsRatio: '0.98', compareToPreviousPrice: { code: '2', name: 'RISING' }, marketStatus: 'OPEN', localTradedAt: '2026-10-05T12:00:00+09:00' }] });
       return new Response('no', { status: 404 });
     }) as typeof fetch,
@@ -375,6 +377,22 @@ test('live quotes come through the API, cached for a few seconds (G-62)', async 
   const calls = t.seen.filter((u) => u.includes('polling.finance')).length;
   assert.equal((await t.call('GET', '/quote?s=000660')).body.cached, true);
   assert.equal(t.seen.filter((u) => u.includes('polling.finance')).length, calls);
+});
+
+test('US quotes (u=) and coin derivatives come through the API, cached (G-142, G-143)', async () => {
+  const t = setup();
+  const a = await t.call('GET', '/quote?u=AAPL.O,TSM,005930');
+  assert.equal(a.status, 200);
+  assert.deepEqual(a.body.quotes.map((q: { symbol: string }) => q.symbol).sort(), ['AAPL.O', 'TSM']);
+  assert.equal(a.body.quotes[0].session, 'regular');
+  assert.equal((await t.call('GET', '/quote?u=AAPL.O,TSM')).body.cached, true);
+  const d = await t.call('GET', '/deriv?ccy=KRW-BTC');
+  assert.equal(d.status, 200);
+  assert.equal(d.body.deriv.instId, 'BTC-USDT-SWAP');
+  assert.equal(d.body.deriv.oi.usd, 2.5e9);
+  assert.equal((await t.call('GET', '/deriv?ccy=BTC')).body.cached, true);
+  assert.equal((await t.call('GET', '/deriv?ccy=XYZ')).status, 404);
+  assert.equal((await t.call('GET', '/deriv?ccy=../x')).status, 400);
 });
 
 test('an invited expert answers in the debate at the invite price (G-80)', async () => {

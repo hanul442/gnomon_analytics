@@ -13,6 +13,7 @@ import { publicPanels } from '../report/publicPanels.js';
 
 import { collectRiskFilings } from './riskCollect.js';
 import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
+import { writeUsPages } from './usStocks.js';
 import { chooseDailyPicks, type DailyPick } from '../analysis/dailyPicks.js';
 import { fetchUpbitDays, fetchUpbitDaysLong, UPBIT_SOURCE } from '../sources/upbit.js';
 import { escapeRegex } from './weekly.js';
@@ -206,7 +207,7 @@ export interface DailyRunResult {
   selected: string | null;
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; dailyPicks?: boolean }): Promise<DailyRunResult> {
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; usStocks?: boolean; dailyPicks?: boolean }): Promise<DailyRunResult> {
   const { root, now } = options;
   await configureSite(root);
   const today = kstParts(now);
@@ -325,6 +326,11 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const coins = await writeCoinPages(join(root, 'site'), { now: () => now, ...fetchOpt });
     universe.status.push(coins.status);
     coinList = coins.rows;
+  }
+  // 3.0 US stocks (G-143): best effort, never fails the run.
+  if (options.usStocks !== false) {
+    const us = await writeUsPages(join(root, 'site'), { now: () => now, ...fetchOpt });
+    universe.status.push(us.status);
   }
   // Filing risk flags for every listed company (G-49), shown next to screener results.
   const risk = await collectRiskFilings({ root, apiKey: options.apiKey, today: today.date, now: () => now, ...fetchOpt });
@@ -690,9 +696,10 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : day ? { reasons: [day.reason], tier: day.tier, pickDate: day.date, kind: day.kind } : {}) });
   }
   await writeAssets(siteDir);
-  await writeFile(join(siteDir, 'stock.html'), renderStockPage());
+  await writeFile(join(siteDir, 'stock.html'), renderStockPage('stock'));
   // Coins (G-54): the same chart page over site/c/, and the list.
-  await writeFile(join(siteDir, 'coin.html'), renderStockPage(true));
+  await writeFile(join(siteDir, 'coin.html'), renderStockPage('coin'));
+  await writeFile(join(siteDir, 'us.html'), renderStockPage('us'));
   // G-72: ETFs and coins are tabs of 찾기 now; the old addresses forward there.
   await writeFile(join(siteDir, 'coins.html'), renderCoinsRedirect('coin'));
   await writeFile(join(siteDir, 'etfs.html'), renderCoinsRedirect('etf'));

@@ -1,4 +1,5 @@
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
+import { parseWorldQuote, US_CODE, worldQuoteUrl } from '../sources/naverWorld.js';
 import { fetchOkxDeriv, type DerivSnapshot } from '../sources/okxDeriv.js';
 import { UNLOCK, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
@@ -297,7 +298,19 @@ route('GET', '/health', async () => ({ ok: true }));
 // origins). Public, at most 40 codes a call, answers cached for 8 seconds per code set in this isolate.
 const quoteCache = new Map<string, { at: number; quotes: Quote[] }>();
 route('GET', '/quote', async ({ req, deps, now }) => {
-  const codes = [...new Set((new URL(req.url).searchParams.get('s') ?? '').split(',').map((x) => x.trim().toUpperCase()).filter((x) => /^[0-9A-Z]{6}$/.test(x)))].slice(0, 40).sort();
+  const q = new URL(req.url).searchParams;
+  // 3.0 (G-143): US codes (u=AAPL.O,TSM) come from Naver's world-stock feed, one call per code, at most 20.
+  const us = [...new Set((q.get('u') ?? '').split(',').map((x) => x.trim().toUpperCase()).filter((x) => US_CODE.test(x)))].slice(0, 20).sort();
+  if (us.length) {
+    const key = `u:${us.join(',')}`, hit = quoteCache.get(key);
+    if (hit && now.getTime() - hit.at < 3000) return { quotes: hit.quotes, cached: true };
+    const quotes = (await Promise.all(us.map((c) => deps.fetch(worldQuoteUrl(c), { signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).then((r) => (r.ok ? r.json() : null)).then(parseWorldQuote).catch(() => null)))).filter((x): x is Quote => !!x);
+    if (!quotes.length) fail(502, 'UPSTREAM', '실시간 시세를 가져오지 못했어요.');
+    if (quoteCache.size > 500) quoteCache.clear();
+    quoteCache.set(key, { at: now.getTime(), quotes });
+    return { quotes };
+  }
+  const codes = [...new Set((q.get('s') ?? '').split(',').map((x) => x.trim().toUpperCase()).filter((x) => /^[0-9A-Z]{6}$/.test(x)))].slice(0, 40).sort();
   if (!codes.length) fail(400, 'NO_CODES', '종목 코드를 6자리로 보내 주세요.');
   const key = codes.join(','), hit = quoteCache.get(key);
   if (hit && now.getTime() - hit.at < 3000) return { quotes: hit.quotes, cached: true };
@@ -955,7 +968,7 @@ route('GET', '/watch', async ({ req, env, now }) => {
 
 route('POST', '/watch', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
-  const symbols = [...new Set((Array.isArray(b.symbols) ? b.symbols : []).filter((x): x is string => typeof x === 'string' && /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/.test(x)))].slice(0, 100);
+  const symbols = [...new Set((Array.isArray(b.symbols) ? b.symbols : []).filter((x): x is string => typeof x === 'string' && (/^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/.test(x) || US_CODE.test(x))))].slice(0, 100);
   await env.DB.prepare('INSERT INTO watchlists (user_id, symbols, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET symbols = excluded.symbols, updated_at = excluded.updated_at')
     .bind(u.id, JSON.stringify(symbols), iso(now)).run();
   return { ok: true, count: symbols.length, updatedAt: iso(now) };
