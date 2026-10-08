@@ -975,7 +975,7 @@ route('POST', '/watch', async ({ req, env, now }) => {
 });
 
 // G-109: browser settings that follow the account. Only known keys; each value a short string.
-const SETTING_KEY = /^gnm-(persona|prefs|ind|theme-sort|theme-direction|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/;
+const SETTING_KEY = /^gnm-(persona|prefs|ind|theme-sort|theme-direction|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z.-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/;
 route('GET', '/me/settings', async ({ req, env, now }) => {
   const u = await authed(req, env, now);
   const r = await env.DB.prepare('SELECT data, updated_at FROM user_settings WHERE user_id = ?').bind(u.id).first<{ data: string; updated_at: string }>();
@@ -989,6 +989,8 @@ route('POST', '/me/settings', async ({ req, env, now }) => {
   let size = 0;
   for (const [k, v] of Object.entries(raw)) {
     if (!SETTING_KEY.test(k) || typeof v !== 'string' || v.length > 20_000) continue;
+    // G-145: chart drawings follow the account on paid plans only.
+    if (k.startsWith('gnm-draw:') && u.plan === 'free') continue;
     size += k.length + v.length;
     if (size > 200_000) fail(413, 'SETTINGS_TOO_LARGE', '설정이 너무 커서 저장하지 못했어요. 차트 그림을 일부 지운 뒤 다시 시도해 주세요.');
     data[k] = v;

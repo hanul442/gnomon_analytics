@@ -50,7 +50,7 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   assert.ok(!page.includes('data-preset="momentum"') && page.includes('id="ind-reset"'));
   for (const s of ['id="ind-sheet"', 'id="strat-sheet"', 'id="active-pills"']) assert.ok(page.includes(s), s);
   // Chart v6: drawing tools, day/week/month and the index comparison (the benchmark series is embedded).
-  assert.ok(page.includes('data-draw="fib"') && page.includes('data-tf="W"') && page.includes('data-compare') && page.includes('id="benchmarks"') && page.includes('window.GNMChart'));
+  assert.ok(UI_JS.includes('피보나치 되돌림') && UI_JS.includes('롱 포지션') && page.includes('data-tf="W"') && page.includes('data-compare') && page.includes('id="benchmarks"') && page.includes('window.GNMChart'));
   // UI layer: price in the header after scrolling, a bottom tab bar, glossary terms, the indicator names marked for it.
   assert.ok(page.includes('id="price-bar"') && page.includes('class="bottom-nav"') && /assets\/ui\.[0-9a-f]{10}\.js/.test(page) && UI_JS.includes('"몬테카를로"') && APP_CSS.includes('.chat-fab') && page.includes('class="term-cell"'));
   // Plans: details sit behind Plus gates; anyone can ask the AI with credits.

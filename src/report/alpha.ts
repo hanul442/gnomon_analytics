@@ -24,8 +24,8 @@ export const ALPHA_CSS = `
 @media (max-width:820px){.wk-pulse{left:14px;bottom:78px}}
 .bell-btn{position:relative;border:1px solid rgba(255,255,255,.28);background:none;color:#fff;border-radius:999px;width:32px;height:30px;cursor:pointer;font-size:14px}.bell-btn i{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#e5484d;color:#fff;font:700 10px/16px inherit;font-style:normal;padding:0 4px}
 .bell-btn.push-on::after{content:'';position:absolute;left:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid var(--navy)}.bell-push{margin:2px 0 8px;padding:10px;border-radius:12px;background:#eef3fb;font-size:13px;display:flex;flex-direction:column;gap:6px}.bell-push.on{flex-direction:row;justify-content:space-between;align-items:center;background:#ecfdf3;color:#166534;font-weight:700}.bell-push button{font:inherit;font-weight:800;border-radius:10px;cursor:pointer}.bell-allow{border:0;background:var(--navy);color:#fff;padding:11px;font-size:14.5px}.bell-push.on button{border:1px solid #86efac;background:#fff;padding:5px 10px;font-size:12.5px;color:#166534}.bell-push small{color:var(--muted)}.home-alerts{display:block;margin:-4px 0 10px;padding:9px 12px;border-radius:12px;background:#fff7e6;border:1px solid #f4dca6;font-size:13.5px;text-decoration:none;color:var(--fg)}.home-alerts.on{background:#ecfdf3;border-color:#bbf7d0}
-.bell-pop{position:absolute;right:16px;top:58px;z-index:70;width:min(360px,calc(100vw - 24px));max-height:70vh;overflow:auto;background:#fff;color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(15,27,45,.22);padding:8px}
-.bell-head{display:flex;justify-content:space-between;align-items:center;padding:6px 10px 4px;font-size:13px}.bell-head button{border:0;background:none;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline}.bell-item{display:flex;align-items:flex-start;gap:2px}.bell-item a{flex:1;min-width:0}.bell-x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:8px 6px;cursor:pointer;border-radius:8px}.bell-x:hover{background:#eef1f6;color:var(--fg)}.bell-pop a{display:block;padding:9px 10px;border-radius:10px;text-decoration:none;color:inherit}.bell-pop a:hover{background:var(--accent-soft)}.bell-pop a.unread b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5484d;margin-right:6px;vertical-align:1px}.bell-pop small{display:block;color:var(--muted)}
+.bell-pop{position:fixed;right:12px;top:60px;z-index:190;width:min(380px,calc(100vw - 24px));max-height:min(70vh,560px);overflow:auto;background:#fff;color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(15,27,45,.22);padding:8px}
+.bell-head{display:flex;justify-content:space-between;align-items:center;padding:6px 10px 8px;font-size:14px;border-bottom:1px solid var(--line);margin-bottom:4px}.bell-head a{font-size:13px;font-weight:700;color:var(--accent-strong);padding:6px 4px!important}.bell-pop .bell-list a{display:flex!important;gap:10px;align-items:flex-start}.bell-ic{flex:none;font-size:18px;line-height:1.3}.bell-tx{min-width:0;display:flex;flex-direction:column;gap:1px}.bell-tx b{font-size:14px}.bell-tx small{font-size:12.5px;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.bell-tx time{font-size:11.5px;color:var(--muted)}.bell-pop a.bell-all{text-align:center;font-weight:800;color:var(--accent-strong);border-top:1px solid var(--line);margin-top:4px;border-radius:0 0 10px 10px;padding:12px}.bell-head button{border:0;background:none;color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer;text-decoration:underline}.bell-item{display:flex;align-items:flex-start;gap:2px}.bell-item a{flex:1;min-width:0}.bell-x{border:0;background:none;color:var(--muted);font-size:18px;line-height:1;padding:8px 6px;cursor:pointer;border-radius:8px}.bell-x:hover{background:#eef1f6;color:var(--fg)}.bell-pop a{display:block;padding:9px 10px;border-radius:10px;text-decoration:none;color:inherit}.bell-pop a:hover{background:var(--accent-soft)}.bell-pop a.unread b::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#e5484d;margin-right:6px;vertical-align:1px}.bell-pop small{display:block;color:var(--muted)}
 `;
 
 export const ALPHA_SCRIPT = `<script>
@@ -46,7 +46,12 @@ export const ALPHA_SCRIPT = `<script>
     return fetch(API + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined, keepalive: method === 'POST' && path === '/events' }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         j = j || {}; j._status = r.status;
-        if (r.status === 401 && s) { set(SK, null); set(MK, null); G.me = null; paint(); }
+        // Only an expired session logs out here: a wrong password (LOGIN_FAILED) or a 401 from some other call is
+        // checked against /me first, so one odd answer never makes a signed-in reader look signed out.
+        if (r.status === 401 && s && j.error !== 'LOGIN_FAILED') {
+          var out = function () { if (get(SK) === s) { set(SK, null); set(MK, null); G.me = null; paint(); } };
+          if (path === '/me') out(); else fetch(API + '/me', { headers: { Authorization: 'Bearer ' + s } }).then(function (m) { if (m.status === 401) out(); }).catch(function () {});
+        }
         return j;
       });
     }, function () { return { error: 'NETWORK', message: '연결이 끊겼어요. 잠시 뒤 다시 해 주세요.', _status: 0 }; });
@@ -104,8 +109,28 @@ export const ALPHA_SCRIPT = `<script>
     if (!G.me || !acct || document.getElementById('bell')) return;
     var b = document.createElement('button'); b.type = 'button'; b.id = 'bell'; b.className = 'bell-btn'; b.setAttribute('aria-label', '알림'); b.innerHTML = '🔔';
     nav.insertBefore(b, acct);
-    // G-135: the bell opens 알림함 (a page), not a popup over the screen.
-    b.addEventListener('click', function () { G.track('bell_open', {}); location.href = base + 'inbox.html'; });
+    // The bell opens a small window under it (the owner's choice, phones too); 알림함 has the full list.
+    var ICONS = { watchReport: '⭐', daily: '📰', request: '📄', price: '🔔', screen: '🔎', update: '✨', intraday: '⚡' };
+    var pop = null, close = function () { if (pop) { pop.remove(); pop = null; b.setAttribute('aria-expanded', 'false'); } };
+    var when = function (iso) { var d = new Date(String(iso).replace(' ', 'T') + (/Z|[+-]\d\d:?\d\d$/.test(iso) ? '' : 'Z')), k = new Date(d.getTime() + 9 * 3600e3), now = new Date(Date.now() + 9 * 3600e3); var hm = String(k.getUTCHours()).padStart(2, '0') + ':' + String(k.getUTCMinutes()).padStart(2, '0'); return k.toISOString().slice(0, 10) === now.toISOString().slice(0, 10) ? hm : (k.getUTCMonth() + 1) + '/' + k.getUTCDate() + ' ' + hm; };
+    b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false');
+    b.addEventListener('click', function (e) {
+      e.stopPropagation(); if (pop) { close(); return; }
+      G.track('bell_open', {});
+      pop = document.createElement('div'); pop.className = 'bell-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '알림');
+      var r0 = b.getBoundingClientRect(); pop.style.top = Math.round(r0.bottom + 8) + 'px';
+      pop.innerHTML = '<div class="bell-head"><b>알림</b><a href="' + base + 'alerts.html">설정</a></div><div class="bell-list"><p class="muted small" style="padding:10px">불러오는 중이에요…</p></div><a class="bell-all" href="' + base + 'inbox.html">알림함 전체 보기 ›</a>';
+      document.body.appendChild(pop); b.setAttribute('aria-expanded', 'true');
+      G.call('GET', '/notifications').then(function (r) {
+        if (!pop) return; var list = pop.querySelector('.bell-list');
+        if (r.error) { list.innerHTML = '<p class="muted small" style="padding:10px">알림을 불러오지 못했어요.</p>'; return; }
+        var items = (r.items || []).slice(0, 8);
+        list.innerHTML = items.length ? items.map(function (n) { return '<a class="' + (n.read_at ? '' : 'unread') + '" href="' + esc(n.link || base + 'inbox.html') + '"><span class="bell-ic" aria-hidden="true">' + (ICONS[n.kind] || '🔔') + '</span><span class="bell-tx"><b>' + esc(n.title) + '</b><small>' + esc(n.body || '') + '</small><time>' + when(n.created_at) + '</time></span></a>'; }).join('') : '<p class="muted small" style="padding:14px 10px">새 알림이 없어요. 관심 종목의 새 리포트, 가격 알림, 업데이트 소식이 여기로 와요.</p>';
+        if (r.unread) { G.call('POST', '/notifications/read'); var dot = b.querySelector('i'); if (dot) dot.remove(); }
+      });
+    });
+    document.addEventListener('click', function (e) { if (pop && !pop.contains(e.target) && e.target !== b) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && pop) close(); });
     G.call('GET', '/notifications').then(function (r) {
       if (r.error) return;
       if (r.unread) b.insertAdjacentHTML('beforeend', '<i>' + r.unread + '</i>');
@@ -129,13 +154,16 @@ export const ALPHA_SCRIPT = `<script>
   // G-109: settings that follow the account — view, chart indicators and drawings, dismissed tours and popups.
   // Writes to these keys while signed in are noticed wherever they happen and sent a moment later; on a new
   // browser the account's copy is applied and the page reloads once. Changes made signed out stay local.
-  var SYNC = /^gnm-(persona|prefs|ind|theme-sort|theme-direction|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/, SAT = 'gnm-settings-at', applying = false, pushT = null;
-  var syncKeys = function () { var out = {}; try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && SYNC.test(k)) out[k] = localStorage.getItem(k); } } catch (e) {} return out; };
+  var SYNC = /^gnm-(persona|prefs|ind|theme-sort|theme-direction|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z.-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/, SAT = 'gnm-settings-at', applying = false, pushT = null;
+  // G-145: drawings stay on this device for the free plan; following the account is a paid feature.
+  var paidDraw = function () { var p = document.documentElement.getAttribute('data-plan') || 'free'; return p !== 'free'; };
+  var syncable = function (k) { return SYNC.test(k) && (k.indexOf('gnm-draw:') !== 0 || paidDraw()); };
+  var syncKeys = function () { var out = {}; try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && syncable(k)) out[k] = localStorage.getItem(k); } } catch (e) {} return out; };
   var pushSettings = function () { clearTimeout(pushT); pushT = setTimeout(function () { if (G.me) G.call('POST', '/me/settings', { data: syncKeys() }).then(function (r) { if (r && r.updatedAt) set(SAT, String(Date.parse(r.updatedAt))); }); }, 1500); };
   try {
     var S = Storage.prototype, rawSet = S.setItem, rawDel = S.removeItem;
-    S.setItem = function (k, v) { rawSet.call(this, k, v); if (!applying && this === window.localStorage && SYNC.test(k) && get(SK)) { rawSet.call(this, SAT, String(Date.now())); pushSettings(); } };
-    S.removeItem = function (k) { rawDel.call(this, k); if (!applying && this === window.localStorage && SYNC.test(k) && get(SK)) { rawSet.call(this, SAT, String(Date.now())); pushSettings(); } };
+    S.setItem = function (k, v) { rawSet.call(this, k, v); if (!applying && this === window.localStorage && syncable(k) && get(SK)) { rawSet.call(this, SAT, String(Date.now())); pushSettings(); } };
+    S.removeItem = function (k) { rawDel.call(this, k); if (!applying && this === window.localStorage && syncable(k) && get(SK)) { rawSet.call(this, SAT, String(Date.now())); pushSettings(); } };
   } catch (e) {}
   var settingsSync = function () {
     if (!G.me) return Promise.resolve(false);
@@ -147,7 +175,7 @@ export const ALPHA_SCRIPT = `<script>
         applying = true;
         try {
           Object.keys(local).forEach(function (k) { if (!(k in data)) { localStorage.removeItem(k); changed = true; } });
-          Object.keys(data).forEach(function (k) { if (SYNC.test(k) && typeof data[k] === 'string' && local[k] !== data[k]) { localStorage.setItem(k, data[k]); changed = true; } });
+          Object.keys(data).forEach(function (k) { if (syncable(k) && typeof data[k] === 'string' && local[k] !== data[k]) { localStorage.setItem(k, data[k]); changed = true; } });
         } catch (e) {}
         applying = false; set(SAT, String(serverAt));
         return changed;
@@ -253,12 +281,12 @@ export const ALPHA_SCRIPT = `<script>
       var panel=f.closest('.panel')||f.closest('.join-wrap')?.parentNode, debate=panel&&panel.querySelector('.card.debate');
       var box = debate || f.closest('.card') || f.parentNode, anchor = spot();
       var mine = mineTurn(q, who);
-      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-wait'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b></div><div class="db-bubble"><div class="chat-progress">${ORBS.replace('data-orb=', 'data-size="64" data-orb=')}<span>질문을 읽고 생각하는 중</span></div><div class="stream-answer"></div></div>';wait.setAttribute('aria-busy','true');wait.setAttribute('aria-live','polite');
+      var wait = document.createElement('div'); wait.className = 'db-turn db-mid db-guest db-wait'; wait.innerHTML = '<div class="db-who"><b>' + esc(who) + '</b></div><div class="db-bubble"><div class="chat-progress">${ORBS.replace('data-orb=', 'data-size="22" data-orb=')}<span>생각 중…</span></div></div>';wait.setAttribute('aria-busy','true');wait.setAttribute('aria-live','polite');
       anchor.parentNode.insertBefore(mine, anchor); anchor.parentNode.insertBefore(wait, anchor);
       wait.scrollIntoView({ block: 'center', behavior: 'smooth' });
       var btn = f.querySelector('[type=submit]'); btn.disabled = true;
       var said = [].map.call(box.querySelectorAll('.db-turn:not(.db-typing):not(.db-wait)'), function (t) { var w = t.querySelector('.db-who b'), x = t.querySelector('.db-bubble'); return (w ? w.textContent : '') + ': ' + (x ? x.textContent.replace(/\\s+/g, ' ').trim() : ''); }).join('\\n').slice(-5000);
-      G.askStream({ tier: 'standard', source: 'debate', expert: key, question: q, symbol: f.getAttribute('data-symbol'), reportDate:f.getAttribute('data-report-date'), page: (f.getAttribute('data-report-date')||'')+' AI 위원회 토론:\\n' + said },function(text){wait.querySelector('.stream-answer').textContent=text;wait.querySelector('.chat-progress span:not(.orbs)').textContent='답변 쓰는 중';wait.querySelector('canvas').dataset.orb='composing';}).then(function (r) {
+      G.askStream({ tier: 'standard', source: 'debate', expert: key, question: q, symbol: f.getAttribute('data-symbol'), reportDate:f.getAttribute('data-report-date'), page: (f.getAttribute('data-report-date')||'')+' AI 위원회 토론:\\n' + said },function(){}).then(function (r) {
         btn.disabled = false; wait.remove();
         if (r.error) { mine.remove(); toast(r.message); if (r.error === 'NO_CREDITS' || r.error === 'PLAN_REQUIRED') location.href = base + 'pricing.html'; return; }
         var x = { q: q, who: who, key: key, speaker: r.speaker || who, a: r.answer, credits: r.credits, at: new Date().toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) };

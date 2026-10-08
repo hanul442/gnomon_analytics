@@ -55,7 +55,7 @@ export const COIN_CHART_JS = `
    }).catch(function(e){if(id===ticket)note.textContent=e.message||'연결을 확인해 주세요. 다시 선택하면 재시도합니다.';}).finally(function(){layer.end();});
   });
   // Daily/weekly/monthly and period controls leave minute mode before their normal handlers run.
-  document.addEventListener('click',function(e){if(e.target.closest('[data-tf],[data-range]')){ticket++;if(saved.length||line)restore();var tfButton=e.target.closest('[data-tf]');note.textContent=tfButton&&tfButton.dataset.tf==='W'?'일봉을 합산한 주봉':tfButton&&tfButton.dataset.tf==='M'?'일봉을 합산한 월봉':'일봉';if(e.target.closest('[data-range]'))press(controls.querySelector('[data-coin-tf="D"]'));else controls.querySelectorAll('[data-coin-tf]').forEach(function(b){if(b.dataset.coinTf!=='D')b.setAttribute('aria-pressed','false');});}},true);
+  document.addEventListener('click',function(e){if(e.target.closest('[data-tf],[data-range]')){ticket++;if(saved.length||line)restore();var tfButton=e.target.closest('[data-tf]');note.textContent=tfButton&&tfButton.dataset.tf==='W'?'일봉을 합산한 주봉':tfButton&&tfButton.dataset.tf==='M'?'일봉을 합산한 월봉':'';if(e.target.closest('[data-range]'))press(controls.querySelector('[data-coin-tf="D"]'));else controls.querySelectorAll('[data-coin-tf]').forEach(function(b){if(b.dataset.coinTf!=='D')b.setAttribute('aria-pressed','false');});}},true);
  };
  window.GNM_coinChartReady=ready;document.addEventListener('DOMContentLoaded',ready);ready();
 })();`;

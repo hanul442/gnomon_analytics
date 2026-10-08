@@ -22,7 +22,7 @@ export const CHAT_CSS = `
 .msg.me{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:4px}.msg.ai{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
 .msg-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:6px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted)}.msg-meta .rate{margin-left:auto;display:flex;gap:4px}.msg-meta .rate button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:1px 7px;cursor:pointer;font-size:13px}.msg-meta .rate button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
 .msg.sys{align-self:stretch;max-width:none;background:#fff7e6;border:1px solid #f1d9a6;color:#5b3d00}
-.msg.wait{color:var(--muted)}.chat-progress .orbs,.chat-progress .orbs canvas{width:36px;height:36px;flex:none}.chat-progress{min-height:36px;display:flex;align-items:center;gap:4px;font-size:12px}.stream-answer{white-space:pre-wrap;color:var(--fg);margin-top:6px}.stream-answer:empty{display:none}.msg.wait i{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:3px;animation:blink 1s infinite}.msg.wait i:nth-child(2){animation-delay:.2s}.msg.wait i:nth-child(3){animation-delay:.4s}@keyframes blink{50%{opacity:.2}}
+.msg.wait{color:var(--muted)}.chat-progress .orbs,.chat-progress .orbs canvas{width:22px;height:22px;flex:none}.chat-progress{min-height:24px;display:flex;align-items:center;gap:4px;font-size:12px}.stream-answer{white-space:pre-wrap;color:var(--fg);margin-top:6px}.stream-answer:empty{display:none}.msg.wait i{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:3px;animation:blink 1s infinite}.msg.wait i:nth-child(2){animation-delay:.2s}.msg.wait i:nth-child(3){animation-delay:.4s}@keyframes blink{50%{opacity:.2}}
 .chat-sugg{display:flex;flex-wrap:wrap;gap:6px}.chat-sugg button{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 11px;font:inherit;font-size:13px;cursor:pointer}.chat-sugg button:hover{border-color:var(--accent);color:var(--accent)}
 .chat-foot{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:#fff}
 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tiers button{border:1px solid var(--line-strong);background:#fff;border-radius:10px;padding:6px 4px;font:inherit;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;line-height:1.3}.tiers button b{font-size:13px}.tiers button small{color:var(--muted)}
@@ -134,7 +134,7 @@ export const CHAT_SCRIPT = `<script>
     }
     busy = true; send.disabled = true; q.value = '';
     add('me', esc(text));
-    var wait = add('ai wait', '<div class="chat-progress">${ORBS.replace('data-orb=', 'data-size="64" data-orb=')}<span>답변 준비 중</span></div><div class="stream-answer"></div>');
+    var wait = add('ai wait', '<div class="chat-progress">${ORBS.replace('data-orb=', 'data-size="22" data-orb=')}<span>생각 중…</span></div>');
     wait.setAttribute('aria-busy','true');
     var h = history();
     var done = function (m) { wait.remove(); h.push(m); remember(h); var d = add('ai', md(m.a) + meta(m)); bindRate(d, m); busy = false; send.disabled = false; };
@@ -144,7 +144,7 @@ export const CHAT_SCRIPT = `<script>
       return;
     }
     if (g.track) g.track('ask_sent', { tier: t.key, symbol: symbol() });
-    g.askStream({ tier: t.key, question: text, symbol: symbol() || undefined, page: pageText(), history: h.filter(function (m) { return m.sym === symbol(); }).slice(-3).map(function (m) { return { q: m.q, a: m.a }; }) },function(text){wait.querySelector('.stream-answer').textContent=text;wait.querySelector('.chat-progress span:not(.orbs)').textContent='답변 작성 중';wait.querySelector('canvas').dataset.orb='composing';}).then(function (r) {
+    g.askStream({ tier: t.key, question: text, symbol: symbol() || undefined, page: pageText(), history: h.filter(function (m) { return m.sym === symbol(); }).slice(-3).map(function (m) { return { q: m.q, a: m.a }; }) },function(){}).then(function (r) {
       if (r.error) {
         wait.remove(); busy = false; send.disabled = false;
         if (r.error === 'NO_CREDITS') need(r.message, {}); else if (r.error === 'LOGIN_REQUIRED') need(r.message, { login: true }); else add('sys', esc(r.message || '답을 받지 못했어요.'));

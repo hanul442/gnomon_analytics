@@ -188,8 +188,6 @@ dialog.v2-dialog[open]{position:fixed!important;inset:0!important;margin:0!impor
 dialog.v2-dialog.rj[open]{padding:0!important}
 dialog.v2-dialog>header{position:sticky;top:0;z-index:3;background:#fff;margin:0 -16px 10px!important;padding:14px 16px 12px!important;border-bottom:1px solid var(--line)}
 dialog.v2-dialog.rj>header{margin:0!important}
-.bell-pop{position:fixed!important;inset:0!important;width:100%!important;max-height:none!important;height:100dvh;border:0!important;border-radius:0!important;box-shadow:none!important;z-index:200!important;padding:0 8px calc(12px + env(safe-area-inset-bottom))!important}
-.bell-pop .bell-head{position:sticky;top:0;background:#fff;z-index:2;padding:14px 8px 12px!important;border-bottom:1px solid var(--line);margin-bottom:6px}
 .flt-pop{padding:0!important;place-items:stretch!important}.flt-sheet{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
 .sheet{align-items:stretch!important}.sheet-body{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;padding-top:0!important}.sheet-head{top:0!important;margin:0 -18px 8px!important;padding:14px 18px 12px!important;border-bottom:1px solid var(--line)}
 .chat{inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;max-width:100%!important;height:100dvh!important;border-radius:0!important}
@@ -376,8 +374,9 @@ export const LIVE_JS = `
         C.candle.update({ time: today, open: same ? b.open : px, high: same ? Math.max(b.high, px) : px, low: same ? Math.min(b.low, px) : px, close: px });
       } catch (x) {}
     });
-    // Parts drawn later (AI fragments, the unlocked deep report) get the last known price right away.
-    var again = null; new MutationObserver(function (list) { if (again || !list.some(function (m) { return [].some.call(m.addedNodes, function (n) { return n.nodeType === 1 && (n.matches('[data-live]') || n.querySelector('[data-live]')); }); })) return; again = setTimeout(function () { again = null; Object.keys(last).forEach(function (sym) { paint(sym, last[sym]); }); }, 100); }).observe(document.body, { childList: true, subtree: true });
+    // Parts drawn later (AI fragments, the unlocked deep report, a free page that learns its code from data) get the
+    // last known price right away, and a symbol never fetched yet is asked for now instead of at the next slow tick.
+    var again = null; new MutationObserver(function (list) { if (again || !list.some(function (m) { return m.type === 'attributes' || [].some.call(m.addedNodes, function (n) { return n.nodeType === 1 && (n.matches('[data-live]') || n.querySelector('[data-live]')); }); })) return; again = setTimeout(function () { again = null; Object.keys(last).forEach(function (sym) { paint(sym, last[sym]); }); if (symbols().some(function (x) { return !last[x]; })) tick(); }, 100); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-live'] });
     window.GNM_live = { tick: tick, last: last };
     setTimeout(tick, 300);
   })();`;

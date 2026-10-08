@@ -8,6 +8,7 @@ const PAGES = (process.env.PAGES ?? [
   'index.html', 'reports.html', 'market-reports.html', 'themes.html', 'signals.html', 'screener.html',
   '005930/index.html', '005930/index.html#tab-technical', '005930/index.html#tab-ai', '005930/index.html#tab-fundamentals', '005930/index.html#tab-news',
   '000660/index.html', 'stock.html?c=015760', 'stock.html?c=015760#tab-fundamentals', 'coin.html?m=KRW-BTC', 'guide.html', 'pricing.html',
+  'us.html?s=AAPL.O', 'us.html?s=NVDA.O', 'screener.html#us', 'screener.html#coin', 'watch.html', 'inbox.html', 'alerts.html', 'updates.html', 'scorecard.html',
 ].join(',')).split(',');
 const WIDTHS = [390, 1280];
 // Logged-in passes: {plan: session token} for throwaway audit accounts the workflow creates (never real users).
@@ -31,7 +32,7 @@ async function pass(label, pages, widths, session) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e.message).slice(0, 160)));
   page.on('console', (m) => { if (m.type() === 'error' && !/api\.upbit\.com\/websocket.*429/.test(m.text())) errors.push(m.text().slice(0, 160)); });
-  page.on('response', (r) => { if (r.status() >= 400 && !/favicon|\/events|\/me\b/.test(r.url())) errors.push(`${r.status()} ${r.url().replace(BASE, '').slice(0, 100)}`); });
+  page.on('response', (r) => { if (r.status() >= 400 && (r.status() === 401 || !/favicon|\/events|\/me\b/.test(r.url()))) errors.push(`${r.status()} ${r.request().method()} ${r.url().replace(BASE, '').replace(/^https:\/\/[^/]+/, '').slice(0, 100)}`); });
   await page.addInitScript((s) => { try { localStorage.setItem('gnm-tour-done', '1'); sessionStorage.setItem('gnm-ad-x', '1'); sessionStorage.setItem('gnm-nudge', '1'); if (s) localStorage.setItem('gnm-session', s); } catch {} }, session || '');
   try { await page.goto(BASE + path, { waitUntil: 'load', timeout: 45000 }); } catch (e) { console.log(JSON.stringify({ as: label, width, path, fatal: String(e).slice(0, 160) })); problems++; await page.close(); continue; }
   const hash = path.split('#')[1]; if (hash) await page.locator(`a[href="#${hash}"]`).first().click({ timeout: 3000 }).catch(() => {});
@@ -57,6 +58,27 @@ async function pass(label, pages, widths, session) {
     const per = document.querySelector('#peers .pe-per'); if (per && vis(per) && /불러오|못했|모자라/.test(per.textContent)) out.peersPer = per.textContent.trim().slice(0, 60);
     const seats = document.querySelectorAll('#tab-ai .parliament, #tab-ai [data-parliament]').length; if (seats > 1) out.aiParliaments = seats;
     const debates = document.querySelectorAll('#tab-ai #debate').length; if (debates > 1) out.aiDebates = debates;
+    // G-144 intent checks: what the owner asked to avoid. Small tap targets on phones, pop-ups over the page,
+    // old or raw wording, cards full of 없음, very long screens.
+    if (innerWidth < 800) {
+      const small = [...document.querySelectorAll('a[href], button, [role=tab], select, input:not([type=hidden])')].filter((e) => {
+        if (!vis(e) || e.closest('p, li > small, .fine, footer, .price-bar, .tr-tip, [hidden]')) return false;
+        const r = e.getBoundingClientRect(); return r.width > 0 && (r.height < 32 || r.width < 32) && r.bottom > 0;
+      }).map((e) => (e.getAttribute('aria-label') || e.textContent || e.className).trim().replace(/\s+/g, ' ').slice(0, 18));
+      if (small.length > 3) out.smallTargets = { n: small.length, eg: [...new Set(small)].slice(0, 8) };
+    }
+    const pops = [...document.querySelectorAll('[role=dialog], dialog[open], [class*="pop"]')].filter((e) => {
+      if (!vis(e)) return false; const cs = getComputedStyle(e); const r = e.getBoundingClientRect();
+      return (cs.position === 'fixed' || cs.position === 'absolute') && r.width * r.height > innerWidth * innerHeight * 0.15;
+    }).map((e) => `${e.tagName.toLowerCase()}.${[...e.classList].slice(0, 2).join('.')}`);
+    if (pops.length) out.popups = pops.slice(0, 4);
+    const text = document.body.innerText;
+    const words = [/상승 구조|하락 구조|상승 시나리오|하락 시나리오/, /\b(BULLISH|BEARISH|NEUTRAL|WITHHELD|ACCUMULATION_LIKE|DISTRIBUTION_LIKE|UNKNOWN)\b/, /\bNaN\b|undefined|\[object|\bnull\b|Infinity/].flatMap((re) => { const m = text.match(re); return m ? [m[0]] : []; });
+    if (words.length) out.wording = words;
+    const nones = [...document.querySelectorAll('b, td, span, dd, strong')].filter((e) => vis(e) && !e.children.length && /^(없음|-|—|N\/A)$/.test(e.textContent.trim())).length;
+    if (nones > 6) out.manyNone = nones;
+    const screens = Math.round(document.documentElement.scrollHeight / innerHeight);
+    if (screens > 14) out.longScreens = screens;
     // Logged in: the account must actually be recognised, and paid parts must not leak to plans without access.
     if (document.cookie !== null && localStorage.getItem('gnm-session')) {
       const me = JSON.parse(localStorage.getItem('gnm-me') || 'null');
