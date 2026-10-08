@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T11:12:56.316Z",
+ "at": "2026-10-08T13:09:51.129Z",
  "selected": null,
  "universe": [
   {
@@ -56,11 +56,6 @@
    "failedSources": []
   },
   {
-   "symbol": "327260",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "232140",
    "report": "SKIPPED",
    "failedSources": []
@@ -87,11 +82,6 @@
   },
   {
    "symbol": "010060",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "098460",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -137,11 +127,6 @@
   },
   {
    "symbol": "222800",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "316140",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -251,22 +236,22 @@
    ]
   },
   {
-   "symbol": "033560",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "001780",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
    "symbol": "030190",
    "report": "EXISTS",
    "failedSources": []
   },
   {
+   "symbol": "033560",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "017890",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "001780",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -281,15 +266,28 @@
    ]
   },
   {
-   "symbol": "002960",
+   "symbol": "KRW-SAND",
    "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "KRW-SAND",
+   "symbol": "002960",
    "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": []
+ "failed": [
+  {
+   "symbol": "327260",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "098460",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "316140",
+   "error": "fetch failed"
+  }
+ ]
 }
