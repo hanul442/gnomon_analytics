@@ -29,3 +29,9 @@ jobs:
           npx wrangler d1 execute gnm --remote --json --command "SELECT role, plan, disabled, COUNT(*) AS n FROM users GROUP BY role, plan, disabled" | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));for(const row of r[0].results)console.log(JSON.stringify(row))"
           echo "--- push subscriptions and price alerts (counts only)"
           npx wrangler d1 execute gnm --remote --json --command "SELECT (SELECT COUNT(*) FROM push_subs) AS subs, (SELECT COUNT(*) FROM price_alerts) AS alerts, (SELECT COUNT(*) FROM notifications WHERE created_at >= datetime('now','-1 day')) AS notes_24h" | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify(r[0].results))"
+      - name: Naver realtime quote shape (public data, no secrets)
+        run: |
+          for s in 005930 069500; do
+            curl -s -m 10 -A "Mozilla/5.0" "https://polling.finance.naver.com/api/realtime/domestic/stock/$s" | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify(d,null,1).slice(0,3500))"
+          done
+          date -u

@@ -317,7 +317,9 @@ export const LIVE_JS = `
       document.querySelectorAll('[data-live="' + sym + '"]').forEach(function (el) {
         var f = el.getAttribute('data-live-f'), t = q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : '';
         if (f === 'nowlabel') { el.textContent = q.open ? '지금' : '현재가'; return; }
-        if (f === 'tag') { el.hidden = false; el.textContent = q.open ? '● 실시간' : '장 마감'; el.classList.toggle('on', !!q.open); return; }
+        // The time of the last trade, so the reader sees how fresh the number is (G-128).
+        var hm = q.at ? String(q.at).replace(/^.*T(\\d\\d:\\d\\d(:\\d\\d)?).*$/, '$1') : '';
+        if (f === 'tag') { el.hidden = false; el.textContent = q.open ? '● 실시간' + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); return; }
         if (f === 'price') el.textContent = won(q.price);
         else if (f === 'pct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
         else if (f === 'arrowpct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
@@ -348,7 +350,7 @@ export const LIVE_JS = `
       if (G.api && codes.length && !document.hidden) {
         fetch(G.api + '/quote?s=' + codes.slice(0, 40).join(',')).then(function (r) { return r.json(); }).then(function (d) { (d.quotes || []).forEach(function (q) { paint(q.symbol, q); }); }).catch(function () {});
       }
-      timer = setTimeout(tick, trading() ? 10000 : 60000);
+      timer = setTimeout(tick, trading() ? 4000 : 60000);
     };
     document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
     // The chart's last daily candle follows the live price on a report page (stocks and ETFs, open market).
