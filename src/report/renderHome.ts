@@ -333,7 +333,7 @@ export function renderHome(data: HomeData): string {
   const covered = new Set(data.entries.map((e) => e.symbol));
   const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
-<div class="find-row"><button type="button" class="flt-btn" aria-expanded="false" aria-controls="flt">⚙︎ 필터</button><a class="find-link" href="themes.html">🧭 테마별 종목</a><a class="find-link" href="signals.html">📡 공시 레이더</a></div>
+<div class="find-row"><a class="flt-btn" href="screener.html">⚙︎ 필터</a><a class="find-link" href="themes.html">🧭 테마별 종목</a><a class="find-link" href="signals.html">📡 공시 레이더</a></div>
 <div class="card flt" id="flt" hidden><div class="flt-seg" role="group" aria-label="찾을 곳"><a href="screener.html">국내 주식</a><a href="screener.html#etf">ETF</a><a href="screener.html#coin">코인</a><a href="reports.html">AI 리포트</a></div>
 ${FILTER_GROUPS.map((g) => `<div class="flt-k">${g.icon} ${g.title}</div><div class="flt-list">${g.keys.map((k) => PRESETS.find((x) => x.key === k)).filter((x) => x).map((x) => `<a href="screener.html#${x!.key}"><b>${esc(x!.label)}</b><small>${esc(x!.hint)}</small></a>`).join('')}</div>`).join('')}
 <div class="flt-actions"><a class="flt-more" href="screener.html#build">⚙︎ 조건 직접 만들기</a><a class="flt-more ai" href="screener.html#build">✦ AI에게 말로 찾기</a></div><p class="flt-foot">누르면 이 화면 위에 필터 창이 열려요. 결과는 계산값이고 투자 권유가 아니에요.</p></div></div></section>
@@ -381,7 +381,7 @@ const FEED_SCRIPT = `<script>
 
 /** G-81: the filters open as a pop-up over the home page (the detailed search in a frame), not a new page. */
 const FILTER_SCRIPT = `<script>
-(function () { var b = document.querySelector('.flt-btn'), p = document.getElementById('flt'); if (!b || !p) return;
+(function () { var b = document.querySelector('button.flt-btn'), p = document.getElementById('flt'); if (!b || !p) return;
   b.addEventListener('click', function () { var o = p.hidden; p.hidden = !o; b.setAttribute('aria-expanded', String(o)); });
   var pop = null;
   var close = function () { if (pop) { pop.remove(); pop = null; document.documentElement.classList.remove('menu-open'); } };

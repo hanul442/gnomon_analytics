@@ -29,6 +29,7 @@ const forecastBars=Array.from({length:160},(_,i)=>({...bars[i%bars.length],date:
 await writeFile(root+'/site/s/999998.html',renderCalculationPage({symbol:'999998',name:'시나리오 메뉴 테스트',bars:forecastBars,now:new Date()}));
 await writeFile(root+'/site/theme-index.json',JSON.stringify({'999999':[['1','테스트 테마'],['2','두 번째 테마']]}));await mkdir(root+'/site/theme',{recursive:true});
 await writeFile(root+'/site/theme/1.json',JSON.stringify({no:'1',name:'테스트 테마',members:[['999999','UI 테스트',2.1,12.5,5e11,bars.slice(-40).map(b=>b.close)],['000001','동료 하나',-1.2,4.0,9e11,bars.slice(-40).map(b=>b.close*1.1)],['000002','동료 둘',0.5,-3.1,2e11,bars.slice(-40).map(b=>b.close*0.9)],['000003','동료 셋',1.5,8.2,1e11,bars.slice(-40).map(b=>b.close*0.8)]]}));
+await writeFile(root+'/site/signals.json',JSON.stringify({labels:{insider:['임원·주요주주 매매','지분 변화 설명'],dividend:['배당','배당 설명']},items:[['2026-10-06','insider','999999','가 종목','최대주주등소유주식변동신고서','20261006000001',3.2],['2026-10-05','dividend','999998','나 종목','현금배당결정','20261005000002',-1.5],['2026-10-06','dividend','999997','다 종목','현금배당결정','20261006000003',0.4]]}));
 await writeFile(root+'/site/screener.json',JSON.stringify({date:'2026-10-06',rows:[['999999','UI 테스트','P',100,181,2,'BULLISH',80,5,10,20,-5,'B',0,3,2,2,20,'A',100,-1,0,'',10,3,40,4],['999998','가 정렬 테스트','Q',50,1200,-3,'BULLISH',60,1,-4,2,null,'B',0,1,1,0,5,null,30,-9,0,'',3,1,10,1],['999997','나 정렬 테스트','P',300,90,7,'BULLISH',40,2,25,8,12,'B',0,2,1,1,8,null,60,-3,0,'',6,2,20,2]]}));
 const scenarioReport=buildDailyReport({symbol:'999999',name:'시나리오 테스트',date:'2026-10-06',generatedAt:new Date(),bars:bars.map(b=>({...b,symbol:'999999',source:'fixture',retrievedAt:'2026-10-06T00:00:00Z'})),disclosures:[],sources:[]});
 scenarioReport.commentary={status:'OK',scenarios:[['BULL',[190,220],195],['BASE',[170,190]],['BEAR',[130,160],160]].map(([kind,zone,trigger])=>({kind,zone,trigger,narrative:{text:'펼쳐 보는 상세 근거'},catalysts:['검증 조건'],invalidation:['무효화 조건']}))};
@@ -181,6 +182,14 @@ try{
   assert.equal(await page.locator('dialog.rj[open] [data-fun]').count(),1);await page.waitForTimeout(1200);
   await page.screenshot({path:'test-artifacts/job-progress-'+width+'.png'});await page.evaluate(()=>document.querySelector('dialog.rj[open]').close());
  }
+ // G-134: 공시 레이더 sorts and filters.
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/signals.html');await page.locator('#sg-list .sg-item').first().waitFor();
+ assert.equal(await page.locator('#sg-list .sg-item').count(),3);await page.locator('#sg-sort').selectOption('up');assert.match(await page.locator('#sg-list .sg-item').first().innerText(),/가 종목/);
+ await page.locator('#sg-move').selectOption('down');assert.equal(await page.locator('#sg-list .sg-item').count(),1);await page.locator('#sg-move').selectOption('');
+ await page.locator('#sg-q').fill('다 종목');assert.equal(await page.locator('#sg-list .sg-item').count(),1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.evaluate(()=>localStorage.removeItem('gnm-signals'));
+ // G-135: the 🔔 opens 알림함 as a page.
+ await page.goto(origin+'/index.html');await page.locator('#bell').waitFor();await page.locator('#bell').click();await page.waitForURL(/inbox\.html/);await page.locator('#ib-list .ib-item, #ib-list .ib-empty').first().waitFor();
  // G-133: 관심 opens its own page with just the watched names.
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/index.html');await page.evaluate(()=>localStorage.setItem('gnm-watch',JSON.stringify(['999999'])));
  await page.locator('.bottom-nav a[href$="watch.html"]').click();await page.waitForURL(/watch\.html/);await page.locator('#wp-list .wp-row').first().waitFor();

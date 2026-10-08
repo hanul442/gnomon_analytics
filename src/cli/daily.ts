@@ -34,7 +34,7 @@ import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderSto
 import { renderHome, renderReportsPage, type IndexQuote } from '../report/renderHome.js';
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
-import { MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
+import { renderInbox, MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
 import { renderMyReports } from '../report/renderMyReports.js';
 import { renderMyDebates } from '../report/renderMyDebates.js';
 import { renderSignalsPage, renderThemesPage, signalData, themeData } from '../report/renderThemes.js';
@@ -742,6 +742,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'watchinfo.json'), JSON.stringify(watchInfo(home)));
   await writeFile(join(siteDir, 'reports.html'), renderReportsPage(homeData));
   await writeFile(join(siteDir, 'watch.html'), renderWatchPage());
+  await writeFile(join(siteDir, 'inbox.html'), renderInbox());
   // Search index: every listed stock, with today's price when the list was fetched this run.
   const covered = new Set([...tickers, ...past].map((t) => t.symbol));
   const items = universe
