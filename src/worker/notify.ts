@@ -7,6 +7,7 @@ import { quoteUrl, parseNaverQuotes } from '../sources/naverQuote.js';
 import { parseWorldQuote, worldQuoteUrl } from '../sources/naverWorld.js';
 import { isUsSymbol } from '../report/seal.js';
 import { notifyLimit } from '../report/plans.js';
+import { noteBullets } from '../report/releases.js';
 
 export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'test';
 /** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
@@ -67,7 +68,8 @@ export async function runUpdateNotify(ctx: Ctx): Promise<{ version: string | nul
   if (await once(ctx.db, 'update-seen-any', ctx.now)) { await once(ctx.db, `update-done:${v.version}`, ctx.now); return { version: v.version, sent: 0 }; }
   if (await ctx.db.prepare('SELECT 1 FROM notify_log WHERE key = ?').bind(`update-done:${v.version}`).first()) return { version: v.version, sent: 0 };
   const users = (await ctx.db.prepare('SELECT id FROM users WHERE disabled = 0').all<{ id: string }>()).results;
-  const note = String(v.note ?? '').trim(), body = note.length > 110 ? `${note.slice(0, 110)}…` : note;
+  // G-153: the changes as a short bulleted list, not a paragraph.
+  const note = String(v.note ?? '').trim(), body = noteBullets(note, 3);
   let sent = 0;
   for (const u of users) {
     if (!(await once(ctx.db, `update:${v.version}:${u.id}`, ctx.now))) continue;

@@ -27,7 +27,7 @@ export const JOBS_JS = `
    if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var title=panel.querySelector('.panel-title');panel.innerHTML='';if(title)panel.appendChild(title);panel.appendChild(target);}else if(key==='home'){var heroEl=panel.querySelector('.hero');while(heroEl&&heroEl.parentElement&&heroEl.parentElement!==panel)heroEl=heroEl.parentElement;if(heroEl&&heroEl.parentElement===panel)heroEl.after(target);else panel.prepend(target);}else panel.prepend(target);}
    if(key==='home'){var stale=panel.querySelector('#home-conclusion');if(stale&&!target.contains(stale))stale.remove();}
    panel.querySelectorAll('[data-stale-ai]').forEach(function(x){x.remove();});
-   target.innerHTML=r.fragments[key];if(composer&&!target.querySelector('.db-join'))(panel.querySelector('.card.debate')||target).appendChild(composer);
+   target.innerHTML=r.fragments[key];if(composer){var fresh=target.querySelector('.db-join');if(fresh)fresh.replaceWith(composer);else(panel.querySelector('.card.debate')||target).appendChild(composer);}
    if(bar&&(key==='home'||key==='ai'))target.insertAdjacentHTML('afterbegin',bar);
    panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});
   });

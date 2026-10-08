@@ -148,3 +148,10 @@ test('US price alerts (G-152) use the world-stock quote, pre/after-market includ
   assert.match(n!.title, /애플 \$241\.50 · \$240\.00 이상 도달/);
   assert.equal(n!.link, 'us.html?s=AAPL.O');
 });
+
+test('release notes read as a list (G-153): one item per sentence, the alert shows the first ones as bullets', async () => {
+  const { noteItems, noteBullets } = await import('../report/releases.js');
+  const note = '미국 주식 리포트를 요청할 수 있어요(달러 기준). 조용한 시간을 넣었어요. 차트 도구가 늘었어요. 토론방을 다듬었어요.';
+  assert.deepEqual(noteItems(note), ['미국 주식 리포트를 요청할 수 있어요(달러 기준).', '조용한 시간을 넣었어요.', '차트 도구가 늘었어요.', '토론방을 다듬었어요.']);
+  assert.equal(noteBullets(note, 3), '• 미국 주식 리포트를 요청할 수 있어요(달러 기준).\n• 조용한 시간을 넣었어요.\n• 차트 도구가 늘었어요.\n외 1가지');
+});

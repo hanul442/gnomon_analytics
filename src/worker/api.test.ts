@@ -608,3 +608,21 @@ test('US stocks (G-152): a report request builds a dollar report from site/u, a 
  assert.match(buildEvidence(input).find((e:{id:string})=>e.id==='P1')!.detail,/종가 \$240\.50/);
  assert.equal((await t.call('POST','/alerts/price',{symbol:'AAPL.O',name:'애플',op:'>=',price:250.5},t.user.session)).status,200);
 });
+
+test('a report request uses the newest prices (G-153): stale research keeps its context but not its old price', async () => {
+ const t=await reportSetup();
+ const {reportInput}=await import('./reports.js');
+ const stale=t.report.price!.sessionDate;
+ const bars=Array.from({length:40},(_,i)=>{const d=new Date(Date.UTC(2026,8,1+i)).toISOString().slice(0,10);return [d,150+i,152+i,149+i,151+i,2000];});
+ assert.ok(bars.at(-1)![0]!>stale,'the daily file is newer than the research context');
+ const real=t.deps.fetch!;
+ const deps={now:t.deps.now!,fetch:(async (url: RequestInfo|URL, init?:RequestInit)=>String(url).endsWith('/s/000660.json')?Response.json({name:'테스트',market:'KOSPI',bars}):real(url,init)) as typeof fetch};
+ const input=await reportInput('https://site.test',`000660`,deps);
+ assert.equal(input.price!.sessionDate,bars.at(-1)![0],'priced at the newest bar');
+ assert.equal(input.exchange,t.report.exchange??'KOSPI');
+ assert.ok(input.notes.some(n=>/수급·실적·뉴스는/.test(n)),'says which parts come from the older report');
+ // When the research context is as fresh as the daily file it is used as is.
+ const same=bars.filter(b=>b[0]!<=stale);
+ const deps2={...deps,fetch:(async (url: RequestInfo|URL, init?:RequestInit)=>String(url).endsWith('/s/000660.json')?Response.json({name:'테스트',bars:same}):real(url,init)) as typeof fetch};
+ assert.equal((await reportInput('https://site.test','000660',deps2)).price!.sessionDate,stale);
+});
