@@ -16,7 +16,7 @@ import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim } from '../analysis/commentary.js';
 import { apiMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
 import { CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
-import { timingInfographic, INFOGRAPHIC_CSS, INFOGRAPHIC_JS } from './infographics.js';
+import { INFOGRAPHIC_CSS, INFOGRAPHIC_JS } from './infographics.js';
 import { chartOverlays, quickInfoCard, flowsPanel, forecastCard, fundamentalsPanel, STOCK_INFO_CSS, STOCK_INFO_TOGGLE_JS, miniGauge, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { DART_SCRIPT, freshness, freshnessBadge, hero, latestLists, staleAiBar, priceChart } from './appParts.js';
 import { arenaHeadline, arenaPanel } from './renderArena.js';
@@ -429,9 +429,11 @@ function filingsTable(report: DailyReport): string {
   const recent = report.recentFilings ?? report.filings;
   const fresh = new Set(report.filings.map((f) => f.receiptNo));
   if (!recent.length) return '<p class="empty">최근 30일 동안 나온 공시가 없어요.</p>';
-  const rows=recent.map((f) => `<tr><td class="col-date nowrap">${escape(f.filedDate)}</td>
-<td>${meta([escape(f.filedDate), escape(f.category)], 'meta m-date')}<a href="${escape(f.url)}" rel="noopener" target="_blank">${escape(f.title)}</a>${fresh.has(f.receiptNo) ? '<span class="badge b-new">새 공시</span>' : ''}<div class="why">${escape(f.why)}</div></td>
-<td class="col-cat nowrap">${escape(f.category)}</td><td><span class="badge b-${f.importance}">${IMPORTANCE_LABEL[f.importance]}</span></td><td class="col-filer nowrap">${escape(f.filer)}</td></tr>`);
+  // G-151: the same plain-language note under several filings in a row is said once.
+  let prevWhy = '';
+  const rows=recent.map((f) => { const why = f.why === prevWhy ? '' : f.why; prevWhy = f.why; return `<tr><td class="col-date nowrap">${escape(f.filedDate)}</td>
+<td>${meta([escape(f.filedDate), escape(f.category)], 'meta m-date')}<a href="${escape(f.url)}" rel="noopener" target="_blank">${escape(f.title)}</a>${fresh.has(f.receiptNo) ? '<span class="badge b-new">새 공시</span>' : ''}${why ? `<div class="why">${escape(why)}</div>` : ''}</td>
+<td class="col-cat nowrap">${escape(f.category)}</td><td><span class="badge b-${f.importance}">${IMPORTANCE_LABEL[f.importance]}</span></td><td class="col-filer nowrap">${escape(f.filer)}</td></tr>`; });
   return contentMore(rows,'공시',html=>`<div class="table-wrap"><table><thead><tr><th class="col-date">날짜</th><th>공시</th><th class="col-cat">종류</th><th>중요도</th><th class="col-filer">제출인</th></tr></thead><tbody>${html}</tbody></table></div>`);
 }
 
@@ -623,7 +625,7 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
   const body = `${bar}${panel('home', home)}
 ${panel('chart', chartTab)}
-${panel('technical', `${timingInfographic(report)}${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${strategyTab}</section>`)}
+${panel('technical', `${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${strategyTab}</section>`)}
 ${panel('fundamentals', `${report.kind === 'coin' ? '' : fundTab}<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`)}
 ${panel('ai', aiTab).replace('role="tabpanel"',`role="tabpanel" data-ai-date="${escape(report.commentary?.status==='OK'?(ctx.commentaryFrom??report.date):'')}"`)}
 ${panel('news', newsTab)}

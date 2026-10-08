@@ -42,7 +42,7 @@ const COMPARE: readonly [string, Cell, Cell, Cell, Cell][] = [
   ['알림: 관심 종목 장중 급등락·거래량', false, false, true, true],
 ];
 
-const STYLE = `<style>
+const STYLE = `<style>.soon-more{margin:4px 0 8px}.soon-more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);padding:6px 0}
 .pr-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.plan .inherits{font-size:12px;font-weight:700;color:var(--muted)}.plan .soon{color:var(--muted)}.plan .soon em{font-style:normal;font-size:11px;font-weight:700;background:#eef1f5;border-radius:999px;padding:0 6px;margin-left:4px}.plan.top{background:linear-gradient(180deg,#0f2244,#1d3a6e);color:#fff;border:0}.plan.top .muted,.plan.top .price small,.plan.top .inherits,.plan.top .soon{color:#c9d5ea}.plan.top .ck{color:#9fc0f5}.plan.top .btn-primary{background:#fff;color:#0f2244}.plan.top .soon em{background:rgba(255,255,255,.15)}.plan{display:flex;flex-direction:column;gap:10px;position:relative}
 .plan h3{margin:0;font-size:18px}.plan .price{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.plan .price small{font-size:14px;font-weight:600;color:var(--muted)}
 .plan ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:7px;font-size:14px;flex:1}.plan li{display:flex;gap:7px;align-items:flex-start}.ck{width:17px;height:17px;flex:none;color:var(--accent);margin-top:2px}
@@ -65,7 +65,7 @@ html[data-plan=free] .plan[data-key=free] .btn-primary,html[data-plan=plus] .pla
 export function renderPricing(): string {
   const plan = (p: (typeof PLANS)[number], i: number) => `<div class="card plan${p.key === 'pro' ? ' featured' : ''}${p.key === 'max' ? ' top' : ''}" data-key="${p.key}">${p.key === 'pro' ? '<span class="ribbon">추천</span>' : ''}
 <h3>${p.name}</h3><div class="muted small">${p.tagline}</div><div class="price">${p.price ? `${won(p.price)}<small> / 월</small>` : '0원'}</div>
-${i ? `<div class="inherits">${PLANS[i - 1]!.name}의 모든 것에 더해</div>` : ''}<ul>${p.adds.map((f) => `<li>${CHECK}<span>${f}</span></li>`).join('')}${(p.soon ?? []).map((f) => `<li class="soon">${CHECK}<span>${f}<em>출시 예정</em></span></li>`).join('')}</ul>
+${i ? `<div class="inherits">${PLANS[i - 1]!.name}의 모든 것에 더해</div>` : ''}<ul>${p.adds.map((f) => `<li>${CHECK}<span>${f}</span></li>`).join('')}</ul>${p.soon?.length ? `<details class="soon-more"><summary>출시 예정 ${p.soon.length}개</summary><ul>${p.soon.map((f) => `<li class="soon">${CHECK}<span>${f}</span></li>`).join('')}</ul></details>` : ''}
 <div class="is-current">지금 쓰는 요금제</div>${p.price ? `<a class="btn-primary" href="checkout.html?item=${p.key}">${p.name} 시작하기</a>` : '<button type="button" class="btn-primary" data-downgrade style="border:0;cursor:pointer">무료로 바꾸기</button>'}</div>`;
   const yes = (v: Cell) => (typeof v === 'string' ? `<td class="val">${v}</td>` : v ? `<td class="yes">${CHECK}</td>` : '<td class="no">—</td>');
   const base = CREDIT_PACKS[0]!.price / CREDIT_PACKS[0]!.credits;

@@ -32,7 +32,9 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   // G-129: 타이밍 (기술 + 전략) and 기업 체력 (수급 + 종목정보); the old ids live on as sections inside them.
   for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-ai', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
   for (const id of ['tab-strategy', 'tab-flows']) assert.match(page, new RegExp(`class="sub-sec" id="${id}"`));
-  for (const text of ['타이밍 한눈에', '재무제표']) assert.ok(page.includes(text), text);
+  for (const text of ['기업 체력 한눈에', '재무제표']) assert.ok(page.includes(text), text);
+  // G-151: 타이밍 opens on 기술적 신호; a separate 한눈에 card only repeated the vote, the locked gauges and the champion.
+  assert.ok(!page.includes('타이밍 한눈에'));
   // G-140: DART statements as tabs with their infographics and every row folded.
   for (const text of ['손익계산서', '재무상태표', '현금흐름표', '잉여현금(FCF)', '부채비율 43%', '영업이익률 <b>34.8%</b>', '전체 5개 항목 보기']) assert.ok(page.includes(text), text);
   // Horizon gauges on the home and technical tabs; strategies show their stance in the race rows (G-91), not a gauge card.

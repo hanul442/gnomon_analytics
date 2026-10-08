@@ -100,7 +100,7 @@ type View = 'beginner' | 'trader' | 'swing' | 'long';
 const VIEW_LEAD: Record<View, string> = {
   beginner: '처음 보기 좋은 대표 종목과 ETF부터',
   trader: '오늘 많이 움직이고 거래가 붙은 종목부터',
-  swing: '테스트 가격에 가까워 판단이 필요한 종목부터',
+  swing: '강세·약세 전환 가격에 가까운 종목부터',
   long: '적정 범위 아래이거나 실적을 볼 만한 종목부터',
 };
 
@@ -115,7 +115,7 @@ function viewFit(e: HomeEntry): Record<View, { score: number; why: string }> {
   const dn = c?.scenarios?.find((x) => x.kind === 'BEAR')?.trigger ?? lv.filter((l) => p && l.price < p.close).sort((a, b) => b.price - a.price)[0]?.price;
   const gapTo = (t?: number) => (p && t ? t / p.close - 1 : null);
   const gu = gapTo(up), gd = gapTo(dn);
-  const near = gu === null && gd === null ? null : gd === null || (gu !== null && Math.abs(gu) <= Math.abs(gd)) ? { t: up!, g: gu!, w: '위쪽' } : { t: dn!, g: gd!, w: '아래쪽' };
+  const near = gu === null && gd === null ? null : gd === null || (gu !== null && Math.abs(gu) <= Math.abs(gd)) ? { t: up!, g: gu!, w: '강세 전환' } : { t: dn!, g: gd!, w: '약세 전환' };
   const fv = r?.market?.fairValue, per = r?.market?.snapshot?.per;
   return {
     beginner: {
@@ -128,7 +128,7 @@ function viewFit(e: HomeEntry): Record<View, { score: number; why: string }> {
     },
     swing: {
       score: (near ? Math.max(0, 10 - Math.abs(near.g) * 100) : 0) + (deep ? 2 : 0),
-      why: near ? `${near.w} 테스트 가격 ${won(near.t)}까지 ${near.g > 0 ? '+' : ''}${(near.g * 100).toFixed(1)}%` : base,
+      why: near ? `${near.w} 가격 ${won(near.t)}까지 ${near.g > 0 ? '+' : ''}${(near.g * 100).toFixed(1)}%` : base,
     },
     long: {
       score: (kind === 'stock' ? 2 : kind === 'etf' ? 1 : -3) + (fv?.position === 'BELOW' ? 4 : fv?.position === 'INSIDE' ? 1 : 0) + (per != null ? 1 : 0) + (deep ? 1 : 0),
@@ -153,11 +153,11 @@ function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): 
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
     const fit = viewFit(e);
     return `<div class="tp" data-pick-daily="${e.group==='daily'?'1':'0'}" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' || e.group === 'core' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
-<p class="muted small">${esc(e.group==='daily'?`일일 선정 · ${e.pickDate??''}`:e.group==='core'?'고정 추적':'주간 선정')}${e.reasons?.[0] ? ` · ${esc(e.reasons[0])}` : ''}</p><div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
+<p class="muted small">${esc(e.group==='daily'?`일일 선정 · ${e.pickDate??''}`:e.group==='core'?'매주 리포트':'주간 선정')}${e.reasons?.[0] ? ` · ${esc(e.reasons[0])}` : ''}</p><div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 것</h2><a class="more-link" href="reports.html">AI 리포트 모음 ›</a></div>
 <p class="tp-lead">${views.map((v) => `<span class="pw pw-${v}">${VIEW_LEAD[v]}</span>`).join('')} <a href="#" data-open-view>보기 방식 바꾸기</a></p>
-<div class="tp-grid" id="tp-grid">${picks.map(card).join('')}</div><p class="muted small">최근 일일 선정(${esc(last??'확인 필요')})과 고정·주간 추적 종목 가운데 내 보기 방식에 맞는 네 개를 보여 드려요. 최근 일일 선정과 내 보유·관심 종목을 먼저 보여 드립니다. <a href="reports.html#daily">일일 선정 전체 보기 ›</a> 투자 권유가 아니에요.</p></section>`;
+<div class="tp-grid" id="tp-grid">${picks.map(card).join('')}</div><p class="muted small">내 보기 방식에 맞는 네 종목이에요. 최근 일일 선정과 내 관심 종목이 먼저 나와요. <a href="reports.html#daily">일일 선정 전체 보기 ›</a> 투자 권유가 아니에요.</p></section>`;
 }
 
 /**
