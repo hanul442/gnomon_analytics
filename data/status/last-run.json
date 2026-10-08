@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T23:23:30.876Z",
+ "at": "2026-10-08T23:46:37.354Z",
  "selected": null,
  "universe": [
   {
@@ -44,182 +44,361 @@
   {
    "symbol": "000660",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
-   "symbol": "009830",
+   "symbol": "005930",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "042700",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "327260",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "232140",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "490470",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "403870",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "043260",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "353200",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "098460",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "080220",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "003160",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
+  },
+  {
+   "symbol": "036930",
+   "report": "NOT_SETTLED",
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "009150",
    "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "011790",
-   "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "000150",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "001820",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
+  },
+  {
+   "symbol": "222800",
+   "report": "NOT_SETTLED",
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "316140",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "000270",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "000250",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "093370",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "007810",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "089030",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "096770",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "178320",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "028300",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "253590",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "058470",
    "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "067310",
-   "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "010950",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "452190",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "003490",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "439090",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "KRW-BTC",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "KRW-ETH",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "KRW-WLD",
    "report": "NOT_SETTLED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "069500",
    "report": "NOT_SETTLED",
    "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_503:google:news-rss"
+    },
     {
      "source": "naver:m-stock",
      "error": "NAVER_FINANCE_UNEXPECTED_RESPONSE"
@@ -229,7 +408,7 @@
  ],
  "failed": [
   {
-   "symbol": "005930",
+   "symbol": "009830",
    "error": "fetch failed"
   },
   {
@@ -237,7 +416,7 @@
    "error": "fetch failed"
   },
   {
-   "symbol": "036930",
+   "symbol": "011790",
    "error": "fetch failed"
   },
   {
@@ -245,7 +424,7 @@
    "error": "fetch failed"
   },
   {
-   "symbol": "222800",
+   "symbol": "067310",
    "error": "fetch failed"
   },
   {
