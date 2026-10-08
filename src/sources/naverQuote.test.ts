@@ -10,5 +10,11 @@ test('naver quotes: price, signed change from the direction code, market status 
   ] });
   assert.deepEqual(q.map((x) => [x.symbol, x.price, x.change, x.changePct, x.open]), [['005930', 71000, 500, 0.71, true], ['000660', 1789000, -53000, -2.88, false]]);
   assert.deepEqual(parseNaverQuotes(null), []);
+  // After 15:30 a stock that trades on Nextrade shows the NXT price, not the KRX close (G-128).
+  const nxt = parseNaverQuotes({ datas: [{ itemCode: '005930', closePrice: '263,000', compareToPreviousClosePrice: '-5,500', compareToPreviousPrice: { code: '5', name: 'FALLING' }, fluctuationsRatio: '-2.05', marketStatus: 'OPEN', marketSessionType: 'afterMarket', localTradedAt: '2026-10-08T19:54:44+09:00',
+    overMarketPriceInfo: { tradingSessionType: 'AFTER_MARKET', overMarketStatus: 'OPEN', overPrice: '262,500', compareToPreviousPrice: { code: '5', name: 'FALLING' }, compareToPreviousClosePrice: '-6,000', fluctuationsRatio: '-2.23', localTradedAt: '2026-10-08T19:54:44+09:00' } }] });
+  assert.deepEqual(nxt.map((x) => [x.price, x.change, x.changePct, x.open, x.session]), [[262500, -6000, -2.23, true, 'after']]);
+  // Without Nextrade (most ETFs) the KRX close stands after hours.
+  assert.equal(parseNaverQuotes({ datas: [{ itemCode: '069500', closePrice: '105,650', marketStatus: 'CLOSE', marketSessionType: 'regularMarket', overMarketPriceInfo: null }] })[0]!.session, 'closed');
   assert.equal(quoteUrl(['005930', '000660']), 'https://polling.finance.naver.com/api/realtime/domestic/stock/005930,000660');
 });

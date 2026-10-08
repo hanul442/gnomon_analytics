@@ -2,7 +2,11 @@
 // one its own pages refresh from. Read through the API Worker (the browser cannot call it across
 // origins). Coins do not come through here: the page talks to Upbit's public WebSocket directly.
 
-export interface Quote { symbol: string; price: number; change: number; changePct: number; open: boolean; at: string | null }
+/**
+ * `session`: where the price comes from (G-128). Outside KRX hours (08:00–08:50, 15:30–20:00) a stock that also
+ * trades on Nextrade (NXT) moves there; Naver's feed then carries both the KRX close and the NXT price.
+ */
+export interface Quote { symbol: string; price: number; change: number; changePct: number; open: boolean; at: string | null; session?: 'regular' | 'pre' | 'after' | 'closed' }
 
 export const quoteUrl = (symbols: readonly string[]) => `https://polling.finance.naver.com/api/realtime/domestic/stock/${symbols.join(',')}`;
 
@@ -19,6 +23,17 @@ export function parseNaverQuotes(json: unknown): Quote[] {
   for (const r of rows as Record<string, unknown>[]) {
     const symbol = String(r.itemCode ?? r.cd ?? ''), price = n(r.closePrice ?? r.nv);
     if (!/^[0-9A-Z]{6}$/.test(symbol) || !(price > 0)) continue;
+    // Nextrade's pre/after market: its price is the live one while KRX is shut (G-128).
+    const over = r.overMarketPriceInfo as Record<string, unknown> | null | undefined, overPrice = n(over?.overPrice);
+    const sessionType = String(r.marketSessionType ?? '');
+    if (over && String(over.overMarketStatus ?? '') === 'OPEN' && overPrice > 0 && /pre|after/i.test(sessionType)) {
+      const d = (over.compareToPreviousPrice as { code?: string; name?: string } | undefined) ?? {};
+      const down = d.code === '4' || d.code === '5' || /FALL|LOWER/i.test(d.name ?? '');
+      const a = Math.abs(n(over.compareToPreviousClosePrice)), p = Math.abs(n(over.fluctuationsRatio));
+      out.push({ symbol, price: overPrice, change: Number.isFinite(a) ? (down ? -a : a) : 0, changePct: Number.isFinite(p) ? (down ? -p : p) : 0, open: true,
+        at: typeof over.localTradedAt === 'string' ? over.localTradedAt : null, session: /pre/i.test(sessionType) ? 'pre' : 'after' });
+      continue;
+    }
     const dir = (r.compareToPreviousPrice as { code?: string; name?: string } | undefined) ?? {};
     // Naver's codes: 1 upper limit, 2 rising, 3 flat, 4 lower limit, 5 falling.
     const falling = dir.code === '4' || dir.code === '5' || /FALL|LOWER/i.test(dir.name ?? '');
@@ -29,6 +44,7 @@ export function parseNaverQuotes(json: unknown): Quote[] {
       changePct: Number.isFinite(pct) ? (falling ? -pct : pct) : 0,
       open: String(r.marketStatus ?? '') === 'OPEN',
       at: typeof r.localTradedAt === 'string' ? r.localTradedAt : null,
+      session: String(r.marketStatus ?? '') === 'OPEN' ? 'regular' : 'closed',
     });
   }
   return out;

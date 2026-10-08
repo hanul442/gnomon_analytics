@@ -319,7 +319,7 @@ export const LIVE_JS = `
         if (f === 'nowlabel') { el.textContent = q.open ? '지금' : '현재가'; return; }
         // The time of the last trade, so the reader sees how fresh the number is (G-128).
         var hm = q.at ? String(q.at).replace(/^.*T(\\d\\d:\\d\\d(:\\d\\d)?).*$/, '$1') : '';
-        if (f === 'tag') { el.hidden = false; el.textContent = q.open ? '● 실시간' + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); return; }
+        if (f === 'tag') { el.hidden = false; el.textContent = q.open ? (q.session === 'pre' ? '● NXT 프리마켓' : q.session === 'after' ? '● NXT 애프터마켓' : '● 실시간') + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); return; }
         if (f === 'price') el.textContent = won(q.price);
         else if (f === 'pct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
         else if (f === 'arrowpct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
@@ -330,7 +330,8 @@ export const LIVE_JS = `
       window.dispatchEvent(new CustomEvent('gnm-quote', { detail: { symbol: sym, quote: q } }));
     };
     var symbols = function () { var s = {}; document.querySelectorAll('[data-live]').forEach(function (el) { s[el.getAttribute('data-live')] = 1; }); return Object.keys(s); };
-    var trading = function () { var k = new Date(Date.now() + 9 * 3600e3), d = k.getUTCDay(), m = k.getUTCHours() * 60 + k.getUTCMinutes(); return d > 0 && d < 6 && m >= 535 && m <= 940; };
+    // KRX 09:00–15:30 plus Nextrade's 08:00–20:00 (G-128).
+    var trading = function () { var k = new Date(Date.now() + 9 * 3600e3), d = k.getUTCDay(), m = k.getUTCHours() * 60 + k.getUTCMinutes(); return d > 0 && d < 6 && m >= 475 && m <= 1205; };
     var coins = function (list) {
       var want = list.filter(function (x) { return x.indexOf('KRW-') === 0; }).sort().join(',');
       if (!want || want === wsSet || !('WebSocket' in window)) return;
@@ -356,7 +357,7 @@ export const LIVE_JS = `
     // The chart's last daily candle follows the live price on a report page (stocks and ETFs, open market).
     window.addEventListener('gnm-quote', function (e) {
       var C = window.GNMChart, d = e.detail, bar = document.getElementById('price-bar');
-      if (!C || !C.candle || !C.bars || !d.quote.open || !bar || !bar.querySelector('[data-live="' + d.symbol + '"]') || d.symbol.indexOf('KRW-') === 0) return;
+      if (!C || !C.candle || !C.bars || !d.quote.open || (d.quote.session && d.quote.session !== 'regular') || !bar || !bar.querySelector('[data-live="' + d.symbol + '"]') || d.symbol.indexOf('KRW-') === 0) return;
       try {
         var today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10), b = C.bars[C.bars.length - 1], px = d.quote.price;
         if (!b || b.date > today) return;
