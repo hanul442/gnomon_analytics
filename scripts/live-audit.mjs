@@ -49,7 +49,7 @@ async function pass(label, pages, widths, session) {
       out.overflowBy = [...document.querySelectorAll('body *')].filter((e) => vis(e) && e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('[style*="overflow"], .chips, .seg, .hz-row, .moms, .pe-strip, .pe-themes, .market-thermals, .table-wrap, .ix-row, .mk-ix, .flt-list'))
         .slice(0, 5).map((e) => `${e.tagName.toLowerCase()}.${[...e.classList].slice(0, 2).join('.')}`);
     }
-    const stuck = [...document.querySelectorAll('p,span,div,li,td,small')].filter((e) => !e.children.length && vis(e) && /불러오는 중|준비하고 있어요|계산 중/.test(e.textContent) && e.textContent.length < 40).map((e) => e.textContent.trim());
+    const stuck = [...document.querySelectorAll('p,span,div,li,td,small')].filter((e) => !e.children.length && vis(e) && /불러오는 중|준비하고 있어요|계산 중/.test(e.textContent) && e.textContent.length < 40).map((e) => { let x = e, at = []; while (x && x !== document.body && at.length < 4) { at.unshift(x.tagName.toLowerCase() + (x.id ? '#' + x.id : '') + (x.classList[0] ? '.' + x.classList[0] : '')); x = x.parentElement; } return `${e.textContent.trim()} @ ${at.join('>')}`; });
     if (stuck.length) out.stuckLoading = [...new Set(stuck)].slice(0, 6);
     const empty = [...document.querySelectorAll('.card')].filter((e) => vis(e) && !e.textContent.trim() && !e.querySelector('canvas,svg,img'));
     if (empty.length) out.emptyCards = empty.length;

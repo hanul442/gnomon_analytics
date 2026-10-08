@@ -57,13 +57,15 @@ export function renderThemesPage(): string {
 <p class="fine">테마 분류와 편입 이유는 네이버 금융 기준이고 매주 다시 가져와요. 등락은 장 마감 기준이에요. 투자 권유가 아니에요.</p></div>
 <script>
 (function(){${COMMON_JS}
- var data=null,sort='avg',listAsc=false,memberSort='change',memberAsc=false;var compareMembers=(${compareThemeMembers.toString()});try{memberSort=localStorage.getItem('gnm-theme-sort')||'change';memberAsc=localStorage.getItem('gnm-theme-direction')==='asc';}catch(e){}
+ var data=null,tmShown=30,sort='avg',listAsc=false,memberSort='change',memberAsc=false;var compareMembers=(${compareThemeMembers.toString()});try{memberSort=localStorage.getItem('gnm-theme-sort')||'change';memberAsc=localStorage.getItem('gnm-theme-direction')==='asc';}catch(e){}
  var list=function(){var q=document.getElementById('tm-q').value.trim().toLowerCase(),t=data.themes.slice();
   if(q)t=t.filter(function(x){return x.name.toLowerCase().indexOf(q)>=0||x.members.some(function(m){return String(m[1]).toLowerCase().indexOf(q)>=0||m[0]===q;});});
   t.sort(function(a,b){var av=sort==='name'?a.name:sort==='count'?a.members.length:sort==='value'?a.value:a.avg,bv=sort==='name'?b.name:sort==='count'?b.members.length:sort==='value'?b.value:b.avg;if(av==null)return bv==null?0:1;if(bv==null)return -1;var d=sort==='name'?av.localeCompare(bv,'ko'):av-bv;return (listAsc?d:-d)||a.name.localeCompare(b.name,'ko');});
-  document.getElementById('tm-list').innerHTML=t.length?t.slice(0,200).map(function(x){var lead=x.members.slice().sort(function(a,b){return compareMembers(a,b,'change',false);}).slice(0,3).map(function(m){return esc(m[1])+' '+pct(m[3]);}).join(' · ');
-   return '<a class="tm-item" href="#'+esc(x.no)+'"><div class="tm-top"><b>'+esc(x.name)+'</b><span class="'+cls(x.avg)+'">'+pct(x.avg)+'</span></div><div class="tm-meta">'+x.members.length+'종목 · 오름 '+x.up+' 내림 '+x.down+' · 거래대금 '+eok(x.value)+'</div><div class="tm-lead">'+lead+'</div></a>';}).join(''):'<p class="muted">맞는 테마가 없어요.</p>';
+  document.getElementById('tm-list').innerHTML=t.length?t.slice(0,tmShown).map(function(x){var lead=x.members.slice().sort(function(a,b){return compareMembers(a,b,'change',false);}).slice(0,3).map(function(m){return esc(m[1])+' '+pct(m[3]);}).join(' · ');
+   return '<a class="tm-item" href="#'+esc(x.no)+'"><div class="tm-top"><b>'+esc(x.name)+'</b><span class="'+cls(x.avg)+'">'+pct(x.avg)+'</span></div><div class="tm-meta">'+x.members.length+'종목 · 오름 '+x.up+' 내림 '+x.down+' · 거래대금 '+eok(x.value)+'</div><div class="tm-lead">'+lead+'</div></a>';}).join('')+(t.length>tmShown?'<button type="button" class="more-btn" data-tm-more>'+Math.min(30,t.length-tmShown)+'개 더 보기 <small>'+tmShown+' / '+t.length+'</small></button>':''):'<p class="muted">맞는 테마가 없어요.</p>';
  };
+ // G-154: 30 themes at a time (the whole list was 27 phone screens long).
+ document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-tm-more]')){tmShown+=30;list();}});
  var detail=function(no){var x=data.themes.filter(function(t){return t.no===no;})[0],d=document.getElementById('tm-detail'),w=document.getElementById('tm-list-wrap');
   if(!x){d.hidden=true;w.hidden=false;return;}
   var ms=x.members.slice().sort(function(a,b){return compareMembers(a,b,memberSort,memberAsc);});
@@ -96,19 +98,21 @@ export function renderSignalsPage(): string {
  var $=function(id){return document.getElementById(id);},prefs={};try{prefs=JSON.parse(localStorage.getItem('gnm-signals')||'{}')||{};}catch(e){}
  ['sg-days','sg-move','sg-sort'].forEach(function(id){if(prefs[id])$(id).value=prefs[id];$(id).addEventListener('change',function(){prefs[id]=$(id).value;try{localStorage.setItem('gnm-signals',JSON.stringify(prefs));}catch(e){}if(data)paint();});});
  $('sg-q').addEventListener('input',function(){if(data)paint();});
- var paint=function(){var q=$('sg-q').value.trim().toLowerCase(),days=Number($('sg-days').value),mv=$('sg-move').value,sort=$('sg-sort').value;
+ var sgShown=60;var paint=function(){var q=$('sg-q').value.trim().toLowerCase(),days=Number($('sg-days').value),mv=$('sg-move').value,sort=$('sg-sort').value;
   var dates=data.items.map(function(x){return x[0];}).sort(),lastDay=dates[dates.length-1]||'',from=lastDay?new Date(Date.parse(lastDay)-(days-1)*864e5).toISOString().slice(0,10):'';
   var items=data.items.filter(function(x){return (kind==='all'||x[1]===kind)&&x[0]>=from&&(!q||String(x[3]).toLowerCase().indexOf(q)>=0||String(x[4]).toLowerCase().indexOf(q)>=0||String(x[2]).indexOf(q)>=0)&&(!mv||(mv==='up'?x[6]>0:x[6]<0));});var lab=data.labels;
   var num=function(v,d){return v==null?d:v;};
   if(sort==='old')items.sort(function(a,b){return a[0]<b[0]?-1:a[0]>b[0]?1:0;});else if(sort==='up')items.sort(function(a,b){return num(b[6],-999)-num(a[6],-999);});else if(sort==='down')items.sort(function(a,b){return num(a[6],999)-num(b[6],999);});else if(sort==='name')items.sort(function(a,b){return String(a[3]).localeCompare(String(b[3]),'ko');});else items.sort(function(a,b){return a[0]<b[0]?1:a[0]>b[0]?-1:0;});
   $('sg-n').textContent=items.length+'건';
   document.getElementById('sg-why').textContent=kind!=='all'&&lab[kind]?lab[kind][1]:'';
-  var byDay=sort==='new'||sort==='old',days={},order=[];items.slice(0,400).forEach(function(x){var k=byDay?x[0]:'_';if(!days[k]){days[k]=[];order.push(k);}days[k].push(x);});
-  document.getElementById('sg-list').innerHTML=order.length?order.map(function(d){return (d==='_'?'':'<div class="sg-day">'+esc(d)+' · '+days[d].length+'건</div>')+days[d].map(function(x){return '<div class="sg-item"><span class="sg-tag edge-tag t-'+esc(x[1])+'">'+esc(lab[x[1]]?lab[x[1]][0]:x[1])+'</span><a class="nm" href="'+href(x[2])+'">'+esc(x[3])+'</a><span class="'+cls(x[6])+'">'+(x[6]==null?'':pct(x[6]))+'</span><span class="ti"><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo='+esc(x[5])+'" target="_blank" rel="noopener">'+esc(x[4])+' ↗</a></span></div>';}).join('');}).join(''):'<p class="muted">조건에 맞는 공시가 없어요. 기간을 늘리거나 검색어를 지워 보세요.</p>';
+  var byDay=sort==='new'||sort==='old',days={},order=[];items.slice(0,sgShown).forEach(function(x){var k=byDay?x[0]:'_';if(!days[k]){days[k]=[];order.push(k);}days[k].push(x);});
+  document.getElementById('sg-list').innerHTML=order.length?order.map(function(d){return (d==='_'?'':'<div class="sg-day">'+esc(d)+' · '+days[d].length+'건</div>')+days[d].map(function(x){return '<div class="sg-item"><span class="sg-tag edge-tag t-'+esc(x[1])+'">'+esc(lab[x[1]]?lab[x[1]][0]:x[1])+'</span><a class="nm" href="'+href(x[2])+'">'+esc(x[3])+'</a><span class="'+cls(x[6])+'">'+(x[6]==null?'':pct(x[6]))+'</span><span class="ti"><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo='+esc(x[5])+'" target="_blank" rel="noopener">'+esc(x[4])+' ↗</a></span></div>';}).join('');}).join('')+(items.length>sgShown?'<button type="button" class="more-btn" data-sg-more>'+Math.min(60,items.length-sgShown)+'건 더 보기 <small>'+sgShown+' / '+items.length+'</small></button>':''):'<p class="muted">조건에 맞는 공시가 없어요. 기간을 늘리거나 검색어를 지워 보세요.</p>';
  };
+ // G-154: 60 filings at a time (the full list ran 38 phone screens).
+ document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-sg-more]')){sgShown+=60;paint();}});
  fetch('signals.json').then(function(r){return r.json();}).then(function(j){data=j;var counts={};j.items.forEach(function(x){counts[x[1]]=(counts[x[1]]||0)+1;});
   document.getElementById('sg-chips').innerHTML='<button type="button" data-k="all">전체 '+j.items.length+'</button>'+Object.keys(j.labels).filter(function(k){return counts[k];}).map(function(k){return '<button type="button" data-k="'+k+'">'+esc(j.labels[k][0])+' '+counts[k]+'</button>';}).join('');
-  document.querySelectorAll('[data-k]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-k')===kind));b.onclick=function(){kind=b.getAttribute('data-k');history.replaceState(null,'',kind==='all'?location.pathname:'#'+kind);document.querySelectorAll('[data-k]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});paint();};});
+  document.querySelectorAll('[data-k]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-k')===kind));b.onclick=function(){sgShown=60;kind=b.getAttribute('data-k');history.replaceState(null,'',kind==='all'?location.pathname:'#'+kind);document.querySelectorAll('[data-k]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});paint();};});
   paint();}).catch(function(){document.getElementById('sg-list').innerHTML='<p class="muted">공시 레이더 자료를 아직 모으지 못했어요.</p>';});
 })();
 </script>`;

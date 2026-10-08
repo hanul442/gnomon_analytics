@@ -460,14 +460,15 @@ export const TOUR_JS = `
 export const TOUR_CSS = `.tr-hole{position:fixed;z-index:200;border-radius:14px;box-shadow:0 0 0 9999px rgba(10,20,35,.6);pointer-events:none;transition:all .2s}.tr-tip{position:fixed;z-index:201;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 28px));background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 14px 36px rgba(0,0,0,.25)}.tr-tip b{font-size:16px}.tr-tip p{margin:6px 0 10px;font-size:14px;line-height:1.6;color:var(--fg2)}.tr-n{font-size:11.5px;font-weight:700;color:var(--accent-strong)}.tr-b{display:flex;gap:6px;justify-content:flex-end}.tr-b button{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:6px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.tr-b [data-t=x]{margin-right:auto;border:0;color:var(--muted)}.tr-b .tr-next{background:var(--navy);color:#fff;border-color:var(--navy)}`;
 
 /**
- * Survey pop-up (G-75): on home and report pages, once the tour is out of the way. No custom survey yet →
+ * Survey card (G-75, G-154): on home only, for signed-in readers, once the tour is out of the way. A small card at
+ * the bottom that covers nothing (it used to be a full-screen pop-up on every report page, even logged out). No custom survey yet →
  * ask for the 7-minute one (again three days after "나중에"). Friday to Sunday → this week's 1-minute
  * survey, once per week. Never on the survey pages themselves.
  */
 export const SURVEY_POP_JS = `
   (function () {
-    if (!document.getElementById('today') && !document.getElementById('tab-ai')) return;
     var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
+    if (!document.getElementById('today') || !get('gnm-session')) return;
     var now = Date.now(), k = new Date(now + 9 * 3600e3), day = k.getUTCDay();
     var week = k.getUTCFullYear() + '-' + Math.ceil(((k - Date.UTC(k.getUTCFullYear(), 0, 1)) / 864e5 + new Date(Date.UTC(k.getUTCFullYear(), 0, 1)).getUTCDay() + 1) / 7);
     var pick = null;
@@ -477,17 +478,18 @@ export const SURVEY_POP_JS = `
     var base = document.body.getAttribute('data-base') || '';
     var open = function () {
       if (document.querySelector('.tr-tip') || document.querySelector('.side-menu:not([hidden])')) return setTimeout(open, 4000);
-      var d = document.createElement('div'); d.className = 'pop-wrap'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', pick.title);
-      d.innerHTML = '<div class="pop"><div class="pop-ic" aria-hidden="true">' + pick.icon + '</div><b>' + pick.title + '</b><p>' + pick.text + '</p><div class="pop-b"><button type="button" data-p="later">나중에</button><a class="btn-primary" href="' + base + pick.href + '">' + pick.cta + ' ›</a></div></div>';
+      var d = document.createElement('aside'); d.className = 'pop-card'; d.setAttribute('aria-label', pick.title);
+      d.innerHTML = '<span class="pc-ic" aria-hidden="true">' + pick.icon + '</span><div class="pc-tx"><b>' + pick.title + '</b><p>' + pick.text + '</p><div class="pc-b"><a class="btn-primary" href="' + base + pick.href + '">' + pick.cta + ' ›</a><button type="button" data-p="later">나중에</button></div></div><button type="button" class="pc-x" data-p="later" aria-label="닫기">×</button>';
       var close = function () { set(pick.key, String(pick.later)); d.remove(); };
-      d.addEventListener('click', function (e) { if (e.target === d || (e.target.getAttribute && e.target.getAttribute('data-p') === 'later')) close(); });
+      d.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-p=later]'); if (b) close(); });
       d.querySelector('a').addEventListener('click', function () { set(pick.key, String(pick.later)); });
       document.body.appendChild(d);
     };
     setTimeout(open, 6000);
   })();`;
 
-export const POP_CSS = `.pop-wrap{position:fixed;inset:0;z-index:150;background:rgba(10,20,35,.45);display:grid;place-items:center;padding:16px;animation:pop-in .2s ease-out}.pop{width:min(380px,100%);background:#fff;border-radius:20px;padding:22px 20px 16px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}.pop-ic{font-size:40px}.pop b{display:block;font-size:18px;margin-top:6px}.pop p{font-size:14px;line-height:1.6;color:var(--fg2);margin:8px 0 14px}.pop-b{display:flex;gap:8px;justify-content:center}.pop-b button{flex:none;white-space:nowrap;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}.pop-b .btn-primary{flex:1;width:auto;margin:0;text-decoration:none;justify-content:center}@keyframes pop-in{from{opacity:0}to{opacity:1}}`;
+export const POP_CSS = `.pop-card{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:120;max-width:440px;margin:0 auto;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(10,20,35,.18);padding:14px;animation:pop-in .2s ease-out}.pc-ic{font-size:22px;line-height:1}.pc-tx b{display:block;font-size:15px}.pc-tx p{margin:4px 0 10px;font-size:13px;line-height:1.55;color:var(--fg2)}.pc-b{display:flex;gap:8px;align-items:center}.pc-b .btn-primary{margin:0;padding:9px 14px;font-size:14px}.pc-b button,.pc-x{border:0;background:none;font:inherit;font-size:13.5px;color:var(--muted);cursor:pointer;min-height:40px;padding:0 8px}.pc-x{font-size:20px;min-width:40px;margin:-8px -8px 0 0}@media (min-width:821px){.pop-card{left:auto;right:24px;bottom:24px}}
+.pop-wrap{position:fixed;inset:0;z-index:150;background:rgba(10,20,35,.45);display:grid;place-items:center;padding:16px;animation:pop-in .2s ease-out}.pop{width:min(380px,100%);background:#fff;border-radius:20px;padding:22px 20px 16px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}.pop-ic{font-size:40px}.pop b{display:block;font-size:18px;margin-top:6px}.pop p{font-size:14px;line-height:1.6;color:var(--fg2);margin:8px 0 14px}.pop-b{display:flex;gap:8px;justify-content:center}.pop-b button{flex:none;white-space:nowrap;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer}.pop-b .btn-primary{flex:1;width:auto;margin:0;text-decoration:none;justify-content:center}@keyframes pop-in{from{opacity:0}to{opacity:1}}`;
 
 /** G-83: the loading mark — three soft orbs that breathe in turn, used wherever the page waits on data or AI. */
 export const ORBS_CSS = `.rj .rj-orb{min-height:0;padding:26px 8px 6px;gap:14px}.rj .rj-orb .orbs{position:relative;width:96px;height:96px;margin:0;border-radius:50%;background:radial-gradient(circle at 50% 42%,#f3f6fc 0%,#e6edf9 52%,rgba(230,237,249,0) 71%);justify-content:center}.rj .rj-orb .orbs canvas{width:76px;height:76px}.rj .rj-orb .orbs::after{content:"";position:absolute;inset:6px;border-radius:50%;border:1.5px solid rgba(19,41,75,.14);animation:rj-ring 2.4s ease-out infinite}@keyframes rj-ring{0%{transform:scale(.86);opacity:.9}100%{transform:scale(1.12);opacity:0}}@media (prefers-reduced-motion:reduce){.rj .rj-orb .orbs::after{animation:none}}
