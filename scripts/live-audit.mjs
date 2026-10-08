@@ -10,6 +10,12 @@ const PAGES = (process.env.PAGES ?? [
   '000660/index.html', 'stock.html?c=015760', 'stock.html?c=015760#tab-fundamentals', 'coin.html?m=KRW-BTC', 'guide.html', 'pricing.html',
 ].join(',')).split(',');
 const WIDTHS = [390, 1280];
+// Logged-in passes: {plan: session token} for throwaway audit accounts the workflow creates (never real users).
+const SESSIONS = JSON.parse(process.env.AUDIT_SESSIONS || '{}');
+const LOGGED = (process.env.LOGGED_PAGES ?? [
+  'index.html', 'pricing.html', 'myreports.html', 'mydebates.html', 'alerts.html', 'screener.html', 'reports.html',
+  '000660/index.html', '000660/index.html#tab-ai', '005930/index.html#tab-ai', 'stock.html?c=015760', 'stock.html?c=015760#tab-ai', 'coin.html?m=KRW-BTC',
+].join(',')).split(',');
 
 const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
 let problems = 0;
@@ -19,16 +25,17 @@ try {
   const href = await p.locator('.mi-card').first().getAttribute('href').catch(() => null); if (href) PAGES.push(href); await p.close();
 } catch { /* the list itself is audited below */ }
 
-for (const width of WIDTHS) for (const path of PAGES) {
+async function pass(label, pages, widths, session) {
+ for (const width of widths) for (const path of pages) {
   const page = await browser.newPage({ viewport: { width, height: width < 800 ? 844 : 900 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e.message).slice(0, 160)));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text().slice(0, 160)); });
   page.on('response', (r) => { if (r.status() >= 400 && !/favicon|\/events|\/me\b/.test(r.url())) errors.push(`${r.status()} ${r.url().replace(BASE, '').slice(0, 100)}`); });
-  await page.addInitScript(() => { try { localStorage.setItem('gnm-tour-done', '1'); sessionStorage.setItem('gnm-ad-x', '1'); } catch {} });
-  try { await page.goto(BASE + path, { waitUntil: 'load', timeout: 45000 }); } catch (e) { console.log(JSON.stringify({ width, path, fatal: String(e).slice(0, 160) })); problems++; await page.close(); continue; }
+  await page.addInitScript((s) => { try { localStorage.setItem('gnm-tour-done', '1'); sessionStorage.setItem('gnm-ad-x', '1'); sessionStorage.setItem('gnm-nudge', '1'); if (s) localStorage.setItem('gnm-session', s); } catch {} }, session || '');
+  try { await page.goto(BASE + path, { waitUntil: 'load', timeout: 45000 }); } catch (e) { console.log(JSON.stringify({ as: label, width, path, fatal: String(e).slice(0, 160) })); problems++; await page.close(); continue; }
   const hash = path.split('#')[1]; if (hash) await page.locator(`a[href="#${hash}"]`).first().click({ timeout: 3000 }).catch(() => {});
-  await page.waitForTimeout(9000);
+  await page.waitForTimeout(session ? 7000 : 9000);
   const found = await page.evaluate(() => {
     const vis = (e) => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length) && getComputedStyle(e).visibility !== 'hidden';
     const out = {};
@@ -50,11 +57,23 @@ for (const width of WIDTHS) for (const path of PAGES) {
     const per = document.querySelector('#peers .pe-per'); if (per && vis(per) && /불러오|못했|모자라/.test(per.textContent)) out.peersPer = per.textContent.trim().slice(0, 60);
     const seats = document.querySelectorAll('#tab-ai .parliament, #tab-ai [data-parliament]').length; if (seats > 1) out.aiParliaments = seats;
     const debates = document.querySelectorAll('#tab-ai #debate').length; if (debates > 1) out.aiDebates = debates;
+    // Logged in: the account must actually be recognised, and paid parts must not leak to plans without access.
+    if (document.cookie !== null && localStorage.getItem('gnm-session')) {
+      const me = JSON.parse(localStorage.getItem('gnm-me') || 'null');
+      if (!me || !me.user) out.notLoggedIn = true;
+      if (/로그인이 (필요|끝났)/.test(document.body.innerText)) out.loginMessage = true;
+    }
     return out;
   });
+  // Sealed committee text must not show for plans that have to unlock it (the audit accounts never unlock).
+  if (['free', 'plus', 'alpha'].includes(label)) { const leak = await page.locator('.deep-body:visible').count(); if (leak) found.deepLeak = leak; }
   if (errors.length) found.errors = [...new Set(errors)].slice(0, 8);
-  if (Object.keys(found).length) { problems++; console.log(JSON.stringify({ width, path, ...found })); }
+  if (Object.keys(found).length) { problems++; console.log(JSON.stringify({ as: label, width, path, ...found })); }
   await page.close();
 }
+}
+
+await pass('anon', PAGES, WIDTHS, '');
+for (const [plan, token] of Object.entries(SESSIONS)) await pass(plan, LOGGED, plan === 'alpha' ? WIDTHS : [390], token);
 await browser.close();
 console.log(`audit done: ${problems} page-width pairs with findings`);
