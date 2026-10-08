@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T10:38:09.306Z",
+ "at": "2026-10-08T11:12:56.316Z",
  "selected": null,
  "universe": [
   {
@@ -256,7 +256,7 @@
    "failedSources": []
   },
   {
-   "symbol": "017890",
+   "symbol": "001780",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -266,12 +266,7 @@
    "failedSources": []
   },
   {
-   "symbol": "001780",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-SAND",
+   "symbol": "017890",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -287,6 +282,11 @@
   },
   {
    "symbol": "002960",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-SAND",
    "report": "EXISTS",
    "failedSources": []
   }

@@ -2040,6 +2040,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "007820",
+  "name": "엠엑스로보틱스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "007860",
   "name": "서연",
   "market": "KOSPI"
@@ -2743,11 +2748,6 @@
   "symbol": "012750",
   "name": "에스원",
   "market": "KOSPI"
- },
- {
-  "symbol": "012790",
-  "name": "신일제약",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "012790",
@@ -4320,6 +4320,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "035610",
+  "name": "솔본",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "035620",
   "name": "바른손이앤에이",
   "market": "KOSDAQ"
@@ -5510,6 +5515,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "053580",
+  "name": "웹케시",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "053610",
   "name": "프로텍",
   "market": "KOSDAQ"
@@ -5762,11 +5772,6 @@
  {
   "symbol": "059100",
   "name": "아이컴포넌트",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "059120",
-  "name": "아진엑스텍",
   "market": "KOSDAQ"
  },
  {
@@ -8830,11 +8835,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "147760",
-  "name": "피엠티",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "147830",
   "name": "제룡산업",
   "market": "KOSDAQ"
@@ -9607,6 +9607,11 @@
  {
   "symbol": "208860",
   "name": "다산디엠씨",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "209640",
+  "name": "와이제이링크",
   "market": "KOSDAQ"
  },
  {
@@ -11648,11 +11653,6 @@
   "symbol": "338100",
   "name": "NH프라임리츠",
   "market": "KOSPI"
- },
- {
-  "symbol": "338220",
-  "name": "뷰노",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "338220",
