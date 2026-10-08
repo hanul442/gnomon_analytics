@@ -13,3 +13,10 @@
 {"date":"2026-10-07","symbol":"460860","name":"동국제강","kind":"stock","market":"KOSPI","tier":"brief","reason":"스크리너 '매집 흔적' 상위"}
 {"date":"2026-10-07","symbol":"455850","name":"SOL AI반도체소부장","kind":"etf","market":"KOSPI","tier":"deep","reason":"거래대금 상위 ETF"}
 {"date":"2026-10-07","symbol":"KRW-POD","name":"돌핀","kind":"coin","market":"UPBIT","tier":"brief","reason":"24시간 거래대금 상위 코인"}
+{"date":"2026-10-08","symbol":"001780","name":"알루코","kind":"stock","market":"KOSPI","tier":"deep","reason":"스크리너 '거래량 급증·상승' 신호 후보"}
+{"date":"2026-10-08","symbol":"017890","name":"한국알콜","kind":"stock","market":"KOSDAQ","tier":"brief","reason":"스크리너 '52주 고점 돌파 시도' 신호 후보"}
+{"date":"2026-10-08","symbol":"033560","name":"블루콤","kind":"stock","market":"KOSDAQ","tier":"brief","reason":"스크리너 '52주 고점 돌파 시도' 신호 후보"}
+{"date":"2026-10-08","symbol":"030190","name":"NICE평가정보","kind":"stock","market":"KOSPI","tier":"brief","reason":"스크리너 '강세 신호 상위' 신호 후보"}
+{"date":"2026-10-08","symbol":"002960","name":"한국쉘석유","kind":"stock","market":"KOSPI","tier":"brief","reason":"스크리너 '강세 신호 상위' 신호 후보"}
+{"date":"2026-10-08","symbol":"498400","name":"KODEX 200타겟위클리커버드콜","kind":"etf","market":"KOSPI","tier":"brief","reason":"거래대금 상위 ETF 후보에서 선정"}
+{"date":"2026-10-08","symbol":"KRW-SAND","name":"샌드박스","kind":"coin","market":"UPBIT","tier":"deep","reason":"24시간 거래대금 상위 코인 후보에서 선정"}
