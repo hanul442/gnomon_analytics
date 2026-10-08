@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T14:35:40.710Z",
+ "at": "2026-10-08T14:56:38.866Z",
  "selected": null,
  "universe": [
   {
@@ -47,11 +47,6 @@
    "failedSources": []
   },
   {
-   "symbol": "005930",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "009830",
    "report": "SKIPPED",
    "failedSources": []
@@ -82,12 +77,12 @@
    "failedSources": []
   },
   {
-   "symbol": "353200",
+   "symbol": "043260",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "010060",
+   "symbol": "353200",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -132,42 +127,12 @@
    "failedSources": []
   },
   {
-   "symbol": "005380",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "222800",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "316140",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "000270",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "000250",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "093370",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "007810",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "089030",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "096770",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -177,22 +142,37 @@
    "failedSources": []
   },
   {
-   "symbol": "028300",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "253590",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "452190",
+   "symbol": "058470",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "067310",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "010950",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "036540",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "003490",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "439090",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -222,6 +202,11 @@
    ]
   },
   {
+   "symbol": "033560",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "017890",
    "report": "EXISTS",
    "failedSources": []
@@ -233,11 +218,6 @@
   },
   {
    "symbol": "030190",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "033560",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -264,31 +244,47 @@
  ],
  "failed": [
   {
-   "symbol": "043260",
+   "symbol": "005930",
    "error": "fetch failed"
   },
   {
-   "symbol": "096770",
+   "symbol": "010060",
    "error": "fetch failed"
   },
   {
-   "symbol": "058470",
+   "symbol": "005380",
    "error": "fetch failed"
   },
   {
-   "symbol": "010950",
+   "symbol": "222800",
    "error": "fetch failed"
   },
   {
-   "symbol": "067310",
+   "symbol": "316140",
    "error": "fetch failed"
   },
   {
-   "symbol": "036540",
+   "symbol": "000270",
    "error": "fetch failed"
   },
   {
-   "symbol": "439090",
+   "symbol": "000250",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "093370",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "007810",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "028300",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "452190",
    "error": "fetch failed"
   }
  ]
