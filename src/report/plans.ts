@@ -145,9 +145,9 @@ export function gate(html: string, opts: { base: string; what: string; need?: 'p
 
 export const PLAN_CSS = `
 .gate{position:relative}.gate-cta{display:none}
-html[data-plan=free] .gate,html[data-plan=plus] .gate[data-need=pro]{min-height:230px}
-html[data-plan=free] .gate>.gate-body,html[data-plan=plus] .gate[data-need=pro]>.gate-body{max-height:340px;overflow:hidden;filter:blur(4px);opacity:.7;pointer-events:none;user-select:none;-webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
-html[data-plan=free] .gate>.gate-cta,html[data-plan=plus] .gate[data-need=pro]>.gate-cta{display:flex;align-items:center;gap:12px;position:absolute;left:50%;top:120px;transform:translateX(-50%);width:min(440px,92%);background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 12px 32px rgba(15,27,45,.14);z-index:2}
+html[data-plan=free] .gate,html[data-plan=plus] .gate[data-need=pro]{min-height:170px}
+html[data-plan=free] .gate>.gate-body,html[data-plan=plus] .gate[data-need=pro]>.gate-body{max-height:180px;overflow:hidden;filter:blur(4px);opacity:.7;pointer-events:none;user-select:none;-webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
+html[data-plan=free] .gate>.gate-cta,html[data-plan=plus] .gate[data-need=pro]>.gate-cta{display:flex;align-items:center;gap:12px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,92%);background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 12px 32px rgba(15,27,45,.14);z-index:2}
 html[data-plan=free] .need-plus{display:none}html:not([data-plan=free]) .only-free{display:none}
 .gate-cta .lock{width:22px;height:22px;color:var(--navy)}.gate-cta div{display:flex;flex-direction:column;flex:1;min-width:0}.gate-cta b{font-size:15px}.gate-cta span{font-size:13px;color:var(--muted)}.gate-cta .btn-primary{margin:0;padding:10px 14px;font-size:14px;white-space:nowrap}
 .acct{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;text-decoration:none;color:#fff}.acct:hover{background:rgba(255,255,255,.1)}.acct i{font-style:normal;opacity:.75;font-weight:500}

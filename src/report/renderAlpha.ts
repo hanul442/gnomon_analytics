@@ -109,7 +109,7 @@ export const ONBOARDING_QUESTIONS = [
   { key: 'sectors', section: '3. 관심사', title: '관심 있는 업종을 골라 주세요', note: '여러 개 골라도 돼요', type: 'many', options: SECTORS },
   { key: 'tickers', title: '갖고 있거나 지켜보는 종목이 있나요?', note: '최대 10개 · 관심 종목에 바로 담아 드려요', type: 'tickers', options: [] },
   { key: 'interests', title: '그노몬에서 주로 보고 싶은 것은?', note: '여러 개 골라도 돼요', type: 'many', options: ['AI 해설·위원회', '기술적 신호·차트', '외국인·기관 수급', '실적·밸류에이션', '공시·뉴스', '전략·백테스트', '모의투자·성적표', '조건 검색(스크리너)'] },
-  { key: 'alerts', title: '받고 싶은 알림은?', note: '여러 개 골라도 돼요', type: 'many', options: ['관심 종목 급등락', '관심 종목 공시', '테스트 가격 돌파·이탈', '조건 검색에 새로 걸린 종목', '매일 아침 요약', '알림은 싫어요'] },
+  { key: 'alerts', title: '받고 싶은 알림은?', note: '여러 개 골라도 돼요', type: 'many', options: ['관심 종목 급등락', '관심 종목 공시', '강세·약세 전환 가격 돌파·이탈', '조건 검색에 새로 걸린 종목', '매일 아침 요약', '알림은 싫어요'] },
   { key: 'explain', section: '4. 그노몬에 바라는 것', title: '설명은 어느 수준이 좋아요?', type: 'one', options: ['아주 쉬운 말로', '보통', '전문 용어 그대로'] },
   { key: 'length', title: '종목 리포트는 어느 정도 길이가 좋아요?', type: 'one', options: ['결론 한 줄', '결론과 이유 세 줄', '근거까지 자세히', '데이터 전부'] },
   { key: 'tools', title: '지금 쓰는 도구는?', note: '여러 개 골라도 돼요', type: 'many', options: ['증권사 앱(MTS·HTS)', '네이버·다음 증권', '증권사 리포트', '유료 리딩방·구독', 'TradingView 같은 해외 도구', '엑셀·직접 만든 도구', '없어요'] },
