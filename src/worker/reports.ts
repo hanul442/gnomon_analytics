@@ -13,6 +13,8 @@ import { committeeTab } from '../report/renderHtml.js';
 import { decisionTrace } from '../report/renderReportExtras.js';
 import { flowsPanel, fundamentalsPanel } from '../report/renderMarket.js';
 import { esc } from '../report/html.js';
+import { withCurrency } from '../report/format.js';
+import { isUsSymbol } from '../report/seal.js';
 export interface ReportQueue { send(body: { id: string }): Promise<void> }
 export interface ReportJob {
  id:string; user_id:string; symbol:string; kind:string; input_hash:string; input_json:string;
@@ -24,15 +26,16 @@ export async function reportInput(site:string,symbol:string,deps:ReportDeps):Pro
  const base=site.replace(/\/$/,'');
  const context=await deps.fetch(`${base}/research/${symbol}.json`,{signal:AbortSignal.timeout(8000)}).catch(()=>null);
  if(context?.ok){const r=await context.json() as DailyReport;if(r.symbol===symbol&&r.price){delete r.commentary;return r;}}
- const r=await deps.fetch(`${base}/${symbol.startsWith('KRW-')?'c':'s'}/${symbol}.json`,{signal:AbortSignal.timeout(8000)});
+ const us=isUsSymbol(symbol);
+ const r=await deps.fetch(`${base}/${symbol.startsWith('KRW-')?'c':us?'u':'s'}/${symbol}.json`,{signal:AbortSignal.timeout(8000)});
  if(!r.ok)throw new Error('분석에 필요한 데이터가 없어요. 데이터 갱신 뒤 다시 요청해 주세요.');
- const d=await r.json() as {name:string;market?:string;kind?:string;bars:[string,number,number,number,number,number][]};
+ const d=await r.json() as {name:string;ticker?:string;market?:string;kind?:string;bars:[string,number,number,number,number,number][]};
  if(!Array.isArray(d.bars)||d.bars.length<20)throw new Error('가격 기록이 부족해서 리포트를 만들 수 없어요.');
- const now=deps.now(), bars=d.bars.map(b=>({symbol,date:b[0],open:b[1],high:b[2],low:b[3],close:b[4],volume:b[5],source:symbol.startsWith('KRW-')?'upbit':'naver',retrievedAt:now.toISOString()}));
+ const now=deps.now(), bars=d.bars.map(b=>({symbol,date:b[0],open:b[1],high:b[2],low:b[3],close:b[4],volume:b[5],source:symbol.startsWith('KRW-')?'upbit':us?'naver:world':'naver',retrievedAt:now.toISOString()}));
  if(bars.some(b=>!/^\d{4}-\d{2}-\d{2}$/.test(b.date)||![b.open,b.high,b.low,b.close,b.volume].every(Number.isFinite)||b.close<=0))throw new Error('가격 데이터 형식을 확인하지 못했어요.');
- const out=buildDailyReport({symbol,name:d.name,date:bars.at(-1)!.date,generatedAt:now,bars,disclosures:[],sources:[bars[0]!.source],...(symbol.startsWith('KRW-')?{kind:'coin' as const,exchange:'UPBIT' as const}:{...(d.kind==='etf'?{kind:'etf' as const}:{}),...(d.market==='KOSPI'||d.market==='KOSDAQ'?{exchange:d.market}:{})})});
+ const out=buildDailyReport({symbol,name:d.name,date:bars.at(-1)!.date,generatedAt:now,bars,disclosures:[],sources:[bars[0]!.source],...(us?{currency:'USD' as const,...(d.kind==='etf'?{kind:'etf' as const}:{}),...(d.market==='NASDAQ'||d.market==='NYSE'||d.market==='AMEX'?{exchange:d.market}:{})}:symbol.startsWith('KRW-')?{kind:'coin' as const,exchange:'UPBIT' as const}:{...(d.kind==='etf'?{kind:'etf' as const}:{}),...(d.market==='KOSPI'||d.market==='KOSDAQ'?{exchange:d.market}:{})})});
  out.market=buildMarketSection({symbol,date:out.date,generatedAt:now,daily:bars,weekly:[],intraday:[],flows:[],snapshots:[],finance:[],research:[],benchmarks:[],loggedForecasts:[],status:[]});
- out.notes.push('이 요청은 공개 가격 기록 기준입니다. 수급·실적·뉴스가 수집되지 않았다면 해당 판단은 보류합니다.');
+ out.notes.push(us?'미국 주식은 네이버 해외 주식 일봉(달러, 미국 현지 날짜) 기준이에요. 수급·실적·공시 근거가 없어서 그 판단은 보류해요.':'이 요청은 공개 가격 기록 기준입니다. 수급·실적·뉴스가 수집되지 않았다면 해당 판단은 보류합니다.');
  return out;
 }
 export async function inputHash(report:DailyReport):Promise<string>{
@@ -87,6 +90,9 @@ export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void
 }
 /** Tabs of a report generated on request, painted onto the stock's page. The AI tab uses the daily pages' own renderer (G-115). */
 export function reportFragments(report:DailyReport,base=''){
+ return withCurrency(report.currency,()=>fragmentsOf(report,base));
+}
+function fragmentsOf(report:DailyReport,base:string){
  const c=report.commentary!;
  const claim=(title:string,items:readonly {text:string}[])=>`<div class="card"><h3>${title}</h3>${items.map(x=>`<p>${esc(x.text)}</p>`).join('')||'<p>확인된 근거가 없어요.</p>'}</div>`;
  const news=`<div class="card"><h3>뉴스·공시</h3>${report.filings.map(f=>`<p>${esc(f.filedDate)} · ${esc(f.title)}</p>`).join('')}${(report.news?.clusters??[]).map(n=>`<p>${esc(n.title)}</p>`).join('')||'<p>추가 뉴스 근거가 없어요.</p>'}</div>`;

@@ -16,7 +16,7 @@ import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, FIELDS, matches } from '../analysis/screenRules.js';
 import { intradaySignals, readIntraday } from '../analysis/intraday.js';
-import { deepPath, DEEP_DATE, DEEP_SYMBOL, unseal } from '../report/seal.js';
+import { deepPath, DEEP_DATE, DEEP_SYMBOL, isUsSymbol, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
 import { parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
 import { fetchNaverMinuteCandles, parseNaverMinuteChart } from '../sources/naverPrice.js';
@@ -193,7 +193,7 @@ async function me(env: Env, u: User, now: Date) {
 
 async function fetchStock(env: Env, deps: Deps, symbol: string): Promise<string> {
   try {
-    const r = await deps.fetch(`${env.SITE_URL.replace(/\/$/, '')}/${symbol.startsWith('KRW-')?'c':'s'}/${symbol}.json`, { signal: AbortSignal.timeout(4000) });
+    const r = await deps.fetch(`${env.SITE_URL.replace(/\/$/, '')}/${symbol.startsWith('KRW-')?'c':isUsSymbol(symbol)?'u':'s'}/${symbol}.json`, { signal: AbortSignal.timeout(4000) });
     return r.ok ? summarizeStock(await r.json()) : '';
   } catch { return ''; }
 }
@@ -203,7 +203,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   if (!tier) fail(400, 'BAD_TIER', '모델을 골라 주세요.');
   const question = str(b.question, 1000);
   if (question.length < 2) fail(400, 'EMPTY', '질문을 적어 주세요.');
-  const symbol = typeof b.symbol === 'string' && /^(?:\d{6}|KRW-[A-Z0-9]{1,15}|MARKET-DAILY)$/.test(b.symbol) ? b.symbol : undefined;
+  const symbol = typeof b.symbol === 'string' && (/^(?:\d{6}|[0-9][0-9A-Z]{5}|KRW-[A-Z0-9]{1,15}|MARKET-DAILY)$/.test(b.symbol) || isUsSymbol(b.symbol)) ? b.symbol : undefined;
   const page = str(b.page, 6000);
   const history = (Array.isArray(b.history) ? b.history : []).slice(-3)
     .map((h) => ({ q: str((h as { q?: unknown })?.q, 1000), a: str((h as { a?: unknown })?.a, 2000) })).filter((h) => h.q && h.a);
@@ -834,7 +834,7 @@ route('GET', '/alerts/price', async ({ req, env, now }) => {
 route('POST', '/alerts/price', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   const symbol = str(b.symbol, 20).toUpperCase(), op = b.op === '<=' ? '<=' : b.op === '>=' ? '>=' : '', price = typeof b.price === 'number' ? b.price : NaN;
-  if (!/^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/.test(symbol) || !op || !(price > 0) || price > 1e12) fail(400, 'BAD_ALERT', '종목과 가격, 이상/이하를 확인해 주세요.');
+  if (!(/^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/.test(symbol) || isUsSymbol(symbol)) || !op || !(price > 0) || price > 1e12) fail(400, 'BAD_ALERT', '종목과 가격, 이상/이하를 확인해 주세요.');
   const open = (await env.DB.prepare('SELECT COUNT(*) AS n FROM price_alerts WHERE user_id = ? AND fired_at IS NULL').bind(u.id).first<{ n: number }>())?.n ?? 0;
   const cap = notifyLimit(u.plan).priceAlerts;
   if (open >= cap) fail(403, 'ALERT_LIMIT', `지금 요금제는 가격 알림을 ${cap}개까지 걸 수 있어요. 지난 알림을 지우거나 요금제를 올려 주세요.`, { limit: cap });

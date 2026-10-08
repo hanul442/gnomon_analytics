@@ -4,11 +4,14 @@
 import type { D1 } from './db.js';
 import { pushTo } from './push.js';
 import { quoteUrl, parseNaverQuotes } from '../sources/naverQuote.js';
+import { parseWorldQuote, worldQuoteUrl } from '../sources/naverWorld.js';
+import { isUsSymbol } from '../report/seal.js';
 import { notifyLimit } from '../report/plans.js';
 
 export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'test';
-export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; push: boolean }
-export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, push: true };
+/** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
+export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
+export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
 const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', test: null };
 
 export async function prefsOf(db: D1, userId: string): Promise<Prefs> {
@@ -18,11 +21,20 @@ export async function prefsOf(db: D1, userId: string): Promise<Prefs> {
 }
 export const cleanPrefs = (v: unknown): Partial<Prefs> => {
   const o = (v && typeof v === 'object' ? v : {}) as Record<string, unknown>, out: Partial<Prefs> = {};
-  for (const k of Object.keys(DEFAULT_PREFS) as (keyof Prefs)[]) if (typeof o[k] === 'boolean') out[k] = o[k] as boolean;
+  for (const k of Object.keys(DEFAULT_PREFS) as (keyof Prefs)[]) {
+    if (typeof DEFAULT_PREFS[k] === 'boolean' && typeof o[k] === 'boolean') (out as Record<string, unknown>)[k] = o[k];
+    if (typeof DEFAULT_PREFS[k] === 'string' && typeof o[k] === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(o[k] as string)) (out as Record<string, unknown>)[k] = o[k];
+  }
   return out;
 };
 
 export interface Ctx { db: D1; fetch: typeof fetch; site: string; now: Date }
+/** Inside the user's quiet hours (KST)? A window may cross midnight (23:00–07:00). */
+export function inQuiet(p: Pick<Prefs, 'quiet' | 'quietFrom' | 'quietTo'>, now: Date): boolean {
+  if (!p.quiet || p.quietFrom === p.quietTo) return false;
+  const t = new Date(now.getTime() + 9 * 3600_000).toISOString().slice(11, 16);
+  return p.quietFrom < p.quietTo ? t >= p.quietFrom && t < p.quietTo : t >= p.quietFrom || t < p.quietTo;
+}
 const iso = (d: Date) => d.toISOString();
 
 /** In the 🔔 list, and on the phone when the user turned push on. Returns false when their settings say no. */
@@ -33,7 +45,7 @@ export async function notifyUser(ctx: Ctx, userId: string, kind: NotifyKind, not
   const plan = (await ctx.db.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first<{ plan: string }>())?.plan ?? 'free', lim = notifyLimit(plan);
   if ((kind === 'watchReport' && !lim.watchReport) || (kind === 'intraday' && !lim.intraday)) return false;
   await ctx.db.prepare('INSERT INTO notifications (user_id, kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(userId, kind, note.title, note.body, note.link, iso(ctx.now)).run();
-  if (prefs.push && lim.push) await pushTo(ctx.db, ctx.fetch, userId, { ...note, link: `${ctx.site.replace(/\/$/, '')}/${note.link}`, tag: kind }, ctx.site, ctx.now).catch(() => 0);
+  if (prefs.push && lim.push && !inQuiet(prefs, ctx.now)) await pushTo(ctx.db, ctx.fetch, userId, { ...note, link: `${ctx.site.replace(/\/$/, '')}/${note.link}`, tag: kind }, ctx.site, ctx.now).catch(() => 0);
   return true;
 }
 
@@ -114,7 +126,9 @@ export async function runPriceAlerts(ctx: Ctx): Promise<{ checked: number; fired
   if (!alerts.length) return { checked: 0, fired: 0 };
   const k = new Date(ctx.now.getTime() + 9 * 3600_000), hhmm = k.toISOString().slice(11, 16), dow = k.getUTCDay();
   const session = dow !== 0 && dow !== 6 && hhmm >= '09:00' && hhmm <= '15:40';
-  const stocks = [...new Set(alerts.map((a) => a.symbol).filter((s) => /^[0-9A-Z]{6}$/.test(s)))], coins = [...new Set(alerts.map((a) => a.symbol).filter((s) => s.startsWith('KRW-')))];
+  const stocks = [...new Set(alerts.map((a) => a.symbol).filter((s) => /^[0-9][0-9A-Z]{5}$/.test(s)))], coins = [...new Set(alerts.map((a) => a.symbol).filter((s) => s.startsWith('KRW-')))];
+  // G-152: US stocks from Naver's world-stock quote, one call each; the pre/after-market price counts when that session is open.
+  const us = [...new Set(alerts.map((a) => a.symbol).filter(isUsSymbol))].slice(0, 60);
   const px = new Map<string, number>();
   if (session) for (let i = 0; i < stocks.length; i += 40) {
     const r = await ctx.fetch(quoteUrl(stocks.slice(i, i + 40)), { signal: AbortSignal.timeout(6000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).catch(() => null);
@@ -124,18 +138,24 @@ export async function runPriceAlerts(ctx: Ctx): Promise<{ checked: number; fired
     const r = await ctx.fetch(`https://api.upbit.com/v1/ticker?markets=${coins.slice(i, i + 50).join(',')}`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
     if (r?.ok) for (const t of (await r.json().catch(() => [])) as { market: string; trade_price: number }[]) if (t.trade_price > 0) px.set(t.market, t.trade_price);
   }
+  for (const sym of us) {
+    const r = await ctx.fetch(worldQuoteUrl(sym), { signal: AbortSignal.timeout(6000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).catch(() => null);
+    const q = r?.ok ? parseWorldQuote(await r.json().catch(() => null)) : null;
+    if (q && q.session !== 'closed') px.set(sym, q.price);
+  }
   let fired = 0;
   for (const a of alerts) {
     const p = px.get(a.symbol);
     if (p === undefined || !(a.op === '>=' ? p >= a.price : p <= a.price)) continue;
     const took = await ctx.db.prepare('UPDATE price_alerts SET fired_at = ?, fired_price = ? WHERE id = ? AND fired_at IS NULL').bind(iso(ctx.now), p, a.id).run();
     if ((took.meta?.changes ?? 0) !== 1) continue;
+    const dollar = (v: number) => `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const won = (v: number) => `${v >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}원`;
-    const coin = a.symbol.startsWith('KRW-');
+    const coin = a.symbol.startsWith('KRW-'), usd = isUsSymbol(a.symbol);
     await notifyUser(ctx, a.user_id, 'price', {
-      title: `${a.name || a.symbol} ${won(p)} · ${won(a.price)} ${a.op === '>=' ? '이상' : '이하'} 도달`,
-      body: `${a.note ? a.note + ' · ' : ''}설정한 가격 알림이에요. ${coin ? '업비트' : '네이버'} 시세 기준이라 몇 분 늦을 수 있고, 투자 권유가 아니에요.`,
-      link: coin ? `coin.html?m=${a.symbol}` : `stock.html?c=${a.symbol}`,
+      title: `${a.name || a.symbol} ${(usd ? dollar : won)(p)} · ${(usd ? dollar : won)(a.price)} ${a.op === '>=' ? '이상' : '이하'} 도달`,
+      body: `${a.note ? a.note + ' · ' : ''}설정한 가격 알림이에요. ${coin ? '업비트' : usd ? '네이버 해외 주식(프리·애프터마켓 포함)' : '네이버'} 시세 기준이라 몇 분 늦을 수 있고, 투자 권유가 아니에요.`,
+      link: coin ? `coin.html?m=${a.symbol}` : usd ? `us.html?s=${encodeURIComponent(a.symbol)}` : `stock.html?c=${a.symbol}`,
     });
     fired += 1;
   }

@@ -29,5 +29,8 @@ export async function unseal(sealed: string, secret: string): Promise<string> {
 
 /** Where the sealed paid HTML of a report lives on the site, relative to the site root. */
 export const deepPath = (symbol: string, date: string) => `${symbol}/deep/${date}.txt`;
-export const DEEP_SYMBOL = /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15}|MARKET-DAILY)$/;
+/** A Korean code, an Upbit market, the market report, or a US Reuters code like AAPL.O (G-152). */
+export const DEEP_SYMBOL = /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15}|MARKET-DAILY|[A-Z][A-Z0-9-]{0,9}(\.[A-Z])?)$/;
+/** A US stock's code: starts with a letter, not a coin or the market report. */
+export const isUsSymbol = (s: string) => /^[A-Z][A-Z0-9-]{0,9}(\.[A-Z])?$/.test(s) && !s.startsWith('KRW-') && !s.startsWith('MARKET-');
 export const DEEP_DATE = /^\d{4}-\d{2}-\d{2}$/;
