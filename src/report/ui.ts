@@ -393,9 +393,9 @@ export const TOUR_JS = `
         ['.top-tabs', '위쪽 탭', '홈 · 찾기 · 관심 · 리포트, 그리고 전체에서 시장·내 것·도움말·계정 메뉴로 가요.'],
       ],
       report: [
-        ['.chips', '여섯 탭', '요약 · 차트 · 타이밍(기술 신호와 전략) · 기업 체력(종목정보·재무제표·수급) · AI 위원회 · 뉴스·공시가 같은 위치에 있어요. 리포트가 없으면 AI 분석은 잠금으로 표시돼요.'],
+        ['.chips', '다섯 탭', '요약 · 타이밍(기술 신호와 전략) · 기업 체력(종목정보·재무제표·수급) · AI 위원회 · 뉴스·공시가 같은 위치에 있어요. 차트는 요약의 작은 차트를 누르면 전체 화면으로 열려요. 리포트가 없으면 AI 분석은 잠금으로 보여요.'],
         ['#home-conclusion', '조건 가격', '큰 가격은 강세·약세 전개를 검토하는 조건이에요. 전망 범위와는 달라요. 분석 날짜·당시 종가와 조건 출처도 확인하세요.', 'home'],
-        ['#tab-chart', '차트', '봉 주기·지표·그리기 도구를 골라 가격 흐름을 자세히 봐요.', 'chart'],
+        ['.hero-chart', '차트 자세히 보기', '작은 차트를 누르면 전체 화면 차트가 열려요. 캔들·하이킨아시·바·라인·영역·기준선, 지표, 그리기, 지수 비교, 최고·최저 표시를 쓸 수 있고 ‹나 뒤로 가기로 닫아요.', 'home'],
         ['#tab-technical', '지표 선택', '피보나치·RSI 등 지표 본문에서 차트 연결을 누르면 해당 지표만 켜져요. 기술로 돌아가기로 보던 위치에 복귀해요.', 'technical'],
         ['#tab-fundamentals', '기업 체력', '성장·수익성·안정성·수급·가치를 한눈에 보고, 재무제표와 수급을 이어서 확인해요.', 'fundamentals'],
         ['#tab-ai', '토론과 질문', '전체 토론은 2초 생각 → 발언 → 2초 쉼으로 재생돼요. 바로 아래 입력창에서 질문하고 +로 답변자나 내 전문가를 고르세요. 전송 전 작은 크레딧 안내를 확인하세요.', 'ai'],
@@ -439,7 +439,9 @@ export const TOUR_JS = `
       window.addEventListener('resize', place); window.addEventListener('scroll', place, { passive: true }); window.addEventListener('keydown', escapeTour);
       show();
     };
-    setTimeout(start, forced ? 300 : 1200);
+    // Not over a full-screen chart or layer: wait until the reader is back on the page.
+    var later = function () { if (/(^| )(chart-fs|layer-open)( |$)/.test(document.documentElement.className)) return setTimeout(later, 1000); start(); };
+    setTimeout(later, forced ? 300 : 1200);
     };
     // G-112: a signed-in visitor on a new device first takes the account's settings (tours already seen
     // come with them), so the tour waits for that before deciding to start.
