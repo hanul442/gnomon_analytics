@@ -32,7 +32,7 @@ async function pass(label, pages, widths, session) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e.message).slice(0, 160)));
   page.on('console', (m) => { if (m.type() === 'error' && !/api\.upbit\.com\/websocket.*429/.test(m.text())) errors.push(m.text().slice(0, 160)); });
-  page.on('response', (r) => { if (r.status() >= 400 && !/favicon|\/events|\/me\b/.test(r.url())) errors.push(`${r.status()} ${r.url().replace(BASE, '').slice(0, 100)}`); });
+  page.on('response', (r) => { if (r.status() >= 400 && (r.status() === 401 || !/favicon|\/events|\/me\b/.test(r.url()))) errors.push(`${r.status()} ${r.request().method()} ${r.url().replace(BASE, '').replace(/^https:\/\/[^/]+/, '').slice(0, 100)}`); });
   await page.addInitScript((s) => { try { localStorage.setItem('gnm-tour-done', '1'); sessionStorage.setItem('gnm-ad-x', '1'); sessionStorage.setItem('gnm-nudge', '1'); if (s) localStorage.setItem('gnm-session', s); } catch {} }, session || '');
   try { await page.goto(BASE + path, { waitUntil: 'load', timeout: 45000 }); } catch (e) { console.log(JSON.stringify({ as: label, width, path, fatal: String(e).slice(0, 160) })); problems++; await page.close(); continue; }
   const hash = path.split('#')[1]; if (hash) await page.locator(`a[href="#${hash}"]`).first().click({ timeout: 3000 }).catch(() => {});
