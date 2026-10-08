@@ -17,7 +17,7 @@ export const COMMENTARY_MODEL = 'claude-opus-5-5';
 export const BRIEF_MODEL = 'claude-haiku-4-5';
 export type CommentaryTier = 'deep' | 'brief';
 /** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v6';
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v7';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -67,7 +67,8 @@ export interface Commentary {
   servedBy?: string;
   tier?: CommentaryTier;
   /** Tokens billed, for cost tracking. */
-  usage?: { inputTokens: number; outputTokens: number };
+  /** inputTokens excludes cached tokens; cacheRead bills at a tenth, cacheWrite at 1.25× (G-149). */
+  usage?: { inputTokens: number; outputTokens: number; cacheReadTokens?: number; cacheWriteTokens?: number };
   summary?: Claim;
   bullish: Claim[];
   bearish: Claim[];
@@ -287,6 +288,9 @@ export const BriefWireSchema = BriefSchema.extend({ insights: WireInsightsSchema
  * a missing list) before the strict schema check. Anything it cannot repair is dropped, never invented.
  */
 const DEEP_SCHEMA_TEXT = JSON.stringify(z.toJSONSchema(CommentaryWireSchema));
+const DEEP_SYSTEM_FULL = () => `${DEEP_SYSTEM}\n\n## 응답 형식\n아래 JSON 스키마에 맞는 JSON 객체 하나만 답합니다. 코드 블록·설명 문장 없이 { 로 시작해 } 로 끝냅니다. enum 값은 스키마에 적힌 것만 씁니다.\n${DEEP_SCHEMA_TEXT}`;
+/** Token counts with the cache split out (G-149). */
+export const usageOf = (u: { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null }) => ({ inputTokens: u.input_tokens, outputTokens: u.output_tokens, ...(u.cache_read_input_tokens ? { cacheReadTokens: u.cache_read_input_tokens } : {}), ...(u.cache_creation_input_tokens ? { cacheWriteTokens: u.cache_creation_input_tokens } : {}) });
 const ENUMS = { kind: ['FACT', 'INFERENCE', 'ASSUMPTION'], desk: ['MARKET', 'TECHNICAL', 'FLOW', 'FUNDAMENTAL', 'EVENT'], stance4: ['BULLISH', 'BEARISH', 'NEUTRAL', 'INSUFFICIENT_DATA'], stance3: ['BULLISH', 'BEARISH', 'NEUTRAL'], scenario: ['BULL', 'BASE', 'BEAR'] } as const;
 const asArr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 const asStr = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v));
@@ -325,7 +329,9 @@ export const kindRule = (kind?: 'etf' | 'coin') => !kind ? '' : kind === 'etf'
   ? '\n- 이 종목은 ETF예요. 개별 기업의 실적·공시·증권가 목표가 근거는 없고, 기초지수 구성·괴리율·총보수 정보도 받지 않았어요. 가격·거래량·기술·수급·뉴스 근거로만 판단하고, 없는 정보는 dataGaps에 적습니다. FUNDAMENTAL 데스크는 근거가 없으면 INSUFFICIENT_DATA로 둡니다.'
   : '\n- 이 종목은 업비트 원화 마켓의 가상자산(코인)이에요. 24시간 거래되고 일봉은 매일 09:00(KST)에 끊으며, "거래일"은 하루를 뜻합니다. 실적·공시·투자자별 수급·증권가 근거가 없으니 FLOW·FUNDAMENTAL 데스크는 INSUFFICIENT_DATA로 둡니다. 비교 대상은 비트코인이에요. 변동성이 주식보다 훨씬 크다는 점을 시나리오 가격대에 반영합니다.';
 
-const briefSystem = (name: string, kind?: 'etf' | 'coin') => `당신은 GNOMON의 리서치 요약 담당이에요. ${name} 주간 리포트의 짧은 AI 요약을 씁니다.
+// G-149: both system prompts are the same for every stock, so the provider caches them; the stock's name and
+// its ETF/coin rules go in the user message, after the cached prefix.
+const BRIEF_SYSTEM = `당신은 GNOMON의 리서치 요약 담당이에요. 사용자 메시지의 종목 주간 리포트에 붙일 짧은 AI 요약을 씁니다.
 
 진짜 요약이에요. 30초 안에 읽히게 짧게 씁니다.
 - summary: 지금 이 종목에서 가장 중요한 한 가지와 그 이유, 2문장 이내(120자 안쪽).
@@ -340,9 +346,10 @@ const briefSystem = (name: string, kind?: 'etf' | 'coin') => `당신은 GNOMON�
 - 모든 주장에 종류(kind)를 붙입니다: 근거에 그대로 있는 사실은 FACT, 근거에서 끌어낸 해석은 INFERENCE, 근거로 확인되지 않은 가정은 ASSUMPTION. 해석을 사실처럼 쓰지 않습니다.
 - 한국어 해요체로, 짧고 분명하게 씁니다. 내부 코드명이나 영어 약어 대신 뜻을 풀어 씁니다.
 - 매수·매도를 권하거나 목표가·익절가·손절가를 제시하지 않습니다. 가격을 말해야 하면 시나리오 가격대와 무효화 가격으로만 씁니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
-- 같은 이야기의 재보도는 하나의 근거로 봅니다. 근거가 부족하면 dataGaps에 적고 억지로 결론 내지 않습니다.${kindRule(kind)}`;
+- 같은 이야기의 재보도는 하나의 근거로 봅니다. 근거가 부족하면 dataGaps에 적고 억지로 결론 내지 않습니다.
+- 사용자 메시지에 "이 종목 추가 규칙"이 있으면 그것도 지킵니다.`;
 
-const system = (name: string, kind?: 'etf' | 'coin') => `당신은 GNOMON의 리서치 위원회예요. ${name} 일일 리포트의 "AI 해설"을 한 번에 씁니다.
+const DEEP_SYSTEM = `당신은 GNOMON의 리서치 위원회예요. 사용자 메시지의 종목 일일 리포트에 붙일 "AI 해설"을 한 번에 씁니다.
 
 위원회 구성:
 - 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
@@ -363,7 +370,17 @@ ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 - 기사 수가 많다고 근거가 강한 것이 아닙니다. 같은 이야기의 재보도는 하나의 근거로 봅니다.
 - 모르는 것은 중립이 아닙니다. 근거가 부족하면 dataGaps에 적고, 억지로 결론 내지 않습니다.
 - 기술적 신호는 지표 요약일 뿐 오를 확률이 아닙니다.
-- 반대 근거를 함께 찾고, 무엇이 나오면 해석이 바뀌는지(watch)를 씁니다.${kindRule(kind)}`;
+- 반대 근거를 함께 찾고, 무엇이 나오면 해석이 바뀌는지(watch)를 씁니다.
+- 사용자 메시지에 "이 종목 추가 규칙"이 있으면 그것도 지킵니다.
+
+분량 (읽는 사람은 휴대폰으로 봅니다. 길이보다 근거의 정확성이 중요합니다):
+- summary 2~3문장, 160자 안쪽. desks의 view와 analysts의 rationale은 각 1~2문장, 100자 안쪽.
+- debate 각 차례 1~2문장, 120자 안쪽. 앞 차례를 그대로 되풀이하지 않습니다.
+- scenarios의 narrative는 2문장, 120자 안쪽. catalysts·invalidation은 각 1~2개, 짧은 구(30자 안쪽)로 씁니다.
+- worstCase의 narrative 2문장 안쪽, checks 2~3개.
+- bullish·bearish 각 3개 이하, uncertain·watch·dataGaps 각 2개 이하. 같은 내용을 여러 칸에 반복하지 않습니다.
+- evidenceIds에는 그 주장을 직접 뒷받침하는 근거 1~3개만 답니다.
+- 숫자는 근거에 적힌 값을 그대로 옮기고 새로 계산한 숫자에는 "약"을 붙입니다.`;
 
 /** Keeps only known IDs; drops claims left with none. */
 export function sanitizeClaims(claims: readonly Claim[], known: ReadonlySet<string>): { kept: Claim[]; dropped: number } {
@@ -420,7 +437,10 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     근거_목록: evidence.map(({ id, label, detail }) => ({ id, 제목: label, 내용: detail })),
   };
   try {
-    const user = { role: 'user' as const, content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.\n\n${JSON.stringify(input, null, 2)}` };
+    // Compact JSON (no indentation) saves about a fifth of the input tokens; the model reads it the same.
+    const extra = kindRule(report.kind).trim();
+    const user = { role: 'user' as const, content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.${extra ? `\n\n이 종목 추가 규칙:\n${extra}` : ''}\n\n${JSON.stringify(input)}` };
+    const cached = (text: string) => [{ type: 'text' as const, text, cache_control: { type: 'ephemeral' as const } }];
     // Deep: the full committee on the large model, with the server-side fallback for safety declines.
     // Brief: the small model takes no effort setting or fallback.
     // A deep committee report can run past a few minutes; stream it so the connection never sits idle and times out
@@ -434,14 +454,14 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
         fallbacks: 'default',
         // No constrained format here (G-102): the committee schema is past the grammar limit. The schema goes in the prompt.
         output_config: { effort: 'medium' },
-        system: `${system(report.name, report.kind)}\n\n## 응답 형식\n아래 JSON 스키마에 맞는 JSON 객체 하나만 답합니다. 코드 블록·설명 문장 없이 { 로 시작해 } 로 끝냅니다. enum 값은 스키마에 적힌 것만 씁니다.\n${DEEP_SCHEMA_TEXT}`, messages: [user],
+        system: cached(DEEP_SYSTEM_FULL()), messages: [user],
       })
       : await call({
         model, max_tokens: 6000,
         output_config: { format: betaZodOutputFormat(BriefWireSchema) },
-        system: briefSystem(report.name, report.kind), messages: [user],
+        system: cached(BRIEF_SYSTEM), messages: [user],
       });
-    const failed=(reason:string):Commentary=>({...empty('FAILED',now,evidence,reason),model,servedBy:response.model,tier,...(response.usage?{usage:{inputTokens:response.usage.input_tokens,outputTokens:response.usage.output_tokens}}:{})});
+    const failed=(reason:string):Commentary=>({...empty('FAILED',now,evidence,reason),model,servedBy:response.model,tier,...(response.usage?{usage:usageOf(response.usage)}:{})});
     if (response.stop_reason === 'refusal') return failed(`REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
     if (response.stop_reason === 'max_tokens') return failed('MAX_TOKENS');
     let parsed = response.parsed_output as (z.infer<typeof BriefSchema> & Partial<z.infer<typeof CommentarySchema>>) | null;
@@ -497,7 +517,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       ...(Object.keys(insights).length ? { insights } : {}),
       status: 'OK', model, promptVersion: COMMENTARY_PROMPT_VERSION, generatedAt: now.toISOString(),
       servedBy: response.model, tier,
-      ...(response.usage ? { usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens } } : {}),
+      ...(response.usage ? { usage: usageOf(response.usage) } : {}),
       ...(summary ? { summary } : {}),
       // A brief stays a brief (G-60): the strongest point on each side and one thing to watch.
       ...(tier === 'brief'

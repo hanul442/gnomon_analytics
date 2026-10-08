@@ -73,7 +73,7 @@ export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void
   const report=JSON.parse(job.input_json) as DailyReport;
   const commentary=await deps.generate(report,job.kind==='brief'?'brief':'deep');
   const usage=commentary.usage;
-  const usd=usage?usdOf(commentary.servedBy||commentary.model,usage.inputTokens,usage.outputTokens):0;
+  const usd=usage?usdOf(commentary.servedBy||commentary.model,usage.inputTokens,usage.outputTokens,usage.cacheReadTokens,usage.cacheWriteTokens):0;
   await db.prepare('UPDATE report_jobs SET usd=? WHERE id=?').bind(usd,id).run();
   // The raw cause goes to error_detail for diagnosis (never returned to users); users get the classified message.
   if(commentary.status!=='OK'||!commentary.summary){await db.prepare('UPDATE report_jobs SET error_detail=? WHERE id=?').bind((commentary.error??'UNKNOWN').replace(/sk-[A-Za-z0-9_-]+/g,'[key]').slice(0,300),id).run().catch(()=>undefined);throw new Error(reportFailureMessage(commentary.error));}

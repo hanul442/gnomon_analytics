@@ -254,7 +254,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
     await release();
     return fail(502, 'AI_FAILED', 'AI가 답하지 못했어요. 크레딧은 돌려드렸어요.');
   }
-  const usd = usdOf(model, res.usage.input_tokens, res.usage.output_tokens);
+  const usd = usdOf(model, res.usage.input_tokens, res.usage.output_tokens, res.usage.cache_read_input_tokens ?? 0, res.usage.cache_creation_input_tokens ?? 0);
   const answer = answerText(res.content);
   const ok = res.stop_reason !== 'refusal' && answer.length > 0;
   if (!ok) await refund('AI가 답하지 않아 돌려드림');

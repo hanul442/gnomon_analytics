@@ -404,7 +404,7 @@ test('an invited expert answers in the debate at the invite price (G-80)', async
   const r = await t.call('POST', '/ask', { tier: 'standard', expert: 'semis', question: '업황은 어때요?', symbol: '000660', page: '이 종목 AI 위원회 토론:\n기술 데스크: 강세예요' }, u.session);
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.deepEqual([r.body.credits, r.body.speaker], [CREDIT_COST.invite, '반도체 전문가']);
-  assert.match(String(calls[0]!.system), /반도체 전문가/);
+  assert.match(JSON.stringify(calls[0]!.system), /반도체 전문가/);
   const c = await t.call('POST', '/ask', { tier: 'standard', expert: 'committee', question: '결론만 다시요' }, u.session);
   assert.deepEqual([c.body.credits, c.body.speaker], [CREDIT_COST.standard, 'AI 위원회']);
 });
@@ -549,7 +549,7 @@ test('custom experts are account-owned, bounded, exported and used at the invite
  assert.equal((await t.call('POST','/ask',{tier:'standard',question:'위험은 뭔가요?',expert:'custom:'+id},other.session)).body.error,'BAD_EXPERT');
  const answer=await t.call('POST','/ask',{tier:'standard',question:'위험은 뭔가요?',expert:'custom:'+id,symbol:'KRW-BTC'},u.session);
  assert.equal(answer.status,200);assert.equal(answer.body.credits,CREDIT_COST.invite);assert.equal(answer.body.speaker,'현금흐름 전문가');
- assert.match(String(calls[0]!.system),/현금흐름과 설비투자/);assert.match(JSON.stringify(calls[0]!.messages),/KRW-BTC/);
+ assert.match(JSON.stringify(calls[0]!.system),/현금흐름과 설비투자/);assert.match(JSON.stringify(calls[0]!.messages),/KRW-BTC/);
  assert.equal((await t.call('GET','/me/export',undefined,u.session)).body.experts[0].id,id);
  for(let i=1;i<20;i++)assert.equal((await t.call('POST','/experts',{name:'전문가 '+i,focus:'거래량과 위험'},u.session)).status,200);
  assert.equal((await t.call('POST','/experts',{name:'초과 전문가',focus:'거래량과 위험'},u.session)).body.error,'EXPERT_LIMIT');

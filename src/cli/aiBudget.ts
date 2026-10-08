@@ -16,11 +16,12 @@ export const PRICE_PER_MTOK: Record<string, readonly [number, number]> = {
 export const ESTIMATE_USD: Record<CommentaryTier, number> = { deep: 0.15, brief: 0.03 };
 export const DEFAULT_BUDGET_USD = 25;
 
-export interface UsageLine { at: string; month: string; symbol: string; model: string; tier: CommentaryTier; inputTokens: number; outputTokens: number; usd: number }
+export interface UsageLine { at: string; month: string; symbol: string; model: string; tier: CommentaryTier; inputTokens: number; outputTokens: number; cacheReadTokens?: number; cacheWriteTokens?: number; usd: number }
 
-export const usd = (model: string, inputTokens: number, outputTokens: number) => {
+/** Cached prompt tokens (G-149): a cache read bills at a tenth of the input price, a cache write at 1.25×. */
+export const usd = (model: string, inputTokens: number, outputTokens: number, cacheRead = 0, cacheWrite = 0) => {
   const [i, o] = PRICE_PER_MTOK[model] ?? PRICE_PER_MTOK['claude-opus-5-5']!;
-  return (inputTokens * i + outputTokens * o) / 1e6;
+  return (inputTokens * i + cacheRead * i * 0.1 + cacheWrite * i * 1.25 + outputTokens * o) / 1e6;
 };
 
 export class AiBudget {
@@ -46,7 +47,7 @@ export class AiBudget {
     this.spent -= ESTIMATE_USD[tier];
     if (!c.usage) return;
     const model = c.servedBy ?? c.model;
-    const line: UsageLine = { at: at.toISOString(), month: this.month, symbol, model, tier, inputTokens: c.usage.inputTokens, outputTokens: c.usage.outputTokens, usd: Math.round(usd(model, c.usage.inputTokens, c.usage.outputTokens) * 1e5) / 1e5 };
+    const line: UsageLine = { at: at.toISOString(), month: this.month, symbol, model, tier, inputTokens: c.usage.inputTokens, outputTokens: c.usage.outputTokens, ...(c.usage.cacheReadTokens ? { cacheReadTokens: c.usage.cacheReadTokens } : {}), ...(c.usage.cacheWriteTokens ? { cacheWriteTokens: c.usage.cacheWriteTokens } : {}), usd: Math.round(usd(model, c.usage.inputTokens, c.usage.outputTokens, c.usage.cacheReadTokens, c.usage.cacheWriteTokens) * 1e5) / 1e5 };
     this.spent += line.usd;
     await mkdir(dirname(AiBudget.path(this.root)), { recursive: true });
     await appendFile(AiBudget.path(this.root), `${JSON.stringify(line)}\n`);

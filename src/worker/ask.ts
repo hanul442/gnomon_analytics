@@ -11,7 +11,7 @@ export interface AskClient {
     content: { type: string; text?: string }[];
     model: string;
     stop_reason: string | null;
-    usage: { input_tokens: number; output_tokens: number };
+    usage: { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null };
   }>;
 }
 
@@ -21,9 +21,10 @@ export const MODEL_PRICE: Record<string, [number, number]> = {
   'claude-sonnet-5-5': [2, 10],
   'claude-opus-5-5': [4, 20],
 };
-export const usdOf = (model: string, inTok: number, outTok: number) => {
+/** Cached prompt tokens (G-149): a read bills at a tenth of the input price, a write at 1.25×. */
+export const usdOf = (model: string, inTok: number, outTok: number, cacheRead = 0, cacheWrite = 0) => {
   const p = MODEL_PRICE[model] ?? [4, 20];
-  return (inTok * p[0] + outTok * p[1]) / 1e6;
+  return (inTok * p[0] + cacheRead * p[0] * 0.1 + cacheWrite * p[0] * 1.25 + outTok * p[1]) / 1e6;
 };
 
 export const ASK_SYSTEM = `당신은 GNOMON(그노몬)의 리서치 도우미예요. 한국 주식·ETF·코인과 시장에 대한 질문에 한국어 해요체로 답해요.
@@ -63,7 +64,7 @@ export function askParams(input: AskInput): Record<string, unknown> {
   const messages: { role: 'user' | 'assistant'; content: string }[] = [];
   for (const h of input.history ?? []) messages.push({ role: 'user', content: h.q }, { role: 'assistant', content: h.a });
   messages.push({ role: 'user', content: `${ctx ? `${ctx}\n\n` : ''}질문: ${input.question}` });
-  const params: Record<string, unknown> = { model: tier.model, max_tokens: tier.maxTokens, system: ASK_SYSTEM + (input.persona ? personaSystem(input.persona) : ''), messages };
+  const params: Record<string, unknown> = { model: tier.model, max_tokens: tier.maxTokens, system: [{ type: 'text', text: ASK_SYSTEM, cache_control: { type: 'ephemeral' } }, ...(input.persona ? [{ type: 'text', text: personaSystem(input.persona).trim() }] : [])], messages };
   // The small model answers directly; the larger ones think as much as the question needs.
   if (tier.key !== 'question') {
     params.thinking = { type: 'adaptive' };
