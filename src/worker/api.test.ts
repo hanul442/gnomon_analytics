@@ -400,7 +400,7 @@ async function reportSetup() {
   return {...t,queued,boss,user,report};
 }
 
-test('on-demand reports charge once across concurrent retries; owner/pro read, Plus cannot; redelivery is idempotent',async()=>{
+test('on-demand reports charge once across concurrent retries; owner/pro read, others unlock once with credits; redelivery is idempotent',async()=>{
  const t=await reportSetup();
  const [a,b]=await Promise.all([t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session),t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session)]);
  assert.equal(a.status,200);assert.equal(b.status,200);assert.equal(a.body.id,b.body.id);assert.equal(t.queued.length,1);
@@ -415,11 +415,21 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, P
  const done=await t.call('GET','/reports/'+a.body.id,undefined,t.user.session);
  assert.equal(done.body.status,'done');assert.match(done.body.fragments.home,/비공개 분석 본문/);assert.match(done.body.fragments.ai,/class="[^"]*parliament/,'the committee seats come with a generated report');assert.doesNotMatch(done.body.fragments.ai,/위원별 판단/,'one committee section: the seats carry each member\'s view');
  const other=await t.login('other@example.com',(await t.call('POST','/admin/invites',{},t.boss.session)).body.code);
- assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,404,'alpha testers read only their own generated reports');
+ // Someone else's report opens once for the unlock price, then stays open without charging again.
+ const lockedJob=await t.call('GET','/reports/'+a.body.id,undefined,other.session);
+ assert.deepEqual([lockedJob.status,lockedJob.body.error,lockedJob.body.cost],[402,'LOCKED',CREDIT_COST.unlock]);
+ assert.doesNotMatch(JSON.stringify(lockedJob.body),/비공개 분석 본문/);
+ const latest=(await t.call('GET','/reports/latest/000660',undefined,other.session)).body.job;
+ assert.deepEqual([latest.id,latest.locked,latest.cost],[a.body.id,true,CREDIT_COST.unlock]);
+ const before=lockedJob.body.balance, opened=await t.call('POST','/reports/'+a.body.id+'/unlock',{},other.session);
+ assert.deepEqual([opened.status,opened.body.charged,opened.body.balance],[200,CREDIT_COST.unlock,before-CREDIT_COST.unlock]);
+ assert.equal((await t.call('POST','/reports/'+a.body.id+'/unlock',{},other.session)).body.charged,0);
+ const read=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(read.status,200);assert.match(read.body.fragments.home,/비공개 분석 본문/);
+ await t.env.DB.prepare("DELETE FROM unlocks WHERE user_id=(SELECT id FROM users WHERE email='other@example.com')").run();
   await t.env.DB.prepare("UPDATE users SET plan='pro' WHERE email='other@example.com'").run();
   assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,200);
  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='other@example.com'").run();
- const blocked=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(blocked.status,404);assert.doesNotMatch(JSON.stringify(blocked.body),/비공개 분석 본문/);
+ const blocked=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(blocked.status,402);assert.doesNotMatch(JSON.stringify(blocked.body),/비공개 분석 본문/);
  assert.equal((await t.call('GET','/reports/'+a.body.id)).status,401);
  const mine=(await t.call('GET','/reports/mine',undefined,t.user.session)).body;assert.equal(mine.jobs.length,1);assert.equal(mine.jobs[0].status,'done');assert.equal(mine.jobs[0].symbol,'000660');
  assert.deepEqual((await t.call('GET','/reports/mine',undefined,other.session)).body.jobs,[],'someone else\'s reports never show in my list');

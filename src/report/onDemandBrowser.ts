@@ -60,6 +60,7 @@ export const JOBS_JS = `
   if(timer)clearTimeout(timer);store(id);
   if(show){ensure(watchTitle);dialog.querySelector('.rj-body').innerHTML=progressHtml();curStage='queued';paintSteps();eta.start();}
   var poll=function(){G.call('GET','/reports/'+id).then(function(r){
+   if(r.error==='LOCKED'){if(live())dialog.close();locked(id,r);return;}
    if(r.error&&typeof r.error==='string'&&!r.status){if(live())dialog.querySelector('[data-job-state]').textContent=r.message||'작업을 확인하지 못했어요';if(r.error==='NOT_FOUND'||r.error==='FORBIDDEN'||r.error==='UNAUTHORIZED')return;timer=setTimeout(poll,5000);return;}
    if(r.kind||r.createdAt)eta.set(r.kind,r.createdAt,r.etaSec);
    if(r.status==='done'){eta.stop();
@@ -74,6 +75,24 @@ export const JOBS_JS = `
    if(dialog){var text=dialog.querySelector('[data-job-state]');if(text)text.textContent=stage[r.stage]||'분석 중이에요';curStage=stage[r.stage]?r.stage:'working';paintSteps();}
    timer=setTimeout(poll,1000);
   });};poll();
+ };
+ // Someone else's finished report (G-61): shown as a card that opens it once for credits, then it stays open.
+ var locked=function(id,r){
+  var panel=document.getElementById('tab-ai');if(!panel)return;
+  var old=panel.querySelector('[data-job-lock]');if(old)old.remove();
+  var cost=r.cost||10,bal=typeof r.balance==='number'?r.balance:(G.me&&G.me.credits),short=typeof bal==='number'&&bal<cost;
+  var day=r.createdAt?new Date(Date.parse(r.createdAt)+9*3600000).toISOString().slice(0,10):'';
+  var card=document.createElement('section');card.className='block';card.setAttribute('data-job-lock','');
+  card.innerHTML='<div class="card locked"><div class="lk-head">🔒<b>다른 사용자가 만든 '+(r.kind==='brief'?'요약':'AI 위원회')+' 리포트가 있어요</b></div><p>'+(day?esc(day)+'에 만든 리포트예요. ':'')+esc(cost)+'크레딧으로 한 번 열면 계속 볼 수 있어요.'+(typeof bal==='number'?' 남은 크레딧 '+esc(bal)+'.':'')+'</p><p class="rj-err" hidden></p><div class="rj-actions"><button type="button" class="btn-primary" data-job-open'+(short?' disabled':'')+'>'+esc(cost)+'크레딧으로 열기</button>'+(short?'<a class="btn-ghost" href="'+(document.body.dataset.base||'')+'pricing.html">크레딧 충전</a>':'')+'</div></div>';
+  var title=panel.querySelector('.panel-title');if(title)title.after(card);else panel.prepend(card);
+  document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent='다른 사용자 리포트 · '+cost+'크레딧';});
+  var go=card.querySelector('[data-job-open]'),err=card.querySelector('.rj-err');
+  go.onclick=function(){go.disabled=true;go.textContent='여는 중';
+   G.call('POST','/reports/'+id+'/unlock',{}).then(function(u){
+    if(u.error){go.disabled=false;go.textContent=cost+'크레딧으로 열기';err.hidden=false;err.textContent=u.message||'열지 못했어요.';return;}
+    card.remove();if(G.toast&&u.charged)G.toast(u.charged+'크레딧을 사용했어요. 남은 크레딧 '+u.balance);if(G.refresh)G.refresh();watch(id,false);
+   }).catch(function(){go.disabled=false;go.textContent=cost+'크레딧으로 열기';err.hidden=false;err.textContent='연결을 확인한 뒤 다시 눌러 주세요.';});
+  };
  };
  G.startReport=function(kind,symbol,name){
   if(!G.api){G.toast('AI 서버 연결이 필요해요.');return Promise.resolve(false);}
