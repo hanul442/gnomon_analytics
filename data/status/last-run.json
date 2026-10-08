@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T09:53:21.235Z",
+ "at": "2026-10-08T10:38:09.306Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2719
+   "count": 2714
   },
   {
    "source": "naver:fchart:day:etf",
@@ -31,7 +31,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 797
+   "count": 799
   }
  ],
  "stocks": [
@@ -251,23 +251,33 @@
    ]
   },
   {
-   "symbol": "017890",
-   "report": "WRITTEN",
+   "symbol": "033560",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "033560",
-   "report": "WRITTEN",
+   "symbol": "017890",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "030190",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "001780",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-SAND",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "498400",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": [
     {
      "source": "naver:m-stock",
@@ -277,17 +287,7 @@
   },
   {
    "symbol": "002960",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "001780",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-SAND",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
