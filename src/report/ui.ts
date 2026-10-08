@@ -218,6 +218,7 @@ export const FS_JS = `
       ['section.chat:not([hidden])', function (e) { var x = e.querySelector('.chat-x'); if (x) x.click(); }],
       ['.side-menu:not([hidden])', function (e) { var x = e.querySelector('.sm-close'); if (x) x.click(); }],
       ['.ins-pop', function (e) { e.remove(); }],
+      ['.db-room:not([hidden])', function (e) { var x = e.querySelector('[data-room-close]'); if (x) x.click(); }],
       ['.pop-wrap', function (e) { var x = e.querySelector('[data-p=later]'); if (x) x.click(); else e.remove(); }]
     ];
     var open = function () { var out = []; L.forEach(function (l) { document.querySelectorAll(l[0]).forEach(function (e) { if (e.offsetParent !== null || getComputedStyle(e).position === 'fixed') out.push([e, l[1]]); }); }); return out; };
