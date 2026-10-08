@@ -1,5 +1,5 @@
 {
- "at": "2026-10-08T14:15:51.398Z",
+ "at": "2026-10-08T14:35:40.710Z",
  "selected": null,
  "universe": [
   {
@@ -72,12 +72,22 @@
    "failedSources": []
   },
   {
+   "symbol": "490470",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
    "symbol": "403870",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "043260",
+   "symbol": "353200",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "010060",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -88,6 +98,11 @@
   },
   {
    "symbol": "080220",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "003160",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -103,6 +118,11 @@
   },
   {
    "symbol": "011790",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "000150",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -152,11 +172,6 @@
    "failedSources": []
   },
   {
-   "symbol": "096770",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "178320",
    "report": "SKIPPED",
    "failedSources": []
@@ -172,37 +187,12 @@
    "failedSources": []
   },
   {
-   "symbol": "058470",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "067310",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "010950",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "036540",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "452190",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "003490",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "439090",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -232,11 +222,6 @@
    ]
   },
   {
-   "symbol": "033560",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
    "symbol": "017890",
    "report": "EXISTS",
    "failedSources": []
@@ -252,6 +237,16 @@
    "failedSources": []
   },
   {
+   "symbol": "033560",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-SAND",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "498400",
    "report": "EXISTS",
    "failedSources": [
@@ -262,34 +257,38 @@
    ]
   },
   {
-   "symbol": "KRW-SAND",
+   "symbol": "002960",
    "report": "EXISTS",
    "failedSources": []
   }
  ],
  "failed": [
   {
-   "symbol": "490470",
+   "symbol": "043260",
    "error": "fetch failed"
   },
   {
-   "symbol": "010060",
+   "symbol": "096770",
    "error": "fetch failed"
   },
   {
-   "symbol": "353200",
+   "symbol": "058470",
    "error": "fetch failed"
   },
   {
-   "symbol": "003160",
+   "symbol": "010950",
    "error": "fetch failed"
   },
   {
-   "symbol": "000150",
+   "symbol": "067310",
    "error": "fetch failed"
   },
   {
-   "symbol": "002960",
+   "symbol": "036540",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "439090",
    "error": "fetch failed"
   }
  ]
