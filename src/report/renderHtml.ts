@@ -741,15 +741,16 @@ export const DEEP_SCRIPT = `<script>
       if (r.html) { show(r.html); return; }
       if(r.error === 'PLAN_REQUIRED'){btn.disabled=false;btn.textContent='요금제 보기';say(r.message||'플러스부터 열 수 있어요');btn.onclick=function(){location.href=(document.body.getAttribute('data-base')||'')+'pricing.html';};return;}
       if (r.error === 'NOT_SEALED') { btn.textContent = '아직 준비 중이에요'; say('심층 리포트는 다음 실행 뒤 열 수 있어요.'); return; }
-      var cost = r.cost || ${DEEP_UNLOCK_CREDITS}, bal = r.balance;
-      btn.disabled = false; btn.textContent = cost + '크레딧으로 열기';
-      say(bal == null ? '' : '남은 크레딧 ' + bal + '개 · 한 번 열면 계속 볼 수 있어요');
+      var cost = r.cost || ${DEEP_UNLOCK_CREDITS}, bal = r.balance, free = r.freeLeft > 0;
+      var label = function () { return free ? '무료로 열기' : cost + '크레딧으로 열기'; };
+      btn.disabled = false; btn.textContent = label();
+      say(free ? '이번 달 무료로 열 수 있는 리포트가 ' + r.freeLeft + '개 남았어요 · 한 번 열면 계속 볼 수 있어요' : bal == null ? '' : '남은 크레딧 ' + bal + '개 · 한 번 열면 계속 볼 수 있어요 · 7일 지나면 무료예요');
       btn.onclick = function () {
         btn.disabled = true; btn.textContent = '여는 중…'; busy('크레딧을 쓰고 심층 리포트를 여는 중이에요');
         GNM.call('POST', path + '/unlock', {}).then(function (u) {
           idle();
-          if (u.html) { show(u.html); if (GNM.refresh) GNM.refresh(); if (GNM.track) GNM.track('deep_unlock', { symbol: sym }); return; }
-          btn.disabled = false; btn.textContent = cost + '크레딧으로 열기'; say(u.message || '열지 못했어요.');
+          if (u.html) { show(u.html); if (GNM.toast && (u.free || u.charged)) GNM.toast(u.free ? '무료로 열었어요. 이번 달 ' + (u.freeLeft || 0) + '개 더 무료예요' : u.charged ? u.charged + '크레딧을 썼어요. 남은 크레딧 ' + u.balance : ''); if (GNM.refresh) GNM.refresh(); if (GNM.track) GNM.track('deep_unlock', { symbol: sym }); return; }
+          btn.disabled = false; btn.textContent = label(); say(u.message || '열지 못했어요.');
           if (u.error === 'NO_CREDITS' && GNM.openChat) GNM.openChat();
         });
       };

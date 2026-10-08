@@ -1,5 +1,5 @@
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
-import { notifyLimit } from '../report/plans.js';
+import { UNLOCK, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
 import { fetchUpbitMinutes, fetchUpbitTicks } from '../sources/upbit.js';
 import { reportInput, inputHash, refundJob, reportFragments, type ReportQueue, type ReportJob } from './reports.js';
@@ -600,15 +600,15 @@ route('GET', '/reports/latest/([^/]+)', async ({ req, env, now, params }) => {
   const u=await authed(req,env,now), symbol=decodeURIComponent(params[0]!);
   if (!DEEP_SYMBOL.test(symbol)) fail(400,'BAD_REPORT','종목코드를 확인해 주세요.');
   // The newest report anyone made for this stock: one's own in progress, or a finished one (others' open with credits).
-  const job=await env.DB.prepare("SELECT id,status,stage,error,kind,user_id,symbol FROM report_jobs WHERE symbol=? AND (user_id=? OR status='done') ORDER BY created_at DESC LIMIT 1").bind(symbol,u.id).first<ReportJob>();
+  const job=await env.DB.prepare("SELECT id,status,stage,error,kind,user_id,symbol,created_at FROM report_jobs WHERE symbol=? AND (user_id=? OR status='done') ORDER BY created_at DESC LIMIT 1").bind(symbol,u.id).first<ReportJob>();
   if (!job) return { job:null };
-  const locked=!(await jobAccess(env.DB,u,job));
-  return { job:{id:job.id,status:job.status,stage:job.stage,error:job.error,kind:job.kind,mine:job.user_id===u.id,...(locked?{locked:true,cost:CREDIT_COST.unlock}:{})} };
+  const locked=!(await jobAccess(env.DB,u,job,now));
+  return { job:{id:job.id,status:job.status,stage:job.stage,error:job.error,kind:job.kind,mine:job.user_id===u.id,...(locked?{locked:true,cost:CREDIT_COST.unlock,freeLeft:await freeOpensLeft(env.DB,u,now)}:{})} };
 });
 route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
   const u=await authed(req,env,now), job=await env.DB.prepare('SELECT * FROM report_jobs WHERE id=?').bind(params[0]).first<ReportJob>();
   if (!job || (job.user_id!==u.id && job.status!=='done')) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
-  if (!(await jobAccess(env.DB,u,job!))) return {locked:true,error:'LOCKED',message:`다른 사용자가 만든 리포트예요. ${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`,cost:CREDIT_COST.unlock,balance:await balanceOf(env.DB,u.id),id:job!.id,symbol:job!.symbol,kind:job!.kind,createdAt:job!.created_at};
+  if (!(await jobAccess(env.DB,u,job!,now))) return {...(await lockInfo(env.DB,u,now)),message:`다른 사용자가 만든 리포트예요. ${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`,id:job!.id,symbol:job!.symbol,kind:job!.kind,createdAt:job!.created_at};
   if (['queued','running'].includes(job!.status) && Date.parse(job!.updated_at)<now.getTime()-15*60000) { await refundJob(env.DB,job!,'작업 시간이 초과되어 크레딧을 반환했어요.',now); job!.status='failed'; job!.stage='failed'; job!.error='작업 시간이 초과됐어요. 다시 요청해 주세요.'; }
   const report=job!.status==='done' && job!.result_json ? JSON.parse(job!.result_json) as DailyReport:null;
   // G-110: the countdown starts from how long this kind actually took lately (70th percentile of the last 20).
@@ -623,14 +623,19 @@ route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
 route('POST', '/reports/([a-f0-9-]+)/unlock', async ({ req, env, now, params }) => {
   const u=await authed(req,env,now), db=env.DB, job=await db.prepare('SELECT * FROM report_jobs WHERE id=?').bind(params[0]).first<ReportJob>();
   if (!job || (job.user_id!==u.id && job.status!=='done')) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
-  if (await jobAccess(db,u,job!)) return { charged:0, balance:await balanceOf(db,u.id) };
-  const cost=CREDIT_COST.unlock;
-  if (!(await charge(db,u.id,cost,'unlock',`${job!.symbol} 다른 사용자 리포트 열람`,`unlock:${u.id}:job:${job!.id}`,now))) {
-    if (await jobAccess(db,u,job!)) return { charged:0, balance:await balanceOf(db,u.id) };
-    fail(402,'NO_CREDITS',`크레딧이 모자라요. ${cost}크레딧이 필요해요.`,{cost,balance:await balanceOf(db,u.id)});
+  if (await jobAccess(db,u,job!,now)) return { charged:0, balance:await balanceOf(db,u.id) };
+  const paid=await openOnce(db,u,job!.symbol,'job:'+job!.id,`${job!.symbol} 다른 사용자 리포트 열람`,now);
+  if (paid===null) {
+    if (await jobAccess(db,u,job!,now)) return { charged:0, balance:await balanceOf(db,u.id) };
+    fail(402,'NO_CREDITS',`크레딧이 모자라요. ${CREDIT_COST.unlock}크레딧이 필요해요.`,{cost:CREDIT_COST.unlock,balance:await balanceOf(db,u.id)});
   }
-  await db.prepare('INSERT OR IGNORE INTO unlocks (user_id, symbol, date, credits, created_at) VALUES (?, ?, ?, ?, ?)').bind(u.id,job!.symbol,'job:'+job!.id,cost,iso(now)).run();
-  return { charged:cost, balance:await balanceOf(db,u.id) };
+  // The maker's share (G-126): only paid opens, never more in total than what the maker spent on it.
+  if (paid!==null && paid>0) {
+    const got=(await db.prepare("SELECT COALESCE(SUM(delta),0) AS n FROM ledger WHERE user_id=? AND kind='share' AND ref LIKE ?").bind(job!.user_id,`share:${job!.id}:%`).first<{n:number}>())?.n??0;
+    const give=Math.min(UNLOCK.makerShare,UNLOCK.makerCap-got);
+    if (give>0) await credit(db,job!.user_id,give,'share',`${job!.symbol} 내가 만든 리포트를 다른 사람이 열었어요`,`share:${job!.id}:${u.id}`,now).run();
+  }
+  return { charged:paid, free:paid===0, balance:await balanceOf(db,u.id), freeLeft:await freeOpensLeft(db,u,now) };
 });
 route('POST', '/screens/compose', async ({req,env,deps,now}) => {
   const u=await authed(req,env,now), b=await body(req), question=str(b.question,600), market=str(b.market,10)||'stock';
@@ -856,13 +861,38 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
 // and report; admins and whoever requested the stock's report open it free.
 /** Plans that read every finished deep report without unlocking it. Alpha testers unlock with credits like everyone else. */
 const PAID_FULL = new Set(['pro', 'max']);
+/** Free opens left this KST month (G-126): unlock rows that charged nothing because of the allowance. */
+async function freeOpensLeft(db: D1, u: User, now: Date): Promise<number> {
+  const quota = UNLOCK.monthlyFree[u.plan] ?? 0; if (!quota) return 0;
+  const month = kst(now).slice(0, 7), start = new Date(Date.parse(`${month}-01T00:00:00+09:00`)).toISOString();
+  const used = await db.prepare("SELECT COUNT(*) AS n FROM unlocks WHERE user_id = ? AND credits = 0 AND created_at >= ?").bind(u.id, start).first<{ n: number }>();
+  return Math.max(0, quota - (used?.n ?? 0));
+}
+const oldEnough = (day: string, now: Date) => Date.parse(`${day.slice(0, 10)}T00:00:00Z`) <= now.getTime() - UNLOCK.freeAfterDays * 86_400_000;
+/** What a locked answer carries: the price, the balance, and the free opens left this month. */
+const lockInfo = async (db: D1, u: User, now: Date) => ({ locked: true, error: 'LOCKED', cost: CREDIT_COST.unlock, balance: await balanceOf(db, u.id), freeLeft: await freeOpensLeft(db, u, now) });
+/**
+ * Opening a report once (G-126): free from the monthly allowance while it lasts, else CREDIT_COST.unlock credits.
+ * Returns the credits charged (0 when free), or null when the balance is short.
+ */
+async function openOnce(db: D1, u: User, symbol: string, key: string, note: string, now: Date): Promise<number | null> {
+  if (await freeOpensLeft(db, u, now) > 0) {
+    await db.prepare('INSERT OR IGNORE INTO unlocks (user_id, symbol, date, credits, created_at) VALUES (?, ?, ?, 0, ?)').bind(u.id, symbol, key, iso(now)).run();
+    return 0;
+  }
+  const cost = CREDIT_COST.unlock;
+  if (!(await charge(db, u.id, cost, 'unlock', note, `unlock:${u.id}:${symbol}:${key}`, now))) return null;
+  await db.prepare('INSERT OR IGNORE INTO unlocks (user_id, symbol, date, credits, created_at) VALUES (?, ?, ?, ?, ?)').bind(u.id, symbol, key, cost, iso(now)).run();
+  return cost;
+}
 /** Reading a generated report: its requester, admins, pro and max; anyone else once they unlock it with credits. */
-async function jobAccess(db: D1, u: User, job: { id: string; user_id: string; symbol: string }): Promise<boolean> {
+async function jobAccess(db: D1, u: User, job: { id: string; user_id: string; symbol: string; created_at?: string }, now: Date): Promise<boolean> {
   if (job.user_id === u.id || u.role === 'admin' || PAID_FULL.has(u.plan)) return true;
+  if (job.created_at && oldEnough(job.created_at, now)) return true;
   return !!(await db.prepare('SELECT 1 FROM unlocks WHERE user_id = ? AND symbol = ? AND date = ?').bind(u.id, job.symbol, 'job:' + job.id).first());
 }
-async function deepAccess(db: D1, u: User, symbol: string, date: string): Promise<boolean> {
-  if (u.role === 'admin' || PAID_FULL.has(u.plan)) return true;
+async function deepAccess(db: D1, u: User, symbol: string, date: string, now: Date): Promise<boolean> {
+  if (u.role === 'admin' || PAID_FULL.has(u.plan) || oldEnough(date, now)) return true;
   if (await db.prepare('SELECT 1 FROM unlocks WHERE user_id = ? AND symbol = ? AND date = ?').bind(u.id, symbol, date).first()) return true;
   return !!(await db.prepare("SELECT 1 FROM action_requests WHERE user_id = ? AND symbol = ? AND kind IN ('report', 'upgrade') AND status = 'done' AND created_at <= ?").bind(u.id, symbol, `${date}T23:59:59Z`).first());
 }
@@ -883,7 +913,7 @@ route('GET', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})', async ({ req, env, deps, no
   const u = await authed(req, env, now), { symbol, date } = deepParams(params);
   if(symbol.startsWith('MARKET-')&&RANK[u.plan]!<RANK.plus!&&u.role!=='admin')fail(403,'PLAN_REQUIRED','시장 상세 리포트는 플러스부터 열 수 있어요. 무료는 요약을 볼 수 있어요.');
   // Locked is an answer, not an error (G-124): the page shows the unlock button without a failed request in the console.
-  if (!(await deepAccess(env.DB, u, symbol, date))) return { locked: true, error: 'LOCKED', message: `${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`, cost: CREDIT_COST.unlock, balance: await balanceOf(env.DB, u.id) };
+  if (!(await deepAccess(env.DB, u, symbol, date, now))) return { ...(await lockInfo(env.DB, u, now)), message: `${CREDIT_COST.unlock}크레딧으로 열 수 있어요.` };
   return { html: await deepHtml(env, deps, symbol, date) };
 });
 
@@ -892,14 +922,13 @@ route('POST', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})/unlock', async ({ req, env, 
   if(symbol.startsWith('MARKET-')&&RANK[u.plan]!<RANK.plus!&&u.role!=='admin')fail(403,'PLAN_REQUIRED','시장 상세 리포트는 플러스부터 열 수 있어요.');
   // The report must exist before anything is charged.
   const html = await deepHtml(env, deps, symbol, date);
-  if (await deepAccess(db, u, symbol, date)) return { html, charged: 0 };
-  const cost = CREDIT_COST.unlock;
-  if (!(await charge(db, u.id, cost, 'unlock', `${symbol} ${date} 심층 리포트`, `unlock:${u.id}:${symbol}:${date}`, now))) {
-    if (await deepAccess(db, u, symbol, date)) return { html, charged: 0 };
-    fail(402, 'NO_CREDITS', `크레딧이 모자라요. ${cost}크레딧이 필요해요.`, { cost, balance: await balanceOf(db, u.id) });
+  if (await deepAccess(db, u, symbol, date, now)) return { html, charged: 0 };
+  const paid = await openOnce(db, u, symbol, date, `${symbol} ${date} 심층 리포트`, now);
+  if (paid === null) {
+    if (await deepAccess(db, u, symbol, date, now)) return { html, charged: 0 };
+    fail(402, 'NO_CREDITS', `크레딧이 모자라요. ${CREDIT_COST.unlock}크레딧이 필요해요.`, { cost: CREDIT_COST.unlock, balance: await balanceOf(db, u.id) });
   }
-  await db.prepare('INSERT OR IGNORE INTO unlocks (user_id, symbol, date, credits, created_at) VALUES (?, ?, ?, ?, ?)').bind(u.id, symbol, date, cost, iso(now)).run();
-  return { html, charged: cost, balance: await balanceOf(db, u.id) };
+  return { html, charged: paid, free: paid === 0, balance: await balanceOf(db, u.id), freeLeft: await freeOpensLeft(db, u, now) };
 });
 
 // ---- watchlist on the server and intraday alerts (G-52) ----
