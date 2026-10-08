@@ -24,7 +24,7 @@ import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
 import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, parliamentViewNote, SEATS_JS, VIEW_FOCUS_CSS } from './conclusion.js';
-import { tabBar, BANNER_CSS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
+import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 import { adStrip, AD_CSS, AD_JS } from './ads.js';
@@ -130,7 +130,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .period-stat{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:13px;color:var(--fg2);margin-top:4px;font-variant-numeric:tabular-nums}.period-stat b{font-size:15px}
 .seg{display:inline-flex;flex-wrap:wrap;background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
 .seg button{border:0;background:none;padding:6px 12px;border-radius:999px;font:inherit;font-size:13px;color:var(--fg2);cursor:pointer;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}
-.seg button:hover{background:var(--accent-soft)}.seg button[aria-pressed=true]{background:var(--brand-grad);color:#fff}
+.seg button:hover{background:var(--accent-soft)}.seg button[aria-pressed=true],.seg button[aria-selected=true]{background:var(--brand-grad);color:#fff}
 .ind-menu{margin:4px 0 8px;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--soft)}.ind-menu summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--accent-strong)}
 .ind-group{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}.ind-group .label{font-size:12px;color:var(--muted);width:56px}
 .chip-toggle{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:4px 11px;font:inherit;font-size:12px;color:var(--fg2);cursor:pointer;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}
@@ -339,11 +339,11 @@ export function shell(base: string, title: string, body: string, options: { lead
   const tabs = options.tabs ?? [];
   const menu = menuHtml(base, options.archiveHref);
   return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#13294b"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/gnomon-icon-192.png"><link rel="icon" type="image/png" href="${base}assets/gnomon-icon-96.png"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${PERSONA_BOOT}
+<meta name="theme-color" content="#13294b"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/gnomon-icon-192.png"><link rel="icon" type="image/png" href="${base}assets/gnomon-icon-96.png"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${PERSONA_BOOT}${INSTALL_BOOT}
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.${ASSET_VERSION}.css"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}"><span class="gnomon-mark"><img src="${base}assets/gnomon-mark.png" alt=""></span><div><b>GNOMON</b><small>AI COMMITTEE</small></div></a>
-${menu.button}<nav class="top-links" aria-label="사이트"><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
+${menu.button}<nav class="top-links" aria-label="사이트"><button type="button" class="install-btn" data-install hidden aria-label="그노몬 앱 설치">📲 앱 설치</button><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? reportNav(tabs) : ''}</header>${menu.drawer}
 <main id="main" tabindex="-1">${options.lead ?? ''}${options.active === 'home' ? versionBanner(base) : ''}${options.ads === false ? '' : adStrip(base)}${body}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script>${LOADING_JS}${VERSION_JS}${AD_JS}</script><script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
 }
@@ -678,7 +678,7 @@ export function committeeTab(report: DailyReport, opts: { base: string; from: st
       : report.commentary?.status === 'OK'
       ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
       : whySection(report);
-  const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(☰ 메뉴에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`);
+  const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(전체 메뉴의 내 보기 방식에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`);
   return `${conclusionCard(report, { id: 'conclusion', title: '시나리오' })}${seats}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
 }
 
@@ -741,15 +741,16 @@ export const DEEP_SCRIPT = `<script>
       if (r.html) { show(r.html); return; }
       if(r.error === 'PLAN_REQUIRED'){btn.disabled=false;btn.textContent='요금제 보기';say(r.message||'플러스부터 열 수 있어요');btn.onclick=function(){location.href=(document.body.getAttribute('data-base')||'')+'pricing.html';};return;}
       if (r.error === 'NOT_SEALED') { btn.textContent = '아직 준비 중이에요'; say('심층 리포트는 다음 실행 뒤 열 수 있어요.'); return; }
-      var cost = r.cost || ${DEEP_UNLOCK_CREDITS}, bal = r.balance;
-      btn.disabled = false; btn.textContent = cost + '크레딧으로 열기';
-      say(bal == null ? '' : '남은 크레딧 ' + bal + '개 · 한 번 열면 계속 볼 수 있어요');
+      var cost = r.cost || ${DEEP_UNLOCK_CREDITS}, bal = r.balance, free = r.freeLeft > 0;
+      var label = function () { return free ? '무료로 열기' : cost + '크레딧으로 열기'; };
+      btn.disabled = false; btn.textContent = label();
+      say(free ? '이번 달 무료로 열 수 있는 리포트가 ' + r.freeLeft + '개 남았어요 · 한 번 열면 계속 볼 수 있어요' : bal == null ? '' : '남은 크레딧 ' + bal + '개 · 한 번 열면 계속 볼 수 있어요 · 7일 지나면 무료예요');
       btn.onclick = function () {
         btn.disabled = true; btn.textContent = '여는 중…'; busy('크레딧을 쓰고 심층 리포트를 여는 중이에요');
         GNM.call('POST', path + '/unlock', {}).then(function (u) {
           idle();
-          if (u.html) { show(u.html); if (GNM.refresh) GNM.refresh(); if (GNM.track) GNM.track('deep_unlock', { symbol: sym }); return; }
-          btn.disabled = false; btn.textContent = cost + '크레딧으로 열기'; say(u.message || '열지 못했어요.');
+          if (u.html) { show(u.html); if (GNM.toast && (u.free || u.charged)) GNM.toast(u.free ? '무료로 열었어요. 이번 달 ' + (u.freeLeft || 0) + '개 더 무료예요' : u.charged ? u.charged + '크레딧을 썼어요. 남은 크레딧 ' + u.balance : ''); if (GNM.refresh) GNM.refresh(); if (GNM.track) GNM.track('deep_unlock', { symbol: sym }); return; }
+          btn.disabled = false; btn.textContent = label(); say(u.message || '열지 못했어요.');
           if (u.error === 'NO_CREDITS' && GNM.openChat) GNM.openChat();
         });
       };
@@ -976,7 +977,7 @@ const stockScript = (coin: boolean) => `<script>
     var mas = VIEW_MA[document.documentElement.getAttribute('data-persona') || 'swing'] || [20, 60];
     var maSeries=[];mas.forEach(function (n) { var line=chart.addSeries(L.LineSeries, { color: MA_COLOR[n], lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });line.setData(ma(n));maSeries.push(line); });
     window.addEventListener('gnm-persona', function () { location.reload(); });
-    var note = document.getElementById('sp-ma-note'); if (note) note.textContent = '이동평균 ' + mas.join('·') + '과 거래량이에요. 내 보기 방식에 맞춘 지표예요(☰ 메뉴에서 바꿀 수 있어요).';
+    var note = document.getElementById('sp-ma-note'); if (note) note.textContent = '이동평균 ' + mas.join('·') + '과 거래량이에요. 내 보기 방식에 맞춘 지표예요(전체 메뉴의 내 보기 방식에서 바꿀 수 있어요).';
     var vol = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceScaleId: 'v', priceLineVisible: false, lastValueVisible: false });
     vol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
     chart._gnmSeries= [candle,vol].concat(maSeries);if(window.GNM_coinChartReady)GNM_coinChartReady();
@@ -1014,11 +1015,11 @@ const stripTag = (s: string) => s.replace(/^\s*<script>/, '').replace(/<\/script
 export const APP_CSS = `${PEERS_CSS}${THEME_CHIPS_CSS}${EDGE_CSS}${ALERTS_CSS}${AD_CSS}${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}
 .chips button{font:inherit;font-weight:700;color:#c5d1e4;border:0;border-radius:24px;background:transparent;padding:8px 16px;white-space:nowrap;cursor:pointer}.chips button.active,.chips button[aria-expanded=true]{background:#fff;color:var(--accent-strong)}.chev{display:inline-block;width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg);margin-left:7px;transition:transform .15s}[aria-expanded=true]>.chev{transform:translateY(1px) rotate(-135deg)}.analysis-tabs{border-top:1px solid #ffffff16;background:#0b203e;gap:2px!important}.analysis-tabs a{font-size:13px;font-weight:700;padding:9px 12px!important;border-radius:0!important;background:transparent!important;color:#9fb0c8!important;border-bottom:2px solid transparent}.analysis-tabs a[aria-selected=true]{color:#fff!important;border-bottom-color:#fff}.analysis-tabs[hidden]{display:none}.analysis-tabs a{display:block!important}.momentum-axis span{white-space:nowrap;font-variant-numeric:tabular-nums}.mom.hz{min-width:0;text-align:center}.mom .v{font-size:15px}.momentum-gauge svg{max-width:220px}.moms{grid-template-columns:repeat(3,minmax(0,1fr))}.race-entry{border-bottom:1px solid var(--line)}.race-entry>summary{list-style:none;cursor:pointer;border-bottom:0}.race-entry>summary::-webkit-details-marker{display:none}.race-entry>summary .race-name b{display:flex;align-items:center;gap:8px;min-width:0}.race-name b:after{content:'';flex:none;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-2px) rotate(45deg);transition:transform .15s}.race-entry[open]>summary .race-name b:after{transform:translateY(2px) rotate(-135deg)}.race-detail{padding:8px 0 16px}.ai-summary{background:linear-gradient(135deg,#edf3ff,#f8f9fe);border:1px solid #d5e1f5;border-left:4px solid #5276bd}.ai-summary .as-kicker{font-size:11px;letter-spacing:.08em;color:#526d9a;font-weight:800}.ai-summary h2{margin:6px 0 14px}.ai-summary p{line-height:1.85;margin:0}.ai-summary strong{font-variant-numeric:tabular-nums}.market-thermals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.market-thermals .tmp,.mk-panel .tmp{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit}.market-thermals .tmp-v,.mk-panel .tmp-v{font-size:20px}.market-thermals .tmp-n,.mk-panel .tmp-n{display:flex;justify-content:space-between;font-size:12px;font-weight:800}.market-thermals .pulse-bar,.market-thermals .br-bar,.mk-panel .pulse-bar,.mk-panel .br-bar{display:flex;height:14px;gap:3px;border-radius:8px;overflow:hidden}.market-thermals .s-bull,.mk-panel .s-bull{background:#e5484d}.market-thermals .s-neutral,.mk-panel .s-neutral{background:#c4cbc9}.market-thermals .s-bear,.mk-panel .s-bear{background:#3b7be0}.mk-panel .tmp{border:0;padding:0;box-shadow:none;background:none;margin-bottom:12px}.market-scenarios{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.market-scenario{border-top:3px solid #7d8da5;background:#f5f7fb}.market-scenario.bull{border-color:#cd454d;background:#fff4f4}.market-scenario.bear{border-color:#467bc4;background:#f0f5ff}.market-scenario h3{margin-top:0}.market-scenario h4{font-size:12px;color:var(--muted);margin-bottom:4px}.market-claims{list-style:none;padding:0}.market-claims li{margin:12px 0;line-height:1.8}.market-claims .tag{font-size:10px}.market-lead h1{font-size:24px}.market-lead .ml-back{font-size:13px;font-weight:700;color:var(--muted);text-decoration:none}.market-lead p{margin:6px 0}.market-evidence>summary{font-weight:800;cursor:pointer}.coin-tf{flex-wrap:wrap;overflow:visible}.minute-options{flex-basis:100%;display:flex;gap:8px;padding:10px;margin-top:8px;background:var(--soft);border:1px solid var(--line);border-radius:12px}.minute-options[hidden]{display:none}.minute-options button{border:1px solid var(--line);border-radius:18px;padding:8px 14px;background:#fff;color:var(--fg)}.coin-tf{position:relative}
 @media(max-width:820px){.moms{grid-template-columns:repeat(2,minmax(0,1fr))}.momentum-axis{font-size:10px;gap:0}.market-scenarios{grid-template-columns:minmax(0,1fr)}.market-thermals{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 0 8px;scrollbar-width:none}.market-thermals::-webkit-scrollbar{display:none}.market-thermals>*{flex:0 0 84%;scroll-snap-align:start}.topbar.scrolled .gnomon-mark{width:28px;height:28px}.topbar.scrolled .price-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 7px;font-size:12px;overflow:visible;line-height:1.5}.price-bar>b{overflow:hidden;text-overflow:ellipsis;grid-column:1;grid-row:1/3}.price-bar .pb-price{grid-column:2;grid-row:1;white-space:nowrap}.price-bar [data-live-f=arrowpct]{grid-column:2;grid-row:2;text-align:right;white-space:nowrap}.price-bar .pb-code,.price-bar .freshness-badge{display:none}.topbar-in{gap:8px}.top-links,.topbar-in>.menu-button{flex:none}.chips button{padding:6px 12px;font-size:13px}.analysis-tabs{padding-top:0}.chips{gap:4px}}
-`;
+${FS_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)};\n${FORMAT_JS}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}`;
+export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${INSTALL_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}`;
 /** Two FNV-1a passes give a short, stable content hash without node:crypto (this module also runs in the Worker). */
 const contentHash = (text: string): string => {
   let a = 0x811c9dc5, b = 0x01000193 ^ text.length;

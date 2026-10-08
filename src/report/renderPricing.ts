@@ -58,7 +58,8 @@ html[data-plan=free] .plan[data-key=free] .btn-primary,html[data-plan=plus] .pla
 .pay{display:flex;flex-direction:column;gap:8px}.pay label{display:flex;align-items:center;gap:10px;border:1px solid var(--line-strong);border-radius:12px;padding:12px 14px;cursor:pointer}.pay input{accent-color:var(--navy);width:18px;height:18px}
 .co .credit-btn{width:100%;justify-content:center;padding:14px;font-size:16px}.co .credit-btn[disabled]{opacity:.45;cursor:not-allowed}.agree{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--fg2)}
 .done{text-align:center}.done svg{width:52px;height:52px;color:var(--accent)}.log{font-size:13px}.log td{padding:7px 6px}
-@media (max-width:1100px){.pr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:820px){.pr-grid,.packs{grid-template-columns:minmax(0,1fr)}.cmp{font-size:12px}.cmp td,.cmp th{padding:6px 4px}}
+.pr-tabs{display:none}.fold>summary{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px;cursor:pointer;list-style:none;font-size:16px}.fold>summary::-webkit-details-marker{display:none}.fold>summary::after{content:"펼치기 ▾";font-size:13px;font-weight:700;color:var(--accent-strong)}.fold[open]>summary::after{content:"접기 ▴"}.fold[open]>summary{margin-bottom:10px}
+@media (max-width:1100px){.pr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:820px){.pr-tabs{display:flex;margin-bottom:12px}.pr-tabs button{flex:1}.pr-grid>.plan{display:none}.pr-grid[data-show=free]>[data-key=free],.pr-grid[data-show=plus]>[data-key=plus],.pr-grid[data-show=pro]>[data-key=pro],.pr-grid[data-show=max]>[data-key=max]{display:flex}.packs{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px}.pack{padding:12px 10px}.pack b{font-size:16px}.pack .price{font-size:15px!important}.pack .btn-primary{padding:9px 6px;font-size:13px}}@media (max-width:820px){.pr-grid{grid-template-columns:minmax(0,1fr)}.cmp{font-size:12px}.cmp td,.cmp th{padding:6px 4px}}
 </style>`;
 
 export function renderPricing(): string {
@@ -72,21 +73,21 @@ ${i ? `<div class="inherits">${PLANS[i - 1]!.name}의 모든 것에 더해</div>
 <p class="hero-line">결제는 깊이를 바꿀 뿐, 진실을 바꾸지 않아요. 같은 종목의 신호·숫자·기록은 누구에게나 같고, 유료는 그 이유를 더 자세히 보여 줘요.</p></div></section>
 <section class="block"><p class="mock-note"><b>MOCK 화면이에요.</b> 실제로 결제되지 않고, 요금제와 크레딧은 이 브라우저에만 저장돼요. 가격과 구성은 출시 전에 바뀔 수 있어요.</p></section>
 <section class="block"><div class="card acct-card"><div><div class="muted small">지금 요금제</div><b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧 <span class="muted small" data-trial></span></div><div><a href="#log" class="link-btn">크레딧 사용 내역</a></div></div></section>
-<section class="block"><div class="pr-grid">${PLANS.map(plan).join('')}</div></section>
-<section class="block"><div class="block-head"><h2>요금제별로 볼 수 있는 것</h2></div><div class="card table-wrap"><table class="cmp"><thead><tr><th>기능</th>${PLANS.map((p) => `<th>${p.name}</th>`).join('')}</tr></thead><tbody>
-${COMPARE.map(([label, ...cells]) => `<tr><td>${label}</td>${cells.map(yes).join('')}</tr>`).join('')}</tbody></table></div></section>
+<section class="block"><div class="seg pr-tabs" role="tablist" aria-label="요금제 고르기">${PLANS.map((p) => `<button type="button" role="tab" data-pr="${p.key}" aria-selected="${p.key === 'pro'}">${p.name}</button>`).join('')}</div><div class="pr-grid" data-show="pro">${PLANS.map(plan).join('')}</div></section>
+<section class="block"><details class="card fold" data-open-wide><summary><b>요금제별로 볼 수 있는 것</b><span class="muted small">기능 ${COMPARE.length}개 비교</span></summary><div class="table-wrap"><table class="cmp"><thead><tr><th>기능</th>${PLANS.map((p) => `<th>${p.name}</th>`).join('')}</tr></thead><tbody>
+${COMPARE.map(([label, ...cells]) => `<tr><td>${label}</td>${cells.map(yes).join('')}</tr>`).join('')}</tbody></table></div></details></section>
 <section class="block" id="credits"><div class="block-head"><h2>크레딧 충전</h2><span class="muted">플러스부터 충전하고 쓸 수 있어요</span></div>
 <div class="packs">${CREDIT_PACKS.map((k) => {
     const per = k.price / k.credits, off = Math.round((1 - per / base) * 100);
     return `<div class="card pack"><span class="muted small">${off > 0 ? `${off}% 더 저렴` : '기본'}</span><b>${k.credits}크레딧</b><div class="price" style="font-size:20px;font-weight:800">${won(k.price)}</div><span class="per">크레딧당 ${Math.round(per)}원</span><a class="btn-primary" href="checkout.html?item=${k.key}">충전하기</a></div>`;
   }).join('')}</div>
-<div class="card" style="margin-top:12px"><table class="compact"><thead><tr><th>크레딧으로 하는 일</th><th>필요한 크레딧</th><th>쓸 수 있는 요금제</th></tr></thead><tbody>
+<details class="card fold" style="margin-top:12px" data-open-wide><summary><b>크레딧으로 하는 일</b><span class="muted small">${CREDIT_ACTIONS.length}가지 · 필요한 크레딧</span></summary><table class="compact"><thead><tr><th>크레딧으로 하는 일</th><th>필요한 크레딧</th><th>쓸 수 있는 요금제</th></tr></thead><tbody>
 ${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>${CREDIT_COST[a.key]}</b></td><td>${PLANS.find((p) => p.key === a.min)!.name}부터</td></tr>`).join('')}</tbody></table>
-<p class="fine">가끔 이벤트로 체험 크레딧을 드려요. 무료 이용자도 체험 크레딧으로 빠른 질문과 요약 리포트 요청을 해 볼 수 있고, 이벤트가 끝나면 남은 체험 크레딧은 사라져요. 프로는 충전할 때 10%, 맥스는 20%를 더 받아요. 요금제에 포함된 크레딧은 매달 새로 채워지고 이월되지 않아요. 충전한 크레딧은 1년 동안 써요.</p></div></section>
+<p class="fine">가끔 이벤트로 체험 크레딧을 드려요. 무료 이용자도 체험 크레딧으로 빠른 질문과 요약 리포트 요청을 해 볼 수 있고, 이벤트가 끝나면 남은 체험 크레딧은 사라져요. 프로는 충전할 때 10%, 맥스는 20%를 더 받아요. 요금제에 포함된 크레딧은 매달 새로 채워지고 이월되지 않아요. 충전한 크레딧은 1년 동안 써요.</p></details></section>
 <section class="block" id="log"><div class="block-head"><h2>크레딧 사용 내역</h2><span class="muted">이 브라우저 기록</span></div><div class="card"><div id="log-body"><p class="empty">아직 내역이 없어요.</p></div></div></section>
 <section class="block faq"><div class="block-head"><h2>자주 묻는 것</h2></div><div class="card">
 <details><summary>지금 결제하면 실제로 돈이 나가나요?</summary><p>아니요. 이 화면은 요금제 구조를 보여 주는 MOCK이에요. 결제 버튼은 이 브라우저의 요금제와 크레딧만 바꿔요.</p></details>
-<details><summary>잠긴 내용은 어떻게 열리나요?</summary><p>플러스부터 상세 내용이 보여요. 지금은 화면에서만 가리는 MOCK이고, 실제 서비스에서는 로그인한 계정으로 확인해요.</p></details>
+<details><summary>잠긴 리포트는 어떻게 열리나요?</summary><p>플러스부터 상세 내용이 보여요. AI 위원회 심층 리포트(매일 리포트와 다른 사람이 만든 리포트)는 한 번 열 때 10크레딧이고, 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료로 열고, 만든 지 7일이 지난 리포트는 누구나 무료예요. 프로·맥스와 리포트를 만든 사람은 크레딧 없이 바로 봐요. 다른 사람이 내가 만든 리포트를 크레딧으로 열면 나에게 2크레딧이 돌아와요(리포트 하나에 80크레딧까지).</p></details>
 <details><summary>크레딧은 언제 사라지나요? (초안)</summary><p>프로·맥스에 포함된 크레딧은 매달 새로 채워지고, 남은 포함 크레딧은 이월되지 않아요. 따로 충전한 크레딧은 1년 동안 써요.</p></details>
 <details><summary>요금제마다 무엇이 달라요?</summary><p>플러스는 계산 상세와 요약 리포트를 보고 크레딧으로 리포트를 요청해요. 프로는 AI 위원회 리포트 전체·전략·모의투자를 보고, 요약 리포트를 심층으로 업그레이드해요. 맥스는 관심 종목 10개를 매주 AI 위원회가 알아서 분석하고, 전문가용 도구(전략 랩·포트폴리오 리스크·시점 재현)를 써요.</p></details>
 <details><summary>투자 자문인가요?</summary><p>아니요. 공개 데이터로 계산한 결과와 AI 해설이고, 매수·매도를 권하지 않아요. 유료 서비스를 열기 전에 관련 법(유사투자자문업 신고 등)을 확인할 예정이에요.</p></details></div></section>
@@ -96,6 +97,12 @@ ${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>$
 
 const PRICING_SCRIPT = `<script>
 (function () {
+  // Phones show one plan at a time (G-122); the current paid plan opens first, otherwise 프로. Long tables open on wide screens.
+  var grid = document.querySelector('.pr-grid'), tabs = [].slice.call(document.querySelectorAll('[data-pr]'));
+  var pick = function (k) { grid.setAttribute('data-show', k); tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t.getAttribute('data-pr') === k)); }); };
+  tabs.forEach(function (t) { t.addEventListener('click', function () { pick(t.getAttribute('data-pr')); }); });
+  var cur = document.documentElement.getAttribute('data-plan'); if (cur && cur !== 'free' && document.querySelector('[data-pr=' + cur + ']')) pick(cur);
+  if (matchMedia('(min-width:821px)').matches) document.querySelectorAll('[data-open-wide]').forEach(function (d) { d.open = true; });
   var G = window.GNM; if (!G) return;
   var KIND = { report: '심층 리포트 요청', brief: '요약 리포트 요청', upgrade: '심층 업그레이드', idea: '아이디어 검증', question: 'AI 빠른 질문', standard: 'AI 표준 질문', deep: 'AI 심층 질문', topup: '충전', trial: '체험 크레딧', plan: '요금제' };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };

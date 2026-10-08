@@ -69,8 +69,8 @@ export async function runDailyNotify(ctx: Ctx): Promise<{ date: string | null; s
     if (!(await once(ctx.db, `daily:${u.id}:${date}`, ctx.now))) continue;
     const watch = new Set<string>(u.symbols && notifyLimit(u.plan).watchReport ? JSON.parse(u.symbols) as string[] : []), mine = today.filter((s) => watch.has(s));
     const ok = mine.length
-      ? await notifyUser(ctx, u.id, 'watchReport', { title: `관심 종목 새 리포트 · ${list(mine)}`, body: `${date} 장 마감 기준 리포트가 나왔어요.`, link: reportLink(mine[0]!) })
-      : await notifyUser(ctx, u.id, 'daily', { title: `오늘 리포트 ${today.length}개가 나왔어요`, body: `${list(today)} · ${date} 장 마감 기준`, link: 'reports.html' });
+      ? await notifyUser(ctx, u.id, 'watchReport', { title: `관심 종목 새 리포트 · ${list(mine)}`, body: `${date} 장 마감 기준 리포트가 나왔어요.`, link: `reports.html?hl=${mine.map(encodeURIComponent).join(',')}#today` })
+      : await notifyUser(ctx, u.id, 'daily', { title: `오늘 리포트 ${today.length}개가 나왔어요`, body: `${list(today)} · ${date} 장 마감 기준`, link: 'reports.html#today' });
     if (ok) sent += 1;
   }
   // Requested reports (G-97): the request was handled and the stock's report is now in today's batch.

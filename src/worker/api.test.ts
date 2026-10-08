@@ -1,11 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ALPHA, CREDIT_COST } from '../report/plans.js';
+import { ALPHA, CREDIT_COST, UNLOCK } from '../report/plans.js';
 import { handle, type Deps, type Env } from './api.js';
 import { askParams } from './ask.js';
 import { testDb } from './testDb.js';
 
 const SITE = 'https://hanul442.github.io/gnomon_analytics';
+
+/** Uses up a user's free opens this month (G-126) so a test can check the paid path. */
+async function spendFreeOpens(t: { env: Env }, email: string): Promise<void> {
+  const id = (await t.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first<{ id: string }>())!.id;
+  for (let i = 0; i < 10; i++) await t.env.DB.prepare("INSERT OR IGNORE INTO unlocks (user_id, symbol, date, credits, created_at) VALUES (?, 'USED', ?, 0, '2026-10-05T00:00:00Z')").bind(id, 'used-' + i).run();
+}
 
 function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
   const env: Env = { DB: testDb(), SITE_URL: SITE, ADMIN_EMAILS: 'boss@example.com', RESEND_API_KEY: opts.mail === false ? undefined as never : 'test', AI_DAILY_USD: '5', USER_DAILY_ASKS: '3' };
@@ -293,7 +299,7 @@ test('market reports enforce paid plans even with credits; Plus unlocks once and
  assert.equal((await t.call('GET',path,undefined,u.session)).body.error,'PLAN_REQUIRED');
  assert.equal((await t.call('POST',path+'/unlock',{},u.session)).body.error,'PLAN_REQUIRED');
  assert.equal((await t.call('GET','/me',undefined,u.session)).body.credits.balance,ALPHA.monthlyCredits);
- await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='market@example.com'").run();
+ await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='market@example.com'").run();await spendFreeOpens(t,'market@example.com');
  assert.equal((await t.call('GET',path,undefined,u.session)).body.error,'LOCKED');
  assert.equal((await t.call('POST',path+'/unlock',{},u.session)).body.charged,CREDIT_COST.unlock);
  assert.match((await t.call('GET',path,undefined,u.session)).body.html,/시장 상세 근거/);
@@ -313,15 +319,16 @@ test('deep reports (G-61): locked until unlocked once with credits; requester an
   const u = await t.login('d@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
   const path = '/deep/000660/2026-10-02';
   // Alpha testers unlock with credits like everyone else; pro and max read without unlocking.
-  assert.equal((await t.call('GET',path,undefined,u.session)).status,402);
+  assert.equal((await t.call('GET',path,undefined,u.session)).body.locked,true);
   await t.env.DB.prepare("UPDATE users SET plan='pro' WHERE email='d@example.com'").run();
   assert.equal((await t.call('GET',path,undefined,u.session)).status,200);
   // An admin looking as a plan (X-View-As) gets that plan's gate.
   const asPlus = await handle(new Request('https://api.test'+path,{headers:{Origin:'https://hanul442.github.io',Authorization:`Bearer ${boss.session}`,'X-View-As':'plus'}}),t.env,t.deps);
-  assert.equal(asPlus.status,402);
+  assert.equal(((await asPlus.json()) as {locked?:boolean}).locked,true);
   await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='d@example.com'").run();
+  await spendFreeOpens(t, 'd@example.com');
   const locked = await t.call('GET', path, undefined, u.session);
-  assert.deepEqual([locked.status, locked.body.error, locked.body.cost, locked.body.balance], [402, 'LOCKED', CREDIT_COST.unlock, ALPHA.monthlyCredits]);
+  assert.deepEqual([locked.status, locked.body.error, locked.body.cost, locked.body.balance], [200, 'LOCKED', CREDIT_COST.unlock, ALPHA.monthlyCredits]);
   // A report with no sealed file costs nothing.
   const missing = await t.call('POST', '/deep/005930/2026-10-02/unlock', {}, u.session);
   assert.deepEqual([missing.status, missing.body.error], [404, 'NOT_SEALED']);
@@ -341,6 +348,7 @@ test('deep reports (G-61): locked until unlocked once with credits; requester an
   const pid = (await t.call('GET', '/admin/overview', undefined, boss.session)).body.users.find((x: any) => x.email === 'p@example.com').id;
   await t.call('POST', '/admin/grant', { userId: pid, amount: -(ALPHA.monthlyCredits - 3) }, boss.session);
   await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE id=?").bind(pid).run();
+  await spendFreeOpens(t, 'p@example.com');
   const broke = await t.call('POST', `${path}/unlock`, {}, poor.session);
   assert.deepEqual([broke.status, broke.body.error, broke.body.balance], [402, 'NO_CREDITS', 3]);
 });
@@ -400,6 +408,32 @@ async function reportSetup() {
   return {...t,queued,boss,user,report};
 }
 
+test('opening reports (G-126): monthly free opens per plan, free after a week, then credits', async () => {
+  const t = setup();
+  t.env.DEEP_KEY = 'deep-secret';
+  const { seal } = await import('../report/seal.js');
+  const sealed = await seal('<div class="deep-body">본문</div>', 'deep-secret');
+  const real = t.deps.fetch;
+  t.deps.fetch = (async (url: string, init?: RequestInit) => (/\/deep\/\d{4}-\d{2}-\d{2}\.txt$/.test(String(url)) ? new Response(sealed) : real(url, init))) as typeof fetch;
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('f@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='f@example.com'").run();
+  const start = (await t.call('GET', '/me', undefined, u.session)).body.credits.balance;
+  assert.equal((await t.call('GET', '/deep/000660/2026-10-02', undefined, u.session)).body.freeLeft, UNLOCK.monthlyFree.plus);
+  const codes = ['000660', '005930', '000270', '005380', '035420', '035720'];
+  for (let i = 0; i < UNLOCK.monthlyFree.plus!; i++) {
+    const r = await t.call('POST', `/deep/${codes[i]}/2026-10-02/unlock`, {}, u.session);
+    assert.deepEqual([r.body.charged, r.body.free, r.body.freeLeft], [0, true, UNLOCK.monthlyFree.plus! - i - 1]);
+  }
+  const paid = await t.call('POST', `/deep/${codes[5]}/2026-10-02/unlock`, {}, u.session);
+  assert.deepEqual([paid.body.charged, paid.body.balance], [CREDIT_COST.unlock, start - CREDIT_COST.unlock]);
+  // A report more than a week old opens without unlocking.
+  assert.match((await t.call('GET', '/deep/051910/2026-09-20', undefined, u.session)).body.html, /본문/);
+  // Alpha gets ten.
+  await t.env.DB.prepare("UPDATE users SET plan='alpha' WHERE email='f@example.com'").run();
+  assert.equal((await t.call('GET', '/deep/068270/2026-10-02', undefined, u.session)).body.freeLeft, UNLOCK.monthlyFree.alpha! - UNLOCK.monthlyFree.plus!);
+});
+
 test('on-demand reports charge once across concurrent retries; owner/pro read, others unlock once with credits; redelivery is idempotent',async()=>{
  const t=await reportSetup();
  const [a,b]=await Promise.all([t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session),t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session)]);
@@ -414,22 +448,25 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, o
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});assert.equal(runs,1);
  const done=await t.call('GET','/reports/'+a.body.id,undefined,t.user.session);
  assert.equal(done.body.status,'done');assert.match(done.body.fragments.home,/비공개 분석 본문/);assert.match(done.body.fragments.ai,/class="[^"]*parliament/,'the committee seats come with a generated report');assert.doesNotMatch(done.body.fragments.ai,/위원별 판단/,'one committee section: the seats carry each member\'s view');
- const other=await t.login('other@example.com',(await t.call('POST','/admin/invites',{},t.boss.session)).body.code);
+ const other=await t.login('other@example.com',(await t.call('POST','/admin/invites',{},t.boss.session)).body.code);await spendFreeOpens(t,'other@example.com');
  // Someone else's report opens once for the unlock price, then stays open without charging again.
  const lockedJob=await t.call('GET','/reports/'+a.body.id,undefined,other.session);
- assert.deepEqual([lockedJob.status,lockedJob.body.error,lockedJob.body.cost],[402,'LOCKED',CREDIT_COST.unlock]);
+ assert.deepEqual([lockedJob.status,lockedJob.body.error,lockedJob.body.cost],[200,'LOCKED',CREDIT_COST.unlock]);
  assert.doesNotMatch(JSON.stringify(lockedJob.body),/비공개 분석 본문/);
  const latest=(await t.call('GET','/reports/latest/000660',undefined,other.session)).body.job;
  assert.deepEqual([latest.id,latest.locked,latest.cost],[a.body.id,true,CREDIT_COST.unlock]);
+ const makerBefore=(await t.call('GET','/me',undefined,t.user.session)).body.credits.balance;
  const before=lockedJob.body.balance, opened=await t.call('POST','/reports/'+a.body.id+'/unlock',{},other.session);
  assert.deepEqual([opened.status,opened.body.charged,opened.body.balance],[200,CREDIT_COST.unlock,before-CREDIT_COST.unlock]);
+ // G-126: the maker gets a share of a paid open, once per reader.
+ assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,makerBefore+UNLOCK.makerShare);
  assert.equal((await t.call('POST','/reports/'+a.body.id+'/unlock',{},other.session)).body.charged,0);
  const read=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(read.status,200);assert.match(read.body.fragments.home,/비공개 분석 본문/);
- await t.env.DB.prepare("DELETE FROM unlocks WHERE user_id=(SELECT id FROM users WHERE email='other@example.com')").run();
+ await t.env.DB.prepare("DELETE FROM unlocks WHERE user_id=(SELECT id FROM users WHERE email='other@example.com') AND symbol<>'USED'").run();
   await t.env.DB.prepare("UPDATE users SET plan='pro' WHERE email='other@example.com'").run();
   assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,other.session)).status,200);
  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='other@example.com'").run();
- const blocked=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(blocked.status,402);assert.doesNotMatch(JSON.stringify(blocked.body),/비공개 분석 본문/);
+ const blocked=await t.call('GET','/reports/'+a.body.id,undefined,other.session);assert.equal(blocked.body.locked,true);assert.doesNotMatch(JSON.stringify(blocked.body),/비공개 분석 본문/);
  assert.equal((await t.call('GET','/reports/'+a.body.id)).status,401);
  const mine=(await t.call('GET','/reports/mine',undefined,t.user.session)).body;assert.equal(mine.jobs.length,1);assert.equal(mine.jobs[0].status,'done');assert.equal(mine.jobs[0].symbol,'000660');
  assert.deepEqual((await t.call('GET','/reports/mine',undefined,other.session)).body.jobs,[],'someone else\'s reports never show in my list');

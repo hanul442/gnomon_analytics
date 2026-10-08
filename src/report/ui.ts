@@ -165,7 +165,7 @@ export function tabBar(base: string, where: 'top' | 'bottom'): string {
 export function menuHtml(base: string, archiveHref?: string): { button: string; drawer: string } {
   return {
     button: tabBar(base, 'top'),
-    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체</b><button type="button" class="sm-close" aria-label="닫기">×</button></div><div class="sm-group sm-acct"><a href="${base}pricing.html" data-acct-tab="1"><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></a></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div class="sm-group sm-view" id="sm-view"><div class="sm-title">내 보기 방식</div>${PERSONA_BAR}<p class="sm-hint">고르면 홈의 '오늘 볼 것'과 종목 화면이 바뀌어요.</p><a href="${base}onboarding.html">설문 다시 하기</a></div><div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
+    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체</b><button type="button" class="sm-close" aria-label="닫기">×</button></div><div class="sm-group sm-acct"><a href="${base}pricing.html" data-acct-tab="1"><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></a><button type="button" class="sm-install" data-install hidden><b>📲 그노몬 앱 설치</b><small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div class="sm-group sm-view" id="sm-view"><div class="sm-title">내 보기 방식</div>${PERSONA_BAR}<p class="sm-hint">고르면 홈의 '오늘 볼 것'과 종목 화면이 바뀌어요.</p><a href="${base}onboarding.html">설문 다시 하기</a></div><div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div>${g.items.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
   };
 }
 
@@ -175,6 +175,138 @@ export function menuHtml(base: string, archiveHref?: string): { button: string; 
  * while the page is visible (every 60 outside trading hours); coins stream from Upbit's public WebSocket.
  * Lists drawn later (the watchlist, 찾기) are picked up on the next tick.
  */
+/**
+ * Full-screen layers (G-121): what used to open as a small popup now takes the whole phone screen like a page
+ * (a fixed top bar, content below) and a tall centred panel on wide screens. The phone's back button closes the
+ * top layer instead of leaving the page. Small explanations (용어 풀이, 근거 칩) stay as tooltips.
+ */
+export const FS_CSS = `.tap-card{cursor:pointer;-webkit-tap-highlight-color:rgba(19,41,75,.06)}.tap-card:active{background-color:rgba(19,41,75,.03)}@media (hover:hover){tr.tap-card:hover,li.tap-card:hover{background:var(--accent-soft)}}
+@media (max-width:820px){
+dialog.v2-dialog[open]{position:fixed!important;inset:0!important;margin:0!important;width:100%!important;max-width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;padding:0 16px calc(16px + env(safe-area-inset-bottom))!important}
+dialog.v2-dialog.rj[open]{padding:0!important}
+dialog.v2-dialog>header{position:sticky;top:0;z-index:3;background:#fff;margin:0 -16px 10px!important;padding:14px 16px 12px!important;border-bottom:1px solid var(--line)}
+dialog.v2-dialog.rj>header{margin:0!important}
+.bell-pop{position:fixed!important;inset:0!important;width:100%!important;max-height:none!important;height:100dvh;border:0!important;border-radius:0!important;box-shadow:none!important;z-index:200!important;padding:0 8px calc(12px + env(safe-area-inset-bottom))!important}
+.bell-pop .bell-head{position:sticky;top:0;background:#fff;z-index:2;padding:14px 8px 12px!important;border-bottom:1px solid var(--line);margin-bottom:6px}
+.flt-pop{padding:0!important;place-items:stretch!important}.flt-sheet{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
+.sheet{align-items:stretch!important}.sheet-body{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;padding-top:0!important}.sheet-head{top:0!important;margin:0 -18px 8px!important;padding:14px 18px 12px!important;border-bottom:1px solid var(--line)}
+.chat{inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;max-width:100%!important;height:100dvh!important;border-radius:0!important}
+.side-menu{top:0!important;max-height:none!important;height:100dvh;border-radius:0!important;animation:sm-in .18s ease-out}
+dialog.v2-dialog>header>.dialog-x,dialog.v2-dialog .rj-head .dialog-x,.flt-top .flt-x,.chat-head .chat-x,.sm-head .sm-close{order:-1;font-size:0!important;width:36px;height:36px;margin:-6px 4px -6px -8px;display:inline-flex;align-items:center;justify-content:center;border:0;background:none;color:var(--fg)}
+dialog.v2-dialog>header>.dialog-x::before,dialog.v2-dialog .rj-head .dialog-x::before,.flt-top .flt-x::before,.chat-head .chat-x::before,.sm-head .sm-close::before{content:"‹";font-size:34px;line-height:1;font-weight:300;margin-top:-4px}
+dialog.v2-dialog>header,.flt-top,.sm-head{justify-content:flex-start!important;gap:4px!important}.chat-head{gap:6px}.chat-head .chat-x{color:#fff!important}
+.ins-pop{align-items:stretch!important}.ins-pop .ins-card{border-radius:0!important;max-width:none!important;display:flex;flex-direction:column;justify-content:center}
+.pop-wrap{padding:0!important;place-items:stretch!important}.pop-wrap .pop{width:100%!important;border-radius:0!important;display:flex;flex-direction:column;justify-content:center;align-items:center}
+}
+@media (min-width:821px){
+dialog.v2-dialog[open]{width:min(760px,calc(100% - 48px))!important;height:calc(100dvh - 48px)!important;max-height:none!important}
+dialog.v2-dialog>header{position:sticky;top:-20px;z-index:3;background:#fff;padding-bottom:10px;border-bottom:1px solid var(--line);margin-bottom:10px}
+dialog.v2-dialog.rj>header{top:0}
+.sheet-body{width:min(760px,94vw)!important;height:calc(100dvh - 48px)!important;max-height:none!important}
+.flt-sheet{width:min(1180px,100%)!important;height:calc(100dvh - 40px)!important}
+}
+html.layer-open{overflow:hidden}`;
+
+/** Back button and scroll lock for the full-screen layers. */
+export const FS_JS = `
+  (function () {
+    var L = [
+      ['dialog.v2-dialog[open]', function (e) { e.close(); }],
+      ['.bell-pop', function () { var b = document.getElementById('bell'); if (b) b.click(); }],
+      ['.flt-pop', function (e) { var x = e.querySelector('.flt-x'); if (x) x.click(); }],
+      ['.sheet:not([hidden])', function (e) { var x = e.querySelector('[data-close]'); if (x) x.click(); }],
+      ['section.chat:not([hidden])', function (e) { var x = e.querySelector('.chat-x'); if (x) x.click(); }],
+      ['.side-menu:not([hidden])', function (e) { var x = e.querySelector('.sm-close'); if (x) x.click(); }],
+      ['.ins-pop', function (e) { e.remove(); }],
+      ['.pop-wrap', function (e) { var x = e.querySelector('[data-p=later]'); if (x) x.click(); else e.remove(); }]
+    ];
+    var open = function () { var out = []; L.forEach(function (l) { document.querySelectorAll(l[0]).forEach(function (e) { if (e.offsetParent !== null || getComputedStyle(e).position === 'fixed') out.push([e, l[1]]); }); }); return out; };
+    // Each open layer adds one history entry. Closing with × leaves its entry behind; history only moves when the
+    // reader presses back (so it never races a link they tap next), and a press that lands on a stale entry skips it.
+    var t = null, lvl = function () { return (history.state && history.state.gnmLayer) || 0; };
+    var sync = function () {
+      t = null; var n = open().length;
+      document.documentElement.classList.toggle('layer-open', n > 0);
+      if (n > lvl()) history.pushState({ gnmLayer: n }, '');
+    };
+    new MutationObserver(function () { if (!t) t = setTimeout(sync, 30); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'open'] });
+    window.addEventListener('popstate', function () {
+      var o = open();
+      if (o.length > lvl()) { var top = o[o.length - 1]; top[1](top[0]); }
+      setTimeout(function () { if (lvl() > open().length) history.back(); }, 60);
+    });
+  })();`;
+
+/**
+ * Whole-card taps (G-123): a card, list row or table row that leads to exactly one place opens it wherever it is
+ * tapped, not only on its small link. Rows with several destinations, forms, charts or their own buttons keep
+ * their parts. Applied again when parts of the page are drawn later.
+ */
+export const TAP_JS = `
+  (function () {
+    var BOX = '.card, .tp-card, .mi-card, .tm-item, .tm-row, .bell-item, .feed-item, .list-row, li, tr, .st-item, .row-link, [data-tap]';
+    var SKIP = 'canvas, svg.chart, form, input, select, textarea, .tv-lightweight-charts, .chart-wrap, dialog, .sheet, .chat, .side-menu';
+    var hrefs = function (el) { var s = {}; el.querySelectorAll('a[href]').forEach(function (a) { var h = a.getAttribute('href'); if (h && h.charAt(0) !== '#' && !/^(javascript|mailto|tel):/.test(h)) s[a.href] = a; }); return s; };
+    var mark = function () {
+      document.querySelectorAll(BOX).forEach(function (el) {
+        if (el.hasAttribute('data-tap-done')) return; var hh = el.getBoundingClientRect().height; if (!hh) return; el.setAttribute('data-tap-done', '');
+        if (el.querySelector(SKIP) || el.closest('dialog, .sheet, .chat, .side-menu, .bell-pop, nav')) return;
+        var h = hrefs(el), keys = Object.keys(h);
+        if (keys.length !== 1 || el.querySelectorAll('button').length > 1) return;
+        // A card holding other cards is a list: its rows decide.
+        if (el.querySelector('.card, li, tr') && el.querySelectorAll('.card, li, tr').length > 1) return;
+        // Only when that link is what the box is about: it holds the box's name, or the box is a short row.
+        var link = h[keys[0]], named = !!link.querySelector('b, strong, h2, h3, h4, .name, .tp-name') || /^(B|STRONG|H2|H3|H4)$/.test((link.firstElementChild || {}).tagName || '');
+        if (!named && hh > 180) return;
+        el.classList.add('tap-card'); el.setAttribute('data-tap-href', keys[0]);
+      });
+    };
+    document.addEventListener('click', function (e) {
+      if (e.defaultPrevented || e.button !== 0) return;
+      var el = e.target.closest && e.target.closest('.tap-card'); if (!el) return;
+      if (e.target.closest('a, button, input, select, textarea, label, summary, details > *:not(summary) a, [role=button], [role=tab], [contenteditable]')) return;
+      if (window.getSelection && String(window.getSelection()).length > 2) return;
+      var a = el.querySelector('a[href]'); var url = el.getAttribute('data-tap-href');
+      if (e.metaKey || e.ctrlKey) { window.open(url, '_blank'); return; }
+      if (a && a.target === '_blank') window.open(url, '_blank', 'noopener'); else location.href = url;
+    });
+    var t = null; new MutationObserver(function () { if (!t) t = setTimeout(function () { t = null; mark(); }, 120); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden'] });
+    mark();
+  })();`;
+
+/** Captures the browser's install offer as early as possible (it can fire before ui.js loads). */
+export const INSTALL_BOOT = `<script>window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__gnmInstall=e;window.dispatchEvent(new Event('gnm-installable'));});</script>`;
+
+/**
+ * One-tap install (G-120): Chrome, Edge and Samsung Internet install from the 📲 button directly; iPhone has no
+ * install API, so the button shows the two Safari steps instead. Hidden once the app runs installed.
+ */
+export const INSTALL_JS = `
+  (function () {
+    var standalone = function () { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; };
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var base = document.body.dataset.base || '';
+    // The service worker makes the site installable everywhere (it is also what carries push).
+    if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistration(base + 'sw.js').then(function (r) { if (!r) navigator.serviceWorker.register(base + 'sw.js').catch(function () {}); }).catch(function () {});
+    var show = function () { var on = !standalone() && (!!window.__gnmInstall || ios); document.querySelectorAll('[data-install]').forEach(function (b) { b.hidden = !on; }); };
+    var iosSteps = function () {
+      var pop = document.createElement('div'); pop.className = 'ins-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-modal', 'true'); pop.setAttribute('aria-label', '앱 설치');
+      pop.innerHTML = '<div class="ins-card"><b>아이폰에 그노몬 설치</b><p class="muted small">아이폰은 Safari에서만 설치할 수 있어요. 두 번만 누르면 돼요.</p><ol><li>아래 <b>공유</b> 버튼(네모에 위 화살표)을 눌러요</li><li><b>홈 화면에 추가</b>를 눌러요</li></ol><button type="button" class="btn-primary">알겠어요</button></div>';
+      pop.addEventListener('click', function (e) { if (e.target === pop || e.target.tagName === 'BUTTON') pop.remove(); });
+      document.body.appendChild(pop); pop.querySelector('button').focus();
+    };
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-install]'); if (!b) return;
+      var ev = window.__gnmInstall;
+      if (ev) { ev.prompt(); ev.userChoice.then(function (c) { if (c && c.outcome === 'accepted') { window.__gnmInstall = null; show(); } }).catch(function () {}); return; }
+      if (ios) { iosSteps(); return; }
+      if (window.GNM && GNM.toast) GNM.toast('이 브라우저는 바로 설치를 지원하지 않아요. 크롬이나 삼성 인터넷에서 열어 주세요.');
+    });
+    window.addEventListener('gnm-installable', show);
+    window.addEventListener('appinstalled', function () { window.__gnmInstall = null; show(); if (window.GNM && GNM.toast) GNM.toast('그노몬 앱을 설치했어요. 홈 화면에서 열 수 있어요.'); });
+    show();
+  })();`;
+
 export const LIVE_JS = `
   (function () {
     var G = window.GNM || {}, last = {}, ws = null, wsSet = '', timer = 0;
@@ -348,7 +480,7 @@ export const ORBS = '<span class="orbs" aria-hidden="true"><canvas data-orb="wor
 
 export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:#1d6b3a;border-color:#bfe3cb;background:#effaf2}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(209,55,61,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(42,98,201,.22)}100%{background:transparent}}`;
 
-export const MENU_CSS = `.top-tabs{display:flex;align-items:center;gap:2px;margin-right:6px}.top-tabs a,.top-tabs button{display:flex;align-items:center;gap:6px;border:0;background:none;color:#dbe4f3;font:inherit;font-size:14px;font-weight:700;padding:8px 11px;border-radius:10px;text-decoration:none;cursor:pointer}.top-tabs svg{width:18px;height:18px}.top-tabs a:hover,.top-tabs button:hover,.top-tabs [aria-current=page]{background:rgba(255,255,255,.12);color:#fff}@media(max-width:820px){.top-tabs{display:none}}
+export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:13px;font-weight:700;border-radius:999px;padding:6px 11px;cursor:pointer;white-space:nowrap}.install-btn:hover{background:rgba(255,255,255,.18)}.sm-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin-top:8px;border:1px solid var(--line-strong);background:#f4f7fc;border-radius:12px;padding:10px 12px;font:inherit;text-align:left;cursor:pointer;color:var(--fg)}.sm-install small{color:var(--muted);font-size:12px}.ins-pop{position:fixed;inset:0;z-index:90;background:rgba(10,20,40,.45);display:flex;align-items:flex-end;justify-content:center}.ins-pop .ins-card{background:#fff;border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));max-width:480px;width:100%}.ins-pop ol{margin:10px 0 14px;padding-left:20px;line-height:1.7}.ins-pop .btn-primary{width:100%;justify-content:center}\n.top-tabs{display:flex;align-items:center;gap:2px;margin-right:6px}.top-tabs a,.top-tabs button{display:flex;align-items:center;gap:6px;border:0;background:none;color:#dbe4f3;font:inherit;font-size:14px;font-weight:700;padding:8px 11px;border-radius:10px;text-decoration:none;cursor:pointer}.top-tabs svg{width:18px;height:18px}.top-tabs a:hover,.top-tabs button:hover,.top-tabs [aria-current=page]{background:rgba(255,255,255,.12);color:#fff}@media(max-width:820px){.top-tabs{display:none}}
 .sm-acct a{display:flex!important;justify-content:space-between;align-items:center;background:#f3f6fb;border-radius:12px!important;padding:14px 14px!important}.sm-acct small{font-size:12.5px;color:var(--muted);font-weight:600}.sm-acct{border-top:0!important;padding-top:4px!important}
 .menu-scrim{position:fixed;inset:0;background:rgba(10,20,35,.42);z-index:90}.side-menu{position:fixed;top:0;right:0;bottom:0;width:min(300px,86vw);background:#fff;z-index:91;overflow-y:auto;padding:14px 16px 24px;box-shadow:-12px 0 32px rgba(10,20,35,.18);animation:sm-in .18s ease-out}
 @keyframes sm-in{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}.sm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.sm-head b{font-size:17px}.sm-close{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);width:38px;height:38px}

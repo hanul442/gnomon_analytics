@@ -71,10 +71,17 @@ export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 10
 
 /** What a credit action costs (G-37). Credits are bought and used from Plus; upgrading a brief to a full report is Pro. */
 /** `unlock` (G-61): opening one sealed deep report, once per user and report. */
+/**
+ * Opening reports (G-126, 한서님 결정 10/8): plans that unlock pay CREDIT_COST.unlock per report after a monthly
+ * allowance of free opens; reports older than UNLOCK.freeAfterDays open free for everyone signed in; and when
+ * someone pays to open a report another user generated, its maker gets UNLOCK.makerShare credits back, up to
+ * what they paid for it (UNLOCK.makerCap).
+ */
+export const UNLOCK = { monthlyFree: { free: 0, plus: 5, alpha: 10, pro: 0, max: 0 } as Record<string, number>, freeAfterDays: 7, makerShare: 2, makerCap: 80 } as const;
 export const CREDIT_COST = { report: 80, brief: 30, upgrade: 50, invite: 40, idea: 20, deep: 15, standard: 10, question: 5, unlock: 10 } as const;
 export type CreditAction = keyof typeof CREDIT_COST;
 export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail: string; min: Exclude<PlanKey, 'free'> }[] = [
-  { key: 'unlock', label: '심층 리포트 열기', detail: '이미 나온 AI 위원회 리포트의 토론·근거·시나리오 전개·최악의 경우를 열어요. 한 번 열면 계속 봐요', min: 'plus' },
+  { key: 'unlock', label: '심층 리포트 열기', detail: '이미 나온 AI 위원회 리포트(매일 리포트, 다른 사람이 만든 리포트)의 토론·근거·시나리오 전개·최악의 경우를 열어요. 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료이고, 7일 지난 리포트는 누구나 무료예요. 다른 사람이 만든 리포트를 열면 만든 사람에게 2크레딧이 돌아가요', min: 'plus' },
   { key: 'report', label: '심층 리포트 요청', detail: '리포트가 없는 종목에 AI 위원회 전체 리포트를 한 번 써요', min: 'plus' },
   { key: 'brief', label: '요약 리포트 요청', detail: '리포트가 없는 종목에 요약 리포트를 한 번 써요', min: 'plus' },
   { key: 'upgrade', label: '심층으로 업그레이드', detail: '요약 리포트만 있는 종목을 AI 위원회 전체 리포트로 다시 써요', min: 'pro' },

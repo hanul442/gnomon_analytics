@@ -29,7 +29,7 @@ const forecastBars=Array.from({length:160},(_,i)=>({...bars[i%bars.length],date:
 await writeFile(root+'/site/s/999998.html',renderCalculationPage({symbol:'999998',name:'시나리오 메뉴 테스트',bars:forecastBars,now:new Date()}));
 await writeFile(root+'/site/theme-index.json',JSON.stringify({'999999':[['1','테스트 테마'],['2','두 번째 테마']]}));await mkdir(root+'/site/theme',{recursive:true});
 await writeFile(root+'/site/theme/1.json',JSON.stringify({no:'1',name:'테스트 테마',members:[['999999','UI 테스트',2.1,12.5,5e11,bars.slice(-40).map(b=>b.close)],['000001','동료 하나',-1.2,4.0,9e11,bars.slice(-40).map(b=>b.close*1.1)],['000002','동료 둘',0.5,-3.1,2e11,bars.slice(-40).map(b=>b.close*0.9)],['000003','동료 셋',1.5,8.2,1e11,bars.slice(-40).map(b=>b.close*0.8)]]}));
-await writeFile(root+'/site/screener.json',JSON.stringify({date:'2026-10-06',rows:[['999999','UI 테스트','P',100,181,2,'BULLISH',80,5,10,20,-5,'B',0,3,2,2,20,'A',100,-1,0,'',10,3,40,4]]}));
+await writeFile(root+'/site/screener.json',JSON.stringify({date:'2026-10-06',rows:[['999999','UI 테스트','P',100,181,2,'BULLISH',80,5,10,20,-5,'B',0,3,2,2,20,'A',100,-1,0,'',10,3,40,4],['999998','가 정렬 테스트','Q',50,1200,-3,'BULLISH',60,1,-4,2,null,'B',0,1,1,0,5,null,30,-9,0,'',3,1,10,1],['999997','나 정렬 테스트','P',300,90,7,'BULLISH',40,2,25,8,12,'B',0,2,1,1,8,null,60,-3,0,'',6,2,20,2]]}));
 const scenarioReport=buildDailyReport({symbol:'999999',name:'시나리오 테스트',date:'2026-10-06',generatedAt:new Date(),bars:bars.map(b=>({...b,symbol:'999999',source:'fixture',retrievedAt:'2026-10-06T00:00:00Z'})),disclosures:[],sources:[]});
 scenarioReport.commentary={status:'OK',scenarios:[['BULL',[190,220],195],['BASE',[170,190]],['BEAR',[130,160],160]].map(([kind,zone,trigger])=>({kind,zone,trigger,narrative:{text:'펼쳐 보는 상세 근거'},catalysts:['검증 조건'],invalidation:['무효화 조건']}))};
 await writeFile(root+'/site/scenario-fixture.html','<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>body{font-family:sans-serif;margin:20px;color:#14233a}button{font:inherit}.card{border:1px solid #ddd;border-radius:14px;padding:12px}figure svg{max-width:100%}'+SCENARIO_CSS+CONCLUSION_CSS+'</style>'+conclusionCard(scenarioReport)+scenarioPanel(scenarioReport)+'<script>'+SCENARIO_JS+CONCLUSION_JS+'</script>');
@@ -164,6 +164,43 @@ try{
  await page.goto(origin+'/myreports.html');await page.locator('#mr-list .mr-item').first().waitFor();assert.equal(await page.locator('#mr-list .mr-item').count(),2);
  await page.locator('.mr-tabs [data-f=failed]').click();assert.equal(await page.locator('#mr-list .mr-item').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('.mr-tabs [data-f=""]').click();await page.screenshot({path:'test-artifacts/myreports.png',fullPage:true});
+ // G-125: the 🔔 '관심 종목 새 리포트' link opens the whole day's list with the watched stocks first.
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/reports.html?hl=000660#today');await page.locator('#today-list .rr').first().waitFor();
+ assert.equal(await page.locator('#today-list .rr').first().getAttribute('data-sym'),'000660');assert.ok(await page.locator('#today-list .rr').first().locator('.t-mine').count());
+ // G-123: a row that leads to one place opens from anywhere on it, not only its small link.
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/screener.html');await page.locator('#sc-body tr.tap-card').first().waitFor();
+ await page.locator('#sc-body tr.tap-card td:nth-child(2)').first().click();await page.waitForURL(/(stock\.html\?c=|\/index\.html)/);
+ await page.goto(origin+'/pricing.html');await page.locator('.pr-tabs [data-pr=plus]').click();assert.equal(await page.locator('.plan[data-key=plus]').isVisible(),true);assert.equal(await page.locator('.plan[data-key=pro]').isVisible(),false);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ // G-121: popups open full screen on phones and the back button closes them without leaving the page.
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/screener.html');await page.waitForLoadState('load');
+ const here=page.url();await page.locator('[data-open-chat]').first().click();await page.locator('#chat:not([hidden])').waitFor();
+ const box=await page.locator('#chat').boundingBox();assert.ok(box.width>=389&&box.height>=840,'chat fills the phone screen: '+JSON.stringify(box));
+ await page.waitForTimeout(100);await page.goBack();await page.locator('#chat').waitFor({state:'hidden'});assert.equal(page.url(),here);
+ await page.locator('[data-all-menu]').last().click();await page.locator('.side-menu:not([hidden])').waitFor();assert.ok((await page.locator('.side-menu').boundingBox()).height>=840);
+ await page.waitForTimeout(100);await page.goBack();await page.locator('.side-menu').waitFor({state:'hidden'});assert.equal(page.url(),here);
+ await page.locator('[data-all-menu]').last().click();await page.locator('.side-menu:not([hidden])').waitFor();await page.locator('.side-menu .sm-close').click();await page.locator('.side-menu').waitFor({state:'hidden'});await page.waitForTimeout(150);assert.equal(page.url(),here);
+ // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.
+ for (const width of [375,1280]) {
+  await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');await page.waitForLoadState('load');
+  assert.equal(await page.locator('.topbar [data-install]').isVisible(),false);
+  await page.evaluate(()=>{const e=new Event('beforeinstallprompt',{cancelable:true});e.prompt=()=>{window.__prompted=1;};e.userChoice=Promise.resolve({outcome:'accepted'});window.dispatchEvent(e);});
+  await page.locator('.topbar [data-install]').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await page.screenshot({path:'test-artifacts/install-'+width+'.png'});
+  await page.locator('.topbar [data-install]').click();assert.equal(await page.evaluate(()=>window.__prompted),1);
+  await page.waitForFunction(()=>document.querySelector('.topbar [data-install]').hidden);
+ }
+ // G-119: results sort by any column both ways; the choice survives a reload.
+ for (const width of [375,1280]) {
+  await page.setViewportSize({width,height:850});await page.goto(origin+'/screener.html');await page.locator('#sc-body tr td a').first().waitFor();
+  const names=async()=>page.$$eval('#sc-body tr td:first-child b',x=>x.map(e=>e.textContent));
+  await page.locator('#sc-sort').selectOption('chg');assert.deepEqual((await names()).slice(0,3),['나 정렬 테스트','UI 테스트','가 정렬 테스트']);
+  await page.locator('#sc-dir').click();assert.equal((await names())[0],'가 정렬 테스트');assert.match(await page.locator('#sc-dir').innerText(),/낮은 순/);
+  if(width>800){await page.locator('th[data-sk=price] button').click();assert.equal(await page.locator('th[data-sk=price]').getAttribute('aria-sort'),'descending');assert.equal((await names())[0],'가 정렬 테스트');await page.locator('th[data-sk=price] button').click();assert.equal((await names())[0],'나 정렬 테스트');}
+  await page.reload();await page.locator('#sc-body tr td a').first().waitFor();assert.equal(await page.locator('#sc-sort').inputValue(),width>800?'price':'chg');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/screener-sort-'+width+'.png'});
+  await page.evaluate(()=>localStorage.removeItem('gnm-sc-sort'));
+ }
  // Waiting indicators must render pixels on mobile, not merely leave an empty canvas in the DOM.
  for (const width of [375,390]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+'/screener.html');

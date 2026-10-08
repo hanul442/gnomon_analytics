@@ -153,12 +153,52 @@ function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): 
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
     const fit = viewFit(e);
     return `<div class="tp" data-pick-daily="${e.group==='daily'?'1':'0'}" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' || e.group === 'core' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
-<p class="muted small">${esc(e.group==='daily'?`일일 선정 · ${e.pickDate??''}`:e.group==='core'?'고정 추적':'주간 선정')} · ${esc(e.reasons?.[0]??'')}</p><div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
+<p class="muted small">${esc(e.group==='daily'?`일일 선정 · ${e.pickDate??''}`:e.group==='core'?'고정 추적':'주간 선정')}${e.reasons?.[0] ? ` · ${esc(e.reasons[0])}` : ''}</p><div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 것</h2><a class="more-link" href="reports.html">AI 리포트 모음 ›</a></div>
 <p class="tp-lead">${views.map((v) => `<span class="pw pw-${v}">${VIEW_LEAD[v]}</span>`).join('')} <a href="#" data-open-view>보기 방식 바꾸기</a></p>
 <div class="tp-grid" id="tp-grid">${picks.map(card).join('')}</div><p class="muted small">최근 일일 선정(${esc(last??'확인 필요')})과 고정·주간 추적 종목 가운데 내 보기 방식에 맞는 네 개를 보여 드려요. 최근 일일 선정과 내 보유·관심 종목을 먼저 보여 드립니다. <a href="reports.html#daily">일일 선정 전체 보기 ›</a> 투자 권유가 아니에요.</p></section>`;
 }
+
+/**
+ * G-125: everything that came out on the newest report day, in one list. The 🔔 notes link here
+ * (reports.html?hl=<symbols>#today): the reader's watched stocks come first, marked, and the rest of the day follows.
+ */
+function todayRows(entries: readonly HomeEntry[]): string {
+  const withDate = entries.filter((e) => e.report?.date && e.group !== 'past');
+  const day = withDate.map((e) => e.report!.date).sort().at(-1);
+  if (!day) return '';
+  const seen = new Set<string>();
+  const list = withDate.filter((e) => e.report!.date === day && !seen.has(e.symbol) && seen.add(e.symbol));
+  const deep = (e: HomeEntry) => e.tier === 'deep' || e.group === 'core';
+  list.sort((a, b) => Number(deep(b)) - Number(deep(a)) || a.name.localeCompare(b.name, 'ko'));
+  const row = (e: HomeEntry) => {
+    const r = e.report!, p = r.price, c = r.commentary?.status === 'OK' ? r.commentary : undefined;
+    const line = (c?.summary?.text ?? r.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
+    return `<div class="rr" data-sym="${esc(e.symbol)}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b>${e.kind && e.kind !== 'stock' ? `<span class="tier t-k">${KIND[e.kind]}</span>` : ''}<span class="tier t-${deep(e) ? 'core' : 'weekly'}">${deep(e) ? '위원회 전체' : '요약'}</span></div><p class="rr-line">${esc(line)}</p></a>
+<div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
+  };
+  return `<section class="block" id="today"><div class="block-head"><h2>${esc(day.slice(5).replace('-', '/'))} 나온 리포트 ${list.length}개</h2><span class="muted">${esc(day)} 장 마감 기준</span></div>
+<p class="muted small td-note" hidden></p><div class="card list rr-list" id="today-list">${list.map(row).join('')}</div></section>`;
+}
+
+/** Watched stocks (from the 🔔 link or this browser's ☆ list) go to the top of today's list, marked. */
+const TODAY_LIST_SCRIPT = `<script>
+(function () {
+  var box = document.getElementById('today-list'); if (!box) return;
+  var hl = (new URLSearchParams(location.search).get('hl') || '').split(',').filter(Boolean), mine = {};
+  hl.forEach(function (s) { mine[s] = 1; });
+  try { (JSON.parse(localStorage.getItem('gnm-watch') || '[]') || []).forEach(function (s) { mine[s] = mine[s] || 2; }); } catch (e) {}
+  var rows = [].slice.call(box.querySelectorAll('.rr[data-sym]')), n = 0;
+  rows.filter(function (r) { return mine[r.getAttribute('data-sym')]; }).reverse().forEach(function (r) {
+    n++; box.insertBefore(r, box.firstChild); r.classList.add('rr-mine');
+    var name = r.querySelector('.rr-name b'); if (name) name.insertAdjacentHTML('afterend', '<span class="tier t-mine">내 관심</span>');
+  });
+  var note = document.querySelector('.td-note');
+  if (note && n) { note.hidden = false; note.textContent = '내 관심 종목 ' + n + '개를 맨 위에 모았어요. 아래는 같은 날 나온 다른 리포트예요.'; }
+  if (hl.length && location.hash !== '#today') { var t = document.getElementById('today'); if (t) t.scrollIntoView(); }
+})();
+</script>`;
 
 /** Every daily pick of the last week and this week's reports, off the front page (G-64). */
 export function renderReportsPage(data: HomeData): string {
@@ -169,8 +209,8 @@ export function renderReportsPage(data: HomeData): string {
   const latest = [...new Set(daily.map((e) => e.pickDate ?? ''))].sort().at(-1);
   const tile = (href: string, title: string, sub: string) => `<a href="${href}"><b>${title}</b><small>${sub}</small></a>`;
   const head = `<section class="card rp-head"><div class="pl-k">AI 리포트 모음</div><h1>최근 AI 리포트</h1><p class="muted">시장 데일리, 매일 고른 종목, 이번 주 리포트를 한곳에 모았어요. 다른 종목은 검색에서 찾을 수 있어요.</p>
-<nav class="rp-links" aria-label="리포트 바로가기">${tile('market-reports.html', '시장 데일리', '코스피·코스닥·코인·ETF')}${daily.length ? tile('#daily', '매일 AI 리포트', `${latest ? esc(latest.slice(5).replace('-', '/')) + ' 최신 · ' : ''}${daily.length}건`) : ''}${tile('#reports', '이번 주 리포트', `${sorted.length}종목`)}</nav></section>`;
-  return shell('', 'AI 리포트 모음 | GNOMON', `${HOME_STYLE}${head}${dailyRows(daily)}${reportRows(sorted, data.selection)}`, { scripts: HOME_SCRIPT });
+<nav class="rp-links" aria-label="리포트 바로가기">${tile('market-reports.html', '시장 데일리', '코스피·코스닥·코인·ETF')}${tile('#today', '오늘 나온 리포트', '내 관심 종목 먼저')}${daily.length ? tile('#daily', '매일 AI 리포트', `${latest ? esc(latest.slice(5).replace('-', '/')) + ' 최신 · ' : ''}${daily.length}건`) : ''}${tile('#reports', '이번 주 리포트', `${sorted.length}종목`)}</nav></section>`;
+  return shell('', 'AI 리포트 모음 | GNOMON', `${HOME_STYLE}<style>.rr-mine{background:#f3f7ff}.t-mine{background:#e8f0ff;color:#1d4ed8}</style>${head}${todayRows(data.entries)}${dailyRows(daily)}${reportRows(sorted, data.selection)}`, { scripts: HOME_SCRIPT + TODAY_LIST_SCRIPT });
 }
 
 function movers(universe: readonly UniverseRow[] | null, covered: ReadonlySet<string>): string {

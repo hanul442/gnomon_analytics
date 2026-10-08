@@ -10,6 +10,9 @@ import type { RiskFlag } from '../analysis/riskFilings.js';
 import { FIELD_INDEX, FIELDS, matches, PRESETS, cleanScreen } from '../analysis/screenRules.js';
 import { SEARCH_SCRIPT, shell } from './renderHtml.js';
 
+/** Result orderings (G-119): every one sorts both ways with the direction button or by its column header. */
+const SORTS: readonly [string, string][] = [['score', '기술 신호 점수'], ['chg', '오늘 등락률'], ['r20', '20거래일 등락률'], ['vol1', '거래량 급증'], ['spike10', '최근 10일 거래량 폭발'], ['tv', '거래대금'], ['tvr', '거래대금 급증'], ['ad', '매집 강도(A/D)'], ['gap', '적정가 대비'], ['cap', '시가총액'], ['price', '종가'], ['name', '이름']];
+
 /**
  * One row per stock: [code, name, market, cap(억), close, change%, level, score×100, r5, r20, r120, fairGap%, position, covered,
  * vol1×, vol5×, vwapGap%, obv%, flow, tradingValue(억), hi52Gap%, risk level (0–3), risk labels,
@@ -45,12 +48,12 @@ export function renderScreener(): string {
 <section class="block" id="build"><div class="card sc-form" id="sc-form">
 <div class="sc-top"><b>조건</b><label class="sc-inline">조건을<select name="match"><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></label>
 <label class="sc-inline"><input type="checkbox" name="norisk" checked> 공시 위험 2단계 이상 빼기</label>
-<label class="sc-inline">정렬<select name="sort"><option value="score">신호 점수 높은 순</option><option value="vol1">거래량 급증 큰 순</option><option value="r20">20거래일 등락 큰 순</option><option value="r20a">20거래일 등락 작은 순</option><option value="cap">시가총액 큰 순</option><option value="tv">거래대금 큰 순</option><option value="tvr">거래대금 급증 큰 순</option><option value="spike10">최근 10일 거래량 폭발 큰 순</option><option value="ad">매집 강도(A/D) 큰 순</option><option value="gap">적정가보다 많이 아래 순</option></select></label></div>
+</div>
 <div class="rules" id="rules"></div>
 <div class="sc-actions"><button type="button" class="chip-toggle" id="add-rule">+ 조건</button><button type="button" class="chip-toggle" id="save-screen">저장</button><span class="muted small" id="sc-desc"></span></div>
 <div class="saved" id="saved" hidden><div class="pl-k">저장한 조건</div><div id="saved-list" class="saved-list"></div><p class="muted small" id="alert-note" hidden>🔔를 켜면 매일 장 마감 뒤 새로 걸린 종목을 알림으로 보내 드려요. 플러스는 3개, 프로·알파는 20개까지예요.</p></div>
 <p class="muted small only-free" style="margin:8px 0 0">무료는 '강세 신호 상위'와 결과 5개까지예요. 조건 빌더, 저장, 알림, 전체 결과는 플러스부터예요.</p></div></section>
-<section class="block"><div class="card list"><div class="table-wrap"><table class="compact sc-table"><thead><tr><th>종목</th><th class="num">종가</th><th class="num">오늘</th><th>기술 신호</th><th class="num">거래량·거래대금</th><th class="num">20거래일</th><th class="num">적정가 대비</th><th class="num">시가총액</th></tr></thead><tbody id="sc-body"><tr><td colspan="8"><div class="orbs-load">${ORBS}<span>종목 조회 중</span></div></td></tr></tbody></table></div>
+<section class="block"><div class="card list"><div class="sc-sortbar"><span class="muted small" id="sc-n"></span><label class="sc-inline">정렬<select id="sc-sort" aria-label="정렬 기준">${SORTS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label><button type="button" class="chip-toggle" id="sc-dir" aria-label="정렬 방향 바꾸기">높은 순 ↓</button></div><div class="table-wrap"><table class="compact sc-table"><thead><tr><th data-sk="name" aria-sort="none"><button type="button" class="th-sort">종목<i aria-hidden="true"></i></button></th><th class="num" data-sk="price" aria-sort="none"><button type="button" class="th-sort">종가<i aria-hidden="true"></i></button></th><th class="num" data-sk="chg" aria-sort="none"><button type="button" class="th-sort">오늘<i aria-hidden="true"></i></button></th><th data-sk="score" aria-sort="none"><button type="button" class="th-sort">기술 신호<i aria-hidden="true"></i></button></th><th class="num" data-sk="vol1" aria-sort="none"><button type="button" class="th-sort">거래량·거래대금<i aria-hidden="true"></i></button></th><th class="num" data-sk="r20" aria-sort="none"><button type="button" class="th-sort">20거래일<i aria-hidden="true"></i></button></th><th class="num" data-sk="gap" aria-sort="none"><button type="button" class="th-sort">적정가 대비<i aria-hidden="true"></i></button></th><th class="num" data-sk="cap" aria-sort="none"><button type="button" class="th-sort">시가총액<i aria-hidden="true"></i></button></th></tr></thead><tbody id="sc-body"><tr><td colspan="8"><div class="orbs-load">${ORBS}<span>종목 조회 중</span></div></td></tr></tbody></table></div>
 <div class="sc-more only-free" id="sc-more" hidden><p>결과가 <b id="sc-total"></b>개 더 있어요. 전체 결과와 직접 조건은 플러스부터 볼 수 있어요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></div></section>
 <style>.sc-top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}.sc-top b{font-size:15px}.sc-inline{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--fg2)}
 .sc-form select,.sc-form input:not([type=checkbox]){font:inherit;font-size:14px;color:var(--fg);border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:#fff;min-width:0}
@@ -59,6 +62,7 @@ export function renderScreener(): string {
 .saved-list span{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line-strong);border-radius:999px;padding:2px 4px 2px 10px;background:#fff;font-size:13px}.saved-list button{border:0;background:none;cursor:pointer;font:inherit;padding:3px 5px}.saved-list .bell[aria-pressed=true]{color:var(--accent)}.saved-list .bell[aria-pressed=false]{opacity:.45}
 html[data-plan=free] .rules,html[data-plan=free] .sc-actions,html[data-plan=free] .sc-top label{opacity:.5;pointer-events:none}.lockmark{font-size:10px;font-weight:700;background:#eef1f5;color:var(--muted);border-radius:999px;padding:0 6px;margin-left:4px}html:not([data-plan=free]) .lockmark{display:none}
 html[data-plan=free] .sc-table th:nth-child(7),html[data-plan=free] .sc-table td:nth-child(7){display:none}.sc-table td a{text-decoration:none}.sc-more{text-align:center;padding:14px 0 6px;border-top:1px solid var(--line)}.sc-more .btn-primary{display:inline-flex}
+.sc-sortbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:2px 0 10px;border-bottom:1px solid var(--line);margin-bottom:4px}.sc-sortbar #sc-n{margin-right:auto}.sc-sortbar label{min-width:0}.sc-sortbar #sc-dir{white-space:nowrap;flex:none}@media (max-width:520px){.sc-sortbar #sc-n{flex-basis:100%}.sc-sortbar label{flex:1 1 0}.sc-sortbar label select{flex:1 1 0;min-width:0;width:100%}}.sc-sortbar select{font:inherit;font-size:14px;color:var(--fg);border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:#fff}.th-sort{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:3px;white-space:nowrap}.th-sort:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}.th-sort i{font-style:normal;font-size:10px;color:var(--muted);min-width:8px}th[aria-sort=descending] .th-sort i::after{content:"▼";color:var(--accent-strong)}th[aria-sort=ascending] .th-sort i::after{content:"▲";color:var(--accent-strong)}th[aria-sort=descending] .th-sort,th[aria-sort=ascending] .th-sort{color:var(--fg)}
 .risk{display:inline-block;margin-left:4px;font-size:11px;font-weight:700;border-radius:6px;padding:0 5px;background:#fff3d6;color:#7a4a00}.risk.r3{background:#fde8e8;color:#9b1c1c}.risk.r1{background:#eef1f5;color:var(--fg2)}.fl-a{color:#1d6b3a;font-size:11px;font-weight:700}.fl-d{color:#9b1c1c;font-size:11px;font-weight:700}
 @media (max-width:820px){.rule{grid-template-columns:minmax(0,1fr) 80px minmax(0,1fr) 28px}.sc-table th:nth-child(3),.sc-table td:nth-child(3),.sc-table th:nth-child(8),.sc-table td:nth-child(8){display:none}}</style>
 </div>
@@ -94,6 +98,15 @@ const SCREENER_SCRIPT = `<script>
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var pct = function (v) { return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%'; };
   var tone = function (v) { return v == null || v === 0 ? '' : v > 0 ? 'up' : 'down'; };
+  var SORT_COL = { name: 1, price: 4, chg: 5, score: 7, r20: 9, gap: 11, cap: 3, vol1: 14, tv: 19, tvr: 24, ad: 25, spike10: 26 }, ASC_FIRST = { name: 1, gap: 1 };
+  var sortKey = 'score', sortAsc = false;
+  try { var ss = JSON.parse(localStorage.getItem('gnm-sc-sort') || 'null'); if (ss && SORT_COL[ss.k] != null) { sortKey = ss.k; sortAsc = !!ss.asc; } } catch (e) {}
+  var setSort = function (k, asc) { if (k === 'r20a') { k = 'r20'; asc = true; } if (SORT_COL[k] == null) return; sortKey = k; sortAsc = asc == null ? !!ASC_FIRST[k] : asc; try { localStorage.setItem('gnm-sc-sort', JSON.stringify({ k: sortKey, asc: sortAsc })); } catch (e) {} };
+  var paintSort = function () {
+    var sel = $('sc-sort'); if (sel) sel.value = sortKey;
+    var dir = $('sc-dir'); if (dir) dir.textContent = sortKey === 'name' ? (sortAsc ? '가나다 ↑' : '가나다 역순 ↓') : sortAsc ? '낮은 순 ↑' : '높은 순 ↓';
+    document.querySelectorAll('.sc-table th[data-sk]').forEach(function (th) { th.setAttribute('aria-sort', th.getAttribute('data-sk') === sortKey ? (sortAsc ? 'ascending' : 'descending') : 'none'); });
+  };
   var free = function () { return (document.documentElement.getAttribute('data-plan') || 'free') === 'free'; };
   var field = function (k) { return FIELDS.filter(function (f) { return f.key === k; })[0]; };
   // The builder: one row per rule.
@@ -129,12 +142,19 @@ const SCREENER_SCRIPT = `<script>
   var draw = function () { drawNow(); };
   var drawNow = function () {
     var sc = free() ? PRESETS.top : current();
-    var out = rows.filter(function (r) { return matches(r, sc, IDX); });
-    var key = free() ? 'score' : el('sort').value;
-    var by = { score: function (r) { return -(r[7] == null ? -999 : r[7]); }, vol1: function (r) { return -(r[14] == null ? -1 : r[14]); }, r20: function (r) { return -(r[9] == null ? -999 : r[9]); }, r20a: function (r) { return r[9] == null ? 999 : r[9]; }, cap: function (r) { return -(r[3] || 0); }, tv: function (r) { return -(r[19] || 0); }, gap: function (r) { return r[11] == null ? 999 : r[11]; }, tvr: function (r) { return -(r[24] == null ? -1 : r[24]); }, spike10: function (r) { return -(r[26] == null ? -1 : r[26]); }, ad: function (r) { return -(r[25] == null ? -999 : r[25]); } }[key];
-    out.sort(function (a, b) { return by(a) - by(b); });
-    var shown = free() ? out.slice(0, 5) : out.slice(0, 200);
-    $('sc-count').textContent = rows.length.toLocaleString('ko-KR') + '종목 중 ' + out.length.toLocaleString('ko-KR') + '개';
+    var out = rows.filter(function (r) { return matches(r, sc, IDX); }), total = out.length;
+    // G-119: any result list sorts by any column, both directions; missing values always go last.
+    var col = SORT_COL[sortKey], sorted = function (list) { return list.slice().sort(function (a, b) {
+      var x = a[col], y = b[col];
+      if (sortKey === 'name') return (sortAsc ? 1 : -1) * String(x).localeCompare(String(y), 'ko');
+      if (x == null || !isFinite(x)) return y == null || !isFinite(y) ? 0 : 1; if (y == null || !isFinite(y)) return -1;
+      return sortAsc ? x - y : y - x; }); };
+    // Free sees the five best by signal score, in the order they picked.
+    if (free()) { col = SORT_COL.score; var asc0 = sortAsc, k0 = sortKey; sortKey = 'score'; sortAsc = false; out = sorted(out).slice(0, 5); sortKey = k0; sortAsc = asc0; col = SORT_COL[sortKey]; }
+    out = sorted(out); paintSort();
+    var shown = out.slice(0, 200);
+    $('sc-n').textContent = '결과 ' + total.toLocaleString('ko-KR') + '개' + (shown.length < total ? ' · ' + shown.length + '개 표시' : '');
+    $('sc-count').textContent = rows.length.toLocaleString('ko-KR') + '종목 중 ' + total.toLocaleString('ko-KR') + '개';
     $('sc-desc').textContent = sc.rules.length + '개 조건' + (sc.maxRisk ? ' · 공시 위험 제외' : '');
     $('sc-body').innerHTML = shown.length ? shown.map(function (r) {
       var href = r[2] === 'C' ? 'coin.html?m=' + r[0] : r[13] ? r[0] + '/index.html' : 'stock.html?c=' + r[0];
@@ -142,7 +162,7 @@ const SCREENER_SCRIPT = `<script>
       var flow = r[18] === 'A' ? ' <span class="fl-a">매집</span>' : r[18] === 'D' ? ' <span class="fl-d">분산</span>' : '';
       return '<tr><td><a href="' + href + '"><b>' + esc(r[1]) + '</b></a>' + risk + '<div class="muted small">' + (r[2] === 'C' ? r[0].replace('KRW-', '') : r[0]) + ' · ' + ({ P: '코스피', Q: '코스닥', E: 'ETF', C: '코인' }[r[2]] || '') + '</div></td><td class="num">' + Math.round(r[4]).toLocaleString('ko-KR') + '</td><td class="num ' + tone(r[5]) + '">' + pct(r[5]) + '</td><td><span class="sig ' + (BULL.indexOf(r[6]) >= 0 ? 'up' : BEAR.indexOf(r[6]) >= 0 ? 'down' : '') + '">' + LEVEL[r[6]] + '</span></td><td class="num">' + (r[14] == null ? '—' : r[14].toFixed(1) + '배') + flow + (r[19] == null ? '' : '<small class="sub-sh">' + r[19].toLocaleString('ko-KR') + '억' + (r[24] == null ? '' : ' · ' + r[24].toFixed(1) + '배') + '</small>') + '</td><td class="num ' + tone(r[9]) + '">' + pct(r[9]) + '</td><td class="num">' + pct(r[11]) + '</td><td class="num">' + (r[3] == null ? '—' : r[3] >= 10000 ? (r[3] / 10000).toFixed(1) + '조' : r[3].toLocaleString('ko-KR') + '억') + '</td></tr>';
     }).join('') : '<tr><td colspan="8" class="empty">조건에 맞는 종목이 없어요.</td></tr>';
-    var more = $('sc-more'); more.hidden = !(free() && out.length > 5); $('sc-total').textContent = (out.length - 5).toLocaleString('ko-KR');
+    var more = $('sc-more'); more.hidden = !(free() && total > 5); $('sc-total').textContent = (total - 5).toLocaleString('ko-KR');
   };
   document.querySelectorAll('[data-preset]').forEach(function (b, i) {
     b.addEventListener('click', function () {
@@ -150,13 +170,15 @@ const SCREENER_SCRIPT = `<script>
       document.querySelectorAll('[data-preset]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
       preset = b.getAttribute('data-preset'); load(PRESETS[preset]); preset = b.getAttribute('data-preset');
       var SORT_FOR = { bottomvol: 'spike10', volsurge: 'vol1', accum: 'ad' };
-      if (SORT_FOR[preset] && !free()) { el('sort').value = SORT_FOR[preset]; draw(); }
+      if (SORT_FOR[preset] && !free()) { setSort(SORT_FOR[preset]); draw(); }
       document.querySelectorAll('[data-preset]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
     });
   });
   $('add-rule').addEventListener('click', function () { ruleRow({ f: 'vol1', op: '>=', v: '' }); });
   form.addEventListener('input', function (e) { if (e.target.closest('.rule') || e.target.name === 'match' || e.target.name === 'norisk') changed(); else draw(); });
-  form.addEventListener('change', function (e) { if (e.target.name === 'sort') draw(); });
+  $('sc-sort').addEventListener('change', function (e) { setSort(e.target.value); draw(); });
+  $('sc-dir').addEventListener('click', function () { setSort(sortKey, !sortAsc); draw(); });
+  document.querySelectorAll('.sc-table th[data-sk]').forEach(function (th) { th.querySelector('button').addEventListener('click', function () { var k = th.getAttribute('data-sk'); setSort(k, k === sortKey ? !sortAsc : undefined); draw(); }); });
   // Saved screens: on the server with the alpha API (and alerts), otherwise in this browser.
   var api = function () { return window.GNM && GNM.api && GNM.me ? GNM : null; };
   var notify = function(msg,kind){if(window.GNM)GNM.toast(msg,kind||'success');};
