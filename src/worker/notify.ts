@@ -83,6 +83,7 @@ export async function runUpdateNotify(ctx: Ctx): Promise<{ version: string | nul
   const note = String(v.note ?? '').trim(), body = noteBullets(note, 3);
   let sent = 0;
   for (const u of users) {
+    // A patch reaches only those who asked for them; notifyUser then reads the same prefs for the 'update' kind.
     if (!minor && !(await prefsOf(ctx.db, u.id)).updatePatch) continue;
     if (!(await once(ctx.db, `update:${v.version}:${u.id}`, ctx.now))) continue;
     if (await notifyUser(ctx, u.id, 'update', { title: `업데이트 v${v.version}${v.title ? ` · ${v.title}` : ''}`, body: body || '새 기능과 바뀐 점을 확인해 보세요.', link: 'updates.html' })) sent += 1;

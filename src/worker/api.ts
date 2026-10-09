@@ -7,6 +7,8 @@ import { fetchUpbitMinutes, fetchUpbitTicks } from '../sources/upbit.js';
 import { reportInput, inputHash, refundJob, reportFragments, type ReportQueue, type ReportJob } from './reports.js';
 import type { DailyReport } from '../report/dailyReport.js';
 import type { Commentary } from '../analysis/commentary.js';
+import { renderDeep } from '../report/renderHtml.js';
+import { withCurrency } from '../report/format.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
@@ -646,7 +648,7 @@ route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
     const took=(await env.DB.prepare("SELECT (julianday(updated_at)-julianday(created_at))*86400 AS s FROM report_jobs WHERE kind=? AND status='done' ORDER BY created_at DESC LIMIT 20").bind(job!.kind).all<{s:number}>()).results.map((x)=>x.s).filter((x)=>x>=5&&x<=900).sort((a,b)=>a-b);
     if (took.length>=3) etaSec=Math.round(took[Math.min(took.length-1,Math.floor(took.length*0.7))]!);
   }
-  return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(etaSec?{etaSec}:{}),...(report?{generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report,env.SITE_URL.replace(/\/?$/,'/'))}:{})};
+  return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(etaSec?{etaSec}:{}),...(report?{name:report.name,generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report,env.SITE_URL.replace(/\/?$/,'/'))}:{})};
 });
 // Someone else's finished report opens once for CREDIT_COST.unlock credits, then stays open (unlocks row 'job:<id>').
 route('POST', '/reports/([a-f0-9-]+)/unlock', async ({ req, env, now, params }) => {
@@ -932,6 +934,28 @@ async function deepHtml(env: Env, deps: Deps, symbol: string, date: string): Pro
   try { return await unseal(await r!.text(), env.DEEP_KEY!); } catch { fail(500, 'UNSEAL_FAILED', '심층 리포트를 열지 못했어요. 운영자에게 알려 주세요.'); }
   return '';
 }
+/**
+ * G-178: a report made on request has no sealed file on the site (only the daily build seals), so its deep part
+ * comes from the job's stored result. The caller's own job wins over anyone else's for the same stock and day,
+ * so a requester always reads what they paid for. The job id doubles as the unlock key ('job:<id>'), the same
+ * one /reports/:id/unlock writes, so one open covers both ways to reach the same report.
+ */
+async function deepFromJob(db: D1, symbol: string, date: string, userId: string): Promise<{ id: string; user_id: string; html: string } | null> {
+  const job = await db.prepare("SELECT id, user_id, result_json FROM report_jobs WHERE symbol = ? AND status = 'done' AND json_valid(result_json) AND json_extract(result_json, '$.date') = ? ORDER BY (user_id = ?) DESC, created_at DESC LIMIT 1").bind(symbol, date, userId).first<{ id: string; user_id: string; result_json: string | null }>();
+  if (!job?.result_json) return null;
+  let report: DailyReport;
+  try { report = JSON.parse(job.result_json) as DailyReport; } catch { return null; }
+  if (report.commentary?.status !== 'OK') return null;
+  return { id: job.id, user_id: job.user_id, html: withCurrency(report.currency, () => renderDeep(report, { live: false })) };
+}
+async function deepHtmlOrJob(env: Env, deps: Deps, db: D1, symbol: string, date: string, userId: string): Promise<{ html: string; job?: { id: string; user_id: string } }> {
+  try { return { html: await deepHtml(env, deps, symbol, date) }; } catch (e) {
+    if (!(e instanceof HttpError && e.code === 'NOT_SEALED' && e.status === 404)) throw e;
+    const fromJob = await deepFromJob(db, symbol, date, userId);
+    if (!fromJob) throw e;
+    return { html: fromJob.html, job: { id: fromJob.id, user_id: fromJob.user_id } };
+  }
+}
 const deepParams = (params: string[]) => {
   const symbol = decodeURIComponent(params[0] ?? ''), date = params[1] ?? '';
   if (!DEEP_SYMBOL.test(symbol) || !DEEP_DATE.test(date)) fail(400, 'BAD_REPORT', '리포트 주소가 맞지 않아요.');
@@ -942,19 +966,24 @@ route('GET', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})', async ({ req, env, deps, no
   const u = await authed(req, env, now), { symbol, date } = deepParams(params);
   if(symbol.startsWith('MARKET-')&&RANK[u.plan]!<RANK.plus!&&u.role!=='admin')fail(403,'PLAN_REQUIRED','시장 상세 리포트는 플러스부터 열 수 있어요. 무료는 요약을 볼 수 있어요.');
   // Locked is an answer, not an error (G-124): the page shows the unlock button without a failed request in the console.
-  if (!(await deepAccess(env.DB, u, symbol, date, now))) return { ...(await lockInfo(env.DB, u, now)), message: `${CREDIT_COST.unlock}크레딧으로 열 수 있어요.` };
-  return { html: await deepHtml(env, deps, symbol, date) };
+  if (!(await deepAccess(env.DB, u, symbol, date, now))) {
+    const own = await deepFromJob(env.DB, symbol, date, u.id);
+    if (own && await jobAccess(env.DB, u, { id: own.id, user_id: own.user_id, symbol }, now)) return { html: own.html };
+    return { ...(await lockInfo(env.DB, u, now)), message: `${CREDIT_COST.unlock}크레딧으로 열 수 있어요.` };
+  }
+  return { html: (await deepHtmlOrJob(env, deps, env.DB, symbol, date, u.id)).html };
 });
 
 route('POST', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})/unlock', async ({ req, env, deps, now, params }) => {
   const u = await authed(req, env, now), { symbol, date } = deepParams(params), db = env.DB;
   if(symbol.startsWith('MARKET-')&&RANK[u.plan]!<RANK.plus!&&u.role!=='admin')fail(403,'PLAN_REQUIRED','시장 상세 리포트는 플러스부터 열 수 있어요.');
   // The report must exist before anything is charged.
-  const html = await deepHtml(env, deps, symbol, date);
-  if (await deepAccess(db, u, symbol, date, now)) return { html, charged: 0 };
-  const paid = await openOnce(db, u, symbol, date, `${symbol} ${date} 심층 리포트`, now);
+  const { html, job } = await deepHtmlOrJob(env, deps, db, symbol, date, u.id);
+  const open = async () => job ? jobAccess(db, u, { ...job, symbol }, now) : deepAccess(db, u, symbol, date, now);
+  if (await open()) return { html, charged: 0 };
+  const paid = await openOnce(db, u, symbol, job ? `job:${job.id}` : date, `${symbol} ${date} 심층 리포트`, now);
   if (paid === null) {
-    if (await deepAccess(db, u, symbol, date, now)) return { html, charged: 0 };
+    if (await open()) return { html, charged: 0 };
     fail(402, 'NO_CREDITS', `크레딧이 모자라요. ${CREDIT_COST.unlock}크레딧이 필요해요.`, { cost: CREDIT_COST.unlock, balance: await balanceOf(db, u.id) });
   }
   return { html, charged: paid, free: paid === 0, balance: await balanceOf(db, u.id), freeLeft: await freeOpensLeft(db, u, now) };

@@ -355,6 +355,42 @@ test('deep reports (G-61): locked until unlocked once with credits; requester an
   assert.deepEqual([broke.status, broke.body.error, broke.body.balance], [402, 'NO_CREDITS', 3]);
 });
 
+test('a report made on request opens its deep part from the job (G-178): requester free, others unlock once under the job key, a broken result is "not sealed"', async () => {
+  const t = setup();
+  t.env.DEEP_KEY = 'deep-secret';
+  const { buildDailyReport } = await import('../report/dailyReport.js');
+  const boss = await t.login('boss@example.com');
+  const invite = async () => (await t.call('POST', '/admin/invites', {}, boss.session)).body.code;
+  const a = await t.login('a@example.com', await invite()), b = await t.login('b@example.com', await invite());
+  const idOf = async (email: string) => (await t.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first<{ id: string }>())!.id;
+  const aid = await idOf('a@example.com'), bid = await idOf('b@example.com');
+  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email IN ('a@example.com','b@example.com')").run();
+  await spendFreeOpens(t, 'a@example.com'); await spendFreeOpens(t, 'b@example.com');
+  const bars = Array.from({ length: 30 }, (_, i) => ({ symbol: 'AAPL.O', source: 'test', retrievedAt: '2026-10-06T00:00:00Z', date: '2026-09-' + String(i + 1).padStart(2, '0'), open: 100, high: 105, low: 95, close: 100 + i, volume: 1000 }));
+  const report = buildDailyReport({ symbol: 'AAPL.O', name: '애플', date: '2026-09-30', currency: 'USD', generatedAt: new Date('2026-09-30T09:00:00Z'), bars, disclosures: [], sources: [] });
+  report.commentary = { status: 'OK', generatedAt: '2026-09-30T09:00:00Z', model: 'test', summary: { text: '결론.' }, bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [], evidence: [], scenarios: [{ kind: 'BASE', narrative: { text: '기본', evidenceIds: [] }, catalysts: [], invalidation: [], probability: 50, zone: [120, 140] }] } as any;
+  const insert = (id: string, user: string, json: string, at: string) => t.env.DB.prepare("INSERT INTO report_jobs (id,user_id,symbol,kind,input_hash,input_json,result_json,status,stage,credits,reserved_usd,created_at,updated_at) VALUES (?,?,?,?,?,?,?,'done','done',0,0,?,?)").bind(id, user, 'AAPL.O', 'report', 'h-' + id, '{}', json, at, at).run();
+  await insert('a0a0a0', aid, JSON.stringify(report), '2026-09-30T09:00:00.000Z');
+  await insert('b0b0b0', bid, JSON.stringify(report), '2026-09-30T10:00:00.000Z');
+  const path = '/deep/AAPL.O/2026-09-30';
+  // Both requesters read their own job free, even though B's job is the newer one; US prices stay in dollars.
+  for (const u of [a, b]) { const r = await t.call('GET', path, undefined, u.session); assert.equal(r.status, 200); assert.match(r.body.html, /deep-body/); assert.doesNotMatch(r.body.html, /\d원/); }
+  // A third user is locked, unlocks once under the job key, and the job route then opens without a second charge.
+  const c = await t.login('c@example.com', await invite());
+  await t.env.DB.prepare("UPDATE users SET plan='plus' WHERE email='c@example.com'").run(); await spendFreeOpens(t, 'c@example.com');
+  assert.equal((await t.call('GET', path, undefined, c.session)).body.locked, true);
+  const open = await t.call('POST', `${path}/unlock`, {}, c.session);
+  assert.deepEqual([open.status, open.body.charged], [200, CREDIT_COST.unlock]);
+  assert.equal((await t.call('GET', path, undefined, c.session)).status, 200);
+  assert.equal((await t.call('POST', `${path}/unlock`, {}, c.session)).body.charged, 0);
+  assert.equal((await t.call('POST', '/reports/b0b0b0/unlock', {}, c.session)).body.charged, 0);
+  assert.equal((await t.call('GET', '/me', undefined, c.session)).body.credits.balance, ALPHA.monthlyCredits - CREDIT_COST.unlock);
+  // A job whose stored result is broken answers like a missing report, not a crash.
+  await insert('e0e0e0', aid, '{"date":"2026-09-29","commentary":{"status":"OK"', '2026-09-29T09:00:00.000Z');
+  const broken = await t.call('POST', '/deep/AAPL.O/2026-09-29/unlock', {}, a.session);
+  assert.deepEqual([broken.status, broken.body.error], [404, 'NOT_SEALED']);
+});
+
 test('a credit event is claimed once per account, only while it runs (G-73)', async () => {
   const t = setup();
   const boss = await t.login('boss@example.com');

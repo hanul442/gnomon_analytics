@@ -3,9 +3,10 @@
 // latest news and filings lists, and the interactive candlestick chart with an
 // indicator menu (Lightweight Charts v5 panes).
 
+import { CREDIT_COST } from './plans.js';
 import { CHART_V6_JS, chartToolbar } from './chartTools.js';
 import { starButton } from './ui.js';
-import { scenarioLayer } from './scenarioChart.js';
+import { scenarioCheck, scenarioLayer } from './scenarioChart.js';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import { esc } from './html.js';
 import { won, tone, pct as fmtPct } from './format.js';
@@ -67,15 +68,33 @@ export function marketChip(report: DailyReport): string {
   return label ? `<span class="mkt-chip mk-${report.kind === 'coin' || ex === 'UPBIT' ? 'coin' : report.kind === 'etf' ? 'etf' : (ex ?? '').toLowerCase()}">${esc(label)}</span>` : '';
 }
 
-/** G-106: the AI part is older than the prices on the page — say so and offer a fresh one. */
-export function staleAiBar(report: DailyReport, from: string): string {
-  return staleAiMarkup(report.symbol, report.name, from, report.price?.sessionDate ?? report.date);
+/**
+ * G-178: the report's standing, right under the price, on every stock: which committee report this page carries,
+ * how many sessions have passed, where today's price sits against its scenarios, and the one button that makes
+ * a new one. The same strip says "AI 리포트 없음" with the button when there is no committee report yet.
+ * `data-stale-ai` marks the strip only while the report is older than the prices (the page scripts look for it).
+ */
+export function reportStatusBar(report: DailyReport, from: string | null): string {
+  const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
+  const priceDate = report.price?.sessionDate ?? report.date, date = c ? from ?? report.date : null;
+  const btn = (label: string) => `<button type="button" class="sa-go" data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}">${label} <small>${CREDIT_COST.report}크레딧</small></button>`;
+  if (!c || !date) return `<div class="rs-bar rs-none" data-report-status role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>AI 위원회 리포트가 아직 없어요</b><small>요청하면 지금 데이터로 위원회가 분석해요. 크레딧 요청은 플러스부터예요.</small></div>${btn('심층 리포트 만들기')}</div>`;
+  const sessions = new Set((report.recentCloses ?? []).filter((p) => p.date > date).map((p) => p.date)).size;
+  const stale = date < priceDate;
+  const md = (d: string) => d.slice(5).replace('-', '/');
+  // Where today's price sits against the scenarios; only said when the report has ranges to check against.
+  let where = '', checked = 0;
+  for (const [kind, name] of [['BASE', '기본'], ['BULL', '강세'], ['BEAR', '약세']] as const) {
+    const k = scenarioCheck(report, kind);
+    if (!k) continue;
+    checked += 1;
+    if (k.now === 'in') { where = `지금 가격은 ${name} 시나리오 범위 안이에요`; break; }
+  }
+  if (!where && checked && sessions) where = checked === 3 ? '지금 가격은 세 시나리오 범위 밖이에요' : '지금 가격은 시나리오 범위 밖이에요';
+  const head = `${md(date)} 위원회 리포트${stale ? ` · ${sessions ? `${sessions}거래일 지났어요` : '그 뒤 새 가격이 있어요'}` : ' · 최신이에요'}`;
+  const sub = stale ? (where || `가격 ${esc(priceDate)} 기준으로 다시 분석할 수 있어요`) : `시나리오 ${c.scenarios?.length ?? 0}개 · 위원 ${(c.analysts?.length ?? 0) + (c.desks?.length ?? 0)}명 · 가격 ${esc(priceDate)} 기준`;
+  return `<div class="rs-bar${stale ? ' rs-stale' : ''}" data-report-status${stale ? ' data-stale-ai' : ''} role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>${esc(head)}</b><small>${sub}</small></div>${stale ? btn('새 리포트 만들기') : ''}</div>`;
 }
-/** The same bar for pages and for a report painted later (onDemandBrowser builds it from this string's shape). */
-export function staleAiMarkup(symbol: string, name: string, from: string, priceDate: string): string {
-  return `<div class="stale-ai" data-stale-ai role="note"><span class="sa-ic" aria-hidden="true">🕒</span><div class="sa-tx"><b>분석 후 새 데이터가 추가됐어요</b><small>AI 리포트 ${esc(from)} 기준 · 가격 ${esc(priceDate)} 기준</small></div><button type="button" class="sa-go" data-create-report data-symbol="${esc(symbol)}" data-name="${esc(name)}">새 데이터로 다시 분석</button></div>`;
-}
-
 /** G-103: a small 3-month chart right under the price; tapping it opens the chart tab. */
 export function heroChart(report: DailyReport): string {
   const pts = (report.recentCloses ?? []).slice(-63).filter((x) => Number.isFinite(x.close) && x.close > 0);

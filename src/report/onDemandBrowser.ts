@@ -1,4 +1,5 @@
 import { ORBS } from './ui.js';
+import { CREDIT_COST } from './plans.js';
 export const JOBS_JS = `
 (function(){
  var G=window.GNM;if(!G)return;
@@ -16,22 +17,25 @@ export const JOBS_JS = `
 
   // G-106/G-114: an AI report older than the prices shown says so, with a way to a fresh one, on the summary and the AI tab.
   var sess=((document.querySelector('[data-session]')||{}).dataset||{}).session||((document.getElementById('sp-date')||{}).textContent||'').slice(0,10);
-  document.querySelectorAll('[data-stale-ai]').forEach(function(x){x.remove();});
-  var bar=createdDay<sess&&r.dataDate&&/^\\d{4}-\\d{2}-\\d{2}$/.test(sess)&&r.dataDate<sess?'<div class="stale-ai" data-stale-ai role="note"><span class="sa-ic" aria-hidden="true">🕒</span><div class="sa-tx"><b>더 새로운 데이터가 있어요</b><small>AI 리포트 '+esc(r.dataDate)+' 기준 · 가격 '+esc(sess)+' 기준</small></div><button type="button" class="sa-go" data-create-report data-symbol="'+esc(r.symbol)+'" data-name="'+esc(r.symbol)+'">새 데이터로 다시 분석</button></div>':'';
+  document.querySelectorAll('[data-report-status]').forEach(function(x){x.remove();});
+  // G-178: the status strip for the report just painted — stale (new prices since) or fresh.
+  var stale=createdDay<sess&&r.dataDate&&/^\\d{4}-\\d{2}-\\d{2}$/.test(sess)&&r.dataDate<sess;
+  var md=function(d){return String(d||'').slice(5).replace('-','/');};
+  var bar=stale?'<div class="rs-bar rs-stale" data-report-status data-stale-ai role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>'+md(r.dataDate)+' 위원회 리포트 · 그 뒤 새 가격이 있어요</b><small>가격 '+esc(sess)+' 기준으로 다시 분석할 수 있어요</small></div><button type="button" class="sa-go" data-create-report data-symbol="'+esc(r.symbol)+'" data-name="'+esc(r.name||r.symbol)+'">새 리포트 만들기 <small>'+((G.me&&G.me.costs&&G.me.costs.report)||${CREDIT_COST.report})+'크레딧</small></button></div>':'<div class="rs-bar" data-report-status role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>'+(md(r.dataDate)||'오늘')+' 위원회 리포트 · 가격과 같은 날</b><small>방금 만든 리포트예요</small></div></div>';
   Object.keys(r.fragments||{}).forEach(function(key){
    if(key==='chart')return;
    if(key==='scenarios'){try{var list=JSON.parse(r.fragments[key]);if(window.GNM_scenarios)window.GNM_scenarios(list);}catch(e){}return;}
    var panel=document.getElementById('tab-'+key);if(!panel)return;
    // G-154: a tab that already shows this data (a report page's own 기업 체력·수급) keeps it; a placeholder slot takes
    // the generated panel in place. Prepending a second copy repeated whole sections.
-   if(key==='fundamentals'||key==='flows'){var slot=panel.querySelector('[data-slot="'+key+'"]');if(slot){if(!slot.querySelector('.empty,[data-missing]')&&slot.textContent.trim().length>40)return;if(r.fragments[key]){slot.innerHTML=r.fragments[key];slot.setAttribute('data-filled','');}return;}}
+   if(key==='fundamentals'||key==='flows'||key==='news'){var slot=panel.querySelector('[data-slot="'+key+'"]');if(slot){if(!slot.querySelector('.empty,[data-missing]')&&slot.textContent.trim().length>40)return;if(r.fragments[key]){var frag=r.fragments[key];if(key==='news'){var tmp=document.createElement('div');tmp.innerHTML=frag;var card=tmp.querySelector('[data-slot="news"]');frag=card?card.innerHTML:frag;}slot.innerHTML=frag;slot.setAttribute('data-filled','');}return;}}
    var composer=key==='ai'?panel.querySelector('.db-join'):null;if(composer)composer.remove();
    var target=panel.querySelector('[data-generated]');
    if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var title=panel.querySelector('.panel-title');panel.innerHTML='';if(title)panel.appendChild(title);panel.appendChild(target);}else if(key==='home'){var heroEl=panel.querySelector('.hero');while(heroEl&&heroEl.parentElement&&heroEl.parentElement!==panel)heroEl=heroEl.parentElement;if(heroEl&&heroEl.parentElement===panel)heroEl.after(target);else panel.prepend(target);}else panel.prepend(target);}
-   if(key==='home'){var stale=panel.querySelector('#home-conclusion');if(stale&&!target.contains(stale))stale.remove();}
-   panel.querySelectorAll('[data-stale-ai]').forEach(function(x){x.remove();});
+   if(key==='home'){var old=panel.querySelector('#home-conclusion');if(old&&!target.contains(old))old.remove();}
    target.innerHTML=r.fragments[key];if(composer){var fresh=target.querySelector('.db-join');if(fresh)fresh.replaceWith(composer);else(panel.querySelector('.card.debate')||target).appendChild(composer);}
-   if(bar&&(key==='home'||key==='ai'))target.insertAdjacentHTML('afterbegin',bar);
+   if(bar&&key==='ai')target.insertAdjacentHTML('afterbegin',bar);
+   if(bar&&key==='home'){var heroEl=panel.querySelector('.hero');if(heroEl)heroEl.insertAdjacentHTML('afterend',bar);else target.insertAdjacentHTML('afterbegin',bar);}
    panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});
   });
   var join=document.querySelector('#tab-ai .join-wrap'), debate=document.querySelector('#tab-ai #debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}

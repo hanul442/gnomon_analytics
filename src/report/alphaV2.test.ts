@@ -44,10 +44,10 @@ test('scenario charts share ranges, do not invent absent forecasts, and do not e
  const {LOCKED_TEXT}=await import('../analysis/commentary.js');
  const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-10-06',generatedAt:new Date(),bars:Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000})),disclosures:[],sources:[]});
  report.commentary={status:'OK',scenarios:[{kind:'BASE',zone:[120,140],narrative:{text:'검증 범위'}}]} as any;
- assert.match(scenarioPlot(report,'BASE'),/<svg/);assert.match(scenarioPanel(report),/120~140/);assert.match(scenarioPanel(report),/data-scenario="ALL"/);
+ assert.match(scenarioPlot(report,'BASE'),/<svg/);assert.match(scenarioPanel(report),/120원~140원/);assert.match(scenarioPanel(report),/data-scenario="ALL"/);
  assert.match(scenarioPlot(report,'BEAR'),/열람 권한/);
  report.commentary!.scenarios![0]!.narrative.text=LOCKED_TEXT;
- assert.doesNotMatch(scenarioPanel(report),/120~140|검증 범위|<svg/);
+ assert.doesNotMatch(scenarioPanel(report),/120원~140원|검증 범위|<svg/);
  report.commentary!.scenarios![0]!.narrative.text='저항 6,690원을 넘으면 7,292원과 8,250원을 확인하고 5,875원 이탈을 점검';delete report.commentary!.scenarios![0]!.zone;
  assert.match(scenarioPlot(report,'BASE'),/<svg/);assert.match(scenarioPlot(report,'BASE'),/설명에 나온 가격 기준/);assert.match(scenarioPlot(report,'BASE'),/6,690원/);assert.match(scenarioPlot(report,'BASE'),/7,292원/);assert.doesNotMatch(scenarioPlot(report,'BASE'),/<rect/);new vm.Script(SCENARIO_JS);
 });
@@ -125,4 +125,28 @@ test('scenario entry prices stay separate from targets and base invalidation exi
  const h=conclusionCard(r);assert.match(h,/<b>255,750원<\/b>/);assert.match(h,/이 가격 아래로 이탈하면 약세 전개 검토/);assert.doesNotMatch(h,/<b>[-+]?[0-9.]+%<\/b>/);assert.match(h,/분석 기준은 2026-10-04 종가/);
  r.commentary!.scenarios![0]!.trigger=260000;assert.deepEqual(scenarioCondition(r,'BULL'),{price:260000,source:'trigger'});
  delete r.commentary!.scenarios![0]!.trigger;r.commentary!.scenarios![1]!.invalidation=[];assert.equal(scenarioCondition(r,'BULL'),undefined);assert.equal(scenarioCondition(r,'BEAR'),undefined);r.commentary!.scenarios![1]!.invalidation=['255,750원 위로 안착하지 못하는 경우'];assert.equal(scenarioCondition(r,'BULL'),undefined);r.commentary!.scenarios![1]!.invalidation=['255,750원 위로 안착하거나 260,000원 상향 돌파'];assert.equal(scenarioCondition(r,'BULL'),undefined);
+});
+
+test('the report status strip (G-178): none, stale and fresh say the state and offer one button', async () => {
+ const {reportStatusBar}=await import('./appParts.js');
+ const bars=Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000}));
+ const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-09-30',generatedAt:new Date(),bars,disclosures:[],sources:[]});
+ const none=reportStatusBar(report,null);
+ assert.match(none,/AI 위원회 리포트가 아직 없어요/);assert.match(none,/data-create-report/);assert.doesNotMatch(none,/data-stale-ai/);
+ report.commentary={status:'OK',generatedAt:'2026-09-20T09:00:00Z',summary:{text:'결론.'},scenarios:[{kind:'BASE',narrative:{text:'x',evidenceIds:[]},catalysts:[],invalidation:[],probability:50,zone:[110,124]}]} as any;
+ const stale=reportStatusBar(report,'2026-09-20');
+ assert.match(stale,/09\/20 위원회 리포트 · 10거래일 지났어요/);assert.match(stale,/data-stale-ai/);assert.match(stale,/새 리포트 만들기/);assert.match(stale,/시나리오 범위 밖|기본 시나리오 범위 안/);
+ delete (report.commentary as any).scenarios;assert.match(reportStatusBar(report,'2026-09-20'),/가격 2026-09-30 기준으로 다시 분석할 수 있어요/);
+ const fresh=reportStatusBar(report,'2026-09-30');
+ assert.match(fresh,/09\/30 위원회 리포트 · 최신이에요/);assert.doesNotMatch(fresh,/data-stale-ai/);assert.doesNotMatch(fresh,/data-create-report/);
+});
+
+test('a report generated on request paints the same 뉴스·공시 body as a daily page (G-178)', async () => {
+ const {reportFragments}=await import('../worker/reports.js');const {newsTabBody}=await import('./renderHtml.js');
+ const bars=Array.from({length:30},(_,i)=>({symbol:'005930',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000}));
+ const report=buildDailyReport({symbol:'005930',name:'삼성전자',date:'2026-09-30',generatedAt:new Date(),bars,disclosures:[{receiptNo:'20260929000001',title:'주요사항보고서(자기주식취득결정)',filedDate:'2026-09-29',filer:'삼성전자',url:'https://dart.fss.or.kr/x',symbol:'005930',source:'dart',retrievedAt:'2026-09-29T00:00:00Z'}] as any,sources:[]});
+ report.commentary={status:'OK',generatedAt:'2026-09-30T09:00:00Z',model:'test',summary:{text:'결론.'},bullish:[],bearish:[],uncertain:[],watch:[],dataGaps:[],evidence:[]} as any;
+ const body=newsTabBody(report);
+ assert.match(body,/data-slot="news"/);assert.match(body,/id="filings"/);assert.match(body,/href="https:\/\/dart\.fss\.or\.kr/);
+ assert.equal(reportFragments(report).news,body);
 });
