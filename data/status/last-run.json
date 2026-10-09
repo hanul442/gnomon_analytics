@@ -1,5 +1,5 @@
 {
- "at": "2026-10-09T11:25:12.236Z",
+ "at": "2026-10-09T11:53:22.933Z",
  "selected": null,
  "universe": [
   {
@@ -35,9 +35,8 @@
   },
   {
    "source": "opendart:risk-filings",
-   "ok": false,
-   "count": 34,
-   "error": "The operation was aborted due to timeout"
+   "ok": true,
+   "count": 408
   }
  ],
  "stocks": [
@@ -102,6 +101,11 @@
    "failedSources": []
   },
   {
+   "symbol": "032830",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "006400",
    "report": "EXISTS",
    "failedSources": []
@@ -114,6 +118,11 @@
   {
    "symbol": "267250",
    "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "042660",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
@@ -158,6 +167,11 @@
   },
   {
    "symbol": "005380",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "267270",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -227,22 +241,12 @@
    "failedSources": []
   },
   {
-   "symbol": "452190",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "003490",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "439090",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "009830",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -299,15 +303,11 @@
  ],
  "failed": [
   {
-   "symbol": "032830",
+   "symbol": "452190",
    "error": "fetch failed"
   },
   {
-   "symbol": "042660",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "267270",
+   "symbol": "009830",
    "error": "fetch failed"
   }
  ]
