@@ -43,7 +43,7 @@ export function weekChanges(cur: DailyReport, prev: DailyReport): WeekChange[] {
 }
 
 export function weekDiffSection(cur: DailyReport, prev: DailyReport | null): string {
-  if (!prev) return `<section class="block" id="diff"><div class="block-head"><h2>지난 리포트 대비</h2></div><div class="card"><p class="empty">비교할 지난 리포트가 아직 없어요. 다음 주간 리포트부터 바뀐 점을 보여 드려요.</p></div></section>`;
+  if (!prev) return `<section class="block" id="diff"><div class="block-head"><h2>지난 리포트 대비</h2></div><div class="card"><p class="empty">비교할 지난 리포트가 아직 없어요. 이 종목 리포트가 다시 나오면 바뀐 점을 보여 드려요.</p></div></section>`;
   const rows = weekChanges(cur, prev);
   const cs = cur.commentary?.status === 'OK' ? cur.commentary.summary?.text : undefined, ps = prev.commentary?.status === 'OK' ? prev.commentary.summary?.text : undefined;
   return `<section class="block" id="diff"><div class="block-head"><h2>지난 리포트 대비</h2><span class="muted">${esc(prev.date)} → ${esc(cur.date)}</span></div><div class="card">

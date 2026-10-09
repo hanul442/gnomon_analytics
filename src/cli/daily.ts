@@ -774,6 +774,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     ? universe.map((r) => [r.symbol, r.name, r.market, r.close, r.changePct, covered.has(r.symbol) ? 1 : 0])
     : (await readListedStocks(root)).map((r) => [r.symbol, r.name, r.market, null, null, covered.has(r.symbol) ? 1 : 0]);
   for (const t of tickers) if (!items.some((i) => i[0] === t.symbol)) items.push([t.symbol, t.name, t.market, null, null, 1]);
+  // G-175: without today's list, a covered stock still shows its last report close (watchlist, search).
+  for (const e of home) { const i = items.find((x) => x[0] === e.symbol); if (i && i[3] == null && e.report?.price) { i[3] = e.report.price.close; i[4] = e.report.price.changePct; } }
   await writeFile(join(siteDir, 'search.json'), JSON.stringify({ fields: ['symbol', 'name', 'market', 'close', 'changePct', 'report'], items }));
   // G-99: themes (with today's numbers) and the market-wide signal radar.
   // Without today's market list (a run that did not fetch it), names still come from the listed-stock file.

@@ -767,7 +767,7 @@ export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headli
   const name = links.name ?? sorted[0]?.name ?? '';
   // The archive sits next to its reports/ folder, so report links are relative to it.
   const body = `<section class="hero" id="archive-top"><div class="orb" aria-hidden="true"></div><div class="hero-main"><div class="eyebrow"><span>지난 리포트</span><span>${sorted.length}건</span></div><h1>${escape(name)} 일일 리포트</h1>
-<p class="hero-line">매주 금요일 장 마감 뒤(18:30 KST)에 한 번 만들고, 만든 뒤에는 고치지 않아요. 최신 데이터는 대시보드에서 볼 수 있어요.</p></div></section>
+<p class="hero-line">리포트는 만든 날의 장 마감 데이터로 쓰고, 만든 뒤에는 고치지 않아요. 최신 데이터는 대시보드에서 볼 수 있어요.</p></div></section>
 <section class="block" id="archive"><div class="card list">${sorted.length ? sorted.map((r) => `<div class="row-item"><span class="badge ${r.status === 'SESSION' ? 'b-MEDIUM' : 'b-LOW'}">${r.status === 'SESSION' ? '거래일' : '휴장'}</span><div class="ri-main"><a href="reports/${escape(r.date)}.html">${escape(r.date)}</a><div class="muted small">${escape(r.headline)}</div></div></div>`).join('') : '<p class="empty">아직 리포트가 없어요.</p>'}</div></section>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 투자 권유가 아니에요.</p></footer>`;
   return shell(base, `${name} 지난 리포트 | GNOMON`, body, { archiveHref: 'archive.html', homeHref: links.homeHref ?? 'index.html' });

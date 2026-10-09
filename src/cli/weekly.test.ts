@@ -49,7 +49,7 @@ test('the first settled run picks the week: core and the largest company get the
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
   // The report lists live on reports.html (G-64); the front page shows a few picks.
   const list = await readFile(join(root, 'site', 'reports.html'), 'utf8');
-  assert.ok(list.includes('이번 주 AI 리포트 3종목') && list.includes('href="222220/index.html"') && list.includes('data-kind="weekly"'));
+  assert.ok(list.includes('추적 종목 3개') && list.includes('href="222220/index.html"') && list.includes('data-kind="data"') && list.includes('data-kind="core"'));
   assert.ok(home.includes('id="today"') && !home.includes('id="reports"'));
   // The market dashboard: index quotes, temperature from every stock's computation, movers; pricing pages exist.
   assert.ok(home.includes('시장 온도') && home.includes('id="movers"') && home.includes('id="watch"'));
