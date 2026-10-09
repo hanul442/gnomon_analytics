@@ -35,7 +35,7 @@ test('unreported stock and coin pages use the full report template and keep miss
   assert.match(html,/data-chart-indicator="fib"/);assert.match(html,/시나리오 미생성/);assert.match(html,/토론이 아직 생성되지 않았어요/);assert.match(html,/v2-mask/);assert.doesNotMatch(html,/AI 위원회가 고른 테스트 가격/);
   for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))if(!match[1]!.includes('application/json'))new vm.Script(match[2]!);
  }
- const empty=renderCalculationPage({symbol:'999999',name:'가격 미수집',bars:[],now:new Date()});for(const id of ['home-conclusion','conclusion','chart-card','structure','parliament-ai','debate','join'])assert.ok(empty.includes(`id="${id}"`),id);
+ const empty=renderCalculationPage({symbol:'999999',name:'가격 미수집',bars:[],now:new Date()});for(const id of ['home-conclusion','chart-card','structure','parliament-ai','debate','join'])assert.ok(empty.includes(`id="${id}"`),id);
  assert.equal(indicatorKey('RSI (14)'),'rsi');assert.equal(indicatorKey('단순 이동평균 60일'),'ma60');assert.equal(indicatorKey('단순 이동평균 240일'),null);assert.equal(indicatorKey('지수 이동평균 12일'),'ema12');
 });
 
