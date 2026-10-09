@@ -33,6 +33,8 @@ export const ALPHA_SCRIPT = `<script>
   var meta = document.querySelector('meta[name=gnm-api]');
   if (!meta) return;
   var API = meta.content, SK = 'gnm-session', MK = 'gnm-me', base = document.body.getAttribute('data-base') || '';
+  // G-167: notification links are site paths ('updates.html', '005930/index.html'); from a page in a folder they need the base.
+  var siteLink = function (l) { var c = l.charAt(0); return /^[a-z]+:/i.test(l) || c === '/' || c === '#' ? l : base + l; };
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   var set = function (k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -125,7 +127,7 @@ export const ALPHA_SCRIPT = `<script>
         if (!pop) return; var list = pop.querySelector('.bell-list');
         if (r.error) { list.innerHTML = '<p class="muted small" style="padding:10px">알림을 불러오지 못했어요.</p>'; return; }
         var items = (r.items || []).slice(0, 8);
-        list.innerHTML = items.length ? items.map(function (n) { return '<a class="' + (n.read_at ? '' : 'unread') + '" href="' + esc(n.link || base + 'inbox.html') + '"><span class="bell-ic" aria-hidden="true">' + (ICONS[n.kind] || '🔔') + '</span><span class="bell-tx"><b>' + esc(n.title) + '</b><small>' + esc(n.body || '') + '</small><time>' + when(n.created_at) + '</time></span></a>'; }).join('') : '<p class="muted small" style="padding:14px 10px">새 알림이 없어요. 관심 종목의 새 리포트, 가격 알림, 업데이트 소식이 여기로 와요.</p>';
+        list.innerHTML = items.length ? items.map(function (n) { return '<a class="' + (n.read_at ? '' : 'unread') + '" href="' + esc(siteLink(n.link || 'inbox.html')) + '"><span class="bell-ic" aria-hidden="true">' + (ICONS[n.kind] || '🔔') + '</span><span class="bell-tx"><b>' + esc(n.title) + '</b><small>' + esc(n.body || '') + '</small><time>' + when(n.created_at) + '</time></span></a>'; }).join('') : '<p class="muted small" style="padding:14px 10px">새 알림이 없어요. 관심 종목의 새 리포트, 가격 알림, 업데이트 소식이 여기로 와요.</p>';
         if (r.unread) { G.call('POST', '/notifications/read'); var dot = b.querySelector('i'); if (dot) dot.remove(); }
       });
     });
