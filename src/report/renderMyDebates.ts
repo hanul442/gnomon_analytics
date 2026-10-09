@@ -8,7 +8,7 @@ export function renderMyDebates(): string {
 .md{max-width:820px;margin:16px auto 32px}.md .card{padding:18px;margin-bottom:12px}.md h1{font-size:23px;margin:2px 0 6px}
 .md-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.md-tools input{flex:1;min-width:160px;font:inherit;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:12px}
 .md-group{margin-top:14px}.md-gh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 6px}.md-gh a{font-weight:800;font-size:15.5px}.md-gh small{color:var(--muted)}
-.md-q{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:#fff}.md-q summary{cursor:pointer;list-style:none;padding:11px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}.md-q summary::-webkit-details-marker{display:none}
+.md-q{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--surface)}.md-q summary{cursor:pointer;list-style:none;padding:11px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}.md-q summary::-webkit-details-marker{display:none}
 .md-q summary b{font-size:14.5px;font-weight:700}.md-q summary small{grid-column:1/-1;color:var(--muted);font-size:12px}.md-q summary i{font-style:normal;color:var(--muted);grid-row:1;grid-column:2}
 .md-a{padding:0 12px 12px;font-size:14px;line-height:1.65;white-space:pre-wrap;color:var(--fg2)}.md-login{text-align:center}
 </style><div class="md">

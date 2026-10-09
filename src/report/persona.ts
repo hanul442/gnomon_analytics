@@ -37,17 +37,23 @@ export const TAB_KEEP: Record<Exclude<Persona, 'all'>, string[]> = {
 
 export const PERSONA_CSS = `${(Object.keys(TAB_KEEP) as Exclude<Persona, 'all'>[]).map((p) => `html[data-persona=${p}]:not(.show-all) .chips [role=tab]:not(${TAB_KEEP[p].map((t) => `#t-${t}`).join(',')})`).join(',')}{display:none}
 .pc{display:none}${(['beginner', 'trader', 'swing', 'long'] as const).map((p) => `html[data-persona=${p}] .pc-${p}`).join(',')},html[data-persona=all] .pc-swing{display:block}
-.pc-wrap{margin:14px 0 4px}.pc-wrap .persona-bar{margin-bottom:10px}.pc{margin-bottom:14px}.pc .card{border:1px solid var(--accent);background:linear-gradient(180deg,#f5f8fd,#fff)}.pc-q{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.pc h2{font-size:19px;margin:0 0 10px;line-height:1.45}
-.pc-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.pc-rows>div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}.pc-rows span{display:block;font-size:12px;color:var(--muted)}.pc-rows b{font-size:16px}.pc-rows small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
+.pc-wrap{margin:14px 0 4px}.pc-wrap .persona-bar{margin-bottom:10px}.pc{margin-bottom:14px}.pc .card{border:1px solid var(--accent);background:linear-gradient(180deg,var(--soft),var(--surface))}.pc-q{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.pc h2{font-size:19px;margin:0 0 10px;line-height:1.45}
+.pc-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.pc-rows>div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.pc-rows span{display:block;font-size:12px;color:var(--muted)}.pc-rows b{font-size:16px}.pc-rows small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
 html[data-persona=beginner]:not(.show-all) .pc-hide-beginner,html[data-persona=trader]:not(.show-all) .pc-hide-trader,html[data-persona=long]:not(.show-all) .pc-hide-long{display:none}
-.persona-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}.persona-bar .lbl{color:var(--muted);font-weight:700}.persona-bar button{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}${PERSONAS.map((p) => `html[data-persona=${p.key}] .persona-bar [data-persona=${p.key}]`).join(',')}{background:var(--navy);color:#fff;border-color:var(--navy)}`;
+.persona-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}.persona-bar .lbl{color:var(--muted);font-weight:700}.persona-bar button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}${PERSONAS.map((p) => `html[data-persona=${p.key}] .persona-bar [data-persona=${p.key}]`).join(',')}{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
+.theme-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}.theme-bar .lbl{color:var(--muted);font-weight:700}.theme-bar button{border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}.theme-bar button[aria-pressed=true]{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}`;
 
 /** The view switch (front page and stock pages). */
 export const PERSONA_BAR = `<div class="persona-bar" role="group" aria-label="보기 방식"><span class="lbl">보기</span>${PERSONAS.map((p) => `<button type="button" data-persona="${p.key}" title="${p.question}">${p.label}</button>`).join('')}</div>`;
 
 /** The switch's behaviour; pages listen for the gnm-persona event to re-arrange. */
 export const PERSONA_JS = `
+  // G-181: the theme switch (dark by default, light, or the device's); charts and pictures listen for gnm-theme.
+  var markTheme = function () { var t = 'dark'; try { t = localStorage.getItem('gnm-theme') || 'dark'; } catch (x) {} document.querySelectorAll('.theme-bar [data-theme-pick]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-theme-pick') === t ? 'true' : 'false'); }); };
+  markTheme();
   document.addEventListener('click', function (e) {
+    var tb = e.target.closest && e.target.closest('.theme-bar [data-theme-pick]');
+    if (tb) { var t = tb.getAttribute('data-theme-pick'); if (window.GNMTheme) GNMTheme.set(t); markTheme(); if (window.GNM && GNM.track) GNM.track('theme', { t: t }); return; }
     var o = e.target.closest && e.target.closest('[data-open-view]');
     if (o) { e.preventDefault(); var m = [].slice.call(document.querySelectorAll('[data-all-menu]')).filter(function (x) { return x.getClientRects().length; })[0]; if (m) { m.click(); var g = document.getElementById('sm-view'); if (g) g.scrollIntoView({ block: 'nearest' }); } return; }
     var b = e.target.closest && e.target.closest('.persona-bar [data-persona]'); if (!b) return;
