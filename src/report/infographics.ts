@@ -6,6 +6,7 @@ import type { MarketSection } from './marketSection.js';
 import type { FinancePeriod } from '../types.js';
 import type { FullStatements, StatementRow } from '../sources/dartStatements.js';
 import { esc } from './html.js';
+import { bigMoney, currency, financeScale, financeUnit } from './format.js';
 
 const clamp = (v: number) => Math.max(0, Math.min(100, v));
 const fmtPct = (v: number | null | undefined, d = 1) => (v == null || !Number.isFinite(v) ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(d)}%`);
@@ -69,8 +70,10 @@ const KEY_ROWS: Record<StKind, readonly [string, RegExp, string?][]> = {
 };
 const findRow = (rows: readonly StatementRow[], id: string, re: RegExp) => rows.find((r) => r.id === id) ?? rows.find((r) => re.test(r.name.replace(/\s+/g, '')));
 /** 억원 for tables; 조/억 for chart labels. */
-const eok = (v: number) => Math.round(v / 1e8).toLocaleString('ko-KR');
-const short = (v: number) => (Math.abs(v) >= 1e12 ? `${(v / 1e12).toFixed(Math.abs(v) >= 1e13 ? 0 : 1)}조` : `${Math.round(v / 1e8).toLocaleString('ko-KR')}억`);
+const eok = (v: number) => Math.round(v / financeScale()).toLocaleString('ko-KR');
+const short = (v: number) => (currency() === 'USD' ? bigMoney(v) : Math.abs(v) >= 1e12 ? `${(v / 1e12).toFixed(Math.abs(v) >= 1e13 ? 0 : 1)}조` : `${Math.round(v / 1e8).toLocaleString('ko-KR')}억`);
+/** A chart label with its currency word: 1.2조원, or $1.2B as is. */
+const shortMoney = (v: number): string => (currency() === 'USD' ? short(v) : `${short(v)}원`);
 
 /** Grouped bars per year (values may be negative); one colour per series. */
 function bars(years: readonly string[], series: readonly { label: string; color: string; values: (number | null)[] }[]): string {
@@ -81,9 +84,9 @@ function bars(years: readonly string[], series: readonly { label: string; color:
   const rects = years.map((y, i) => series.map((x, j) => {
     const v = x.values[i]; if (v == null) return '';
     const x0 = i * gw + (gw - bw * series.length) / 2 + j * bw, y0 = v >= 0 ? zero - (v / span) * h : zero, hh = Math.max(1, Math.abs(v / span) * h);
-    return `<rect${v < 0 ? ' class="neg"' : ''} data-g="${i}" style="--i:${i * series.length + j}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(bw - 3).toFixed(1)}" height="${hh.toFixed(1)}" rx="2" fill="${x.color}"><title>${esc(y)} ${esc(x.label)} ${short(v)}원</title></rect>${j === 0 ? `<text x="${(x0 + (bw - 3) / 2).toFixed(1)}" y="${(v >= 0 ? y0 - 4 : y0 + hh + 11).toFixed(1)}" text-anchor="middle" class="ig-bl">${short(v)}</text>` : ''}`;
+    return `<rect${v < 0 ? ' class="neg"' : ''} data-g="${i}" style="--i:${i * series.length + j}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(bw - 3).toFixed(1)}" height="${hh.toFixed(1)}" rx="2" fill="${x.color}"><title>${esc(y)} ${esc(x.label)} ${shortMoney(v)}</title></rect>${j === 0 ? `<text x="${(x0 + (bw - 3) / 2).toFixed(1)}" y="${(v >= 0 ? y0 - 4 : y0 + hh + 11).toFixed(1)}" text-anchor="middle" class="ig-bl">${short(v)}</text>` : ''}`;
   }).join('') + `<text x="${(i * gw + gw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="ig-bx">${esc(y)}</text>`).join('');
-  const tip = { y: years, s: series.map((x) => ({ l: x.label, c: x.color, v: x.values.map((v) => (v == null ? null : short(v) + '원')) })) };
+  const tip = { y: years, s: series.map((x) => ({ l: x.label, c: x.color, v: x.values.map((v) => (v == null ? null : shortMoney(v))) })) };
   return `<figure class="ig-bars mo-bars" data-tip="${esc(JSON.stringify(tip))}"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map((x) => x.label).join('·'))} 연도별 막대"><line x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}" class="ig-b0"/>${rects}</svg><figcaption>${series.map((x) => `<span><i style="background:${x.color}"></i>${esc(x.label)}</span>`).join('')}</figcaption></figure>`;
 }
 
@@ -94,7 +97,7 @@ function bars(years: readonly string[], series: readonly { label: string; color:
 export function quarterBars(quarters: readonly FinancePeriod[]): string {
   const ps = quarters.filter((q) => q.metrics['매출액'] != null).slice(-6);
   if (ps.length < 2) return '';
-  const v = (k: string) => ps.map((q) => (q.metrics[k] == null ? null : q.metrics[k]! * 1e8));
+  const v = (k: string) => ps.map((q) => (q.metrics[k] == null ? null : q.metrics[k]! * financeScale()));
   return bars(ps.map((q) => `${q.period.slice(2, 4)}.${q.period.slice(4)}${q.isEstimate ? 'E' : ''}`), [{ label: '매출', color: '#2e4268', values: v('매출액') }, { label: '영업이익', color: '#f04452', values: v('영업이익') }]);
 }
 
@@ -141,14 +144,14 @@ export function statementsCard(m: MarketSection | undefined, st?: FullStatements
   if (!years.length && !quarters.length && !st) return '';
   const table = (ps: readonly FinancePeriod[], label: (p: FinancePeriod) => string) => {
     const rows = ROWS.filter(([k]) => ps.some((p) => p.metrics[k] != null));
-    const cell = (v: number | null | undefined, unit: string) => (v == null ? '<td class="num muted">-</td>' : `<td class="num${v < 0 ? ' down' : ''}">${unit === '%' ? v.toFixed(1) : Math.round(v).toLocaleString('ko-KR')}</td>`);
-    return `<div class="table-wrap ig-fs"><table class="compact"><thead><tr><th>항목</th>${ps.map((p) => `<th class="num">${label(p)}${p.isEstimate ? '<small>추정</small>' : ''}</th>`).join('')}</tr></thead><tbody>${rows.map(([k, unit]) => `<tr><th scope="row">${k}<small>${unit}</small></th>${ps.map((p) => cell(p.metrics[k], unit)).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const cell = (v: number | null | undefined, unit: string) => (v == null ? '<td class="num muted">-</td>' : `<td class="num${v < 0 ? ' down' : ''}">${unit === '%' ? v.toFixed(1) : unit === '원' && currency() === 'USD' ? v.toFixed(2) : Math.round(v).toLocaleString('ko-KR')}</td>`);
+    return `<div class="table-wrap ig-fs"><table class="compact"><thead><tr><th>항목</th>${ps.map((p) => `<th class="num">${label(p)}${p.isEstimate ? '<small>추정</small>' : ''}</th>`).join('')}</tr></thead><tbody>${rows.map(([k, unit]) => `<tr><th scope="row">${k}<small>${unit === '억원' ? financeUnit() : unit === '원' && currency() === 'USD' ? '달러' : unit}</small></th>${ps.map((p) => cell(p.metrics[k], unit)).join('')}</tr>`).join('')}</tbody></table></div>`;
   };
   const tabs: [string, string, string][] = [];
   if (years.length) tabs.push(['y', '연간 요약', table(years, (p) => p.period.slice(0, 4))]);
   if (quarters.length) tabs.push(['q', '분기 요약', table(quarters, (p) => `${p.period.slice(2, 4)}.${p.period.slice(4)}`)]);
   if (st) (['IS', 'BS', 'CF'] as const).forEach((k) => { if (st.statements[k].length) tabs.push([k.toLowerCase(), k === 'IS' ? '손익계산서' : k === 'BS' ? '재무상태표' : '현금흐름표', statementPanel(st, k)]); });
-  const src = [years.length || quarters.length ? '요약: 네이버 증권(기업 실적 분석, IFRS 연결). 추정은 증권사 컨센서스예요.' : '', st ? `손익계산서·재무상태표·현금흐름표: DART ${esc(st.years[st.years.length - 1] ?? '')} 사업보고서(${st.basis === 'CFS' ? '연결' : '별도'}), 단위 억원. <a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${encodeURIComponent(st.receiptNo)}" target="_blank" rel="noopener">원문 보기</a>` : '재무상태표·현금흐름표 전체는 DART 공시를 받은 종목부터 보여요.'].filter(Boolean).join(' ');
+  const src = [years.length || quarters.length ? (currency() === 'USD' ? '요약: SEC EDGAR XBRL(us-gaap) 기준, 달력 분기·회계연도. 금액은 백만 달러예요.' : '요약: 네이버 증권(기업 실적 분석, IFRS 연결). 추정은 증권사 컨센서스예요.') : '', st ? `손익계산서·재무상태표·현금흐름표: DART ${esc(st.years[st.years.length - 1] ?? '')} 사업보고서(${st.basis === 'CFS' ? '연결' : '별도'}), 단위 억원. <a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${encodeURIComponent(st.receiptNo)}" target="_blank" rel="noopener">원문 보기</a>` : '재무상태표·현금흐름표 전체는 DART 공시를 받은 종목부터 보여요.'].filter(Boolean).join(' ');
   return `<div class="card fs-full" id="statements">
 <div class="seg ig-seg" role="tablist" aria-label="재무제표 종류">${tabs.map(([k, l], i) => `<button type="button" data-fs="${k}" aria-selected="${i === 0}">${l}</button>`).join('')}</div>
 ${tabs.map(([k, , html], i) => `<div data-fsl="${k}"${i ? ' hidden' : ''}>${html}</div>`).join('')}

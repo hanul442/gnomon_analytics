@@ -49,6 +49,7 @@ jobs:
           NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GNM_DEEP_KEY: ${{ secrets.GNM_DEEP_KEY }}
+          EDGAR_CONTACT: ${{ secrets.EDGAR_CONTACT }}
           MARKET_REGEN: ${{ inputs.regen_market && '1' || '' }}
         run: npm run daily
       - name: Commit collected data and reports

@@ -41,6 +41,8 @@ export interface Env {
   USER_DAILY_ASKS?: string;
   /** G-61: the secret that opens sealed deep reports (GitHub secret GNM_DEEP_KEY). */
   DEEP_KEY?: string;
+  /** G-179: a contact SEC may reach about EDGAR requests (goes in the User-Agent). */
+  EDGAR_CONTACT?: string;
   REPORT_QUEUE?: ReportQueue;
 }
 export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient; waitUntil?: (promise: Promise<unknown>) => void; generate?: (report: DailyReport) => Promise<Commentary> }

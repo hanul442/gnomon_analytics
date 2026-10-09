@@ -2,6 +2,7 @@
 // moves, supply contracts and trading-value surges, gathered per stock and across the market. Pure.
 
 import type { FinancePeriod, PriceBar } from '../types.js';
+import { bigMoney, currency, won } from '../report/format.js';
 
 export type EventKey = 'earnings' | 'dividend' | 'buyback' | 'buybackSell' | 'insider' | 'holder' | 'contract' | 'ir';
 export interface EventRule { key: EventKey; label: string; pattern: RegExp; why: string }
@@ -26,7 +27,7 @@ export function eventOf(title: string): EventRule | null {
 }
 
 /** One insider (임원·주요주주) ownership report, from OpenDART elestock.json. */
-export interface InsiderReport { symbol: string; receiptNo: string; date: string; reporter: string; position: string; isExec: boolean; isMajor: boolean; shares: number | null; delta: number | null; ratio: number | null; retrievedAt: string }
+export interface InsiderReport { symbol: string; receiptNo: string; date: string; reporter: string; position: string; isExec: boolean; isMajor: boolean; shares: number | null; delta: number | null; ratio: number | null; retrievedAt: string; /** The filing's page when it is not on DART (SEC Form 4, G-179). */ url?: string }
 /** One 5% holder report, from OpenDART majorstock.json. */
 export interface HolderReport { symbol: string; receiptNo: string; date: string; reporter: string; shares: number | null; delta: number | null; ratio: number | null; ratioDelta: number | null; reason: string; retrievedAt: string }
 
@@ -49,7 +50,7 @@ export interface EdgeSection {
 const DAY = 86_400_000;
 const daysBefore = (date: string, n: number) => new Date(Date.parse(`${date}T00:00:00Z`) - n * DAY).toISOString().slice(0, 10);
 const fmtShares = (n: number) => `${Math.abs(n) >= 10_000 ? `${(Math.abs(n) / 10_000).toFixed(Math.abs(n) >= 100_000 ? 0 : 1)}만` : Math.abs(n).toLocaleString('ko-KR')}주`;
-const fmtWon = (n: number) => (Math.abs(n) >= 1e8 ? `${(n / 1e8).toFixed(Math.abs(n) >= 1e10 ? 0 : 1)}억원` : `${Math.round(n).toLocaleString('ko-KR')}원`);
+const fmtWon = (n: number) => (currency() === 'USD' ? bigMoney(n) : Math.abs(n) >= 1e8 ? `${(n / 1e8).toFixed(Math.abs(n) >= 1e10 ? 0 : 1)}억원` : `${Math.round(n).toLocaleString('ko-KR')}원`);
 
 /** Insider moves of the last `days`: buys and sells by report, net shares and roughly what that is worth at `close`. */
 export function insiderSummary(reports: readonly InsiderReport[], date: string, close: number | null, days = 90): InsiderSummary | null {
@@ -85,7 +86,8 @@ export function surprises(log: readonly FinancePeriod[], metrics: readonly strin
 }
 
 /** The next quarter to be reported and when it usually comes: preliminary numbers early, the quarterly report by the legal deadline. */
-export function nextEarnings(date: string, events: readonly EventFiling[]): { period: string; label: string; basis: string } {
+export function nextEarnings(date: string, events: readonly EventFiling[], us = false): { period: string; label: string; basis: string } {
+  if (us) return nextEarningsUs(date);
   const d = new Date(`${date}T00:00:00Z`), y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
   // Quarter ends: Mar, Jun, Sep, Dec. The quarter being reported is the last one that has ended.
   const qEnd = m <= 3 ? { y: y - 1, q: 4 } : m <= 6 ? { y, q: 1 } : m <= 9 ? { y, q: 2 } : { y, q: 3 };
@@ -96,6 +98,14 @@ export function nextEarnings(date: string, events: readonly EventFiling[]): { pe
   const early = q.q === 4 ? `${q.y + 1}년 1월 말~2월` : `${q.y}년 ${endMonth + 1}월 초~중순`;
   const last = events.filter((e) => e.key === 'earnings').sort((a, b) => (a.date < b.date ? 1 : -1))[0];
   return { period: `${q.y}년 ${q.q}분기`, label: `잠정실적 ${early} · 정기보고서 ${deadline}까지`, basis: last ? `직전 실적 공시 ${last.date}` : '대형주는 분기가 끝나고 1~3주 안에 잠정실적을 내는 경우가 많아요' };
+}
+
+/** US companies report within weeks of a quarter's end; the 10-Q is due 40 days after it, the 10-K 60 days after the year. */
+function nextEarningsUs(date: string): { period: string; label: string; basis: string } {
+  const d = new Date(`${date}T00:00:00Z`), y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
+  const q = m <= 3 ? { y: y - 1, q: 4 } : m <= 6 ? { y, q: 1 } : m <= 9 ? { y, q: 2 } : { y, q: 3 };
+  const endMonth = q.q * 3, nextY = q.q === 4 ? q.y + 1 : q.y, early = `${nextY}년 ${(endMonth % 12) + 1}월 중순~${(endMonth % 12) + 2}월 초`;
+  return { period: `${q.y}년 ${q.q}분기(달력 기준)`, label: `실적 발표 ${early} · 10-Q는 분기 끝 40일, 10-K는 연말 60일 안에 제출`, basis: 'SEC 제출 기한 기준. 회사 회계연도가 달력과 다르면 분기 이름이 달라요.' };
 }
 
 export function dividendInfo(finance: readonly FinancePeriod[], close: number | null, events: readonly EventFiling[]): DividendInfo | null {
@@ -115,7 +125,7 @@ export function valueSurge(bars: readonly Pick<PriceBar, 'close' | 'volume'>[]):
   return avg20 > 0 ? { today, avg20, ratio: today / avg20 } : null;
 }
 
-export function buildEdge(input: { date: string; close: number | null; bars: readonly Pick<PriceBar, 'close' | 'volume'>[]; finance: readonly FinancePeriod[]; financeLog: readonly FinancePeriod[]; events: readonly EventFiling[]; insider: readonly InsiderReport[]; holders: readonly HolderReport[] }): EdgeSection {
+export function buildEdge(input: { date: string; close: number | null; bars: readonly Pick<PriceBar, 'close' | 'volume'>[]; finance: readonly FinancePeriod[]; financeLog: readonly FinancePeriod[]; events: readonly EventFiling[]; insider: readonly InsiderReport[]; holders: readonly HolderReport[]; us?: boolean }): EdgeSection {
   const since = daysBefore(input.date, 180);
   const events = input.events.filter((e) => e.date >= since && e.date <= input.date).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 30).map((e) => { const r = EVENT_RULES.find((x) => x.key === e.key)!; return { ...e, label: r.label, why: r.why }; });
   const insider = insiderSummary(input.insider, input.date, input.close);
@@ -135,8 +145,8 @@ export function buildEdge(input: { date: string; close: number | null; bars: rea
   const ct = events.filter((e) => e.key === 'contract' && e.date >= daysBefore(input.date, 30));
   if (ct.length) highlights.push({ key: 'contract', tone: 'up', text: `최근 30일 수주·공급계약 ${ct.length}건` });
   if (value && value.ratio >= 2.5) highlights.push({ key: 'value', tone: '', text: `오늘 거래대금이 20일 평균의 ${value.ratio.toFixed(1)}배(${fmtWon(value.today)})` });
-  if (dividend?.yieldEstPct != null && dividend.yieldEstPct >= 3) highlights.push({ key: 'dividend', tone: 'up', text: `예상 배당수익률 ${dividend.yieldEstPct.toFixed(1)}%(주당 ${Math.round(dividend.dpsEst!).toLocaleString('ko-KR')}원)` });
-  return { insider, holders, events, surprises: surp, nextEarnings: nextEarnings(input.date, input.events), dividend, value, highlights };
+  if (dividend?.yieldEstPct != null && dividend.yieldEstPct >= 3) highlights.push({ key: 'dividend', tone: 'up', text: `예상 배당수익률 ${dividend.yieldEstPct.toFixed(1)}%(주당 ${won(Math.round(dividend.dpsEst!))})` });
+  return { insider, holders, events, surprises: surp, nextEarnings: nextEarnings(input.date, input.events, input.us), dividend, value, highlights };
 }
 
 /** Market-wide radar rows for the site (radar.json): the last `days` of surfaced filings, by kind. */

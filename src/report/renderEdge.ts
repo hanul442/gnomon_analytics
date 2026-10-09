@@ -5,9 +5,9 @@
 import type { DailyReport } from './dailyReport.js';
 import { dartViewerUrl } from '../sources/opendart.js';
 import { esc } from './html.js';
-import { won } from './format.js';
+import { won, bigMoney, currency } from './format.js';
 
-const eok = (v: number) => (Math.abs(v) >= 1e8 ? `${(v / 1e8).toLocaleString('ko-KR', { maximumFractionDigits: Math.abs(v) >= 1e10 ? 0 : 1 })}억원` : won(v));
+const eok = (v: number) => (currency() === 'USD' ? bigMoney(v) : Math.abs(v) >= 1e8 ? `${(v / 1e8).toLocaleString('ko-KR', { maximumFractionDigits: Math.abs(v) >= 1e10 ? 0 : 1 })}억원` : won(v));
 const shares = (n: number) => `${n > 0 ? '+' : ''}${n.toLocaleString('ko-KR')}주`;
 const qLabel = (p: string) => `${p.slice(0, 4)}년 ${Number(p.slice(4)) / 3}분기`;
 const ICON: Record<string, string> = { insider: '👤', surprise: '📊', buyback: '🔁', buybackSell: '📤', holder: '🏦', contract: '📝', value: '🔊', dividend: '💰', earnings: '📊', ir: '🎤' };
@@ -25,10 +25,10 @@ export function edgeFlows(report: DailyReport): string {
   const e = report.edge;
   if (!e) return '';
   const ins = e.insider;
-  const insider = ins ? `<div class="card"><div class="head"><h2>임원·주요주주 보유 변화</h2><span class="sub">최근 90일 · 소유보고 기준</span></div>
+  const insider = ins ? `<div class="card"><div class="head"><h2>임원·주요주주 보유 변화</h2><span class="sub">최근 90일 · ${currency() === 'USD' ? 'SEC Form 4 기준' : '소유보고 기준'}</span></div>
 <p class="edge-sum"><b class="${ins.netShares > 0 ? 'up' : ins.netShares < 0 ? 'down' : ''}">${ins.netShares === 0 ? '변화 없음' : `${ins.netShares > 0 ? '보유 증가' : '보유 감소'} ${shares(ins.netShares)}`}</b>${ins.netValue != null && ins.netShares !== 0 ? ` · 지금 가격으로 약 ${eok(Math.abs(ins.netValue))}` : ''} · 늘린 보고 ${ins.buys}건 · 줄인 보고 ${ins.sells}건</p>
-<div class="table-wrap"><table class="compact"><thead><tr><th>보고일</th><th>보고자</th><th>직위</th><th class="num">증감</th><th class="num">보유</th></tr></thead><tbody>${ins.items.map((r) => `<tr><td class="nowrap"><a href="${dartViewerUrl(r.receiptNo)}" target="_blank" rel="noopener">${esc(r.date)}</a></td><td>${esc(r.reporter)}</td><td>${esc(r.position || (r.isMajor ? '주요주주' : ''))}</td><td class="num ${r.delta != null && r.delta > 0 ? 'up' : r.delta != null && r.delta < 0 ? 'down' : ''}">${r.delta == null ? '-' : shares(r.delta)}</td><td class="num">${r.shares == null ? '-' : r.shares.toLocaleString('ko-KR')}</td></tr>`).join('')}</tbody></table></div>
-<p class="fine">보유 수량의 증감이에요. 장내 매매뿐 아니라 증여·상속·주식 보상도 포함될 수 있어 사유는 원문에서 확인하세요.</p></div>` : '';
+<div class="table-wrap"><table class="compact"><thead><tr><th>보고일</th><th>보고자</th><th>직위</th><th class="num">증감</th><th class="num">보유</th></tr></thead><tbody>${ins.items.map((r) => `<tr><td class="nowrap"><a href="${r.url ?? dartViewerUrl(r.receiptNo)}" target="_blank" rel="noopener">${esc(r.date)}</a></td><td>${esc(r.reporter)}</td><td>${esc(r.position || (r.isMajor ? '주요주주' : ''))}</td><td class="num ${r.delta != null && r.delta > 0 ? 'up' : r.delta != null && r.delta < 0 ? 'down' : ''}">${r.delta == null ? '-' : shares(r.delta)}</td><td class="num">${r.shares == null ? '-' : r.shares.toLocaleString('ko-KR')}</td></tr>`).join('')}</tbody></table></div>
+<p class="fine">${currency() === 'USD' ? '장내 매수(P)·매도(S)만 더한 수량이에요. 주식 보상·옵션 행사·세금 납부용 처분은 뺐어요. 원문은 SEC에서 열려요.' : '보유 수량의 증감이에요. 장내 매매뿐 아니라 증여·상속·주식 보상도 포함될 수 있어 사유는 원문에서 확인하세요.'}</p></div>` : '';
   const holders = e.holders.length ? `<div class="card"><div class="head"><h2>5% 이상 대량보유</h2><span class="sub">최근 180일</span></div><div class="table-wrap"><table class="compact"><thead><tr><th>보고일</th><th>보고자</th><th class="num">지분 변화</th><th class="num">보유 지분</th><th>사유</th></tr></thead><tbody>${e.holders.map((h) => `<tr><td class="nowrap"><a href="${dartViewerUrl(h.receiptNo)}" target="_blank" rel="noopener">${esc(h.date)}</a></td><td>${esc(h.reporter)}</td><td class="num ${h.ratioDelta != null && h.ratioDelta > 0 ? 'up' : h.ratioDelta != null && h.ratioDelta < 0 ? 'down' : ''}">${h.ratioDelta == null ? '-' : `${h.ratioDelta > 0 ? '+' : ''}${h.ratioDelta.toFixed(2)}%p`}</td><td class="num">${h.ratio == null ? '-' : `${h.ratio.toFixed(2)}%`}</td><td>${esc(h.reason)}</td></tr>`).join('')}</tbody></table></div></div>` : '';
   const v = e.value;
   const value = v ? `<div class="card edge-value"><div class="head"><h2>거래대금</h2><span class="sub">종가×거래량 추정</span></div><p class="edge-sum">오늘 <b>${eok(v.today)}</b> · 20일 평균 ${eok(v.avg20)} · <b class="${v.ratio >= 2.5 ? 'up' : ''}">평소의 ${v.ratio.toFixed(1)}배</b></p></div>` : '';

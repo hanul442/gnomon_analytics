@@ -16,6 +16,15 @@ export function withCurrency<T>(currency: 'KRW' | 'USD' | undefined, render: () 
 }
 /** A price in the current currency (won unless a US render). */
 export const won = (v: number): string => (CURRENCY === 'USD' ? usd(v) : krw(v));
+/** The currency of the current render. */
+export const currency = (): 'KRW' | 'USD' => CURRENCY;
+/** FinancePeriod metrics are stored in 억원 (Naver, Korean stocks) or 백만 달러 (SEC XBRL, US stocks). */
+export const financeScale = (): number => (CURRENCY === 'USD' ? 1e6 : 1e8);
+export const financeUnit = (): string => (CURRENCY === 'USD' ? '백만 달러' : '억원');
+const krwBig = (v: number): string => (Math.abs(v) >= 1e12 ? `${(v / 1e12).toFixed(Math.abs(v) >= 1e14 ? 0 : 1)}조원` : Math.abs(v) >= 1e8 ? `${Math.round(v / 1e8).toLocaleString('ko-KR')}억원` : `${Math.round(v / 1e4).toLocaleString('ko-KR')}만원`);
+const usdBig = (v: number): string => { const a = Math.abs(v), u = a >= 1e12 ? [1e12, 'T'] as const : a >= 1e9 ? [1e9, 'B'] as const : a >= 1e6 ? [1e6, 'M'] as const : a >= 1e3 ? [1e3, 'K'] as const : [1, ''] as const, m = a / u[0]; return `${v < 0 ? '-' : ''}$${m.toFixed(m >= 100 || !u[1] ? 0 : 1)}${u[1]}`; };
+/** A large amount (market value, revenue) in the current currency: 1.2조원 / 345억원, or $1.2T / $34.5B / $120M. */
+export const bigMoney = (v: number): string => (CURRENCY === 'USD' ? usdBig(v) : krwBig(v));
 
 /** Signed percent, e.g. +0.77%. `empty` stands in for a missing value. */
 export const pct = (v: number | null | undefined, digits = 2, empty = '—'): string => (v == null ? empty : `${v > 0 ? '+' : ''}${v.toFixed(digits)}%`);

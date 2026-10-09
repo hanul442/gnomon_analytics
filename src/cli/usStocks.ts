@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { quickCalc } from '../analysis/quickCalc.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { fetchUsUniverse, fetchWorldBars, type UsListing } from '../sources/naverWorld.js';
+import { cikMap, edgarUserAgent, tickersUrl } from '../sources/edgar.js';
 import { coinCalc, type CoinRow } from './coins.js';
 import { pool } from './weekly.js';
 
@@ -28,6 +29,9 @@ export async function writeUsPages(siteDir: string, options: { now: () => Date; 
   try { list = options.universe ?? await fetchUsUniverse(options.fetch ? { fetch: options.fetch } : {}); } catch (e) {
     return { status: { source: 'naver:world:universe', ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }, rows: [] };
   }
+  // G-179: the SEC CIK per ticker, from one download; a requested report then skips the 1 MB map. Best effort.
+  let ciks = new Map<string, number>();
+  try { const r = await (options.fetch ?? fetch)(tickersUrl, { headers: { 'User-Agent': edgarUserAgent(process.env.EDGAR_CONTACT), Accept: 'application/json' }, signal: AbortSignal.timeout(20_000) }); if (r.ok) ciks = cikMap(await r.json()); } catch { /* no CIKs this run */ }
   const rows: CoinRow[] = [], errors: string[] = [];
   await pool(list, options.concurrency ?? 6, async (l) => {
     try {
@@ -35,7 +39,7 @@ export async function writeUsPages(siteDir: string, options: { now: () => Date; 
       if (bars.length < 2) return;
       const calc = quickCalc(l.code, bars, now), last = bars.at(-1)!, prev = bars.at(-2)!;
       await writeFile(join(dir, `${l.code}.json`), JSON.stringify({
-        symbol: l.code, ticker: l.ticker, name: l.name, english: l.nameEng, market: l.exchange, kind: l.kind, industry: l.industry, currency: 'USD', marketCapUsd: l.marketCapUsd,
+        symbol: l.code, ticker: l.ticker, name: l.name, english: l.nameEng, market: l.exchange, kind: l.kind, industry: l.industry, currency: 'USD', marketCapUsd: l.marketCapUsd, cik: ciks.get(l.ticker.toUpperCase().replace(/\./g, '-')) ?? null,
         bars: bars.map((b) => [b.date, cents(b.open), cents(b.high), cents(b.low), cents(b.close), b.volume]), calc: calc ? coinCalc(calc) : null,
       }));
       const mv = (d: number) => r1(calc?.moves.find((x) => x.days === d)?.pct);
