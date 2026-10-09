@@ -3,36 +3,39 @@
 // answers a finger or a mouse: the scenario and summary mini charts follow the pointer with the date and price,
 // the statement bars light up one year with its values, the radar and its list point at each other.
 // Readers who ask their system for less motion get the finished pictures at once; the touch values stay.
+// G-170: a picture plays once it is well on screen, a little slower, and plays again after it was scrolled away or its tab hidden.
 
 export const MOTION_CSS = `
 html.mo .mo-line,html.mo .hero-chart:not(.mo-in) polyline,html.mo .hero-chart:not(.mo-in) polygon{clip-path:inset(0 100% 0 0)}
-html.mo .mo-in .mo-line,html.mo .hero-chart.mo-in polyline,html.mo .hero-chart.mo-in polygon{clip-path:inset(0 0 0 0);transition:clip-path 1s cubic-bezier(.16,1,.3,1)}
+html.mo .mo-in .mo-line,html.mo .hero-chart.mo-in polyline,html.mo .hero-chart.mo-in polygon{clip-path:inset(0 0 0 0);transition:clip-path 1.4s cubic-bezier(.16,1,.3,1)}
 html.mo .scenario-band{opacity:0;transform:scaleY(.2);transform-box:fill-box;transform-origin:center}
-html.mo .mo-in .scenario-band{opacity:1;transform:none;transition:opacity .5s .6s,transform .6s .6s cubic-bezier(.16,1,.3,1)}
+html.mo .mo-in .scenario-band{opacity:1;transform:none;transition:opacity .6s .9s,transform .8s .9s cubic-bezier(.16,1,.3,1)}
 html.mo .scenario-figure:not(.mo-in) .mo-dot,html.mo .scenario-figure:not(.mo-in) .mo-pulse{opacity:0}
-html.mo .scenario-figure.mo-in .mo-dot{transition:opacity .3s .9s}
+html.mo .scenario-figure.mo-in .mo-dot{transition:opacity .3s 1.3s}
 .mo-pulse{transform-box:fill-box;transform-origin:center;animation:mo-pulse 2.2s ease-out 1s infinite}
 @keyframes mo-pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.4);opacity:0}}
 html.mo .mo-bars rect{transform:scaleY(0);transform-box:fill-box;transform-origin:50% 100%}
 html.mo .mo-bars rect.neg{transform-origin:50% 0}
-html.mo .mo-bars.mo-in rect{transform:none;transition:transform .6s cubic-bezier(.16,1,.3,1) calc(min(var(--i,0),12) * 45ms),opacity .15s}
-html.mo .mo-bars .ig-bl{opacity:0}html.mo .mo-bars.mo-in .ig-bl{opacity:1;transition:opacity .4s .55s}
+html.mo .mo-bars.mo-in rect{transform:none;transition:transform .9s cubic-bezier(.16,1,.3,1) calc(min(var(--i,0),12) * 70ms),opacity .15s}
+html.mo .mo-bars .ig-bl{opacity:0}html.mo .mo-bars.mo-in .ig-bl{opacity:1;transition:opacity .5s .9s}
 .mo-bars rect{transition:opacity .15s}.mo-bars[data-hi] rect:not(.hi){opacity:.28}
 .mo-bars svg,.mo-scrub,.hero-chart svg{touch-action:pan-y;cursor:crosshair}.mo-bars svg:focus-visible,.mo-scrub:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 html.mo .ig-radar .area{transform:scale(0);transform-box:view-box;transform-origin:110px 104px;opacity:0}
-html.mo .ig-radar.mo-in .area{transform:none;opacity:1;transition:transform .8s cubic-bezier(.16,1,.3,1),opacity .4s}
-html.mo .ig-radar .dot{opacity:0}html.mo .ig-radar.mo-in .dot{opacity:1;transition:opacity .3s calc(.5s + var(--i,0) * 70ms),r .15s}
+html.mo .ig-radar.mo-in .area{transform:none;opacity:1;transition:transform 1.1s cubic-bezier(.16,1,.3,1),opacity .5s}
+html.mo .ig-radar .dot{opacity:0}html.mo .ig-radar.mo-in .dot{opacity:1;transition:opacity .35s calc(.8s + var(--i,0) * 90ms),r .15s}
 .ig-radar .dot{transition:r .15s}.ig-radar .dot.hi{r:6.5px;fill:var(--accent)}
 .ig-hl li{transition:background .15s}.ig-hl li.hi{background:var(--accent-soft);border-radius:10px}
 html.mo .ig-bs-bar i{transform:scaleX(0);transform-origin:left}
-html.mo .ig-bs.mo-in .ig-bs-bar i{transform:none;transition:transform .7s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 90ms)}
+html.mo .ig-bs.mo-in .ig-bs-bar i{transform:none;transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 120ms)}
 html.mo .mini-gauge:not(.mo-in) .needle{animation:none;transform:rotate(0deg)}
 html.mo .si-card:not(.mo-in) .si-c{opacity:0;transform:translateY(6px)}
-html.mo .si-card.mo-in .si-c{transition:opacity .4s calc(min(var(--i,0),10) * 45ms),transform .5s cubic-bezier(.16,1,.3,1) calc(min(var(--i,0),10) * 45ms)}
-html.mo .si-card:not(.mo-in) .si-rbar{transform:scaleX(0)}.si-rbar{transform-origin:left;transition:transform .7s cubic-bezier(.16,1,.3,1)}
-html.mo .si-card:not(.mo-in) .si-rbar i{left:0!important;opacity:0}.si-rbar i{transition:left 1s cubic-bezier(.16,1,.3,1) .35s,opacity .3s .35s}
-html.mo .si-card:not(.mo-in) .si-fbar i{transform:scaleX(0)}.si-fbar i{transition:transform .7s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 70ms)}.si-fbar i.pos{transform-origin:left}.si-fbar i.neg{transform-origin:right}
-html.mo .si-card:not(.mo-in) .si-cols i{transform:scaleY(0)}.si-cols i{transform-origin:bottom;transition:transform .7s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 70ms)}
+html.mo .si-card.mo-in .si-c{transition:opacity .55s calc(min(var(--i,0),10) * 60ms),transform .7s cubic-bezier(.16,1,.3,1) calc(min(var(--i,0),10) * 60ms)}
+html.mo .si-card:not(.mo-in) .si-rbar{transform:scaleX(0)}.si-rbar{transform-origin:left;transition:transform 1s cubic-bezier(.16,1,.3,1)}
+html.mo .si-card:not(.mo-in) .si-rbar i{left:0!important;opacity:0}.si-rbar i{transition:left 1.3s cubic-bezier(.16,1,.3,1) .5s,opacity .3s .5s}
+html.mo .si-card:not(.mo-in) .si-fbar i{transform:scaleX(0)}.si-fbar i{transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 90ms)}.si-fbar i.pos{transform-origin:left}.si-fbar i.neg{transform-origin:right}
+html.mo .si-card:not(.mo-in) .si-cols i{transform:scaleY(0)}.si-cols i{transform-origin:bottom;transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 110ms)}
+html.mo .si-card:not(.mo-in) .si-cols span{opacity:0}.si-cols span{transition:opacity .4s calc(.6s + var(--i,0) * 110ms)}
+html.mo .si-card:not(.mo-in) .earn-chart>rect{transform:scaleY(0)}.earn-chart>rect{transform-box:fill-box;transform-origin:50% 100%;transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 80ms)}
 .mo-tip{position:absolute;z-index:6;left:0;top:0;pointer-events:none;background:#191f28;color:#fff;border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:500;line-height:1.55;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.18);transform:translate(-50%,calc(-100% - 10px))}
 .mo-tip.below{transform:translate(-50%,12px)}.mo-tip[hidden]{display:none}.mo-tip b{font-weight:800}.mo-tip .up{color:#ff8a8f}.mo-tip .down{color:#8db4ff}
 .mo-tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
@@ -50,16 +53,32 @@ export const MOTION_JS = `
   var day = function (d) { d = String(d || ''); return /^\\d{4}-\\d{2}-\\d{2}/.test(d) ? d.slice(2, 4) + '.' + d.slice(5, 7) + '.' + d.slice(8, 10) : d; };
   // ---- numbers count up from zero, keeping their commas, decimals and units ----
   var count = function (el) {
-    if (el.dataset.moDone) return; el.dataset.moDone = '1'; if (reduce) return;
-    var t = el.textContent, m = t.match(/-?[0-9][0-9,]*(\\.[0-9]+)?/); if (!m || (t.match(/[0-9][0-9,.]*/g) || []).length > 1) return;
+    if (el.dataset.moDone) return; el.dataset.moDone = '1'; if (el.dataset.moText == null) el.dataset.moText = el.textContent; if (reduce) return;
+    var t = el.dataset.moText, m = t.match(/-?[0-9][0-9,]*(\\.[0-9]+)?/); if (!m || (t.match(/[0-9][0-9,.]*/g) || []).length > 1) return;
     var end = Number(m[0].replace(/,/g, '')); if (!isFinite(end) || end === 0) return;
     var dec = m[1] ? m[1].length - 1 : 0, comma = m[0].indexOf(',') >= 0, pre = t.slice(0, m.index), post = t.slice(m.index + m[0].length), t0 = null;
     var fmt = function (v) { var s = v.toFixed(dec); if (comma) { var p = s.split('.'); p[0] = Number(p[0]).toLocaleString('en-US'); s = p.join('.'); } return pre + s + post; };
-    var step = function (ts) { if (t0 == null) t0 = ts; var k = Math.min(1, (ts - t0) / 700); el.textContent = k < 1 ? fmt(end * (1 - Math.pow(1 - k, 3))) : t; if (k < 1) requestAnimationFrame(step); };
+    var step = function (ts) { if (t0 == null) t0 = ts; var k = Math.min(1, (ts - t0) / 1100); el.textContent = k < 1 ? fmt(end * (1 - Math.pow(1 - k, 3))) : t; if (k < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step);
   };
-  var show = function (el) { el.classList.add('mo-in'); el.querySelectorAll('.mo-count, .ig-hl em, .si-c b, .si-target b').forEach(count); };
-  var io = !reduce && 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { show(e.target); io.unobserve(e.target); } }); }, { threshold: 0.2 }) : null;
+  var NUMS = '.mo-count, .ig-hl em, .si-c b, .si-target b';
+  var show = function (el) { if (el.classList.contains('mo-in')) return; el.classList.add('mo-in'); el.querySelectorAll(NUMS).forEach(count); };
+  // G-170: a picture that leaves the screen, or whose tab is hidden, goes back to its start, so it plays again on the way back.
+  var reset = function (el) { if (!el.classList.contains('mo-in')) return; el.classList.remove('mo-in'); el.querySelectorAll(NUMS).forEach(function (n) { if (n.dataset.moText != null) n.textContent = n.dataset.moText; delete n.dataset.moDone; }); };
+  var pend = typeof WeakMap === 'function' ? new WeakMap() : null, vh = function () { return window.innerHeight || root.clientHeight; };
+  // It plays once a good part of it is on screen (not when its top edge peeks in at the bottom), after a short beat for the eye.
+  var io = !reduce && pend && 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) {
+    var el = e.target, t = pend.get(el);
+    if (!e.isIntersecting) { if (t) { clearTimeout(t); pend.delete(el); } reset(el); return; }
+    if (t || el.classList.contains('mo-in') || !(e.intersectionRatio >= 0.45 || e.intersectionRect.height >= vh() * 0.4)) return;
+    pend.set(el, setTimeout(function () { pend.delete(el); show(el); }, 180));
+  }); }, { threshold: [0, 0.15, 0.3, 0.45, 0.6, 0.8, 1] }) : null;
+  // A card's own tabs (재무제표 손익·부채비율·당좌비율·현금흐름) play the picture again when switched.
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-fs]'); if (!b || reduce) return; var c = b.closest('.card'); if (!c) return;
+    var els = (c.matches(SEL) ? [c] : []).concat(Array.prototype.slice.call(c.querySelectorAll(SEL)));
+    els.forEach(reset); void c.offsetWidth; requestAnimationFrame(function () { requestAnimationFrame(function () { els.forEach(function (x) { if (x.offsetParent) show(x); }); }); });
+  });
   // ---- a value bubble above a point ----
   var mkTip = function (host) { if (getComputedStyle(host).position === 'static') host.style.position = 'relative'; var t = document.createElement('div'); t.className = 'mo-tip'; t.hidden = true; t.setAttribute('role', 'status'); host.appendChild(t); return t; };
   // Above the point when there is room, else just below it, so the bubble never covers what it describes.
@@ -140,7 +159,7 @@ export const MOTION_JS = `
   var scan = function () {
     document.querySelectorAll(SEL).forEach(function (el) {
       if (seen ? seen.has(el) : el.dataset.moSeen) return; if (seen) seen.add(el); else el.dataset.moSeen = '1';
-      if (el.matches('.si-card')) { el.querySelectorAll('.si-c').forEach(function (c, i) { c.style.setProperty('--i', i); }); el.querySelectorAll('.si-flow').forEach(function (r, i) { var b = r.querySelector('.si-fbar i'); if (b) b.style.setProperty('--i', i); }); el.querySelectorAll('.si-cols i').forEach(function (b, i) { b.style.setProperty('--i', i % 6); }); }
+      if (el.matches('.si-card')) { el.querySelectorAll('.si-c').forEach(function (c, i) { c.style.setProperty('--i', i); }); el.querySelectorAll('.si-flow').forEach(function (r, i) { var b = r.querySelector('.si-fbar i'); if (b) b.style.setProperty('--i', i); }); el.querySelectorAll('.si-cols').forEach(function (g) { Array.prototype.forEach.call(g.children, function (col, i) { col.style.setProperty('--i', i); }); }); el.querySelectorAll('.earn-chart').forEach(function (svg) { svg.querySelectorAll(':scope > rect').forEach(function (b, i) { b.style.setProperty('--i', Math.floor(i / 2)); }); }); }
       if (io) io.observe(el); else show(el);
       if (el.matches('.hero-chart')) hero(el);
       else if (el.matches('.mo-bars')) bars(el);
