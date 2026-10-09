@@ -59,7 +59,23 @@ function tempCard(p:MarketPulse|null,universe:readonly UniverseRow[]|null,href:s
  return marketTemperature(p,{up:rows.filter(r=>r.changePct!>0).length,down:rows.filter(r=>r.changePct!<0).length,flat:rows.filter(r=>r.changePct===0).length},'시장',href);
 }
 
-const GROUP = { core: '위원회 전체', weekly: '요약', request: '요청', past: '', daily: '' } as const;
+const GROUP = { core: '위원회', weekly: '간단(이전)', request: '요청', data: '', past: '', daily: '' } as const;
+/**
+ * G-175 (v3.5.5): which AI a row carries, from the report itself — every new report is the full committee (G-168)
+ * and there are no weekly reports (G-174), so the old 위원회 전체/요약 split by selection group no longer holds.
+ */
+function aiKind(e: HomeEntry): 'core' | 'weekly' | 'request' | 'data' {
+  const c = e.report?.commentary;
+  if (e.group === 'request') return 'request';
+  if (c?.status !== 'OK') return 'data';
+  return c.tier === 'brief' ? 'weekly' : 'core';
+}
+/** The tier pill: kind plus the report date (MM/DD) for committee reports. */
+function aiPill(e: HomeEntry): string {
+  const k = aiKind(e), d = e.report?.date;
+  if (k === 'data') return '';
+  return `<span class="tier t-${k}">${GROUP[k]}${k === 'core' && d ? ` ${esc(d.slice(5).replace('-', '/'))}` : ''}</span>`;
+}
 const KIND = { stock: '주식', etf: 'ETF', coin: '코인' } as const;
 
 /** Daily picks of the last seven days (G-56), newest day first. */
@@ -69,12 +85,11 @@ function dailyRows(entries: readonly HomeEntry[]): string {
   const row = (e: HomeEntry) => {
     const r = e.report, p = r?.price, c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
-    const kind = e.tier === 'deep' ? 'core' : 'weekly';
-    return `<div class="rr" data-kind="${kind}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span><span class="tier t-${kind}">${GROUP[kind]}</span></div><p class="rr-line">${esc(line || (e.reasons?.[0] ?? ''))}</p></a>
+    return `<div class="rr" data-kind="${aiKind(e)}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${aiPill(e)}</div><p class="rr-line">${esc(line || (e.reasons?.[0] ?? ''))}</p></a>
 <div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
   };
-  return `<section class="block" id="daily"><div class="block-head"><h2>매일 AI 리포트</h2><span class="muted">거래일 주식 최대 5·ETF 1·코인 1, 휴장일 코인 1</span></div>
-<details class="card"><summary>선정 기준과 반복 종목 안내</summary><p>주식은 스크리너 신호를 통과한 후보에서 날짜별로 뽑고, ETF·코인은 거래대금 상위 후보에서 고릅니다. 고정·주간 추적 종목과 최근 28일 리포트 종목은 일일 선정에서 제외합니다. 적격 후보가 부족하면 선정 수가 줄어듭니다.</p><p>삼성전자·SK하이닉스는 고정 추적합니다. 주간 선정은 다음 선정일까지 유지하고, 아래 일일 선정은 최근 7일 기록을 함께 보여 줍니다.</p></details><div class="card list rr-list">${days.map((d, i) => `<div class="dl-day${i ? ' dl-old' : ''}">${esc(d.slice(5).replace('-', '/'))}${i ? '' : ' · 최신'}</div>${entries.filter((e) => e.pickDate === d).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1)).map(row).join('')}`).join('')}</div>
+  return `<section class="block" id="daily"><div class="block-head"><h2>매일 AI 리포트</h2><span class="muted">평일 주식 2 + ETF(월·수·금)·코인(화·목) 1, 주말 코인 1</span></div>
+<details class="card"><summary>선정 기준과 반복 종목 안내</summary><p>주식은 스크리너 추천 조건에 걸린 종목(과열·위험 조건과 1,000원 미만 제외) 가운데 날짜마다 무작위로 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목과 최근 28일 안에 리포트가 나온 종목은 빼고, 후보가 모자라면 그날은 덜 뽑아요.</p><p>모두 AI 위원회 심층 리포트예요. 아래 목록은 최근 7일 기록이에요.</p></details><div class="card list rr-list">${days.map((d, i) => `<div class="dl-day${i ? ' dl-old' : ''}">${esc(d.slice(5).replace('-', '/'))}${i ? '' : ' · 최신'}</div>${entries.filter((e) => e.pickDate === d).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1)).map(row).join('')}`).join('')}</div>
 <p class="muted small">스크리너 상위 종목, 거래대금 상위 ETF·코인 가운데 무작위로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></section>`;
 }
 
@@ -84,16 +99,16 @@ function reportRows(entries: readonly HomeEntry[], selection: HomeData['selectio
     const mid = r?.market?.horizons.find((h) => h.key === 'MEDIUM')?.summary;
     const c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
-    const kind = e.group === 'weekly' && e.tier === 'deep' ? 'core' : e.group;
+    const kind = aiKind(e);
     const lean = mid?.score == null ? '' : mid.score >= 0.1 ? 'bull' : mid.score <= -0.1 ? 'bear' : 'flat';
-    return `<div class="rr" data-kind="${kind}" data-lean="${lean}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b><span class="tier t-${kind}">${GROUP[kind]}</span></div><p class="rr-line">${esc(line)}</p></a>
+    return `<div class="rr" data-kind="${kind}" data-lean="${lean}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b>${aiPill(e)}</div><p class="rr-line">${esc(line)}</p></a>
 <div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : '<span class="muted small">가격 기록 없음</span>'}${mid ? `<span class="sig ${tone(mid.score === null ? null : mid.score >= 0.1 ? 1 : mid.score <= -0.1 ? -1 : 0)}">${esc(mid.label)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
   }).join('');
   const chip = (f: string, label: string, n?: number) => `<button type="button" class="chip-toggle" data-rf="${f}" aria-pressed="${f === ''}">${label}${n === undefined ? '' : ` ${n}`}</button>`;
-  const count = (k: string) => entries.filter((e) => (e.group === 'weekly' && e.tier === 'deep' ? 'core' : e.group) === k).length;
-  return `<section class="block" id="reports"><div class="block-head"><h2>이번 주 AI 리포트 ${entries.length}종목</h2><span class="muted">${selection ? `${esc(selection.date)} 선정 · ` : ''}매주 금요일 장 마감 뒤</span></div>
-<div class="card list rr-list"><div class="pl-chips rr-chips" role="group" aria-label="리포트 거르기">${chip('', '전체', entries.length)}${count('core') ? chip('core', '위원회 전체', count('core')) : ''}${count('weekly') ? chip('weekly', '요약', count('weekly')) : ''}${count('request') ? chip('request', '요청', count('request')) : ''}${chip('bull', '강세')}${chip('bear', '약세')}</div>${rows || '<p class="empty">아직 리포트가 없어요.</p>'}</div>
-<p class="muted small">위원회 전체는 대표 종목과 시가총액 상위 종목, 요약은 시가총액·거래대금·공시·움직임으로 고른 종목이에요. 신호는 중기(일봉) 기술 신호예요.</p></section>`;
+  const count = (k: string) => entries.filter((e) => aiKind(e) === k).length;
+  return `<section class="block" id="reports"><div class="block-head"><h2>추적 종목 ${entries.length}개</h2><span class="muted">${selection ? `${esc(selection.date)} 선정 · ` : ''}가격·지표는 매일 바뀌어요</span></div>
+<div class="card list rr-list"><div class="pl-chips rr-chips" role="group" aria-label="리포트 거르기">${chip('', '전체', entries.length)}${count('core') ? chip('core', '위원회', count('core')) : ''}${count('weekly') ? chip('weekly', '간단(이전)', count('weekly')) : ''}${count('request') ? chip('request', '요청', count('request')) : ''}${chip('bull', '강세')}${chip('bear', '약세')}</div>${rows || '<p class="empty">아직 리포트가 없어요.</p>'}</div>
+<p class="muted small">대표 종목과 시가총액·거래대금·공시·움직임으로 고른 종목이에요. 가격·지표·신호는 매일 바뀌고, AI 리포트는 표시된 날짜에 쓴 내용이에요(매일 리포트나 요청으로 새로 만들어요). 신호는 중기(일봉) 기술 신호예요.</p></section>`;
 }
 
 type View = 'beginner' | 'trader' | 'swing' | 'long';
@@ -152,8 +167,9 @@ function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): 
     const r = e.report, p = r?.price, c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
     const fit = viewFit(e);
-    return `<div class="tp" data-pick-daily="${e.group==='daily'?'1':'0'}" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${e.tier === 'deep' || e.group === 'core' ? '<span class="tier t-core">위원회</span>' : '<span class="tier t-weekly">요약</span>'}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
-<p class="muted small">${esc(e.group==='daily'?`일일 선정 · ${e.pickDate??''}`:e.group==='core'?'매주 리포트':'주간 선정')}${e.reasons?.[0] ? ` · ${esc(e.reasons[0])}` : ''}</p><div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
+    const sub = e.group === 'daily' ? `일일 선정 · ${e.pickDate ?? ''}` : e.group === 'core' ? '대표 종목' : '주간 선정';
+    return `<div class="tp" data-pick-daily="${e.group==='daily'?'1':'0'}" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${aiPill(e)}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
+<p class="muted small">${esc(sub)}${e.reasons?.[0] && e.reasons[0] !== sub ? ` · ${esc(e.reasons[0])}` : ''}</p><div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 것</h2><a class="more-link" href="reports.html">AI 리포트 모음 ›</a></div>
 <p class="tp-lead">${views.map((v) => `<span class="pw pw-${v}">${VIEW_LEAD[v]}</span>`).join('')} <a href="#" data-open-view>보기 방식 바꾸기</a></p>
@@ -170,12 +186,12 @@ function todayRows(entries: readonly HomeEntry[]): string {
   if (!day) return '';
   const seen = new Set<string>();
   const list = withDate.filter((e) => e.report!.date === day && !seen.has(e.symbol) && seen.add(e.symbol));
-  const deep = (e: HomeEntry) => e.tier === 'deep' || e.group === 'core';
+  const deep = (e: HomeEntry) => aiKind(e) === 'core';
   list.sort((a, b) => Number(deep(b)) - Number(deep(a)) || a.name.localeCompare(b.name, 'ko'));
   const row = (e: HomeEntry) => {
     const r = e.report!, p = r.price, c = r.commentary?.status === 'OK' ? r.commentary : undefined;
     const line = (c?.summary?.text ?? r.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
-    return `<div class="rr" data-sym="${esc(e.symbol)}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b>${e.kind && e.kind !== 'stock' ? `<span class="tier t-k">${KIND[e.kind]}</span>` : ''}<span class="tier t-${deep(e) ? 'core' : 'weekly'}">${deep(e) ? '위원회 전체' : '요약'}</span></div><p class="rr-line">${esc(line)}</p></a>
+    return `<div class="rr" data-sym="${esc(e.symbol)}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b>${e.kind && e.kind !== 'stock' ? `<span class="tier t-k">${KIND[e.kind]}</span>` : ''}${aiPill(e)}</div><p class="rr-line">${esc(line)}</p></a>
 <div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="today"><div class="block-head"><h2>${esc(day.slice(5).replace('-', '/'))} 나온 리포트 ${list.length}개</h2><span class="muted">${esc(day)} 장 마감 기준</span></div>
@@ -208,8 +224,8 @@ export function renderReportsPage(data: HomeData): string {
   const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
   const latest = [...new Set(daily.map((e) => e.pickDate ?? ''))].sort().at(-1);
   const tile = (href: string, title: string, sub: string) => `<a href="${href}"><b>${title}</b><small>${sub}</small></a>`;
-  const head = `<section class="card rp-head"><div class="pl-k">AI 리포트 모음</div><h1>최근 AI 리포트</h1><p class="muted">시장 데일리, 매일 고른 종목, 이번 주 리포트를 한곳에 모았어요. 다른 종목은 검색에서 찾을 수 있어요.</p>
-<nav class="rp-links" aria-label="리포트 바로가기">${tile('market-reports.html', '시장 데일리', '코스피·코스닥·코인·ETF')}${tile('#today', '오늘 나온 리포트', '내 관심 종목 먼저')}${daily.length ? tile('#daily', '매일 AI 리포트', `${latest ? esc(latest.slice(5).replace('-', '/')) + ' 최신 · ' : ''}${daily.length}건`) : ''}${tile('#reports', '이번 주 리포트', `${sorted.length}종목`)}</nav></section>`;
+  const head = `<section class="card rp-head"><div class="pl-k">AI 리포트 모음</div><h1>최근 AI 리포트</h1><p class="muted">시장 데일리, 매일 고른 종목, 추적 종목의 AI 리포트를 한곳에 모았어요. 다른 종목은 검색에서 찾을 수 있어요.</p>
+<nav class="rp-links" aria-label="리포트 바로가기">${tile('market-reports.html', '시장 데일리', '코스피·코스닥·코인·ETF')}${tile('#today', '오늘 나온 리포트', '내 관심 종목 먼저')}${daily.length ? tile('#daily', '매일 AI 리포트', `${latest ? esc(latest.slice(5).replace('-', '/')) + ' 최신 · ' : ''}${daily.length}건`) : ''}${tile('#reports', '추적 종목', `${sorted.length}개`)}</nav></section>`;
   return shell('', 'AI 리포트 모음 | GNOMON', `${HOME_STYLE}<style>.rr-mine{background:#f3f7ff}.t-mine{background:#e8f0ff;color:var(--accent-strong)}</style>${head}${todayRows(data.entries)}${dailyRows(daily)}${reportRows(sorted, data.selection)}`, { scripts: HOME_SCRIPT + TODAY_LIST_SCRIPT });
 }
 
@@ -258,7 +274,7 @@ function filings(entries: readonly HomeEntry[]): string {
 }
 
 const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class="pl-k">지금 요금제 <b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧</div>
-<p>무료는 요약, <b>플러스</b>는 상세 열기·리포트 요청·AI 질문, <b>프로</b>는 위원회 전체와 전문가 초청, <b>맥스</b>는 내 종목 전담 위원회예요. 크레딧 기능은 플러스부터 사용해요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
+<p>무료는 결론·차트·지표, <b>플러스</b>는 상세 열기·리포트 요청·AI 질문, <b>프로</b>는 위원회 전체와 전문가 초청, <b>맥스</b>는 내 종목 전담 위원회예요. 크레딧 기능은 플러스부터 사용해요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
 
 /** G-78: the reader's saved screens (or the first preset), run on today's screener.json in the page. */
 const MY_SCREENS = `<section class="block" id="myscreens"><div class="block-head"><h2 id="ms-title">내 조건에 걸린 종목</h2><a class="more-link" href="screener.html#ai-build">AI로 조건 만들기 ›</a></div><div id="ms-body" class="ms-grid"><div class="orbs-load" style="grid-column:1/-1">${ORBS}<span>내 조건으로 오늘 종목을 찾는 중이에요</span></div></div></section>`;
@@ -405,7 +421,7 @@ const PERSONA_HOME_SCRIPT = `<script>
     var seq = (keep || ALL).slice();
     if (phase === 'open') ['myscreens', 'movers'].reverse().forEach(function (id) { var i = seq.indexOf(id); if (i >= 0) { seq.splice(i, 1); seq.splice(Math.min(seq.indexOf('watch') + 1, seq.length), 0, id); } });
     var note = document.getElementById('phase-note');
-    if (note) note.innerHTML = { pre: '<b>장 시작 전</b> · 밤사이 나온 공시와 오늘 볼 종목부터 보여 드려요', open: '<b>장중</b> · 지금 많이 움직이는 종목과 내 조건에 걸린 종목부터 보여 드려요', after: '<b>장 마감 뒤</b> · 오늘 나온 AI 리포트와 내일 볼 종목부터 보여 드려요', off: '<b>휴장일</b> · 이번 주 리포트와 내 조건을 정리해 보세요' }[phase];
+    if (note) note.innerHTML = { pre: '<b>장 시작 전</b> · 밤사이 나온 공시와 오늘 볼 종목부터 보여 드려요', open: '<b>장중</b> · 지금 많이 움직이는 종목과 내 조건에 걸린 종목부터 보여 드려요', after: '<b>장 마감 뒤</b> · 오늘 나온 AI 리포트와 내일 볼 종목부터 보여 드려요', off: '<b>휴장일</b> · 최근 리포트와 내 조건을 정리해 보세요' }[phase];
     var fl = document.getElementById('home-filings'), rail = document.querySelector('.home-rail');
     if (fl) { if (phase === 'pre') { var w = document.getElementById('watch'); if (w && w.parentNode === main) main.insertBefore(fl, w.nextSibling); fl.classList.add('fl-main'); } else if (rail && fl.parentNode !== rail) { rail.appendChild(fl); fl.classList.remove('fl-main'); } }
     seq.concat(ALL.filter(function (k) { return seq.indexOf(k) < 0; })).forEach(function (id) {

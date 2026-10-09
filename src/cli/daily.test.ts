@@ -76,7 +76,10 @@ test('a settled run writes the report once and renders the site', async () => {
   // Search covers listed stocks; without a list this run it still has the covered ones.
   assert.ok(home.includes('id="q"'));
   const search = JSON.parse(await readFile(join(root, 'site', 'search.json'), 'utf8')) as { items: unknown[][] };
-  assert.deepEqual(search.items.find((i) => i[0] === '000660'), ['000660', 'SK하이닉스', 'KOSPI', null, null, 1]);
+  // G-175: without today's stock list, a covered stock carries its report's last close.
+  const sk = search.items.find((i) => i[0] === '000660')!;
+  assert.deepEqual(sk.slice(0, 3).concat(sk[5]), ['000660', 'SK하이닉스', 'KOSPI', 1]);
+  assert.ok(typeof sk[3] === 'number' && (sk[3] as number) > 0 && typeof sk[4] === 'number');
   assert.match(await readFile(join(root, 'site', 'assets', 'lightweight-charts.js'), 'utf8'), /LightweightCharts/);
 });
 
