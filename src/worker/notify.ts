@@ -8,12 +8,14 @@ import { parseWorldQuote, worldQuoteUrl } from '../sources/naverWorld.js';
 import { isUsSymbol } from '../report/seal.js';
 import { notifyLimit } from '../report/plans.js';
 import { noteBullets } from '../report/releases.js';
+import { esc, mailButton, mailLayout, mailList, sendMail, type MailEnv } from './mail.js';
 
 export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'test';
 /** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
 /** updatePatch (G-177): off by default, only x.Y.0 releases are announced; on, every patch too. */
-export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; updatePatch: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
-export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, updatePatch: false, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
+/** weekly (G-180): the Sunday-evening summary mail (watched stocks, screens, the week's reports). */
+export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; updatePatch: boolean; weekly: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
+export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, updatePatch: false, weekly: true, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
 const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', test: null };
 
 export async function prefsOf(db: D1, userId: string): Promise<Prefs> {
@@ -50,6 +52,20 @@ export async function notifyUser(ctx: Ctx, userId: string, kind: NotifyKind, not
   if (prefs.push && lim.push && !inQuiet(prefs, ctx.now)) await pushTo(ctx.db, ctx.fetch, userId, { ...note, link: `${ctx.site.replace(/\/$/, '')}/${note.link}`, tag: kind }, ctx.site, ctx.now).catch(() => 0);
   return true;
 }
+
+/** A JSON file of the site (watchinfo.json, search.json …), or null when it cannot be read. */
+async function siteJson<T>(ctx: Ctx, path: string): Promise<T | null> {
+  const r = await ctx.fetch(`${ctx.site.replace(/\/$/, '')}/${path}`, { signal: AbortSignal.timeout(15_000) }).catch(() => null);
+  return r?.ok ? (await r.json().catch(() => null)) as T | null : null;
+}
+/** Names by symbol from search.json; a symbol without a name reads as itself. */
+async function siteNames(ctx: Ctx): Promise<(symbol: string) => string> {
+  const names = new Map<string, string>();
+  for (const it of (await siteJson<{ items: unknown[][] }>(ctx, 'search.json'))?.items ?? []) names.set(String(it[0]), String(it[1]));
+  return (s) => names.get(s) ?? s;
+}
+/** A JSON array column, or [] when it is empty or broken. */
+const jsonList = (t: string | null | undefined): string[] => { try { const v = JSON.parse(t || '[]'); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
 
 /** Once per key, ever (a user's daily note for a date, a request's report for a date). */
 const once = async (db: D1, key: string, now: Date) => ((await db.prepare('INSERT OR IGNORE INTO notify_log (key, created_at) VALUES (?, ?)').bind(key, iso(now)).run()).meta?.changes ?? 0) === 1;
@@ -106,12 +122,7 @@ export async function runDailyNotify(ctx: Ctx): Promise<{ date: string | null; s
   if (!date || date < kstDate(new Date(ctx.now.getTime() - 3 * 86400_000))) return { date, sent: 0 };
   const today = Object.keys(info).filter((s) => info[s]!.d === date);
   if (!today.length) return { date, sent: 0 };
-  const names = new Map<string, string>();
-  try {
-    const s = await ctx.fetch(`${site}/search.json`, { signal: AbortSignal.timeout(15_000) });
-    if (s.ok) for (const it of ((await s.json()) as { items: unknown[][] }).items) names.set(String(it[0]), String(it[1]));
-  } catch { /* names are a nicety */ }
-  const nm = (s: string) => names.get(s) ?? s;
+  const nm = await siteNames(ctx);
   const list = (xs: string[]) => xs.slice(0, 3).map(nm).join(', ') + (xs.length > 3 ? ` 외 ${xs.length - 3}개` : '');
   const users = (await ctx.db.prepare('SELECT u.id, u.plan, w.symbols FROM users u LEFT JOIN watchlists w ON w.user_id = u.id WHERE u.disabled = 0').all<{ id: string; plan: string; symbols: string | null }>()).results;
   let sent = 0;
@@ -175,4 +186,58 @@ export async function runPriceAlerts(ctx: Ctx): Promise<{ checked: number; fired
     fired += 1;
   }
   return { checked: px.size, fired };
+}
+
+/**
+ * G-180: the weekly summary mail, Sunday evening (KST): the user's watched stocks (close, and this week's filings,
+ * news and report when the report is this week's), the saved screens with alerts on (the only ones the
+ * evening run keeps current) and the week's reports. Once per user and week; the key is written only after
+ * Resend accepted the mail, so a failed send is tried again on the next evening run. Watched-stock lines
+ * follow the plan's watchReport limit, as the push notes do (G-98).
+ */
+export async function runWeeklySummary(ctx: Ctx, env: MailEnv): Promise<{ week: string | null; sent: number }> {
+  const kst = new Date(ctx.now.getTime() + 9 * 3600_000);
+  if (kst.getUTCDay() !== 0) return { week: null, sent: 0 };
+  const week = kstDate(ctx.now), site = ctx.site.replace(/\/$/, '');
+  // Monday to Sunday: a report dated last Sunday belongs to last week's mail.
+  const weekStart = kstDate(new Date(ctx.now.getTime() - 6 * 86400_000));
+  const info = (await siteJson<Record<string, { c: number; f: number; n: number; d: string }>>(ctx, 'watchinfo.json')) ?? {};
+  const nm = await siteNames(ctx);
+  const md = (d: string) => d.slice(5).replace('-', '/');
+  const price = (sym: string, v: number) => (isUsSymbol(sym) ? `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `${v >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })}원`);
+  const weekReports = Object.entries(info).filter(([, x]) => x.d >= weekStart).sort((a, b) => b[1].d.localeCompare(a[1].d));
+  const reportsBlock = weekReports.length ? `<h2 style="font-size:15px;margin:18px 0 4px">이번 주 리포트 ${weekReports.length}개</h2><p style="margin:0;line-height:1.6">${esc(weekReports.slice(0, 10).map(([s]) => nm(s)).join(', '))}${weekReports.length > 10 ? ` 외 ${weekReports.length - 10}개` : ''}</p>` : '';
+  const reportsLine = weekReports.length ? `이번 주 리포트: ${weekReports.slice(0, 10).map(([s]) => nm(s)).join(', ')}` : '';
+  const users = (await ctx.db.prepare('SELECT u.id, u.email, u.plan, w.symbols FROM users u LEFT JOIN watchlists w ON w.user_id = u.id WHERE u.disabled = 0').all<{ id: string; email: string; plan: string; symbols: string | null }>()).results;
+  let sent = 0;
+  for (const u of users) {
+    try {
+      const prefs = await prefsOf(ctx.db, u.id);
+      if (!prefs.weekly || !u.email) continue;
+      if (await ctx.db.prepare('SELECT 1 FROM notify_log WHERE key = ?').bind(`weekly:${u.id}:${week}`).first()) continue;
+      const blocks: string[] = [], lines: string[] = [];
+      const watch = jsonList(u.symbols), known = watch.filter((s) => info[s]);
+      if (watch.length && notifyLimit(u.plan).watchReport) {
+        const items = known.slice(0, 12).map((s) => { const x = info[s]!; return `<b>${esc(nm(s))}</b> ${esc(price(s, x.c))}${x.d >= weekStart ? ` · 공시 ${x.f}건 · 뉴스 ${x.n}건 · <span style="color:#4f46e5">${esc(md(x.d))} 새 리포트</span>` : ` <span style="color:#6b7684">· 리포트 ${esc(md(x.d))}</span>`}`; });
+        const rest = watch.length - Math.min(known.length, 12);
+        blocks.push(`<h2 style="font-size:15px;margin:18px 0 4px">관심 종목 ${watch.length}개</h2>${items.length ? mailList(items) : ''}${rest > 0 ? `<p style="margin:6px 0 0;color:#6b7684">${known.length > 12 ? `외 ${known.length - 12}개 · ` : ''}리포트가 없는 종목 ${watch.length - known.length}개</p>` : ''}`);
+        if (known.length) lines.push(`관심 종목: ${known.slice(0, 12).map((s) => `${nm(s)} ${price(s, info[s]!.c)}`).join(', ')}`);
+      }
+      const screens = (await ctx.db.prepare('SELECT name, last_symbols, last_date FROM screens WHERE user_id = ? AND alert = 1 AND last_date IS NOT NULL ORDER BY id').bind(u.id).all<{ name: string; last_symbols: string | null; last_date: string }>()).results;
+      if (screens.length) {
+        const items = screens.slice(0, 8).map((sc) => `<b>${esc(sc.name)}</b> 걸린 종목 ${jsonList(sc.last_symbols).length}개 <span style="color:#6b7684">(${esc(sc.last_date)})</span>`);
+        blocks.push(`<h2 style="font-size:15px;margin:18px 0 4px">내 조건 ${screens.length}개</h2>${mailList(items)}`);
+        lines.push(`내 조건: ${screens.slice(0, 8).map((sc) => `${sc.name} ${jsonList(sc.last_symbols).length}개`).join(', ')}`);
+      }
+      if (reportsBlock) { blocks.push(reportsBlock); lines.push(reportsLine); }
+      if (!blocks.length) continue;
+      const title = `이번 주 그노몬 요약 · ${md(week)}`;
+      const html = mailLayout(site, title, `<p style="margin:0;line-height:1.6;color:#6b7684">${esc(md(weekStart))}~${esc(md(week))} 한 주 동안 있었던 일이에요.</p>${blocks.join('')}<p style="margin:20px 0 0">${mailButton(`${site}/watch.html`, '관심 종목 보기')} &nbsp; <a href="${site}/scorecard.html" style="color:#4f46e5;font-weight:700">성적표 ›</a></p>`, { preheader: lines[0] ?? title });
+      if (await sendMail(env, ctx.db, ctx.fetch, ctx.now, { kind: 'weekly', userId: u.id, to: u.email, subject: `[그노몬] ${title}`, html, text: `${title}\n${lines.join('\n')}\n${site}/watch.html` })) {
+        await once(ctx.db, `weekly:${u.id}:${week}`, ctx.now);
+        sent += 1;
+      }
+    } catch { /* one user's bad row must not stop the rest */ }
+  }
+  return { week, sent };
 }

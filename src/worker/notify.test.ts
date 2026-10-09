@@ -174,3 +174,51 @@ test('release notes read as plain Korean: no raw code words the live audit flags
   const { RELEASES } = await import('../report/releases.js');
   for (const r of RELEASES) assert.doesNotMatch(String(r[2]), /\bNaN\b|undefined|\[object|\bnull\b|Infinity/, String(r[0]));
 });
+
+test('the weekly summary mail (G-180): Sunday evening only, once a week, to users with the setting on, through the shared template and logged', async () => {
+  const db = testDb();
+  const { runWeeklySummary } = await import('./notify.js');
+  const { mailLayout } = await import('./mail.js');
+  await db.prepare("INSERT INTO users (id, email, plan, role, created_at) VALUES ('u1', 'a@example.com', 'plus', 'user', '2026-10-01T00:00:00Z'), ('u2', 'b@example.com', 'free', 'user', '2026-10-01T00:00:00Z')").run();
+  await db.prepare("INSERT INTO watchlists (user_id, symbols, updated_at) VALUES ('u1', '[\"000660\",\"AAPL.O\"]', '2026-10-01T00:00:00Z')").run();
+  await db.prepare("INSERT INTO screens (user_id, name, screen, alert, last_symbols, last_date, created_at) VALUES ('u1', '거래량 증가', '{}', 1, '[\"005930\",\"000660\"]', '2026-10-09', '2026-10-01T00:00:00Z'), ('u1', '꺼진 조건', '{}', 0, NULL, NULL, '2026-10-01T00:00:00Z')").run();
+  await db.prepare("INSERT INTO notify_prefs (user_id, prefs, updated_at) VALUES ('u2', '{\"weekly\":false}', '2026-10-01T00:00:00Z')").run();
+  const sent: { to: string; subject: string; html: string; text: string }[] = [];
+  const fetchFn = (async (url: string | URL | Request, init?: RequestInit) => {
+    const u = String(url);
+    if (u.endsWith('/watchinfo.json')) return Response.json({ '000660': { c: 1842000, f: 2, n: 5, d: '2026-10-09' }, 'AAPL.O': { c: 250.12, f: 1, n: 3, d: '2026-10-01' } });
+    if (u.endsWith('/search.json')) return Response.json({ items: [['000660', 'SK하이닉스'], ['AAPL.O', '애플']] });
+    if (u.startsWith('https://api.resend.com')) { const b = JSON.parse(String(init!.body)); sent.push({ to: b.to[0], subject: b.subject, html: b.html, text: b.text }); return new Response('{"id":"m1"}', { status: 200 }); }
+    return new Response('', { status: 404 });
+  }) as typeof fetch;
+  const env = { RESEND_API_KEY: 'k', SITE_URL: SITE };
+  // Saturday evening KST: nothing.
+  assert.deepEqual(await runWeeklySummary({ db, fetch: fetchFn, site: SITE, now: new Date('2026-10-10T10:10:00Z') }, env), { week: null, sent: 0 });
+  // Sunday evening KST: u1 gets one mail; u2 turned it off.
+  const sunday = new Date('2026-10-11T10:10:00Z');
+  assert.deepEqual(await runWeeklySummary({ db, fetch: fetchFn, site: SITE, now: sunday }, env), { week: '2026-10-11', sent: 1 });
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0]!.to, 'a@example.com');
+  assert.match(sent[0]!.subject, /이번 주 그노몬 요약 · 10\/11/);
+  assert.match(sent[0]!.html, /관심 종목 2개/);
+  assert.match(sent[0]!.html, /SK하이닉스<\/b> 1,842,000원 · 공시 2건 · 뉴스 5건 · <span[^>]*>10\/09 새 리포트/);
+  assert.match(sent[0]!.html, /애플<\/b> \$250\.12 <span[^>]*>· 리포트 10\/01<\/span>/, 'an older report shows its date, not this week\'s counts');
+  assert.doesNotMatch(sent[0]!.html, /꺼진 조건/);
+  assert.match(sent[0]!.html, /거래량 증가<\/b> 걸린 종목 2개/);
+  assert.match(sent[0]!.html, /이번 주 리포트 1개/);
+  assert.match(sent[0]!.html, /alerts\.html/, 'the footer links the settings');
+  assert.match(sent[0]!.text, /관심 종목: SK하이닉스 1,842,000원, 애플 \$250\.12/);
+  // The same week again sends nothing more; the log carries the delivery.
+  assert.deepEqual(await runWeeklySummary({ db, fetch: fetchFn, site: SITE, now: new Date('2026-10-11T11:10:00Z') }, env), { week: '2026-10-11', sent: 0 });
+  const log = (await db.prepare('SELECT user_id, kind, status FROM mail_log ORDER BY id').all<{ user_id: string; kind: string; status: string }>()).results;
+  assert.deepEqual(log.map((r) => [r.user_id, r.kind, r.status]), [['u1', 'weekly', 'sent']]);
+  // Without a mail key the row says so, nothing is sent, and the week stays open for a later run.
+  await db.prepare("DELETE FROM notify_log").run();
+  assert.deepEqual(await runWeeklySummary({ db, fetch: fetchFn, site: SITE, now: sunday }, { SITE_URL: SITE }), { week: '2026-10-11', sent: 0 });
+  assert.equal((await db.prepare("SELECT status, error FROM mail_log WHERE id = 2").first<{ status: string; error: string }>())?.error, 'NO_API_KEY');
+  assert.equal(await db.prepare("SELECT 1 FROM notify_log WHERE key = 'weekly:u1:2026-10-11'").first(), null, 'a failed send is tried again next run');
+  // The template escapes what it is given and keeps the disclaimer.
+  const page = mailLayout(SITE, '<b>제목</b>', '<p>본문</p>');
+  assert.match(page, /&lt;b&gt;제목&lt;\/b&gt;/);
+  assert.match(page, /투자 권유가 아니고/);
+});
