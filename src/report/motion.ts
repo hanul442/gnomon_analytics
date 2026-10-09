@@ -27,6 +27,12 @@ html.mo .ig-radar .dot{opacity:0}html.mo .ig-radar.mo-in .dot{opacity:1;transiti
 html.mo .ig-bs-bar i{transform:scaleX(0);transform-origin:left}
 html.mo .ig-bs.mo-in .ig-bs-bar i{transform:none;transition:transform .7s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 90ms)}
 html.mo .mini-gauge:not(.mo-in) .needle{animation:none;transform:rotate(0deg)}
+html.mo .si-card:not(.mo-in) .si-c{opacity:0;transform:translateY(6px)}
+html.mo .si-card.mo-in .si-c{transition:opacity .4s calc(min(var(--i,0),10) * 45ms),transform .5s cubic-bezier(.16,1,.3,1) calc(min(var(--i,0),10) * 45ms)}
+html.mo .si-card:not(.mo-in) .si-rbar{transform:scaleX(0)}.si-rbar{transform-origin:left;transition:transform .7s cubic-bezier(.16,1,.3,1)}
+html.mo .si-card:not(.mo-in) .si-rbar i{left:0!important;opacity:0}.si-rbar i{transition:left 1s cubic-bezier(.16,1,.3,1) .35s,opacity .3s .35s}
+html.mo .si-card:not(.mo-in) .si-fbar i{transform:scaleX(0)}.si-fbar i{transition:transform .7s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 70ms)}.si-fbar i.pos{transform-origin:left}.si-fbar i.neg{transform-origin:right}
+html.mo .si-card:not(.mo-in) .si-cols i{transform:scaleY(0)}.si-cols i{transform-origin:bottom;transition:transform .7s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 70ms)}
 .mo-tip{position:absolute;z-index:6;left:0;top:0;pointer-events:none;background:#191f28;color:#fff;border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:500;line-height:1.55;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.18);transform:translate(-50%,calc(-100% - 10px))}
 .mo-tip.below{transform:translate(-50%,12px)}.mo-tip[hidden]{display:none}.mo-tip b{font-weight:800}.mo-tip .up{color:#ff8a8f}.mo-tip .down{color:#8db4ff}
 .mo-tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
@@ -38,21 +44,21 @@ export const MOTION_JS = `
 (function () {
   var root = document.documentElement, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduce) root.classList.add('mo');
-  var SEL = '.scenario-figure, .hero-chart, .mo-bars, .ig-radar, .ig-bs, .mini-gauge, .ig-hc';
+  var SEL = '.scenario-figure, .hero-chart, .mo-bars, .ig-radar, .ig-bs, .mini-gauge, .ig-hc, .si-card';
   var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var money = function (v) { if (root.getAttribute('data-ccy') === 'USD') return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
   var day = function (d) { d = String(d || ''); return /^\\d{4}-\\d{2}-\\d{2}/.test(d) ? d.slice(2, 4) + '.' + d.slice(5, 7) + '.' + d.slice(8, 10) : d; };
   // ---- numbers count up from zero, keeping their commas, decimals and units ----
   var count = function (el) {
     if (el.dataset.moDone) return; el.dataset.moDone = '1'; if (reduce) return;
-    var t = el.textContent, m = t.match(/-?[0-9][0-9,]*(\\.[0-9]+)?/); if (!m) return;
+    var t = el.textContent, m = t.match(/-?[0-9][0-9,]*(\\.[0-9]+)?/); if (!m || (t.match(/[0-9][0-9,.]*/g) || []).length > 1) return;
     var end = Number(m[0].replace(/,/g, '')); if (!isFinite(end) || end === 0) return;
     var dec = m[1] ? m[1].length - 1 : 0, comma = m[0].indexOf(',') >= 0, pre = t.slice(0, m.index), post = t.slice(m.index + m[0].length), t0 = null;
     var fmt = function (v) { var s = v.toFixed(dec); if (comma) { var p = s.split('.'); p[0] = Number(p[0]).toLocaleString('en-US'); s = p.join('.'); } return pre + s + post; };
     var step = function (ts) { if (t0 == null) t0 = ts; var k = Math.min(1, (ts - t0) / 700); el.textContent = k < 1 ? fmt(end * (1 - Math.pow(1 - k, 3))) : t; if (k < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step);
   };
-  var show = function (el) { el.classList.add('mo-in'); el.querySelectorAll('.mo-count, .ig-hl em').forEach(count); };
+  var show = function (el) { el.classList.add('mo-in'); el.querySelectorAll('.mo-count, .ig-hl em, .si-c b, .si-target b').forEach(count); };
   var io = !reduce && 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { show(e.target); io.unobserve(e.target); } }); }, { threshold: 0.2 }) : null;
   // ---- a value bubble above a point ----
   var mkTip = function (host) { if (getComputedStyle(host).position === 'static') host.style.position = 'relative'; var t = document.createElement('div'); t.className = 'mo-tip'; t.hidden = true; t.setAttribute('role', 'status'); host.appendChild(t); return t; };
@@ -134,6 +140,7 @@ export const MOTION_JS = `
   var scan = function () {
     document.querySelectorAll(SEL).forEach(function (el) {
       if (seen ? seen.has(el) : el.dataset.moSeen) return; if (seen) seen.add(el); else el.dataset.moSeen = '1';
+      if (el.matches('.si-card')) { el.querySelectorAll('.si-c').forEach(function (c, i) { c.style.setProperty('--i', i); }); el.querySelectorAll('.si-flow').forEach(function (r, i) { var b = r.querySelector('.si-fbar i'); if (b) b.style.setProperty('--i', i); }); el.querySelectorAll('.si-cols i').forEach(function (b, i) { b.style.setProperty('--i', i % 6); }); }
       if (io) io.observe(el); else show(el);
       if (el.matches('.hero-chart')) hero(el);
       else if (el.matches('.mo-bars')) bars(el);

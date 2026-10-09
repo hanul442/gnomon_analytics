@@ -214,6 +214,7 @@ export const FS_JS = `
       ['dialog.v2-dialog[open]', function (e) { e.close(); }],
       ['.bell-pop', function () { var b = document.getElementById('bell'); if (b) b.click(); }],
       ['.flt-pop', function (e) { var x = e.querySelector('.flt-x'); if (x) x.click(); }],
+      ['.sc-sheet.open', function (e) { var x = e.querySelector('.sc-sheet-x'); if (x) x.click(); }],
       ['.sheet:not([hidden])', function (e) { var x = e.querySelector('[data-close]'); if (x) x.click(); }],
       ['section.chat:not([hidden])', function (e) { var x = e.querySelector('.chat-x'); if (x) x.click(); }],
       ['.side-menu:not([hidden])', function (e) { var x = e.querySelector('.sm-close'); if (x) x.click(); }],
@@ -411,6 +412,7 @@ export const TOUR_JS = `
       find: [
         ['#search', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
         ['.find-tabs', '시장 선택', '주식·ETF·코인을 선택하세요. 시장별로 지원되는 조건이 달라요.'],
+        ['#sc-filter-open', '필터 · AI 조건', '필터를 누르면 AI 조건(원하는 특징을 문장으로)과 직접 조건을 정하는 화면이 열려요. 결과 보기로 돌아와요.'],
         ['#ai-build', 'AI 조건', '원하는 특징을 문장으로 적고 ✦를 누르세요. 실제 생성 대기에는 Thinking Orbs가 표시돼요.'],
         ['#sc-form', '검토·적용·저장', 'AI 제안을 검토해 적용한 뒤 조건을 직접 수정하고 저장하세요. 완료 안내가 나와야 저장된 상태예요. 오류면 다시 확인하세요.'],
       ],
