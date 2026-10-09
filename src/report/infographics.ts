@@ -1,39 +1,14 @@
-// Infographics at the top of the merged tabs (G-129): 타이밍 (기술 + 전략) opens with gauges, the indicator
-// vote and the champion strategy's stance; 기업 체력 (수급 + 종목정보) opens with a five-axis health chart and
+// Infographics at the top of the merged tabs (G-129): 기업 체력 (수급 + 종목정보) opens with a five-axis health chart and
 // the financial statements table. Everything is drawn from numbers the report already holds; nothing new is
 // fetched, and an axis without data is drawn as missing rather than guessed.
 
-import type { DailyReport } from './dailyReport.js';
 import type { MarketSection } from './marketSection.js';
 import type { FinancePeriod } from '../types.js';
 import type { FullStatements, StatementRow } from '../sources/dartStatements.js';
-import { miniGauge } from './renderMarket.js';
 import { esc } from './html.js';
-import { won } from './format.js';
 
 const clamp = (v: number) => Math.max(0, Math.min(100, v));
 const fmtPct = (v: number | null | undefined, d = 1) => (v == null || !Number.isFinite(v) ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(d)}%`);
-
-/** 타이밍 한눈에: 단기·중기·장기 gauges, the 16-indicator vote, the champion strategy and the fair-value band. */
-export function timingInfographic(report: DailyReport): string {
-  const m = report.market, close = report.price?.close ?? null;
-  const pick = ['SHORT', 'MEDIUM', 'LONG'] as const;
-  const gauges = m ? pick.map((k) => m.horizons.find((h) => h.key === k)).filter((h) => h) : [];
-  const t = report.technicals, c = t?.counts;
-  const total = c ? c.bullish + c.neutral + c.bearish : 0;
-  const champ = m?.arena?.results.find((r) => r.key === m.arena!.championKey) ?? null;
-  const fv = m?.fairValue ?? null;
-  if (!gauges.length && !total && !champ && !fv) return '';
-  const vote = total ? `<div class="ig-vote"><div class="ig-k">지표 16개의 표</div><div class="ig-stack" role="img" aria-label="강세 ${c!.bullish}, 중립 ${c!.neutral}, 약세 ${c!.bearish}">${(['bullish', 'neutral', 'bearish'] as const).map((k) => `<i class="ig-${k}" style="flex:${c![k]}"></i>`).join('')}</div><div class="ig-legend"><span><b class="up">${c!.bullish}</b> 강세</span><span><b>${c!.neutral}</b> 중립</span><span><b class="down">${c!.bearish}</b> 약세</span></div></div>` : '';
-  const strat = champ ? `<div class="ig-champ"><div class="ig-k">전략 챔피언</div><div class="ig-cn"><span class="ig-pos ${champ.position ? 'on' : ''}">${champ.position ? '보유' : '관망'}</span><b>${esc(champ.name)}</b></div><small>검증 구간 ${fmtPct(champ.oosReturn * 100)}${champ.beatsHold === true ? ' · 보유 전략보다 나음' : champ.beatsHold === false ? ' · 보유 전략보다 못함' : ''}</small></div>` : '';
-  const band = fv && close ? (() => {
-    const lo = Math.min(fv.low, close) * 0.98, hi = Math.max(fv.high, close) * 1.02, at = (v: number) => ((v - lo) / (hi - lo)) * 100;
-    return `<div class="ig-fv"><div class="ig-k">기술적 적정가 범위</div><div class="ig-fbar"><span style="left:${at(fv.low).toFixed(1)}%;width:${(at(fv.high) - at(fv.low)).toFixed(1)}%"></span><i style="left:${at(close).toFixed(1)}%"></i></div><div class="ig-legend"><span>${won(fv.low)}</span><span><b>지금 ${won(close)}</b></span><span>${won(fv.high)}</span></div></div>`;
-  })() : '';
-  return `<section class="block"><div class="card ig-card"><div class="head"><h2>타이밍 한눈에</h2><span class="sub">기술 신호와 전략을 함께</span></div>
-${gauges.length ? `<div class="ig-gauges">${gauges.map((h) => `<div class="ig-g">${miniGauge(h!.summary.score, h!.summary.label)}<b>${esc(h!.label)}</b><small>${esc(h!.span)}</small></div>`).join('')}</div>` : ''}
-<div class="ig-row">${vote}${strat}${band}</div></div></section>`;
-}
 
 type Axis = { key: string; label: string; score: number | null; value: string; note: string };
 
@@ -168,11 +143,11 @@ ${tabs.map(([k, , html], i) => `<div data-fsl="${k}"${i ? ' hidden' : ''}>${html
 }
 
 export const INFOGRAPHIC_CSS = `.ig-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.ig-card h2{font-size:17px;margin:0 0 6px}
-.ig-gauges{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:4px 0 10px}.ig-g{display:flex;flex-direction:column;align-items:center;text-align:center}.ig-g svg{width:100%;max-width:150px}.ig-g b{font-size:14px}.ig-g small{font-size:11px;color:var(--muted)}
-.ig-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ig-row>div{background:#f6f8fc;border-radius:14px;padding:12px 14px;min-width:0}.ig-k{font-size:12px;font-weight:800;color:var(--fg2);margin-bottom:8px}
-.ig-stack{display:flex;height:12px;border-radius:99px;overflow:hidden;background:#e9edf3}.ig-stack i{display:block}.ig-bullish{background:#e5484d}.ig-neutral{background:#c4cbc9}.ig-bearish{background:#3e63dd}.ig-legend{display:flex;justify-content:space-between;gap:6px;font-size:12px;color:var(--muted);margin-top:6px}.ig-legend b{color:var(--fg)}
-.ig-cn{display:flex;align-items:center;gap:8px;min-width:0}.ig-cn b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ig-pos{flex:none;font-size:12px;font-weight:800;border-radius:99px;padding:2px 9px;background:#e9edf3;color:var(--fg2)}.ig-pos.on{background:#fde8e8;color:#b4232b}.ig-champ small{display:block;font-size:12px;color:var(--muted);margin-top:6px}
-.ig-fbar{position:relative;height:12px;border-radius:99px;background:#e9edf3}.ig-fbar span{position:absolute;top:0;bottom:0;background:#b9cbea;border-radius:99px}.ig-fbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+
+.ig-k{font-size:12px;font-weight:800;color:var(--fg2);margin-bottom:8px}
+.ig-bullish{background:#e5484d}.ig-neutral{background:#c4cbc9}.ig-bearish{background:#3e63dd}.ig-legend{display:flex;justify-content:space-between;gap:6px;font-size:12px;color:var(--muted);margin-top:6px}.ig-legend b{color:var(--fg)}
+
+
 .ig-health{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:center}.ig-hc{margin:0 0 14px}.ig-hl{list-style:none;margin:0;padding:0;max-width:560px;display:flex;flex-direction:column;gap:2px}.ig-hl li{display:grid;grid-template-columns:3.4em auto minmax(0,1fr);align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}.ig-hl li:last-child{border-bottom:0}.ig-hl .ig-v{justify-self:start}.ig-hl em{font-style:normal;font-size:13px;color:var(--fg2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ig-radar{width:100%;max-width:260px;margin:0 auto;display:block}.ig-radar .grid{fill:none;stroke:#dfe5ee;stroke-width:1}.ig-radar .area{fill:rgba(19,41,75,.16);stroke:var(--navy,#13294b);stroke-width:2;stroke-linejoin:round}.ig-radar .dot{fill:var(--navy,#13294b)}.ig-radar text{font-size:12px;font-weight:700;fill:var(--fg2)}.ig-radar text.na{fill:#aab3c2}
 .ig-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.ig-tile{background:#f6f8fc;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}.ig-tile>div{display:flex;justify-content:space-between;align-items:center;gap:6px}.ig-tile strong{font-size:14px}.ig-tile small{font-size:11.5px;color:var(--muted)}.ig-v{font-size:11.5px;font-weight:800;border-radius:99px;padding:1px 8px}.ig-v.good{background:#e6f4ea;color:#1d6b3a}.ig-v.mid{background:#eef1f5;color:var(--fg2)}.ig-v.warn{background:#fde8e8;color:#9b1c1c}.ig-v.na{background:#f1f3f6;color:#9aa4b2}
 .ig-seg{margin:2px 0 10px;width:max-content}.ig-fs td.num,.ig-fs th.num{text-align:right;font-variant-numeric:tabular-nums}.ig-fs table{min-width:520px}.ig-fs th[scope=row]{position:sticky;left:0;background:#fff;white-space:nowrap;text-align:left;font-weight:700}.ig-fs th small,.ig-fs th[scope=row] small{display:block;font-size:10.5px;font-weight:500;color:var(--muted)}
@@ -181,7 +156,7 @@ export const INFOGRAPHIC_CSS = `.ig-card .head{display:flex;justify-content:spac
 .ig-bs{display:flex;flex-direction:column;gap:8px;margin:4px 0 8px}.ig-bs-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13px}.ig-bs-bar{display:flex;height:26px;border-radius:8px;overflow:hidden;background:#e9edf3}.ig-bs-bar i{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden}.ig-bs-bar .d{background:#d1676b}.ig-bs-bar .e{background:#2e4268}.ig-bs-row b{font-size:12.5px;white-space:nowrap}
 .ig-note{font-size:13px;color:var(--fg2);margin:2px 0 8px}.ig-key th,.ig-key td{font-weight:700}.ig-all{margin-top:8px}.ig-all summary{cursor:pointer;font-weight:700;font-size:14px;color:var(--accent-strong);padding:8px 0}
 .sub-sec{margin-top:28px;padding-top:18px;border-top:2px solid var(--line)}.sub-sec>.sub-h{font-size:19px;margin:0 0 10px}
-@media (max-width:820px){.ig-row{grid-template-columns:minmax(0,1fr)}.ig-health{grid-template-columns:150px minmax(0,1fr);gap:10px}.ig-health .ig-radar{max-width:150px}.ig-health .ig-radar text{font-size:17px}.ig-hl li{grid-template-columns:auto 1fr;gap:1px 6px;padding:4px 0;font-size:13px}.ig-hl em{grid-column:1/-1;text-align:left;font-size:12px}.ig-gauges{gap:2px}}`;
+@media (max-width:820px){.ig-health{grid-template-columns:150px minmax(0,1fr);gap:10px}.ig-health .ig-radar{max-width:150px}.ig-health .ig-radar text{font-size:17px}.ig-hl li{grid-template-columns:auto 1fr;gap:1px 6px;padding:4px 0;font-size:13px}.ig-hl em{grid-column:1/-1;text-align:left;font-size:12px}}`;
 
 /** Period switch of the 재무제표 card. */
 export const INFOGRAPHIC_JS = `document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-fs]');if(!b)return;var c=b.closest('.card');c.querySelectorAll('[data-fs]').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});c.querySelectorAll('[data-fsl]').forEach(function(x){x.hidden=x.getAttribute('data-fsl')!==b.getAttribute('data-fs');});});`;

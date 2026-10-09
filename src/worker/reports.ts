@@ -6,7 +6,7 @@ import type { D1 } from './db.js';
 import type { DailyReport } from '../report/dailyReport.js';
 import { buildDailyReport } from '../report/dailyReport.js';
 import { buildMarketSection } from '../report/marketSection.js';
-import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
+import type { Commentary } from '../analysis/commentary.js';
 import { usdOf } from './ask.js';
 import { conclusionCard } from '../report/conclusion.js';
 import { committeeTab } from '../report/renderHtml.js';
@@ -21,7 +21,7 @@ export interface ReportJob {
  status:string; stage:string; credits:number; reserved_usd:number; usd:number;
  result_json:string|null; error:string|null; created_at:string; updated_at:string;
 }
-export interface ReportDeps { now:()=>Date; fetch:typeof fetch; generate?:(report:DailyReport,tier:CommentaryTier)=>Promise<Commentary>; site?:string }
+export interface ReportDeps { now:()=>Date; fetch:typeof fetch; generate?:(report:DailyReport)=>Promise<Commentary>; site?:string }
 export async function reportInput(site:string,symbol:string,deps:ReportDeps):Promise<DailyReport>{
  const base=site.replace(/\/$/,'');
  const context=await deps.fetch(`${base}/research/${symbol}.json`,{signal:AbortSignal.timeout(8000)}).catch(()=>null);
@@ -90,7 +90,7 @@ export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void
  try{
   if(!deps.generate)throw new Error('AI 연결이 설정되지 않았어요.');
   const report=JSON.parse(job.input_json) as DailyReport;
-  const commentary=await deps.generate(report,job.kind==='brief'?'brief':'deep');
+  const commentary=await deps.generate(report);
   const usage=commentary.usage;
   const usd=usage?usdOf(commentary.servedBy||commentary.model,usage.inputTokens,usage.outputTokens,usage.cacheReadTokens,usage.cacheWriteTokens):0;
   await db.prepare('UPDATE report_jobs SET usd=? WHERE id=?').bind(usd,id).run();

@@ -131,7 +131,7 @@ export const SURVEYS: Record<'midterm' | 'weekly', { title: string; lead: string
       { key: 'best', title: '가장 쓸모 있었던 것 하나와 이유', type: 'text' },
       { key: 'hard', title: '어렵거나 헷갈렸던 화면·용어', type: 'text' },
       { key: 'trust', title: 'AI 해설을 얼마나 믿을 만하다고 느꼈어요?', type: 'one', options: ['전혀', '조금', '보통', '꽤', '매우'] },
-      { key: 'brief', title: '요약 리포트 길이는 어땠어요?', type: 'one', options: ['너무 짧아요', '적당해요', '조금 길어요', '너무 길어요'] },
+      { key: 'length', title: 'AI 위원회 리포트 길이는 어땠어요?', type: 'one', options: ['너무 짧아요', '적당해요', '조금 길어요', '너무 길어요'] },
       { key: 'pay', title: '정식 출시 때 한 달에 낼 의향이 있는 금액은?', type: 'one', options: ['무료만', '1만 원 안쪽', '1~3만 원', '3~5만 원', '5~10만 원', '10만 원 넘게도'] },
       { key: 'want', title: '꼭 있었으면 하는 기능', type: 'text' },
       { key: 'bug', title: '오류나 이상하게 보인 곳 (페이지와 상황)', type: 'text' },

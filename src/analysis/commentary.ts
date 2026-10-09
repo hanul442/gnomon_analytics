@@ -7,15 +7,16 @@
 // it is stored as status FAILED and the page says "AI 해설 없음".
 
 import Anthropic from '@anthropic-ai/sdk';
-import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import type { DailyReport } from '../report/dailyReport.js';
 import { won, withCurrency } from '../report/format.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystId } from './analysts.js';
 
 export const COMMENTARY_MODEL = 'claude-opus-5-5';
-/** Weekly picks outside the top tier (G-28): a short summary only, on the small model. */
-export const BRIEF_MODEL = 'claude-haiku-4-5';
+/**
+ * G-168 (v3.5.0): every AI report is the full committee. 'brief' (the Haiku summary, G-28) is no longer written;
+ * it only appears on reports stored before v3.5.0, which still render.
+ */
 export type CommentaryTier = 'deep' | 'brief';
 /** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
 export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v7';
@@ -104,7 +105,7 @@ export const LOCKED_TEXT = '심층 리포트를 열면 볼 수 있어요.';
  * analysts' targets (logged and scored in the open anyway), the red team's first sentence, scenario
  * kinds and probabilities, one point a side and the tab one-liners. Reasons, the debate, scenario
  * narratives, the worst case and the rest of the evidence lists are left for the sealed part.
- * A brief, or a commentary that is not OK, is returned as it is.
+ * A legacy brief, or a commentary that is not OK, is returned as it is.
  */
 export function publicCommentary(c: Commentary): Commentary {
   if (c.status !== 'OK' || c.tier === 'brief') return c;
@@ -264,17 +265,6 @@ export const CommentarySchema = z.object({
   dataGaps: z.array(z.string()).describe('근거가 부족해서 판단할 수 없는 부분'),
 });
 
-/** The brief: summary, both sides and what to watch. No desks, analysts or scenarios. */
-export const BriefSchema = z.object({
-  summary: CommentarySchema.shape.summary,
-  bullish: CommentarySchema.shape.bullish,
-  bearish: CommentarySchema.shape.bearish,
-  uncertain: CommentarySchema.shape.uncertain,
-  watch: CommentarySchema.shape.watch,
-  dataGaps: CommentarySchema.shape.dataGaps,
-  insights: InsightsSchema,
-});
-
 /** Required wire fields avoid exponential optional-field grammar expansion. Local validation stays compatible with older reports. */
 export const WireInsightsSchema = InsightsSchema.required();
 export const CommentaryWireSchema = CommentarySchema.extend({
@@ -283,7 +273,6 @@ export const CommentaryWireSchema = CommentarySchema.extend({
     replyTo: z.number().describe('반박하는 앞 차례 번호. 답장 대상이 없는 첫 차례와 RED_TEAM은 -1'),
   })),
 });
-export const BriefWireSchema = BriefSchema.extend({ insights: WireInsightsSchema.describe('근거가 없는 탭도 빈 text·evidenceIds와 INFERENCE kind로 반환') });
 
 /**
  * G-102: the deep committee's schema is too big for constrained decoding ("compiled grammar is too large"), so the
@@ -335,26 +324,8 @@ export const kindRule = (kind?: 'etf' | 'coin') => !kind ? '' : kind === 'etf'
   ? '\n- 이 종목은 ETF예요. 개별 기업의 실적·공시·증권가 목표가 근거는 없고, 기초지수 구성·괴리율·총보수 정보도 받지 않았어요. 가격·거래량·기술·수급·뉴스 근거로만 판단하고, 없는 정보는 dataGaps에 적습니다. FUNDAMENTAL 데스크는 근거가 없으면 INSUFFICIENT_DATA로 둡니다.'
   : '\n- 이 종목은 업비트 원화 마켓의 가상자산(코인)이에요. 24시간 거래되고 일봉은 매일 09:00(KST)에 끊으며, "거래일"은 하루를 뜻합니다. 실적·공시·투자자별 수급·증권가 근거가 없으니 FLOW·FUNDAMENTAL 데스크는 INSUFFICIENT_DATA로 둡니다. 비교 대상은 비트코인이에요. 변동성이 주식보다 훨씬 크다는 점을 시나리오 가격대에 반영합니다.';
 
-// G-149: both system prompts are the same for every stock, so the provider caches them; the stock's name and
+// G-149: the system prompt is the same for every stock, so the provider caches them; the stock's name and
 // its ETF/coin rules go in the user message, after the cached prefix.
-const BRIEF_SYSTEM = `당신은 GNOMON의 리서치 요약 담당이에요. 사용자 메시지의 종목 주간 리포트에 붙일 짧은 AI 요약을 씁니다.
-
-진짜 요약이에요. 30초 안에 읽히게 짧게 씁니다.
-- summary: 지금 이 종목에서 가장 중요한 한 가지와 그 이유, 2문장 이내(120자 안쪽).
-- bullish·bearish: 강세·약세 근거 각각 가장 강한 1개만. 한 문장(60자 안쪽).
-- uncertain: 꼭 필요할 때만 1개, 아니면 빈 배열.
-- watch: 판단이 바뀔 조건 1개(무효화 가격이나 사건).
-- insights: 탭 맨 위 한 줄씩, 각 40자 안쪽. 근거가 없는 탭은 비웁니다.
-- 전체를 300자 안쪽으로 맞춥니다.
-
-규칙:
-- 제공된 근거 목록에 있는 내용만 쓰고, 모든 주장에 근거 ID(P1, T1, F1, N1 …)를 답니다. 목록에 없는 사실·숫자·전망은 쓰지 않습니다.
-- 모든 주장에 종류(kind)를 붙입니다: 근거에 그대로 있는 사실은 FACT, 근거에서 끌어낸 해석은 INFERENCE, 근거로 확인되지 않은 가정은 ASSUMPTION. 해석을 사실처럼 쓰지 않습니다.
-- 한국어 해요체로, 짧고 분명하게 씁니다. 내부 코드명이나 영어 약어 대신 뜻을 풀어 씁니다.
-- 매수·매도를 권하거나 목표가·익절가·손절가를 제시하지 않습니다. 가격을 말해야 하면 시나리오 가격대와 무효화 가격으로만 씁니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
-- 같은 이야기의 재보도는 하나의 근거로 봅니다. 근거가 부족하면 dataGaps에 적고 억지로 결론 내지 않습니다.
-- 사용자 메시지에 "이 종목 추가 규칙"이 있으면 그것도 지킵니다.`;
-
 const DEEP_SYSTEM = `당신은 GNOMON의 리서치 위원회예요. 사용자 메시지의 종목 일일 리포트에 붙일 "AI 해설"을 한 번에 씁니다.
 
 위원회 구성:
@@ -427,10 +398,9 @@ function empty(status: Commentary['status'], generatedAt: Date, evidence: Eviden
   };
 }
 
-export async function writeCommentary(report: DailyReport, options: { client?: Anthropic; apiKey?: string; now?: () => Date; tier?: CommentaryTier } = {}): Promise<Commentary> {
+export async function writeCommentary(report: DailyReport, options: { client?: Anthropic; apiKey?: string; now?: () => Date } = {}): Promise<Commentary> {
   const now = (options.now ?? (() => new Date()))();
-  const tier = options.tier ?? 'deep';
-  const model = tier === 'deep' ? COMMENTARY_MODEL : BRIEF_MODEL;
+  const tier = 'deep' as const, model = COMMENTARY_MODEL;
   const evidence = buildEvidence(report);
   if (!options.client && !options.apiKey?.trim()) return empty('SKIPPED', now, evidence, 'ANTHROPIC_API_KEY_MISSING');
   if (!evidence.length) return empty('SKIPPED', now, evidence, 'NO_EVIDENCE');
@@ -447,38 +417,30 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const extra = `${kindRule(report.kind)}${report.currency === 'USD' ? US_RULE : ''}`.trim();
     const user = { role: 'user' as const, content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.${extra ? `\n\n이 종목 추가 규칙:\n${extra}` : ''}\n\n${JSON.stringify(input)}` };
     const cached = (text: string) => [{ type: 'text' as const, text, cache_control: { type: 'ephemeral' as const } }];
-    // Deep: the full committee on the large model, with the server-side fallback for safety declines.
-    // Brief: the small model takes no effort setting or fallback.
+    // The full committee on the large model, with the server-side fallback for safety declines.
     // A deep committee report can run past a few minutes; stream it so the connection never sits idle and times out
     // (the Worker's on-demand reports failed that way). Test doubles without stream() keep the plain call.
     const call = <P extends Parameters<typeof client.beta.messages.parse>[0]>(params: P) =>
       typeof client.beta.messages.stream === 'function' ? client.beta.messages.stream(params as never).finalMessage() as ReturnType<typeof client.beta.messages.parse<P>> : client.beta.messages.parse(params);
-    const response = tier === 'deep'
-      ? await call({
-        model, max_tokens: 16000,
-        betas: ['server-side-fallback-2026-07-01'],
-        fallbacks: 'default',
-        // No constrained format here (G-102): the committee schema is past the grammar limit. The schema goes in the prompt.
-        output_config: { effort: 'medium' },
-        system: cached(DEEP_SYSTEM_FULL()), messages: [user],
-      })
-      : await call({
-        model, max_tokens: 6000,
-        output_config: { format: betaZodOutputFormat(BriefWireSchema) },
-        system: cached(BRIEF_SYSTEM), messages: [user],
-      });
+    const response = await call({
+      model, max_tokens: 16000,
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      // No constrained format here (G-102): the committee schema is past the grammar limit. The schema goes in the prompt.
+      output_config: { effort: 'medium' },
+      system: cached(DEEP_SYSTEM_FULL()), messages: [user],
+    });
     const failed=(reason:string):Commentary=>({...empty('FAILED',now,evidence,reason),model,servedBy:response.model,tier,...(response.usage?{usage:usageOf(response.usage)}:{})});
     if (response.stop_reason === 'refusal') return failed(`REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
     if (response.stop_reason === 'max_tokens') return failed('MAX_TOKENS');
-    let parsed = response.parsed_output as (z.infer<typeof BriefSchema> & Partial<z.infer<typeof CommentarySchema>>) | null;
+    let parsed = response.parsed_output as z.infer<typeof CommentarySchema> | null;
     // beta.messages.stream().finalMessage() returns raw content, unlike messages.parse().
     // Validate the assembled text with the same schema without making another billed request.
     if (!parsed) {
       const text = (response.content ?? []).filter(b => b.type === 'text').map(b => b.text).join('');
       if (text) {
         try {
-          const json: unknown = tier === 'deep' ? repairDeep(jsonOf(text)) : JSON.parse(text);
-          const validated = tier === 'deep' ? CommentarySchema.safeParse(json) : BriefSchema.safeParse(json);
+          const validated = CommentarySchema.safeParse(repairDeep(jsonOf(text)));
           // A repaired reply still needs the core: a written summary (an empty object is not a report).
           if (!validated.success || !validated.data.summary.text.trim()) return failed('UNPARSEABLE_OUTPUT:SCHEMA');
           parsed = validated.data;
@@ -525,10 +487,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       servedBy: response.model, tier,
       ...(response.usage ? { usage: usageOf(response.usage) } : {}),
       ...(summary ? { summary } : {}),
-      // A brief stays a brief (G-60): the strongest point on each side and one thing to watch.
-      ...(tier === 'brief'
-        ? { bullish: clean(parsed.bullish).slice(0, 1), bearish: clean(parsed.bearish).slice(0, 1), uncertain: clean(parsed.uncertain).slice(0, 1), watch: clean(parsed.watch).slice(0, 1) }
-        : { bullish: clean(parsed.bullish), bearish: clean(parsed.bearish), uncertain: clean(parsed.uncertain), watch: clean(parsed.watch) }),
+      bullish: clean(parsed.bullish), bearish: clean(parsed.bearish), uncertain: clean(parsed.uncertain), watch: clean(parsed.watch),
       dataGaps: parsed.dataGaps.map((g) => g.trim()).filter(Boolean),
       desks, scenarios, analysts,
       ...(counter ? { redTeam: { counterargument: counter, unresolved: (parsed.redTeam?.unresolved ?? []).map((u) => u.trim()).filter(Boolean) } } : {}),

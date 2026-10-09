@@ -5,7 +5,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { buildDailyReport } from '../report/dailyReport.js';
 import { renderReport } from '../report/renderHtml.js';
-import { CommentaryWireSchema, BriefWireSchema, buildEvidence, COMMENTARY_MODEL, normalizeProbabilities, sanitizeClaims, writeCommentary } from './commentary.js';
+import { CommentaryWireSchema, buildEvidence, COMMENTARY_MODEL, normalizeProbabilities, sanitizeClaims, writeCommentary } from './commentary.js';
 
 const AT = '2026-10-05T09:30:00.000Z';
 const bars: PriceBar[] = Array.from({ length: 30 }, (_, i) => {
@@ -137,7 +137,7 @@ test('a coin or an ETF gets its own rules in the message; the cached system prom
   const reply = { stop_reason: 'end_turn', model: COMMENTARY_MODEL, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } };
   const seen: { system: { text: string; cache_control?: { type: string } }[]; messages: { content: string }[] }[] = [];
   const coin = buildDailyReport({ symbol: 'KRW-BTC', name: '비트코인', kind: 'coin', date: '2026-09-30', generatedAt: new Date(AT), bars: bars.map((b) => ({ ...b, symbol: 'KRW-BTC' })), disclosures: [], sources: [], news: [], newsStatus: [] });
-  await writeCommentary(coin, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT), tier: 'brief' });
+  await writeCommentary(coin, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
   await writeCommentary({ ...report, kind: 'etf' }, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
   await writeCommentary(report, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
   await writeCommentary({ ...report, symbol: '005930', name: '삼성전자' }, { client: fakeClient(reply, seen as unknown[]), now: () => new Date(AT) });
@@ -161,13 +161,6 @@ test('scenario probabilities sum to 100 in whole percents, or are left out (G-60
   assert.deepEqual(normalizeProbabilities([{ probability: 0 }, { probability: 0 }]), [{}, {}]);
 });
 
-test('a brief keeps one point a side and one thing to watch (G-60)', async () => {
-  const many = (t: string) => [1, 2, 3].map((i) => ({ text: `${t}${i}`, evidenceIds: ['P1'] }));
-  const reply = { stop_reason: 'end_turn', model: 'claude-haiku-4-5', parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, bullish: many('강'), bearish: many('약'), uncertain: many('불'), watch: many('봐'), dataGaps: [] } };
-  const c = await writeCommentary(report, { client: fakeClient(reply), now: () => new Date(AT), tier: 'brief' });
-  assert.deepEqual([c.bullish.length, c.bearish.length, c.uncertain.length, c.watch.length], [1, 1, 1, 1]);
-});
-
 test('replyIndex: points back only, shifting a 1-based pointer down one', async () => {
   const { replyIndex } = await import('./commentary.js');
   assert.equal(replyIndex(0, 1), 0);
@@ -182,11 +175,11 @@ test('streamed raw JSON is schema-validated instead of requiring parsed_output',
  const claim={text:'검증된 근거',evidenceIds:['P1'],kind:'FACT'};
  const base={summary:claim,bullish:[claim],bearish:[],uncertain:[],watch:[],dataGaps:[],insights:{}};
  const deep={...base,desks:[],redTeam:{counterargument:claim,unresolved:[]},scenarios:[{kind:'BULL',narrative:claim,catalysts:[],invalidation:[],probability:100,trigger:350000,zoneLow:360000,zoneHigh:380000}],analysts:[],debate:[],worstCase:{narrative:claim,checks:[]}};
- for(const tier of ['brief','deep'] as const){
-  let calls=0;const raw=JSON.stringify(tier==='deep'?deep:base);
+ {
+  let calls=0;const raw=JSON.stringify(deep);
   const client={beta:{messages:{stream:()=>{calls++;return {finalMessage:async()=>({stop_reason:'end_turn',model:COMMENTARY_MODEL,content:[{type:'text',text:raw.slice(0,30)},{type:'text',text:raw.slice(30)}],usage:{input_tokens:120,output_tokens:240}})};},parse:()=>{throw new Error('nonstreaming must not be called');}}}} as unknown as Anthropic;
-  const result=await writeCommentary(report,{client,tier});assert.equal(result.status,'OK');assert.equal(result.summary?.text,claim.text);assert.equal(calls,1);assert.deepEqual(result.usage,{inputTokens:120,outputTokens:240});
-  if(tier==='deep')assert.equal(result.scenarios?.[0]?.trigger,350000);
+  const result=await writeCommentary(report,{client});assert.equal(result.status,'OK');assert.equal(result.summary?.text,claim.text);assert.equal(calls,1);assert.deepEqual(result.usage,{inputTokens:120,outputTokens:240});
+  assert.equal(result.scenarios?.[0]?.trigger,350000);
  }
 });
 
@@ -198,24 +191,24 @@ test('malformed, schema-invalid, refused and truncated streams retain failure co
 });
 
 
-test('real SDK SSE assembly produces a usable brief without automatic parsed_output',async()=>{
+test('real SDK SSE assembly produces a usable committee report without automatic parsed_output',async()=>{
  const claim={text:'스트리밍 근거',evidenceIds:['P1'],kind:'FACT'};
- const text=JSON.stringify({summary:claim,bullish:[claim],bearish:[],uncertain:[],watch:[],dataGaps:[],insights:Object.fromEntries(['technical','strategy','flow','fundamental','news'].map(k=>[k,{text:'',evidenceIds:[],kind:'INFERENCE'}]))});
+ const text=JSON.stringify({summary:claim,bullish:[claim],bearish:[],uncertain:[],watch:[],dataGaps:[],desks:[],redTeam:{counterargument:claim,unresolved:[]},scenarios:[],analysts:[],debate:[],worstCase:{narrative:claim,checks:[]},insights:Object.fromEntries(['technical','strategy','flow','fundamental','news'].map(k=>[k,{text:'',evidenceIds:[],kind:'INFERENCE'}]))});
  const events=[{type:'message_start',message:{id:'msg_fixture',type:'message',role:'assistant',model:COMMENTARY_MODEL,content:[],stop_reason:null,stop_sequence:null,usage:{input_tokens:120,output_tokens:0}}},{type:'content_block_start',index:0,content_block:{type:'text',text:''}},{type:'content_block_delta',index:0,delta:{type:'text_delta',text:text.slice(0,20)}},{type:'content_block_delta',index:0,delta:{type:'text_delta',text:text.slice(20)}},{type:'content_block_stop',index:0},{type:'message_delta',delta:{stop_reason:'end_turn',stop_sequence:null},usage:{output_tokens:240}},{type:'message_stop'}];
  let calls=0;const client=new Anthropic({apiKey:'fixture-not-a-real-key',maxRetries:0,fetch:async()=>{calls++;return new Response(events.map(e=>'event: '+e.type+'\ndata: '+JSON.stringify(e)+'\n\n').join(''),{headers:{'content-type':'text/event-stream'}});}});
- const c=await writeCommentary(report,{client,tier:'brief'});assert.equal(c.status,'OK',c.error);assert.equal(c.summary?.text,'스트리밍 근거');assert.equal(calls,1);assert.equal(c.usage?.outputTokens,240);
+ const c=await writeCommentary(report,{client});assert.equal(c.status,'OK',c.error);assert.equal(c.summary?.text,'스트리밍 근거');assert.equal(calls,1);assert.equal(c.usage?.outputTokens,240);
 });
 
 
 test('report wire schemas contain no optional properties; unsupported tabs use empty cited claims',()=>{
- for(const schema of [CommentaryWireSchema,BriefWireSchema]) {
+ for(const schema of [CommentaryWireSchema]) {
   const format=betaZodOutputFormat(schema);
   const visit=(node:any):void=>{if(!node||typeof node!=='object')return;if(node.properties)assert.deepEqual(new Set(node.required),new Set(Object.keys(node.properties)));for(const value of Object.values(node))if(value&&typeof value==='object')visit(value);};
   visit(format.schema);
  }
  const blank={text:'',evidenceIds:[],kind:'INFERENCE'};
- assert.ok(BriefWireSchema.shape.insights.safeParse(Object.fromEntries(['technical','strategy','flow','fundamental','news'].map(k=>[k,blank]))).success);
- assert.equal(BriefWireSchema.shape.insights.safeParse({}).success,false);
+ assert.ok(CommentaryWireSchema.shape.insights.safeParse(Object.fromEntries(['technical','strategy','flow','fundamental','news'].map(k=>[k,blank]))).success);
+ assert.equal(CommentaryWireSchema.shape.insights.safeParse({}).success,false);
 });
 
 test('deep reports ask for JSON in words (no grammar) and repair small slips before the strict check',async()=>{

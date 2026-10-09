@@ -6,7 +6,7 @@ import { vapid } from './push.js';
 import { fetchUpbitMinutes, fetchUpbitTicks } from '../sources/upbit.js';
 import { reportInput, inputHash, refundJob, reportFragments, type ReportQueue, type ReportJob } from './reports.js';
 import type { DailyReport } from '../report/dailyReport.js';
-import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
+import type { Commentary } from '../analysis/commentary.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
@@ -41,13 +41,13 @@ export interface Env {
   DEEP_KEY?: string;
   REPORT_QUEUE?: ReportQueue;
 }
-export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient; waitUntil?: (promise: Promise<unknown>) => void; generate?: (report: DailyReport, tier: CommentaryTier) => Promise<Commentary> }
+export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient; waitUntil?: (promise: Promise<unknown>) => void; generate?: (report: DailyReport) => Promise<Commentary> }
 
 interface User { id: string; email: string; plan: string; role: string; created_at: string; disabled: number; viewAs?: string }
 
 const RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, max: 3, alpha: 2 };
 const LOGIN_TTL_MIN = 20, SESSION_DAYS = 30, MAX_BODY = 24_000;
-const ACTION_KINDS = ['report', 'brief', 'upgrade', 'invite'] as const;
+const ACTION_KINDS = ['report', 'invite'] as const;
 
 class HttpError extends Error { constructor(public status: number, public code: string, message: string, public extra: Record<string, unknown> = {}) { super(message); } }
 const fail = (status: number, code: string, message: string, extra: Record<string, unknown> = {}): never => { throw new HttpError(status, code, message, extra); };
@@ -586,17 +586,18 @@ route('GET','/stockinfo/([0-9][0-9A-Z]{5})',async({req,deps,params,now})=>{
 });
 route('POST', '/reports', async ({ req, env, deps, now }) => {
   const u = await authed(req, env, now), b = await body(req);
-  const symbol = str(b.symbol, 24), kind = ['report', 'brief', 'upgrade'].find(k => k === b.kind) as 'report' | 'brief' | 'upgrade' | undefined;
+  // G-168: one kind of report, the full committee ('brief' and 'upgrade' are gone).
+  const symbol = str(b.symbol, 24), kind = b.kind === 'report' ? 'report' as const : undefined;
   if (!kind || !DEEP_SYMBOL.test(symbol)) fail(400, 'BAD_ACTION', '종목과 리포트 종류를 확인해 주세요.');
   const min = CREDIT_ACTIONS.find(a => a.key === kind)!.min;
   if (RANK[u.plan]! < RANK[min]!) fail(403, 'PLAN_REQUIRED', '이 리포트는 지금 요금제에서 생성할 수 없어요.');
   if (!env.REPORT_QUEUE || !deps.generate) fail(503, 'REPORT_UNAVAILABLE', '리포트 생성 연결을 준비 중이에요. 크레딧은 차감하지 않았어요.');
   let input: DailyReport;
   try { input = await reportInput(env.SITE_URL, symbol, deps); } catch (e) { return fail(422, 'NO_DATA', e instanceof Error ? e.message : '분석 데이터가 없어요.'); }
-  const hash = await inputHash(input), canonicalKind = kind === 'brief' ? 'brief' : 'report', db = env.DB;
+  const hash = await inputHash(input), canonicalKind = 'report', db = env.DB;
   const existing = await db.prepare("SELECT * FROM report_jobs WHERE user_id=? AND symbol=? AND kind=? AND input_hash=? AND status!='failed'").bind(u.id, symbol, canonicalKind, hash).first<ReportJob>();
   if (existing) return { id: existing.id, status: existing.status, reused: true, balance: await balanceOf(db, u.id) };
-  const id = crypto.randomUUID(), cost = CREDIT_COST[kind!], reserve = canonicalKind === 'brief' ? .15 : .8, day = kstDayStart(now), cap = Number(env.AI_DAILY_USD ?? 5);
+  const id = crypto.randomUUID(), cost = CREDIT_COST.report, reserve = .4 /* the most one committee call can cost: 16K out + input */, day = kstDayStart(now), cap = Number(env.AI_DAILY_USD ?? 5);
   await db.batch([
     db.prepare(`INSERT OR IGNORE INTO report_jobs(id,user_id,symbol,kind,input_hash,input_json,credits,reserved_usd,created_at,updated_at)
       SELECT ?,?,?,?,?,?,?,?,?,? WHERE (SELECT COALESCE(SUM(delta),0) FROM ledger WHERE user_id=?)>=?

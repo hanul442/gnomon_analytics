@@ -5,8 +5,8 @@
 // 50% mark-up on cost with room to spare. Every plan is checked at its worst
 // case: all included credits spent on the action with the lowest margin.
 //
-// Token counts are medians measured from stored reports (2026-10-04), with a
-// 30% allowance for retries, failures and longer pages. Prices per million
+// Token counts are medians measured from stored reports, with a 30% allowance
+// for retries, failures and longer pages. Prices per million
 // tokens: Opus 5.5 $4 / $20, Sonnet 5.5 $2 / $10, Haiku 4.5 $1 / $5.
 
 import { CREDIT_COST, CREDIT_PACKS, PLANS, type CreditAction, type Plan } from './plans.js';
@@ -30,12 +30,9 @@ const callKrw = (model: keyof typeof MODELS, inTok: number, outTok: number) =>
 
 /** What one use of each credit action costs us, KRW. */
 export const ACTION_COST: Record<CreditAction, number> = {
-  // Measured: deep committee median 10.1K in / 3.9K out; v4 adds the debate, worst case and tab lines (~+900 out).
-  report: callKrw('opus', 10_100, 4_850),
-  // A brief on the small model (summary, both sides, watch items).
-  brief: callKrw('haiku', 9_500, 2_200),
-  // Rewriting a brief as the full committee costs a full report.
-  upgrade: callKrw('opus', 10_100, 4_850),
+  // G-168: the committee report, measured on the v7 prompt (10/5–10/9, 39 reports): median 11K in / 6.6K out
+  // (p90 7.2K), $0.18 a report; 7K out keeps a margin. With the allowance about 335원.
+  report: callKrw('opus', 11_000, 7_000),
   // An invited expert writes one opinion over the report's evidence.
   invite: callKrw('opus', 11_000, 2_500),
   // Red team over the report's evidence and the user's idea, with invalidation conditions.

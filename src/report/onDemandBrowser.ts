@@ -50,7 +50,7 @@ export const JOBS_JS = `
     if(fun&&tick%4===0){var line=left>0?FUN[i%FUN.length]:'예상보다 조금 더 걸리고 있어요. 꼼꼼히 쓰는 중이에요 🐢';fun.classList.add('swap');setTimeout(function(){fun.textContent=line;fun.classList.remove('swap');},180);i++;var big=dialog.querySelector('.orbs-load canvas'),seq=ORB_CYCLE[curStage]||ORB_CYCLE.working;if(big)big.dataset.orb=seq[i%seq.length];}tick++;};
    paintEta();self.iv=setInterval(paintEta,1000);},
   stop:function(){clearInterval(this.iv);this.iv=null;},
-  set:function(kind,createdAt,etaSec){this.est=etaSec>0?etaSec:(kind==='brief'?40:150);var t=Date.parse(createdAt||'');if(Number.isFinite(t))this.started=t;}};
+  set:function(kind,createdAt,etaSec){this.est=etaSec>0?etaSec:150;var t=Date.parse(createdAt||'');if(Number.isFinite(t))this.started=t;}};
  // One popup for the whole flow (G-121): confirm the credits, then the same window shows the progress.
  var watchTitle='AI 리포트 생성';
  var ensure=function(title){
@@ -75,7 +75,7 @@ export const JOBS_JS = `
     if(live())dialog.querySelector('.orbs-load').innerHTML='<b>리포트가 완성됐어요</b><span>데이터 기준 '+esc(r.dataDate||'확인 필요')+' · 생성 '+esc(r.generatedAt||'')+'</span><a class="btn-primary" href="'+href+'">리포트 보기</a>';
     if(G.refresh)G.refresh();return;
    }
-   if(r.status==='failed'){eta.stop();if(live()){dialog.querySelector('.orbs-load').innerHTML='<b>리포트를 만들지 못했어요</b><p>'+esc(r.error||'크레딧은 반환했어요. 다시 요청해 주세요.')+'</p><button type="button" class="btn-primary" data-retry-report>다시 요청</button>';dialog.querySelector('[data-retry-report]').onclick=function(){dialog.close();G.startReport(r.kind==='brief'?'brief':'report',r.symbol,r.symbol);};}if(G.refresh)G.refresh();return;}
+   if(r.status==='failed'){eta.stop();if(live()){dialog.querySelector('.orbs-load').innerHTML='<b>리포트를 만들지 못했어요</b><p>'+esc(r.error||'크레딧은 반환했어요. 다시 요청해 주세요.')+'</p><button type="button" class="btn-primary" data-retry-report>다시 요청</button>';dialog.querySelector('[data-retry-report]').onclick=function(){dialog.close();G.startReport('report',r.symbol,r.symbol);};}if(G.refresh)G.refresh();return;}
    if(dialog){var text=dialog.querySelector('[data-job-state]');if(text)text.setAttribute('title',stage[r.stage]||'분석 중이에요');curStage=stage[r.stage]?r.stage:'working';paintSteps();}
    timer=setTimeout(poll,1000);
   });};poll();
@@ -87,7 +87,7 @@ export const JOBS_JS = `
   var cost=r.cost||10,bal=typeof r.balance==='number'?r.balance:(G.me&&G.me.credits),free=r.freeLeft>0,short=!free&&typeof bal==='number'&&bal<cost,label=free?'무료로 열기':cost+'크레딧으로 열기';
   var day=r.createdAt?new Date(Date.parse(r.createdAt)+9*3600000).toISOString().slice(0,10):'';
   var card=document.createElement('section');card.className='block';card.setAttribute('data-job-lock','');
-  card.innerHTML='<div class="card locked"><div class="lk-head">🔒<b>다른 사용자가 만든 '+(r.kind==='brief'?'요약':'AI 위원회')+' 리포트가 있어요</b></div><p>'+(day?esc(day)+'에 만든 리포트예요. ':'')+(free?'이번 달 무료로 열 수 있는 리포트가 '+esc(r.freeLeft)+'개 남았어요.':esc(cost)+'크레딧으로 한 번 열면 계속 볼 수 있어요.'+(typeof bal==='number'?' 남은 크레딧 '+esc(bal)+'.':''))+' 만든 날부터 7일이 지나면 무료예요.</p><p class="rj-err" hidden></p><div class="rj-actions"><button type="button" class="btn-primary" data-job-open'+(short?' disabled':'')+'>'+esc(label)+'</button>'+(short?'<a class="btn-ghost" href="'+(document.body.dataset.base||'')+'pricing.html">크레딧 충전</a>':'')+'</div></div>';
+  card.innerHTML='<div class="card locked"><div class="lk-head">🔒<b>다른 사용자가 만든 AI 위원회 리포트가 있어요</b></div><p>'+(day?esc(day)+'에 만든 리포트예요. ':'')+(free?'이번 달 무료로 열 수 있는 리포트가 '+esc(r.freeLeft)+'개 남았어요.':esc(cost)+'크레딧으로 한 번 열면 계속 볼 수 있어요.'+(typeof bal==='number'?' 남은 크레딧 '+esc(bal)+'.':''))+' 만든 날부터 7일이 지나면 무료예요.</p><p class="rj-err" hidden></p><div class="rj-actions"><button type="button" class="btn-primary" data-job-open'+(short?' disabled':'')+'>'+esc(label)+'</button>'+(short?'<a class="btn-ghost" href="'+(document.body.dataset.base||'')+'pricing.html">크레딧 충전</a>':'')+'</div></div>';
   var title=panel.querySelector('.panel-title');if(title)title.after(card);else panel.prepend(card);
   document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent='다른 사용자 리포트 · '+cost+'크레딧';});
   var go=card.querySelector('[data-job-open]'),err=card.querySelector('.rj-err');
@@ -101,7 +101,7 @@ export const JOBS_JS = `
  G.startReport=function(kind,symbol,name){
   if(!G.api){G.toast('AI 서버 연결이 필요해요.');return Promise.resolve(false);}
   if(!G.me){G.toast('로그인하면 리포트를 생성할 수 있어요.');return Promise.resolve(false);}
-  var cost=G.me.costs[kind],bal=G.me.credits,label=kind==='brief'?'요약 리포트':kind==='upgrade'?'심층 리포트로 업그레이드':'AI 위원회 심층 리포트';
+  var cost=G.me.costs[kind],bal=G.me.credits,label='AI 위원회 심층 리포트';
   watchTitle=(name||symbol)+' 리포트';ensure(watchTitle);eta.stop();
   var after=typeof bal==='number'?bal-cost:null;
   dialog.querySelector('.rj-body').innerHTML='<div class="rj-intro"><canvas data-orb="breathing" data-size="20" aria-hidden="true"></canvas><div><b>'+esc(label)+'</b><p>전문가 11명의 판단, 토론, 시나리오와 레드팀 검토까지 한 번에 만들어요. 보통 2~3분 걸려요.</p></div></div>'+

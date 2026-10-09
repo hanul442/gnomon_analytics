@@ -1,7 +1,7 @@
 // Pricing and a MOCK checkout (docs/DESIGN.md §5.8, G-30). Nothing is charged:
 // "paying" only changes the plan and credit balance stored in this browser.
 
-import { CREDIT_ACTIONS, CREDIT_COST, CREDIT_PACKS, PLANS, won } from './plans.js';
+import { CREDIT_ACTIONS, CREDIT_COST, CREDIT_PACKS, PLANS, UNLOCK, won } from './plans.js';
 import { shell } from './renderHtml.js';
 
 const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="ck"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -18,13 +18,12 @@ const COMPARE: readonly [string, Cell, Cell, Cell, Cell][] = [
   ['예측 가격 범위 · 분석가 예상가', false, false, true, true],
   ['수급 흔적 · 가격 구조 분석', false, true, true, true],
   ['전략 대결 전체 · 모의투자 종목별 장부', false, false, true, true],
-  ['요약 리포트 · 제한된 AI 위원회(결론·데스크 입장·레드팀 한 줄)', false, true, true, true],
+  ['제한된 AI 위원회(결론·데스크 입장·레드팀 한 줄) · 심층 리포트 매달 5개 무료 열기', false, true, true, true],
   ['AI 위원회 리포트 전체(위원별 근거·예측·레드팀·시나리오)', false, false, true, true],
   ['성적표 종목별 상세 · 빗나간 예측', false, false, true, true],
   ['관심 종목', '5개', '30개', '100개', '무제한'],
   ['매달 포함 크레딧', false, false, '300', '1,000'],
   ['크레딧 충전 · 리포트 요청 · AI 질문', false, true, true, true],
-  ['요약 리포트를 심층으로 업그레이드', false, false, true, true],
   ['전문가 AI 초청', false, false, '크레딧', '매달 30회 포함'],
   ['전문가 정기 초청(주간 위원회 고정)', false, false, false, '5명'],
   ['충전할 때 추가 크레딧', false, false, '+10%', '+20%'],
@@ -83,13 +82,13 @@ ${COMPARE.map(([label, ...cells]) => `<tr><td>${label}</td>${cells.map(yes).join
   }).join('')}</div>
 <details class="card fold" style="margin-top:12px" data-open-wide><summary><b>크레딧으로 하는 일</b><span class="muted small">${CREDIT_ACTIONS.length}가지 · 필요한 크레딧</span></summary><table class="compact"><thead><tr><th>크레딧으로 하는 일</th><th>필요한 크레딧</th><th>쓸 수 있는 요금제</th></tr></thead><tbody>
 ${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>${CREDIT_COST[a.key]}</b></td><td>${PLANS.find((p) => p.key === a.min)!.name}부터</td></tr>`).join('')}</tbody></table>
-<p class="fine">가끔 이벤트로 체험 크레딧을 드려요. 무료 이용자도 체험 크레딧으로 빠른 질문과 요약 리포트 요청을 해 볼 수 있고, 이벤트가 끝나면 남은 체험 크레딧은 사라져요. 프로는 충전할 때 10%, 맥스는 20%를 더 받아요. 요금제에 포함된 크레딧은 매달 새로 채워지고 이월되지 않아요. 충전한 크레딧은 1년 동안 써요.</p></details></section>
+<p class="fine">가끔 이벤트로 체험 크레딧을 드려요. 무료 이용자도 체험 크레딧으로 AI 빠른 질문을 해 볼 수 있고, 이벤트가 끝나면 남은 체험 크레딧은 사라져요. 프로는 충전할 때 10%, 맥스는 20%를 더 받아요. 요금제에 포함된 크레딧은 매달 새로 채워지고 이월되지 않아요. 충전한 크레딧은 1년 동안 써요.</p></details></section>
 <section class="block" id="log"><div class="block-head"><h2>크레딧 사용 내역</h2><span class="muted">이 브라우저 기록</span></div><div class="card"><div id="log-body"><p class="empty">아직 내역이 없어요.</p></div></div></section>
 <section class="block faq"><div class="block-head"><h2>자주 묻는 것</h2></div><div class="card">
 <details><summary>지금 결제하면 실제로 돈이 나가나요?</summary><p>아니요. 이 화면은 요금제 구조를 보여 주는 MOCK이에요. 결제 버튼은 이 브라우저의 요금제와 크레딧만 바꿔요.</p></details>
-<details><summary>잠긴 리포트는 어떻게 열리나요?</summary><p>플러스부터 상세 내용이 보여요. AI 위원회 심층 리포트(매일 리포트와 다른 사람이 만든 리포트)는 한 번 열 때 10크레딧이고, 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료로 열고, 만든 지 7일이 지난 리포트는 누구나 무료예요. 프로·맥스와 리포트를 만든 사람은 크레딧 없이 바로 봐요. 다른 사람이 내가 만든 리포트를 크레딧으로 열면 나에게 2크레딧이 돌아와요(리포트 하나에 40크레딧까지).</p></details>
+<details><summary>잠긴 리포트는 어떻게 열리나요?</summary><p>플러스부터 상세 내용이 보여요. AI 위원회 심층 리포트(매일 리포트와 다른 사람이 만든 리포트)는 한 번 열 때 ${CREDIT_COST.unlock}크레딧이고, 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료로 열고, 만든 지 7일이 지난 리포트는 누구나 무료예요. 프로·맥스와 리포트를 만든 사람은 크레딧 없이 바로 봐요. 다른 사람이 내가 만든 리포트를 크레딧으로 열면 나에게 ${UNLOCK.makerShare}크레딧이 돌아와요(리포트 하나에 ${UNLOCK.makerCap}크레딧까지).</p></details>
 <details><summary>크레딧은 언제 사라지나요? (초안)</summary><p>프로·맥스에 포함된 크레딧은 매달 새로 채워지고, 남은 포함 크레딧은 이월되지 않아요. 따로 충전한 크레딧은 1년 동안 써요.</p></details>
-<details><summary>요금제마다 무엇이 달라요?</summary><p>플러스는 계산 상세와 요약 리포트를 보고 크레딧으로 리포트를 요청해요. 프로는 AI 위원회 리포트 전체·전략·모의투자를 보고, 요약 리포트를 심층으로 업그레이드해요. 맥스는 관심 종목 10개를 매주 AI 위원회가 알아서 분석하고, 전문가용 도구(전략 랩·포트폴리오 리스크·시점 재현)를 써요.</p></details>
+<details><summary>요금제마다 무엇이 달라요?</summary><p>AI 리포트는 모두 AI 위원회 심층 리포트 한 종류예요(한 번 만들 때 ${CREDIT_COST.report}크레딧). 플러스는 계산 상세를 보고 크레딧으로 심층 리포트를 요청해요. 프로는 AI 위원회 리포트 전체·전략·모의투자를 바로 봐요. 맥스는 관심 종목 10개를 매주 AI 위원회가 알아서 분석하고, 전문가용 도구(전략 랩·포트폴리오 리스크·시점 재현)를 써요.</p></details>
 <details><summary>투자 자문인가요?</summary><p>아니요. 공개 데이터로 계산한 결과와 AI 해설이고, 매수·매도를 권하지 않아요. 유료 서비스를 열기 전에 관련 법(유사투자자문업 신고 등)을 확인할 예정이에요.</p></details></div></section>
 <footer id="sources" style="padding:24px 0 0"><p>가격은 부가세 포함 기준의 초안이에요. 투자 권유가 아니에요.</p></footer>`;
   return shell('', '요금제 | GNOMON', body, { active: 'pricing', scripts: PRICING_SCRIPT });
@@ -104,7 +103,7 @@ const PRICING_SCRIPT = `<script>
   var cur = document.documentElement.getAttribute('data-plan'); if (cur && cur !== 'free' && document.querySelector('[data-pr=' + cur + ']')) pick(cur);
   if (matchMedia('(min-width:821px)').matches) document.querySelectorAll('[data-open-wide]').forEach(function (d) { d.open = true; });
   var G = window.GNM; if (!G) return;
-  var KIND = { report: '심층 리포트 요청', brief: '요약 리포트 요청', upgrade: '심층 업그레이드', idea: '아이디어 검증', question: 'AI 빠른 질문', standard: 'AI 표준 질문', deep: 'AI 심층 질문', topup: '충전', trial: '체험 크레딧', plan: '요금제' };
+  var KIND = { report: '심층 리포트 요청', brief: '요약 리포트 요청(이전)', upgrade: '심층 업그레이드(이전)', idea: '아이디어 검증', question: 'AI 빠른 질문', standard: 'AI 표준 질문', deep: 'AI 심층 질문', topup: '충전', trial: '체험 크레딧', plan: '요금제' };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var draw = function () {
     var a = G.read(), el = document.getElementById('log-body');

@@ -1,7 +1,8 @@
 // Weekly selection (docs/DESIGN.md §5.10, G-25, G-28): about 40 stocks a week
 // get a report. The full AI committee goes to the always-covered stocks from
 // tickers.json plus the largest companies by market cap (five in all). The rest
-// get a brief summary and are picked by one composite score over stocks above a
+// get a dated data report without AI (G-168: no more briefs; a reader can ask for
+// the committee with credits) and are picked by one composite score over stocks above a
 // market-cap floor, so that big, much-traded and newsworthy stocks come before
 // the week's biggest movers: size (market cap), liquidity (20-session trading
 // value), major filings, the 5-session move and a trading-value surge. Pure.
@@ -54,7 +55,8 @@ export interface Pick {
   name: string;
   market: 'KOSPI' | 'KOSDAQ';
   core: boolean;
-  tier: 'deep' | 'brief';
+  /** 'deep' for the committee; null for a data-only report. Selections saved before v3.5.0 may say 'brief'. */
+  tier: 'deep' | 'brief' | null;
   /** 0–1 composite; null for stocks picked regardless (core and the largest by market cap). */
   score: number | null;
   parts: Weights | null;
@@ -119,7 +121,7 @@ export function selectWeekly(input: {
     if (s.ret5 !== null && Math.abs(s.ret5) >= 0.08) reasons.push(`5거래일 ${s.ret5 > 0 ? '+' : ''}${(s.ret5 * 100).toFixed(1)}%`);
     if (s.surge !== null && s.surge >= 1.8) reasons.push(`거래대금 평소의 ${s.surge.toFixed(1)}배`);
     if (!reasons.length) reasons.push('종합 점수 상위');
-    return { cap: c.row.marketCap ?? 0, pick: { symbol: c.row.symbol, name: c.row.name, market: c.row.market, core: false, tier: 'brief', score, parts, ret5: s.ret5, surge: s.surge, reasons } as Pick };
+    return { cap: c.row.marketCap ?? 0, pick: { symbol: c.row.symbol, name: c.row.name, market: c.row.market, core: false, tier: null, score, parts, ret5: s.ret5, surge: s.surge, reasons } as Pick };
   }).sort((a, b) => b.pick.score! - a.pick.score! || (a.pick.symbol < b.pick.symbol ? -1 : 1));
   const core: Pick[] = input.core.map((c) => ({ ...c, core: true, tier: 'deep', score: null, parts: null, ret5: null, surge: null, reasons: ['매주 리포트하는 대표 종목'] }));
   // The largest companies join the core for the full committee, whatever their score.
