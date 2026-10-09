@@ -1,0 +1,5 @@
+{"symbol":"062040","receiptNo":"20260403003569","date":"2026-04-03","reporter":"박동석","shares":14010727,"delta":-3073020,"ratio":45.45,"ratioDelta":-10.27,"reason":"특별관계자의 지분 변동","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"062040","receiptNo":"20260701000271","date":"2026-07-01","reporter":"국민연금공단","shares":2536651,"delta":15548,"ratio":8.29,"ratioDelta":0.01,"reason":"단순추가취득/처분","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"062040","receiptNo":"20260729000427","date":"2026-07-29","reporter":"박동석","shares":14010727,"delta":0,"ratio":45.45,"ratioDelta":0,"reason":"특별관계자의 주식매수선택권 행사로 인한\n보유형태 변경","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"062040","receiptNo":"20260813000040","date":"2026-08-13","reporter":"박동석","shares":13985727,"delta":-25000,"ratio":45.37,"ratioDelta":-0.08,"reason":"특별관계자의 장내(시간외) 매도","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"062040","receiptNo":"20261002000427","date":"2026-10-02","reporter":"국민연금공단","shares":2228956,"delta":-307695,"ratio":7.27,"ratioDelta":-1.02,"reason":"단순추가취득/처분","retrievedAt":"2026-10-09T09:08:50.767Z"}

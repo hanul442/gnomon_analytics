@@ -6,3 +6,5 @@
 {"symbol":"042700","date":"2026-10-02","close":272000,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"analyst:volume_flow","label":"거래량·수급 분석가","position":1,"basis":"강세"}
 {"symbol":"042700","date":"2026-10-02","close":272000,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"analyst:fundamental","label":"실적·밸류에이션 분석가","position":0,"basis":"중립"}
 {"symbol":"042700","date":"2026-10-02","close":272000,"method":"gnm-paper-v1","recordedAt":"2026-10-04T09:55:58.530Z","follower":"analyst:event_catalyst","label":"이벤트·뉴스 분석가","position":1,"basis":"강세"}
+{"symbol":"042700","date":"2026-10-08","close":263000,"method":"gnm-paper-v1","recordedAt":"2026-10-09T09:08:50.767Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
+{"symbol":"042700","date":"2026-10-08","close":263000,"method":"gnm-paper-v1","recordedAt":"2026-10-09T09:08:50.767Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"거래량 동반 돌파"}

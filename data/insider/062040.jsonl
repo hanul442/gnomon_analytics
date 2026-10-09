@@ -1,0 +1,5 @@
+{"symbol":"062040","receiptNo":"20260327000016","date":"2026-03-27","reporter":"강은숙","position":"-","isExec":false,"isMajor":true,"shares":2782080,"delta":-3054520,"ratio":9.09,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"062040","receiptNo":"20260417000523","date":"2026-04-17","reporter":"류영태","position":"부사장","isExec":true,"isMajor":false,"shares":0,"delta":-500,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"062040","receiptNo":"20260512000735","date":"2026-05-12","reporter":"박성일","position":"상무","isExec":true,"isMajor":false,"shares":7000,"delta":-4000,"ratio":0.02,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"062040","receiptNo":"20260729000399","date":"2026-07-29","reporter":"한익희","position":"공동대표이사","isExec":true,"isMajor":false,"shares":27000,"delta":27000,"ratio":0.09,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"062040","receiptNo":"20260813000024","date":"2026-08-13","reporter":"한익희","position":"공동대표이사","isExec":true,"isMajor":false,"shares":2000,"delta":-25000,"ratio":0.01,"retrievedAt":"2026-10-09T09:08:50.767Z"}

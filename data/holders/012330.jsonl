@@ -1,0 +1,4 @@
+{"symbol":"012330","receiptNo":"20251016000158","date":"2025-10-16","reporter":"기아","shares":29671938,"delta":100,"ratio":32.32,"ratioDelta":0,"reason":"특별관계자 변동","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"012330","receiptNo":"20260223001574","date":"2026-02-23","reporter":"기아","shares":29672358,"delta":420,"ratio":32.7,"ratioDelta":0.38,"reason":"자사주 상여금 지급","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"012330","receiptNo":"20260318000515","date":"2026-03-18","reporter":"기아","shares":29672318,"delta":-40,"ratio":32.7,"ratioDelta":0,"reason":"특별관계자 변동","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"012330","receiptNo":"20260401003888","date":"2026-04-01","reporter":"국민연금공단","shares":8625989,"delta":612784,"ratio":9.51,"ratioDelta":1.01,"reason":"단순추가취득/처분","retrievedAt":"2026-10-09T09:08:50.767Z"}
