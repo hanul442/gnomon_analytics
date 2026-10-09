@@ -48,11 +48,15 @@ export function edgeFundamentals(report: DailyReport): string {
   return sur || div || nx ? `<section class="block edge-sec"><div class="block-head"><h2>실적·배당 일정</h2></div><div class="edge-grid">${sur}${div}${nx}</div></section>` : '';
 }
 
-/** 뉴스·공시: every surfaced filing of the last 180 days with what it means. */
+/**
+ * 뉴스·공시: the surfaced filings with what they mean. G-172: the last 30 days are already in the 공시 list above,
+ * so this card keeps the older ones (31~180 days) and no filing shows twice.
+ */
 export function edgeEvents(report: DailyReport): string {
-  const e = report.edge;
-  if (!e || !e.events.length) return '';
-  return `<section class="block edge-sec"><div class="block-head"><h2>주요 이벤트 공시</h2><span class="muted small">최근 180일 · 실적·배당·자사주·지분·수주</span></div><div class="card"><ul class="edge-ev">${e.events.map((x) => `<li><span class="edge-tag t-${x.key}">${esc(x.label)}</span><a href="${dartViewerUrl(x.receiptNo)}" target="_blank" rel="noopener">${esc(x.title)}</a><small>${esc(x.date)} · ${esc(x.why)}</small></li>`).join('')}</ul></div></section>`;
+  const e = report.edge, cut = new Date(Date.parse(`${report.date}T00:00:00Z`) - 30 * 864e5).toISOString().slice(0, 10);
+  const older = (e?.events ?? []).filter((x) => x.date < cut);
+  if (!older.length) return '';
+  return `<section class="block edge-sec"><div class="block-head"><h2>지난 주요 공시</h2><span class="muted small">31~180일 전 · 실적·배당·자사주·지분·수주</span></div><div class="card"><ul class="edge-ev">${older.map((x) => `<li><span class="edge-tag t-${x.key}">${esc(x.label)}</span><a href="${dartViewerUrl(x.receiptNo)}" target="_blank" rel="noopener">${esc(x.title)}</a><small>${esc(x.date)} · ${esc(x.why)}</small></li>`).join('')}</ul></div></section>`;
 }
 
 

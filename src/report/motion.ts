@@ -27,7 +27,8 @@ html.mo .ig-radar .dot{opacity:0}html.mo .ig-radar.mo-in .dot{opacity:1;transiti
 .ig-hl li{transition:background .15s}.ig-hl li.hi{background:var(--accent-soft);border-radius:10px}
 html.mo .ig-bs-bar i{transform:scaleX(0);transform-origin:left}
 html.mo .ig-bs.mo-in .ig-bs-bar i{transform:none;transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 120ms)}
-html.mo .mini-gauge:not(.mo-in) .needle{animation:none;transform:rotate(0deg)}
+html.mo .mini-gauge:not(.mo-in) .needle,html.mo .gauge:not(.mo-in) .needle{animation:none;transform:rotate(0deg)}
+html.mo .gbars:not(.mo-in) .track i{transform:scaleX(0)}.gbars .track i{transform-origin:left;transition:transform .9s cubic-bezier(.16,1,.3,1)}.gbars .gbar+.gbar .track i{transition-delay:.15s}
 html.mo .si-card:not(.mo-in) .si-c{opacity:0;transform:translateY(6px)}
 html.mo .si-card.mo-in .si-c{transition:opacity .55s calc(min(var(--i,0),10) * 60ms),transform .7s cubic-bezier(.16,1,.3,1) calc(min(var(--i,0),10) * 60ms)}
 html.mo .si-card:not(.mo-in) .si-rbar{transform:scaleX(0)}.si-rbar{transform-origin:left;transition:transform 1s cubic-bezier(.16,1,.3,1)}
@@ -35,6 +36,8 @@ html.mo .si-card:not(.mo-in) .si-rbar i{left:0!important;opacity:0}.si-rbar i{tr
 html.mo .si-card:not(.mo-in) .si-fbar i{transform:scaleX(0)}.si-fbar i{transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 90ms)}.si-fbar i.pos{transform-origin:left}.si-fbar i.neg{transform-origin:right}
 html.mo .si-card:not(.mo-in) .si-cols i{transform:scaleY(0)}.si-cols i{transform-origin:bottom;transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 110ms)}
 html.mo .si-card:not(.mo-in) .si-cols span{opacity:0}.si-cols span{transition:opacity .4s calc(.6s + var(--i,0) * 110ms)}
+html.mo .fc-card:not(.mo-in) .fc-rng{transform:scaleX(0)}.fc-rng{transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 130ms)}
+html.mo .fc-card:not(.mo-in) .fc-mid{opacity:0;transform:scale(.4)}.fc-mid{transition:opacity .35s calc(.7s + var(--i,0) * 130ms),transform .45s cubic-bezier(.34,1.56,.64,1) calc(.7s + var(--i,0) * 130ms)}
 .mo-tip{position:absolute;z-index:6;left:0;top:0;pointer-events:none;background:#191f28;color:#fff;border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:500;line-height:1.55;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.18);transform:translate(-50%,calc(-100% - 10px))}
 .mo-tip.below{transform:translate(-50%,12px)}.mo-tip[hidden]{display:none}.mo-tip b{font-weight:800}.mo-tip .up{color:#ff8a8f}.mo-tip .down{color:#8db4ff}
 .mo-tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
@@ -46,7 +49,7 @@ export const MOTION_JS = `
 (function () {
   var root = document.documentElement, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduce) root.classList.add('mo');
-  var SEL = '.scenario-figure, .hero-chart, .mo-bars, .ig-radar, .ig-bs, .mini-gauge, .ig-hc, .si-card';
+  var SEL = '.scenario-figure, .hero-chart, .mo-bars, .ig-radar, .ig-bs, .mini-gauge, .ig-hc, .si-card, .fc-card, .gbars, .gauge';
   var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var money = function (v) { if (root.getAttribute('data-ccy') === 'USD') return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
   var day = function (d) { d = String(d || ''); return /^\\d{4}-\\d{2}-\\d{2}/.test(d) ? d.slice(2, 4) + '.' + d.slice(5, 7) + '.' + d.slice(8, 10) : d; };
