@@ -76,6 +76,15 @@ test('the AI tab opens with the short 결론 and its odds, without the scenario 
  assert.ok(html.startsWith('<section class="block" id="conclusion"><div class="card cl-mini">'),'결론 comes first');
  assert.match(html,/위원회는 기본 시나리오를 더 무겁게 봐요\./);assert.doesNotMatch(html,/다음 문장/);assert.match(html,/기본 50%/);assert.doesNotMatch(html,/cl-row/);
 });
+test('sealed reports offer 심층 리포트 열기 on 요약 and put the unlock card right under 결론 (G-172)',async()=>{
+ const {conclusionCard}=await import('./conclusion.js');const {committeeTab}=await import('./renderHtml.js');const {LOCKED_TEXT}=await import('../analysis/commentary.js');
+ const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-10-06',generatedAt:new Date(),bars:Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000})),disclosures:[],sources:[]});
+ const sc=(kind:string)=>({kind,narrative:{text:LOCKED_TEXT,evidenceIds:[]},catalysts:[],invalidation:[],probability:kind==='BASE'?40:30});
+ report.commentary={status:'OK',summary:{text:'결론.'},scenarios:[sc('BULL'),sc('BASE'),sc('BEAR')]} as any;
+ const home=conclusionCard(report);assert.match(home,/class="cl-deep"[^]*data-deep-go/);assert.doesNotMatch(home,/이용 권한 확인하기/);
+ const ai=committeeTab(report,{base:'',from:null,deepDate:'2026-10-06'});const d=ai.indexOf('id="deep-slot"');
+ assert.ok(d>ai.indexOf('cl-mini')&&d>0,'the unlock card follows 결론');const seats=ai.indexOf('parliament-ai');if(seats>=0)assert.ok(d<seats,'and comes before the seats');
+});
 test('report failures preserve actionable categories without exposing provider details',async()=>{
  const {reportFailureMessage}=await import('../worker/reports.js');
  assert.match(reportFailureMessage('API_529:provider request details'),/AI_BUSY/);

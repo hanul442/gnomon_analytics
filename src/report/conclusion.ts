@@ -7,6 +7,7 @@ import type { DailyReport } from './dailyReport.js';
 import { LOCKED_TEXT } from '../analysis/commentary.js';
 import { esc } from './html.js';
 import { won } from './format.js';
+import { CREDIT_COST } from './plans.js';
 
 const gap = (to: number, from: number) => { const g = (to / from - 1) * 100; return `${g > 0 ? '+' : ''}${g.toFixed(1)}%`; };
 const zone = (z?: [number, number]) => (z ? `${won(z[0])} ~ ${won(z[1])}` : '');
@@ -54,7 +55,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const detail = (sc: typeof bull, label: string) => {
     if (!sc) return missing?`<div class="cl-sc" hidden><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 ${label} 시나리오 미생성</b><button type="button" class="chip-toggle" data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}">리포트 생성</button></div></div></div>`:'';
     const locked = sc.narrative.text === LOCKED_TEXT;
-    return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>프로·맥스·알파 또는 개별 열기 권한으로 볼 수 있어요.</p><a href="#tab-ai">이용 권한 확인하기</a></div></div>` : `${scenarioPlot(report,sc.kind)}<div class="scenario-evidence"><b>조건·근거</b><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>성립 근거·촉매</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>무효화 조건 · 가정 재검토</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${!locked && sc.zone ? `<p class="cl-sc-k"><b>20거래일 예상 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</div>'}</div>`;
+    return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>시나리오 전개·근거·무효화 조건은 심층 리포트에 있어요.</p><button type="button" class="btn-primary dl-go" data-deep-go>심층 리포트 열기</button></div></div>` : `${scenarioPlot(report,sc.kind)}<div class="scenario-evidence"><b>조건·근거</b><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>성립 근거·촉매</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>무효화 조건 · 가정 재검토</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${!locked && sc.zone ? `<p class="cl-sc-k"><b>20거래일 예상 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</div>'}</div>`;
   };
   const row = (cls: string, sc: typeof bull, label: string, px: string, what: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc||missing ? ' aria-expanded="false"' : ' disabled'}>${px}<div class="cl-what"><b>${label} 시나리오</b> ${odds(sc)}<small>${what}</small></div>${sc||missing ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
   // A crossing condition and a future range are different facts. Only the stored trigger supplies
@@ -84,10 +85,12 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : `조건 가격 도달만으로 전개가 확정되지는 않아요. 예상 범위와 조건 가격은 다릅니다. 분석 기준은 ${esc(report.date)} 종가 ${won(p.close)}이며, 현재 가격과 차이가 날 수 있어요`;
   return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')}</div><h2 class="cl-line">${esc(line)}</h2>${oddsBar}
 <div class="cl-ladder">${rows}</div>
+${[bull, base, bear].some((x) => x?.narrative.text === LOCKED_TEXT) ? `<div class="cl-deep"><span>🔒 시나리오 전개·무효화 조건·최악의 경우·위원회 토론은 심층 리포트에 있어요.</span><button type="button" class="btn-primary" data-deep-go>심층 리포트 열기 <small>${CREDIT_COST.unlock}크레딧</small></button></div>` : ''}
 <p class="fine">${bull || bear || base ? '줄을 누르면 시나리오가 펼쳐져요. ' : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
 }
 
-export const CONCLUSION_CSS = `.cl-mini p{margin:4px 0 8px;line-height:1.55}.cl-go{display:inline-block;font-size:13px;font-weight:700;padding:6px 0;color:var(--accent-strong);text-decoration:none}.cl-odds{margin:10px 0 14px}.cl-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.cl-odds .sc-prob{height:10px;margin:0;border-radius:5px;gap:2px;font-size:0}.cl-odds .sc-prob span{min-width:6px}.cl-odds-l{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.cl-odds-l span:nth-child(2){color:var(--fg2)}
+export const CONCLUSION_CSS = `.cl-deep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:var(--accent-soft);font-size:13.5px;color:var(--fg2)}.cl-deep .btn-primary{margin:0;padding:10px 16px;font-size:14px}.cl-deep small{font-weight:600;opacity:.85;margin-left:4px}.dl-go{margin-top:6px}
+.cl-mini p{margin:4px 0 8px;line-height:1.55}.cl-go{display:inline-block;font-size:13px;font-weight:700;padding:6px 0;color:var(--accent-strong);text-decoration:none}.cl-odds{margin:10px 0 14px}.cl-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.cl-odds .sc-prob{height:10px;margin:0;border-radius:5px;gap:2px;font-size:0}.cl-odds .sc-prob span{min-width:6px}.cl-odds-l{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.cl-odds-l span:nth-child(2){color:var(--fg2)}
 @media (min-width:821px){.cl-row{grid-template-columns:minmax(0,1fr) minmax(230px,30%) 20px!important}.cl-what{justify-self:stretch}}.cl-card .card{border:1.5px solid var(--navy)}.cl-k{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.cl-line{font-size:19px;line-height:1.5;margin:0 0 8px}.cl-tally{font-size:13px;color:var(--fg2);margin:0 0 14px}
 .cl-ladder{position:relative;display:flex;flex-direction:column;gap:8px;padding-left:4px}.cl-ladder::before{content:'';position:absolute;left:15px;top:14px;bottom:14px;width:2px;background:linear-gradient(#f04452,#7b8798,#3182f6);opacity:.35}
 .cl-item{display:flex;flex-direction:column}.cl-row{position:relative;display:grid;grid-template-columns:minmax(150px,auto) 1fr auto;gap:6px 16px;align-items:center;border-radius:14px;padding:12px 14px;border:0;font:inherit;color:inherit;text-align:left;width:100%;cursor:pointer}.cl-row:disabled{cursor:default}.cl-row:not(:disabled):hover{outline:2px solid rgba(15,34,68,.15)}.cl-more{font-size:20px;color:var(--muted);transition:transform .15s}.cl-row[aria-expanded=true] .cl-more{transform:rotate(90deg)}.cl-row[aria-expanded=true]{border-bottom-left-radius:0;border-bottom-right-radius:0}.cl-sc{position:relative;z-index:1;background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 14px 14px;padding:10px 14px 4px;font-size:14px;line-height:1.6}.cl-sc p{margin:0 0 8px}.cl-sc-k{font-size:13px;color:var(--fg2)}.cl-worst{margin:4px 0 10px;background:#fff5f5;border:1px solid #f3c7c9;border-radius:10px;padding:9px 11px}.cl-worst>b{color:#9b1c1c;font-size:13px}.cl-worst p{margin:3px 0 6px}.cl-worst ul{list-style:none;padding:0;margin:0 0 4px;font-size:13px}.cl-worst li{margin:2px 0}.cl-worst small{color:var(--muted);font-size:11.5px}.cl-sc-k b{color:var(--fg);margin-right:4px}.cl-up{background:#fdf0f0}.cl-now{background:#f2f4f7}.cl-down{background:#eef3fc}
@@ -98,6 +101,12 @@ export const CONCLUSION_CSS = `.cl-mini p{margin:4px 0 8px;line-height:1.55}.cl-
 
 /** Opens a conclusion row's scenario. */
 export const CONCLUSION_JS = `
+  // G-172: every "심층 리포트 열기" on 요약 goes to the unlock card at the top of the AI tab.
+  document.addEventListener('click', function (e) {
+    var g = e.target.closest && e.target.closest('[data-deep-go]'); if (!g) return; e.preventDefault();
+    var t = document.querySelector('[aria-controls=tab-ai]'); if (t) t.click();
+    setTimeout(function () { var s = document.getElementById('deep-slot'); if (s) s.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 80);
+  });
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('.cl-row[aria-expanded]'); if (!b) return;
     var open = b.getAttribute('aria-expanded') !== 'true', d = b.nextElementSibling;
