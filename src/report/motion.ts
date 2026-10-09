@@ -35,7 +35,6 @@ html.mo .si-card:not(.mo-in) .si-rbar i{left:0!important;opacity:0}.si-rbar i{tr
 html.mo .si-card:not(.mo-in) .si-fbar i{transform:scaleX(0)}.si-fbar i{transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 90ms)}.si-fbar i.pos{transform-origin:left}.si-fbar i.neg{transform-origin:right}
 html.mo .si-card:not(.mo-in) .si-cols i{transform:scaleY(0)}.si-cols i{transform-origin:bottom;transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 110ms)}
 html.mo .si-card:not(.mo-in) .si-cols span{opacity:0}.si-cols span{transition:opacity .4s calc(.6s + var(--i,0) * 110ms)}
-html.mo .si-card:not(.mo-in) .earn-chart>rect{transform:scaleY(0)}.earn-chart>rect{transform-box:fill-box;transform-origin:50% 100%;transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 80ms)}
 .mo-tip{position:absolute;z-index:6;left:0;top:0;pointer-events:none;background:#191f28;color:#fff;border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:500;line-height:1.55;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.18);transform:translate(-50%,calc(-100% - 10px))}
 .mo-tip.below{transform:translate(-50%,12px)}.mo-tip[hidden]{display:none}.mo-tip b{font-weight:800}.mo-tip .up{color:#ff8a8f}.mo-tip .down{color:#8db4ff}
 .mo-tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
@@ -159,7 +158,7 @@ export const MOTION_JS = `
   var scan = function () {
     document.querySelectorAll(SEL).forEach(function (el) {
       if (seen ? seen.has(el) : el.dataset.moSeen) return; if (seen) seen.add(el); else el.dataset.moSeen = '1';
-      if (el.matches('.si-card')) { el.querySelectorAll('.si-c').forEach(function (c, i) { c.style.setProperty('--i', i); }); el.querySelectorAll('.si-flow').forEach(function (r, i) { var b = r.querySelector('.si-fbar i'); if (b) b.style.setProperty('--i', i); }); el.querySelectorAll('.si-cols').forEach(function (g) { Array.prototype.forEach.call(g.children, function (col, i) { col.style.setProperty('--i', i); }); }); el.querySelectorAll('.earn-chart').forEach(function (svg) { svg.querySelectorAll(':scope > rect').forEach(function (b, i) { b.style.setProperty('--i', Math.floor(i / 2)); }); }); }
+      if (el.matches('.si-card')) { el.querySelectorAll('.si-c').forEach(function (c, i) { c.style.setProperty('--i', i); }); el.querySelectorAll('.si-flow').forEach(function (r, i) { var b = r.querySelector('.si-fbar i'); if (b) b.style.setProperty('--i', i); }); el.querySelectorAll('.si-cols').forEach(function (g) { Array.prototype.forEach.call(g.children, function (col, i) { col.style.setProperty('--i', i); }); }); }
       if (io) io.observe(el); else show(el);
       if (el.matches('.hero-chart')) hero(el);
       else if (el.matches('.mo-bars')) bars(el);

@@ -6,10 +6,9 @@
 import type { HorizonGauge } from '../analysis/horizons.js';
 import type { ForecastScore, PriceForecast, TechnicalFairValue } from '../analysis/valuation.js';
 import type { Footprint, StructureSnapshot } from '../analysis/structure.js';
-import type { FinancePeriod } from '../types.js';
 import type { FlowSection, MarketSection } from './marketSection.js';
 import type { FullStatements } from '../sources/dartStatements.js';
-import { healthInfographic, statementChart, statementsCard } from './infographics.js';
+import { healthInfographic, quarterBars, statementChart, statementsCard } from './infographics.js';
 import { esc } from './html.js';
 import { won, tone, pct as fmtPct } from './format.js';
 const pct = (v: number | null, digits = 1) => fmtPct(v, digits, '없음');
@@ -214,25 +213,6 @@ ${lockFootprint(`<div class="card"><div class="head"><h2>수급 흔적</h2></div
 <p class="fine">거래량과 투자자별 순매수로 본 흔적이에요. 조작의 증거가 아니에요.</p></div>`)}</div>`;
 }
 
-/** Quarterly revenue and operating profit, estimates hatched. One axis (KRW 100M). */
-function earningsChart(quarters: readonly FinancePeriod[]): string {
-  const rows = quarters.map((q) => ({ q, rev: q.metrics['매출액'] ?? null, op: q.metrics['영업이익'] ?? null })).filter((r) => r.rev !== null);
-  if (rows.length < 2) return '<p class="empty">분기 실적 기록이 부족해요.</p>';
-  const max = Math.max(...rows.flatMap((r) => [r.rev!, r.op ?? 0]));
-  const W = 640, H = 220, padB = 26, padT = 18, group = (W - 20) / rows.length, bw = Math.min(28, group / 3);
-  const y = (v: number) => H - padB - (Math.max(0, v) / max) * (H - padB - padT);
-  const bars = rows.map((r, i) => {
-    const gx = 10 + i * group + group / 2;
-    const label = `${r.q.period.slice(0, 4)}.${r.q.period.slice(4)}${r.q.isEstimate ? ' (추정)' : ''}`;
-    const bar = (v: number | null, dx: number, cls: string, name: string) => (v === null ? '' :
-      `<rect x="${(gx + dx).toFixed(1)}" y="${y(v).toFixed(1)}" width="${bw.toFixed(1)}" height="${(H - padB - y(v)).toFixed(1)}" rx="3" class="${cls}${r.q.isEstimate ? ' est' : ''}"><title>${esc(label)} ${name} ${Math.round(v).toLocaleString('ko-KR')}억원</title></rect>`);
-    return `${bar(r.rev, -bw - 1, 'b-rev', '매출액')}${bar(r.op, 1, 'b-op', '영업이익')}<text x="${gx.toFixed(1)}" y="${H - 8}" text-anchor="middle" class="axis-label">${esc(label)}</text>`;
-  }).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" class="earn-chart" role="img" aria-label="분기 매출액과 영업이익">
-<defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="6" stroke="currentColor" stroke-width="3"/></pattern></defs>
-<line x1="10" x2="${W - 10}" y1="${H - padB}" y2="${H - padB}" class="zero"/>${bars}</svg>`;
-}
-
 type Bar = { date: string; open: number; high: number; low: number; close: number; volume: number };
 
 /** A Toss-style range: low and high at the ends, a dot where the price is now. */
@@ -276,9 +256,14 @@ export function quickInfoCard(market: MarketSection | undefined, close: number |
 function financeCard(market: MarketSection, st?: FullStatements): string {
   const q = market.quarters.filter((p) => !p.isEstimate);
   const tabs: [string, string][] = [];
-  // 손익: quarterly sales and operating profit (estimates hatched), or DART's yearly bars.
-  const is = market.quarters.length >= 2 ? `${earningsChart(market.quarters)}<p class="ig-note legend-inline"><span><i class="sw-rev"></i>매출액</span><span><i class="sw-op"></i>영업이익</span><span><i class="sw-est"></i>추정</span><span>분기 · 억원</span></p>` : st ? statementChart(st, 'IS') : '';
+  // G-171: the same infographics as 자세히 보기 — DART's yearly 손익 bars, then the quarters in the same bars (estimates E).
+  const yearly = st ? statementChart(st, 'IS') : '', quarterly = quarterBars(market.quarters);
+  const both = !!yearly && !!quarterly, estimate = market.quarters.slice(-6).some((p) => p.isEstimate);
+  const is = `${yearly ? `${both ? '<h3 class="fs-sub">연간</h3>' : ''}${yearly}` : ''}${quarterly ? `${both ? '<h3 class="fs-sub">분기</h3>' : ''}${quarterly}${estimate ? '<p class="ig-note">E는 증권사 추정치예요.</p>' : ''}` : ''}`;
   if (is) tabs.push(['손익', is]);
+  // 재무상태: the 부채·자본 split by year, as in 자세히 보기.
+  const bsChart = st ? statementChart(st, 'BS') : '';
+  if (bsChart) tabs.push(['재무상태', bsChart]);
   // G-170: 부채비율 and 당좌비율 each get their own tab, full width (side by side they crowded and hid the 100% line).
   const stb = q.filter((p) => p.metrics['부채비율'] != null || p.metrics['당좌비율'] != null).slice(-5);
   const ratio = (k: string, good: 'low' | 'high') => {
@@ -291,7 +276,6 @@ function financeCard(market: MarketSection, st?: FullStatements): string {
   const debt = stb.length >= 2 ? ratio('부채비율', 'low') : '', quick = stb.length >= 2 ? ratio('당좌비율', 'high') : '';
   if (debt) tabs.push(['부채비율', `${debt}<p class="ig-note">빚 ÷ 자기자본이에요. 낮을수록 튼튼하고, 100% 이하면 무난해요.</p>`]);
   if (quick) tabs.push(['당좌비율', `${quick}<p class="ig-note">현금처럼 바로 쓸 수 있는 자산 ÷ 1년 안에 갚을 빚이에요. 높을수록 좋고, 100% 이상이면 무난해요.</p>`]);
-  if (!debt && !quick && st) { const bs = statementChart(st, 'BS'); if (bs) tabs.push(['재무', bs]); }
   const cf = st ? statementChart(st, 'CF') : '';
   if (cf) tabs.push(['현금흐름', cf]);
   if (!tabs.length) return '';
@@ -347,7 +331,7 @@ export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:fle
 .si-range{margin:6px 0 14px}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
 .si-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.si-c{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.si-c span{color:var(--fg2)}.si-c b{font-variant-numeric:tabular-nums;text-align:right}
 .si-seg{margin-bottom:8px;width:max-content}.si-flow{display:grid;grid-template-columns:56px minmax(0,1fr) 84px;align-items:center;gap:8px;padding:7px 0;font-size:14px}.si-flow b{text-align:right;font-variant-numeric:tabular-nums}.si-fbar{position:relative;height:10px;background:#f1f3f7;border-radius:4px}.si-fbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}.si-fbar i{position:absolute;top:0;bottom:0;border-radius:3px}.si-fbar i.pos{background:#e5484d}.si-fbar i.neg{background:#3e63dd}
-.si-stab{margin:6px 0 16px}.si-sk{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;margin-bottom:6px}.si-sk span{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.si-ok{color:#1d6b3a}.si-warn{color:#b4232b}.si-cols{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:14px;height:160px;align-items:end;padding:0 0 18px;border-bottom:1px solid var(--line)}.si-cols::before{content:"";position:absolute;z-index:1;left:0;right:0;bottom:calc(18px + var(--ref) * 142px);border-top:1.5px dashed #8b95a1;pointer-events:none}.si-cols em{position:absolute;z-index:2;left:0;bottom:calc(21px + var(--ref) * 142px);font-size:11px;font-weight:700;font-style:normal;color:var(--fg2);background:var(--surface);padding:0 5px 0 0}.si-cols div{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}.si-cols div span{font-size:11.5px;font-weight:700;color:var(--fg2);margin-bottom:3px}.si-cols i{display:block;width:56%;max-width:40px;border-radius:5px 5px 0 0;background:#9fb3d9}.si-cols i.ok{background:#7fb38f}.si-cols i.warn{background:#e58a8d}.si-cols div:last-child i{filter:saturate(1.4) brightness(.85)}.si-cols small{position:absolute;bottom:-17px;font-size:10.5px;color:var(--muted)}.si-note{font-size:12px;color:var(--muted);margin:22px 0 0}
+.fs-sub{font-size:13px;font-weight:800;color:var(--fg2);margin:12px 0 2px}.fs-sub:first-child{margin-top:4px}.si-stab{margin:6px 0 16px}.si-sk{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;margin-bottom:6px}.si-sk span{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.si-ok{color:#1d6b3a}.si-warn{color:#b4232b}.si-cols{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:14px;height:160px;align-items:end;padding:0 0 18px;border-bottom:1px solid var(--line)}.si-cols::before{content:"";position:absolute;z-index:1;left:0;right:0;bottom:calc(18px + var(--ref) * 142px);border-top:1.5px dashed #8b95a1;pointer-events:none}.si-cols em{position:absolute;z-index:2;left:0;bottom:calc(21px + var(--ref) * 142px);font-size:11px;font-weight:700;font-style:normal;color:var(--fg2);background:var(--surface);padding:0 5px 0 0}.si-cols div{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}.si-cols div span{font-size:11.5px;font-weight:700;color:var(--fg2);margin-bottom:3px}.si-cols i{display:block;width:56%;max-width:40px;border-radius:5px 5px 0 0;background:#9fb3d9}.si-cols i.ok{background:#7fb38f}.si-cols i.warn{background:#e58a8d}.si-cols div:last-child i{filter:saturate(1.4) brightness(.85)}.si-cols small{position:absolute;bottom:-17px;font-size:10.5px;color:var(--muted)}.si-note{font-size:12px;color:var(--muted);margin:22px 0 0}
 .si-dps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.si-dps span{display:flex;flex-direction:column;font-size:12px;color:var(--muted);background:#f5f7fb;border-radius:10px;padding:6px 10px}.si-dps b{color:var(--fg);font-size:14px}
 .si-target{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.si-target div{display:flex;flex-direction:column;gap:2px}.si-target span{font-size:13px;color:var(--fg2)}.si-target b{font-size:22px;font-variant-numeric:tabular-nums}.si-target small{font-size:13px}
 

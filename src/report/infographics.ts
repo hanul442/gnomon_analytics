@@ -87,6 +87,17 @@ function bars(years: readonly string[], series: readonly { label: string; color:
   return `<figure class="ig-bars mo-bars" data-tip="${esc(JSON.stringify(tip))}"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map((x) => x.label).join('·'))} 연도별 막대"><line x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}" class="ig-b0"/>${rects}</svg><figcaption>${series.map((x) => `<span><i style="background:${x.color}"></i>${esc(x.label)}</span>`).join('')}</figcaption></figure>`;
 }
 
+/**
+ * G-171: the quarters' 매출·영업이익 in the same grouped-bar infographic as 자세히 보기 (touch a quarter for its values).
+ * Naver's quarter metrics are in 억원; an estimate quarter is marked E.
+ */
+export function quarterBars(quarters: readonly FinancePeriod[]): string {
+  const ps = quarters.filter((q) => q.metrics['매출액'] != null).slice(-6);
+  if (ps.length < 2) return '';
+  const v = (k: string) => ps.map((q) => (q.metrics[k] == null ? null : q.metrics[k]! * 1e8));
+  return bars(ps.map((q) => `${q.period.slice(2, 4)}.${q.period.slice(4)}${q.isEstimate ? 'E' : ''}`), [{ label: '매출', color: '#2e4268', values: v('매출액') }, { label: '영업이익', color: '#f04452', values: v('영업이익') }]);
+}
+
 /** The infographic of one DART statement (G-148: also the simple 재무제표 card's picture). */
 export function statementChart(st: FullStatements, kind: StKind): string {
   const rows = st.statements[kind];
@@ -99,8 +110,10 @@ export function statementChart(st: FullStatements, kind: StKind): string {
     const last = st.years.length - 1, m = rev[last] && op[last] != null ? (op[last]! / rev[last]!) * 100 : null;
     if (m != null) note = `${esc(st.years[last]!)}년 영업이익률 <b>${m.toFixed(1)}%</b>`;
   } else if (kind === 'BS') {
+    // A narrow part shows its amount only, a very narrow one nothing (the bar's label and the 부채비율 still say it).
+    const seg = (word: string, v: number, w: number) => (w >= 36 ? `${word} ${short(v)}` : w >= 20 ? short(v) : '');
     const debt = val('ifrs-full_Liabilities', KEY_ROWS.BS[6]![1]), eq = val('ifrs-full_Equity', KEY_ROWS.BS[8]![1]);
-    chart = `<div class="ig-bs">${st.years.map((y, i) => { const d = debt[i], e = eq[i]; if (d == null || e == null || d + e <= 0) return ''; const dp = (d / (d + e)) * 100; return `<div class="ig-bs-row" style="--i:${i}"><span>${esc(y)}</span><div class="ig-bs-bar" role="img" aria-label="${esc(y)} 부채 ${short(d)} 자본 ${short(e)}"><i class="d" style="width:${dp.toFixed(1)}%">${dp >= 18 ? `부채 ${short(d)}` : ''}</i><i class="e" style="width:${(100 - dp).toFixed(1)}%">${100 - dp >= 18 ? `자본 ${short(e)}` : ''}</i></div><b class="${e > 0 && d / e > 2 ? 'down' : ''}">${e > 0 ? `부채비율 ${Math.round((d / e) * 100)}%` : '자본잠식'}</b></div>`; }).join('')}</div>`;
+    chart = `<div class="ig-bs">${st.years.map((y, i) => { const d = debt[i], e = eq[i]; if (d == null || e == null || d + e <= 0) return ''; const dp = (d / (d + e)) * 100; return `<div class="ig-bs-row" style="--i:${i}"><span>${esc(y)}</span><div class="ig-bs-bar" role="img" aria-label="${esc(y)} 부채 ${short(d)} 자본 ${short(e)}"><i class="d" style="width:${dp.toFixed(1)}%">${seg('부채', d, dp)}</i><i class="e" style="width:${(100 - dp).toFixed(1)}%">${seg('자본', e, 100 - dp)}</i></div><b class="${e > 0 && d / e > 2 ? 'down' : ''}">${e > 0 ? `부채비율 ${Math.round((d / e) * 100)}%` : '자본잠식'}</b></div>`; }).join('')}</div>`;
     note = '자산 = 부채 + 자본. 부채비율이 200%를 넘으면 빨간색이에요.';
   } else {
     const ocf = val(...(KEY_ROWS.CF[0]!.slice(0, 2) as [string, RegExp])), inv = val(...(KEY_ROWS.CF[1]!.slice(0, 2) as [string, RegExp])), fin = val(...(KEY_ROWS.CF[3]!.slice(0, 2) as [string, RegExp])), capex = val(...(KEY_ROWS.CF[2]!.slice(0, 2) as [string, RegExp]));
