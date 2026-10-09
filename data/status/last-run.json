@@ -1,6 +1,6 @@
 {
- "at": "2026-10-09T09:08:50.767Z",
- "selected": "2026-10-09",
+ "at": "2026-10-09T09:41:01.762Z",
+ "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
@@ -52,172 +52,162 @@
   },
   {
    "symbol": "402340",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "009150",
-   "report": "WRITTEN",
-   "failedSources": [
-    {
-     "source": "google:news-rss",
-     "error": "fetch failed"
-    }
-   ]
-  },
-  {
    "symbol": "373220",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "066570",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "034020",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "043260",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "042700",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "003670",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "009540",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "196170",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "032830",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "006400",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "036930",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "042660",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "012450",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "096770",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "316140",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "062040",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "298040",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "329180",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "353200",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "069540",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "005380",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "267270",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "207940",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "082740",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "058470",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "028260",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "055550",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "012330",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "222800",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "051910",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "267260",
-   "report": "WRITTEN",
+   "symbol": "105560",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "007660",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "000150",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "443060",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
@@ -231,22 +221,12 @@
    "failedSources": []
   },
   {
-   "symbol": "439090",
+   "symbol": "009830",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "232140",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "327260",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "403870",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -282,13 +262,17 @@
   },
   {
    "symbol": "KRW-NEAR",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
  "failed": [
   {
-   "symbol": "043260",
+   "symbol": "009150",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "006400",
    "error": "fetch failed"
   },
   {
@@ -296,19 +280,27 @@
    "error": "fetch failed"
   },
   {
-   "symbol": "096770",
+   "symbol": "042660",
    "error": "fetch failed"
   },
   {
-   "symbol": "028260",
+   "symbol": "062040",
    "error": "fetch failed"
   },
   {
-   "symbol": "105560",
+   "symbol": "267260",
    "error": "fetch failed"
   },
   {
-   "symbol": "009830",
+   "symbol": "439090",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "327260",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "403870",
    "error": "fetch failed"
   }
  ]
