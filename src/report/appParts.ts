@@ -239,6 +239,12 @@ window.addEventListener('DOMContentLoaded', function () {
   var candle = chart.addSeries(L.CandlestickSeries, { upColor: UP, downColor: DOWN, borderVisible: false, wickUpColor: UP, wickDownColor: DOWN });
   candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
 
+  // ---- indicator settings (G-157): every period and multiple can be changed in 상세 설정하기; kept on this device ----
+  var IP0 = { ma5: { n: 5 }, ma20: { n: 20 }, ma60: { n: 60 }, ma120: { n: 120 }, ema12: { f: 12, s: 26 }, bb: { n: 20, k: 2 }, env: { n: 20, pct: 6 }, ichimoku: { conv: 9, base: 26, span: 52 },
+    rsi: { n: 14, hi: 70, lo: 30 }, macd: { f: 12, s: 26, sig: 9 }, stoch: { n: 14, k: 3, d: 3 }, cci: { n: 20 }, wr: { n: 14 }, atr: { n: 14 }, value: { n: 20 } };
+  var IP = JSON.parse(JSON.stringify(IP0));
+  try { var ips = JSON.parse(localStorage.getItem('gnm-ind-params') || 'null'); if (ips) Object.keys(ips).forEach(function (k) { if (IP[k]) Object.keys(IP[k]).forEach(function (f) { var v = Number(ips[k][f]); if (isFinite(v) && v > 0) IP[k][f] = v; }); }); } catch (e) {}
+  var ip = function (k) { return IP[k]; };
   // ---- indicator maths ----
   var sma = function (a, n) { var o = [], s = 0; for (var i = 0; i < a.length; i++) { s += a[i]; if (i >= n) s -= a[i - n]; o.push(i >= n - 1 ? s / n : null); } return o; };
   var ema = function (a, n) { var o = [], k = 2 / (n + 1), p = null; for (var i = 0; i < a.length; i++) { if (a[i] == null) { o.push(null); continue; } p = p == null ? a[i] : a[i] * k + p * (1 - k); o.push(p); } return o; };
@@ -252,16 +258,16 @@ window.addEventListener('DOMContentLoaded', function () {
   // ---- overlays (on the price pane) ----
   var built = {}, priceLines = {};
   var overlayMakers = {
-    ma5: function () { return [line(sma(C, 5), '#6b6f78')]; },
-    ma20: function () { return [line(sma(C, 20), '#d97706')]; },
-    ma60: function () { return [line(sma(C, 60), '#7a4fb3')]; },
-    ma120: function () { return [line(sma(C, 120), '#00968a')]; },
-    ema12: function () { return [line(ema(C, 12), '#c2410c', 0, { lineStyle: 2 }), line(ema(C, 26), '#4338ca', 0, { lineStyle: 2 })]; },
-    bb: function () { var m = sma(C, 20), s = std(C, 20, m); return [line(m, '#8a96a3', 0, { lineStyle: 2 }), line(m.map(function (x, i) { return x == null ? null : x + 2 * s[i]; }), '#8a96a3'), line(m.map(function (x, i) { return x == null ? null : x - 2 * s[i]; }), '#8a96a3')]; },
-    env: function () { var m = sma(C, 20); return [line(m.map(function (x) { return x == null ? null : x * 1.06; }), '#34496f', 0, { lineStyle: 1 }), line(m.map(function (x) { return x == null ? null : x * 0.94; }), '#34496f', 0, { lineStyle: 1 })]; },
+    ma5: function () { return [line(sma(C, ip('ma5').n), '#6b6f78')]; },
+    ma20: function () { return [line(sma(C, ip('ma20').n), '#d97706')]; },
+    ma60: function () { return [line(sma(C, ip('ma60').n), '#7a4fb3')]; },
+    ma120: function () { return [line(sma(C, ip('ma120').n), '#00968a')]; },
+    ema12: function () { var q = ip('ema12'); return [line(ema(C, q.f), '#c2410c', 0, { lineStyle: 2 }), line(ema(C, q.s), '#4338ca', 0, { lineStyle: 2 })]; },
+    bb: function () { var q = ip('bb'), m = sma(C, q.n), s = std(C, q.n, m); return [line(m, '#8a96a3', 0, { lineStyle: 2 }), line(m.map(function (x, i) { return x == null ? null : x + q.k * s[i]; }), '#8a96a3'), line(m.map(function (x, i) { return x == null ? null : x - q.k * s[i]; }), '#8a96a3')]; },
+    env: function () { var q = ip('env'), m = sma(C, q.n); return [line(m.map(function (x) { return x == null ? null : x * (1 + q.pct / 100); }), '#34496f', 0, { lineStyle: 1 }), line(m.map(function (x) { return x == null ? null : x * (1 - q.pct / 100); }), '#34496f', 0, { lineStyle: 1 })]; },
     ichimoku: function () {
-      var conv = C.map(function (_, i) { return i < 8 ? null : (hh(9, i) + ll(9, i)) / 2; }), basev = C.map(function (_, i) { return i < 25 ? null : (hh(26, i) + ll(26, i)) / 2; });
-      return [line(conv, '#e11d48'), line(basev, '#2563eb'), line(C.map(function (_, i) { return i < 51 ? null : (hh(52, i) + ll(52, i)) / 2; }), '#2e4268', 0, { lineStyle: 2 }), line(conv.map(function (x, i) { return x == null || basev[i] == null ? null : (x + basev[i]) / 2; }), '#16a34a', 0, { lineStyle: 2 })];
+      var q = ip('ichimoku'), conv = C.map(function (_, i) { return i < q.conv - 1 ? null : (hh(q.conv, i) + ll(q.conv, i)) / 2; }), basev = C.map(function (_, i) { return i < q.base - 1 ? null : (hh(q.base, i) + ll(q.base, i)) / 2; });
+      return [line(conv, '#e11d48'), line(basev, '#2563eb'), line(C.map(function (_, i) { return i < q.span - 1 ? null : (hh(q.span, i) + ll(q.span, i)) / 2; }), '#2e4268', 0, { lineStyle: 2 }), line(conv.map(function (x, i) { return x == null || basev[i] == null ? null : (x + basev[i]) / 2; }), '#16a34a', 0, { lineStyle: 2 })];
     }
   };
   var lineMakers = {
@@ -355,26 +361,26 @@ window.addEventListener('DOMContentLoaded', function () {
   // ---- panes (below the price) ----
   var paneMakers = {
     volume: function (p) { var s = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false }, p); s.setData(bars.map(function (b, i) { return { time: b.date, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(42,98,201,.45)' : 'rgba(209,55,61,.45)' }; })); return [s]; },
-    rsi: function (p) { var s = line(rsi(14), '#7a4fb3', p, { lastValueVisible: true, title: 'RSI 14' }); s.createPriceLine({ price: 70, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: 30, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
+    rsi: function (p) { var q = ip('rsi'), s = line(rsi(q.n), '#7a4fb3', p, { lastValueVisible: true, title: 'RSI ' + q.n }); s.createPriceLine({ price: q.hi, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: q.lo, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
     macd: function (p) {
-      var f = ema(C, 12), s = ema(C, 26), m = C.map(function (_, i) { return i < 25 ? null : f[i] - s[i]; });
-      var sig = ema(m, 9).map(function (x, i) { return i < 33 ? null : x; });
+      var q = ip('macd'), f = ema(C, q.f), s = ema(C, q.s), m = C.map(function (_, i) { return i < q.s - 1 ? null : f[i] - s[i]; });
+      var sig = ema(m, q.sig).map(function (x, i) { return i < q.s + q.sig - 2 ? null : x; });
       var hist = chart.addSeries(L.HistogramSeries, { priceLineVisible: false, lastValueVisible: false }, p);
       hist.setData(m.map(function (x, i) { return x == null || sig[i] == null ? null : { time: t(i), value: x - sig[i], color: x - sig[i] >= 0 ? 'rgba(209,55,61,.5)' : 'rgba(42,98,201,.5)' }; }).filter(Boolean));
       return [hist, line(m, '#1b2230', p, { title: 'MACD' }), line(sig, '#d97706', p, { title: '시그널' })];
     },
-    stoch: function (p) { var k = C.map(function (c, i) { if (i < 13) return null; var h = hh(14, i), l = ll(14, i); return h === l ? 50 : (c - l) / (h - l) * 100; }); var ks = sma(k.map(function (x) { return x == null ? 0 : x; }), 3).map(function (x, i) { return i < 15 ? null : x; }); var ds = sma(ks.map(function (x) { return x == null ? 0 : x; }), 3).map(function (x, i) { return i < 17 ? null : x; }); return [line(ks, '#00968a', p, { title: '%K' }), line(ds, '#d97706', p, { title: '%D' })]; },
-    cci: function (p) { var tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }), m = sma(tp, 20); return [line(tp.map(function (x, i) { if (m[i] == null) return null; var md = 0; for (var j = i - 19; j <= i; j++) md += Math.abs(tp[j] - m[i]); md /= 20; return md === 0 ? 0 : (x - m[i]) / (0.015 * md); }), '#0e7490', p, { title: 'CCI 20' })]; },
-    wr: function (p) { return [line(C.map(function (c, i) { if (i < 13) return null; var h = hh(14, i), l = ll(14, i); return h === l ? -50 : (h - c) / (h - l) * -100; }), '#be185d', p, { title: '%R 14' })]; },
+    stoch: function (p) { var q = ip('stoch'), k = C.map(function (c, i) { if (i < q.n - 1) return null; var h = hh(q.n, i), l = ll(q.n, i); return h === l ? 50 : (c - l) / (h - l) * 100; }); var ks = sma(k.map(function (x) { return x == null ? 0 : x; }), q.k).map(function (x, i) { return i < q.n + q.k - 2 ? null : x; }); var ds = sma(ks.map(function (x) { return x == null ? 0 : x; }), q.d).map(function (x, i) { return i < q.n + q.k + q.d - 3 ? null : x; }); return [line(ks, '#00968a', p, { title: '%K' }), line(ds, '#d97706', p, { title: '%D' })]; },
+    cci: function (p) { var n = ip('cci').n, tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }), m = sma(tp, n); return [line(tp.map(function (x, i) { if (m[i] == null) return null; var md = 0; for (var j = i - n + 1; j <= i; j++) md += Math.abs(tp[j] - m[i]); md /= n; return md === 0 ? 0 : (x - m[i]) / (0.015 * md); }), '#0e7490', p, { title: 'CCI ' + n })]; },
+    wr: function (p) { var n = ip('wr').n; return [line(C.map(function (c, i) { if (i < n - 1) return null; var h = hh(n, i), l = ll(n, i); return h === l ? -50 : (h - c) / (h - l) * -100; }), '#be185d', p, { title: '%R ' + n })]; },
     value: function (p) {
-      var tv = bars.map(function (b) { return b.close * b.volume / 1e8; }), m = sma(tv, 20);
+      var vn = ip('value').n, tv = bars.map(function (b) { return b.close * b.volume / 1e8; }), m = sma(tv, vn);
       var s = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'price', precision: 1, minMove: 0.1 }, priceLineVisible: false, lastValueVisible: true, title: '거래대금(억)' }, p);
       s.setData(bars.map(function (b, i) { var big = i >= 20 && m[i - 1] && tv[i] >= m[i - 1] * 3, up = !i || b.close >= bars[i - 1].close; return { time: b.date, value: tv[i], color: big ? (up ? 'rgba(209,55,61,.95)' : 'rgba(42,98,201,.95)') : (up ? 'rgba(209,55,61,.35)' : 'rgba(42,98,201,.35)') }; }));
-      return [s, line(m, '#64748b', p, { title: '20일 평균' })];
+      return [s, line(m, '#64748b', p, { title: vn + '일 평균' })];
     },
     ad: function (p) { var a = 0; return [line(bars.map(function (b) { a += b.high > b.low ? ((b.close - b.low) - (b.high - b.close)) / (b.high - b.low) * b.volume : 0; return a; }), '#0f766e', p, { title: 'A/D', lastValueVisible: false })]; },
     obv: function (p) { var o = 0; return [line(C.map(function (c, i) { if (i) o += c > C[i - 1] ? V[i] : c < C[i - 1] ? -V[i] : 0; return o; }), '#475569', p, { title: 'OBV' })]; },
-    atr: function (p) { var a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * 13 + tr) / 14; return i < 14 ? null : a; }), '#223456', p, { title: 'ATR 14' })]; }
+    atr: function (p) { var n = ip('atr').n, a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * (n - 1) + tr) / n; return i < n ? null : a; }), '#223456', p, { title: 'ATR ' + n })]; }
   };
   var paneOrder = [];
   var clearPanes=function(){Object.keys(paneMakers).forEach(function(k){(built['pane:'+k]||[]).forEach(function(s){chart.removeSeries(s);});delete built['pane:'+k];});while(chart.panes().length>1)chart.removePane(chart.panes().length-1);};
@@ -403,6 +409,23 @@ window.addEventListener('DOMContentLoaded', function () {
   });
   document.querySelectorAll('[data-pane]').forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); rebuildPanes(); }); });
   rebuildPanes();
+  // The moving averages carry their period in the menu ("이동평균 25" after a change).
+  var maName = function () { ['ma5', 'ma20', 'ma60', 'ma120'].forEach(function (k) { var b = document.querySelector('[data-ov="' + k + '"] .opt-t b'); if (b) b.textContent = '이동평균 ' + IP[k].n; }); };
+  maName();
+  window.GNM_indParams = {
+    defaults: IP0,
+    get: function (k) { return IP[k] ? Object.assign({}, IP[k]) : null; },
+    set: function (k, vals) {
+      if (!IP[k]) return false;
+      Object.keys(IP[k]).forEach(function (f) { var v = vals && vals[f] != null ? Number(vals[f]) : IP0[k][f]; if (isFinite(v) && v > 0) IP[k][f] = v; });
+      try { var out = {}; Object.keys(IP).forEach(function (x) { if (JSON.stringify(IP[x]) !== JSON.stringify(IP0[x])) out[x] = IP[x]; }); localStorage.setItem('gnm-ind-params', JSON.stringify(out)); } catch (e) {}
+      maName();
+      if (analysisSuspended) return true;
+      var ob = document.querySelector('[data-ov="' + k + '"]'); if (ob && ob.getAttribute('aria-pressed') === 'true') { setOverlay(k, false); setOverlay(k, true); }
+      if (paneMakers[k] && paneOrder.indexOf(k) >= 0) rebuildPanes();
+      return true;
+    }
+  };
 
   // ---- filings and news: icons above the chart (click → popover), dashed guide lines on the chart ----
   var byBar = {};
