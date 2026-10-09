@@ -1,5 +1,5 @@
 {
- "at": "2026-10-09T11:15:02.868Z",
+ "at": "2026-10-09T11:25:12.236Z",
  "selected": null,
  "universe": [
   {
@@ -35,8 +35,9 @@
   },
   {
    "source": "opendart:risk-filings",
-   "ok": true,
-   "count": 408
+   "ok": false,
+   "count": 34,
+   "error": "The operation was aborted due to timeout"
   }
  ],
  "stocks": [
@@ -52,6 +53,11 @@
   },
   {
    "symbol": "402340",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "009150",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -96,11 +102,6 @@
    "failedSources": []
   },
   {
-   "symbol": "032830",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
    "symbol": "006400",
    "report": "EXISTS",
    "failedSources": []
@@ -116,7 +117,7 @@
    "failedSources": []
   },
   {
-   "symbol": "042660",
+   "symbol": "012450",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -132,6 +133,11 @@
   },
   {
    "symbol": "062040",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "298040",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -156,7 +162,17 @@
    "failedSources": []
   },
   {
+   "symbol": "207940",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "082740",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "058470",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -191,6 +207,11 @@
    "failedSources": []
   },
   {
+   "symbol": "267260",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "007660",
    "report": "EXISTS",
    "failedSources": []
@@ -198,6 +219,21 @@
   {
    "symbol": "000150",
    "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "443060",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "452190",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "003490",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
@@ -217,6 +253,11 @@
   },
   {
    "symbol": "327260",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "403870",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -258,47 +299,15 @@
  ],
  "failed": [
   {
-   "symbol": "009150",
+   "symbol": "032830",
    "error": "fetch failed"
   },
   {
-   "symbol": "012450",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "298040",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "207940",
+   "symbol": "042660",
    "error": "fetch failed"
   },
   {
    "symbol": "267270",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "058470",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "267260",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "452190",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "443060",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "003490",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "403870",
    "error": "fetch failed"
   }
  ]
