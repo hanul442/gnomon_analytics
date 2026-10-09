@@ -186,7 +186,9 @@ export const HERO_RANGE_JS = `
 export const CHART_PRO_JS = `
 (function () {
   var panel = document.getElementById('tab-chart'); if (!panel) return;
-  var root = document.documentElement, UP = '#f04452', DOWN = '#3182f6', NAVY = '#2e4268', T = 'rgba(0,0,0,0)';
+  // G-181: line colours come from the theme tokens (navy ink on light, pale ink on dark).
+  var TV = function (n, d) { var x = window.GNMTheme && GNMTheme.v(n); return x || d; }, DARK = document.documentElement.getAttribute('data-theme') === 'dark';
+  var root = document.documentElement, UP = TV('--up', '#f04452'), DOWN = TV('--down', '#3182f6'), NAVY = TV('--ink', '#2e4268'), INK_RGB = DARK ? '207,227,255' : '46,66,104', T = 'rgba(0,0,0,0)';
   var ICON_CT = ${JSON.stringify(ICONS)}, P = ${JSON.stringify(CHART_PRO_PARTS)}, FIELDS = ${JSON.stringify(IND_FIELDS)};
   var svg = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>'; };
   var PREF = 'gnm-chart-pro', pref = { ct: 'candle', scale: 0, hilo: true, magnet: false };
@@ -367,7 +369,7 @@ export const CHART_PRO_JS = `
       if (k === 'hollow') view = chart.addSeries(L.CandlestickSeries, Object.assign({ upColor: T, downColor: DOWN, borderVisible: true, borderUpColor: UP, borderDownColor: DOWN, wickUpColor: UP, wickDownColor: DOWN }, o));
       if (k === 'bar') view = chart.addSeries(L.BarSeries, Object.assign({ upColor: UP, downColor: DOWN, thinBars: false }, o));
       if (k === 'line') view = chart.addSeries(L.LineSeries, Object.assign({ color: NAVY, lineWidth: 2 }, o));
-      if (k === 'area') view = chart.addSeries(L.AreaSeries, Object.assign({ lineColor: NAVY, topColor: 'rgba(46,66,104,.28)', bottomColor: 'rgba(46,66,104,.02)', lineWidth: 2 }, o));
+      if (k === 'area') view = chart.addSeries(L.AreaSeries, Object.assign({ lineColor: NAVY, topColor: 'rgba(' + INK_RGB + ',.28)', bottomColor: 'rgba(' + INK_RGB + ',.02)', lineWidth: 2 }, o));
       if (k === 'base') view = chart.addSeries(L.BaselineSeries, Object.assign({ topLineColor: UP, topFillColor1: 'rgba(240,68,82,.22)', topFillColor2: 'rgba(240,68,82,.03)', bottomLineColor: DOWN, bottomFillColor1: 'rgba(49,130,246,.03)', bottomFillColor2: 'rgba(49,130,246,.22)', lineWidth: 2 }, o));
       sync();
     };

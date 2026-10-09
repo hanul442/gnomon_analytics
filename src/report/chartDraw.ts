@@ -96,7 +96,8 @@ export const CHART_DRAW_JS = `
   var GROUPS = ${JSON.stringify(DRAW_GROUPS.map((g) => ({ key: g.key, label: g.label, tools: g.tools })))};
   var TOOL = {}; GROUPS.forEach(function (g) { g.tools.forEach(function (t) { t.g = g.key; TOOL[t.key] = t; }); });
   var KEYS = { t: 'trend', h: 'hline', v: 'vline', f: 'fib', c: 'channel', r: 'rect', m: 'measure', l: 'long', s: 'short', x: 'text', p: 'brush' };
-  var COLORS = ['#2563eb', '#f04452', '#16a34a', '#f59e0b', '#7c3aed', '#191f28'];
+  var INK = (window.GNMTheme && GNMTheme.v('--fg')) || '#191f28';
+  var COLORS = ['#2563eb', '#f04452', '#16a34a', '#f59e0b', '#7c3aed', INK];
   var FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1], FIBX = [0, 0.618, 1, 1.272, 1.618, 2, 2.618], FIBT = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89], GANN = [[8, '1×8'], [4, '1×4'], [3, '1×3'], [2, '1×2'], [1, '1×1'], [0.5, '2×1'], [1 / 3, '3×1'], [0.25, '4×1'], [0.125, '8×1']];
   var G = null;
   var init = function () {
@@ -292,7 +293,7 @@ export const CHART_DRAW_JS = `
     var local = function (e) { var r = host.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     var showTip = function (pt, xy, touch) { if (!pt) { tip.hidden = true; return; } tip.hidden = false; tip.textContent = won(pt.p) + ' · ' + dayOf(pt); tip.style.left = xy[0] + 'px'; tip.style.top = (xy[1] - (touch ? 46 : 14)) + 'px'; };
     var finish = function () { if (!draft) return; var before = snap(); var s = draft; draft = null; step = 0; if (s.k === 'long' || s.k === 'short') s.stop = s.pts[0].p - (s.pts[1].p - s.pts[0].p) / 2; shapes.push(s); commit(before); tip.hidden = true; var i = shapes.length - 1; setTool(null); select(i); if (s.k === 'text' || s.k === 'note') editText(i, true); };
-    var newShape = function (pt) { var t = TOOL[tool]; return { k: tool, pts: t.n === 1 ? [pt] : [pt, { t: pt.t, d: pt.d, p: pt.p }], st: { c: tool === 'text' ? '#191f28' : COLORS[0], w: tool === 'brush' ? 3 : 2 } }; };
+    var newShape = function (pt) { var t = TOOL[tool]; return { k: tool, pts: t.n === 1 ? [pt] : [pt, { t: pt.t, d: pt.d, p: pt.p }], st: { c: tool === 'text' ? INK : COLORS[0], w: tool === 'brush' ? 3 : 2 } }; };
     // A press that starts a shape and is dragged places its second point on release; a press without a drag
     // waits for the next tap (or click) for each further point, with a live preview under the mouse.
     var down = null;
