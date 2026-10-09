@@ -89,7 +89,13 @@ export const PRICE_ALERT_JS = `
     var now = price(), scen = []; try { scen = JSON.parse(document.getElementById('scen').textContent) || []; } catch (e) {}
     var chips = [];
     if (now) [-10, -5, 5, 10].forEach(function (p) { chips.push([(p > 0 ? '+' : '') + p + '%', snap(now * (1 + p / 100)), '지금보다 ' + Math.abs(p) + '% ' + (p > 0 ? '오르면' : '내리면')]); });
-    scen.forEach(function (x) { if (x.kind === 'BULL' && x.zone) chips.push(['강세 가격대', snap(x.zone[0]), '강세 가격대에 들어오면']); if (x.kind === 'BEAR' && x.zone) chips.push(['약세 가격대', snap(x.zone[1]), '약세 가격대에 들어오면']); });
+    // A scenario chip only when the price is outside that range and moving into it means crossing its near edge:
+    // below the bull range → its lower edge (이상); above the bear range → its upper edge (이하). Inside or past it, no chip.
+    scen.forEach(function (x) {
+      if (!x.zone || !now) return; var lo = Math.min(x.zone[0], x.zone[1]), hi = Math.max(x.zone[0], x.zone[1]), rng = won(lo) + '~' + won(hi);
+      if (x.kind === 'BULL' && now < lo) chips.push(['강세 가격대', snap(lo), '강세 가격대(' + rng + ')에 들어오면']);
+      if (x.kind === 'BEAR' && now > hi) chips.push(['약세 가격대', snap(hi), '약세 가격대(' + rng + ')에 들어오면']);
+    });
     var d = document.createElement('dialog'); d.className = 'v2-dialog pa-dialog';
     d.innerHTML = '<header><b>' + esc(name()) + ' 가격 알림</b><button type="button" class="dialog-x" aria-label="닫기">×</button></header>' +
       '<div class="pa-now"><span>현재가</span><b>' + (now ? won(now) : '확인 중') + '</b></div>' +
@@ -111,8 +117,9 @@ export const PRICE_ALERT_JS = `
       if (!now) { hint.textContent = '현재가를 불러오지 못했어요. 이 가격 이상이 되면 알려 드려요.'; saveB.disabled = false; return; }
       if (!o) { hint.textContent = '현재가와 같아요. 조금 올리거나 내려 주세요.'; saveB.disabled = true; return; }
       var g = (v / now - 1) * 100;
-      hint.innerHTML = '현재가보다 <b class="' + (g > 0 ? 'up' : 'down') + '">' + (g > 0 ? '+' : '') + g.toFixed(1) + '%</b> ' + (g > 0 ? '높아요' : '낮아요') + ' · 이 가격 <b>' + (o === '>=' ? '이상' : '이하') + '</b>이 되면 알려 드려요';
+      hint.innerHTML = '현재가보다 <b class="' + (g > 0 ? 'up' : 'down') + '">' + (g > 0 ? '+' : '') + g.toFixed(1) + '%</b> ' + (g > 0 ? '높아요' : '낮아요') + ' · 이 가격 <b>' + (o === '>=' ? '이상</b>이' : '이하</b>가') + ' 되면 알려 드려요';
       saveB.disabled = false; saveB.textContent = won(v) + ' ' + (o === '>=' ? '이상' : '이하') + '에서 알림 받기';
+      if (note) hint.innerHTML += '<br><small>' + esc(note) + '</small>';
     };
     var setV = function (v, n) { inp.value = fmtIn(v); note = n || ''; d.querySelectorAll('[data-chip]').forEach(function (c) { c.setAttribute('aria-pressed', String(chips[Number(c.getAttribute('data-chip'))][1] === v)); }); paint(); };
     setV(now ? snap(now * 1.05) : 0, now ? '지금보다 5% 오르면' : '');
@@ -133,7 +140,7 @@ export const PRICE_ALERT_JS = `
       G.call('POST', '/alerts/price', { symbol: symbol(), name: name(), op: o, price: Math.round(v * 10000) / 10000, note: note }).then(function (r) {
         saveB.disabled = false;
         if (r.error) { msg.textContent = r.message; return; }
-        msg.textContent = won(v) + ' ' + (o === '>=' ? '이상' : '이하') + '이 되면 🔔으로 알려 드려요.'; mine();
+        msg.textContent = won(v) + ' ' + (o === '>=' ? '이상이' : '이하가') + ' 되면 🔔으로 알려 드려요.'; mine();
         if (G.push) G.push.state().then(function (s) { if (!s.on) msg.innerHTML = esc(msg.textContent) + ' <a href="' + base + 'alerts.html">휴대폰 알림도 켜기 ›</a>'; });
       });
     });

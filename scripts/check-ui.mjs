@@ -215,6 +215,7 @@ try{
  await page.locator('.pa-btn').click();await page.locator('.pa-dialog[open]').waitFor();assert.ok(await page.locator('.pa-chips button').count()>=4);
  // G-159: target price with − / + in ticks; the % gap and 이상/이하 follow the price; equal to now cannot be saved.
  assert.equal(await page.locator('#pa-price').inputValue(),'184');assert.match(await page.locator('.pa-hint').innerText(),/\+5\.1%.*이상/);
+ for(const [label,word] of [['강세 가격대','이상'],['약세 가격대','이하']]){const c=page.locator('.pa-chips button',{hasText:label});if(await c.count()){await c.click();assert.match(await page.locator('.pa-hint').innerText(),new RegExp(word),label+' must point into its range');}}
  await page.locator('.pa-chips button',{hasText:'-5%'}).click();assert.equal(await page.locator('#pa-price').inputValue(),'166');assert.match(await page.locator('.pa-hint').innerText(),/이하/);
  await page.locator('.pa-target [data-step="1"]').click();assert.equal(await page.locator('#pa-price').inputValue(),'167');
  await page.locator('#pa-price').fill('175');assert.equal(await page.locator('.pa-save').isDisabled(),true,'the price now cannot be an alert');await page.locator('#pa-price').fill('190');assert.match(await page.locator('.pa-save').innerText(),/190원 이상/);

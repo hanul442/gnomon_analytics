@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function () {
       nowPx = p; $('al-now').hidden = false; $('al-now').innerHTML = '현재가 <b>' + price(p, sym) + '</b>'; if (!f.price.value) f.price.placeholder = '현재가 ' + price(p, sym); sync();
     }).catch(function () {});
   };
-  var sync = function () { var v = Number(String(f.price.value).replace(/[^0-9.]/g, '')); if (!nowPx || !(v > 0)) return; if (v !== nowPx) f.op.value = v > nowPx ? '>=' : '<='; var g = (v / nowPx - 1) * 100; $('al-now').innerHTML = '현재가 <b>' + price(nowPx, chosen.symbol) + '</b> · 적은 가격은 ' + (v === nowPx ? '현재가와 같아요' : '<b class="' + (g > 0 ? 'up' : 'down') + '">' + (g > 0 ? '+' : '') + g.toFixed(1) + '%</b> → <b>' + (g > 0 ? '이상' : '이하') + '</b>이 되면 알려요'); };
+  var sync = function () { var v = Number(String(f.price.value).replace(/[^0-9.]/g, '')); if (!nowPx || !(v > 0)) return; if (v !== nowPx) f.op.value = v > nowPx ? '>=' : '<='; var g = (v / nowPx - 1) * 100; $('al-now').innerHTML = '현재가 <b>' + price(nowPx, chosen.symbol) + '</b> · 적은 가격은 ' + (v === nowPx ? '현재가와 같아요' : '<b class="' + (g > 0 ? 'up' : 'down') + '">' + (g > 0 ? '+' : '') + g.toFixed(1) + '%</b> → <b>' + (g > 0 ? '이상</b>이' : '이하</b>가') + ' 되면 알려요'); };
   f.price.addEventListener('input', sync);
   f.addEventListener('submit', function (e) {
     e.preventDefault(); var v = Number(String(f.price.value).replace(/[^0-9.]/g, ''));
