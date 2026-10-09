@@ -207,7 +207,7 @@ export interface DailyRunResult {
   selected: string | null;
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; usStocks?: boolean; dailyPicks?: boolean }): Promise<DailyRunResult> {
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; usStocks?: boolean; dailyPicks?: boolean; weeklyReports?: boolean }): Promise<DailyRunResult> {
   const { root, now } = options;
   await configureSite(root);
   const today = kstParts(now);
@@ -234,12 +234,15 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const last = (await readdir(join(root, 'reports', symbol)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0, 10) < today.date).sort().at(-1)?.slice(0, 10);
     return friday || !last || daysBetween(last, today.date) >= 8;
   };
+  // G-174: the site runs without weekly reports (weeklyReports: false) — the stocks in tickers.json and the week's picks
+  // stay live dashboards and AI reports come from the daily picks and readers' requests. The weekly path stays for tests.
+  const weekly = options.weeklyReports !== false;
   const jobs: { ticker: Ticker; tier: 'deep' | null; reportDay: boolean; force?: boolean }[] = [];
   for (const t of options.tickers) {
-    const due = await weeklyDue(t.symbol);
+    const due = weekly && await weeklyDue(t.symbol);
     jobs.push({ ticker: t, tier: due && t.ai ? 'deep' : null, reportDay: due });
   }
-  for (const p of (selection?.picks ?? []).filter((x) => !core.has(x.symbol))) jobs.push({ ticker: pickTicker(p, corpCodes), tier: selected && p.tier === 'deep' ? 'deep' : null, reportDay: selected !== null });
+  for (const p of (selection?.picks ?? []).filter((x) => !core.has(x.symbol))) jobs.push({ ticker: pickTicker(p, corpCodes), tier: weekly && selected && p.tier === 'deep' ? 'deep' : null, reportDay: weekly && selected !== null });
   // Requested stocks: a deep committee right away until one report has it, then dashboards only.
   const listed: readonly ListedStock[] = universe.rows ?? await readListedStocks(root);
   const requested = new Set<string>();
@@ -817,6 +820,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '', tickers, requests,
       naver: { clientId: process.env.NAVER_CLIENT_ID ?? '', clientSecret: process.env.NAVER_CLIENT_SECRET ?? '' },
       anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
+      // G-174 (한서님 10/9): no weekly 대표 종목 or weekly-pick reports on the site.
+      weeklyReports: false,
       ...(process.env.GNM_AI_BUDGET_USD ? { aiBudgetUsd: Number(process.env.GNM_AI_BUDGET_USD) } : {}),
     }))
     .then((result) => {

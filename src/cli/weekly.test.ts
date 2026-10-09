@@ -153,6 +153,17 @@ test('daily picks (G-56): drawn once a day from the screener, reported once, sho
   assert.equal((await readFile(join(root, 'data', 'daily-picks.jsonl'), 'utf8')).trim().split('\n').length, picks.length);
 });
 
+test('weeklyReports: false (the site, G-174): no weekly committee for 대표 종목 or the week\'s picks, pages still built', async () => {
+  const root = await tempDir('gnm-');
+  const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
+  const models: string[] = [];
+  const anthropic = { beta: { messages: { parse: async (req: { model: string }) => { models.push(req.model); throw new Error('no AI expected'); } } } } as never;
+  const out = await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, weeklyReports: false, dailyPicks: false, selectionParams: { ...DEFAULT_SELECTION, size: 3, bigCaps: 1 } });
+  assert.deepEqual(models, []);
+  assert.ok(out.results.every((r) => r.report !== 'WRITTEN'), JSON.stringify(out.results.map((r) => [r.symbol, r.report])));
+  assert.ok((await readFile(join(root, 'site', 'index.html'), 'utf8')).includes('<title>'));
+});
+
 test('the monthly AI budget: core stocks spend it first, the rest skip AI with the reason; every call is in the ledger', async () => {
   const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');

@@ -85,6 +85,20 @@ test('sealed reports offer 심층 리포트 열기 on 요약 and put the unlock 
  const ai=committeeTab(report,{base:'',from:null,deepDate:'2026-10-06'});const d=ai.indexOf('id="deep-slot"');
  assert.ok(d>ai.indexOf('cl-mini')&&d>0,'the unlock card follows 결론');const seats=ai.indexOf('parliament-ai');if(seats>=0)assert.ok(d<seats,'and comes before the seats');
 });
+test('an older report keeps its ranges and says how each fared since (G-173)',async()=>{
+ const {scenarioCheck,checkLine,scenarioPlot}=await import('./scenarioChart.js');const {conclusionCard}=await import('./conclusion.js');
+ const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-10-06',generatedAt:new Date(),bars:Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000})),disclosures:[],sources:[]});
+ const sc=(kind:string,zone:[number,number],p:number)=>({kind,narrative:{text:kind+' 설명',evidenceIds:['P1']},catalysts:[kind+' 근거'],invalidation:[],probability:p,zone});
+ // Written on 9/20 (KST); closes 9/21~9/30 run 120..129.
+ report.commentary={status:'OK',generatedAt:'2026-09-20T09:00:00Z',summary:{text:'결론.'},scenarios:[sc('BULL',[125,140],30),sc('BASE',[110,124],50),sc('BEAR',[90,109],20)]} as any;
+ const bull=scenarioCheck(report,'BULL')!,base=scenarioCheck(report,'BASE')!,bear=scenarioCheck(report,'BEAR')!;
+ assert.equal(bull.sessions,10);assert.equal(bull.entered,'2026-09-26');assert.equal(bull.now,'in');
+ assert.equal(base.entered,'2026-09-21');assert.equal(base.now,'above');assert.equal(bear.entered,null);
+ assert.match(checkLine(bull,'강세'),/9\/26에 강세 범위에 들어왔고 지금도 안/);assert.match(checkLine(bear,'약세'),/아직 범위 밖.*10\/20거래일/);
+ const card=conclusionCard(report);assert.match(card,/9\/20 리포트 이후 10거래일/);assert.match(card,/강세 시나리오<\/b> 범위 안이에요 — 위원회가 30%로 본 시나리오예요\. 위원회가 본 근거: BULL 근거/);
+ // The range starts at the report day, with a marker there.
+ assert.match(scenarioPlot(report,'BULL'),/리포트 09\/20/);
+});
 test('report failures preserve actionable categories without exposing provider details',async()=>{
  const {reportFailureMessage}=await import('../worker/reports.js');
  assert.match(reportFailureMessage('API_529:provider request details'),/AI_BUSY/);

@@ -1,4 +1,4 @@
-import {scenarioPlot, scenarioZone} from './scenarioChart.js';
+import {checkLine, scenarioCheck, scenarioPlot, scenarioZone} from './scenarioChart.js';
 export { scenarioZone };
 // Scenario assumptions, supporting catalysts and invalidation conditions are distinct.
 // Never infer a scenario trigger from unrelated support/resistance levels.
@@ -75,21 +75,28 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
     const range = z ? `<small class="cl-range">${z.source === 'analyst' ? 'AI 분석가 목표가 범위' : z.source === 'calc' ? '20거래일 변동성 참고 범위' : '20거래일 예상 범위'} ${zone(z.zone)}${z.source === 'ai' ? ` · 분석 종가 대비 ${gap((z.zone[0]+z.zone[1])/2,p.close)}` : ''}</small>` : '';
     return `<div class="cl-px"><span class="cl-arrow">${arrow}</span>${condition}${range}</div>`;
   };
+  // G-173: once prices exist after the AI's date, each row says how its range fared and the card says which one played out.
+  const checks = { BULL: scenarioCheck(report, 'BULL'), BASE: scenarioCheck(report, 'BASE'), BEAR: scenarioCheck(report, 'BEAR') };
+  const anyCheck = checks.BULL ?? checks.BASE ?? checks.BEAR;
+  const playing = (['BULL', 'BASE', 'BEAR'] as const).find((k) => checks[k]?.now === 'in');
+  const why = (k: 'BULL' | 'BASE' | 'BEAR') => { const s = sc(k); return s && s.narrative.text !== LOCKED_TEXT && s.catalysts[0] ? ` 위원회가 본 근거: ${esc(s.catalysts[0])}.` : ''; };
+  const verdict = anyCheck ? `<div class="cl-check"><b>📅 ${esc(anyCheck.since.slice(5).replace('-', '/'))} 리포트 이후 ${anyCheck.sessions}거래일</b><p>${playing ? `지금 가격은 <b>${({ BULL: '강세', BASE: '기본', BEAR: '약세' })[playing]} 시나리오</b> 범위 안이에요${typeof sc(playing)?.probability === 'number' ? ` — 위원회가 ${sc(playing)!.probability}%로 본 시나리오예요` : ''}.${why(playing)}` : '지금 가격은 세 시나리오 범위 어디에도 있지 않아요. 아래에서 각 범위까지 남은 거리를 볼 수 있어요.'}</p></div>` : '';
   const rows = [
-    row('cl-up', bull, '강세', px('BULL', '▲'), '성립 근거와 무효화 조건 함께 확인'),
-    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small data-live="${esc(report.symbol)}" data-live-f="nowlabel">${esc((p.sessionDate ?? report.date).slice(5).replace('-', '/'))} 종가</small></div>`, '현재 근거에서 가장 그럴듯한 전개'),
-    row('cl-down', bear, '약세', px('BEAR', '▼'), '성립 근거와 무효화 조건 함께 확인'),
+    row('cl-up', bull, '강세', px('BULL', '▲'), checks.BULL ? checkLine(checks.BULL, '강세') : '성립 근거와 무효화 조건 함께 확인'),
+    row('cl-now', base, '기본', `<div class="cl-px"><span class="cl-arrow">●</span><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small data-live="${esc(report.symbol)}" data-live-f="nowlabel">${esc((p.sessionDate ?? report.date).slice(5).replace('-', '/'))} 종가</small></div>`, checks.BASE ? checkLine(checks.BASE, '기본') : '현재 근거에서 가장 그럴듯한 전개'),
+    row('cl-down', bear, '약세', px('BEAR', '▼'), checks.BEAR ? checkLine(checks.BEAR, '약세') : '성립 근거와 무효화 조건 함께 확인'),
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
   const oddsBar = oddsBarOf(c);
   const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : `조건 가격 도달만으로 전개가 확정되지는 않아요. 예상 범위와 조건 가격은 다릅니다. 분석 기준은 ${esc(report.date)} 종가 ${won(p.close)}이며, 현재 가격과 차이가 날 수 있어요`;
   return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')}</div><h2 class="cl-line">${esc(line)}</h2>${oddsBar}
-<div class="cl-ladder">${rows}</div>
+${verdict}<div class="cl-ladder">${rows}</div>
 ${[bull, base, bear].some((x) => x?.narrative.text === LOCKED_TEXT) ? `<div class="cl-deep"><span>🔒 시나리오 전개·무효화 조건·최악의 경우·위원회 토론은 심층 리포트에 있어요.</span><button type="button" class="btn-primary" data-deep-go>심층 리포트 열기 <small>${CREDIT_COST.unlock}크레딧</small></button></div>` : ''}
 <p class="fine">${bull || bear || base ? '줄을 누르면 시나리오가 펼쳐져요. ' : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
 }
 
-export const CONCLUSION_CSS = `.cl-deep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:var(--accent-soft);font-size:13.5px;color:var(--fg2)}.cl-deep .btn-primary{margin:0;padding:10px 16px;font-size:14px}.cl-deep small{font-weight:600;opacity:.85;margin-left:4px}.dl-go{margin-top:6px}
+export const CONCLUSION_CSS = `.cl-check{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:#f2f4f6;font-size:14px}.cl-check b{font-weight:800}.cl-check p{margin:4px 0 0;line-height:1.55;color:var(--fg2)}.cl-check p b{color:var(--fg)}
+.cl-deep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:var(--accent-soft);font-size:13.5px;color:var(--fg2)}.cl-deep .btn-primary{margin:0;padding:10px 16px;font-size:14px}.cl-deep small{font-weight:600;opacity:.85;margin-left:4px}.dl-go{margin-top:6px}
 .cl-mini p{margin:4px 0 8px;line-height:1.55}.cl-go{display:inline-block;font-size:13px;font-weight:700;padding:6px 0;color:var(--accent-strong);text-decoration:none}.cl-odds{margin:10px 0 14px}.cl-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.cl-odds .sc-prob{height:10px;margin:0;border-radius:5px;gap:2px;font-size:0}.cl-odds .sc-prob span{min-width:6px}.cl-odds-l{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.cl-odds-l span:nth-child(2){color:var(--fg2)}
 @media (min-width:821px){.cl-row{grid-template-columns:minmax(0,1fr) minmax(230px,30%) 20px!important}.cl-what{justify-self:stretch}}.cl-card .card{border:1.5px solid var(--navy)}.cl-k{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.cl-line{font-size:19px;line-height:1.5;margin:0 0 8px}.cl-tally{font-size:13px;color:var(--fg2);margin:0 0 14px}
 .cl-ladder{position:relative;display:flex;flex-direction:column;gap:8px;padding-left:4px}.cl-ladder::before{content:'';position:absolute;left:15px;top:14px;bottom:14px;width:2px;background:linear-gradient(#f04452,#7b8798,#3182f6);opacity:.35}
