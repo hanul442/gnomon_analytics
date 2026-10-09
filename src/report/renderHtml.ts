@@ -46,7 +46,8 @@ export const CHART_ASSET = 'assets/lightweight-charts.js';
 export const FONT_DIR = 'assets/fonts';
 
 const IMPORTANCE_LABEL = { HIGH: '중요', MEDIUM: '보통', LOW: '참고' } as const;
-const MIX_COLORS = ['#243659', '#34496f', '#8fa5c3', '#becbdc', '#6b6f78', '#dde4ee'];
+// G-176: kinds side by side must be told apart, so neighbours differ in hue, not only in shade.
+const MIX_COLORS = ['#6b4eff', '#243659', '#0f9b8e', '#e8a33d', '#8b95a1', '#d6ceff'];
 /** Meta details as separate items (spacing, not "·" chains). */
 const meta = (parts: readonly string[], cls = 'meta'): string => `<span class="${cls}">${parts.filter(Boolean).map((part) => `<span>${part}</span>`).join('')}</span>`;
 
@@ -145,7 +146,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .mini-gauge{width:100%;max-width:150px;display:block;margin:4px auto 0}.hz-label{font-weight:600;font-size:17px}.hz-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:0 10px;color:var(--muted);font-size:12px}
 .value-head{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:6px}.value-head .label,.facts .label,.kpi .label{display:block;color:var(--muted);font-size:12px}
 .big{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}.mid{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
-.value-strip{width:100%;height:auto;display:block;margin:6px 0}.value-strip text{font-size:11px;fill:var(--muted)}.vs-axis{stroke:var(--line);stroke-width:2}
+.value-strip{width:100%;max-width:560px;height:auto;display:block;margin:6px auto}.value-strip text{font-size:11.5px;fill:var(--muted)}.value-strip .vs-v{font-weight:700;fill:var(--fg2)}.vs-axis{stroke:var(--line);stroke-width:2}
 .vs-band{fill:var(--accent-soft);stroke:#a5b6ce}.vs-center line{stroke:var(--accent);stroke-width:2}.vs-close line{stroke:var(--fg);stroke-width:3}.vs-cons line{stroke:#7a4fb3;stroke-width:2;stroke-dasharray:3 3}.vs-p50 line{stroke:#d97706;stroke-width:2;stroke-dasharray:3 3}
 .facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:10px}.facts.one{grid-template-columns:1fr;margin-top:10px}.facts b{font-variant-numeric:tabular-nums}
 .race{padding:6px 18px}.race-row{display:grid;grid-template-columns:44px minmax(0,1.4fr) 140px repeat(3,minmax(0,.6fr)) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.race-row:first-of-type{border-top:0}
@@ -278,7 +279,7 @@ ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.d
 .chip{display:inline-block;font-size:11px;font-weight:600;color:var(--accent-strong);background:var(--accent-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none}.chip:hover{background:var(--accent);color:#fff}
 .evid li{font-size:13px}.desk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.desk-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}.desk-grid p,.why-grid p{margin:4px 0;font-size:14px}
 .red-team{margin-top:12px;border-left:4px solid #f04452;background:#fdf3f2;border-radius:0 12px 12px 0;padding:10px 14px}.red-team h3{font-size:14px;margin:0 0 4px;color:#9f1d24}.red-team p{margin:4px 0}
-.flow-chart{width:100%;height:auto;display:block}.flow-chart .zero{stroke:#b6c0cf;stroke-width:1}.flow-chart .hit{fill:transparent}.flow-chart .hit:hover{fill:rgba(46,66,104,.08)}
+.flow-chart{width:100%;max-width:640px;height:auto;display:block;margin:0 auto}.flow-chart .zero{stroke:#b6c0cf;stroke-width:1}.flow-chart .hit{fill:transparent}.flow-chart .hit:hover{fill:rgba(46,66,104,.08)}
 .flow-label{font-size:12px;fill:var(--fg);font-weight:600}.axis-label{font-size:11px;fill:var(--muted)}
 .legend-inline{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}.legend-inline i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 
@@ -312,6 +313,9 @@ export const TABS: readonly { key: TabKey; label: string }[] = [
   { key: 'ai', label: 'AI 위원회' },
   { key: 'news', label: '뉴스·공시' },
 ];
+
+/** G-176: a coin has no company to weigh, so its 기업 체력 tab is called 수급 (what is in it). */
+const tabsFor = (kind?: string) => (kind === 'coin' ? TABS.map((t) => (t.key === 'fundamentals' ? { ...t, label: '수급' } : t)) : TABS);
 
 const ANALYSIS_KEYS = new Set<string>();
 function reportNav(tabs:readonly {key:string;label:string}[]):string {
@@ -478,16 +482,16 @@ function whySection(report: DailyReport, opts: { committee?: boolean; only?: 'cl
   const brief = c.tier === 'brief';
   const showClaims = opts.only !== 'structure', showStructure = opts.only !== 'claims';
   if (opts.only === 'claims') return `<div class="card" id="why-claims"><div class="head"><h2>위원회 근거 정리</h2><span class="sub" style="margin:0">강세와 약세 근거 · 불확실한 점 · 판단이 바뀔 수 있는 것</span></div>
-<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div><div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish, '찾지 못했어요.')}</div><div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain, '없어요.')}</div></div>
-<h3 class="why-h">판단이 바뀔 수 있는 것</h3>${list(c.watch, '없어요.')}<details class="more"><summary>근거 목록 ${c.evidence.length}개</summary><ul class="plain evid">${legend}</ul></details>
+<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div><div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish, '찾지 못했어요.')}</div>${c.uncertain.length ? `<div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain, '')}</div>` : ''}</div>
+${c.watch.length ? `<h3 class="why-h">판단이 바뀔 수 있는 것</h3>${list(c.watch, '')}` : ''}<details class="more"><summary>근거 목록 ${c.evidence.length}개</summary><ul class="plain evid">${legend}</ul></details>
 <p class="fine">AI(${escape(c.servedBy ?? c.model)})가 이 리포트의 근거만 보고 쓴 해설이에요. 틀릴 수 있고, 투자 권유가 아니에요.</p></div>`;
   return `<div class="card" id="why"><div class="head"><h2>${brief ? '간단 해설 (이전 형식)' : opts.committee ? '위원회 결론' : 'AI 위원회 해설'}</h2><span class="sub" style="margin:0">${brief ? '요약 · 강세와 약세 근거 · 지켜볼 것' : opts.committee ? '요약, 레드팀 반론, 시나리오' : '데스크 5곳과 레드팀이 오늘 리포트의 근거만 인용해요'}</span></div>
 ${c.summary ? `<p class="headline">${kindChip(c.summary.kind)}${escape(c.summary.text)} <span class="chips-inline">${chips(c.summary.evidenceIds)}</span></p>` : ''}
 ${showStructure ? `${opts.committee ? '' : desks}${red}` : ''}
 ${showClaims ? `${opts.committee ? '<details class="more why-fold"><summary>근거 정리 · 판단이 바뀔 수 있는 것 · 부족한 근거</summary>' : ''}${desks ? '<h3 class="why-h">근거 정리</h3>' : ''}<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
 <div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish, '찾지 못했어요.')}</div>
-<div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain, '없어요.')}</div></div>
-<h3 class="why-h">판단이 바뀔 수 있는 것</h3>${list(c.watch, '없어요.')}
+${c.uncertain.length ? `<div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain, '')}</div>` : ''}</div>
+${c.watch.length ? `<h3 class="why-h">판단이 바뀔 수 있는 것</h3>${list(c.watch, '')}` : ''}
 ${c.dataGaps.length ? `<h3 class="why-h">근거가 부족한 부분</h3><ul class="plain">${c.dataGaps.map((g) => `<li>${escape(g)}</li>`).join('')}</ul>` : ''}
 <details class="more"><summary>근거 목록 ${c.evidence.length}개</summary><ul class="plain evid">${legend}</ul></details>${opts.committee ? '</details>' : ''}` : `<details class="more"><summary>근거 목록 ${c.evidence.length}개</summary><ul class="plain evid">${legend}</ul></details>`}
 ${c.promptVersion >= 'gnm-committee-v3' ? '<p class="fine">주장마다 <span class="ck ck-FACT">사실</span><span class="ck ck-INFERENCE">해석</span><span class="ck ck-ASSUMPTION">가정</span>을 표시해요.</p>' : ''}<p class="fine">AI(${escape(c.servedBy ?? c.model)})가 이 리포트의 근거만 보고 쓴 해설이에요. 틀릴 수 있고, 투자 권유가 아니에요.${c.dropped ? ` 근거를 대지 못한 주장 ${c.dropped}개는 뺐어요.` : ''} 프롬프트 ${escape(c.promptVersion)}.</p></div>`;
@@ -588,7 +592,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
   const ctx: PageContext = { base, live: links.live ?? false, homeHref: links.homeHref ?? `${base}index.html`, archiveHref: links.archiveHref ?? `${base}archive.html`, commentaryFrom: links.commentaryFrom ?? null, previous: links.previous ?? null, deep: links.deep ?? null };
   const m = report.market;
   const chart = priceChart(report, chartOverlays(m), base, CHART_ASSET);
-  const panel = (key: TabKey, html: string) => `<section class="panel" id="tab-${key}" role="tabpanel" aria-labelledby="t-${key}" tabindex="-1"><h2 class="panel-title">${TABS.find((t) => t.key === key)!.label}</h2>${html}</section>`;
+  const panel = (key: TabKey, html: string) => `<section class="panel" id="tab-${key}" role="tabpanel" aria-labelledby="t-${key}" tabindex="-1"><h2 class="panel-title">${tabsFor(report.kind).find((t) => t.key === key)!.label}</h2>${html}</section>`;
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   // G-71: the conclusion (scenarios that open on tap) heads the summary tab, above everything else.
   const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${ctx.commentaryFrom && ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? staleAiBar(report, ctx.commentaryFrom) : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : quickInfoCard(m, report.price?.close ?? null, report.recentBars ?? [])}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
@@ -622,13 +626,13 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   const body = `${bar}${panel('home', home)}
 ${panel('chart', chartTab)}
 ${panel('technical', `${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${strategyTab}</section>`)}
-${panel('fundamentals', `${report.kind === 'coin' ? '' : fundTab}<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`)}
+${panel('fundamentals', `${report.kind === 'coin' ? '' : fundTab}<section class="sub-sec${report.kind === 'coin' ? ' sub-first' : ''}" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`)}
 ${panel('ai', aiTab).replace('role="tabpanel"',`role="tabpanel" data-ai-date="${escape(report.commentary?.status==='OK'?(ctx.commentaryFrom??report.date):'')}"`)}
 ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | GNOMON` : `${report.name} ${report.date} 일일 리포트 | GNOMON`;
-  return shell(base, title, body, { tabs: TABS, scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+  return shell(base, title, body, { tabs: tabsFor(report.kind), scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
 
 /**
@@ -866,9 +870,9 @@ ${coin || us ? '' : `<section class="block"><div class="block-head"><h2>AI 리�
   const ending=body.indexOf('<footer id="sources"');
   const techAt=body.indexOf('<section class="block"><div class="grid-eq">',split);
   const head=body.slice(0,split), chart=body.slice(split,techAt), technical=body.slice(techAt,ending);
-  const missing=(label:string)=>`<section class="block" data-missing><h2>${label}</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 생성되지 않은 분석이에요</b><p>리포트를 생성하면 이 영역에서 확인할 수 있어요.</p><button type="button" class="btn-primary" data-create-report>심층 리포트 생성하기</button></div></div></section>`;
-  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${missing('전략 대결 · 모의투자')}</section></section>${[{key:'fundamentals',label:'기업 체력'},{key:'ai',label:'AI 위원회'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${missing(t.label)}${t.key==='fundamentals'?`<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${missing('수급')}</section>`:''}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
-  return shell('', coin ? '코인 차트 | GNOMON' : us ? '미국 주식 차트 | GNOMON' : '종목 차트 | GNOMON', body, { tabs: TABS, bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(kind)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}${PARLIAMENT_SCRIPT}` });
+  const missing=(label:string)=>`<section class="block" data-missing>${label?`<h2>${label}</h2>`:''}<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 생성되지 않은 분석이에요</b><p>리포트를 생성하면 이 영역에서 확인할 수 있어요.</p><button type="button" class="btn-primary" data-create-report>심층 리포트 생성하기</button></div></div></section>`;
+  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${missing('전략 대결 · 모의투자')}</section></section>${[{key:'fundamentals',label:coin?'수급':'기업 체력'},{key:'ai',label:'AI 위원회'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${t.key==='fundamentals'&&coin?'':missing(t.label)}${t.key==='fundamentals'?`${us?'':`<section class="sub-sec${coin?' sub-first':''}" id="tab-flows"><h2 class="sub-h">수급</h2>${missing('')}</section>`}`:''}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
+  return shell('', coin ? '코인 차트 | GNOMON' : us ? '미국 주식 차트 | GNOMON' : '종목 차트 | GNOMON', body, { tabs: tabsFor(kind), bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(kind)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}${PARLIAMENT_SCRIPT}` });
 }
 
 /** The free chart page; coins (upbit KRW markets) reuse it with their own data folder and wording. */

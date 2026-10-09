@@ -271,8 +271,10 @@ window.addEventListener('DOMContentLoaded', function () {
     }
   };
   var lineMakers = {
-    levels: function () { return (ov.levels || []).map(function (l) { return candle.createPriceLine({ price: l.price, color: l.kind === 'SUPPORT' ? DOWN : UP, lineWidth: 1, axisLabelVisible: true, title: l.kind === 'SUPPORT' ? '지지' : '저항' }); }); },
-    fib: function () { return (ov.fib || []).map(function (f) { return candle.createPriceLine({ price: f.price, color: GOLD, lineWidth: 1, lineStyle: 1, axisLabelVisible: true, title: f.ratio === 0 ? 'Fib 0% (끝)' : f.ratio === 1 ? 'Fib 100% (시작)' : 'Fib ' + (f.ratio * 100).toFixed(1) + '%' }); }); },
+    // G-176: six level boxes piled over the price scale. Only the nearest support and the nearest resistance get an axis box;
+    // the other levels stay as lines (the 가격 구조 table lists them all).
+    levels: function () { var lv = ov.levels || [], now = bars.length ? bars[bars.length - 1].close : 0, near = {}; lv.forEach(function (l) { var d = Math.abs(l.price - now); if (!near[l.kind] || d < near[l.kind].d) near[l.kind] = { d: d, l: l }; }); return lv.map(function (l) { var top = near[l.kind] && near[l.kind].l === l; return candle.createPriceLine({ price: l.price, color: l.kind === 'SUPPORT' ? DOWN : UP, lineWidth: 1, lineStyle: top ? 0 : 2, axisLabelVisible: top, title: top ? (l.kind === 'SUPPORT' ? '지지' : '저항') : '' }); }); },
+    fib: function () { return (ov.fib || []).map(function (f) { return candle.createPriceLine({ price: f.price, color: GOLD, lineWidth: 1, lineStyle: 1, axisLabelVisible: false, title: f.ratio === 0 ? 'Fib 0% (끝)' : f.ratio === 1 ? 'Fib 100% (시작)' : 'Fib ' + (f.ratio * 100).toFixed(1) + '%' }); }); },
     fair: function () { if (!ov.fair) return []; return [['low', '적정 하단'], ['center', '적정가'], ['high', '적정 상단']].map(function (k) { return candle.createPriceLine({ price: ov.fair[k[0]], color: '#223456', lineWidth: k[0] === 'center' ? 2 : 1, lineStyle: k[0] === 'center' ? 0 : 2, axisLabelVisible: true, title: k[1] }); }); }
   };
   var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); var w = d.getUTCDay(); if (w !== 0 && w !== 6) n--; } return d.toISOString().slice(0, 10); };
@@ -541,7 +543,8 @@ window.addEventListener('DOMContentLoaded', function () {
     var from = Math.max(0, bars.length - n);
     currentExtra = extra || 0;
     // Room on the right for the scenario boxes: a fixed share of the visible candles, wider on phones.
-    if (scShown.length && currentExtra < 62) currentExtra = Math.max(currentExtra, 22, Math.round(Math.min(n, bars.length) * (mobile ? 0.9 : 0.4)));
+    // G-176: room for the scenario boxes, at most a third of the candles on screen (a phone showed half the chart empty); 1개월 keeps 10.
+    if (scShown.length && currentExtra < 62) currentExtra = Math.max(currentExtra, Math.max(10, Math.min(30, Math.round(Math.min(n, bars.length) * (mobile ? 0.4 : 0.3)))));
     chart.timeScale().setVisibleLogicalRange({ from: from - 0.5, to: bars.length - 0.5 + currentExtra });
     var w = bars.slice(from), first = w[0].open, lastC = w[w.length - 1].close, hi = Math.max.apply(null, w.map(function (b) { return b.high; })), lo = Math.min.apply(null, w.map(function (b) { return b.low; }));
     var ch = (lastC / first - 1) * 100, label = document.querySelector('[data-range="' + n + '"]').textContent;
