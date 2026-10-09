@@ -85,7 +85,7 @@ export function personaCards(report: DailyReport): string {
   // Trader: today's move, volume and the nearest levels.
   const value = p.close * p.volume;
   const trader = card('trader', '오늘 움직임', `${pct(p.changePct)} · 거래량 평소의 ${p.volumeRatio20 == null ? '—' : p.volumeRatio20.toFixed(1)}배`,
-    row('거래대금', `${(value / 1e8).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}억`)
+    row('거래대금', value >= 1e8 ? `${(value / 1e8).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}억` : `${Math.max(1, Math.round(value / 1e4)).toLocaleString('ko-KR')}만`)
     + (below ? row('가까운 지지', won(below.price), `닿은 횟수 ${below.touches}번`) : '')
     + (above ? row('가까운 저항', won(above.price), `닿은 횟수 ${above.touches}번`) : '')
     + (m ? row('수급 흔적', FOOT[m.footprint.state] ?? '—') : '')
