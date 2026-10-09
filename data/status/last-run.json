@@ -1,5 +1,5 @@
 {
- "at": "2026-10-09T08:23:28.223Z",
+ "at": "2026-10-09T08:42:34.681Z",
  "selected": null,
  "universe": [
   {
@@ -35,8 +35,8 @@
   {
    "source": "opendart:risk-filings",
    "ok": false,
-   "count": 218,
-   "error": "The operation was aborted due to timeout"
+   "count": 0,
+   "error": "fetch failed"
   }
  ],
  "stocks": [
@@ -52,6 +52,11 @@
   },
   {
    "symbol": "009830",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "042700",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -86,11 +91,6 @@
    "failedSources": []
   },
   {
-   "symbol": "010060",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
    "symbol": "098460",
    "report": "NOT_SETTLED",
    "failedSources": []
@@ -121,11 +121,6 @@
    "failedSources": []
   },
   {
-   "symbol": "000150",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
    "symbol": "001820",
    "report": "NOT_SETTLED",
    "failedSources": []
@@ -141,27 +136,17 @@
    "failedSources": []
   },
   {
-   "symbol": "316140",
+   "symbol": "000270",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "000250",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "093370",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "007810",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "089030",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "096770",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -182,11 +167,6 @@
   },
   {
    "symbol": "058470",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "067310",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -243,15 +223,31 @@
  ],
  "failed": [
   {
-   "symbol": "042700",
+   "symbol": "010060",
    "error": "fetch failed"
   },
   {
-   "symbol": "000270",
+   "symbol": "000150",
    "error": "fetch failed"
   },
   {
-   "symbol": "000250",
+   "symbol": "316140",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "007810",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "089030",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "096770",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "067310",
    "error": "fetch failed"
   }
  ]
