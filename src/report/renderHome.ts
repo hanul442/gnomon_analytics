@@ -26,6 +26,8 @@ export interface IndexQuote { symbol: string; name: string; date: string; close:
 
 export interface HomeData {
   marketReports?: readonly MarketReport[];
+  /** G-179: the US market's temperature (signal buckets over the US universe) and today's breadth. */
+  us?: UsTemp | null;
   entries: readonly HomeEntry[];
   selection: { date: string; eligible: number; universe: number } | null;
   universe: readonly UniverseRow[] | null;
@@ -38,14 +40,18 @@ export interface HomeData {
   banners?: readonly Banner[];
 }
 
+export interface UsTemp { pulse: MarketPulse | null; date: string; up: number; down: number; flat: number }
+
 const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg>';
 const star = (symbol: string, name: string) => `<button type="button" class="star" data-star="${esc(symbol)}" aria-pressed="false" aria-label="${esc(name)} 관심 종목">${STAR}</button>`;
 
 
-function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null, pulse: MarketPulse | null, dailyHref = 'market-reports.html'): string {
+function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null, pulse: MarketPulse | null, dailyHref = 'market-reports.html', us: UsTemp | null = null): string {
   const cards = indices.map((i) => `<div class="card ix"><div class="ix-top"><div><div class="pl-k">${esc(i.name)}</div><div class="ix-v">${i.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</div><div class="${tone(i.changePct)} ix-c">${signed(i.changePct)}</div></div>${sparkline(i.closes, `${i.name} 최근 60거래일`, 110, 40, i.changePct == null ? null : i.changePct >= 0)}</div><div class="muted small">${esc(i.date)} 종가</div></div>`).join('');
   const temp = tempCard(pulse, universe, dailyHref);
-  return cards || temp ? `<section class="block ix-row">${cards}${temp}</section>` : '';
+  // G-179: the US market beside the Korean one, from the US universe's own signals (us.html lists them).
+  const usCard = us && (us.pulse || us.up || us.down) ? marketTemperature(us.pulse, { up: us.up, down: us.down, flat: us.flat }, '미국', 'us.html') : '';
+  return cards || temp || usCard ? `<section class="block ix-row${usCard ? ' ix-4' : ''}">${cards}${temp}${usCard}</section>` : '';
 }
 
 /**
@@ -88,7 +94,7 @@ function dailyRows(entries: readonly HomeEntry[]): string {
     return `<div class="rr" data-kind="${aiKind(e)}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${aiPill(e)}</div><p class="rr-line">${esc(line || (e.reasons?.[0] ?? ''))}</p></a>
 <div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
   };
-  return `<section class="block" id="daily"><div class="block-head"><h2>매일 AI 리포트</h2><span class="muted">평일 주식 2 + ETF(월·수·금)·코인(화·목) 1, 주말 코인 1</span></div>
+  return `<section class="block" id="daily"><div class="block-head"><h2>매일 AI 리포트</h2><span class="muted">평일 주식 2 + 미국 1 + ETF(월·수·금)·코인(화·목) 1, 주말 코인 1</span></div>
 <details class="card"><summary>선정 기준과 반복 종목 안내</summary><p>주식은 스크리너 추천 조건에 걸린 종목(과열·위험 조건과 1,000원 미만 제외) 가운데 날짜마다 무작위로 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목과 최근 28일 안에 리포트가 나온 종목은 빼고, 후보가 모자라면 그날은 덜 뽑아요.</p><p>모두 AI 위원회 심층 리포트예요. 아래 목록은 최근 7일 기록이에요.</p></details><div class="card list rr-list">${days.map((d, i) => `<div class="dl-day${i ? ' dl-old' : ''}">${esc(d.slice(5).replace('-', '/'))}${i ? '' : ' · 최신'}</div>${entries.filter((e) => e.pickDate === d).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1)).map(row).join('')}`).join('')}</div>
 <p class="muted small">스크리너 상위 종목, 거래대금 상위 ETF·코인 가운데 무작위로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></section>`;
 }
@@ -345,7 +351,7 @@ export function renderHome(data: HomeData): string {
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
 <div class="find-row"><a class="flt-btn" href="screener.html">⚙︎ 필터</a><a class="find-link" href="themes.html">🧭 테마별 종목</a><a class="find-link" href="signals.html">📡 공시 레이더</a></div></div></section>
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
-${indexStrip(data.indices, data.universe, data.pulse, latestDaily(data))}
+${indexStrip(data.indices, data.universe, data.pulse, latestDaily(data), data.us ?? null)}
 
 <p class="phase-note" id="phase-note"></p><div class="home-grid"><div class="home-main">${FEED}${WATCH}${todayPicks(daily, sorted)}${THEMES_TOP}${SIGNALS}
 ${MY_SCREENS}${movers(data.universe, covered)}</div>
@@ -459,7 +465,7 @@ const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-
 .feed{background:linear-gradient(135deg,#f3f7fd,#fff)}.feed-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.feed-head b{font-size:16px}.feed-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .chip-link{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:999px;padding:5px 11px;font-size:13px;text-decoration:none;background:#fff}.chip-link.alt{border-color:var(--navy);color:var(--navy);font-weight:700}.muted-chip{color:var(--muted);background:#f4f6f9}
 .home-hero{grid-template-columns:minmax(0,1fr)}.home-hero h1{font-size:30px}.home-hero .search-block{margin-top:14px;position:relative}
-.ix-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ix-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.ix-v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}.ix-c{font-weight:600;font-size:14px}
+.ix-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ix-row.ix-4{grid-template-columns:repeat(4,minmax(0,1fr))}.ix-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.ix-v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}.ix-c{font-weight:600;font-size:14px}
 .br-bar,.pulse-bar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:10px 0 6px}.br-bar .s-bull{background:#f04452}.br-bar .s-neutral{background:#c4cbc9}.br-bar .s-bear{background:#3182f6}.br-n{display:flex;justify-content:space-between;font-weight:700;font-size:14px}
 .tt-list{padding:4px 14px}.tt-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit}.tt-row:first-child{border-top:0}.tt-n{font-weight:800;color:var(--muted);text-align:center}.tt-main b{display:block;font-size:14.5px}.tt-main small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tt-v{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}.tt-v small{display:block;font-weight:500;color:var(--muted);font-size:11px}.home-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}.home-rail{position:sticky;top:76px}
 .pulse-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}.pulse-head b{font-size:22px}.pulse-bar{height:16px;border-radius:8px}
@@ -476,7 +482,7 @@ const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-
 .plan-cta p{font-size:14px;margin:8px 0}.plan-cta .btn-primary{width:100%;justify-content:center}
 .wl{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;gap:8px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}.wl:first-child{border-top:0}.wl a{text-decoration:none}
 @media (max-width:1100px){.home-grid{grid-template-columns:minmax(0,1fr)}.home-rail{position:static}}
-@media (max-width:820px){.ix-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.ix-row>.tmp{grid-column:1/3}.ix .spark{display:none}.ix-v{font-size:18px}.home-hero h1{font-size:24px}.home-hero .hero-line{display:block;font-size:13px}.rr-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rr-chips>*{flex:none}}
+@media (max-width:820px){.ix-row,.ix-row.ix-4{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.ix-row>.tmp{grid-column:1/3}.ix .spark{display:none}.ix-v{font-size:18px}.home-hero h1{font-size:24px}.home-hero .hero-line{display:block;font-size:13px}.rr-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rr-chips>*{flex:none}}
 </style>`;
 
 const HOME_SCRIPT = `<script>

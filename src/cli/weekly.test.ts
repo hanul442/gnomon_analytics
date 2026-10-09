@@ -211,3 +211,48 @@ test('sealed deep reports (G-61): the paid part is neither in the repository nor
     assert.match(await unseal(await readFile(join(root, 'site', '000660', 'deep', '2026-10-02.txt'), 'utf8'), 'test-deep-key'), /비밀시나리오/);
   } finally { setDeepKey(''); }
 });
+
+test('a weekday run picks one US stock: Naver world bars, EDGAR into the logs, a dollar report and page (G-179)', async () => {
+  const root = await tempDir('gnm-');
+  const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
+  const models: string[] = [];
+  const anthropic = { beta: { messages: { parse: async (req: { model: string }) => { models.push(req.model); return { stop_reason: 'end_turn', model: req.model, usage: { input_tokens: 100, output_tokens: 50 }, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'], kind: 'FACT' }, bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [], scenarios: [], analysts: [], desks: [], debate: [], worstCase: { text: 'x', evidenceIds: ['P1'], kind: 'ASSUMPTION', checks: [] }, insights: {} } }; } } } } as never;
+  const usDay = (i: number) => new Date(Date.UTC(2026, 5, 15) + i * 86_400_000);
+  const worldBars = Array.from({ length: 110 }, (_, i) => usDay(i)).filter((d) => ![0, 6].includes(d.getUTCDay())).slice(-80).map((d, i) => ({ localDate: d.toISOString().slice(0, 10).replaceAll('-', ''), closePrice: 40 + i * 0.1, openPrice: 40, highPrice: 41 + i * 0.1, lowPrice: 39, accumulatedTradingVolume: 5_000_000 }));
+  const usFake = (async (url: string | URL | Request, init?: RequestInit) => {
+    const u = String(url);
+    if (u.includes('/stock/exchange/NASDAQ/marketValue')) return Response.json({ stocks: [{ reutersCode: 'MRNA.O', symbolCode: 'MRNA', stockName: '모더나', stockNameEng: 'Moderna, Inc.', stockEndType: 'stock', marketValueFullRaw: 12_000_000_000, closePrice: '40.5', fluctuationsRatio: '1.2', accumulatedTradingValue: '5억 USD', industryCodeType: { industryGroupKor: '바이오' } }] });
+    if (u.includes('/stock/exchange/')) return Response.json({ stocks: [] });
+    if (u.includes('ac.stock.naver.com')) return Response.json({ items: [] });
+    if (u.includes('/chart/foreign/item/MRNA.O/day')) return Response.json(worldBars);
+    if (u.includes('/stock/MRNA.O/basic')) return Response.json({ stockItemTotalInfos: [{ code: 'pbr', key: 'PBR', value: '1.30배' }, { code: 'eps', key: 'EPS', value: '-9.30' }, { code: 'marketValue', key: '시가총액', value: '123억 USD' }] });
+    if (u.includes('company_tickers.json')) return Response.json({ '0': { cik_str: 1682852, ticker: 'MRNA', title: 'Moderna, Inc.' } });
+    if (u.includes('data.sec.gov/submissions/')) return Response.json({ name: 'Moderna, Inc.', filings: { recent: { accessionNumber: ['0001682852-26-000040'], filingDate: ['2026-10-01'], form: ['8-K'], primaryDocument: ['mrna.htm'], items: ['2.02,9.01'] } } });
+    if (u.includes('companyfacts')) return Response.json({ facts: { 'us-gaap': { Revenues: { units: { USD: [{ end: '2026-06-30', start: '2026-04-01', val: 143e6, fy: 2026, fp: 'Q2', form: '10-Q', filed: '2026-08-01', frame: 'CY2026Q2' }] } }, NetIncomeLoss: { units: { USD: [{ end: '2026-06-30', start: '2026-04-01', val: -1000e6, fy: 2026, fp: 'Q2', form: '10-Q', filed: '2026-08-01', frame: 'CY2026Q2' }] } } } } });
+    if (u.includes('news.google.com') && u.includes('ceid=US')) return new Response('<rss><channel><item><title>Moderna flu vaccine wins FDA approval - Reuters</title><link>https://www.reuters.com/mrna</link><pubDate>Mon, 05 Oct 2026 08:00:00 GMT</pubDate><source url="https://www.reuters.com">Reuters</source></item></channel></rss>');
+    return fake(url as never, init);
+  }) as typeof fetch;
+  const out = await runDaily({ root, now: new Date('2026-10-05T09:30:00Z'), apiKey: 'k', fetch: usFake, tickers, anthropic, selectionParams: { ...DEFAULT_SELECTION, size: 3, bigCaps: 1 } });
+  const picks = (await readFile(join(root, 'data', 'daily-picks.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as { symbol: string; market: string; us?: { ticker: string } });
+  const us = picks.find((p) => p.market === 'NASDAQ');
+  assert.ok(us && us.symbol === 'MRNA.O' && us.us?.ticker === 'MRNA', JSON.stringify(picks));
+  assert.ok(out.results.some((r) => r.symbol === 'MRNA.O' && r.report === 'WRITTEN'), JSON.stringify(out.results.map((r) => [r.symbol, r.report])) + JSON.stringify(out.failed));
+  const report = JSON.parse(await readFile(join(root, 'reports', 'MRNA.O', '2026-10-05.json'), 'utf8')) as { currency?: string; exchange?: string; market?: { quarters: unknown[]; snapshot: { pbr: number } | null }; recentFilings?: { title: string; url: string }[]; news?: { clusters: { title: string }[] }; edge?: unknown; commentary?: { status: string } };
+  assert.equal(report.currency, 'USD');
+  assert.equal(report.exchange, 'NASDAQ');
+  assert.equal(report.market?.quarters.length, 1);
+  assert.equal(report.market?.snapshot?.pbr, 1.3);
+  assert.match(report.recentFilings?.[0]?.title ?? '', /실적 발표 \(8-K 2\.02/);
+  assert.match(report.recentFilings?.[0]?.url ?? '', /sec\.gov\/Archives/);
+  assert.equal(report.news?.clusters[0]?.title, 'Moderna flu vaccine wins FDA approval');
+  assert.ok(report.edge, 'edge with the EDGAR data');
+  // The logs the Korean sources fill carry the US data too, so the next run reads them back.
+  assert.ok((await readFile(join(root, 'data', 'finance', 'MRNA.O.jsonl'), 'utf8')).includes('"sec:edgar:xbrl"'));
+  assert.ok((await readFile(join(root, 'data', 'disclosures', 'MRNA.O.jsonl'), 'utf8')).includes('0001682852-26-000040'));
+  // The page is in dollars, the home lists the pick, and the calculation file points at the report.
+  const page = await readFile(join(root, 'site', 'MRNA.O', 'index.html'), 'utf8');
+  assert.match(page, /\$4[0-9]\.\d\d/);
+  assert.doesNotMatch(page, /\d원<\/b>/);
+  assert.ok((await readFile(join(root, 'site', 'reports.html'), 'utf8')).includes('href="MRNA.O/index.html"'));
+  assert.equal(JSON.parse(await readFile(join(root, 'site', 'u', 'MRNA.O.json'), 'utf8')).pageUrl, 'MRNA.O/index.html');
+});

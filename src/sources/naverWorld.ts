@@ -3,7 +3,7 @@
 //   live quote  https://polling.finance.naver.com/api/realtime/worldstock/stock/<reuters>
 // Reuters codes carry the exchange: AAPL.O (Nasdaq), KO.N (NYSE), SPY.K (NYSE Arca).
 
-import type { PriceBar } from '../types.js';
+import type { PriceBar, StockSnapshot } from '../types.js';
 import type { Quote } from './naverQuote.js';
 
 export const NAVER_WORLD_SOURCE = 'naver:world:day';
@@ -117,4 +117,34 @@ export async function fetchUsUniverse(options: { fetch?: typeof fetch; perExchan
     if (hit && !out.has(hit.code)) out.set(hit.code, { ...hit, kind: 'etf' });
   }
   return [...out.values()];
+}
+
+/** Valuation figures Naver shows for a US stock (PER, EPS, PBR, 시가총액, 52주 범위, 배당수익률). */
+export const NAVER_WORLD_BASIC_SOURCE = 'naver:world:basic';
+export function worldBasicUrl(code: string): string {
+  return `https://api.stock.naver.com/stock/${code}/basic`;
+}
+const money = (v: unknown): number | null => { const s = String(v ?? '').replace(/[$,\s]/g, '').replace(/(배|%|USD|원)$/g, ''); const n = Number(s); return s && Number.isFinite(n) ? n : null; };
+/**
+ * /stock/<code>/basic → StockSnapshot. The answer carries `stockItemTotalInfos: [{code, key, value}]`; rows are
+ * matched by their code first and their Korean label second, so a renamed code still reads. Nothing Naver does
+ * not show is invented: consensus stays null, and so does any missing figure.
+ */
+export function parseWorldBasic(body: unknown, code: string, retrievedAt: Date): StockSnapshot | null {
+  const b = body as { stockItemTotalInfos?: unknown; stockEndType?: unknown; closePrice?: unknown } | null;
+  const rows = Array.isArray(b?.stockItemTotalInfos) ? (b!.stockItemTotalInfos as { code?: unknown; key?: unknown; value?: unknown }[]) : null;
+  if (!rows) return null;
+  const find = (codes: readonly string[], label: RegExp) => rows.find((r) => codes.includes(String(r.code ?? ''))) ?? rows.find((r) => label.test(String(r.key ?? '')));
+  const val = (codes: readonly string[], label: RegExp) => find(codes, label)?.value;
+  const cap = val(['marketValue', 'marketValueFull'], /시가\s*총액/), per = money(val(['per'], /^PER$/i)), eps = money(val(['eps'], /^EPS$/i)), pbr = money(val(['pbr'], /^PBR$/i));
+  const high52 = money(val(['highPriceOf52Weeks', 'high52w', 'fiftyTwoWeekHigh'], /52주.*(최고|고가)/)), low52 = money(val(['lowPriceOf52Weeks', 'low52w', 'fiftyTwoWeekLow'], /52주.*(최저|저가)/));
+  const dy = money(val(['dividendYieldRatio', 'dividendYield'], /배당\s*수익률/));
+  const marketCap = typeof cap === 'number' ? cap : usdHangeul(cap);
+  if (per == null && eps == null && pbr == null && marketCap == null && high52 == null) return null;
+  return { symbol: code, date: retrievedAt.toISOString().slice(0, 10), per, eps, estimatedPer: null, estimatedEps: null, pbr, bps: null, dividendYield: dy, marketCap, high52w: high52, low52w: low52, consensus: null, source: NAVER_WORLD_BASIC_SOURCE, retrievedAt: retrievedAt.toISOString() };
+}
+export async function fetchWorldBasic(code: string, options: { now?: () => Date; fetch?: typeof fetch } = {}): Promise<StockSnapshot | null> {
+  const r = await (options.fetch ?? fetch)(worldBasicUrl(code), { signal: AbortSignal.timeout(15_000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } });
+  if (!r.ok) throw new Error(`NAVER_WORLD_HTTP_${r.status}`);
+  return parseWorldBasic(await r.json(), code, (options.now ?? (() => new Date()))());
 }

@@ -9,6 +9,7 @@
 // fitted to the past does not win by memory. This is a comparison of rules on
 // past prices, not a promise about future returns.
 
+import { won } from '../report/format.js';
 export const ARENA_METHOD = 'gnm-arena-v1';
 /** Round-trip cost: fees both ways plus the securities transaction tax (approximate). */
 export const ARENA_COST = 0.0025;
@@ -82,7 +83,6 @@ export function context(bars: readonly ArenaBar[]): Ctx {
   };
 }
 
-const won = (v: number) => `${Math.round(v).toLocaleString('ko-KR')}원`;
 
 export const STRATEGIES: readonly StrategyDef[] = [
   {

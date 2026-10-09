@@ -1,7 +1,7 @@
 name: Deploy API
 # The alpha API on Cloudflare Workers + D1 (docs/DESIGN.md §5.13). Needs repository secrets
 # CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; RESEND_API_KEY, ANTHROPIC_API_KEY and
-# GNM_ADMIN_EMAILS and GNM_DEEP_KEY (as DEEP_KEY) are passed on to the Worker when present. Skips quietly until set up.
+# GNM_ADMIN_EMAILS, GNM_DEEP_KEY (as DEEP_KEY) and EDGAR_CONTACT are passed on to the Worker when present. Skips quietly until set up.
 on:
   push:
     branches: [main]
@@ -64,8 +64,9 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ADMIN_EMAILS: ${{ secrets.GNM_ADMIN_EMAILS }}
           DEEP_KEY: ${{ secrets.GNM_DEEP_KEY }}
+          EDGAR_CONTACT: ${{ secrets.EDGAR_CONTACT }}
         run: |
-          for name in RESEND_API_KEY ANTHROPIC_API_KEY ADMIN_EMAILS DEEP_KEY; do
+          for name in RESEND_API_KEY ANTHROPIC_API_KEY ADMIN_EMAILS DEEP_KEY EDGAR_CONTACT; do
             value="${!name}"
             if [ -n "$value" ]; then printf '%s' "$value" | npx wrangler secret put "$name" >/dev/null && echo "set $name"; else echo "skip $name (not set)"; fi
           done

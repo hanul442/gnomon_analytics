@@ -26,6 +26,12 @@ test('relevance needs the company in the headline and skips sports or personnel 
 test('classification and outlet tier', () => {
   assert.deepEqual(classifyNews('SK하이닉스 3분기 영업이익 사상 최대'), { category: '실적', importance: 'HIGH' });
   assert.deepEqual(classifyNews('SK하이닉스, 엔비디아에 HBM4 공급'), { category: '고객·수주', importance: 'MEDIUM' });
+  // English headlines (G-179) land in the same categories.
+  assert.deepEqual(classifyNews('Moderna flu vaccine wins FDA approval, shares jump'), { category: '규제·정책', importance: 'HIGH' });
+  assert.deepEqual(classifyNews('Moderna cuts 2026 revenue outlook as COVID demand fades'), { category: '실적', importance: 'HIGH' });
+  assert.deepEqual(classifyNews('Apple shares slide after iPhone demand worries'), { category: '주가·수급', importance: 'LOW' });
+  assert.deepEqual(classifyNews('Why this biotech is in the news today'), { category: '기타', importance: 'LOW' });
+  assert.deepEqual(classifyNews('Apple shares slide after bank downgrade'), { category: '증권가 전망', importance: 'MEDIUM' });
   assert.deepEqual(classifyNews('SK하이닉스 목표가 상향'), { category: '증권가 전망', importance: 'MEDIUM' });
   assert.deepEqual(classifyNews('SK하이닉스 투자의견 매수 유지'), { category: '증권가 전망', importance: 'MEDIUM' });
   assert.deepEqual(classifyNews('SK하이닉스, 용인에 20조 투자'), { category: '투자·설비', importance: 'MEDIUM' });

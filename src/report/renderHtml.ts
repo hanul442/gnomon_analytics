@@ -33,12 +33,12 @@ import { CHART_PRO_CSS, CHART_PRO_JS, HERO_RANGE_JS } from './chartPro.js';
 import { derivSlot, DERIV_CSS, DERIV_JS } from './deriv.js';
 import { CHART_DRAW_CSS, CHART_DRAW_JS, IND_LIMIT_JS } from './chartDraw.js';
 import { adStrip, AD_CSS, AD_JS } from './ads.js';
-import { edgeCard, edgeEvents, edgeFlows, edgeFundamentals, EDGE_CSS } from './renderEdge.js';
+import { edgeCard, edgeEvents, edgeFlows, edgeFundamentals, EDGE_CSS, insiderSection } from './renderEdge.js';
 import { ALERTS_CSS, PRICE_ALERT_JS, PUSH_JS } from './pushParts.js';
 import { STOCK_INFO_JS } from './stockInfo.js';
 import { THEME_CHIPS_CSS, THEME_CHIPS_JS } from './themeChips.js';
 import { esc as escape } from './html.js';
-import { won, tone, FORMAT_JS, pct as fmtPct } from './format.js';
+import { withCurrency, won, tone, FORMAT_JS, pct as fmtPct } from './format.js';
 const pct = (value: number | null): string => fmtPct(value, 2, '없음');
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
@@ -593,7 +593,11 @@ export interface PageContext {
   deep?: { date: string } | null;
 }
 
+/** The report's page; every price helper inside follows the report's currency (G-179: a US page in dollars). */
 export function renderReport(report: DailyReport, links: { index: string; base?: string } & Partial<PageContext>): string {
+  return withCurrency(report.currency, () => renderReportIn(report, links));
+}
+function renderReportIn(report: DailyReport, links: { index: string; base?: string } & Partial<PageContext>): string {
   const base = links.base ?? '../';
   const ctx: PageContext = { base, live: links.live ?? false, homeHref: links.homeHref ?? `${base}index.html`, archiveHref: links.archiveHref ?? `${base}archive.html`, commentaryFrom: links.commentaryFrom ?? null, previous: links.previous ?? null, deep: links.deep ?? null };
   const m = report.market;
@@ -631,10 +635,10 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   const body = `${bar}${panel('home', home)}
 ${panel('chart', chartTab)}
 ${panel('technical', `${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${strategyTab}</section>`)}
-${panel('fundamentals', `${report.kind === 'coin' ? '' : fundTab}<section class="sub-sec${report.kind === 'coin' ? ' sub-first' : ''}" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`)}
+${panel('fundamentals', `${report.kind === 'coin' ? '' : fundTab}${report.currency === 'USD' ? insiderSection(report) : `<section class="sub-sec${report.kind === 'coin' ? ' sub-first' : ''}" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`}`)}
 ${panel('ai', aiTab).replace('role="tabpanel"',`role="tabpanel" data-ai-date="${escape(report.commentary?.status==='OK'?(ctx.commentaryFrom??report.date):'')}"`)}
 ${panel('news', newsTab)}
-<footer id="sources" style="padding:24px 0 0"><p>${report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
+<footer id="sources" style="padding:24px 0 0"><p>${report.currency === 'USD' ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜)과 지표(PER·EPS·PBR·시가총액·52주), SEC EDGAR(공시·XBRL 재무·Form 4 내부자 거래), 구글 뉴스(영문). 투자자별 수급과 증권가 목표가는 없어요. 환율 변동은 반영하지 않아요.' : report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`;
   const title = ctx.live ? `${report.name} 리서치 대시보드 | GNOMON` : `${report.name} ${report.date} 일일 리포트 | GNOMON`;
   return shell(base, title, body, { tabs: tabsFor(report.kind), scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
@@ -875,7 +879,7 @@ ${coin || us ? '' : peersSlot('')}<section class="block"><div class="card sp-one
 <p class="fine" id="sp-ma-note">이동평균 20·60과 거래량이에요.</p></div></section>
 ${open}${gate(detail, { base: '', what: '기술적 적정가' })}${gate(forecast, { base: '', what: '예측 가격 범위', need: 'pro' })}
 ${coin || us ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트가 생기면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>`}
-<footer id="sources" style="padding:24px 0 0"><p>${us ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜). 매일 저녁 갱신하고, 시세는 실시간이에요. 환율 변동은 반영하지 않아요.' : coin ? '데이터: 업비트 원화 마켓 일봉(09:00 KST 기준). 매일 저녁 갱신해요. 가상자산은 원금 손실 위험이 커요.' : '데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
+<footer id="sources" style="padding:24px 0 0"><p>${us ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜)과 지표, SEC EDGAR 공시·XBRL 재무·Form 4 내부자 거래, 영문 뉴스. 매일 저녁 갱신하고, 시세는 실시간이에요. 환율 변동은 반영하지 않아요.' : coin ? '데이터: 업비트 원화 마켓 일봉(09:00 KST 기준). 매일 저녁 갱신해요. 가상자산은 원금 손실 위험이 커요.' : '데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   const split=body.indexOf('<section class="block"><div class="card chart-card">');
   const ending=body.indexOf('<footer id="sources"');
   const techAt=body.indexOf('<section class="block"><div class="grid-eq">',split);

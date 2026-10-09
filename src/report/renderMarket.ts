@@ -10,7 +10,7 @@ import type { FlowSection, MarketSection } from './marketSection.js';
 import type { FullStatements } from '../sources/dartStatements.js';
 import { healthInfographic, quarterBars, statementChart, statementsCard } from './infographics.js';
 import { esc } from './html.js';
-import { won, tone, pct as fmtPct } from './format.js';
+import { won, tone, pct as fmtPct, bigMoney, currency, financeScale } from './format.js';
 const pct = (v: number | null, digits = 1) => fmtPct(v, digits, '없음');
 
 /** Shares in 만주 / 억주 so flow numbers stay readable. */
@@ -245,7 +245,7 @@ function targetBar(now: number, target: number, low52: number | null, high52: nu
 <div class="tb-key"><span><i class="tb-now"></i>현재가 ${won(now)}</span><span><b class="tb-tgt"></b>목표가 ${won(target)}</span></div></div>`;
 }
 const cell = (k: string, v: string, _hint = '') => `<div class="si-c"><span>${esc(k)}</span><b>${v}</b></div>`;
-const eok = (v: number | null | undefined) => (v == null ? '없음' : v >= 1e12 ? `${(v / 1e12).toFixed(v >= 1e14 ? 0 : 1)}조원` : v >= 1e8 || v <= 0 ? `${Math.round(v / 1e8).toLocaleString('ko-KR')}억원` : `${Math.max(1, Math.round(v / 1e4)).toLocaleString('ko-KR')}만원`);
+const eok = (v: number | null | undefined) => (v == null ? '없음' : currency() === 'USD' ? bigMoney(v) : v >= 1e12 ? `${(v / 1e12).toFixed(v >= 1e14 ? 0 : 1)}조원` : v >= 1e8 || v <= 0 ? `${Math.round(v / 1e8).toLocaleString('ko-KR')}억원` : `${Math.max(1, Math.round(v / 1e4)).toLocaleString('ko-KR')}만원`);
 const num = (v: number | null | undefined, unit: string, d = 2) => (v == null || !Number.isFinite(v) ? '없음' : `${v.toFixed(d)}${unit}`);
 
 /**
@@ -324,11 +324,11 @@ export function stockInfoCards(market: MarketSection, close: number | null, _nam
   const sales4 = q.length >= 4 ? q.slice(-4).reduce((a, p) => a + (p.metrics['매출액'] ?? NaN), 0) : null;
   const roe = y.at(-1)?.metrics['ROE'] ?? q.at(-1)?.metrics['ROE'] ?? null;
   if (s || q.length) {
-    const cap = s?.marketCap ?? null, psr = cap && sales4 && Number.isFinite(sales4) && sales4 > 0 ? cap / (sales4 * 1e8) : null;
+    const cap = s?.marketCap ?? null, psr = cap && sales4 && Number.isFinite(sales4) && sales4 > 0 ? cap / (sales4 * financeScale()) : null;
     const cells = [cell('시가총액', eok(cap)), cell('PER', num(s?.per, '배')), s?.estimatedPer != null ? cell('추정 PER', num(s.estimatedPer, '배')) : '', cell('PBR', num(s?.pbr, '배')), roe != null ? cell('ROE', num(roe, '%')) : '', psr != null ? cell('PSR', num(psr, '배')) : '',
       s?.eps != null ? cell('EPS', won(s.eps)) : '', s?.bps != null ? cell('BPS', won(s.bps)) : '', s?.dividendYield != null ? cell('배당수익률', num(s.dividendYield, '%')) : ''].filter(Boolean);
     card('투자 지표', `<div class="si-grid">${cells.join('')}</div>
-<p class="fine">네이버 증권 기준. ROE는 최근 결산, PSR은 시가총액 ÷ 최근 4분기 매출액이에요.</p>`);
+<p class="fine">${currency() === 'USD' ? '네이버 증권(지표)·SEC EDGAR(실적) 기준.' : '네이버 증권 기준.'} ROE는 최근 결산, PSR은 시가총액 ÷ 최근 4분기 매출액이에요.</p>`);
   }
   const fin = financeCard(market, st);
   if (fin) out.push(fin);

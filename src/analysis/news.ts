@@ -26,8 +26,19 @@ const RULES: readonly { category: string; importance: NewsImportance; pattern: R
   { category: '주가·수급', importance: 'LOW', pattern: /주가|외국인|기관|순매수|순매도|시가총액|시총|코스피|급등|급락|신고가|상승|하락/ },
 ];
 
+// G-179: English headlines (a US stock's Google News feed) read into the same categories.
+const EN_RULES: readonly { category: string; importance: NewsImportance; pattern: RegExp }[] = [
+  { category: '실적', importance: 'HIGH', pattern: /\b(earnings|revenue|revenues|profit|profits|loss|losses|guidance|outlook|quarterly results|quarter results|beats|beat|misses|miss|EPS|forecast|forecasts)\b/i },
+  { category: '규제·정책', importance: 'HIGH', pattern: /\b(FDA|approval|approves|approved|regulator|regulators|lawsuit|lawsuits|sues|sued|tariff|tariffs|sanction|sanctions|antitrust|probe|investigation|recall|recalls|ban|bans|banned|DOJ|FTC|SEC)\b/i },
+  { category: '투자·설비', importance: 'MEDIUM', pattern: /\b(acquire|acquires|acquired|acquisition|merger|buyout|takeover|plant|factory|invest|invests|investment|expansion|capex|spin-?off)\b/i },
+  { category: '고객·수주', importance: 'MEDIUM', pattern: /\b(contract|contracts|deal|deals|order|orders|partnership|supply agreement|wins|awarded|customer|customers)\b/i },
+  { category: '증권가 전망', importance: 'MEDIUM', pattern: /\b(upgrade|upgrades|upgraded|downgrade|downgrades|downgraded|price target|analyst|analysts|rating|overweight|underweight)\b/i },
+  { category: '주가·수급', importance: 'LOW', pattern: /\b(shares?|stock)\b.*\b(jump|jumps|soar|soars|surge|surges|rally|rallies|fall|falls|drop|drops|slide|slides|plunge|plunges|tumble|tumbles|rise|rises|gain|gains|climb|climbs|sink|sinks|dip|dips)\b|\b(record high|all-time high|market cap)\b/i },
+];
+const LATIN = /^[\x00-\x7F\u2000-\u206F\u20AC$€£]*$/;
+
 export function classifyNews(title: string): { category: string; importance: NewsImportance } {
-  const rule = RULES.find((r) => r.pattern.test(title));
+  const rule = (LATIN.test(title) ? EN_RULES : RULES).find((r) => r.pattern.test(title));
   return rule ? { category: rule.category, importance: rule.importance } : { category: '기타', importance: 'LOW' };
 }
 

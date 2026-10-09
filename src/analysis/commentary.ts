@@ -9,7 +9,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import type { DailyReport } from '../report/dailyReport.js';
-import { won, withCurrency } from '../report/format.js';
+import { won, withCurrency, financeUnit } from '../report/format.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystId } from './analysts.js';
 
 export const COMMENTARY_MODEL = 'claude-opus-5-5';
@@ -172,7 +172,7 @@ function evidenceOf(report: DailyReport): EvidenceItem[] {
     if (m.snapshot || m.quarters.length) {
       const s = m.snapshot, q = m.quarters.slice(-4);
       items.push({ id: 'D1', kind: 'FUNDAMENTAL', label: '밸류에이션·실적·증권가 평균', url: '#tab-fundamentals',
-        detail: `${s ? `PER ${s.per ?? '없음'}, 추정 PER ${s.estimatedPer ?? '없음'}, PBR ${s.pbr ?? '없음'}, 증권가 평균 목표가 ${s.consensus?.targetPriceMean ? won(s.consensus.targetPriceMean) : '없음'}. ` : ''}분기 영업이익(억원): ${q.map((p) => `${p.period}${p.isEstimate ? '(추정)' : ''} ${p.metrics['영업이익'] ?? '없음'}`).join(', ')}` });
+        detail: `${s ? `PER ${s.per ?? '없음'}, 추정 PER ${s.estimatedPer ?? '없음'}, PBR ${s.pbr ?? '없음'}, 증권가 평균 목표가 ${s.consensus?.targetPriceMean ? won(s.consensus.targetPriceMean) : '없음'}. ` : ''}분기 영업이익(${financeUnit()}): ${q.map((p) => `${p.period}${p.isEstimate ? '(추정)' : ''} ${p.metrics['영업이익'] ?? '없음'}`).join(', ')}` });
     }
     if (m.arena) {
       const a = m.arena;
@@ -317,7 +317,7 @@ export function jsonOf(text: string): unknown {
 
 
 /** A US stock (G-152): dollars, US dates, and no Korean flows, DART filings or Korean brokers' estimates. */
-export const US_RULE = '\n- 이 종목은 미국 시장(나스닥·뉴욕·아멕스) 종목이에요. 가격은 달러, 날짜는 미국 현지 날짜예요. 시나리오 가격대·trigger·분석가 예상 가격도 모두 달러로 씁니다. 투자자별 수급·DART 공시·국내 증권가 근거는 없으니 FLOW·FUNDAMENTAL 데스크는 근거가 없으면 INSUFFICIENT_DATA로 둡니다. 환율이나 원화 환산은 말하지 않습니다.';
+export const US_RULE = '\n- 이 종목은 미국 시장(나스닥·뉴욕·아멕스) 종목이에요. 가격은 달러, 날짜는 미국 현지 날짜예요. 시나리오 가격대·trigger·분석가 예상 가격도 모두 달러로 씁니다. 공시는 SEC EDGAR 서류(8-K·10-Q·10-K·Form 4 등)이고 재무는 XBRL 기준 백만 달러, 뉴스는 영문 기사예요. 영문 제목은 한국어 한 줄로 번역해 인용하고 원문을 그대로 옮기지 않습니다. 투자자별 수급과 국내 증권가 목표가는 없으니 FLOW 데스크는 근거가 없으면 INSUFFICIENT_DATA로 두고, FUNDAMENTAL 데스크는 XBRL 실적과 공시로 판단합니다. 환율이나 원화 환산은 말하지 않습니다.';
 
 /** Extra rules for an ETF or a coin (G-56); a stock's prompt is unchanged. */
 export const kindRule = (kind?: 'etf' | 'coin') => !kind ? '' : kind === 'etf'

@@ -14,6 +14,12 @@ import { publicPanels } from '../report/publicPanels.js';
 import { collectRiskFilings } from './riskCollect.js';
 import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
 import { writeUsPages } from './usStocks.js';
+import type { SignalLevel } from '../analysis/technicals.js';
+import { fetchWorldBars } from '../sources/naverWorld.js';
+import { gatherUsResearch } from '../report/usResearch.js';
+import { US_NEWS_SOURCE, usNewsName } from '../sources/usNews.js';
+import { withCurrency } from '../report/format.js';
+import { weeklyFromDaily } from '../analysis/horizons.js';
 import { chooseDailyPicks, type DailyPick } from '../analysis/dailyPicks.js';
 import { fetchUpbitDays, fetchUpbitDaysLong, UPBIT_SOURCE } from '../sources/upbit.js';
 import { escapeRegex } from './weekly.js';
@@ -29,11 +35,11 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
 import { COMMENTARY_PROMPT_VERSION, publicCommentary, skippedCommentary, writeCommentary } from '../analysis/commentary.js';
-import { deepPath, seal, unseal } from '../report/seal.js';
+import { deepPath, isUsSymbol, seal, unseal } from '../report/seal.js';
 import { AiBudget } from './aiBudget.js';
 import type Anthropic from '@anthropic-ai/sdk';
 import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderStockPage, type HomeEntry, type PageContext, APP_CSS, APP_JS, UI_JS, ASSET_VERSION } from '../report/renderHtml.js';
-import { renderHome, renderReportsPage, type IndexQuote } from '../report/renderHome.js';
+import { renderHome, renderReportsPage, type IndexQuote, type UsTemp } from '../report/renderHome.js';
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
 import { renderInbox, MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
@@ -61,7 +67,7 @@ import { analystCallKey, type AnalystCall } from '../analysis/analysts.js';
 import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
-import { aliasPattern, benchmarksFor, loadTickers, type Ticker } from '../config/tickers.js';
+import { aliasPattern, benchmarksFor, isUsMarket, loadTickers, type Ticker } from '../config/tickers.js';
 import { collectUniverse, readCorpCodes, readListedStocks, type ListedStock } from './universe.js';
 import { loadRequests, type ReportRequest } from '../config/requests.js';
 import { latestSelection, pickTicker, pool, runSelection } from './weekly.js';
@@ -331,9 +337,15 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     coinList = coins.rows;
   }
   // 3.0 US stocks (G-143): best effort, never fails the run.
+  let usTemp: UsTemp | null = null, usRows: CoinRow[] = [];
   if (options.usStocks !== false) {
     const us = await writeUsPages(join(root, 'site'), { now: () => now, ...fetchOpt });
     universe.status.push(us.status);
+    usRows = us.rows;
+    // G-179: the US market's temperature from the rows' own signals (level, score, 20-session move), for the home.
+    const calcs: Pick<StockCalc, 'date' | 'signal' | 'moves'>[] = us.rows.filter((r) => r[6] && r[6] !== 'WITHHELD').map((r) => ({ date: us.date, signal: { label: '', level: String(r[6]) as SignalLevel, score: r[7] == null ? null : Number(r[7]) / 100, bull: 0, neutral: 0, bear: 0, abstain: 0 }, moves: [{ label: '20일', days: 20, pct: r[9] == null ? null : Number(r[9]) }] }));
+    const chg = (f: (v: number) => boolean) => us.rows.filter((r) => r[5] != null && f(Number(r[5]))).length;
+    if (us.rows.length) usTemp = { pulse: marketPulse(calcs), date: us.date, up: chg((v) => v > 0), down: chg((v) => v < 0), flat: chg((v) => v === 0) };
   }
   // Filing risk flags for every listed company (G-49), shown next to screener results.
   const risk = await collectRiskFilings({ root, apiKey: options.apiKey, today: today.date, now: () => now, ...fetchOpt });
@@ -378,7 +390,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const exclude = new Set([...jobs.map((j) => j.ticker.symbol), ...await recentlyReported(root, today.date, 28)]);
     const picks = await dailyPicksFor(root, today.date, () => chooseDailyPicks({
       date: today.date, weekday: session ? new Date(`${today.date}T00:00:00Z`).getUTCDay() : 0,
-      stocks: session && universe.rows ? screenerRows(universe.rows, calcs, new Set(), risk.flags) : [], etfs: session ? etfList : [], coins: coinList, exclude,
+      stocks: session && universe.rows ? screenerRows(universe.rows, calcs, new Set(), risk.flags) : [], etfs: session ? etfList : [], coins: coinList, us: session ? usRows : [], exclude,
     }));
     const fresh = picks.filter((p) => !jobs.some((j) => j.ticker.symbol === p.symbol));
     const pickJobs = fresh.map((p) => ({ ticker: dailyTicker(p, corpCodes), tier: p.tier, reportDay: true }));
@@ -391,7 +403,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     }
   }
   if (today.hour >= SETTLED_HOUR_KST) await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget);
-  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')) });
+  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
   await mkdir(join(root, 'data', 'status'), { recursive: true });
@@ -429,6 +441,11 @@ async function dailyPicksFor(root: string, date: string, choose: () => DailyPick
 }
 
 export function dailyTicker(p: DailyPick, corpCodes: Readonly<Record<string, string>>): Ticker {
+  // G-179: a US pick carries its ticker and English name; the CIK is read from u/<code>.json when the run reaches it.
+  if (p.kind === 'stock' && isUsMarket(p.market)) {
+    const ticker = p.us?.ticker ?? p.symbol.split('.')[0]!, english = p.us?.english ?? p.name;
+    return { symbol: p.symbol, name: p.name, market: p.market, dartCorpCode: '', newsQuery: english || ticker, newsAliases: [escapeRegex(p.name), `\\b${escapeRegex(ticker)}\\b`, ...(usNewsName(english) ? [escapeRegex(usNewsName(english))] : [])], ai: true, us: { ticker, english, cik: null } };
+  }
   if (p.kind === 'stock') return pickTicker({ symbol: p.symbol, name: p.name, market: p.market === 'KOSDAQ' ? 'KOSDAQ' : 'KOSPI' }, corpCodes);
   const sym = p.symbol.replace('KRW-', '');
   return { symbol: p.symbol, name: p.name, market: p.kind === 'coin' ? 'UPBIT' : 'KOSPI', kind: p.kind, dartCorpCode: '', newsQuery: p.kind === 'coin' ? `${p.name} 코인` : p.name,
@@ -447,10 +464,21 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
   const fetchOptions = { now: clock, ...(options.fetch ? { fetch: options.fetch } : {}) };
 
   // About four years of sessions: enough history for strategy backtests.
-  const coin = ticker.market === 'UPBIT';
-  const bars = coin ? await fetchUpbitDaysLong(SYMBOL, now, 1000, options.fetch) : await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
+  const coin = ticker.market === 'UPBIT', us = isUsMarket(ticker.market);
+  const bars = coin ? await fetchUpbitDaysLong(SYMBOL, now, 1000, options.fetch) : us ? await fetchWorldBars(SYMBOL, 1000, fetchOptions) : await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
+  // G-179: a US stock's filings, financials, insider trades, snapshot and English news come from EDGAR, Naver and Google,
+  // and land in the same logs the Korean sources fill, so composeReport reads them the same way.
+  let usResearch: Awaited<ReturnType<typeof gatherUsResearch>> | null = null;
+  if (us) {
+    const page = await readFile(join(root, 'site', 'u', `${SYMBOL}.json`), 'utf8').then((t) => JSON.parse(t) as { ticker?: string; english?: string; cik?: number | null }, () => null);
+    usResearch = await gatherUsResearch({ symbol: SYMBOL, ticker: ticker.us?.ticker ?? page?.ticker ?? SYMBOL.split('.')[0]!, nameEng: ticker.us?.english || page?.english || ticker.name, cik: ticker.us?.cik ?? page?.cik ?? null, now: clock, ...(options.fetch ? { fetch: options.fetch } : {}), ...(process.env.EDGAR_CONTACT ? { contact: process.env.EDGAR_CONTACT } : {}) });
+    const mp = marketPaths(root, SYMBOL);
+    await appendUnseen(mp.finance, usResearch.finance, financeKey);
+    if (usResearch.snapshot) await appendUnseen(mp.snapshots, [usResearch.snapshot], snapshotKey);
+    await appendUnseen(join(root, 'data', 'insider', `${SYMBOL}.jsonl`), usResearch.insider, (r) => `${r.receiptNo}:${r.reporter}`);
+  }
   // Without a corp code DART would return every company's filings, so skip it.
-  const filings = ticker.dartCorpCode ? await fetchDartFilings({ apiKey: options.apiKey, corpCode: ticker.dartCorpCode, from: monthAgo.compact, to: today.compact, ...fetchOptions }) : [];
+  const filings = usResearch ? usResearch.disclosures : ticker.dartCorpCode ? await fetchDartFilings({ apiKey: options.apiKey, corpCode: ticker.dartCorpCode, from: monthAgo.compact, to: today.compact, ...fetchOptions }) : [];
   const addedBars = await appendNew(pricePath, bars, priceKey);
   const addedFilings = await appendNew(filingPath, filings, filingKey);
   // G-99: who inside the company and which 5% holders changed their stake (best effort, never fatal).
@@ -472,12 +500,12 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
   }
   // News is best effort: a failed source is recorded and shown, never fatal.
   const newsPath = join(root, 'data', 'news', `${SYMBOL}.jsonl`);
-  const { items: news, status: newsStatus } = await collectNews(ticker, options, fetchOptions);
+  const { items: news, status: newsStatus } = usResearch ? { items: usResearch.news, status: usResearch.status.filter((st) => st.source === US_NEWS_SOURCE) } : await collectNews(ticker, options, fetchOptions);
   const aliases = aliasPattern(ticker);
   const addedNews = await appendUnseen(newsPath, news.filter((n) => isRelevant(n.title, aliases)), newsKey);
   // Index and peer prices were fetched once by runDaily.
   // Coins have no Naver weekly, minute, flow or finance pages.
-  const marketStatus = coin ? [] : await collectMarketData(root, SYMBOL, today.date, fetchOptions, []);
+  const marketStatus = coin ? [] : usResearch ? usResearch.status.filter((st) => st.source !== US_NEWS_SOURCE) : await collectMarketData(root, SYMBOL, today.date, fetchOptions, []);
 
   let report: 'WRITTEN' | 'EXISTS' | 'NOT_SETTLED' | 'SKIPPED' = 'NOT_SETTLED';
   const reportPath = join(reportDir, `${today.date}.json`);
@@ -561,10 +589,13 @@ export async function composeReport(
   const forecastPath = join(root, 'data', 'forecasts', `${SYMBOL}.jsonl`);
   const earlier = (await loadReports(reportDir)).filter((r) => r.date < today.date).sort((a, b) => (a.date < b.date ? -1 : 1));
   const daily = asOf(await readLog<PriceBar>(pricePath), priceKey, now);
+  // G-179: a US stock's sections are built in dollars.
+  const us = isUsMarket(ticker.market), inCurrency = <T>(f: () => T): T => (us ? withCurrency('USD', f) : f());
   const built = buildDailyReport({
     symbol: SYMBOL,
     name: ticker.name,
     ...(ticker.kind ? { kind: ticker.kind } : {}),
+    ...(us ? { currency: 'USD' as const } : {}),
     exchange: ticker.market,
     date: today.date,
     generatedAt: now,
@@ -573,17 +604,18 @@ export async function composeReport(
     news: asOf(await readLog<NewsItem>(newsPath), newsKey, now),
     newsStatus: options.newsStatus ?? [],
     newsAliases: aliasPattern(ticker),
-    sources: ticker.market === 'UPBIT' ? [UPBIT_SOURCE] : ticker.kind === 'etf' ? [NAVER_PRICE_SOURCE] : [NAVER_PRICE_SOURCE, OPENDART_SOURCE],
+    sources: ticker.market === 'UPBIT' ? [UPBIT_SOURCE] : us ? ['naver:world:day', 'sec:edgar'] : ticker.kind === 'etf' ? [NAVER_PRICE_SOURCE] : [NAVER_PRICE_SOURCE, OPENDART_SOURCE],
     // The first report (no earlier ones) lists the past month's filings as context.
     previouslyReported: new Set(earlier.flatMap((r) => r.filings.map((f) => f.receiptNo))),
     previous: earlier.at(-1) ?? null,
     ...(options.barsLimit ? { barsLimit: options.barsLimit } : {}),
   });
   const mp = marketPaths(root, SYMBOL);
-  built.market = buildMarketSection({
+  const weekly = us ? weeklyFromDaily(daily).map((w) => ({ ...w, symbol: SYMBOL, source: 'derived:weekly', retrievedAt: now.toISOString() })) : asOf(await readLog<PriceBar>(mp.weekly), priceKey, now);
+  const marketInput = {
     symbol: SYMBOL, date: today.date, generatedAt: now,
     daily,
-    weekly: asOf(await readLog<PriceBar>(mp.weekly), priceKey, now),
+    weekly,
     intraday: asOf(await readLog<IntradaySession>(mp.intraday), intradayKey, now),
     flows: asOf(await readLog<InvestorFlow>(mp.flows), flowKey, now),
     snapshots: asOf(await readLog<StockSnapshot>(mp.snapshots), snapshotKey, now),
@@ -594,18 +626,19 @@ export async function composeReport(
     analystCalls: (await readLog<AnalystCall>(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`))).filter((c) => c.madeAt <= now.toISOString()),
     paperEntries: (await readLog<PaperEntry>(join(root, 'data', 'paper', `${SYMBOL}.jsonl`))).filter((e) => e.recordedAt <= now.toISOString()),
     status: options.marketStatus ?? [],
-  });
+  };
+  built.market = inCurrency(() => buildMarketSection(marketInput));
   // G-99: earnings, dividends, buybacks, insider and 5% holder moves, contracts and value surges.
   if (!ticker.kind) {
     const known = (await readLog<EventFiling>(join(root, 'data', 'event-filings.jsonl'))).filter((e) => e.symbol === SYMBOL);
     const own = asOf(await readLog<Disclosure>(filingPath), filingKey, now).flatMap((f) => { const r = eventOf(f.title); return r ? [{ symbol: SYMBOL, date: f.filedDate, title: f.title, receiptNo: f.receiptNo, key: r.key }] : []; });
     const events = [...new Map([...known, ...own].map((e) => [e.receiptNo, e])).values()];
     const financeLog = await readLog<FinancePeriod>(mp.finance);
-    built.edge = buildEdge({
-      date: today.date, close: built.price?.close ?? null, bars: daily, finance: asOf(financeLog, financeKey, now), financeLog: financeLog.filter((f) => f.retrievedAt <= now.toISOString()), events,
-      insider: (await readLog<InsiderReport>(join(root, 'data', 'insider', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString()),
-      holders: (await readLog<HolderReport>(join(root, 'data', 'holders', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString()),
-    });
+    const insider = (await readLog<InsiderReport>(join(root, 'data', 'insider', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString());
+    const holders = (await readLog<HolderReport>(join(root, 'data', 'holders', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString());
+    built.edge = inCurrency(() => buildEdge({
+      date: today.date, close: built.price?.close ?? null, bars: daily, finance: asOf(financeLog, financeKey, now), financeLog: financeLog.filter((f) => f.retrievedAt <= now.toISOString()), events, us, insider, holders,
+    }));
     const statements = await readFile(join(root, 'data', 'statements', `${SYMBOL}.json`), 'utf8').then((t) => JSON.parse(t) as FullStatements, () => null);
     if (statements && statements.retrievedAt <= now.toISOString()) built.statements = statements;
   }
@@ -644,16 +677,16 @@ export async function configureSite(root: string): Promise<void> {
   SITE_CONFIG.apiUrl = process.env.GNM_API_URL ?? config.apiUrl ?? '';
 }
 
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[] } = {}): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[]; us?: UsTemp | null } = {}): Promise<void> {
   const siteDir = join(root, 'site');
   await configureSite(root);
   const home: HomeEntry[] = [];
   // Stocks picked in earlier weeks keep their pages (latest dated report), off the front page.
-  const reportDirs = (await readdir(join(root, 'reports'), { withFileTypes: true }).catch(() => [])).filter((d) => d.isDirectory() && /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15})$/.test(d.name)).map((d) => d.name);
+  const reportDirs = (await readdir(join(root, 'reports'), { withFileTypes: true }).catch(() => [])).filter((d) => d.isDirectory() && /^([0-9A-Z]{6}|KRW-[A-Z0-9]{1,15}|[A-Z][A-Z0-9-]{0,9}\.[A-Z])$/.test(d.name)).map((d) => d.name);
   const past: Ticker[] = [];
   for (const symbol of reportDirs.filter((d) => !tickers.some((t) => t.symbol === d))) {
     const latest = (await loadReports(join(root, 'reports', symbol))).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
-    if (latest) past.push({ symbol, name: latest.name, market: symbol.startsWith('KRW-') ? 'UPBIT' : 'KOSPI', ...(latest.kind ? { kind: latest.kind } : {}), dartCorpCode: '', newsQuery: latest.name, newsAliases: [latest.name], ai: false });
+    if (latest) past.push({ symbol, name: latest.name, market: symbol.startsWith('KRW-') ? 'UPBIT' : isUsSymbol(symbol) ? (latest.exchange && isUsMarket(latest.exchange) ? latest.exchange : 'NASDAQ') : 'KOSPI', ...(latest.kind ? { kind: latest.kind } : {}), dartCorpCode: '', newsQuery: latest.name, newsAliases: [latest.name], ai: false });
   }
   const picks = new Map((selection?.picks ?? []).map((p) => [p.symbol, p]));
   // Daily picks of the last seven days stay on the front page (G-56), newest first.
@@ -686,12 +719,12 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     }
     if (page) {
       // Calculation-page entry points open an existing report in the same template.
-      const calcPath=join(siteDir,page.kind==='coin'?'c':'s',ticker.symbol+'.json');
+      const calcPath=join(siteDir,page.currency==='USD'?'u':page.kind==='coin'?'c':'s',ticker.symbol+'.json');
       try {const raw=JSON.parse(await readFile(calcPath,'utf8'));raw.pageUrl=ticker.symbol+'/index.html';raw.research=true;await writeFile(calcPath,JSON.stringify(raw));} catch { /* no shared price file for this covered symbol */ }
       const { commentary: _private, ...input } = page;
       await mkdir(join(siteDir, 'research'), { recursive: true });
       await writeFile(join(siteDir, 'research', ticker.symbol + '.json'), JSON.stringify(input));
-      await writeFile(join(siteDir, 'research', ticker.symbol + '.panels.json'), JSON.stringify(publicPanels(input)));
+      await writeFile(join(siteDir, 'research', ticker.symbol + '.panels.json'), JSON.stringify(withCurrency(input.currency, () => publicPanels(input))));
     }
     const pick = picks.get(ticker.symbol);
     const day = daily.get(ticker.symbol);
@@ -759,7 +792,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const homeData = {
     marketReports,
     banners,
-    entries: home, universe, indices, pulse: extras.pulse ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
+    entries: home, universe, indices, pulse: extras.pulse ?? null, us: extras.us ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
     selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,
   };
   await writeFile(join(siteDir, 'index.html'), renderHome(homeData));
