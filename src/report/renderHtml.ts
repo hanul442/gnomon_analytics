@@ -23,7 +23,7 @@ import { arenaHeadline, arenaPanel } from './renderArena.js';
 import { parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, PLAN_CSS } from './plans.js';
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
-import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, parliamentViewNote, SEATS_JS, VIEW_FOCUS_CSS } from './conclusion.js';
+import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, conclusionMini, parliamentViewNote, SEATS_JS, VIEW_FOCUS_CSS } from './conclusion.js';
 import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
@@ -618,7 +618,7 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary?.status === 'OK'
     ? `${upgrade}${fromNote}${committeeTab(report, { base, from: ctx.commentaryFrom ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
-    : `${report.commentary?whySection(report):''}${conclusionCard(report,{id: 'conclusion',title: '시나리오'})}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 토론이 아직 생성되지 않았어요</b><button type="button" class="chip-toggle" data-create-report data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">리포트 생성</button></div></div>${joinBox(report)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
+    : `${report.commentary?whySection(report):''}${conclusionMini(report)}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 토론이 아직 생성되지 않았어요</b><button type="button" class="chip-toggle" data-create-report data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">리포트 생성</button></div></div>${joinBox(report)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
   const newsTab = `${insightLine(report, 'news', base)}${edgeEvents(report)}<div data-slot="news">${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}</div>
 <div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 원문이 열려요</span></div><div data-slot="filings">${filingsTable(report)}</div></div>${mixCard(report.recentFilings ?? report.filings)}</div>`;
   const p = report.price;
@@ -649,12 +649,12 @@ export function committeeTab(report: DailyReport, opts: { base: string; from: st
       ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
       : whySection(report);
   const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(전체 메뉴의 내 보기 방식에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`);
-  return `${conclusionCard(report, { id: 'conclusion', title: '시나리오' })}${seats}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
+  return `${conclusionMini(report)}${seats}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
 }
 
 /** The paid part of a committee report (G-61), rendered from the full commentary and sealed into <symbol>/deep/<date>.txt. */
 export function renderDeep(report: DailyReport, ctx: { live: boolean; previous?: DailyReport | null }): string {
-  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'conclusion', title: '시나리오' })}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
+  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
 }
 
 export const DEEP_UNLOCK_CREDITS = 10;
