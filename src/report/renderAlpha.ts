@@ -56,12 +56,16 @@ export function renderLogin(): string {
     document.getElementById('go').textContent = m === 'signup' ? '가입하고 시작하기' : '로그인';
   };
   document.querySelectorAll('[data-mode]').forEach(function (b) { b.addEventListener('click', function () { setMode(b.getAttribute('data-mode')); }); });
-  if (qs.get('invite')) { document.getElementById('invite').value = qs.get('invite'); setMode('signup'); }
+  // G-176: an invite link opens 가입 only for someone without an account here; a returning reader sees 로그인 (one password field).
+  var known = false; try { known = !!(localStorage.getItem('gnm-session') || localStorage.getItem('gnm-last-email')); } catch (e) {}
+  if (qs.get('invite')) { document.getElementById('invite').value = qs.get('invite'); setMode(known ? 'login' : 'signup'); }
   if (qs.get('return')) try { sessionStorage.setItem('gnm-return', qs.get('return')); } catch (e) {}
   if (!window.GNM || !GNM.api) { form.querySelector('button[type=submit]').disabled = true; return; }
   var done = function (r) {
     var me = Object.assign({}, r); delete me.session; delete me._status;
     GNM.signIn(r.session, me);
+    // Only the fact that someone signed in here is kept (for the invite-link mode above), never the address itself.
+    try { localStorage.setItem('gnm-last-email', '1'); if (qs.get('invite')) history.replaceState(null, '', location.pathname); } catch (e) {}
     var back = ''; try { back = sessionStorage.getItem('gnm-return') || ''; sessionStorage.removeItem('gnm-return'); } catch (e) {}
     location.replace(!me.survey.onboarding ? 'onboarding.html' : /^[\\w\\/.-]+(\\?[\\w=&%-]*)?$/.test(back) ? back : 'index.html');
   };

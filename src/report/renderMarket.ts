@@ -73,22 +73,25 @@ ${notes.length ? `<p class="fine">${notes.map(esc).join(' ')}</p>` : ''}</div>`;
 function valueStrip(fv: TechnicalFairValue, consensus: number | null, p50: number | null): string {
   const marks = [fv.low, fv.high, fv.close, fv.center, ...(consensus ? [consensus] : []), ...(p50 ? [p50] : [])];
   const lo = Math.min(...marks) * 0.97, hi = Math.max(...marks) * 1.03;
-  const x = (v: number) => 12 + ((v - lo) / (hi - lo)) * 576;
+  // G-176: drawn at phone width (360 units) so the labels stay readable instead of shrinking to 6px.
+  const x = (v: number) => 8 + ((v - lo) / (hi - lo)) * 344;
+  const short = (v: number) => (v >= 1e8 ? `${(v / 1e8).toFixed(1)}억` : v >= 1e6 ? `${Math.round(v / 1e4).toLocaleString('ko-KR')}만` : v >= 1e4 ? `${(v / 1e4).toFixed(1)}만` : won(v));
   // Labels sit above or below the axis; a label too close to another on its side drops to an outer row.
-  const placed: { side: number; x: number; row: number }[] = [];
+  // Each label's width is estimated from its text (about 6.5 units a character) so longer labels drop to an outer row instead of overprinting.
+  const placed: { side: number; x: number; row: number; w: number }[] = [];
   const mark = (v: number, label: string, cls: string, side: -1 | 1) => {
-    const px = x(v);
+    const px = x(v), w = (label.length + short(v).length + 1) * 6.5;
     let row = 0;
-    while (placed.some((p) => p.side === side && p.row === row && Math.abs(p.x - px) < 90)) row += 1;
-    placed.push({ side, x: px, row });
-    const ty = side < 0 ? 28 - row * 13 : 82 + row * 13;
-    const anchor = px < 50 ? 'start' : px > 550 ? 'end' : 'middle';
-    return `<g class="vs-${cls}"><line x1="${px.toFixed(1)}" x2="${px.toFixed(1)}" y1="38" y2="66"/><text x="${px.toFixed(1)}" y="${ty}" text-anchor="${anchor}">${esc(label)}</text><title>${esc(label)} ${won(v)}</title></g>`;
+    while (placed.some((p) => p.side === side && p.row === row && Math.abs(p.x - px) < (p.w + w) / 2 + 6)) row += 1;
+    placed.push({ side, x: px, row, w });
+    const ty = side < 0 ? 30 - row * 15 : 84 + row * 15;
+    const anchor = px < 48 ? 'start' : px > 312 ? 'end' : 'middle';
+    return `<g class="vs-${cls}"><line x1="${px.toFixed(1)}" x2="${px.toFixed(1)}" y1="40" y2="68"/><text x="${px.toFixed(1)}" y="${ty}" text-anchor="${anchor}">${esc(label)} <tspan class="vs-v">${short(v)}</tspan></text><title>${esc(label)} ${won(v)}</title></g>`;
   };
-  return `<svg viewBox="0 0 600 104" class="value-strip" role="img" aria-label="기술적 적정 범위 ${won(fv.low)}~${won(fv.high)}, 현재가 ${won(fv.close)}">
-<line x1="12" x2="588" y1="52" y2="52" class="vs-axis"/>
-<rect x="${x(fv.low).toFixed(1)}" y="44" width="${(x(fv.high) - x(fv.low)).toFixed(1)}" height="16" rx="4" class="vs-band"><title>적정 범위 ${won(fv.low)}~${won(fv.high)}</title></rect>
-${mark(fv.center, '적정가', 'center', -1)}${consensus ? mark(consensus, '증권가 목표가', 'cons', -1) : ''}${mark(fv.close, '현재가', 'close', 1)}${p50 ? mark(p50, '20일 예측 중앙', 'p50', 1) : ''}
+  return `<svg viewBox="0 0 360 108" class="value-strip" role="img" aria-label="기술적 적정 범위 ${won(fv.low)}~${won(fv.high)}, 현재가 ${won(fv.close)}">
+<line x1="8" x2="352" y1="54" y2="54" class="vs-axis"/>
+<rect x="${x(fv.low).toFixed(1)}" y="46" width="${(x(fv.high) - x(fv.low)).toFixed(1)}" height="16" rx="4" class="vs-band"><title>적정 범위 ${won(fv.low)}~${won(fv.high)}</title></rect>
+${mark(fv.center, '적정가', 'center', -1)}${consensus ? mark(consensus, '증권가 목표가', 'cons', -1) : ''}${mark(fv.close, '현재가', 'close', 1)}${p50 ? mark(p50, '20일 예측', 'p50', 1) : ''}
 </svg>`;
 }
 
@@ -172,7 +175,8 @@ function flowChart(flow: FlowSection): string {
   });
   const all = cum.flatMap((c) => c.values).concat(0);
   const lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
-  const W = 640, H = 200, padL = 8, padR = 64, padT = 10, padB = 22;
+  // G-176: phone-width units so the line labels and dates read at about 11px on a phone.
+  const W = 380, H = 170, padL = 4, padR = 46, padT = 10, padB = 22;
   const x = (i: number) => padL + (i * (W - padL - padR)) / (days.length - 1);
   const y = (v: number) => padT + ((hi - v) / span) * (H - padT - padB);
   const labelY = cum.map((c) => y(c.values.at(-1)!) + 4);
@@ -225,6 +229,20 @@ type Bar = { date: string; open: number; high: number; low: number; close: numbe
 function rangeBar(label: string, low: number, high: number, now: number, note = '', ends: [string, string] = ['최저', '최고']): string {
   const at = high > low ? Math.min(100, Math.max(0, ((now - low) / (high - low)) * 100)) : 50;
   return `<div class="si-range"><div class="si-rk">${esc(label)}${note ? `<small>${esc(note)}</small>` : ''}</div><div class="si-rbar"><i style="left:${at.toFixed(1)}%"></i></div><div class="si-rv"><span>${ends[0]} <b>${won(low)}</b></span><span>${ends[1]} <b>${won(high)}</b></span></div></div>`;
+}
+/**
+ * G-176: current price → analyst target on the 52-week scale. The old bar ran from the current price to the
+ * target, so its dot always sat at one end; this one fills the gap between them and marks the 52-week range.
+ */
+function targetBar(now: number, target: number, low52: number | null, high52: number | null): string {
+  const lo = Math.min(now, target, low52 ?? now), hi = Math.max(now, target, high52 ?? now), span = hi - lo || 1;
+  const at = (v: number) => (((v - lo) / span) * 100).toFixed(1);
+  const a = Math.min(now, target), b = Math.max(now, target), up = target >= now;
+  const tick = (v: number | null, label: string) => (v == null ? '' : `<em class="tb-tick" style="left:${at(v)}%" title="${label} ${won(v)}"></em>`);
+  return `<div class="si-range tb"><div class="si-rk">현재가 → 목표가<small>${up ? '목표가까지' : '목표가보다 위'} ${pct((target / now - 1) * 100)}</small></div>
+<div class="tb-bar">${tick(low52, '52주 최저')}${tick(high52, '52주 최고')}<span class="tb-fill ${up ? 'up' : 'down'}" style="left:${at(a)}%;width:${(((b - a) / span) * 100).toFixed(1)}%"></span><i class="tb-now" style="left:${at(now)}%"></i><b class="tb-tgt" style="left:${at(target)}%"></b></div>
+<div class="si-rv"><span>${lo === low52 ? '52주 최저' : lo === target ? '목표가' : '현재가'} <b>${won(lo)}</b></span><span>${hi === high52 ? '52주 최고' : hi === target ? '목표가' : '현재가'} <b>${won(hi)}</b></span></div>
+<div class="tb-key"><span><i class="tb-now"></i>현재가 ${won(now)}</span><span><b class="tb-tgt"></b>목표가 ${won(target)}</span></div></div>`;
 }
 const cell = (k: string, v: string, _hint = '') => `<div class="si-c"><span>${esc(k)}</span><b>${v}</b></div>`;
 const eok = (v: number | null | undefined) => (v == null ? '없음' : v >= 1e12 ? `${(v / 1e12).toFixed(v >= 1e14 ? 0 : 1)}조원` : v >= 1e8 || v <= 0 ? `${Math.round(v / 1e8).toLocaleString('ko-KR')}억원` : `${Math.max(1, Math.round(v / 1e4)).toLocaleString('ko-KR')}만원`);
@@ -325,7 +343,7 @@ export function stockInfoCards(market: MarketSection, close: number | null, _nam
     if (cons?.targetPriceMean && now) {
       const up = (cons.targetPriceMean / now - 1) * 100, rec = cons.recommendationMean;
       const recLabel = rec == null ? '' : rec >= 4.5 ? '강력 매수' : rec >= 3.5 ? '매수' : rec >= 2.5 ? '중립' : rec >= 1.5 ? '매도' : '강력 매도';
-      head = `<div class="si-target"><div><span>평균 목표가</span><b>${won(cons.targetPriceMean)}</b><small class="${tone(up)}">현재가 대비 ${pct(up)}</small></div>${rec != null ? `<div><span>투자의견 평균</span><b>${recLabel}</b><small>${rec.toFixed(2)} / 5</small></div>` : ''}</div>${now <= cons.targetPriceMean ? rangeBar('현재가 → 목표가', now, cons.targetPriceMean, now, '', ['현재가', '목표가']) : rangeBar('목표가 → 현재가', cons.targetPriceMean, now, now, '목표가보다 위', ['목표가', '현재가'])}`;
+      head = `<div class="si-target"><div><span>평균 목표가</span><b>${won(cons.targetPriceMean)}</b><small class="${tone(up)}">현재가 대비 ${pct(up)}</small></div>${rec != null ? `<div><span>투자의견 평균</span><b>${recLabel}</b><small>${rec.toFixed(2)} / 5</small></div>` : ''}</div>${targetBar(now, cons.targetPriceMean, s?.low52w ?? null, s?.high52w ?? null)}`;
     }
     card('애널리스트 의견', `${head}${reports}<p class="fine">증권사 컨센서스${cons?.date ? `(${esc(cons.date)})` : ''}와 리포트 제목이에요. 우리 판단이 아니에요.</p>`);
   }
@@ -334,7 +352,7 @@ export function stockInfoCards(market: MarketSection, close: number | null, _nam
 
 export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:flex;justify-content:space-between;align-items:baseline}.qi-card h2{font-size:17px;margin:0 0 4px}.qi-more{font-size:13.5px;font-weight:800;color:var(--accent-strong);text-decoration:none}.qi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.qi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}.qi-k{color:var(--fg2);font-weight:700;margin-right:auto}.qi-who{display:inline-flex;gap:6px;align-items:baseline}.qi-who small{color:var(--muted)}@media (max-width:520px){.qi-k{width:100%}}
 .si-wrap{columns:2;column-gap:14px;margin-bottom:16px}.si-card{min-width:0;break-inside:avoid;margin:0 0 14px;display:block}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:17px;margin:0 0 10px}
-.si-range{margin:6px 0 14px}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
+.si-range{margin:6px 0 14px}.tb-bar{position:relative;height:8px;margin:10px 0 4px;border-radius:99px;background:#eef0f4}.tb-fill{position:absolute;top:0;bottom:0;border-radius:99px;opacity:.85}.tb-fill.up{background:linear-gradient(90deg,#ffd3d7,var(--up))}.tb-fill.down{background:linear-gradient(90deg,var(--down),#d3e3ff)}.tb-tick{position:absolute;top:-3px;width:2px;height:14px;margin-left:-1px;background:#c3c9d2}.tb-now,.tb-tgt{display:inline-block}.tb-bar .tb-now{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--fg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.tb-bar .tb-tgt{position:absolute;top:50%;width:4px;height:18px;margin:-9px 0 0 -2px;border-radius:2px;background:var(--accent)}.tb-key{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--fg2);margin-top:8px}.tb-key span{display:inline-flex;align-items:center;gap:6px}.tb-key .tb-now{width:10px;height:10px;border-radius:50%;background:var(--fg)}.tb-key .tb-tgt{width:4px;height:12px;border-radius:2px;background:var(--accent)}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
 .si-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.si-c{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.si-c span{color:var(--fg2)}.si-c b{font-variant-numeric:tabular-nums;text-align:right}
 .si-seg{margin-bottom:8px;width:max-content}.si-flow{display:grid;grid-template-columns:56px minmax(0,1fr) 84px;align-items:center;gap:8px;padding:7px 0;font-size:14px}.si-flow b{text-align:right;font-variant-numeric:tabular-nums}.si-fbar{position:relative;height:10px;background:#f1f3f7;border-radius:4px}.si-fbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}.si-fbar i{position:absolute;top:0;bottom:0;border-radius:3px}.si-fbar i.pos{background:#e5484d}.si-fbar i.neg{background:#3e63dd}
 .fc-row{margin:14px 0 4px}.fc-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}.fc-h span{font-size:13px;color:var(--fg2)}.fc-h span b{color:var(--fg)}.fc-h em{font-style:normal;font-weight:700;margin-left:4px}

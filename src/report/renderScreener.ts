@@ -42,7 +42,7 @@ export function renderScreener(): string {
   const body = `<section class="find-head" id="top"><h1>자세히 검색</h1><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 이름이나 코드 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div>
 <nav class="find-tabs" role="tablist" aria-label="시장"><button type="button" role="tab" data-find="stock" aria-selected="true">주식 <span id="sc-count" class="muted"></span></button><button type="button" role="tab" data-find="us" aria-selected="false">미국 주식</button><button type="button" role="tab" data-find="etf" aria-selected="false">ETF</button><button type="button" role="tab" data-find="coin" aria-selected="false">코인</button><a href="reports.html">AI 리포트</a></nav></section>
-<div id="find-stock"><p class="muted small" id="sc-kind-note" hidden style="margin:6px 0 0">ETF·코인도 주식과 같은 조건으로 걸러요. 시가총액·외국인 수급·공시 항목은 없어서 그 조건은 빼고 봐요. 코인의 '유의 종목'은 공시 위험 2단계로 쳐요.</p>
+<div id="find-stock"><div class="pl-chips sc-mkt" id="sc-mkt" role="group" aria-label="거래소"><button type="button" class="chip-toggle" data-mkt="" aria-pressed="true">전체</button><button type="button" class="chip-toggle" data-mkt="P" aria-pressed="false">코스피</button><button type="button" class="chip-toggle" data-mkt="Q" aria-pressed="false">코스닥</button></div><p class="muted small" id="sc-kind-note" hidden style="margin:6px 0 0">ETF·코인도 주식과 같은 조건으로 걸러요. 시가총액·외국인 수급·공시 항목은 없어서 그 조건은 빼고 봐요. 코인의 '유의 종목'은 공시 위험 2단계로 쳐요.</p>
 <section class="block"><div class="pl-chips sc-presets" role="group" aria-label="빠른 조건"><button type="button" class="chip-toggle sc-filter-btn" id="sc-filter-open" aria-haspopup="dialog" aria-controls="sc-sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>필터<b id="sc-filter-n"></b></button>${PRESETS.map((p, i) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${i === 0}" title="${p.hint}">${p.label}${i ? ' <span class="lockmark">플러스</span>' : ''}</button>`).join('')}</div></section>
 <div class="sc-sheet" id="sc-sheet" role="dialog" aria-label="필터"><div class="sc-sheet-head"><button type="button" class="sc-sheet-x" aria-label="필터 닫기">‹</button><b>필터</b></div>
 <section class="block" id="ai-build"><div class="card"><div class="compact-heading"><b>AI 조건</b><small class="muted">제안 확인 후 적용</small></div><div class="compact-input"><textarea id="ai-screen-q" maxlength="600" rows="1" aria-label="원하는 종목 조건" placeholder="예: 거래량이 터졌는데 아직 많이 안 오른 코스닥 종목" style="width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:10px"></textarea><button type="button" class="btn-primary" id="ai-screen-send" aria-label="AI 조건 생성" title="AI 조건 생성">✦</button></div><small class="muted">${CREDIT_COST.question}크레딧 / 생성</small><div id="ai-screen-out" aria-live="polite"></div></div></section>
@@ -79,6 +79,7 @@ html[data-plan=free] .sc-table th:nth-child(7),html[data-plan=free] .sc-table td
 </div>
 <script>if (/[?&]embed=1/.test(location.search)) { document.documentElement.classList.add('embed'); var bt = document.createElement('base'); bt.target = '_top'; document.head.appendChild(bt); }</script>
 <style>html.embed .topbar,html.embed .bottom-nav,html.embed .chat-fab,html.embed .site-links,html.embed #sources,html.embed .find-head h1,html.embed .promo-bar,html.embed .fb-row{display:none!important}html.embed body{padding-bottom:0!important;background:#fff}html.embed main{padding-top:4px}
+.sc-mkt{margin:10px 0 0}.sc-mkt[hidden]{display:none}
 .find-head{max-width:1180px;margin:14px auto 0;padding:0 24px}.find-head h1{font-size:24px;margin:4px 0 12px}.find-head .search-box{background:#fff;border:2px solid var(--navy)}.find-tabs{display:flex;gap:6px;margin:14px 0 4px;overflow-x:auto}.find-tabs>*{flex:none;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:8px 16px;font:inherit;font-size:14.5px;font-weight:700;cursor:pointer;text-decoration:none;color:var(--fg)}.find-tabs [aria-selected=true]{background:var(--navy);color:#fff;border-color:var(--navy)}.find-tabs [aria-selected=true] .muted{color:#c9d3e3}.find-tabs a{color:var(--accent-strong)}#find-stock .sc-presets{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}#find-stock .sc-presets>*{flex:none}@media (max-width:820px){.find-head{padding:0 14px}}</style>
 <footer id="sources" style="padding:24px 0 0"><p>계산 결과이고, 투자 권유가 아니에요. 기술 신호는 오를 확률이 아니에요. 공시 위험은 제목으로 분류한 경고라 원문을 꼭 확인해 주세요.</p></footer>`;
   return shell('', '자세히 검색 | GNOMON', body, { active: 'screener', scripts: SCREENER_SCRIPT + SEARCH_SCRIPT + FIND_TABS_SCRIPT });
@@ -153,11 +154,14 @@ const SCREENER_SCRIPT = `<script>
   // G-154: 50 results at a time (200 at once ran 24 phone screens); a new condition starts from 50 again.
   var scShown = 50, lastKey = '';
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-sc-more]')) { scShown += 50; drawNow(); } });
+  var mkt = '', mktBox = document.getElementById('sc-mkt');
+  if (mktBox) mktBox.addEventListener('click', function (e) { var b = e.target.closest('[data-mkt]'); if (!b) return; mkt = b.getAttribute('data-mkt'); mktBox.querySelectorAll('[data-mkt]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); draw(); });
   var draw = function () { drawNow(); };
   var drawNow = function () {
     var sc = free() ? PRESETS.top : current();
-    var out = rows.filter(function (r) { return matches(r, sc, IDX); }), total = out.length;
-    var key = JSON.stringify(sc) + '|' + rows.length; if (key !== lastKey) { lastKey = key; scShown = 50; }
+    // G-176: 코스피/코스닥 chips narrow the stock list before the conditions run (ETF·코인·미국 have no exchange split).
+    var out = rows.filter(function (r) { return (currentMarket !== 'stock' || !mkt || r[2] === mkt) && matches(r, sc, IDX); }), total = out.length;
+    var key = JSON.stringify(sc) + '|' + rows.length + '|' + mkt; if (key !== lastKey) { lastKey = key; scShown = 50; }
     // G-119: any result list sorts by any column, both directions; missing values always go last.
     var col = SORT_COL[sortKey], sorted = function (list) { return list.slice().sort(function (a, b) {
       var x = a[col], y = b[col];
@@ -266,7 +270,7 @@ const SCREENER_SCRIPT = `<script>
   };
   window.GNM_screenSource = function (kind) {
     var ticket=++sourceTicket;currentMarket=kind;
-    var note = document.getElementById('sc-kind-note'); if (note) note.hidden = kind === 'stock';
+    var note = document.getElementById('sc-kind-note'); if (note) note.hidden = kind === 'stock'; var mk = document.getElementById('sc-mkt'); if (mk) mk.hidden = kind !== 'stock';
     return source(kind).then(function (r) { if(ticket!==sourceTicket)return; rows = r; draw(); var shared=new URLSearchParams(location.search).get('screen');if(shared){try{var sc=(${cleanScreen.toString()})(JSON.parse(shared));if(sc)load(sc);}catch(e){}} }).catch(function () { $('sc-body').innerHTML = '<tr><td colspan="8" class="empty">목록을 불러오지 못했어요.</td></tr>'; });
   };
   var first = /^#(etf|coin|us)$/.test(location.hash) ? location.hash.slice(1) : 'stock';
