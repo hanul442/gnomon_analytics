@@ -49,7 +49,7 @@ export const COIN_CHART_JS = `
     hideDaily();if(line){G.chart.removeSeries(line);line=null;}G.candle.applyOptions({visible:true});
     if(G.showBars)G.showBars(r.bars.map(function(x){return Object.assign({},x,{date:new Date(x.time*1000+9*3600000).toISOString().slice(0,16).replace('T',' ')});}));G.candle.setData(r.bars.map(function(x){return {time:x.time,open:x.open,high:x.high,low:x.low,close:x.close};}));
     if(!extra){extra=G.chart.addSeries(G.L.HistogramSeries,{priceFormat:{type:'volume'},priceScaleId:'coin-v',priceLineVisible:false,lastValueVisible:false});extra.priceScale().applyOptions({scaleMargins:{top:.82,bottom:0}});}
-    extra.applyOptions({visible:true});extra.setData(r.bars.map(function(x){return {time:x.time,value:x.volume,color:x.close>=x.open?'#d1373d66':'#2a62c966'};}));
+    extra.applyOptions({visible:true});extra.setData(r.bars.map(function(x){return {time:x.time,value:x.volume,color:x.close>=x.open?'#f0445266':'#3182f666'};}));
     G.chart.timeScale().setVisibleRange({from:r.bars[0].time,to:r.bars[r.bars.length-1].time});
     press(b);note.textContent=(COIN?'업비트 '+u+'분봉 · KST · 최근 ':'정규장 '+u+'분봉 · 1분 종가로 만든 봉 · 최근 ')+r.bars.length+'개 · 체결 없는 구간은 비어 있어요. 일봉 지표·전략·그리기는 일봉에서 사용해요.';
    }).catch(function(e){if(id===ticket)note.textContent=e.message||'연결을 확인해 주세요. 다시 선택하면 재시도합니다.';}).finally(function(){layer.end();});

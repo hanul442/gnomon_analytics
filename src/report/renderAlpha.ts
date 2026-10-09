@@ -5,7 +5,7 @@ import { shell } from './renderHtml.js';
 import { ALPHA } from './plans.js';
 
 const PAGE_CSS = `<style>
-.form-card{max-width:520px;margin:24px auto}.fld-err{display:block;color:#b4232b;font-size:13px;margin-top:4px}[aria-invalid=true]{border-color:#d1373d!important}.form-card h1{font-size:26px;margin:0 0 6px}.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}.fld label{font-weight:700;font-size:14px}
+.form-card{max-width:520px;margin:24px auto}.fld-err{display:block;color:#b4232b;font-size:13px;margin-top:4px}[aria-invalid=true]{border-color:#f04452!important}.form-card h1{font-size:26px;margin:0 0 6px}.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}.fld label{font-weight:700;font-size:14px}
 .fld input,.fld select,.fld textarea{border:1px solid var(--line-strong);border-radius:12px;padding:11px 12px;font:inherit;font-size:15px}.fld small{color:var(--muted)}
 .chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:14px}.form-card .btn-primary{width:100%;justify-content:center;margin-top:16px}
 .msg-ok{background:#e7f5ec;color:#1d6b3a;border-radius:12px;padding:12px 14px;margin-top:14px}.msg-err{background:#fde8e8;color:#9b1c1c;border-radius:12px;padding:12px 14px;margin-top:14px}

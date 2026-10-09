@@ -145,7 +145,7 @@ try{
  await page.locator('#dw [data-dw-group="line"]').click();await page.locator('#dw-tools [data-dw-tool="trend"]').click();await page.locator('.dw-hint:not([hidden])').waitFor();
  {const b=await page.locator('.dw-cap').boundingBox();await page.mouse.move(b.x+b.width*0.3,b.y+b.height*0.6);await page.mouse.down();await page.mouse.move(b.x+b.width*0.6,b.y+b.height*0.3,{steps:6});await page.mouse.up();
  assert.equal(await page.evaluate(()=>GNM_draw.shapes().length),1);assert.equal(await page.evaluate(()=>GNM_draw.shapes()[0].k),'trend');await page.locator('.dw-edit:not([hidden])').waitFor();
- await page.locator('.dw-edit [data-e="c"]').nth(1).click();assert.equal(await page.evaluate(()=>GNM_draw.shapes()[0].st.c),'#d1373d');
+ await page.locator('.dw-edit [data-e="c"]').nth(1).click();assert.equal(await page.evaluate(()=>GNM_draw.shapes()[0].st.c),'#f04452');
  await page.evaluate(()=>GNM_draw.setTool('long'));await page.mouse.click(b.x+b.width*0.4,b.y+b.height*0.5);await page.mouse.click(b.x+b.width*0.55,b.y+b.height*0.35);
  assert.equal(await page.evaluate(()=>GNM_draw.shapes().length),2);assert.ok(await page.evaluate(()=>GNM_draw.shapes()[1].stop>0),'stop set');
  assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem(GNM_draw.key)).length===2),'saved on this device (free)');

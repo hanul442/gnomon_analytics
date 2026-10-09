@@ -11,7 +11,7 @@ export function derivSlot(symbol: string): string {
 export const DERIV_CSS = `.dv-card{margin:14px 0}.dv-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.dv-card h2{font-size:17px;margin:0 0 6px}
 .dv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dv-t{background:#f6f8fc;border-radius:14px;padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:4px}
 .dv-t>span{font-size:12.5px;font-weight:800;color:var(--fg2)}.dv-t>b{font-size:19px;font-variant-numeric:tabular-nums}.dv-t>small{font-size:12px;color:var(--muted);line-height:1.4}
-.dv-t svg{width:100%;height:34px;display:block}.dv-liq{display:flex;height:10px;border-radius:99px;overflow:hidden;background:#e9edf3;margin:2px 0}.dv-liq i{display:block}.dv-liq .l{background:#2a62c9}.dv-liq .s{background:#d1373d}
+.dv-t svg{width:100%;height:34px;display:block}.dv-liq{display:flex;height:10px;border-radius:99px;overflow:hidden;background:#e9edf3;margin:2px 0}.dv-liq i{display:block}.dv-liq .l{background:#3182f6}.dv-liq .s{background:#f04452}
 @media (max-width:520px){.dv-grid{grid-template-columns:minmax(0,1fr)}}`;
 
 export const DERIV_JS = `

@@ -12,7 +12,7 @@ export function apiMeta(): string {
 }
 
 export const ALPHA_CSS = `
-.alpha-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#e8eef7;color:#1d3a6e;font-size:13px;padding:8px 14px;border-bottom:1px solid #c9d6ee}.alpha-bar a{font-weight:700}.alpha-bar button{border:0;background:none;color:inherit;font-size:16px;cursor:pointer}
+.alpha-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:var(--accent-soft);color:var(--accent-strong);font-size:13px;padding:8px 14px;border-bottom:1px solid #c9d6ee}.alpha-bar a{font-weight:700}.alpha-bar button{border:0;background:none;color:inherit;font-size:16px;cursor:pointer}
 .fb-row{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin:22px 0 4px;padding:12px 4px 4px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}.fb-row>span{margin-right:2px}
 .fb-row button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 11px;cursor:pointer;font:inherit;font-size:12.5px;color:var(--fg2)}.fb-row button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft)}
 .fb-row form{display:flex;gap:6px;flex:1 1 100%}.fb-row input{flex:1;border:1px solid var(--line-strong);border-radius:8px;padding:6px 9px;font:inherit}

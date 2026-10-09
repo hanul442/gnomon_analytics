@@ -120,7 +120,7 @@ export function statementChart(st: FullStatements, kind: StKind): string {
   let chart = '', note = '';
   if (kind === 'IS') {
     const rev = val('ifrs-full_Revenue', KEY_ROWS.IS[0]![1]), op = val('dart_OperatingIncomeLoss', KEY_ROWS.IS[3]![1]), net = val('ifrs-full_ProfitLoss', KEY_ROWS.IS[5]![1]);
-    chart = bars(st.years, [{ label: '매출', color: '#2e4268', values: rev }, { label: '영업이익', color: '#d1373d', values: op }, { label: '순이익', color: '#e9a23b', values: net }]);
+    chart = bars(st.years, [{ label: '매출', color: '#2e4268', values: rev }, { label: '영업이익', color: '#f04452', values: op }, { label: '순이익', color: '#e9a23b', values: net }]);
     const last = st.years.length - 1, m = rev[last] && op[last] != null ? (op[last]! / rev[last]!) * 100 : null;
     if (m != null) note = `${esc(st.years[last]!)}년 영업이익률 <b>${m.toFixed(1)}%</b>`;
   } else if (kind === 'BS') {

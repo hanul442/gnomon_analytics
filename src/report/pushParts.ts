@@ -21,7 +21,7 @@ self.addEventListener('notificationclick', function (e) {
 
 export const MANIFEST = JSON.stringify({
   name: 'GNOMON', short_name: '그노몬', start_url: './index.html', scope: './', display: 'standalone',
-  background_color: '#ffffff', theme_color: '#13294b', lang: 'ko',
+  background_color: '#ffffff', theme_color: '#18143a', lang: 'ko',
   icons: [{ src: 'assets/gnomon-icon-192.png', sizes: '192x192', type: 'image/png' }, { src: 'assets/gnomon-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }],
 });
 
@@ -154,11 +154,11 @@ export const PRICE_ALERT_JS = `
 export const ALERTS_CSS = `.pa-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;background:none;border-radius:50%;padding:0;font:inherit;font-size:17px;cursor:pointer;margin-left:2px;vertical-align:middle;opacity:.55;filter:grayscale(1)}.pa-btn:hover,.pa-btn:focus-visible{opacity:1;filter:none;background:#eef1f6}
 .pa-now{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 14px;font-size:14px;color:var(--fg2)}.pa-now b{font-size:20px;color:var(--fg);font-variant-numeric:tabular-nums}
 .pa-label{display:block;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}
-.pa-target{display:flex;align-items:center;background:#f2f4f6;border-radius:14px;padding:4px}.pa-target button{flex:none;width:48px;height:48px;border:0;border-radius:12px;background:#fff;font:inherit;font-size:24px;color:#4e5968;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}.pa-target button:hover{background:#e8f3ff;color:#1b64da}
+.pa-target{display:flex;align-items:center;background:#f2f4f6;border-radius:14px;padding:4px}.pa-target button{flex:none;width:48px;height:48px;border:0;border-radius:12px;background:#fff;font:inherit;font-size:24px;color:#4e5968;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}.pa-target button:hover{background:var(--accent-soft);color:var(--accent-strong)}
 .pa-target input{flex:1;min-width:0;border:0;background:none;text-align:right;font:inherit;font-size:22px;font-weight:800;color:var(--fg);padding:0 4px;font-variant-numeric:tabular-nums}.pa-target input:focus{outline:none}.pa-unit{font-size:16px;font-weight:700;color:var(--fg2);margin-right:10px}
 .pa-hint{margin:8px 2px 10px;font-size:13.5px;color:var(--fg2);min-height:20px}
-.pa-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.pa-chips button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:0 14px;min-height:36px;font:inherit;font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer}.pa-chips button[aria-pressed=true]{background:#e8f3ff;border-color:#3182f6;color:#1b64da}
-.pa-save{display:block;width:100%;min-height:52px;border:0;border-radius:14px;background:#3182f6;color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer}.pa-save:disabled{background:#c9d4e3;cursor:not-allowed}
+.pa-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.pa-chips button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:0 14px;min-height:36px;font:inherit;font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer}.pa-chips button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-strong)}
+.pa-save{display:block;width:100%;min-height:52px;border:0;border-radius:14px;background:var(--accent);color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer}.pa-save:disabled{background:#c9d4e3;cursor:not-allowed}
 .pa-mine{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}.pa-mine>b{font-size:13px;color:var(--fg2)}.pa-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f2f4f6}.pa-item small{display:block;font-size:12px;color:var(--muted)}.pa-item button{border:1px solid var(--line);background:#fff;border-radius:10px;min-height:36px;padding:0 12px;font:inherit;font-size:13px;font-weight:700;color:var(--fg2);cursor:pointer}
 .pa-msg{margin:8px 0 0}.pa-dialog .pa-target button{font-size:26px;font-weight:600;line-height:1}.pa-dialog .pa-save{font-size:16px;font-weight:800}.pa-all{display:block;margin-top:8px;font-size:13px;font-weight:700}`;
 

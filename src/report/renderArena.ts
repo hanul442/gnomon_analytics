@@ -20,7 +20,7 @@ function equitySpark(values: readonly number[], label: string): string {
   const w = 140, h = 40, lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1;
   const pts = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 3 - ((v - lo) / span) * (h - 6)).toFixed(1)}`).join(' ');
   const up = values.at(-1)! >= 1;
-  return `<svg viewBox="0 0 ${w} ${h}" class="spark" role="img" aria-label="${esc(label)}"><line x1="0" x2="${w}" y1="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" y2="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" stroke="#cdd7e4" stroke-dasharray="2 3"/><polyline fill="none" stroke="${up ? '#d1373d' : '#2a62c9'}" stroke-width="1.6" points="${pts}"/></svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" class="spark" role="img" aria-label="${esc(label)}"><line x1="0" x2="${w}" y1="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" y2="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" stroke="#cdd7e4" stroke-dasharray="2 3"/><polyline fill="none" stroke="${up ? '#f04452' : '#3182f6'}" stroke-width="1.6" points="${pts}"/></svg>`;
 }
 
 const CROWN = '<svg viewBox="0 0 24 24" aria-hidden="true" class="crown"><path d="M3 18h18l-1.5-9-4.5 4-3-7-3 7-4.5-4z" fill="currentColor"/></svg>';
