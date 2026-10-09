@@ -126,7 +126,8 @@ export function renderInbox(): string {
 <div class="ib"><section class="hero"><div class="hero-main ib-head"><div><div class="eyebrow"><span>알림</span></div><h1>알림함</h1></div><div class="ib-tools"><button type="button" class="chip-toggle" id="ib-clear" hidden>모두 지우기</button><a class="chip-toggle" href="alerts.html">⚙︎ 알림 설정</a></div></div></section>
 <section class="block" id="ib-list"><p class="muted">불러오는 중이에요.</p></section></div>
 <script>
-(function () {
+// G-161: the account script loads after this page's own; wait for it, or a signed-in reader is asked to log in.
+document.addEventListener('DOMContentLoaded', function () {
   var G = window.GNM || {}, box = document.getElementById('ib-list'), clear = document.getElementById('ib-clear');
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICON = { watchReport: '⭐', daily: '📰', request: '📄', price: '🔔', screen: '🔎', update: '✨', intraday: '⚡' };
@@ -150,7 +151,7 @@ export function renderInbox(): string {
     G.call('GET', '/notifications').then(function (r) { if (r.error) { box.innerHTML = '<div class="ib-empty card">알림을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</div>'; return; }
       items = r.items || []; paint(); if (r.unread) G.call('POST', '/notifications/read'); });
   });
-})();
+});
 </script>`;
   return shell('', '알림함 | GNOMON', body, { ads: false });
 }

@@ -241,7 +241,7 @@ function rangeBar(label: string, low: number, high: number, now: number, note = 
   return `<div class="si-range"><div class="si-rk">${esc(label)}${note ? `<small>${esc(note)}</small>` : ''}</div><div class="si-rbar"><i style="left:${at.toFixed(1)}%"></i></div><div class="si-rv"><span>${ends[0]} <b>${won(low)}</b></span><span>${ends[1]} <b>${won(high)}</b></span></div></div>`;
 }
 const cell = (k: string, v: string, _hint = '') => `<div class="si-c"><span>${esc(k)}</span><b>${v}</b></div>`;
-const eok = (v: number | null | undefined) => (v == null ? '없음' : v >= 1e12 ? `${(v / 1e12).toFixed(v >= 1e14 ? 0 : 1)}조원` : `${Math.round(v / 1e8).toLocaleString('ko-KR')}억원`);
+const eok = (v: number | null | undefined) => (v == null ? '없음' : v >= 1e12 ? `${(v / 1e12).toFixed(v >= 1e14 ? 0 : 1)}조원` : v >= 1e8 || v <= 0 ? `${Math.round(v / 1e8).toLocaleString('ko-KR')}억원` : `${Math.max(1, Math.round(v / 1e4)).toLocaleString('ko-KR')}만원`);
 const num = (v: number | null | undefined, unit: string, d = 2) => (v == null || !Number.isFinite(v) ? '없음' : `${v.toFixed(d)}${unit}`);
 
 /**

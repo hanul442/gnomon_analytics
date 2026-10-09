@@ -143,6 +143,15 @@ export const MOTION_JS = `
   };
   // The summary chart redraws for another period: trace the new line again.
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-hc]'); if (!b || reduce) return; var a = b.closest('.hc-range'); a = a && a.previousElementSibling; if (!a || !a.classList.contains('hero-chart')) return; a.classList.remove('mo-in'); void a.offsetWidth; requestAnimationFrame(function () { a.classList.add('mo-in'); }); });
+  // G-160: the chat button steps aside while the page scrolls down (it covered the ends of list rows on phones)
+  // and comes back when scrolling stops or turns up.
+  var lastY = window.scrollY, fabT = null;
+  window.addEventListener('scroll', function () {
+    var fab = document.querySelector('.chat-fab'); if (!fab) return;
+    var y = window.scrollY, dy = y - lastY; lastY = y;
+    if (dy > 4 && y > 120) fab.classList.add('fab-away'); else if (dy < -4 || y <= 120) fab.classList.remove('fab-away');
+    clearTimeout(fabT); fabT = setTimeout(function () { fab.classList.remove('fab-away'); }, 900);
+  }, { passive: true });
   var queued = false;
   new MutationObserver(function () { if (queued) return; queued = true; setTimeout(function () { queued = false; scan(); }, 120); }).observe(document.documentElement, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scan); else scan();

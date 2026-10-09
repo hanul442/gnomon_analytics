@@ -47,7 +47,7 @@ const PAGE_CSS = `<style>
 
 const COMMON_JS = `var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
 var pct=function(v){return v==null?'-':(v>0?'▲ +':v<0?'▼ ':'')+Number(v).toFixed(2)+'%';};var cls=function(v){return v>0?'up':v<0?'down':'';};
-var eok=function(v){return v?(v>=1e12?(v/1e12).toFixed(1)+'조':Math.round(v/1e8).toLocaleString('ko-KR')+'억'):'-';};
+var eok=function(v){return v?(v>=1e12?(v/1e12).toFixed(1)+'조':v>=1e8?Math.round(v/1e8).toLocaleString('ko-KR')+'억':Math.max(1,Math.round(v/1e4)).toLocaleString('ko-KR')+'만'):'-';};
 var href=function(s){return 'stock.html?c='+encodeURIComponent(s);};`;
 
 export function renderThemesPage(): string {
