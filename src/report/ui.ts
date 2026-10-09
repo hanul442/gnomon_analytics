@@ -61,7 +61,7 @@ export const UI_CSS = `.deep-lock{display:flex;gap:14px;align-items:flex-start;b
 .price-bar b{font-size:var(--fs-base)}.price-bar .pb-price{font-weight:800;font-variant-numeric:tabular-nums}.price-bar .pb-code{color:#9fb6dc;font-size:var(--fs-xs)}
 .price-bar .up{color:#ff9a9e}.price-bar .down{color:#9fc0f5}.price-bar .fresh{background:rgba(255,255,255,.12);color:#fff}
 @media (max-width:820px){.topbar.scrolled .brand div{display:none}}
-.tip{display:inline-grid;place-items:center;width:17px;height:17px;margin-left:5px;border-radius:50%;border:1px solid var(--line-strong);background:#fff;color:var(--muted);font:700 11px/1 inherit;cursor:help;vertical-align:1px;padding:0}
+.tip{display:inline-grid;place-items:center;width:17px;height:17px;margin-left:5px;border-radius:50%;border:1px solid var(--line-strong);background:#fff;color:var(--muted);font:700 11px/1 inherit;cursor:help;vertical-align:1px;padding:0;position:relative}.tip::after{content:"";position:absolute;inset:-8px}
 .tip:hover,.tip[aria-expanded=true]{border-color:var(--accent);color:var(--accent)}
 .tip-pop{position:absolute;z-index:70;max-width:300px;background:#0f1b2d;color:#fff;border-radius:var(--r-md);padding:10px 12px;font-size:var(--fs-sm);line-height:1.55;box-shadow:0 12px 30px rgba(0,0,0,.25)}
 .tip-pop b{display:block;margin-bottom:2px;color:#9fc0f5}

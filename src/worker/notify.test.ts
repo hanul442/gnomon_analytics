@@ -155,3 +155,8 @@ test('release notes read as a list (G-153): one item per sentence, the alert sho
   assert.deepEqual(noteItems(note), ['미국 주식 리포트를 요청할 수 있어요(달러 기준).', '조용한 시간을 넣었어요.', '차트 도구가 늘었어요.', '토론방을 다듬었어요.']);
   assert.equal(noteBullets(note, 3), '• 미국 주식 리포트를 요청할 수 있어요(달러 기준).\n• 조용한 시간을 넣었어요.\n• 차트 도구가 늘었어요.\n외 1가지');
 });
+
+test('release notes read as plain Korean: no raw code words the live audit flags', async () => {
+  const { RELEASES } = await import('../report/releases.js');
+  for (const r of RELEASES) assert.doesNotMatch(String(r[2]), /\bNaN\b|undefined|\[object|\bnull\b|Infinity/, String(r[0]));
+});
