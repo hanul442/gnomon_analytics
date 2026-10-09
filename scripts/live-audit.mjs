@@ -62,7 +62,7 @@ async function pass(label, pages, widths, session) {
     // old or raw wording, cards full of 없음, very long screens.
     if (innerWidth < 800) {
       const small = [...document.querySelectorAll('a[href], button, [role=tab], select, input:not([type=hidden])')].filter((e) => {
-        if (!vis(e) || e.closest('p, li > small, .fine, footer, .price-bar, .tr-tip, [hidden]')) return false;
+        if (!vis(e) || e.matches('.tip') || e.closest('p, li > small, .fine, footer, .price-bar, .tr-tip, [hidden]')) return false; // .tip widens its tap area with ::after
         const r = e.getBoundingClientRect(); return r.width > 0 && (r.height < 32 || r.width < 32) && r.bottom > 0;
       }).map((e) => (e.getAttribute('aria-label') || e.textContent || e.className).trim().replace(/\s+/g, ' ').slice(0, 18));
       if (small.length > 3) out.smallTargets = { n: small.length, eg: [...new Set(small)].slice(0, 8) };
