@@ -31,7 +31,7 @@ test('core and the largest companies get the full committee; the rest rank by th
     core: [{ symbol: '000660', name: 'SK하이닉스', market: 'KOSPI' }],
     candidates: [quiet, mover, earner, giant], params: { ...DEFAULT_SELECTION, size: 4, bigCaps: 1 },
   });
-  assert.deepEqual(sel.picks.map((p) => [p.symbol, p.tier]), [['000660', 'deep'], ['400000', 'deep'], ['300000', 'brief'], ['200000', 'brief']]);
+  assert.deepEqual(sel.picks.map((p) => [p.symbol, p.tier]), [['000660', 'deep'], ['400000', 'deep'], ['300000', null], ['200000', null]]);
   assert.deepEqual(sel.picks[1]!.reasons, ['시가총액 상위 (90조원)']);
   // A larger, more traded stock with earnings outranks a one-week mover.
   assert.ok(sel.picks[2]!.reasons.includes('공시: 영업(잠정)실적(공정공시)'));

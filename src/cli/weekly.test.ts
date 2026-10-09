@@ -31,7 +31,7 @@ const fake = (async (url: string | URL | Request) => {
   return new Response('<rss><channel></channel></rss>');
 }) as typeof fetch;
 
-test('the first settled run picks the week: core and the largest company get the committee, the rest a brief', async () => {
+test('the first settled run picks the week: core and the largest company get the committee, the rest a data report (G-168)', async () => {
   const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const models: string[] = [];
@@ -40,12 +40,12 @@ test('the first settled run picks the week: core and the largest company get the
   const out = await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, selectionParams: params });
   assert.equal(out.selected, '2026-10-02');
   const sel = JSON.parse(await readFile(join(root, 'data', 'selections', '2026-10-02.json'), 'utf8')) as { picks: { symbol: string; tier: string; reasons: string[] }[] };
-  assert.deepEqual(sel.picks.map((p) => [p.symbol, p.tier]), [['000660', 'deep'], ['111110', 'deep'], ['222220', 'brief']]);
+  assert.deepEqual(sel.picks.map((p) => [p.symbol, p.tier]), [['000660', 'deep'], ['111110', 'deep'], ['222220', null]]);
   assert.deepEqual(sel.picks[1]!.reasons, ['시가총액 상위 (30조원)']);
   assert.deepEqual(out.results.map((r) => [r.symbol, r.report]), [['000660', 'WRITTEN'], ['111110', 'WRITTEN'], ['222220', 'WRITTEN']]);
-  assert.deepEqual(models.sort(), ['claude-haiku-4-5', 'claude-opus-5-5', 'claude-opus-5-5']);
-  const report = JSON.parse(await readFile(join(root, 'reports', '222220', '2026-10-02.json'), 'utf8')) as { commentary: { tier: string; usage: unknown } };
-  assert.deepEqual([report.commentary.tier, report.commentary.usage], ['brief', { inputTokens: 100, outputTokens: 50 }]);
+  assert.deepEqual(models.sort(), ['claude-opus-5-5', 'claude-opus-5-5'], 'no small-model briefs');
+  const report = JSON.parse(await readFile(join(root, 'reports', '222220', '2026-10-02.json'), 'utf8')) as { commentary?: { status: string; usage?: unknown } };
+  assert.notEqual(report.commentary?.status, 'OK');assert.equal(report.commentary?.usage, undefined);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
   // The report lists live on reports.html (G-64); the front page shows a few picks.
   const list = await readFile(join(root, 'site', 'reports.html'), 'utf8');
@@ -158,14 +158,14 @@ test('the monthly AI budget: core stocks spend it first, the rest skip AI with t
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const models: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string }) => { models.push(req.model); return { stop_reason: 'end_turn', model: req.model, usage: { input_tokens: 10_000, output_tokens: 4_000 }, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
-  const out = await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, aiBudgetUsd: 0.2, selectionParams: { ...DEFAULT_SELECTION, size: 3, bigCaps: 1 } });
-  // Core (Opus) first; then the big-cap deep call no longer fits, the cheap brief still does.
-  assert.deepEqual(models.sort(), ['claude-haiku-4-5', 'claude-opus-5-5']);
+  const out = await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, aiBudgetUsd: 0.3, selectionParams: { ...DEFAULT_SELECTION, size: 3, bigCaps: 1 } });
+  // Core first ($0.12 spent); then the big-cap committee ($0.22 estimate) no longer fits. The rest get no AI at all (G-168).
+  assert.deepEqual(models, ['claude-opus-5-5']);
   const skipped = JSON.parse(await readFile(join(root, 'reports', '111110', '2026-10-02.json'), 'utf8')) as { commentary: { status: string; error: string } };
-  assert.deepEqual([skipped.commentary.status, skipped.commentary.error], ['SKIPPED', 'AI_MONTHLY_BUDGET:0.2USD']);
+  assert.deepEqual([skipped.commentary.status, skipped.commentary.error], ['SKIPPED', 'AI_MONTHLY_BUDGET:0.3USD']);
   assert.equal(out.results.length, 3);
   const ledger = (await readFile(join(root, 'data', 'status', 'ai-usage.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as { symbol: string; usd: number; month: string });
-  assert.deepEqual(ledger.map((l) => [l.symbol, l.usd, l.month]).sort(), [['000660', 0.12, '2026-10'], ['222220', 0.03, '2026-10']]);
+  assert.deepEqual(ledger.map((l) => [l.symbol, l.usd, l.month]).sort(), [['000660', 0.12, '2026-10']]);
 });
 
 test('sealed deep reports (G-61): the paid part is neither in the repository nor in the page, only sealed next to it', async () => {

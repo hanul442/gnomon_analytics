@@ -1,15 +1,15 @@
-// Daily AI reports (docs/DESIGN.md §5.19, G-56): on each settled weekday run, five stocks drawn at
-// random from the tops of the ready-made screens, one ETF and one coin; on weekends one coin only.
-// Two deep committees a weekday (the first stock, and the ETF or the coin on alternate days), the
-// rest briefs. The draw is seeded by the date, so a re-run of the same day picks the same names. Pure.
+// Daily AI reports (docs/DESIGN.md §5.19, G-56): on each settled weekday run, two stocks drawn at
+// random from the tops of the ready-made screens, then the ETF (Monday, Wednesday, Friday) or the coin
+// (Tuesday, Thursday); on weekends one coin. Every pick gets the full committee (G-168: no briefs), so
+// a weekday is three committee reports. The draw is seeded by the date, so a re-run picks the same names. Pure.
 
 import { PRESETS } from './screenRules.js';
 import { todaysSignals } from './signalLog.js';
 
 export type PickKind = 'stock' | 'etf' | 'coin';
-export interface DailyPick { date: string; symbol: string; name: string; kind: PickKind; market: 'KOSPI' | 'KOSDAQ' | 'UPBIT'; tier: 'deep' | 'brief'; reason: string }
+export interface DailyPick { date: string; symbol: string; name: string; kind: PickKind; market: 'KOSPI' | 'KOSDAQ' | 'UPBIT'; tier: 'deep'; reason: string }
 
-export const DAILY_STOCKS = 5;
+export const DAILY_STOCKS = 2;
 /** How far down each list the draw reaches. */
 const ETF_POOL = 20, COIN_POOL = 15;
 /** Screens left out of the stock draw: overheated and risky names are not what a reader is pointed to. */
@@ -63,15 +63,15 @@ export function chooseDailyPicks(input: {
     }
     for (const symbol of shuffle([...pool.keys()], rand).slice(0, DAILY_STOCKS)) {
       const r = rows.get(symbol)!;
-      out.push({ date: input.date, symbol, name: String(r[1]), kind: 'stock', market: r[2] === 'Q' ? 'KOSDAQ' : 'KOSPI', tier: out.length ? 'brief' : 'deep', reason: `스크리너 '${pool.get(symbol)}' 신호 후보`  });
+      out.push({ date: input.date, symbol, name: String(r[1]), kind: 'stock', market: r[2] === 'Q' ? 'KOSDAQ' : 'KOSPI', tier: 'deep', reason: `스크리너 '${pool.get(symbol)}' 신호 후보`  });
     }
     const etfs = input.etfs.filter((r) => !ETF_SKIP.test(String(r[1])) && !input.exclude.has(String(r[0])) && Number(r[4]) > 0).slice(0, ETF_POOL);
     const etf = shuffle(etfs, rand)[0];
-    // Deep for the ETF on Monday, Wednesday and Friday; for the coin on Tuesday and Thursday.
-    if (etf) out.push({ date: input.date, symbol: String(etf[0]), name: String(etf[1]), kind: 'etf', market: 'KOSPI', tier: input.weekday % 2 ? 'deep' : 'brief', reason: '거래대금 상위 ETF 후보에서 선정' });
+    // The ETF on Monday, Wednesday and Friday; the coin on Tuesday and Thursday (and weekends).
+    if (etf && input.weekday % 2) out.push({ date: input.date, symbol: String(etf[0]), name: String(etf[1]), kind: 'etf', market: 'KOSPI', tier: 'deep', reason: '거래대금 상위 ETF 후보에서 선정' });
   }
   const coins = input.coins.filter((r) => !STABLE.has(String(r[0]).replace('KRW-', '')) && !r[3] && Number(r[4]) >= 100 && !input.exclude.has(String(r[0]))).slice(0, COIN_POOL);
   const coin = shuffle(coins, rand)[0];
-  if (coin) out.push({ date: input.date, symbol: String(coin[0]), name: String(coin[1]), kind: 'coin', market: 'UPBIT', tier: weekend || input.weekday % 2 === 0 ? 'deep' : 'brief', reason: '24시간 거래대금 상위 코인 후보에서 선정' });
+  if (coin && (weekend || input.weekday % 2 === 0)) out.push({ date: input.date, symbol: String(coin[0]), name: String(coin[1]), kind: 'coin', market: 'UPBIT', tier: 'deep', reason: '24시간 거래대금 상위 코인 후보에서 선정' });
   return out;
 }

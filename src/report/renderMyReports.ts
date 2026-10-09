@@ -17,7 +17,7 @@ export function renderMyReports(): string {
 document.addEventListener('DOMContentLoaded', function () {
   var G = window.GNM || {}, $ = function (id) { return document.getElementById(id); }, rows = [], filter = '';
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var KIND = { report: '심층', brief: '요약', upgrade: '심층 업그레이드' };
+  var KIND = { report: '심층', brief: '요약(이전)', upgrade: '심층 업그레이드(이전)' };
   var TONE = { done: 'ok', failed: 'bad', rejected: 'bad', running: 'warn', queued: 'warn', pending: 'warn', approved: 'warn' };
   var ST = { done: '완성', failed: '실패', running: '만드는 중', queued: '대기 중', pending: '접수됨', approved: '처리 중', rejected: '반려' };
   var page = function (s) { return (s.indexOf('KRW-') === 0 ? 'coin.html?m=' : 'stock.html?c=') + encodeURIComponent(s); };

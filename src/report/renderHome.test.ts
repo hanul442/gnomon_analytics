@@ -5,7 +5,7 @@ import type { HomeEntry } from './renderHtml.js';
 import type { DailyReport } from './dailyReport.js';
 
 const entry = (symbol: string, changePct: number, kind: HomeEntry['kind'] = 'stock'): HomeEntry => ({
-  symbol, name: symbol, href: `${symbol}/index.html`, group: 'daily', tier: 'brief', pickDate: '2026-10-06', kind, reasons: ['테스트'],
+  symbol, name: symbol, href: `${symbol}/index.html`, group: 'daily', pickDate: '2026-10-06', kind, reasons: ['테스트'],
   report: { symbol, name: symbol, date: '2026-10-06', headline: '한 줄', price: { close: 100, changePct, volume: 1, volumeRatio20: 1 } } as unknown as DailyReport,
 });
 

@@ -6,17 +6,23 @@
 
 import { appendFile, mkdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import type { Commentary, CommentaryTier } from '../analysis/commentary.js';
+import type { Commentary } from '../analysis/commentary.js';
 
 /** USD per million tokens, input / output. */
 export const PRICE_PER_MTOK: Record<string, readonly [number, number]> = {
   'claude-opus-5-5': [4, 20], 'claude-sonnet-5-5': [2, 10], 'claude-haiku-4-5': [1, 5],
 };
-/** Typical cost of one call per tier, USD (measured medians plus a margin), used to decide before calling. */
-export const ESTIMATE_USD: Record<CommentaryTier, number> = { deep: 0.15, brief: 0.03 };
+/**
+ * What a run spends AI on (G-168): a stock committee report, or the day's market committee.
+ * Typical cost of one call, USD (measured medians plus a margin), used to decide before calling:
+ * a committee report measured $0.18 median (10/5–10/9, about 11K in / 6.6K out on Opus).
+ */
+export type BudgetTier = 'deep' | 'market';
+export const ESTIMATE_USD: Record<BudgetTier, number> = { deep: 0.22, market: 0.03 };
 export const DEFAULT_BUDGET_USD = 25;
 
-export interface UsageLine { at: string; month: string; symbol: string; model: string; tier: CommentaryTier; inputTokens: number; outputTokens: number; cacheReadTokens?: number; cacheWriteTokens?: number; usd: number }
+export interface UsageLine { at: string; month: string; symbol: string; model: string; /** 'brief' on lines written before v3.5.0. */
+  tier: BudgetTier | 'brief'; inputTokens: number; outputTokens: number; cacheReadTokens?: number; cacheWriteTokens?: number; usd: number }
 
 /** Cached prompt tokens (G-149): a cache read bills at a tenth of the input price, a cache write at 1.25×. */
 export const usd = (model: string, inputTokens: number, outputTokens: number, cacheRead = 0, cacheWrite = 0) => {
@@ -37,13 +43,13 @@ export class AiBudget {
   static path(root: string) { return join(root, 'data', 'status', 'ai-usage.jsonl'); }
 
   /** Whether a call of this tier still fits, counting what is already reserved by calls in flight. */
-  allows(tier: CommentaryTier): boolean { return this.spent + ESTIMATE_USD[tier] <= this.limit; }
+  allows(tier: BudgetTier): boolean { return this.spent + ESTIMATE_USD[tier] <= this.limit; }
 
   /** Reserve before the call so parallel calls cannot all pass the check at once. */
-  reserve(tier: CommentaryTier) { this.spent += ESTIMATE_USD[tier]; }
+  reserve(tier: BudgetTier) { this.spent += ESTIMATE_USD[tier]; }
 
   /** Replace the reservation with the real cost and append the ledger line. */
-  async record(symbol: string, tier: CommentaryTier, c: Commentary, at: Date): Promise<void> {
+  async record(symbol: string, tier: BudgetTier, c: Commentary, at: Date): Promise<void> {
     this.spent -= ESTIMATE_USD[tier];
     if (!c.usage) return;
     const model = c.servedBy ?? c.model;

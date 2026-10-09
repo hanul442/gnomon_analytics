@@ -333,7 +333,7 @@ export function shell(base: string, title: string, body: string, options: { lead
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}"><span class="gnomon-mark"><img src="${base}assets/gnomon-mark.png" alt=""></span><div><b>GNOMON</b><small>AI COMMITTEE</small></div></a>
 ${menu.button}<nav class="top-links" aria-label="사이트"><button type="button" class="install-btn" data-install hidden aria-label="그노몬 앱 설치">📲 앱 설치</button><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? reportNav(tabs) : ''}</header>${menu.drawer}
-<main id="main" tabindex="-1">${options.lead ?? ''}${options.active === 'home' ? versionBanner(base) : ''}${options.ads === false ? '' : adStrip(base)}${body}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script>${LOADING_JS}${VERSION_JS}${AD_JS}</script><script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
+<main id="main" tabindex="-1">${options.lead ?? ''}${options.active === 'home' ? versionBanner(base) : ''}${options.ads === false ? '' : adStrip(base)}${body}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관·면책</a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
@@ -481,7 +481,7 @@ function whySection(report: DailyReport, opts: { committee?: boolean; only?: 'cl
 <div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div><div class="why-col bear"><h3>약세 근거</h3>${list(c.bearish, '찾지 못했어요.')}</div><div class="why-col unc"><h3>불확실한 점</h3>${list(c.uncertain, '없어요.')}</div></div>
 <h3 class="why-h">판단이 바뀔 수 있는 것</h3>${list(c.watch, '없어요.')}<details class="more"><summary>근거 목록 ${c.evidence.length}개</summary><ul class="plain evid">${legend}</ul></details>
 <p class="fine">AI(${escape(c.servedBy ?? c.model)})가 이 리포트의 근거만 보고 쓴 해설이에요. 틀릴 수 있고, 투자 권유가 아니에요.</p></div>`;
-  return `<div class="card" id="why"><div class="head"><h2>${brief ? '요약 리포트' : opts.committee ? '위원회 결론' : 'AI 위원회 해설'}</h2><span class="sub" style="margin:0">${brief ? '요약 · 강세와 약세 근거 · 지켜볼 것' : opts.committee ? '요약, 레드팀 반론, 시나리오' : '데스크 5곳과 레드팀이 오늘 리포트의 근거만 인용해요'}</span></div>
+  return `<div class="card" id="why"><div class="head"><h2>${brief ? '간단 해설 (이전 형식)' : opts.committee ? '위원회 결론' : 'AI 위원회 해설'}</h2><span class="sub" style="margin:0">${brief ? '요약 · 강세와 약세 근거 · 지켜볼 것' : opts.committee ? '요약, 레드팀 반론, 시나리오' : '데스크 5곳과 레드팀이 오늘 리포트의 근거만 인용해요'}</span></div>
 ${c.summary ? `<p class="headline">${kindChip(c.summary.kind)}${escape(c.summary.text)} <span class="chips-inline">${chips(c.summary.evidenceIds)}</span></p>` : ''}
 ${showStructure ? `${opts.committee ? '' : desks}${red}` : ''}
 ${showClaims ? `${opts.committee ? '<details class="more why-fold"><summary>근거 정리 · 판단이 바뀔 수 있는 것 · 부족한 근거</summary>' : ''}${desks ? '<h3 class="why-h">근거 정리</h3>' : ''}<div class="why-grid"><div class="why-col bull"><h3>강세 근거</h3>${list(c.bullish, '찾지 못했어요.')}</div>
@@ -606,7 +606,8 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   // Investor flows and fundamentals are public data: free. Our footprint reading is Plus.
   const flowsTab = insightLine(report, 'flow', base) + (report.kind==='coin' ? coinFlow(report) : `<div data-slot="flows">${m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>'}</div>`) + edgeFlows(report);
   const fundTab = insightLine(report, 'fundamental', base) + `<div data-slot="fundamentals">${(m ? fundamentalsPanel(m, report.price?.close ?? null, report.name, report.recentBars ?? [], report.statements) : '') || '<div class="card empty">기업 정보를 아직 받지 못했어요.</div>'}</div>` + edgeFundamentals(report);
-  const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>요약 리포트예요</b><p class="muted small">AI 위원회 전체(데스크 5곳·분석가 6명·레드팀·시나리오)로 다시 쓰려면 심층 리포트로 업그레이드하세요. 프로부터 쓸 수 있어요.</p></div><button type="button" class="credit-btn" data-spend="upgrade" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">심층으로 업그레이드 <small>${CREDIT_COST.upgrade}크레딧</small></button></div></section>` : '';
+  // G-168: a report written before v3.5.0 may carry the old short summary; it offers the committee report in its place.
+  const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>이전 형식의 간단 해설이에요</b><p class="muted small">이제 AI 리포트는 모두 AI 위원회 심층 리포트(데스크 5곳·분석가 6명·레드팀·시나리오)로 써요. 이 종목도 심층 리포트로 새로 만들 수 있어요.</p></div><button type="button" class="credit-btn" data-spend="report" data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">심층 리포트 만들기 <small>${CREDIT_COST.report}크레딧</small></button></div></section>` : '';
   // G-114: an older committee says so with a way to a fresh one, on the AI tab as on the summary.
   const fromNote = ctx.commentaryFrom ? (ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? staleAiBar(report, ctx.commentaryFrom) : `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요.</p>`) : '';
   const sealedDeep = !!ctx.deep && report.commentary?.status === 'OK' && report.commentary.tier !== 'brief';
@@ -637,7 +638,7 @@ ${panel('news', newsTab)}
 export function committeeTab(report: DailyReport, opts: { base: string; from: string | null; deepDate?: string }): string {
   const base = opts.base, isBrief = report.commentary?.status === 'OK' && report.commentary.tier === 'brief';
   const aiBody = isBrief
-    ? gate(whySection(report), { base, what: '요약 리포트: 요약 · 강세와 약세 근거 · 지켜볼 것' })
+    ? gate(whySection(report), { base, what: '간단 해설(이전 형식): 요약 · 강세와 약세 근거 · 지켜볼 것' })
     : opts.deepDate
       ? deepSlot(report.symbol, opts.deepDate)
       : report.commentary?.status === 'OK'
@@ -850,7 +851,7 @@ export function renderStockPage(kindArg: 'stock' | 'coin' | 'us' | boolean = 'st
   let body = `${priceBar({ name: '<span id="pb-name"></span>', symbol: '<span id="pb-code"></span>', price: '<span id="pb-price"></span>', change: '<span id="pb-change"></span>', tone: '', badge: '' })}<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span data-report-state>AI 리포트 확인 중</span></div>
 <div class="h1-row"><h1 id="sp-name" class="skel">종목 이름</h1>${starButton('', '이 종목', 'sp-star')}</div><div class="hero-price" id="sp-price"></div><div class="hero-sub" id="sp-date"></div></div>
 ${coin ? derivSlot('') : ''}${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산</b></div><p>업비트 원화 마켓 일봉으로 주식과 같은 지표 16개, 기간별 등락, 기술적 적정가를 계산해요. 코인 AI 리포트는 매일 거래대금 상위 코인 가운데 하나씩 써요.</p><p class="fine">코인은 24시간 거래돼서 일봉은 매일 09:00(KST)에 끊어요. 변동성이 커서 예측 범위가 넓어요.</p></div>' : `<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>${us ? '요청하면 국내 종목과 같은 AI 위원회가 달러 가격과 미국 현지 날짜로 분석해요. 국내 수급·공시 근거는 없어서 그 판단은 보류해요.' : '요청하면 바로 분석을 시작해요. 최신으로 확보된 데이터 기준으로 작성합니다.'} 크레딧 요청은 플러스부터예요.</p>
-<span class="req-btns"><button type="button" class="credit-btn ghost" data-spend="brief" id="sp-request-brief">요약 리포트 <small>${CREDIT_COST.brief}크레딧</small></button><button type="button" class="credit-btn" data-spend="report" id="sp-request-credit">심층 리포트 <small>${CREDIT_COST.report}크레딧</small></button></span>
+<span class="req-btns"><button type="button" class="credit-btn" data-spend="report" id="sp-request-credit">AI 위원회 심층 리포트 <small>${CREDIT_COST.report}크레딧</small></button></span>
 <p class="fine">남은 크레딧 <b data-credits>0</b>개 · <a href="pricing.html#credits">충전</a> · <a id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">운영 문의</a></p></div>`}</section>
 ${coin || us ? '' : peersSlot('')}<section class="block"><div class="card sp-one"><div class="sp-one-head"><span class="pl-k">한 줄 요약</span><b id="sp-signal" class="sp-signal">계산 중</b></div><p class="headline skel" id="sp-line">이 종목의 계산 결과를 불러오는 중이에요.</p><div class="pl-tally" id="sp-tally" aria-hidden="true"></div><p class="muted small" id="sp-counts"></p></div></section>
 <section class="block"><div class="card chart-card"><div class="chart-head"><div><div class="muted small">최근 1년 일봉</div><div class="period-stat" id="period-stat" aria-live="polite"></div></div>
@@ -914,7 +915,7 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
       $('pb-change').textContent = prev ? (pc > 0 ? '▲ +' : pc < 0 ? '▼ ' : '') + pc.toFixed(2) + '%' : ''; $('pb-change').className = ch > 0 ? 'up' : ch < 0 ? 'down' : '';
       document.querySelectorAll('.skel').forEach(function (x) { x.classList.remove('skel'); });
     }
-    ['sp-request-credit', 'sp-request-brief'].forEach(function (id) { var rb = $(id); if (rb) { rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name); } });
+    ['sp-request-credit'].forEach(function (id) { var rb = $(id); if (rb) { rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name); } });
     if(window.GNM_coinChartReady)GNM_coinChartReady();
     var c = d.calc, VOTE = { BULLISH: '강세', NEUTRAL: '중립', BEARISH: '약세' };
     var signed = function (v) { return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%'; };
@@ -971,7 +972,8 @@ export interface HomeEntry {
   /** core: reported every day; weekly: this week's selection; request: asked for; daily: a daily pick of the last 7 days; past: picked earlier (search only). */
   group: 'core' | 'weekly' | 'request' | 'past' | 'daily';
   reasons?: string[];
-  tier?: 'deep' | 'brief';
+  /** 'deep' when the pick got the committee. */
+  tier?: 'deep';
   /** Daily picks (G-56): the day picked and what it is. */
   pickDate?: string;
   kind?: 'stock' | 'etf' | 'coin';
@@ -995,7 +997,10 @@ html.chart-fs #tab-chart::after,.db-room:not([hidden])::after{content:"";positio
 @media(max-width:820px){.moms{grid-template-columns:repeat(2,minmax(0,1fr))}.momentum-axis{font-size:10px;gap:0}.market-scenarios{grid-template-columns:minmax(0,1fr)}.market-thermals{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 0 8px;scrollbar-width:none}.market-thermals::-webkit-scrollbar{display:none}.market-thermals>*{flex:0 0 84%;scroll-snap-align:start}.topbar.scrolled .gnomon-mark{width:28px;height:28px}.topbar.scrolled .price-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 7px;font-size:12px;overflow:visible;line-height:1.5}.price-bar>b{overflow:hidden;text-overflow:ellipsis;grid-column:1;grid-row:1/3}.price-bar .pb-price{grid-column:2;grid-row:1;white-space:nowrap}.price-bar [data-live-f=arrowpct]{grid-column:2;grid-row:2;text-align:right;white-space:nowrap}.price-bar .pb-code,.price-bar .freshness-badge{display:none}.topbar-in{gap:8px}.top-links,.topbar-in>.menu-button{flex:none}.chips button{padding:6px 12px;font-size:13px}.analysis-tabs{padding-top:0}.chips{gap:4px}}
 ${FS_CSS}${THEME_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
-export const APP_JS = `${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)};\n${FORMAT_JS}`;
+// G-169: the loading layer, the version banner and the ad strip used to be inlined in every page (about 19 KB each,
+// never cached); they lead the cached app bundle instead, in the same order. The leading ';' keeps the orb bundle's
+// "use strict" from becoming a directive for the whole file.
+export const APP_JS = `;${LOADING_JS};\n${VERSION_JS};\n${AD_JS};\n${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)};\n${FORMAT_JS}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
 export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${STOCK_INFO_TOGGLE_JS}\n${INFOGRAPHIC_JS}\n${INSTALL_JS}\n${DERIV_JS}\n${HERO_RANGE_JS}\n${CHART_PRO_JS}\n${CHART_DRAW_JS}\n${IND_LIMIT_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}\n${MOTION_JS}`;
 /** Two FNV-1a passes give a short, stable content hash without node:crypto (this module also runs in the Worker). */

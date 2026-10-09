@@ -452,6 +452,14 @@ test('opening reports (G-126): monthly free opens per plan, free after a week, t
   assert.equal((await t.call('GET', '/deep/068270/2026-10-02', undefined, u.session)).body.freeLeft, UNLOCK.monthlyFree.alpha! - UNLOCK.monthlyFree.plus!);
 });
 
+test('one report kind (G-168): brief and upgrade requests are refused without charging; a report costs CREDIT_COST.report',async()=>{
+ const t=await reportSetup();
+ for(const kind of ['brief','upgrade']){const r=await t.call('POST','/reports',{symbol:'000660',kind},t.user.session);assert.equal(r.status,400);assert.equal(r.body.error,'BAD_ACTION');}
+ assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits);
+ const ok=await t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session);assert.equal(ok.status,200);
+ assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits-CREDIT_COST.report);
+ assert.equal(CREDIT_COST.report,30);
+});
 test('on-demand reports charge once across concurrent retries; owner/pro read, others unlock once with credits; redelivery is idempotent',async()=>{
  const t=await reportSetup();
  const [a,b]=await Promise.all([t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session),t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session)]);
@@ -461,7 +469,7 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, o
  for(const [i,sec] of [[1,60],[2,90],[3,120]] as const)await t.env.DB.prepare("INSERT INTO report_jobs (id,user_id,symbol,kind,input_hash,input_json,status,stage,credits,reserved_usd,created_at,updated_at) VALUES (?,?,?,?,?,?,'done','done',0,0,?,?)").bind('hist-'+i,'someone','005930','report','h'+i,'{}','2026-10-01T00:00:00.000Z',new Date(Date.parse('2026-10-01T00:00:00Z')+sec*1000).toISOString()).run();
  assert.equal((await t.call('GET','/reports/'+a.body.id,undefined,t.user.session)).body.etaSec,120,'the countdown starts from recent real durations');
  const {runReportJob}=await import('./reports.js');let runs=0;
- const gen=t.deps.generate!;t.deps.generate=async(r,k)=>{runs++;return gen(r,k);};
+ const gen=t.deps.generate!;t.deps.generate=async(r)=>{runs++;return gen(r);};
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});assert.equal(runs,1);
  const done=await t.call('GET','/reports/'+a.body.id,undefined,t.user.session);

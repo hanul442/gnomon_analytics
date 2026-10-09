@@ -289,7 +289,7 @@ export function renderAdmin(): string {
       }));
     },
     action: function () {
-      var K = { report: '심층 리포트', brief: '요약 리포트', upgrade: '심층 업그레이드', invite: '전문가 초청' };
+      var K = { report: '심층 리포트', brief: '요약 리포트(이전)', upgrade: '심층 업그레이드(이전)', invite: '전문가 초청' };
       return '<p class="muted small">알파에서는 손으로 처리해요. 리포트는 requests.json에 종목을 넣고 다음 실행을 기다리면 돼요. 반려하면 크레딧이 돌아가요.</p>' + table(['때', '사용자', '종류', '종목', '내용', '크레딧', '상태', '처리'], D.actions.map(function (a) {
         return '<tr><td>' + when(a.created_at) + '</td><td>' + esc(a.email) + '</td><td>' + (K[a.kind] || a.kind) + '</td><td><a href="stock.html?c=' + esc(a.symbol) + '">' + esc(a.symbol) + '</a></td><td>' + esc(a.detail) + '</td><td class="num">' + a.credits + '</td><td>' + pill(a.status) + '</td><td>' + (a.status === 'pending' ? '<div class="act" data-act="' + a.id + '"><button class="ok" data-s="done">완료</button><button data-s="rejected">반려·환불</button></div>' : '') + '</td></tr>';
       }));

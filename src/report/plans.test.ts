@@ -12,10 +12,10 @@ test('promotions: only well-formed ones are published; the repo file is valid', 
   assert.equal(validPromos(file).length, file.length);
 });
 
-test('plan rules: credits from Plus, upgrade from Pro, trial only for cheap actions, watchlists grow', () => {
+test('plan rules: credits from Plus, one report kind (G-168), trial only for quick questions, watchlists grow', () => {
   for (const a of CREDIT_ACTIONS) assert.notEqual(a.min, 'free' as never);
-  assert.equal(CREDIT_ACTIONS.find((a) => a.key === 'upgrade')!.min, 'pro');
-  assert.deepEqual([...TRIAL.actions].sort(), ['brief', 'question']);
+  assert.deepEqual(CREDIT_ACTIONS.filter((a) => /리포트 요청/.test(a.label)).map((a) => a.key), ['report']);
+  assert.deepEqual([...TRIAL.actions], ['question']);
   assert.deepEqual(PLANS.map((p) => WATCH_LIMIT[p.key]), [5, 30, 100, 1e9]);
   assert.deepEqual(PLANS.map((p) => p.price), [0, 14900, 39000, 99000]);
 });

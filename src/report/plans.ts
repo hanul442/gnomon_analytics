@@ -27,8 +27,8 @@ export interface Plan {
 export const PLANS: readonly Plan[] = [
   { key: 'free', name: '무료', price: 0, tagline: '한 줄 요약 (크레딧 없음)', monthlyCredits: 0, topUpBonus: 0, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
     adds: ['전 종목 검색과 1년 차트', '한 줄 요약과 지표 16개 판단', '시장 데일리 요약', '외국인·기관 수급, 실적·밸류에이션', 'AI 위원회 표 분포', '뉴스·공시', '성적표 대표 숫자 · 전략 챔피언 이름', '관심 종목 5개'] },
-  { key: 'plus', name: '플러스', price: 14900, tagline: '계산 상세 + 요약 리포트', monthlyCredits: 100, topUpBonus: 0, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
-    adds: ['기간별 신호 게이지(15분봉~월봉)', '기술적 적정가', '수급 흔적(매집·분산 분석)·가격 구조', '스크리너: 전 종목 조건 검색 전체', '차트 그리기 저장(10종목)', '요약 리포트 전체', '시장 데일리 상세 열기(10크레딧)·위원회 질문', '제한된 AI 위원회: 결론 · 데스크 5곳 입장 · 레드팀 한 줄', '전략 순위표 · 전략 챔피언 레이스', '성적표 요약표(기간별 적중·분석가 순위) · 모의투자 평균 성과', '크레딧 충전과 사용: 리포트 요청·AI 질문', '관심 종목 30개'],
+  { key: 'plus', name: '플러스', price: 14900, tagline: '계산 상세 + 심층 리포트 요청', monthlyCredits: 100, topUpBonus: 0, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
+    adds: ['기간별 신호 게이지(15분봉~월봉)', '기술적 적정가', '수급 흔적(매집·분산 분석)·가격 구조', '스크리너: 전 종목 조건 검색 전체', '차트 그리기 저장(10종목)', '매달 심층 리포트 5개 무료 열기', '시장 데일리 상세 열기(10크레딧)·위원회 질문', '제한된 AI 위원회: 결론 · 데스크 5곳 입장 · 레드팀 한 줄', '전략 순위표 · 전략 챔피언 레이스', '성적표 요약표(기간별 적중·분석가 순위) · 모의투자 평균 성과', '크레딧 충전과 사용: 리포트 요청·AI 질문', '관심 종목 30개'],
     soon: [] },
   { key: 'pro', name: '프로', price: 39000, tagline: 'AI 위원회 전체 + 전문가 초청', monthlyCredits: 400, topUpBonus: 10, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
     adds: ['AI 위원회 리포트 전체(위원별 근거·예측·레드팀·시나리오)', '시장 데일리 상세 전체 열람', '전문가 AI 초청: 업종·투자 스타일 전문가를 골라 위원회에 앉혀요(크레딧)', '예측 가격 범위(5·20·60·120거래일)와 분석가 예상가', '전략 대결 전체(매매 시점·수익 곡선·몬테카를로·차트 표시)', '모의투자 종목별 장부·매매 내역', '성적표 종목별 상세·빗나간 예측 하나하나', '요약 리포트를 심층 리포트로 업그레이드', '매달 400크레딧', '충전할 때 크레딧 10% 더', '관심 종목 100개'],
@@ -69,7 +69,11 @@ export const notifyLimit = (plan: string): NotifyLimit => NOTIFY_LIMITS[(plan ==
 /** Watchlist size per plan. */
 export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 100, max: 1e9 };
 
-/** What a credit action costs (G-37). Credits are bought and used from Plus; upgrading a brief to a full report is Pro. */
+/**
+ * What a credit action costs (G-37). Credits are bought and used from Plus.
+ * G-168 (v3.5.0): one report kind, the full committee, priced from its measured cost (economics.ts):
+ * about 330원 a report with the retry allowance, so 30 credits keeps it under a fifth of what the cheapest credits net.
+ */
 /** `unlock` (G-61): opening one sealed deep report, once per user and report. */
 /**
  * Opening reports (G-126, 한서님 결정 10/8): plans that unlock pay CREDIT_COST.unlock per report after a monthly
@@ -77,14 +81,12 @@ export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 10
  * someone pays to open a report another user generated, its maker gets UNLOCK.makerShare credits back, up to
  * half of what they paid for it (UNLOCK.makerCap).
  */
-export const UNLOCK = { monthlyFree: { free: 0, plus: 5, alpha: 10, pro: 0, max: 0 } as Record<string, number>, freeAfterDays: 7, makerShare: 2, makerCap: 40 } as const;
-export const CREDIT_COST = { report: 80, brief: 30, upgrade: 50, invite: 40, idea: 20, deep: 15, standard: 10, question: 5, unlock: 10 } as const;
+export const UNLOCK = { monthlyFree: { free: 0, plus: 5, alpha: 10, pro: 0, max: 0 } as Record<string, number>, freeAfterDays: 7, makerShare: 2, makerCap: 15 } as const;
+export const CREDIT_COST = { report: 30, invite: 20, idea: 20, deep: 15, standard: 10, question: 5, unlock: 10 } as const;
 export type CreditAction = keyof typeof CREDIT_COST;
 export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail: string; min: Exclude<PlanKey, 'free'> }[] = [
   { key: 'unlock', label: '심층 리포트 열기', detail: '이미 나온 AI 위원회 리포트(매일 리포트, 다른 사람이 만든 리포트)의 토론·근거·시나리오 전개·최악의 경우를 열어요. 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료이고, 7일 지난 리포트는 누구나 무료예요. 다른 사람이 만든 리포트를 열면 만든 사람에게 2크레딧이 돌아가요', min: 'plus' },
   { key: 'report', label: '심층 리포트 요청', detail: '리포트가 없는 종목에 AI 위원회 전체 리포트를 한 번 써요', min: 'plus' },
-  { key: 'brief', label: '요약 리포트 요청', detail: '리포트가 없는 종목에 요약 리포트를 한 번 써요', min: 'plus' },
-  { key: 'upgrade', label: '심층으로 업그레이드', detail: '요약 리포트만 있는 종목을 AI 위원회 전체 리포트로 다시 써요', min: 'pro' },
   { key: 'invite', label: '전문가 AI 초청', detail: '고른 전문가가 이 종목 리포트 근거를 보고 의견·위험·지켜볼 것을 써요. 맥스는 매달 30회까지 크레딧 없이', min: 'pro' },
   { key: 'idea', label: '아이디어 검증 (출시 예정)', detail: '내 매매 아이디어를 레드팀이 근거로 반박하고 무효화 조건을 정리해요', min: 'pro' },
   { key: 'deep', label: 'AI 심층 질문', detail: '위원회 모델(Opus)이 리포트 근거 전체를 다시 보고 답해요', min: 'plus' },
@@ -97,7 +99,7 @@ export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail
  * so free visitors can try a little. Each promotion is claimed once per browser and lapses when it ends.
  * Free visitors can spend them on these actions; paid plans spend them before paid credits.
  */
-export const TRIAL = { actions: ['question', 'brief'] as readonly CreditAction[] };
+export const TRIAL = { actions: ['question'] as readonly CreditAction[] };
 
 export interface Promo { id: string; credits: number; from: string; to: string; title: string }
 
@@ -238,12 +240,12 @@ export const ACCOUNT_SCRIPT = `<script>
       var b = read(); if (b.claimed.indexOf(open.id) >= 0) { bar.remove(); return; }
       b.claimed.push(open.id); b.grants.push({ id: open.id, left: open.credits, to: open.to });
       b.log.unshift({ at: new Date().toISOString(), kind: 'trial', amount: open.credits, note: open.title + ' (' + open.to + '까지)' });
-      write(b); bar.remove(); toast('체험 크레딧 ' + open.credits + '개를 받았어요. 빠른 질문과 요약 리포트 요청에 쓸 수 있어요.');
+      write(b); bar.remove(); toast('체험 크레딧 ' + open.credits + '개를 받았어요. AI 빠른 질문에 쓸 수 있어요.');
     });
     bar.querySelector('.promo-x').addEventListener('click', function () { bar.remove(); });
   }).catch(function () {});
-  // Report requests and upgrades: recorded in this browser (MOCK).
-  var WORD = { report: '심층 리포트 요청', brief: '요약 리포트 요청', upgrade: '심층 리포트로 업그레이드' };
+  // Report requests: recorded in this browser (MOCK).
+  var WORD = { report: '심층 리포트 요청' };
   document.querySelectorAll('[data-spend]').forEach(function (b) {
     var kind = b.getAttribute('data-spend');
     if (!WORD[kind]) return;

@@ -35,5 +35,5 @@ function dependencies(env: Env, ctx?: {waitUntil(p:Promise<unknown>):void}) {
  }:undefined;
  // Report jobs run in the queue consumer (up to 15 minutes): give the streamed committee call room to finish.
  const reportClient=env.ANTHROPIC_API_KEY?new Anthropic({apiKey:env.ANTHROPIC_API_KEY,maxRetries:0,timeout:600000}):undefined;
- return {site:env.SITE_URL,now:()=>new Date(),fetch:(input:RequestInfo|URL,init?:RequestInit)=>fetch(input,init),...(ai?{ai}:{}),...(reportClient?{generate:(report:import('../report/dailyReport.js').DailyReport,tier:import('../analysis/commentary.js').CommentaryTier)=>writeCommentary(report,{client:reportClient,tier})}:{}),...(ctx?{waitUntil:(p:Promise<unknown>)=>ctx.waitUntil(p)}:{})};
+ return {site:env.SITE_URL,now:()=>new Date(),fetch:(input:RequestInfo|URL,init?:RequestInit)=>fetch(input,init),...(ai?{ai}:{}),...(reportClient?{generate:(report:import('../report/dailyReport.js').DailyReport)=>writeCommentary(report,{client:reportClient})}:{}),...(ctx?{waitUntil:(p:Promise<unknown>)=>ctx.waitUntil(p)}:{})};
 }

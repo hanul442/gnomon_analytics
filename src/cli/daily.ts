@@ -28,7 +28,7 @@ import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promi
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
-import { COMMENTARY_PROMPT_VERSION, publicCommentary, skippedCommentary, writeCommentary, type CommentaryTier } from '../analysis/commentary.js';
+import { COMMENTARY_PROMPT_VERSION, publicCommentary, skippedCommentary, writeCommentary } from '../analysis/commentary.js';
 import { deepPath, seal, unseal } from '../report/seal.js';
 import { AiBudget } from './aiBudget.js';
 import type Anthropic from '@anthropic-ai/sdk';
@@ -234,12 +234,12 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const last = (await readdir(join(root, 'reports', symbol)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0, 10) < today.date).sort().at(-1)?.slice(0, 10);
     return friday || !last || daysBetween(last, today.date) >= 8;
   };
-  const jobs: { ticker: Ticker; tier: CommentaryTier | null; reportDay: boolean; force?: boolean }[] = [];
+  const jobs: { ticker: Ticker; tier: 'deep' | null; reportDay: boolean; force?: boolean }[] = [];
   for (const t of options.tickers) {
     const due = await weeklyDue(t.symbol);
     jobs.push({ ticker: t, tier: due && t.ai ? 'deep' : null, reportDay: due });
   }
-  for (const p of (selection?.picks ?? []).filter((x) => !core.has(x.symbol))) jobs.push({ ticker: pickTicker(p, corpCodes), tier: selected ? p.tier : null, reportDay: selected !== null });
+  for (const p of (selection?.picks ?? []).filter((x) => !core.has(x.symbol))) jobs.push({ ticker: pickTicker(p, corpCodes), tier: selected && p.tier === 'deep' ? 'deep' : null, reportDay: selected !== null });
   // Requested stocks: a deep committee right away until one report has it, then dashboards only.
   const listed: readonly ListedStock[] = universe.rows ?? await readListedStocks(root);
   const requested = new Set<string>();
@@ -432,7 +432,7 @@ export function dailyTicker(p: DailyPick, corpCodes: Readonly<Record<string, str
     newsAliases: p.kind === 'coin' ? [escapeRegex(p.name), `\\b${escapeRegex(sym)}\\b`] : [escapeRegex(p.name)], ai: true };
 }
 
-async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTier | null, core: boolean, reportDay: boolean, force = false): Promise<TickerResult> {
+async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | null, core: boolean, reportDay: boolean, force = false): Promise<TickerResult> {
   const { root, now } = options;
   const SYMBOL = ticker.symbol;
   const clock = () => now;
@@ -507,7 +507,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: CommentaryTi
       } else if (tier) {
         options.budget?.reserve(tier);
         built.commentary = await writeCommentary(built, {
-          now: clock, tier,
+          now: clock,
           ...(options.anthropic ? { client: options.anthropic } : {}),
           ...(options.anthropicApiKey ? { apiKey: options.anthropicApiKey } : {}),
         });
@@ -693,7 +693,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const pick = picks.get(ticker.symbol);
     const day = daily.get(ticker.symbol);
     const group = day && !pick ? 'daily' : past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : requested.has(ticker.symbol) ? 'request' : 'core';
-    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, tier: pick.tier } : day ? { reasons: [day.reason], tier: day.tier, pickDate: day.date, kind: day.kind } : {}) });
+    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, ...(pick.tier === 'deep' ? { tier: 'deep' as const } : {}) } : day ? { reasons: [day.reason], ...(day.tier === 'deep' ? { tier: 'deep' as const } : {}), pickDate: day.date, kind: day.kind } : {}) });
   }
   await writeAssets(siteDir);
   await writeFile(join(siteDir, 'stock.html'), renderStockPage('stock'));

@@ -213,11 +213,11 @@ export const ALPHA_SCRIPT = `<script>
     else if (t.closest('.gate-cta')) G.track('gate_click', { need: t.closest('.gate').getAttribute('data-need') });
     else G.track(t.getAttribute('data-track'), {});
   });
-  // Credit actions through the server: report requests, upgrades, expert invitations.
-  var WORD = { report: '심층 리포트 요청', brief: '요약 리포트 요청', upgrade: '심층 리포트로 업그레이드', invite: '전문가 AI 초청' };
+  // Credit actions through the server: report requests and expert invitations.
+  var WORD = { report: '심층 리포트 요청', invite: '전문가 AI 초청' };
   var action = function (kind, sym, name, detail) {
     if (!G.me) { location.href = base + 'login.html'; return Promise.resolve(false); }
-    if (['report','brief','upgrade'].indexOf(kind)>=0 && G.startReport) return G.startReport(kind,sym,name);
+    if (kind === 'report' && G.startReport) return G.startReport(kind,sym,name);
     var c = G.me.costs[kind];
     if (!confirm(name + ' ' + WORD[kind] + (detail ? ' (' + detail + ')' : '') + ': ' + c + '크레딧을 쓸까요? 알파에서는 운영자가 확인하고 처리해요.')) return Promise.resolve(false);
     return G.call('POST', '/actions', { kind: kind, symbol: sym, detail: detail || '' }).then(function (r) {
