@@ -91,6 +91,17 @@ html.chart-fs .cfs-foot .minute-options{position:absolute;left:8px;bottom:calc(1
 #ind-sheet.st-page .pro-bar .pb-ic[aria-pressed=true]::before{transform:translateX(20px)}
 #ind-sheet.st-page .pro-bar .pb-scale{display:flex;margin:6px 0 10px;background:#f2f4f6;border-radius:12px;padding:3px;border:0}#ind-sheet.st-page .pro-bar .pb-scale button{flex:1;min-height:40px}
 #ind-sheet.st-page .pro-bar [data-open="ind-sheet"],#ind-sheet.st-page .pro-bar #ind-reset{display:none}
+.st-more-link{display:flex;align-items:center;border:0;background:none;font:inherit;font-size:15px;font-weight:600;color:#3182f6;padding:0 0 12px;margin-top:-12px;cursor:pointer;min-height:32px}
+#ind-sheet.st-page .opt[aria-pressed=false]+.st-more-link{display:none}
+#ind-sheet.dp-open .sheet-body>*:not(.st-dp){display:none!important}.st-dp[hidden]{display:none}
+.st-dp-head{display:flex;align-items:center;gap:4px;padding:6px 8px;position:sticky;top:0;background:#fff;z-index:2}.st-dp-head b{flex:1;font-size:17px}
+.st-dp-body{padding:4px 20px}
+.st-f{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #f2f4f6;font-size:17px;font-weight:600;color:#191f28}
+.st-step{display:inline-flex;align-items:center;background:#f2f4f6;border-radius:12px;flex:none}
+.st-step button{width:44px;height:44px;border:0;background:none;font:inherit;font-size:22px;color:#4e5968;cursor:pointer;border-radius:12px}.st-step button:hover{background:#e5e8eb}
+.st-step input{width:64px;height:44px;border:0;background:none;text-align:center;font:inherit;font-size:17px;font-weight:700;color:#191f28;-moz-appearance:textfield;appearance:textfield}
+.st-step input::-webkit-inner-spin-button,.st-step input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.st-dp-note{font-size:14px;color:#8b95a1;line-height:1.55;margin:14px 0 0}
 .st-save{position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:4;min-height:56px;border:0;border-radius:16px;background:#3182f6;color:#fff;font:inherit;font-size:18px;font-weight:700;cursor:pointer;max-width:560px;margin:0 auto}
 @media (max-width:820px){html.chart-fs #tab-chart .chart-head>.seg{display:none}
  html.chart-fs #tab-chart .chart-wrap>.dw{display:none}html.chart-fs.chart-draw #tab-chart .chart-wrap>.dw{display:flex}html.chart-fs.chart-draw .cfs-foot{display:none}
@@ -116,6 +127,18 @@ const PL = 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap=
 export const CHART_PRO_BAR = `<div class="pro-bar" role="toolbar" aria-label="차트 보기 도구"><div class="seg pb-scale" role="group" aria-label="가격 축"><button type="button" data-scale="0" aria-pressed="true">가격</button><button type="button" data-scale="1" aria-pressed="false" title="로그 눈금: 오래 오른 종목을 비율로 봐요">로그</button><button type="button" data-scale="2" aria-pressed="false" title="화면 왼쪽 첫 봉 대비 %">%</button></div>
 ${PB('data-hilo', '최고·최저', `<path ${PL} d="M12 3v6M9 6l3-3 3 3M12 21v-6M9 18l3 3 3-3M4 12h16"/>`, ' aria-pressed="true"')}${PB('data-magnet', '자석 십자선', `<path ${PL} d="M6 4v8a6 6 0 0012 0V4M6 8h4M14 8h4"/>`, ' aria-pressed="false"')}${PB('data-shot', '사진 저장', `<path ${PL} d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5" ${PL}/>`)}</div>`;
 const SVG = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+/** G-157: what 상세 설정하기 can change per indicator — [field, label, min, max, step]. Defaults live in CHART_JS (IP0). */
+export const IND_FIELDS: Record<string, [string, string, number, number, number][]> = {
+  ma5: [['n', '기간(일)', 2, 240, 1]], ma20: [['n', '기간(일)', 2, 240, 1]], ma60: [['n', '기간(일)', 2, 240, 1]], ma120: [['n', '기간(일)', 2, 240, 1]],
+  ema12: [['f', '짧은 기간', 2, 100, 1], ['s', '긴 기간', 3, 200, 1]],
+  bb: [['n', '기간', 5, 120, 1], ['k', '표준편차 배수', 0.5, 5, 0.5]],
+  env: [['n', '기간', 5, 120, 1], ['pct', '폭(%)', 1, 30, 1]],
+  ichimoku: [['conv', '전환선 기간', 2, 60, 1], ['base', '기준선 기간', 5, 120, 1], ['span', '선행스팬2 기간', 10, 240, 1]],
+  rsi: [['n', '기간', 2, 60, 1], ['hi', '과열 기준', 50, 95, 1], ['lo', '침체 기준', 5, 50, 1]],
+  macd: [['f', '짧은 기간', 2, 60, 1], ['s', '긴 기간', 5, 120, 1], ['sig', '시그널 기간', 2, 60, 1]],
+  stoch: [['n', '기간', 5, 60, 1], ['k', '%K 평활', 1, 10, 1], ['d', '%D 평활', 1, 10, 1]],
+  cci: [['n', '기간', 5, 100, 1]], wr: [['n', '기간', 5, 60, 1]], atr: [['n', '기간', 2, 60, 1]], value: [['n', '평균선 기간', 5, 120, 1]],
+};
 /** Header and bottom bar of the full-screen chart (G-156). */
 export const CHART_PRO_PARTS = {
   back: SVG(`<path ${PL} d="M20 12H5M11 5l-7 7 7 7"/>`),
@@ -164,7 +187,7 @@ export const CHART_PRO_JS = `
 (function () {
   var panel = document.getElementById('tab-chart'); if (!panel) return;
   var root = document.documentElement, UP = '#d1373d', DOWN = '#2a62c9', NAVY = '#2e4268', T = 'rgba(0,0,0,0)';
-  var ICON_CT = ${JSON.stringify(ICONS)}, P = ${JSON.stringify(CHART_PRO_PARTS)};
+  var ICON_CT = ${JSON.stringify(ICONS)}, P = ${JSON.stringify(CHART_PRO_PARTS)}, FIELDS = ${JSON.stringify(IND_FIELDS)};
   var svg = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>'; };
   var PREF = 'gnm-chart-pro', pref = { ct: 'candle', scale: 0, hilo: true, magnet: false };
   try { var sp = JSON.parse(localStorage.getItem(PREF) || 'null'); if (sp) for (var k in sp) pref[k] = sp[k]; } catch (e) {}
@@ -264,7 +287,7 @@ export const CHART_PRO_JS = `
       sheet.classList.add('st-page');
       var sbody = sheet.querySelector('.sheet-body'), sh = sbody.querySelector('.sheet-head'), groups = [].slice.call(sbody.children).filter(function (x) { return x.classList.contains('opt-group'); }), note = [].slice.call(sbody.children).filter(function (x) { return x.tagName === 'P'; })[0];
       sh.querySelector('b').textContent = '차트 설정';
-      var shut = function () { sheet.hidden = true; document.body.classList.remove('sheet-open'); var g0 = head.querySelector('[data-cfs-set]'); if (g0) g0.focus(); };
+      var shut = function () { sheet.hidden = true; document.body.classList.remove('sheet-open'); sheet.classList.remove('dp-open'); var d0 = sheet.querySelector('.st-dp'); if (d0) { d0.hidden = true; d0.innerHTML = ''; } var g0 = head.querySelector('[data-cfs-set]'); if (g0) g0.focus(); };
       var sx = document.createElement('button'); sx.type = 'button'; sx.className = 'st-x'; sx.setAttribute('aria-label', '닫기'); sx.innerHTML = P.back; sh.insertBefore(sx, sh.firstChild); sx.addEventListener('click', shut);
       var rs = document.createElement('button'); rs.type = 'button'; rs.className = 'st-reset'; rs.textContent = '초기화'; rs.title = '내 보기 방식의 기본 지표로 되돌려요'; sh.appendChild(rs);
       rs.addEventListener('click', function () { var r = document.getElementById('ind-reset'); if (r && !r.disabled) { r.click(); toast('기본 지표로 되돌렸어요.'); } });
@@ -279,6 +302,40 @@ export const CHART_PRO_JS = `
       tabs.addEventListener('click', function (e) { var b = e.target.closest('[data-st]'); if (!b) return; var n = Number(b.getAttribute('data-st')); tabs.querySelectorAll('[data-st]').forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); }); panes.forEach(function (d, i) { d.hidden = i !== n; }); sbody.scrollTop = 0; });
       var save = document.createElement('button'); save.type = 'button'; save.className = 'st-save'; save.textContent = '저장하기'; sbody.appendChild(save);
       save.addEventListener('click', function () { shut(); toast('차트 설정을 저장했어요.'); });
+      // G-157: 상세 설정하기 — under each indicator that is on; a page of − / + fields, 기본값 and 저장하기.
+      var IPAPI = window.GNM_indParams;
+      if (IPAPI) {
+        sheet.querySelectorAll('.opt[data-ov], .opt[data-pane]').forEach(function (b) {
+          var k = b.getAttribute('data-ov') || b.getAttribute('data-pane'); if (!FIELDS[k] || !IPAPI.get(k)) return;
+          var a = document.createElement('button'); a.type = 'button'; a.className = 'st-more-link'; a.setAttribute('data-detail', k); a.textContent = '상세 설정하기 ›'; b.insertAdjacentElement('afterend', a);
+        });
+        var dp = document.createElement('div'); dp.className = 'st-dp'; dp.hidden = true; sbody.appendChild(dp);
+        var dpKey = null, esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+        var dpClose = function () { dp.hidden = true; dp.innerHTML = ''; sheet.classList.remove('dp-open'); var back = dpKey && sheet.querySelector('[data-detail="' + dpKey + '"]'); dpKey = null; if (back) back.focus(); };
+        var fill = function (v) { FIELDS[dpKey].forEach(function (f) { var i = dp.querySelector('input[name="' + f[0] + '"]'); if (i) i.value = String(v[f[0]]); }); };
+        var dpOpen = function (k) {
+          dpKey = k; var ob = sheet.querySelector('[data-ov="' + k + '"], [data-pane="' + k + '"]'), name = ob ? ob.querySelector('.opt-t b').textContent.replace(/\\s*\\d+$/, '') : k, note = ob && ob.querySelector('.opt-t small') ? ob.querySelector('.opt-t small').textContent : '';
+          dp.innerHTML = '<div class="st-dp-head"><button type="button" class="st-x" data-dp-x aria-label="뒤로">' + P.back + '</button><b>' + esc(name) + '</b><button type="button" class="st-reset" data-dp-def>기본값</button></div><div class="st-dp-body">'
+            + FIELDS[k].map(function (f) { return '<div class="st-f"><span id="dpl-' + f[0] + '">' + esc(f[1]) + '</span><span class="st-step"><button type="button" data-step="-1" aria-label="' + esc(f[1]) + ' 줄이기">−</button><input type="number" inputmode="decimal" name="' + f[0] + '" min="' + f[2] + '" max="' + f[3] + '" step="' + f[4] + '" aria-labelledby="dpl-' + f[0] + '"><button type="button" data-step="1" aria-label="' + esc(f[1]) + ' 늘리기">+</button></span></div>'; }).join('')
+            + (note ? '<p class="st-dp-note">' + esc(note) + '</p>' : '') + '</div><button type="button" class="st-save" data-dp-save>저장하기</button>';
+          fill(IPAPI.get(k)); sheet.classList.add('dp-open'); dp.hidden = false; sbody.scrollTop = 0; var x0 = dp.querySelector('[data-dp-x]'); if (x0) x0.focus();
+        };
+        sheet.addEventListener('click', function (e) { var a = e.target.closest('[data-detail]'); if (a) dpOpen(a.getAttribute('data-detail')); });
+        var clamp = function (inp) { var f = FIELDS[dpKey].filter(function (x) { return x[0] === inp.name; })[0], v = Number(inp.value); if (!isFinite(v)) v = f[2]; v = Math.min(f[3], Math.max(f[2], Math.round(v / f[4]) * f[4])); inp.value = String(v); return v; };
+        dp.addEventListener('click', function (e) {
+          var b = e.target.closest('button'); if (!b) return;
+          if (b.hasAttribute('data-dp-x')) { dpClose(); return; }
+          if (b.hasAttribute('data-dp-def')) { fill(IPAPI.defaults[dpKey]); return; }
+          if (b.hasAttribute('data-step')) { var inp = b.parentNode.querySelector('input'), f = FIELDS[dpKey].filter(function (x) { return x[0] === inp.name; })[0]; inp.value = String(Number(inp.value || 0) + Number(b.getAttribute('data-step')) * f[4]); clamp(inp); return; }
+          if (b.hasAttribute('data-dp-save')) {
+            var v = {}; dp.querySelectorAll('input').forEach(function (i) { v[i.name] = clamp(i); });
+            if ((dpKey === 'ema12' || dpKey === 'macd') && v.s <= v.f) { toast('긴 기간은 짧은 기간보다 커야 해요.'); return; }
+            if (dpKey === 'rsi' && v.hi <= v.lo) { toast('과열 기준은 침체 기준보다 커야 해요.'); return; }
+            IPAPI.set(dpKey, v); toast('바꾼 값을 차트에 적용했어요.'); dpClose();
+          }
+        });
+        dp.addEventListener('change', function (e) { if (e.target.matches('input')) clamp(e.target); });
+      }
     }
     ensureX();
     // The small live price in the header: the last close until the live feed answers (LIVE_JS fills [data-live]).
