@@ -21,7 +21,7 @@ export function renderAlerts(): string {
 .sw{position:relative;width:46px;height:28px;flex:none}.sw input{opacity:0;width:0;height:0;position:absolute}.sw i{position:absolute;inset:0;border-radius:999px;background:#cbd3df;transition:.15s}.sw i::after{content:'';position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}.sw input:checked+i{background:var(--navy)}.sw input:checked+i::after{transform:translateX(18px)}.sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
 .al-list .al-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.al-list .al-item:first-child{border-top:0}.al-item a{font-weight:700}.al-item small{display:block;color:var(--muted);font-size:12px}.al-item button{font:inherit;font-size:12.5px;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:5px 10px;cursor:pointer}.al-done{opacity:.6}
 .al-add{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.al-add input,.al-add select{font:inherit;padding:10px;border:1px solid var(--line-strong);border-radius:10px;min-width:0}.al-add .wide{grid-column:1/-1}.al-add button{grid-column:1/-1;font:inherit;font-weight:800;border:0;border-radius:12px;padding:11px;background:var(--navy);color:#fff;cursor:pointer}.al-sugg{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}.al-sugg button{grid-column:auto;background:#eef3fb;color:var(--fg);font-weight:700;font-size:13px;padding:6px 10px;border-radius:999px}
-.al-plan{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13.5px}.al-plan b{font-size:15px}.al-plan span{color:var(--fg2)}.al-plan a{font-weight:800;margin-left:auto}.al-lock{opacity:.55}.al-lock small::after{content:' · 플러스부터';font-weight:700;color:var(--accent-strong)}
+.al-plan{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13.5px}.al-plan[hidden]{display:none}.al-now{margin:2px 0 4px;font-size:13.5px;color:var(--fg2)}.al-now[hidden]{display:none}.al-plan b{font-size:15px}.al-plan span{color:var(--fg2)}.al-plan a{font-weight:800;margin-left:auto}.al-lock{opacity:.55}.al-lock small::after{content:' · 플러스부터';font-weight:700;color:var(--accent-strong)}
 .al-quiet{display:flex;gap:12px;flex-wrap:wrap;padding-top:4px}.al-quiet label{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--fg2)}.al-quiet input{font:inherit;padding:8px 10px;border:1px solid var(--line-strong);border-radius:10px}
 .al-msg{font-size:13px;color:var(--muted);min-height:1.4em;margin:6px 0 0}.al-login{text-align:center}
 </style><div class="al">
@@ -36,7 +36,7 @@ export function renderAlerts(): string {
 <section class="card"><label class="al-row"><span><b>조용한 시간</b><small>이 시간에는 휴대폰으로 울리지 않고 🔔 알림함에만 쌓아요. 미국 장 시간처럼 밤에 오는 알림을 미뤄 둘 때 써요.</small></span><span class="sw"><input type="checkbox" data-pref="quiet"><i></i></span></label><div class="al-quiet"><label>시작 <input type="time" data-qt="quietFrom" value="23:00"></label><label>끝 <input type="time" data-qt="quietTo" value="07:00"></label></div></section>
 <section class="card"><h2>스크리너 조건 알림</h2><div class="al-list" id="al-screens"><p class="muted small">불러오는 중…</p></div><p class="al-help">조건은 <a href="screener.html">필터로 종목 찾기</a>에서 저장해요. 매일 장 마감 뒤 새로 걸린 종목을 알려요.</p></section>
 <section class="card"><h2>가격 알림</h2><div class="al-list" id="al-prices"><p class="muted small">불러오는 중…</p></div>
-<form class="al-add" id="al-add"><input class="wide" name="q" placeholder="종목·ETF·코인 이름이나 코드" autocomplete="off" aria-label="종목"><div class="al-sugg" id="al-sugg"></div><input name="price" inputmode="decimal" placeholder="가격(원, 미국은 달러)" aria-label="가격"><select name="op" aria-label="조건"><option value=">=">이상이 되면</option><option value="<=">이하가 되면</option></select><button type="submit">가격 알림 걸기</button></form>
+<form class="al-add" id="al-add"><input class="wide" name="q" placeholder="종목·ETF·코인 이름이나 코드" autocomplete="off" aria-label="종목"><div class="al-sugg" id="al-sugg"></div><p class="al-now" id="al-now" hidden></p><input name="price" inputmode="decimal" placeholder="가격(원, 미국은 달러)" aria-label="가격"><select name="op" aria-label="조건"><option value=">=">이상이 되면</option><option value="<=">이하가 되면</option></select><button type="submit">가격 알림 걸기</button></form>
 <p class="al-msg" id="al-add-msg" role="status"></p><p class="al-help">종목 화면의 🔔 가격 알림 버튼으로도 걸 수 있어요. 강세·약세 시나리오 가격대에 들어오면 알려 주는 빠른 선택이 있어요. 주식·ETF는 장중, 미국 주식은 프리·정규·애프터마켓, 코인은 언제든 10분마다 확인해요.</p></section>
 </div></div><script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -86,14 +86,27 @@ document.addEventListener('DOMContentLoaded', function () {
     (list ? Promise.resolve(list) : Promise.all([fetch('search.json').then(function (r) { return r.json(); }), fetch('usstocks.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; }).catch(function () { return { rows: [] }; })]).then(function (j) { list = (j[0].items || []).concat((j[1].rows || []).map(function (u) { return [u[0], u[1] + ' ' + String(u[2]).split(' · ')[0]]; })); return list; })).then(function (items) {
       var hit = items.filter(function (it) { return String(it[0]).toLowerCase().indexOf(q) === 0 || String(it[1]).toLowerCase().indexOf(q) >= 0; }).slice(0, 6);
       $('al-sugg').innerHTML = hit.map(function (it, i) { return '<button type="button" data-i="' + i + '">' + esc(it[1]) + ' <small>' + esc(it[0]) + '</small></button>'; }).join('');
-      $('al-sugg').querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { var it = hit[Number(b.getAttribute('data-i'))]; chosen = { symbol: String(it[0]), name: String(it[1]) }; f.q.value = it[1] + ' (' + it[0] + ')'; $('al-sugg').innerHTML = ''; f.price.focus(); }; });
+      $('al-sugg').querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { var it = hit[Number(b.getAttribute('data-i'))]; chosen = { symbol: String(it[0]), name: String(it[1]) }; f.q.value = it[1] + ' (' + it[0] + ')'; $('al-sugg').innerHTML = ''; quote(chosen.symbol); f.price.focus(); }; });
     });
   });
+  // G-159: the chosen stock's price now; the 이상/이하 follows the typed price (above now → 이상, below → 이하).
+  var nowPx = 0;
+  var quote = function (sym) {
+    nowPx = 0; $('al-now').hidden = true;
+    var coin = /^KRW-/.test(sym), url = coin ? 'https://api.upbit.com/v1/ticker?markets=' + encodeURIComponent(sym) : G.api ? G.api + '/quote?' + (US(sym) ? 'u=' : 's=') + encodeURIComponent(sym) : '';
+    if (!url) return;
+    fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+      var p = coin ? (j[0] || {}).trade_price : ((j.quotes || [])[0] || {}).price; if (!(p > 0) || !chosen || chosen.symbol !== sym) return;
+      nowPx = p; $('al-now').hidden = false; $('al-now').innerHTML = '현재가 <b>' + price(p, sym) + '</b>'; if (!f.price.value) f.price.placeholder = '현재가 ' + price(p, sym); sync();
+    }).catch(function () {});
+  };
+  var sync = function () { var v = Number(String(f.price.value).replace(/[^0-9.]/g, '')); if (!nowPx || !(v > 0)) return; if (v !== nowPx) f.op.value = v > nowPx ? '>=' : '<='; var g = (v / nowPx - 1) * 100; $('al-now').innerHTML = '현재가 <b>' + price(nowPx, chosen.symbol) + '</b> · 적은 가격은 ' + (v === nowPx ? '현재가와 같아요' : '<b class="' + (g > 0 ? 'up' : 'down') + '">' + (g > 0 ? '+' : '') + g.toFixed(1) + '%</b> → <b>' + (g > 0 ? '이상' : '이하') + '</b>이 되면 알려요'); };
+  f.price.addEventListener('input', sync);
   f.addEventListener('submit', function (e) {
     e.preventDefault(); var v = Number(String(f.price.value).replace(/[^0-9.]/g, ''));
     if (!chosen) { $('al-add-msg').textContent = '목록에서 종목을 골라 주세요.'; return; }
     if (!(v > 0)) { $('al-add-msg').textContent = '가격을 적어 주세요.'; return; }
-    G.call('POST', '/alerts/price', { symbol: chosen.symbol, name: chosen.name, op: f.op.value, price: v }).then(function (r) { $('al-add-msg').textContent = r.error ? r.message : '걸었어요.'; if (!r.error) { f.reset(); chosen = null; loadPrices(); } });
+    G.call('POST', '/alerts/price', { symbol: chosen.symbol, name: chosen.name, op: f.op.value, price: v }).then(function (r) { $('al-add-msg').textContent = r.error ? r.message : '걸었어요.'; if (!r.error) { f.reset(); chosen = null; nowPx = 0; $('al-now').hidden = true; loadPrices(); } });
   });
   if (G.ready) G.ready.then(start); else start(null);
 });

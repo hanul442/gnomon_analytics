@@ -75,30 +75,69 @@ export const PRICE_ALERT_JS = `
     if (t && Number(t) > 0) return Number(t);
     try { var bars = JSON.parse(document.getElementById('bars').textContent); return bars[bars.length - 1].close; } catch (e) { return 0; }
   };
+  // G-159: Toss-style — the price now, one target price with − / + in real tick steps, the gap in %, and the
+  // direction picked from it (above now → 이상, below → 이하). Quick chips, and this stock's open alerts below.
+  var COIN = /^KRW-/.test(symbol());
+  var tick = function (v) {
+    if (US) return 0.01;
+    if (COIN) return v >= 1e6 ? 1000 : v >= 1e5 ? 50 : v >= 1e4 ? 10 : v >= 1000 ? 1 : v >= 100 ? 0.1 : v >= 10 ? 0.01 : 0.0001;
+    return v < 2000 ? 1 : v < 5000 ? 5 : v < 20000 ? 10 : v < 50000 ? 50 : v < 200000 ? 100 : v < 500000 ? 500 : 1000;
+  };
+  var snap = function (v) { var t = tick(v), d = String(t).split('.')[1]; return Number((Math.round(v / t) * t).toFixed(d ? d.length : 0)); };
   b.addEventListener('click', function () {
     if (!G.me) { location.href = base + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/') + location.search); return; }
     var now = price(), scen = []; try { scen = JSON.parse(document.getElementById('scen').textContent) || []; } catch (e) {}
-    var picks = [];
-    scen.forEach(function (x) { if (x.kind === 'BULL') picks.push(['>=', x.zone[0], '강세 가격대에 들어오면']); if (x.kind === 'BEAR') picks.push(['<=', x.zone[1], '약세 가격대에 들어오면']); });
-    if (now) { picks.push(['>=', now * 1.05, '지금보다 5% 오르면']); picks.push(['<=', now * 0.95, '지금보다 5% 내리면']); }
+    var chips = [];
+    if (now) [-10, -5, 5, 10].forEach(function (p) { chips.push([(p > 0 ? '+' : '') + p + '%', snap(now * (1 + p / 100)), '지금보다 ' + Math.abs(p) + '% ' + (p > 0 ? '오르면' : '내리면')]); });
+    scen.forEach(function (x) { if (x.kind === 'BULL' && x.zone) chips.push(['강세 가격대', snap(x.zone[0]), '강세 가격대에 들어오면']); if (x.kind === 'BEAR' && x.zone) chips.push(['약세 가격대', snap(x.zone[1]), '약세 가격대에 들어오면']); });
     var d = document.createElement('dialog'); d.className = 'v2-dialog pa-dialog';
     d.innerHTML = '<header><b>' + esc(name()) + ' 가격 알림</b><button type="button" class="dialog-x" aria-label="닫기">×</button></header>' +
-      '<p class="muted small">지금 ' + (now ? won(now) : '가격 확인 중') + ' · 닿으면 🔔과 휴대폰으로 한 번 알려 드려요.</p>' +
-      '<div class="pa-picks">' + picks.map(function (p, i) { return '<button type="button" data-pick="' + i + '"><b>' + esc(p[2]) + '</b><span>' + won(p[1]) + ' ' + (p[0] === '>=' ? '이상' : '이하') + '</span></button>'; }).join('') + '</div>' +
-      '<form class="pa-own"><label>직접 정하기<input name="price" inputmode="decimal" placeholder="' + (US ? '가격(달러)' : '가격(원)') + '" value="' + (now ? (US ? now.toFixed(2) : Math.round(now)) : '') + '"></label><select name="op"><option value=">=">이상이 되면</option><option value="<=">이하가 되면</option></select><button type="submit">알림 걸기</button></form>' +
-      '<p class="pa-msg muted small" role="status"></p><a class="pa-all" href="' + base + 'alerts.html">내 알림 모두 보기 · 휴대폰 알림 켜기 ›</a>';
+      '<div class="pa-now"><span>현재가</span><b>' + (now ? won(now) : '확인 중') + '</b></div>' +
+      '<label class="pa-label" for="pa-price">이 가격이 되면 알려 주세요</label>' +
+      '<div class="pa-target"><button type="button" data-step="-1" aria-label="한 호가 내리기">−</button><input id="pa-price" name="price" inputmode="decimal" autocomplete="off"><span class="pa-unit">' + (US ? '달러' : '원') + '</span><button type="button" data-step="1" aria-label="한 호가 올리기">+</button></div>' +
+      '<p class="pa-hint" aria-live="polite"></p>' +
+      '<div class="pa-chips" role="group" aria-label="빠른 선택">' + chips.map(function (c, i) { return '<button type="button" data-chip="' + i + '">' + esc(c[0]) + '</button>'; }).join('') + '</div>' +
+      '<button type="button" class="pa-save">알림 받기</button><p class="pa-msg muted small" role="status"></p>' +
+      '<div class="pa-mine" hidden><b>이 종목에 건 알림</b><div class="pa-list"></div></div>' +
+      '<a class="pa-all" href="' + base + 'alerts.html">내 알림 모두 보기 · 휴대폰 알림 켜기 ›</a>';
     document.body.appendChild(d); d.showModal();
-    var msg = d.querySelector('.pa-msg');
-    var save = function (op, p, note) {
-      msg.textContent = '거는 중…';
-      G.call('POST', '/alerts/price', { symbol: symbol(), name: name(), op: op, price: Math.round(p * 10000) / 10000, note: note || '' }).then(function (r) {
-        if (r.error) { msg.textContent = r.message; return; }
-        msg.textContent = won(p) + ' ' + (op === '>=' ? '이상' : '이하') + '이 되면 알려 드려요.';
-        if (G.push) G.push.state().then(function (s) { if (!s.on) msg.innerHTML = esc(msg.textContent) + ' <a href="' + base + 'alerts.html">휴대폰 알림도 켜기 ›</a>'; });
+    var inp = d.querySelector('#pa-price'), hint = d.querySelector('.pa-hint'), msg = d.querySelector('.pa-msg'), saveB = d.querySelector('.pa-save'), note = '';
+    var val = function () { return Number(String(inp.value).replace(/[^0-9.]/g, '')); };
+    var fmtIn = function (v) { return US || v < 100 ? String(v) : Math.round(v).toLocaleString('ko-KR'); };
+    var op = function () { var v = val(); return !now || !(v > 0) || v === now ? '' : v > now ? '>=' : '<='; };
+    var paint = function () {
+      var v = val(), o = op();
+      if (!(v > 0)) { hint.textContent = '받고 싶은 가격을 적어 주세요.'; saveB.disabled = true; return; }
+      if (!now) { hint.textContent = '현재가를 불러오지 못했어요. 이 가격 이상이 되면 알려 드려요.'; saveB.disabled = false; return; }
+      if (!o) { hint.textContent = '현재가와 같아요. 조금 올리거나 내려 주세요.'; saveB.disabled = true; return; }
+      var g = (v / now - 1) * 100;
+      hint.innerHTML = '현재가보다 <b class="' + (g > 0 ? 'up' : 'down') + '">' + (g > 0 ? '+' : '') + g.toFixed(1) + '%</b> ' + (g > 0 ? '높아요' : '낮아요') + ' · 이 가격 <b>' + (o === '>=' ? '이상' : '이하') + '</b>이 되면 알려 드려요';
+      saveB.disabled = false; saveB.textContent = won(v) + ' ' + (o === '>=' ? '이상' : '이하') + '에서 알림 받기';
+    };
+    var setV = function (v, n) { inp.value = fmtIn(v); note = n || ''; d.querySelectorAll('[data-chip]').forEach(function (c) { c.setAttribute('aria-pressed', String(chips[Number(c.getAttribute('data-chip'))][1] === v)); }); paint(); };
+    setV(now ? snap(now * 1.05) : 0, now ? '지금보다 5% 오르면' : '');
+    inp.addEventListener('input', function () { note = ''; d.querySelectorAll('[data-chip]').forEach(function (c) { c.setAttribute('aria-pressed', 'false'); }); paint(); });
+    d.querySelectorAll('[data-step]').forEach(function (x) { x.addEventListener('click', function () { var v = val() || now || 0, t = tick(v), dir = Number(x.getAttribute('data-step')); setV(Math.max(t, snap(v + dir * t)), ''); }); });
+    d.querySelectorAll('[data-chip]').forEach(function (x) { x.addEventListener('click', function () { var c = chips[Number(x.getAttribute('data-chip'))]; setV(c[1], c[2]); }); });
+    var mine = function () {
+      G.call('GET', '/alerts/price').then(function (r) {
+        var items = (r.items || []).filter(function (a) { return a.symbol === symbol().toUpperCase() && !a.fired_at; }), box = d.querySelector('.pa-mine');
+        box.hidden = !items.length;
+        box.querySelector('.pa-list').innerHTML = items.map(function (a) { return '<div class="pa-item"><span><b>' + won(a.price) + '</b> ' + (a.op === '>=' ? '이상' : '이하') + (a.note ? '<small>' + esc(a.note) + '</small>' : '') + '</span><button type="button" data-del="' + a.id + '" aria-label="' + esc(won(a.price)) + ' 알림 지우기">지우기</button></div>'; }).join('');
+        box.querySelectorAll('[data-del]').forEach(function (x) { x.onclick = function () { if (!confirm('이 가격 알림을 지울까요?')) return; G.call('POST', '/alerts/price/' + x.getAttribute('data-del') + '/delete').then(function () { msg.textContent = '지웠어요.'; mine(); }); }; });
       });
     };
-    d.querySelectorAll('[data-pick]').forEach(function (x) { x.addEventListener('click', function () { var p = picks[Number(x.getAttribute('data-pick'))]; save(p[0], p[1], p[2]); }); });
-    d.querySelector('.pa-own').addEventListener('submit', function (e) { e.preventDefault(); var v = Number(String(this.price.value).replace(/[^0-9.]/g, '')); if (!(v > 0)) { msg.textContent = '가격을 적어 주세요.'; return; } save(this.op.value, v, ''); });
+    saveB.addEventListener('click', function () {
+      var v = val(), o = op() || '>='; if (!(v > 0)) return;
+      msg.textContent = '거는 중…'; saveB.disabled = true;
+      G.call('POST', '/alerts/price', { symbol: symbol(), name: name(), op: o, price: Math.round(v * 10000) / 10000, note: note }).then(function (r) {
+        saveB.disabled = false;
+        if (r.error) { msg.textContent = r.message; return; }
+        msg.textContent = won(v) + ' ' + (o === '>=' ? '이상' : '이하') + '이 되면 🔔으로 알려 드려요.'; mine();
+        if (G.push) G.push.state().then(function (s) { if (!s.on) msg.innerHTML = esc(msg.textContent) + ' <a href="' + base + 'alerts.html">휴대폰 알림도 켜기 ›</a>'; });
+      });
+    });
+    mine();
     d.querySelector('.dialog-x').onclick = function () { d.close(); };
     d.addEventListener('close', function () { d.remove(); });
     d.addEventListener('click', function (e) { if (e.target === d) d.close(); });
@@ -106,6 +145,13 @@ export const PRICE_ALERT_JS = `
 })();`;
 
 export const ALERTS_CSS = `.pa-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:0;background:none;border-radius:50%;padding:0;font:inherit;font-size:17px;cursor:pointer;margin-left:2px;vertical-align:middle;opacity:.55;filter:grayscale(1)}.pa-btn:hover,.pa-btn:focus-visible{opacity:1;filter:none;background:#eef1f6}
-.pa-picks{display:grid;gap:6px;margin:10px 0}.pa-picks button{display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 12px;font:inherit;cursor:pointer;text-align:left}.pa-picks button:hover{border-color:var(--accent)}.pa-picks span{font-size:13px;color:var(--fg2);white-space:nowrap}
-.pa-own{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:end}.pa-own label{grid-column:1/-1;display:grid;gap:4px;font-size:13px;font-weight:700}.pa-own input,.pa-own select{font:inherit;padding:9px 10px;border:1px solid var(--line-strong);border-radius:10px}.pa-own button{font:inherit;font-weight:800;border:0;border-radius:10px;padding:10px 14px;background:var(--navy);color:#fff;cursor:pointer}.pa-all{display:block;margin-top:8px;font-size:13px;font-weight:700}`;
+.pa-now{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 14px;font-size:14px;color:var(--fg2)}.pa-now b{font-size:20px;color:var(--fg);font-variant-numeric:tabular-nums}
+.pa-label{display:block;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}
+.pa-target{display:flex;align-items:center;background:#f2f4f6;border-radius:14px;padding:4px}.pa-target button{flex:none;width:48px;height:48px;border:0;border-radius:12px;background:#fff;font:inherit;font-size:24px;color:#4e5968;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}.pa-target button:hover{background:#e8f3ff;color:#1b64da}
+.pa-target input{flex:1;min-width:0;border:0;background:none;text-align:right;font:inherit;font-size:22px;font-weight:800;color:var(--fg);padding:0 4px;font-variant-numeric:tabular-nums}.pa-target input:focus{outline:none}.pa-unit{font-size:16px;font-weight:700;color:var(--fg2);margin-right:10px}
+.pa-hint{margin:8px 2px 10px;font-size:13.5px;color:var(--fg2);min-height:20px}
+.pa-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}.pa-chips button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:0 14px;min-height:36px;font:inherit;font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer}.pa-chips button[aria-pressed=true]{background:#e8f3ff;border-color:#3182f6;color:#1b64da}
+.pa-save{display:block;width:100%;min-height:52px;border:0;border-radius:14px;background:#3182f6;color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer}.pa-save:disabled{background:#c9d4e3;cursor:not-allowed}
+.pa-mine{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}.pa-mine>b{font-size:13px;color:var(--fg2)}.pa-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f2f4f6}.pa-item small{display:block;font-size:12px;color:var(--muted)}.pa-item button{border:1px solid var(--line);background:#fff;border-radius:10px;min-height:36px;padding:0 12px;font:inherit;font-size:13px;font-weight:700;color:var(--fg2);cursor:pointer}
+.pa-msg{margin:8px 0 0}.pa-dialog .pa-target button{font-size:26px;font-weight:600;line-height:1}.pa-dialog .pa-save{font-size:16px;font-weight:800}.pa-all{display:block;margin-top:8px;font-size:13px;font-weight:700}`;
 

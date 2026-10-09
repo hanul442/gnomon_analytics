@@ -68,7 +68,7 @@ function radar(axes: readonly Axis[]): string {
   const labels = axes.map((a, i) => { const [x, y] = pt(i, 1.2); return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" class="${a.score == null ? 'na' : ''}">${esc(a.label)}</text>`; }).join('');
   return `<svg class="ig-radar" viewBox="0 0 220 210" role="img" aria-label="${axes.map((a) => `${a.label} ${a.score == null ? '자료 없음' : Math.round(a.score) + '점'}`).join(', ')}">
 ${[0.33, 0.66, 1].map((v) => `<polygon points="${ring(v)}" class="grid"/>`).join('')}${axes.map((_, i) => { const [x, y] = pt(i, 1); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" class="grid"/>`; }).join('')}
-<polygon points="${shape}" class="area"/>${axes.map((a, i) => a.score == null ? '' : (() => { const [x, y] = pt(i, a.score / 100); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" class="dot"><title>${esc(a.label)} ${Math.round(a.score)}점</title></circle>`; })()).join('')}${labels}</svg>`;
+<polygon points="${shape}" class="area"/>${axes.map((a, i) => a.score == null ? '' : (() => { const [x, y] = pt(i, a.score / 100); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" class="dot" data-i="${i}" style="--i:${i}"><title>${esc(a.label)} ${Math.round(a.score)}점</title></circle>`; })()).join('')}${labels}</svg>`;
 }
 
 /** 기업 체력 한눈에 (G-148): the radar beside one short line per axis; the thresholds sit in each line's title. */
@@ -78,7 +78,7 @@ export function healthInfographic(m: MarketSection | undefined, close: number | 
   if (axes.every((a) => a.score == null)) return '';
   const verdict = (s: number | null) => (s == null ? ['na', '자료 없음'] : s >= 67 ? ['good', '좋음'] : s >= 34 ? ['mid', '보통'] : ['warn', '주의']);
   return `<section class="card ig-card ig-hc"><div class="head"><h2>기업 체력 한눈에</h2></div>
-<div class="ig-health">${radar(axes)}<ul class="ig-hl">${axes.map((a) => { const [cls, word] = verdict(a.score); return `<li title="${esc(a.note)}"><b>${esc(a.label)}</b><span class="ig-v ${cls}">${word}</span><em>${esc(a.value)}</em></li>`; }).join('')}</ul></div>
+<div class="ig-health">${radar(axes)}<ul class="ig-hl">${axes.map((a, i) => { const [cls, word] = verdict(a.score); return `<li title="${esc(a.note)}" data-i="${i}" tabindex="0"><b>${esc(a.label)}</b><span class="ig-v ${cls}">${word}</span><em>${esc(a.value)}</em></li>`; }).join('')}</ul></div>
 <p class="fine">단순 기준으로 환산한 참고값이에요(영업이익률 20%·부채비율 0%면 만점). 같은 업종끼리 비교해 보세요.</p></section>`;
 }
 
@@ -106,9 +106,10 @@ function bars(years: readonly string[], series: readonly { label: string; color:
   const rects = years.map((y, i) => series.map((x, j) => {
     const v = x.values[i]; if (v == null) return '';
     const x0 = i * gw + (gw - bw * series.length) / 2 + j * bw, y0 = v >= 0 ? zero - (v / span) * h : zero, hh = Math.max(1, Math.abs(v / span) * h);
-    return `<rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(bw - 3).toFixed(1)}" height="${hh.toFixed(1)}" rx="2" fill="${x.color}"><title>${esc(y)} ${esc(x.label)} ${short(v)}원</title></rect>${j === 0 ? `<text x="${(x0 + (bw - 3) / 2).toFixed(1)}" y="${(v >= 0 ? y0 - 4 : y0 + hh + 11).toFixed(1)}" text-anchor="middle" class="ig-bl">${short(v)}</text>` : ''}`;
+    return `<rect${v < 0 ? ' class="neg"' : ''} data-g="${i}" style="--i:${i * series.length + j}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(bw - 3).toFixed(1)}" height="${hh.toFixed(1)}" rx="2" fill="${x.color}"><title>${esc(y)} ${esc(x.label)} ${short(v)}원</title></rect>${j === 0 ? `<text x="${(x0 + (bw - 3) / 2).toFixed(1)}" y="${(v >= 0 ? y0 - 4 : y0 + hh + 11).toFixed(1)}" text-anchor="middle" class="ig-bl">${short(v)}</text>` : ''}`;
   }).join('') + `<text x="${(i * gw + gw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="ig-bx">${esc(y)}</text>`).join('');
-  return `<figure class="ig-bars"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map((x) => x.label).join('·'))} 연도별 막대"><line x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}" class="ig-b0"/>${rects}</svg><figcaption>${series.map((x) => `<span><i style="background:${x.color}"></i>${esc(x.label)}</span>`).join('')}</figcaption></figure>`;
+  const tip = { y: years, s: series.map((x) => ({ l: x.label, c: x.color, v: x.values.map((v) => (v == null ? null : short(v) + '원')) })) };
+  return `<figure class="ig-bars mo-bars" data-tip="${esc(JSON.stringify(tip))}"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map((x) => x.label).join('·'))} 연도별 막대"><line x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}" class="ig-b0"/>${rects}</svg><figcaption>${series.map((x) => `<span><i style="background:${x.color}"></i>${esc(x.label)}</span>`).join('')}</figcaption></figure>`;
 }
 
 /** The infographic of one DART statement (G-148: also the simple 재무제표 card's picture). */
@@ -124,7 +125,7 @@ export function statementChart(st: FullStatements, kind: StKind): string {
     if (m != null) note = `${esc(st.years[last]!)}년 영업이익률 <b>${m.toFixed(1)}%</b>`;
   } else if (kind === 'BS') {
     const debt = val('ifrs-full_Liabilities', KEY_ROWS.BS[6]![1]), eq = val('ifrs-full_Equity', KEY_ROWS.BS[8]![1]);
-    chart = `<div class="ig-bs">${st.years.map((y, i) => { const d = debt[i], e = eq[i]; if (d == null || e == null || d + e <= 0) return ''; const dp = (d / (d + e)) * 100; return `<div class="ig-bs-row"><span>${esc(y)}</span><div class="ig-bs-bar" role="img" aria-label="${esc(y)} 부채 ${short(d)} 자본 ${short(e)}"><i class="d" style="width:${dp.toFixed(1)}%">${dp >= 18 ? `부채 ${short(d)}` : ''}</i><i class="e" style="width:${(100 - dp).toFixed(1)}%">${100 - dp >= 18 ? `자본 ${short(e)}` : ''}</i></div><b class="${e > 0 && d / e > 2 ? 'down' : ''}">${e > 0 ? `부채비율 ${Math.round((d / e) * 100)}%` : '자본잠식'}</b></div>`; }).join('')}</div>`;
+    chart = `<div class="ig-bs">${st.years.map((y, i) => { const d = debt[i], e = eq[i]; if (d == null || e == null || d + e <= 0) return ''; const dp = (d / (d + e)) * 100; return `<div class="ig-bs-row" style="--i:${i}"><span>${esc(y)}</span><div class="ig-bs-bar" role="img" aria-label="${esc(y)} 부채 ${short(d)} 자본 ${short(e)}"><i class="d" style="width:${dp.toFixed(1)}%">${dp >= 18 ? `부채 ${short(d)}` : ''}</i><i class="e" style="width:${(100 - dp).toFixed(1)}%">${100 - dp >= 18 ? `자본 ${short(e)}` : ''}</i></div><b class="${e > 0 && d / e > 2 ? 'down' : ''}">${e > 0 ? `부채비율 ${Math.round((d / e) * 100)}%` : '자본잠식'}</b></div>`; }).join('')}</div>`;
     note = '자산 = 부채 + 자본. 부채비율이 200%를 넘으면 빨간색이에요.';
   } else {
     const ocf = val(...(KEY_ROWS.CF[0]!.slice(0, 2) as [string, RegExp])), inv = val(...(KEY_ROWS.CF[1]!.slice(0, 2) as [string, RegExp])), fin = val(...(KEY_ROWS.CF[3]!.slice(0, 2) as [string, RegExp])), capex = val(...(KEY_ROWS.CF[2]!.slice(0, 2) as [string, RegExp]));
