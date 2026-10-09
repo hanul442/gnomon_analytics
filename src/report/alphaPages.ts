@@ -86,9 +86,9 @@ export const BANNER_JS = `<script>
 })();
 </script>`;
 
-const PAGE = `<style>.gd{max-width:760px;margin:0 auto}.gd h2{margin:26px 0 8px;font-size:19px}.gd p,.gd li{line-height:1.7}.gd ol,.gd ul{padding-left:20px}.gd .gd-note{background:#eef3fb;border-radius:12px;padding:10px 14px;font-size:14px}
-.sv{max-width:720px;margin:0 auto}.sv .q{padding:14px 0;border-top:1px solid var(--line)}.sv h3{font-size:16px;margin:0 0 8px}.sv .opts{display:flex;flex-wrap:wrap;gap:6px}.sv .opts label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:999px;padding:7px 12px;font-size:14px;cursor:pointer;background:#fff}
-.sv .opts input{accent-color:var(--navy)}.sv .opts label:has(input:checked){border-color:var(--navy);background:#eef3fb;font-weight:700}.sv .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:4px}.sv .nps label{justify-content:center;padding:8px 0;border-radius:10px}.sv .nps input{display:none}
+const PAGE = `<style>.gd{max-width:760px;margin:0 auto}.gd h2{margin:26px 0 8px;font-size:19px}.gd p,.gd li{line-height:1.7}.gd ol,.gd ul{padding-left:20px}.gd .gd-note{background:var(--soft);border-radius:12px;padding:10px 14px;font-size:14px}
+.sv{max-width:720px;margin:0 auto}.sv .q{padding:14px 0;border-top:1px solid var(--line)}.sv h3{font-size:16px;margin:0 0 8px}.sv .opts{display:flex;flex-wrap:wrap;gap:6px}.sv .opts label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:999px;padding:7px 12px;font-size:14px;cursor:pointer;background:var(--surface)}
+.sv .opts input{accent-color:var(--navy)}.sv .opts label:has(input:checked){border-color:var(--navy);background:var(--soft);font-weight:700}.sv .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:4px}.sv .nps label{justify-content:center;padding:8px 0;border-radius:10px}.sv .nps input{display:none}
 .sv textarea{width:100%;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;min-height:80px}.sv .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}</style>`;
 
 /** G-74: the guide, on real screenshots (site/guide/*.webp, copied from docs/guide), with a live tour per page. */
@@ -115,8 +115,8 @@ export function renderGuide(): string {
 <div class="gd-tours"><a class="btn-primary" href="index.html?tour=1">홈 둘러보기 시작 ›</a><a class="btn-ghost" href="000660/index.html?tour=1">종목 리포트 둘러보기 ›</a><a class="btn-ghost" href="screener.html?tour=1">검색 조건 둘러보기 ›</a></div></div></section>
 <section class="block gd"><nav class="gd-toc" aria-label="목차">${toc}</nav>${steps}
 <p class="gd-note">그노몬의 모든 내용은 계산 결과와 시나리오 해설이고, 투자 권유가 아니에요. 투자 판단과 결과의 책임은 투자자 본인에게 있어요.</p></section>
-<style>.gd{max-width:980px}.gd-tours{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.gd-tours a{display:inline-flex;text-decoration:none}.gd-toc{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.gd-toc a{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;text-decoration:none;color:var(--fg)}
-.gd-step{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin:14px 0;scroll-margin-top:80px}.gd-step h2{margin:0 0 12px}.gd-row{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:start}.gd-noimg{grid-template-columns:1fr}.gd-row figure{margin:0;position:sticky;top:80px}.gd-row img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(15,34,68,.08)}.gd-row figcaption{font-size:12px;color:var(--muted);margin-top:4px;text-align:center}.gd-text li{margin:6px 0}
+<style>.gd{max-width:980px}.gd-tours{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.gd-tours a{display:inline-flex;text-decoration:none}.gd-toc{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.gd-toc a{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;text-decoration:none;color:var(--fg)}
+.gd-step{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin:14px 0;scroll-margin-top:80px}.gd-step h2{margin:0 0 12px}.gd-row{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:start}.gd-noimg{grid-template-columns:1fr}.gd-row figure{margin:0;position:sticky;top:80px}.gd-row img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(15,34,68,.08)}.gd-row figcaption{font-size:12px;color:var(--muted);margin-top:4px;text-align:center}.gd-text li{margin:6px 0}
 @media (max-width:820px){.gd-row{grid-template-columns:1fr}.gd-row figure{position:static;max-width:340px;margin:0 auto}}</style>`;
   return shell('', '사용법 · 그노몬', body, {});
 }
@@ -150,7 +150,7 @@ export const SURVEYS: Record<'midterm' | 'weekly', { title: string; lead: string
 
 export function renderSurvey(): string {
   const body = `${PAGE}<section class="card form-card sv"><div class="eyebrow"><span>알파 테스트</span><span id="sv-kind"></span></div><h1 id="sv-title">설문</h1><p class="muted" id="sv-lead"></p>
-<div id="sv-login" hidden style="background:#fde8e8;color:#9b1c1c;border-radius:12px;padding:10px 12px;margin:8px 0">설문은 로그인한 뒤에 할 수 있어요. <a href="login.html?return=survey.html">로그인</a></div>
+<div id="sv-login" hidden style="background:var(--up-soft);color:var(--up-strong);border-radius:12px;padding:10px 12px;margin:8px 0">설문은 로그인한 뒤에 할 수 있어요. <a href="login.html?return=survey.html">로그인</a></div>
 <form id="sv"></form><div id="out" aria-live="polite"></div></section>`;
   const script = `<script>
 (function () {

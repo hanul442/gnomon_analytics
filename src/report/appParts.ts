@@ -257,6 +257,8 @@ window.addEventListener('DOMContentLoaded', function () {
   var C = bars.map(function (b) { return b.close; }), H = bars.map(function (b) { return b.high; }), Lo = bars.map(function (b) { return b.low; }), V = bars.map(function (b) { return b.volume; });
   var candle = chart.addSeries(L.CandlestickSeries, { upColor: UP, downColor: DOWN, borderVisible: false, wickUpColor: UP, wickDownColor: DOWN });
   candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
+  // G-181: text, grid and candle colours come from the theme tokens and follow a dark/light switch.
+  if (window.GNMTheme) GNMTheme.chart(chart, function (c) { UP = c.up; DOWN = c.down; candle.applyOptions({ upColor: c.up, downColor: c.down, wickUpColor: c.up, wickDownColor: c.down }); });
 
   // ---- indicator settings (G-157): every period and multiple can be changed in 상세 설정하기; kept on this device ----
   var IP0 = { ma5: { n: 5 }, ma20: { n: 20 }, ma60: { n: 60 }, ma120: { n: 120 }, ema12: { f: 12, s: 26 }, bb: { n: 20, k: 2 }, env: { n: 20, pct: 6 }, ichimoku: { conv: 9, base: 26, span: 52 },
