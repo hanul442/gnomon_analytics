@@ -187,8 +187,12 @@ export const CHART_PRO_JS = `
 (function () {
   var panel = document.getElementById('tab-chart'); if (!panel) return;
   // G-181: line colours come from the theme tokens (navy ink on light, pale ink on dark).
-  var TV = function (n, d) { var x = window.GNMTheme && GNMTheme.v(n); return x || d; }, DARK = document.documentElement.getAttribute('data-theme') === 'dark';
-  var root = document.documentElement, UP = TV('--up', '#f04452'), DOWN = TV('--down', '#3182f6'), NAVY = TV('--ink', '#2e4268'), INK_RGB = DARK ? '207,227,255' : '46,66,104', T = 'rgba(0,0,0,0)';
+  // G-182: colours come from the theme tokens and are read again on a theme switch (see the gnm-theme listener).
+  var TH = window.GNMTheme, tv = function (n, d) { return TH ? TH.v(n, d) : d; };
+  var rgbOf = function (c) { var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c); return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)].join(',') : '46,66,104'; };
+  var root = document.documentElement, UP, DOWN, NAVY, INK_RGB, T = 'rgba(0,0,0,0)';
+  var readColors = function () { UP = tv('--up', '#f04452'); DOWN = tv('--down', '#3182f6'); NAVY = tv('--ink', '#2e4268'); INK_RGB = rgbOf(NAVY); };
+  readColors();
   var ICON_CT = ${JSON.stringify(ICONS)}, P = ${JSON.stringify(CHART_PRO_PARTS)}, FIELDS = ${JSON.stringify(IND_FIELDS)};
   var svg = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>'; };
   var PREF = 'gnm-chart-pro', pref = { ct: 'candle', scale: 0, hilo: true, magnet: false };
@@ -421,6 +425,8 @@ export const CHART_PRO_JS = `
     bar.querySelector('[data-hilo]').setAttribute('aria-pressed', String(pref.hilo));
     if (pref.ct !== 'candle') setType(pref.ct); if (pref.scale) setScale(pref.scale); if (pref.magnet) setMagnet(true);
     window.GNM_chartPro = { type: setType, scale: setScale, view: function () { return view; }, extremes: ext };
+    // After the candle colours are re-applied (GNMTheme.chart), rebuild the chosen chart type in the new colours.
+    window.addEventListener('gnm-theme', function () { setTimeout(function () { readColors(); orig = Object.assign({}, orig, { upColor: UP, downColor: DOWN, wickUpColor: UP, wickDownColor: DOWN }); if (pref.ct !== 'candle') setType(pref.ct); }, 0); });
   };
   // The free chart pages build GNMChart after their data arrives; try again until it exists.
   var tries = 0, poll = setInterval(function () { init(); if (G || ++tries > 60) clearInterval(poll); }, 500);

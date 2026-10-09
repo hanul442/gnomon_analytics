@@ -144,7 +144,7 @@ var resolve=function(t){return t==='auto'?(mq&&mq.matches?'light':'dark'):(t==='
 var saved=function(){try{return localStorage.getItem('gnm-theme')||'dark'}catch(e){return 'dark'}};
 var paint=function(on){d.setAttribute('data-theme',on);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',on==='dark'?'#0A1626':'#EEF3F8');};
 paint(resolve(saved()));
-var v=function(n){return getComputedStyle(d).getPropertyValue(n).trim();};
+var v=function(n,f){return getComputedStyle(d).getPropertyValue(n).trim()||f||'';};
 window.GNMTheme={v:v,set:function(t){try{localStorage.setItem('gnm-theme',t)}catch(e){}paint(resolve(t));window.dispatchEvent(new Event('gnm-theme'));},
 chart:function(chart,more){var ap=function(){var c={up:v('--up')||'#F04452',down:v('--down')||'#0582CA',muted:v('--muted')||'#6B7A8C',line:v('--line')||'rgba(127,127,127,.15)',strong:v('--line-strong')||'rgba(127,127,127,.3)',fg:v('--fg')||'#0A1626'};try{chart.applyOptions({layout:{textColor:c.muted,panes:{separatorColor:c.strong}},grid:{horzLines:{color:c.line}}});if(more)more(c);}catch(e){}};ap();window.addEventListener('gnm-theme',ap);return ap;}};
 if(mq&&mq.addEventListener)mq.addEventListener('change',function(){if(saved()!=='auto')return;paint(resolve('auto'));window.dispatchEvent(new Event('gnm-theme'));});})();</script>`;

@@ -238,8 +238,8 @@ window.addEventListener('DOMContentLoaded', function () {
   if (bars.length < 2) return;
   var marks = JSON.parse(document.getElementById('marks').textContent) || [];
   var ov = JSON.parse(document.getElementById('overlays').textContent) || {};
-  var TV = function (n, d) { var x = window.GNMTheme && GNMTheme.v(n); return x || d; }, DARK = document.documentElement.getAttribute('data-theme') === 'dark';
-  var UP = TV('--up', '#f04452'), DOWN = TV('--down', '#3182f6'), GOLD = TV('--ink', '#2e4268'), INK = GOLD;
+  // G-182: up/down follow the theme (re-read on a switch below); overlay ink is a mid slate-blue that reads on the light and the dark page alike.
+  var TH = window.GNMTheme, UP = TH ? TH.v('--up', '#f04452') : '#f04452', DOWN = TH ? TH.v('--down', '#3182f6') : '#3182f6', INK = '#6F86A8', GOLD = INK;
   var mobile = window.matchMedia('(max-width: 820px)').matches;
   var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
   var chart = L.createChart(el, {
