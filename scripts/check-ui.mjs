@@ -212,9 +212,14 @@ try{
  }
  // G-97: the 🔔 가격 알림 dialog on a stock page and the settings page.
  await page.setViewportSize({width:390,height:850});await page.goto(origin+'/stock.html?c=999999');await page.locator('#main[aria-busy]').waitFor({state:'detached'});
- await page.locator('.pa-btn').click();await page.locator('.pa-dialog[open]').waitFor();assert.ok(await page.locator('.pa-picks button').count()>=2);
+ await page.locator('.pa-btn').click();await page.locator('.pa-dialog[open]').waitFor();assert.ok(await page.locator('.pa-chips button').count()>=4);
+ // G-159: target price with − / + in ticks; the % gap and 이상/이하 follow the price; equal to now cannot be saved.
+ assert.equal(await page.locator('#pa-price').inputValue(),'184');assert.match(await page.locator('.pa-hint').innerText(),/\+5\.1%.*이상/);
+ await page.locator('.pa-chips button',{hasText:'-5%'}).click();assert.equal(await page.locator('#pa-price').inputValue(),'166');assert.match(await page.locator('.pa-hint').innerText(),/이하/);
+ await page.locator('.pa-target [data-step="1"]').click();assert.equal(await page.locator('#pa-price').inputValue(),'167');
+ await page.locator('#pa-price').fill('175');assert.equal(await page.locator('.pa-save').isDisabled(),true,'the price now cannot be an alert');await page.locator('#pa-price').fill('190');assert.match(await page.locator('.pa-save').innerText(),/190원 이상/);
  assert.equal(await page.locator('.pa-dialog').evaluate(d=>d.getBoundingClientRect().right<=innerWidth),true);await page.screenshot({path:'test-artifacts/price-alert.png'});
- await page.locator('.pa-picks button').first().click();await page.locator('.pa-msg').filter({hasText:'알려 드려요'}).waitFor();assert.equal(priceAlerts[0].symbol,'999999');
+ await page.locator('.pa-save').click();await page.locator('.pa-msg').filter({hasText:'알려 드려요'}).waitFor();assert.equal(priceAlerts[0].symbol,'999999');assert.equal(priceAlerts[0].op,'>=');assert.equal(priceAlerts[0].price,190);
  await page.goto(origin+'/alerts.html');await page.locator('#al-body').waitFor();await page.locator('#al-prices .al-item').first().waitFor();
  assert.equal(await page.locator('[data-pref=screen]').isChecked(),false);assert.equal(await page.locator('[data-screen="1"]').isChecked(),true);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/alerts.png',fullPage:true});
