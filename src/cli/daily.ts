@@ -33,7 +33,7 @@ import { deepPath, seal, unseal } from '../report/seal.js';
 import { AiBudget } from './aiBudget.js';
 import type Anthropic from '@anthropic-ai/sdk';
 import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderStockPage, type HomeEntry, type PageContext, APP_CSS, APP_JS, UI_JS, ASSET_VERSION } from '../report/renderHtml.js';
-import { renderHome, renderReportsPage, type IndexQuote } from '../report/renderHome.js';
+import { renderHome, renderReportsPage, type IndexQuote, type UsTemp } from '../report/renderHome.js';
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
 import { renderInbox, MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
@@ -331,9 +331,14 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     coinList = coins.rows;
   }
   // 3.0 US stocks (G-143): best effort, never fails the run.
+  let usTemp: UsTemp | null = null;
   if (options.usStocks !== false) {
     const us = await writeUsPages(join(root, 'site'), { now: () => now, ...fetchOpt });
     universe.status.push(us.status);
+    // G-179: the US market's temperature from the rows' own signals (level, score, 20-session move), for the home.
+    const calcs = us.rows.filter((r) => r[6] && r[6] !== 'WITHHELD').map((r) => ({ date: us.date, signal: { level: r[6], score: r[7] == null ? null : Number(r[7]) / 100 }, moves: [{ days: 20, pct: r[9] }] }));
+    const chg = (f: (v: number) => boolean) => us.rows.filter((r) => r[5] != null && f(Number(r[5]))).length;
+    if (us.rows.length) usTemp = { pulse: marketPulse(calcs as never), date: us.date, up: chg((v) => v > 0), down: chg((v) => v < 0), flat: chg((v) => v === 0) };
   }
   // Filing risk flags for every listed company (G-49), shown next to screener results.
   const risk = await collectRiskFilings({ root, apiKey: options.apiKey, today: today.date, now: () => now, ...fetchOpt });
@@ -391,7 +396,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     }
   }
   if (today.hour >= SETTLED_HOUR_KST) await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget);
-  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')) });
+  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
   await mkdir(join(root, 'data', 'status'), { recursive: true });
@@ -644,7 +649,7 @@ export async function configureSite(root: string): Promise<void> {
   SITE_CONFIG.apiUrl = process.env.GNM_API_URL ?? config.apiUrl ?? '';
 }
 
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[] } = {}): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[]; us?: UsTemp | null } = {}): Promise<void> {
   const siteDir = join(root, 'site');
   await configureSite(root);
   const home: HomeEntry[] = [];
@@ -759,7 +764,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const homeData = {
     marketReports,
     banners,
-    entries: home, universe, indices, pulse: extras.pulse ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
+    entries: home, universe, indices, pulse: extras.pulse ?? null, us: extras.us ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
     selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,
   };
   await writeFile(join(siteDir, 'index.html'), renderHome(homeData));
