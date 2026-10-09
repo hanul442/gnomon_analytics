@@ -123,7 +123,7 @@ export function selectWeekly(input: {
     if (!reasons.length) reasons.push('종합 점수 상위');
     return { cap: c.row.marketCap ?? 0, pick: { symbol: c.row.symbol, name: c.row.name, market: c.row.market, core: false, tier: null, score, parts, ret5: s.ret5, surge: s.surge, reasons } as Pick };
   }).sort((a, b) => b.pick.score! - a.pick.score! || (a.pick.symbol < b.pick.symbol ? -1 : 1));
-  const core: Pick[] = input.core.map((c) => ({ ...c, core: true, tier: 'deep', score: null, parts: null, ret5: null, surge: null, reasons: ['매주 리포트하는 대표 종목'] }));
+  const core: Pick[] = input.core.map((c) => ({ ...c, core: true, tier: 'deep', score: null, parts: null, ret5: null, surge: null, reasons: ['대표 종목'] }));
   // The largest companies join the core for the full committee, whatever their score.
   const big = [...ranked].sort((a, b) => b.cap - a.cap).slice(0, params.bigCaps).map((r) => ({ ...r.pick, tier: 'deep' as const, score: null, reasons: [`시가총액 상위 (${eok(r.cap)}원)`] }));
   const bigSet = new Set(big.map((p) => p.symbol));

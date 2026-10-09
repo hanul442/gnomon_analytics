@@ -107,7 +107,7 @@ const VIEW_LEAD: Record<View, string> = {
 /** How much each view would want this pick today, and the one line that says why (G-67). */
 function viewFit(e: HomeEntry): Record<View, { score: number; why: string }> {
   const r = e.report, p = r?.price, kind = e.kind ?? 'stock', deep = e.tier === 'deep' || e.group === 'core';
-  const base = e.reasons?.[0] ?? (e.group === 'core' ? '대표 종목 · 매주 위원회 리포트' : '이번 주 위원회 리포트');
+  const base = e.reasons?.[0] ?? (e.group === 'core' ? '대표 종목' : '이번 주 위원회 리포트');
   const move = Math.abs(p?.changePct ?? 0), vol = p?.volumeRatio20 ?? null;
   const c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
   const lv = r?.market?.structure?.levels ?? [];
