@@ -8,6 +8,7 @@ import { reportInput, inputHash, refundJob, reportFragments, type ReportQueue, t
 import type { DailyReport } from '../report/dailyReport.js';
 import type { Commentary } from '../analysis/commentary.js';
 import { renderDeep } from '../report/renderHtml.js';
+import { mailButton, mailLayout, mailList, sendMail as deliverMail } from './mail.js';
 import { withCurrency } from '../report/format.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
@@ -138,12 +139,10 @@ const monthlyGrant = (db: D1, u: User, now: Date) =>
 
 async function sendMail(env: Env, deps: Deps, to: string, link: string): Promise<void> {
   if (!env.RESEND_API_KEY) fail(503, 'MAIL_UNAVAILABLE', '메일 발송이 아직 설정되지 않았어요. 운영자에게 로그인 링크를 받아 주세요.');
-  const html = `<div style="font-family:sans-serif;max-width:480px"><h2>그노몬 로그인</h2><p>아래 버튼을 누르면 로그인돼요. 링크는 ${LOGIN_TTL_MIN}분 동안 한 번만 쓸 수 있어요.</p><p><a href="${link}" style="display:inline-block;background:#0f2244;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700">로그인</a></p><p style="color:#666;font-size:13px">요청하지 않았다면 이 메일을 무시해 주세요.</p></div>`;
-  const r = await deps.fetch('https://api.resend.com/emails', {
-    method: 'POST', headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: env.MAIL_FROM || 'GNOMON <onboarding@resend.dev>', to: [to], subject: '그노몬 로그인 링크', html, text: `그노몬 로그인 링크 (${LOGIN_TTL_MIN}분): ${link}` }),
-  });
-  if (!r.ok) fail(502, 'MAIL_FAILED', '메일을 보내지 못했어요. 잠시 뒤 다시 해 주세요.');
+  // G-180: the common frame (mail.ts); the row in mail_log says whether it went out.
+  const html = mailLayout(env.SITE_URL, '그노몬 로그인', `<p style="margin:0 0 16px;line-height:1.6">아래 버튼을 누르면 로그인돼요. 링크는 ${LOGIN_TTL_MIN}분 동안 한 번만 쓸 수 있어요.</p><p style="margin:0 0 16px">${mailButton(link, '로그인')}</p><p style="margin:0;color:#6b7684;font-size:13px">요청하지 않았다면 이 메일을 무시해 주세요.</p>`, { settings: false, preheader: '한 번만 쓸 수 있는 로그인 링크예요.' });
+  const ok = await deliverMail(env, env.DB, deps.fetch, deps.now(), { kind: 'login', to, subject: '그노몬 로그인 링크', html, text: `그노몬 로그인 링크 (${LOGIN_TTL_MIN}분): ${link}` });
+  if (!ok) fail(502, 'MAIL_FAILED', '메일을 보내지 못했어요. 잠시 뒤 다시 해 주세요.');
 }
 
 async function inviteOk(db: D1, code: string, now: Date): Promise<boolean> {
@@ -464,15 +463,16 @@ route('GET', '/me/ledger', async ({ req, env, now }) => {
 route('GET', '/me/export', async ({ req, env, now }) => {
   const u = await authed(req, env, now), db = env.DB;
   const all = (t: string) => db.prepare(`SELECT * FROM ${t} WHERE user_id = ?`).bind(u.id).all().then((r) => r.results);
+  const mailLog = await db.prepare('SELECT kind, subject, status, error, created_at FROM mail_log WHERE user_id = ? ORDER BY id').bind(u.id).all().then((r) => r.results);
   const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'custom_experts', 'price_alerts', 'notify_prefs', 'user_settings'].map(all));
-  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings };
+  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings, mailLog };
 });
 
 route('POST', '/me/delete', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   if (b.confirm !== '삭제') fail(400, 'CONFIRM', "확인 문구 '삭제'를 적어 주세요.");
   const db = env.DB;
-  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'custom_experts', 'push_subs', 'notify_prefs', 'price_alerts', 'user_settings', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
+  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'custom_experts', 'push_subs', 'notify_prefs', 'price_alerts', 'user_settings', 'mail_log', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
     db.prepare('DELETE FROM login_tokens WHERE email = ?').bind(u.email), db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)]);
   return { ok: true };
 });
@@ -878,12 +878,10 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
     await db.batch(stmts);
     if (fresh.length) await notifyUser({ db, fetch: deps.fetch, site: env.SITE_URL, now }, s.user_id, 'screen', { title: `'${s.name}' 조건에 새로 걸린 종목 ${fresh.length}개`, body: `${data.date} 장 마감 기준: ${fresh.slice(0, 8).map((row) => String(row[1])).join(', ')}${fresh.length > 8 ? ` 외 ${fresh.length - 8}개` : ''}`, link: 'screener.html' });
     if (fresh.length && env.RESEND_API_KEY) {
-      // Best effort: before our own mail domain is verified, only the account owner's address receives mail.
-      const lines = fresh.slice(0, 20).map((row) => `<li><b>${String(row[1]).replace(/[<>&]/g, '')}</b> ${String(row[0])}</li>`).join('');
-      await deps.fetch('https://api.resend.com/emails', {
-        method: 'POST', headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: env.MAIL_FROM || 'GNOMON <onboarding@resend.dev>', to: [s.email], subject: `[그노몬] '${s.name}' 새 종목 ${fresh.length}개`, html: `<p>${data.date} 장 마감 기준으로 새로 걸린 종목이에요.</p><ul>${lines}</ul><p><a href="${env.SITE_URL}/screener.html">스크리너에서 보기</a></p><p style="color:#666;font-size:12px">계산 결과이고 투자 권유가 아니에요.</p>` }),
-      }).catch(() => undefined);
+      // Best effort (G-180: one template, logged): before our own mail domain is verified, only the account owner's address receives mail.
+      const names = fresh.slice(0, 20).map((row) => `<b>${String(row[1]).replace(/[<>&]/g, '')}</b> <span style="color:#6b7684">${String(row[0])}</span>`);
+      const html = mailLayout(env.SITE_URL, `'${s.name}' 조건에 새로 걸린 종목 ${fresh.length}개`, `<p style="margin:0;line-height:1.6">${data.date} 장 마감 기준으로 새로 걸린 종목이에요.</p>${mailList(names)}${fresh.length > 20 ? `<p style="margin:8px 0 0;color:#6b7684">외 ${fresh.length - 20}개</p>` : ''}<p style="margin:16px 0 0">${mailButton(`${env.SITE_URL.replace(/\/$/, '')}/screener.html`, '스크리너에서 보기')}</p>`, { preheader: fresh.slice(0, 3).map((row) => String(row[1])).join(', ') });
+      await deliverMail(env, db, deps.fetch, now, { kind: 'screen', userId: s.user_id, to: s.email, subject: `[그노몬] '${s.name}' 새 종목 ${fresh.length}개`, html, text: `${data.date} 장 마감 기준 '${s.name}' 조건에 새로 걸린 종목: ${fresh.slice(0, 20).map((row) => `${String(row[1])} ${String(row[0])}`).join(', ')}` });
     }
   }
   return { date: data.date, screens: list.length, sent };

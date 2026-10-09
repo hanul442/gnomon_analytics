@@ -13,6 +13,7 @@ export function renderAlerts(): string {
     ['request', '요청한 리포트', '즉시 생성하거나 요청한 리포트가 완성되면(실패하면 그 이유도)'],
     ['update', '업데이트 소식', '큰 업데이트(x.Y.0)가 나오면 한 번 알려요. 밤 10시~아침 8시 사이 것은 아침에 보내요'],
     ['updatePatch', '작은 업데이트도 알림', '기본은 꺼져 있어요. 켜면 작은 수리(x.Y.Z)도 알려요'],
+    ['weekly', '주간 요약 메일', '일요일 저녁에 관심 종목·내 조건·이번 주 리포트를 메일로 모아 보내요'],
   ];
   const body = `<style>
 .al{max-width:760px;margin:16px auto 32px}.al .card{padding:18px;margin-bottom:12px}.al h1{font-size:23px;margin:2px 0 6px}.al h2{font-size:17px;margin:0 0 8px}.al p{line-height:1.6}
