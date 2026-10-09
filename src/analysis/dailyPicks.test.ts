@@ -26,6 +26,21 @@ test('daily picks: a weekday is two stocks and the ETF or the coin, every one a 
   assert.ok(wed.every((p) => p.tier === 'deep'));
 });
 
+test('daily picks: one US stock a weekday from the top by trading value, never an ETF, with its ticker and English name (G-179)', () => {
+  const us = [['AAPL.O', '애플', 'AAPL · NASDAQ · Apple Inc.', 0, 250, 1.1, 'BULLISH', 40, 1, 2, 3, 1, 9000, 2, 'I', -3], ['SPY', 'SPDR S&P500', 'SPY · AMEX ETF · SPDR S&P 500 ETF Trust', 0, 560, 0.3, 'NEUTRAL', 0, 0, 0, 0, 1, 30000, 0, 'I', -1], ['MRNA.O', '모더나', 'MRNA · NASDAQ · Moderna, Inc.', 0, 40, -2.5, 'BEARISH', 20, -1, -3, -8, 1, 500, 5, 'B', -40]];
+  const picks = chooseDailyPicks({ date: '2026-10-06', weekday: 2, stocks, etfs, coins, us, exclude: new Set() });
+  const pick = picks.find((p) => p.market === 'NASDAQ')!;
+  assert.ok(pick, 'a US pick');
+  assert.ok(['AAPL.O', 'MRNA.O'].includes(pick.symbol));
+  assert.deepEqual([pick.kind, pick.tier, pick.reason], ['stock', 'deep', '미국 거래대금 상위 후보에서 선정']);
+  assert.equal(pick.us?.ticker, pick.symbol.split('.')[0]);
+  assert.match(pick.us!.english, /Apple Inc\.|Moderna, Inc\./);
+  assert.equal(picks.filter((p) => ['NASDAQ', 'NYSE', 'AMEX'].includes(p.market)).length, 1);
+  // Excluded names and weekends draw none.
+  assert.ok(!chooseDailyPicks({ date: '2026-10-06', weekday: 2, stocks, etfs, coins, us, exclude: new Set(['AAPL.O', 'MRNA.O']) }).some((p) => p.market === 'NASDAQ'));
+  assert.ok(!chooseDailyPicks({ date: '2026-10-04', weekday: 6, stocks, etfs, coins, us, exclude: new Set() }).some((p) => p.market === 'NASDAQ'));
+});
+
 test('daily picks: the same date draws the same names; weekends are one deep coin; exclusions and risk hold', () => {
   const a = chooseDailyPicks({ date: '2026-10-06', weekday: 2, stocks, etfs, coins, exclude: new Set() });
   const b = chooseDailyPicks({ date: '2026-10-06', weekday: 2, stocks, etfs, coins, exclude: new Set() });

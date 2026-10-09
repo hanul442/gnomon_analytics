@@ -7,8 +7,10 @@ export interface Ticker {
   /** KRX code, e.g. 005930. */
   symbol: string;
   name: string;
-  /** Index the stock is compared against; UPBIT for coins (KRW-XXX symbols). */
-  market: 'KOSPI' | 'KOSDAQ' | 'UPBIT';
+  /** Index the stock is compared against; UPBIT for coins (KRW-XXX symbols); a US exchange for a US stock (G-179). */
+  market: 'KOSPI' | 'KOSDAQ' | 'UPBIT' | 'NASDAQ' | 'NYSE' | 'AMEX';
+  /** G-179: a US stock's ticker, English name and SEC CIK (from u/<code>.json), for EDGAR and English news. */
+  us?: { ticker: string; english: string; cik: number | null };
   /** ETFs and coins (G-56) are reported with the same pipeline; their prompts and sources differ. */
   kind?: 'etf' | 'coin';
   /** OpenDART corp_code (8 digits), not the stock code. */
@@ -27,8 +29,10 @@ const MARKET_NAME = { KOSPI: '코스피', KOSDAQ: '코스닥' } as const;
 export const BTC = { symbol: 'KRW-BTC', name: '비트코인' } as const;
 
 /** Index first, then the peer. A coin is compared against Bitcoin (Bitcoin against nothing). */
+export const isUsMarket = (m: Ticker['market']): m is 'NASDAQ' | 'NYSE' | 'AMEX' => m === 'NASDAQ' || m === 'NYSE' || m === 'AMEX';
+/** A US stock has no index bars here (G-179), so it compares against nothing. */
 export const benchmarksFor = (t: Ticker): { symbol: string; name: string }[] =>
-  t.market === 'UPBIT' ? (t.symbol === BTC.symbol ? [] : [{ ...BTC }]) : [{ symbol: t.market, name: MARKET_NAME[t.market] }, ...(t.peer ? [t.peer] : [])];
+  t.market === 'UPBIT' ? (t.symbol === BTC.symbol ? [] : [{ ...BTC }]) : isUsMarket(t.market) ? [] : [{ symbol: t.market, name: MARKET_NAME[t.market] }, ...(t.peer ? [t.peer] : [])];
 
 export const aliasPattern = (t: Pick<Ticker, 'newsAliases'>): RegExp => new RegExp(t.newsAliases.join('|'), 'i');
 

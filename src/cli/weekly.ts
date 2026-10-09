@@ -57,7 +57,8 @@ export async function runSelection(input: {
   const selection = selectWeekly({
     date: input.date, generatedAt: input.now, universe: input.universe.length,
     eligibleCount: input.universe.filter((r) => eligible(r, params)).length, params,
-    core: input.core.flatMap((t) => (t.market === 'UPBIT' ? [] : [{ symbol: t.symbol, name: t.name, market: t.market }])), candidates,
+    // Coins and US stocks (G-179) are not on the Korean weekly list.
+    core: input.core.flatMap((t) => (t.market === 'KOSPI' || t.market === 'KOSDAQ' ? [{ symbol: t.symbol, name: t.name, market: t.market }] : [])), candidates,
   });
   await mkdir(dir(input.root), { recursive: true });
   await writeFile(join(dir(input.root), `${input.date}.json`), `${JSON.stringify(selection, null, 1)}\n`, { flag: 'wx' });

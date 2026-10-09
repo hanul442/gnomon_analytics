@@ -7,9 +7,12 @@ import { PRESETS } from './screenRules.js';
 import { todaysSignals } from './signalLog.js';
 
 export type PickKind = 'stock' | 'etf' | 'coin';
-export interface DailyPick { date: string; symbol: string; name: string; kind: PickKind; market: 'KOSPI' | 'KOSDAQ' | 'UPBIT'; tier: 'deep'; reason: string }
+export interface DailyPick { date: string; symbol: string; name: string; kind: PickKind; market: 'KOSPI' | 'KOSDAQ' | 'UPBIT' | 'NASDAQ' | 'NYSE' | 'AMEX'; tier: 'deep'; reason: string; /** G-179: a US pick's ticker and English name (from the usstocks row). */ us?: { ticker: string; english: string } }
 
 export const DAILY_STOCKS = 2;
+/** G-179: one US stock a weekday, from the top of the US list by trading value (ETFs aside). */
+export const DAILY_US = 1;
+const US_POOL = 40;
 /** How far down each list the draw reaches. */
 const ETF_POOL = 20, COIN_POOL = 15;
 /** Screens left out of the stock draw: overheated and risky names are not what a reader is pointed to. */
@@ -45,6 +48,8 @@ function shuffle<T>(xs: readonly T[], rand: () => number): T[] {
 export function chooseDailyPicks(input: {
   date: string; weekday: number;
   stocks: readonly (readonly unknown[])[]; etfs: readonly (readonly unknown[])[]; coins: readonly (readonly unknown[])[];
+  /** usstocks.json rows: [code, 한글 이름, "TICKER · NASDAQ · English", …, value(백만 달러) at 12]. */
+  us?: readonly (readonly unknown[])[];
   exclude: ReadonlySet<string>;
 }): DailyPick[] {
   const rand = seeded(`gnm-daily:${input.date}`);
@@ -69,6 +74,13 @@ export function chooseDailyPicks(input: {
     const etf = shuffle(etfs, rand)[0];
     // The ETF on Monday, Wednesday and Friday; the coin on Tuesday and Thursday (and weekends).
     if (etf && input.weekday % 2) out.push({ date: input.date, symbol: String(etf[0]), name: String(etf[1]), kind: 'etf', market: 'KOSPI', tier: 'deep', reason: '거래대금 상위 ETF 후보에서 선정' });
+    // G-179: one US stock (not an ETF) from the top of the list by trading value; the desc column carries ticker · exchange · English name.
+    const usRows = (input.us ?? []).filter((r) => !input.exclude.has(String(r[0])) && Number(r[4]) > 0 && !/ ETF /.test(` ${String(r[2])} `)).sort((a, b) => Number(b[12] ?? 0) - Number(a[12] ?? 0)).slice(0, US_POOL);
+    for (const r of shuffle(usRows, rand).slice(0, DAILY_US)) {
+      const [ticker = String(r[0]).split('.')[0]!, exchange = 'NASDAQ', ...rest] = String(r[2]).split(' · ');
+      const market = exchange === 'NYSE' ? 'NYSE' as const : exchange === 'AMEX' ? 'AMEX' as const : 'NASDAQ' as const;
+      out.push({ date: input.date, symbol: String(r[0]), name: String(r[1]), kind: 'stock', market, tier: 'deep', reason: '미국 거래대금 상위 후보에서 선정', us: { ticker, english: rest.join(' · ') } });
+    }
   }
   const coins = input.coins.filter((r) => !STABLE.has(String(r[0]).replace('KRW-', '')) && !r[3] && Number(r[4]) >= 100 && !input.exclude.has(String(r[0]))).slice(0, COIN_POOL);
   const coin = shuffle(coins, rand)[0];
