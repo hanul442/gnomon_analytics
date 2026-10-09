@@ -305,6 +305,13 @@ try{
   assert.ok(loads>=1&&loads<=2,'reloads at most once, got '+loads);
   await p2.evaluate(()=>localStorage.setItem('gnm-ind','["rsi"]'));await p2.waitForFunction(()=>true);for(let i=0;i<20&&!sync.pushed.some(d=>d['gnm-ind']);i++)await p2.waitForTimeout(250);
   assert.ok(sync.pushed.some(d=>d['gnm-ind']==='["rsi"]'&&d['gnm-persona']==='trader'),'a change is sent with the rest');await fresh.close();}
+ // 3.1.4: live-quote polling stays quiet (it used to keep "불러오는 중이에요" on screen); a slow ordinary fetch still shows it.
+ await page.goto(origin+'/guide.html');await page.waitForLoadState('networkidle');
+ {const api=await page.evaluate(()=>(window.GNM&&window.GNM.api)||'');const slow=async(r)=>{await new Promise(f=>setTimeout(f,1200));await r.fulfill({body:'{}',contentType:'application/json'}).catch(()=>{});};await page.route(/\/(quote|slow-test)\b/,slow);
+  await page.evaluate((a)=>{fetch(a+'/quote?s=005930');},api);await page.waitForTimeout(700);assert.equal(await page.locator('.gnm-network').count(),0,'quote polling does not show the network badge');
+  await page.waitForTimeout(800);await page.evaluate((a)=>{fetch(a+'/slow-test');},api);await page.locator('.gnm-network').waitFor();await page.locator('.gnm-network').waitFor({state:'detached'});await page.unroute(/\/(quote|slow-test)\b/);}
+ // The AI tab opens with a one-line conclusion, not a second copy of the summary tab's scenarios.
+ await page.goto(origin+'/market-fixture.html');{const n=await page.locator('#tab-ai #conclusion').count();if(n){assert.equal(await page.locator('#tab-ai #conclusion .cl-row').count(),0,'AI tab conclusion is the short card');}}
  await page.goto(origin+'/guide.html');await page.waitForLoadState('networkidle');await page.evaluate(()=>{for(const [id,t] of [['orb1','PER 불러오는 중…'],['orb2','AI 요약을 준비하고 있어요.'],['orb3','불러오는 중이 아닌 아주 긴 일반 문장은 그대로 두어야 해요 정말로 그래요']]){const p=document.createElement('p');p.id=id;p.textContent=t;document.body.appendChild(p);}});await page.waitForTimeout(250);assert.equal(await page.locator('#orb1 canvas[data-orb=connecting]').count(),1);assert.equal(await page.locator('#orb2 canvas[data-orb=breathing]').count(),1);assert.equal(await page.locator('#orb3 canvas').count(),0);assert.equal(await page.locator('.brand img[src$="gnomon-mark.png"]').count(),1);
  assert.deepEqual(errors,[]);console.log('Browser checks passed: four widths, seven tabs, expert dialog, coin minute/day, volume flow, AI conditions, Thinking Orbs chat and loading lines, GNOMON brand, price alerts.');
 }catch(e){console.error('Page errors:',errors);if(browser){const page=browser.contexts()[0]?.pages().at(-1);await page?.screenshot({path:'test-artifacts/failure.png'});}throw e;}finally{await browser?.close();await new Promise(r=>server.close(r));}

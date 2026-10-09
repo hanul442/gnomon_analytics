@@ -40,9 +40,9 @@ export const LOADING_JS = THINKING_ORB_JS + `
  var orbQueued=false;new MutationObserver(function(){if(orbQueued)return;orbQueued=true;Promise.resolve().then(function(){orbQueued=false;orbLines();});}).observe(document.body,{childList:true,subtree:true,characterData:true});orbLines();
  window.GNM_loading={begin:begin,delay:delay,orb:orb,min:function(p){return Promise.resolve(p);}};
  var raw=window.fetch.bind(window),pending=new Set(),badgeTimer=null;
- var paint=function(){if(!pending.size||badge)return;badge=document.createElement('div');badge.className='gnm-network';badge.setAttribute('role','status');badge.innerHTML=orb('connecting',20)+'<span>불러오는 중이에요</span>';document.body.appendChild(badge);};
+ var paint=function(){if(!pending.size||badge)return;badge=document.createElement('div');badge.className='gnm-network';badge.setAttribute('role','status');badge.innerHTML=orb('connecting',20)+'<span>불러오는 중이에요</span>';document.body.appendChild(badge);var mine=badge;setTimeout(function(){if(badge===mine){badge.remove();}},12000);};
  window.fetch=function(input,init){
-  var url=String(typeof input==='string'?input:input.url||input), background=/\\/(events|quotes|watchinfo|notifications\\/read)(?:[?\/]|$)/.test(url)||(init&&init.keepalive);
+  var url=String(typeof input==='string'?input:input.url||input), background=/\\/(events|quotes?|deriv|ticks|watchinfo|notifications\\/read)(?:[?\/]|$)/.test(url)||/\\/reports\\/[^/?]+$/.test(url)&&!(init&&init.method&&init.method!=='GET')||(init&&init.keepalive);
   if(background)return raw(input,init);
   var token={};pending.add(token);if(!badgeTimer&&!badge)badgeTimer=setTimeout(function(){badgeTimer=null;paint();},300);
   return raw(input,Object.assign({signal:AbortSignal.timeout(120000)},init||{})).finally(function(){pending.delete(token);if(!pending.size){clearTimeout(badgeTimer);badgeTimer=null;if(badge){badge.remove();badge=null;}}});
