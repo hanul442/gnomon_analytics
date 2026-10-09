@@ -59,6 +59,15 @@ test('scenario cards distinguish assumptions and invalidation without inferring 
  const html=conclusionCard(report);assert.match(html,/성립 근거·촉매/);assert.match(html,/무효화 조건 · 가정 재검토/);assert.doesNotMatch(html,/가격 기준 미지정/);assert.match(html,/가격 자료가 아직 없어요/);assert.doesNotMatch(html,/이 가격 위로|이 가격 아래로|두 가격 사이|지지·저항을 테스트 가격/);
 });
 
+test('지금 판단 shows the committee odds as one bar, and none when there are no odds (G-165)',async()=>{
+ const {conclusionCard}=await import('./conclusion.js');
+ const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-10-06',generatedAt:new Date(),bars:Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000})),disclosures:[],sources:[]});
+ const sc=(kind:string,probability?:number)=>({kind,narrative:{text:kind},catalysts:[],invalidation:[],...(probability==null?{}:{probability})});
+ report.commentary={status:'OK',scenarios:[sc('BULL',35),sc('BASE',40),sc('BEAR',25)]} as any;
+ const html=conclusionCard(report);assert.match(html,/시나리오 확률/);assert.match(html,/강세 35%<\/span><span>기본 40%<\/span><span class="down">약세 25%/);assert.match(html,/sp-bull" style="flex:35"/);
+ report.commentary={status:'OK',scenarios:[sc('BULL'),sc('BASE'),sc('BEAR')]} as any;
+ assert.doesNotMatch(conclusionCard(report),/cl-odds|시나리오 확률/);
+});
 test('report failures preserve actionable categories without exposing provider details',async()=>{
  const {reportFailureMessage}=await import('../worker/reports.js');
  assert.match(reportFailureMessage('API_529:provider request details'),/AI_BUSY/);
