@@ -1,5 +1,5 @@
 {
- "at": "2026-10-09T09:52:26.022Z",
+ "at": "2026-10-09T10:05:46.891Z",
  "selected": null,
  "universe": [
   {
@@ -35,18 +35,14 @@
   },
   {
    "source": "opendart:risk-filings",
-   "ok": true,
-   "count": 408
+   "ok": false,
+   "count": 218,
+   "error": "fetch failed"
   }
  ],
  "stocks": [
   {
    "symbol": "000660",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "005930",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -62,6 +58,11 @@
   },
   {
    "symbol": "373220",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "066570",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -96,12 +97,12 @@
    "failedSources": []
   },
   {
-   "symbol": "006400",
+   "symbol": "032830",
    "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "036930",
+   "symbol": "006400",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -111,12 +112,27 @@
    "failedSources": []
   },
   {
+   "symbol": "042660",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "012450",
    "report": "EXISTS",
    "failedSources": []
   },
   {
+   "symbol": "096770",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
    "symbol": "316140",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "062040",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -156,27 +172,12 @@
    "failedSources": []
   },
   {
-   "symbol": "082740",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "058470",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
    "symbol": "028260",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "055550",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "012330",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -188,11 +189,6 @@
   {
    "symbol": "051910",
    "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "105560",
-   "report": "SKIPPED",
    "failedSources": []
   },
   {
@@ -288,23 +284,27 @@
  ],
  "failed": [
   {
-   "symbol": "066570",
+   "symbol": "005930",
    "error": "fetch failed"
   },
   {
-   "symbol": "032830",
+   "symbol": "036930",
    "error": "fetch failed"
   },
   {
-   "symbol": "042660",
+   "symbol": "082740",
    "error": "fetch failed"
   },
   {
-   "symbol": "096770",
+   "symbol": "058470",
    "error": "fetch failed"
   },
   {
-   "symbol": "062040",
+   "symbol": "012330",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "105560",
    "error": "fetch failed"
   }
  ]
