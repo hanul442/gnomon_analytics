@@ -55,6 +55,9 @@ test('big amounts and finance units follow the currency', () => {
   assert.equal(withCurrency('USD', () => bigMoney(12_300_000_000)), '$12.3B');
   assert.equal(withCurrency('USD', () => bigMoney(-120_000_000)), '-$120M');
   assert.equal(withCurrency('USD', () => bigMoney(3.4e12)), '$3.4T');
+  assert.equal(withCurrency('USD', () => bigMoney(999.95e9)), '$1.0T');
+  assert.equal(withCurrency('USD', () => bigMoney(99.96e9)), '$100B');
+  assert.equal(withCurrency('USD', () => bigMoney(999_600)), '$1.0M');
   assert.equal(bigMoney(1.23e12), '1.2조원');
   assert.equal(bigMoney(3.5e8), '4억원');
   assert.deepEqual([financeUnit(), withCurrency('USD', financeUnit)], ['억원', '백만 달러']);
@@ -72,6 +75,9 @@ test('English news query: the plain company name or the ticker, searched in Engl
   assert.equal(usNewsQuery('MRNA', 'Moderna, Inc.'), '"Moderna" OR "MRNA stock"');
   assert.equal(usNewsQuery('AAPL', 'Apple Inc.'), '"Apple" OR "AAPL stock"');
   assert.equal(usNewsQuery('SPY', ''), '"SPY stock"');
+  assert.equal(usNewsQuery('GOOGL', 'Alphabet Inc. Class A'), '"Alphabet" OR "GOOGL stock"');
+  assert.equal(usNewsQuery('TSM', 'Taiwan Semiconductor Manufacturing Co., Ltd. (ADR)'), '"Taiwan Semiconductor Manufacturing" OR "TSM stock"');
+  assert.equal(usNewsQuery('KO', 'The Coca-Cola Company'), '"Coca-Cola" OR "KO stock"');
   assert.match(usNewsSearchUrl('x'), /hl=en-US&gl=US&ceid=US%3Aen/);
 });
 

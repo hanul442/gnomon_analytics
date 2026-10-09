@@ -2,7 +2,7 @@
 // moves, supply contracts and trading-value surges, gathered per stock and across the market. Pure.
 
 import type { FinancePeriod, PriceBar } from '../types.js';
-import { bigMoney, currency, won } from '../report/format.js';
+import { bigMoney, won } from '../report/format.js';
 
 export type EventKey = 'earnings' | 'dividend' | 'buyback' | 'buybackSell' | 'insider' | 'holder' | 'contract' | 'ir';
 export interface EventRule { key: EventKey; label: string; pattern: RegExp; why: string }
@@ -50,7 +50,7 @@ export interface EdgeSection {
 const DAY = 86_400_000;
 const daysBefore = (date: string, n: number) => new Date(Date.parse(`${date}T00:00:00Z`) - n * DAY).toISOString().slice(0, 10);
 const fmtShares = (n: number) => `${Math.abs(n) >= 10_000 ? `${(Math.abs(n) / 10_000).toFixed(Math.abs(n) >= 100_000 ? 0 : 1)}만` : Math.abs(n).toLocaleString('ko-KR')}주`;
-const fmtWon = (n: number) => (currency() === 'USD' ? bigMoney(n) : Math.abs(n) >= 1e8 ? `${(n / 1e8).toFixed(Math.abs(n) >= 1e10 ? 0 : 1)}억원` : `${Math.round(n).toLocaleString('ko-KR')}원`);
+const fmtWon = (n: number) => bigMoney(n);
 
 /** Insider moves of the last `days`: buys and sells by report, net shares and roughly what that is worth at `close`. */
 export function insiderSummary(reports: readonly InsiderReport[], date: string, close: number | null, days = 90): InsiderSummary | null {

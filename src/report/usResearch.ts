@@ -29,10 +29,16 @@ export const emptyUsResearch = (): UsResearch => ({ cik: null, disclosures: [], 
 export async function gatherUsResearch(input: { symbol: string; ticker: string; nameEng: string; cik?: number | null; fetch?: typeof fetch; now?: () => Date; contact?: string }): Promise<UsResearch> {
   const now = input.now ?? (() => new Date()), out = emptyUsResearch();
   const opts = { ...(input.fetch ? { fetch: input.fetch } : {}), now };
-  const edgar = await fetchEdgar({ symbol: input.symbol, ticker: input.ticker, cik: input.cik ?? null, ...opts, ...(input.contact ? { contact: input.contact } : {}) });
-  out.cik = edgar.cik; out.disclosures = edgar.disclosures; out.finance = edgar.finance; out.insider = edgar.insider; out.status.push(...edgar.status);
-  try { out.snapshot = await fetchWorldBasic(input.symbol, opts); out.status.push({ source: NAVER_WORLD_BASIC_SOURCE, ok: !!out.snapshot, count: out.snapshot ? 1 : 0 }); } catch (e) { out.status.push({ source: NAVER_WORLD_BASIC_SOURCE, ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }); }
-  try { out.news = await fetchUsNews(input.ticker, input.nameEng, opts); out.status.push({ source: US_NEWS_SOURCE, ok: true, count: out.news.length }); } catch (e) { out.status.push({ source: US_NEWS_SOURCE, ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }); }
+  // The three sources are independent: EDGAR (serial inside, for SEC's rate limit), Naver and Google run side by side.
+  const [edgar, snapshot, news] = await Promise.allSettled([
+    fetchEdgar({ symbol: input.symbol, ticker: input.ticker, cik: input.cik ?? null, ...opts, ...(input.contact ? { contact: input.contact } : {}) }),
+    fetchWorldBasic(input.symbol, opts),
+    fetchUsNews(input.ticker, input.nameEng, opts),
+  ]);
+  const failed = (source: string, e: unknown) => ({ source, ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' });
+  if (edgar.status === 'fulfilled') { out.cik = edgar.value.cik; out.disclosures = edgar.value.disclosures; out.finance = edgar.value.finance; out.insider = edgar.value.insider; out.status.push(...edgar.value.status); } else out.status.push(failed('sec:edgar', edgar.reason));
+  if (snapshot.status === 'fulfilled') { out.snapshot = snapshot.value; out.status.push({ source: NAVER_WORLD_BASIC_SOURCE, ok: !!out.snapshot, count: out.snapshot ? 1 : 0 }); } else out.status.push(failed(NAVER_WORLD_BASIC_SOURCE, snapshot.reason));
+  if (news.status === 'fulfilled') { out.news = news.value; out.status.push({ source: US_NEWS_SOURCE, ok: true, count: out.news.length }); } else out.status.push(failed(US_NEWS_SOURCE, news.reason));
   return out;
 }
 

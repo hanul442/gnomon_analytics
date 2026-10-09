@@ -12,7 +12,7 @@ import { conclusionCard } from '../report/conclusion.js';
 import { committeeTab, newsTabBody } from '../report/renderHtml.js';
 import { decisionTrace } from '../report/renderReportExtras.js';
 import { flowsPanel, fundamentalsPanel } from '../report/renderMarket.js';
-import { edgeFlows } from '../report/renderEdge.js';
+import { insiderSection } from '../report/renderEdge.js';
 import { esc } from '../report/html.js';
 import { withCurrency } from '../report/format.js';
 import { isUsSymbol } from '../report/seal.js';
@@ -124,6 +124,6 @@ function fragmentsOf(report:DailyReport,base:string){
  const news=newsTabBody(report);
  const frags:Record<string,string>={chart:aiSummaryCard(c.summary?.text??'','차트 AI 요약',report.date),scenarios:JSON.stringify(scenarioLayer(report)),home:aiSummaryCard(c.summary?.text??'','AI 요약',report.date)+conclusionCard(report,{id:'conclusion-live'}),ai:committeeTab(report,{base,from:null})+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
  // G-179: a US stock has no investor flows; its Form 4 trades and trading value ride the 기업 체력 panel.
- if(report.currency==='USD'){frags.fundamentals=(frags.fundamentals??'')+edgeFlows(report);delete frags.flows;}
+ if(report.currency==='USD'){frags.fundamentals=(frags.fundamentals??'')+insiderSection(report);delete frags.flows;}
  return frags;
 }

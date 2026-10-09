@@ -81,9 +81,8 @@ export function parseSubmissions(body: unknown, input: { symbol: string; cik: nu
   for (let i = 0; i < r.form.length; i += 1) {
     const form = col('form', i), date = col('filingDate', i), acc = col('accessionNumber', i), doc = col('primaryDocument', i);
     if (!FORMS.has(form) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !acc) continue;
-    if (form === '4' || form === '4/A') {
-      if (date >= (input.form4Since ?? input.since) && doc) form4.push({ accession: acc, date, doc: doc.replace(/^xsl[^/]*\//, '') });
-    }
+    // A 4/A restates a Form 4 already counted; opening both would count the trade twice, so only originals are read.
+    if (form === '4' && date >= (input.form4Since ?? input.since) && doc) form4.push({ accession: acc, date, doc: doc.replace(/^xsl[^/]*\//, '') });
     if (date < input.since) continue;
     disclosures.push({ receiptNo: acc, corpName: name, stockCode: input.symbol, title: edgarTitle(form, col('items', i)), filer: name, filedDate: date, remark: form, url: archiveUrl(input.cik, acc, doc), source: EDGAR_SOURCE, retrievedAt: at });
   }
@@ -138,10 +137,9 @@ export function parseCompanyFacts(body: unknown, symbol: string, retrievedAt: Da
     return p;
   };
   for (const [metric, tags, kind] of METRICS) {
-    const tag = tags.find((t) => gaap[t]?.units);
-    if (!tag) continue;
-    const units = gaap[tag]!.units!;
-    const facts = (kind === 'perShare' ? units['USD/shares'] : units['USD']) ?? [];
+    // A filer may tag the same line differently over the years (Revenues, then RevenueFromContract…): read them all.
+    const facts = tags.flatMap((t) => (kind === 'perShare' ? gaap[t]?.units?.['USD/shares'] : gaap[t]?.units?.['USD']) ?? []);
+    if (!facts.length) continue;
     const scale = kind === 'perShare' ? 1 : MILLION;
     // Newest filing wins when the same period was restated.
     const sorted = [...facts].filter((f) => Number.isFinite(f.val) && /^\d{4}-\d{2}-\d{2}$/.test(f.end)).sort((a, b) => ((a.filed ?? '') < (b.filed ?? '') ? -1 : 1));
@@ -166,12 +164,13 @@ export function parseCompanyFacts(body: unknown, symbol: string, retrievedAt: Da
     }
   }
   for (const p of periods.values()) {
-    const m = p.metrics, rev = m['매출액'], op = m['영업이익'], net = m['당기순이익'], debt = m['부채총계'], eq = m['자본총계'];
+    const m = p.metrics, rev = m['매출액'], op = m['영업이익'], net = m['당기순이익'], debt = m['부채총계'];
+    if (m['자본총계'] == null && m['자산총계'] != null && debt != null) m['자본총계'] = m['자산총계']! - debt;
+    const eq = m['자본총계'];
     if (rev && op != null) m['영업이익률'] = (op / rev) * 100;
     if (rev && net != null) m['순이익률'] = (net / rev) * 100;
     if (eq && debt != null) m['부채비율'] = (debt / eq) * 100;
     if (p.periodType === 'ANNUAL' && eq && net != null) m['ROE'] = (net / eq) * 100;
-    if (eq == null && m['자산총계'] != null && debt != null) m['자본총계'] = m['자산총계']! - debt;
   }
   // Only periods with an income line or a balance sheet; the last eight quarters and five years.
   // Only periods with an income line: a balance sheet alone (a Q4 instant, a stray year-end) is not a period to show.
@@ -211,12 +210,12 @@ export function parseForm4(xml: string, input: { symbol: string; receiptNo: stri
   const reporter = xmlValue(first, 'rptOwnerName') ?? '보고자', title = xmlValue(first, 'officerTitle') ?? '';
   const isOfficer = flag(first, 'isOfficer'), isDirector = flag(first, 'isDirector'), isMajor = flag(first, 'isTenPercentOwner');
   const position = title || (isDirector ? '이사' : isMajor ? '10% 이상 주주' : isOfficer ? '임원' : '관계인');
-  let delta = 0, shares: number | null = null, last = '', traded = false;
+  let delta = 0, shares: number | null = null, last = '', traded = false, sharesAt = '';
   for (const m of xml.matchAll(/<nonDerivativeTransaction>([\s\S]*?)<\/nonDerivativeTransaction>/gi)) {
     const t = m[1]!, code = (xmlValue(t, 'transactionCode') ?? '').toUpperCase();
     const n = Number(xmlValue(t, 'transactionShares')), ad = (xmlValue(t, 'transactionAcquiredDisposedCode') ?? '').toUpperCase();
     const after = Number(xmlValue(t, 'sharesOwnedFollowingTransaction')), date = xmlValue(t, 'transactionDate') ?? '';
-    if (Number.isFinite(after)) shares = after;
+    if (Number.isFinite(after) && date >= sharesAt) { shares = after; sharesAt = date; }
     if (date > last) last = date;
     if (code !== 'P' && code !== 'S') continue;
     if (!Number.isFinite(n) || n <= 0) continue;

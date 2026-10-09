@@ -7,7 +7,7 @@ import { dartViewerUrl } from '../sources/opendart.js';
 import { esc } from './html.js';
 import { won, bigMoney, currency } from './format.js';
 
-const eok = (v: number) => (currency() === 'USD' ? bigMoney(v) : Math.abs(v) >= 1e8 ? `${(v / 1e8).toLocaleString('ko-KR', { maximumFractionDigits: Math.abs(v) >= 1e10 ? 0 : 1 })}억원` : won(v));
+const eok = (v: number) => bigMoney(v);
 const shares = (n: number) => `${n > 0 ? '+' : ''}${n.toLocaleString('ko-KR')}주`;
 const qLabel = (p: string) => `${p.slice(0, 4)}년 ${Number(p.slice(4)) / 3}분기`;
 const ICON: Record<string, string> = { insider: '👤', surprise: '📊', buyback: '🔁', buybackSell: '📤', holder: '🏦', contract: '📝', value: '🔊', dividend: '💰', earnings: '📊', ir: '🎤' };
@@ -34,6 +34,12 @@ export function edgeFlows(report: DailyReport): string {
   const value = v ? `<div class="card edge-value"><div class="head"><h2>거래대금</h2><span class="sub">종가×거래량 추정</span></div><p class="edge-sum">오늘 <b>${eok(v.today)}</b> · 20일 평균 ${eok(v.avg20)} · <b class="${v.ratio >= 2.5 ? 'up' : ''}">평소의 ${v.ratio.toFixed(1)}배</b></p></div>` : '';
   if (!insider && !holders && !value) return '';
   return `<section class="block edge-sec"><div class="block-head"><h2>내부자·대량보유·거래대금</h2></div><div class="edge-grid">${insider}${holders}${value}</div></section>`;
+}
+
+/** G-179: a US stock has no investor flows; its Form 4 trades and trading value take the 수급 slot, on a covered page and a page filled on request alike. */
+export function insiderSection(report: DailyReport): string {
+  const body = edgeFlows(report);
+  return body ? `<section class="sub-sec" id="tab-flows"><h2 class="sub-h">내부자 거래</h2>${body}</section>` : '';
 }
 
 /** 실적: surprises against the estimate stored before the release, dividends and when the next quarter comes. */

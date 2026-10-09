@@ -14,6 +14,7 @@ import { publicPanels } from '../report/publicPanels.js';
 import { collectRiskFilings } from './riskCollect.js';
 import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
 import { writeUsPages } from './usStocks.js';
+import type { SignalLevel } from '../analysis/technicals.js';
 import { fetchWorldBars } from '../sources/naverWorld.js';
 import { gatherUsResearch } from '../report/usResearch.js';
 import { US_NEWS_SOURCE, usNewsName } from '../sources/usNews.js';
@@ -342,9 +343,9 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     universe.status.push(us.status);
     usRows = us.rows;
     // G-179: the US market's temperature from the rows' own signals (level, score, 20-session move), for the home.
-    const calcs = us.rows.filter((r) => r[6] && r[6] !== 'WITHHELD').map((r) => ({ date: us.date, signal: { level: r[6], score: r[7] == null ? null : Number(r[7]) / 100 }, moves: [{ days: 20, pct: r[9] }] }));
+    const calcs: Pick<StockCalc, 'date' | 'signal' | 'moves'>[] = us.rows.filter((r) => r[6] && r[6] !== 'WITHHELD').map((r) => ({ date: us.date, signal: { label: '', level: String(r[6]) as SignalLevel, score: r[7] == null ? null : Number(r[7]) / 100, bull: 0, neutral: 0, bear: 0, abstain: 0 }, moves: [{ label: '20일', days: 20, pct: r[9] == null ? null : Number(r[9]) }] }));
     const chg = (f: (v: number) => boolean) => us.rows.filter((r) => r[5] != null && f(Number(r[5]))).length;
-    if (us.rows.length) usTemp = { pulse: marketPulse(calcs as never), date: us.date, up: chg((v) => v > 0), down: chg((v) => v < 0), flat: chg((v) => v === 0) };
+    if (us.rows.length) usTemp = { pulse: marketPulse(calcs), date: us.date, up: chg((v) => v > 0), down: chg((v) => v < 0), flat: chg((v) => v === 0) };
   }
   // Filing risk flags for every listed company (G-49), shown next to screener results.
   const risk = await collectRiskFilings({ root, apiKey: options.apiKey, today: today.date, now: () => now, ...fetchOpt });

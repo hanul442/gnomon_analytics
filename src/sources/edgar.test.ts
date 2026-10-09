@@ -9,16 +9,18 @@ const TICKERS = { '0': { cik_str: 320193, ticker: 'AAPL', title: 'Apple Inc.' },
 const SUBMISSIONS = {
   cik: '1682852', name: 'Moderna, Inc.', tickers: ['MRNA'],
   filings: { recent: {
-    accessionNumber: ['0001682852-26-000041', '0001682852-26-000040', '0001682852-26-000039', '0001682852-26-000030', '0001682852-26-000012', '0001682852-25-000090'],
-    filingDate: ['2026-10-02', '2026-09-29', '2026-09-29', '2026-08-01', '2026-05-01', '2025-03-01'],
-    form: ['4', '8-K', '3', '10-Q', '8-K', '10-K'],
-    primaryDocument: ['xslF345X05/wk-form4_1759.xml', 'mrna-20260929.htm', 'xslF345X05/form3.xml', 'mrna-20260630.htm', 'mrna-20260501.htm', 'mrna-20251231.htm'],
-    primaryDocDescription: ['FORM 4', '8-K', 'FORM 3', '10-Q', '8-K', '10-K'],
-    items: ['', '5.02,9.01', '', '', '2.02,9.01', ''],
+    accessionNumber: ['0001682852-26-000042', '0001682852-26-000041', '0001682852-26-000040', '0001682852-26-000039', '0001682852-26-000030', '0001682852-26-000012', '0001682852-25-000090'],
+    filingDate: ['2026-10-03', '2026-10-02', '2026-09-29', '2026-09-29', '2026-08-01', '2026-05-01', '2025-03-01'],
+    form: ['4/A', '4', '8-K', '3', '10-Q', '8-K', '10-K'],
+    primaryDocument: ['xslF345X05/wk-form4a.xml', 'xslF345X05/wk-form4_1759.xml', 'mrna-20260929.htm', 'xslF345X05/form3.xml', 'mrna-20260630.htm', 'mrna-20260501.htm', 'mrna-20251231.htm'],
+    primaryDocDescription: ['FORM 4/A', 'FORM 4', '8-K', 'FORM 3', '10-Q', '8-K', '10-K'],
+    items: ['', '', '5.02,9.01', '', '', '2.02,9.01', ''],
   } },
 };
 const fact = (end: string, val: number, extra: Record<string, unknown> = {}) => ({ end, val, accn: 'x', fy: 2026, fp: 'Q2', form: '10-Q', filed: '2026-08-01', ...extra });
 const FACTS = { cik: 1682852, entityName: 'Moderna, Inc.', facts: { 'us-gaap': {
+  // The old tag holds an earlier year; the new tag the recent periods: both are read (merged per period).
+  SalesRevenueNet: { units: { USD: [fact('2024-12-31', 2500e6, { start: '2024-01-01', frame: 'CY2024', fp: 'FY', form: '10-K', filed: '2025-02-20' })] } },
   Revenues: { units: { USD: [
     fact('2026-03-31', 108e6, { start: '2026-01-01', frame: 'CY2026Q1', fp: 'Q1' }), fact('2026-06-30', 142e6, { start: '2026-04-01', frame: 'CY2026Q2' }),
     fact('2025-12-31', 3236e6, { start: '2025-01-01', frame: 'CY2025', fp: 'FY', form: '10-K', filed: '2026-02-20' }),
@@ -58,10 +60,10 @@ test('CIK lookup: by ticker (class shares with a dot or a dash), padded to ten d
 test('submissions: only the forms worth a line, Korean titles the classifier reads, Form 4s listed to open', () => {
   const r = parseSubmissions(SUBMISSIONS, { symbol: 'MRNA.O', cik: 1682852, retrievedAt: AT, since: '2026-04-11', form4Since: '2026-07-10' });
   assert.equal(r.name, 'Moderna, Inc.');
-  assert.deepEqual(r.disclosures.map((d) => d.title), ['임원·주요주주 거래 보고 (Form 4)', '임원 변동 (8-K 5.02, 9.01)', '분기보고서 (10-Q)', '실적 발표 (8-K 2.02, 9.01)']);
-  assert.equal(r.disclosures[1]!.url, 'https://www.sec.gov/Archives/edgar/data/1682852/000168285226000040/mrna-20260929.htm');
-  assert.equal(r.disclosures[1]!.remark, '8-K');
-  // The raw XML, not the XSL-rendered page.
+  assert.deepEqual(r.disclosures.map((d) => d.title), ['[정정] 임원·주요주주 거래 보고 (Form 4/A)', '임원·주요주주 거래 보고 (Form 4)', '임원 변동 (8-K 5.02, 9.01)', '분기보고서 (10-Q)', '실적 발표 (8-K 2.02, 9.01)']);
+  assert.equal(r.disclosures[2]!.url, 'https://www.sec.gov/Archives/edgar/data/1682852/000168285226000040/mrna-20260929.htm');
+  assert.equal(r.disclosures[2]!.remark, '8-K');
+  // The raw XML, not the XSL-rendered page; the 4/A restates the original and is not opened again.
   assert.deepEqual(r.form4, [{ accession: '0001682852-26-000041', date: '2026-10-02', doc: 'wk-form4_1759.xml' }]);
   assert.throws(() => parseSubmissions({}, { symbol: 'X', cik: 1, retrievedAt: AT, since: '2026-01-01' }), /EDGAR_UNEXPECTED/);
   // classify.ts: the form decides the kind and weight.
@@ -87,12 +89,13 @@ test('company facts: calendar frames become quarters and years in 백만 달러,
   assert.equal(q[1]!.metrics['자산총계'], 12000);
   assert.equal(Math.round(q[1]!.metrics['부채비율']!), 33);
   assert.equal(Math.round(q[1]!.metrics['영업이익률']!), -839);
-  assert.deepEqual(y.map((p) => p.period), ['202512', '202609']);
-  assert.equal(y[0]!.metrics['매출액'], 3236);
-  assert.equal(y[0]!.metrics['자본총계'], 9750);
-  assert.equal(Math.round(y[0]!.metrics['ROE']!), -37);
-  assert.equal(y[1]!.metrics['매출액'], 4000);
-  assert.equal(y[1]!.metrics['주당배당금'], 1);
+  assert.deepEqual(y.map((p) => p.period), ['202412', '202512', '202609']);
+  assert.equal(y[0]!.metrics['매출액'], 2500);
+  assert.equal(y[1]!.metrics['매출액'], 3236);
+  assert.equal(y[1]!.metrics['자본총계'], 9750);
+  assert.equal(Math.round(y[1]!.metrics['ROE']!), -37);
+  assert.equal(y[2]!.metrics['매출액'], 4000);
+  assert.equal(y[2]!.metrics['주당배당금'], 1);
   assert.ok(f.every((p) => !p.isEstimate && p.source === 'sec:edgar:xbrl'));
   assert.throws(() => parseCompanyFacts({ facts: {} }, 'X', AT), /EDGAR_FACTS_UNEXPECTED/);
 });
@@ -101,6 +104,9 @@ test('Form 4: open-market buys and sells summed per filing, exercises and grants
   const r = parseForm4(FORM4, { symbol: 'MRNA.O', receiptNo: '0001682852-26-000041', filedDate: '2026-10-02', retrievedAt: AT });
   assert.equal(r.length, 1);
   assert.deepEqual([r[0]!.reporter, r[0]!.position, r[0]!.isExec, r[0]!.isMajor, r[0]!.delta, r[0]!.shares, r[0]!.date], ['Bancel Stephane', 'Chief Executive Officer', true, false, -180000, 4160000, '2026-09-30']);
+  const blocks = [...FORM4.matchAll(/<nonDerivativeTransaction>[\s\S]*?<\/nonDerivativeTransaction>/g)].map((m) => m[0]);
+  const shuffled = FORM4.replace(/<nonDerivativeTable>[\s\S]*<\/nonDerivativeTable>/, `<nonDerivativeTable>${[blocks[1], blocks[2], blocks[0]].join('')}</nonDerivativeTable>`);
+  assert.equal(parseForm4(shuffled, { symbol: 'MRNA.O', receiptNo: 'x', filedDate: '2026-10-02', retrievedAt: AT })[0]!.shares, 4160000);
   // A filing with only a grant is not a trade.
   assert.deepEqual(parseForm4(FORM4.replace(/<transactionCode>[SP]<\/transactionCode>/g, '<transactionCode>A</transactionCode>'), { symbol: 'MRNA.O', receiptNo: 'x', filedDate: '2026-10-02', retrievedAt: AT }), []);
   assert.throws(() => parseForm4('<html></html>', { symbol: 'X', receiptNo: 'x', filedDate: '2026-10-02', retrievedAt: AT }), /EDGAR_FORM4_UNEXPECTED/);
@@ -118,7 +124,7 @@ test('fetchEdgar: the CIK map is skipped when the CIK is known, every part is be
   }) as unknown as typeof fetch;
   const r = await fetchEdgar({ symbol: 'MRNA.O', ticker: 'MRNA', cik: 1682852, fetch: fake, now: () => AT, contact: 'ops@example.com' });
   assert.ok(!seen.includes(tickersUrl));
-  assert.deepEqual([r.cik, r.name, r.disclosures.length, r.finance.length, r.insider.length], [1682852, 'Moderna, Inc.', 4, 0, 1]);
+  assert.deepEqual([r.cik, r.name, r.disclosures.length, r.finance.length, r.insider.length], [1682852, 'Moderna, Inc.', 5, 0, 1]);
   assert.equal(r.insider[0]!.url, 'https://www.sec.gov/Archives/edgar/data/1682852/000168285226000041/');
   assert.deepEqual(r.status.map((s) => [s.source, s.ok]), [['sec:edgar', true], ['sec:edgar:xbrl', false], ['sec:edgar:form4', true]]);
   assert.deepEqual([...agents], ['GNOMON research bot (https://github.com/hanul442/gnomon_analytics; ops@example.com)']);

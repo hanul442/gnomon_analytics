@@ -9,7 +9,10 @@ export const US_NEWS_SOURCE = 'google:news-rss-en';
 
 /** "Moderna, Inc." → "Moderna", "The Coca-Cola Company" → "Coca-Cola": the name people write in a headline. */
 export function usNewsName(nameEng: string): string {
-  return nameEng.replace(/^the\s+/i, '').replace(/,?\s+(Inc|Corp|Corporation|Co|Ltd|PLC|Holdings|Group|Company|SA|NV|AG)\.?(\s|$)/gi, ' ').replace(/[.,]+$/, '').replace(/\s+/g, ' ').trim();
+  let name = nameEng.replace(/^the\s+/i, '').replace(/\s*\(?(ADR|ADS)\)?\s*$/i, '').replace(/\s+(Class [A-C]|Ordinary Shares|Common Stock|Depositary Shares)\s*$/i, '');
+  // "Co., Ltd." is two suffixes: peel them one at a time.
+  for (let i = 0; i < 3; i += 1) name = name.replace(/,?\s+(Inc|Corp|Corporation|Co|Ltd|PLC|Holdings|Group|Company|SA|NV|AG)[.,]*\s*$/i, '');
+  return name.replace(/[.,]+$/, '').replace(/\s+/g, ' ').trim();
 }
 /** The query pairs the plain name with the ticker so index notes do not drown it. */
 export function usNewsQuery(ticker: string, nameEng: string): string {
