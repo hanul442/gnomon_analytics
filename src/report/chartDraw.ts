@@ -35,15 +35,15 @@ export const DRAW_GROUPS: { key: string; label: string; tools: Tool[] }[] = [
   ] },
   { key: 'measure', label: '측정', tools: [
     { key: 'measure', label: '가격·기간 측정', n: 2, hint: '두 점 사이의 가격 차이·등락률·봉 수를 재요', icon: I(`<path ${L} d="M4 20V8h16M4 20h16V8M8 14h8M12 10v8"/>`) },
-    { key: 'long', label: '롱 포지션', n: 2, hint: '진입가를 누르고 목표가로 끌어요. 손절선은 끌어서 옮겨요', icon: I(`<path fill="#1b9e5a" opacity=".35" d="M4 4h16v8H4z"/><path fill="#d1373d" opacity=".35" d="M4 12h16v6H4z"/><path ${L} d="M4 12h16"/>`) },
-    { key: 'short', label: '숏 포지션', n: 2, hint: '진입가를 누르고 목표가로 끌어요. 손절선은 끌어서 옮겨요', icon: I(`<path fill="#d1373d" opacity=".35" d="M4 6h16v6H4z"/><path fill="#1b9e5a" opacity=".35" d="M4 12h16v8H4z"/><path ${L} d="M4 12h16"/>`) },
+    { key: 'long', label: '롱 포지션', n: 2, hint: '진입가를 누르고 목표가로 끌어요. 손절선은 끌어서 옮겨요', icon: I(`<path fill="#1b9e5a" opacity=".35" d="M4 4h16v8H4z"/><path fill="#f04452" opacity=".35" d="M4 12h16v6H4z"/><path ${L} d="M4 12h16"/>`) },
+    { key: 'short', label: '숏 포지션', n: 2, hint: '진입가를 누르고 목표가로 끌어요. 손절선은 끌어서 옮겨요', icon: I(`<path fill="#f04452" opacity=".35" d="M4 6h16v6H4z"/><path fill="#1b9e5a" opacity=".35" d="M4 12h16v8H4z"/><path ${L} d="M4 12h16"/>`) },
   ] },
   { key: 'shape', label: '도형·글', tools: [
     { key: 'rect', label: '박스', n: 2, hint: '두 꼭짓점으로 구간을 표시해요', icon: I(`<rect x="4" y="6" width="16" height="12" rx="1.5" ${L}/>`) },
     { key: 'text', label: '텍스트', n: 1, hint: '글을 둘 자리를 누르고 바로 입력해요', icon: I(`<path ${L} d="M5 6V4h14v2M12 4v16M9 20h6"/>`) },
     { key: 'note', label: '메모', n: 1, hint: '말풍선을 둘 자리를 누르고 입력해요', icon: I(`<path ${L} d="M4 5h16v10H10l-5 4V5z"/>`) },
-    { key: 'up', label: '위 표시', n: 1, hint: '매수·반등 자리를 표시해요', icon: I(`<path fill="#d1373d" d="M12 4l7 10h-4v6H9v-6H5z"/>`) },
-    { key: 'down', label: '아래 표시', n: 1, hint: '매도·하락 자리를 표시해요', icon: I(`<path fill="#2a62c9" d="M12 20l7-10h-4V4H9v6H5z"/>`) },
+    { key: 'up', label: '위 표시', n: 1, hint: '매수·반등 자리를 표시해요', icon: I(`<path fill="#f04452" d="M12 4l7 10h-4v6H9v-6H5z"/>`) },
+    { key: 'down', label: '아래 표시', n: 1, hint: '매도·하락 자리를 표시해요', icon: I(`<path fill="#3182f6" d="M12 20l7-10h-4V4H9v6H5z"/>`) },
     { key: 'brush', label: '펜', n: 0, hint: '손가락이나 마우스로 자유롭게 그려요', icon: I(`<path ${L} d="M3 17c3-6 6 2 9-4s6-2 9-8"/>`) },
   ] },
 ];
@@ -69,18 +69,18 @@ export function drawToolbar(): string {
 export const CHART_DRAW_CSS = `
 .dw{display:flex;gap:4px;align-items:center;overflow-x:auto;scrollbar-width:none;padding:6px 0;-webkit-overflow-scrolling:touch}.dw::-webkit-scrollbar{display:none}
 .dw-b{flex:none;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:52px;min-height:48px;padding:4px 6px;border:0;border-radius:12px;background:transparent;color:var(--fg2);font:inherit;font-size:11px;font-weight:700;cursor:pointer;position:relative}
-.dw-b svg{width:22px;height:22px}.dw-b:hover{background:#eef2f8}.dw-b[aria-pressed=true],.dw-b.on{background:#e6edfb;color:#1d4ed8}.dw-b:disabled{opacity:.35;cursor:not-allowed}
+.dw-b svg{width:22px;height:22px}.dw-b:hover{background:#eef2f8}.dw-b[aria-pressed=true],.dw-b.on{background:var(--accent-soft);color:var(--accent-strong)}.dw-b:disabled{opacity:.35;cursor:not-allowed}
 .dw-chev{position:absolute;right:4px;bottom:4px;width:5px;height:5px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);opacity:.6}
 .dw-sep{flex:none;width:1px;height:28px;background:var(--line);margin:0 4px}
 .dw-tools{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:4px;background:#f4f6fb;border-radius:14px;margin:0 0 6px}.dw-tools::-webkit-scrollbar{display:none}
 .dw-tools .dw-b{min-width:64px;background:#fff;border:1px solid var(--line)}.dw-tools .dw-b span{white-space:nowrap}
-.dw-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0f2244;color:#fff;border-radius:12px;padding:8px 12px;font-size:13px;margin:0 0 6px}.dw-hint[hidden]{display:none}.dw-hint button{border:0;background:rgba(255,255,255,.18);color:#fff;font:inherit;font-weight:700;border-radius:8px;padding:6px 12px;cursor:pointer;min-height:36px}
+.dw-hint{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#191f28;color:#fff;border-radius:12px;padding:8px 12px;font-size:13px;margin:0 0 6px}.dw-hint[hidden]{display:none}.dw-hint button{border:0;background:rgba(255,255,255,.18);color:#fff;font:inherit;font-weight:700;border-radius:8px;padding:6px 12px;cursor:pointer;min-height:36px}
 .dw-cap{position:absolute;left:0;top:0;z-index:4;touch-action:none;cursor:crosshair}.dw-cap[hidden]{display:none}
-.dw-tip{position:absolute;z-index:6;pointer-events:none;background:#0f2244;color:#fff;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;white-space:nowrap;transform:translate(-50%,-100%)}.dw-tip[hidden]{display:none}
+.dw-tip{position:absolute;z-index:6;pointer-events:none;background:#191f28;color:#fff;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;white-space:nowrap;transform:translate(-50%,-100%)}.dw-tip[hidden]{display:none}
 .dw-edit{position:absolute;z-index:7;left:50%;top:8px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(15,34,68,.16);padding:4px;max-width:calc(100% - 16px);overflow-x:auto;scrollbar-width:none}.dw-edit[hidden]{display:none}
-.dw-edit button{flex:none;min-width:40px;min-height:40px;border:0;background:transparent;border-radius:10px;cursor:pointer;display:grid;place-items:center;font:inherit;font-size:12px;font-weight:800;color:var(--fg2)}.dw-edit button:hover{background:#eef2f8}.dw-edit button[aria-pressed=true]{background:#e6edfb;color:#1d4ed8}.dw-edit svg{width:20px;height:20px}
-.dw-edit .sw{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}.dw-edit button[aria-pressed=true] .sw{box-shadow:0 0 0 2px #1d4ed8}
-.dw-input{position:absolute;z-index:8;min-width:140px;font:inherit;font-size:14px;padding:8px 10px;border:2px solid #1d4ed8;border-radius:10px;background:#fff;box-shadow:0 6px 20px rgba(15,34,68,.18)}
+.dw-edit button{flex:none;min-width:40px;min-height:40px;border:0;background:transparent;border-radius:10px;cursor:pointer;display:grid;place-items:center;font:inherit;font-size:12px;font-weight:800;color:var(--fg2)}.dw-edit button:hover{background:#eef2f8}.dw-edit button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent-strong)}.dw-edit svg{width:20px;height:20px}
+.dw-edit .sw{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}.dw-edit button[aria-pressed=true] .sw{box-shadow:0 0 0 2px var(--accent-strong)}
+.dw-input{position:absolute;z-index:8;min-width:140px;font:inherit;font-size:14px;padding:8px 10px;border:2px solid var(--accent-strong);border-radius:10px;background:#fff;box-shadow:0 6px 20px rgba(15,34,68,.18)}
 .chart-body{position:relative}
 @media (min-width:821px){html.chart-fs #tab-chart .chart-wrap{display:grid;grid-template-columns:52px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"dw ev" "dw body" "dw pop";column-gap:6px}
  html.chart-fs #tab-chart .chart-wrap>.dw{grid-area:dw;flex-direction:column;align-self:start;overflow-y:auto;overflow-x:visible;max-height:100%;background:#fff;border:1px solid var(--line);border-radius:16px;padding:6px 4px}
@@ -96,7 +96,7 @@ export const CHART_DRAW_JS = `
   var GROUPS = ${JSON.stringify(DRAW_GROUPS.map((g) => ({ key: g.key, label: g.label, tools: g.tools })))};
   var TOOL = {}; GROUPS.forEach(function (g) { g.tools.forEach(function (t) { t.g = g.key; TOOL[t.key] = t; }); });
   var KEYS = { t: 'trend', h: 'hline', v: 'vline', f: 'fib', c: 'channel', r: 'rect', m: 'measure', l: 'long', s: 'short', x: 'text', p: 'brush' };
-  var COLORS = ['#2563eb', '#d1373d', '#16a34a', '#f59e0b', '#7c3aed', '#0f2244'];
+  var COLORS = ['#2563eb', '#f04452', '#16a34a', '#f59e0b', '#7c3aed', '#191f28'];
   var FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1], FIBX = [0, 0.618, 1, 1.272, 1.618, 2, 2.618], FIBT = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89], GANN = [[8, '1×8'], [4, '1×4'], [3, '1×3'], [2, '1×2'], [1, '1×1'], [0.5, '2×1'], [1 / 3, '3×1'], [0.25, '4×1'], [0.125, '8×1']];
   var G = null;
   var init = function () {
@@ -191,16 +191,16 @@ export const CHART_DRAW_JS = `
       else if (k === 'fibext' && P[2]) { line(A, B); line(B, P[2]); var mv = s.pts[1].p - s.pts[0].p; FIBX.forEach(function (f) { var p = s.pts[2].p + mv * f, y = candle.priceToCoordinate(p); if (y == null) return; ctx.globalAlpha = 0.8; line([P[2][0], y], [W / r, y]); ctx.globalAlpha = 1; label(ctx, r, f.toFixed(3).replace(/0+$/, '').replace(/\\.$/, '') + '  ' + won(p), P[2][0] * r, (y - 8) * r, c); }); }
       else if (k === 'fibtime' && P[1]) { var la = ts.coordinateToLogical(A[0]), lb = ts.coordinateToLogical(B[0]); if (la != null && lb != null) { var u = Math.max(1, Math.round(lb - la)); line([A[0], 0], [A[0], H / r]); FIBT.forEach(function (f) { var xx = ts.logicalToCoordinate(la + u * f); if (xx == null || xx * r > W) return; ctx.globalAlpha = 0.7; line([xx, 0], [xx, H / r]); ctx.globalAlpha = 1; label(ctx, r, String(f), xx * r, 12 * r, c, 'center'); }); } }
       else if (k === 'gann' && P[1]) { var gdx = B[0] - A[0], gdy = B[1] - A[1]; GANN.forEach(function (gg) { var e2 = edgeLine(A[0], A[1], A[0] + gdx, A[1] + gdy * gg[0], W, H, false); ctx.globalAlpha = gg[0] === 1 ? 1 : 0.55; line([e2[0], e2[1]], [e2[2], e2[3]]); ctx.globalAlpha = 1; var lx = A[0] + gdx * 1.15, ly = A[1] + gdy * gg[0] * 1.15; label(ctx, r, gg[1], lx * r, ly * r, c); }); }
-      else if (k === 'measure' && P[1]) { var up = s.pts[1].p >= s.pts[0].p, mc = up ? '#d1373d' : '#2a62c9'; ctx.fillStyle = mc; ctx.globalAlpha = 0.14; ctx.fillRect(Math.min(A[0], B[0]) * r, Math.min(A[1], B[1]) * r, Math.abs(B[0] - A[0]) * r, Math.abs(B[1] - A[1]) * r); ctx.globalAlpha = 1; ctx.strokeStyle = mc; line([A[0], (A[1] + B[1]) / 2], [B[0], (A[1] + B[1]) / 2]); line([(A[0] + B[0]) / 2, A[1]], [(A[0] + B[0]) / 2, B[1]]);
+      else if (k === 'measure' && P[1]) { var up = s.pts[1].p >= s.pts[0].p, mc = up ? '#f04452' : '#3182f6'; ctx.fillStyle = mc; ctx.globalAlpha = 0.14; ctx.fillRect(Math.min(A[0], B[0]) * r, Math.min(A[1], B[1]) * r, Math.abs(B[0] - A[0]) * r, Math.abs(B[1] - A[1]) * r); ctx.globalAlpha = 1; ctx.strokeStyle = mc; line([A[0], (A[1] + B[1]) / 2], [B[0], (A[1] + B[1]) / 2]); line([(A[0] + B[0]) / 2, A[1]], [(A[0] + B[0]) / 2, B[1]]);
         var dv = s.pts[1].p - s.pts[0].p, dp = dv / s.pts[0].p * 100, nb = barsBetween(s.pts[0], s.pts[1]); label(ctx, r, (dv > 0 ? '+' : '') + won(dv) + ' (' + (dp > 0 ? '+' : '') + dp.toFixed(2) + '%) · ' + nb + '봉', (A[0] + B[0]) / 2 * r, (Math.min(A[1], B[1]) - 12) * r, mc, 'center', true); }
       else if ((k === 'long' || k === 'short') && P[1]) { var entry = s.pts[0].p, tgt = s.pts[1].p, stop = s.stop != null ? s.stop : entry - (tgt - entry) / 2, ye = A[1], yt = B[1], yst = candle.priceToCoordinate(stop); var xl = Math.min(A[0], B[0]), xr = Math.max(A[0], B[0], A[0] + 40);
-        if (yst != null) { ctx.setLineDash([]); ctx.globalAlpha = 0.2; ctx.fillStyle = '#16a34a'; ctx.fillRect(xl * r, Math.min(ye, yt) * r, (xr - xl) * r, Math.abs(yt - ye) * r); ctx.fillStyle = '#d1373d'; ctx.fillRect(xl * r, Math.min(ye, yst) * r, (xr - xl) * r, Math.abs(yst - ye) * r); ctx.globalAlpha = 1; ctx.strokeStyle = '#0f2244'; line([xl, ye], [xr, ye]);
+        if (yst != null) { ctx.setLineDash([]); ctx.globalAlpha = 0.2; ctx.fillStyle = '#16a34a'; ctx.fillRect(xl * r, Math.min(ye, yt) * r, (xr - xl) * r, Math.abs(yt - ye) * r); ctx.fillStyle = '#f04452'; ctx.fillRect(xl * r, Math.min(ye, yst) * r, (xr - xl) * r, Math.abs(yst - ye) * r); ctx.globalAlpha = 1; ctx.strokeStyle = '#191f28'; line([xl, ye], [xr, ye]);
           var gain = (tgt / entry - 1) * 100 * (k === 'short' ? -1 : 1), loss = (stop / entry - 1) * 100 * (k === 'short' ? -1 : 1), rr = loss ? Math.abs(gain / loss) : 0;
           label(ctx, r, '목표 ' + won(tgt) + ' (' + (gain > 0 ? '+' : '') + gain.toFixed(2) + '%)', (xl + xr) / 2 * r, (yt + (yt < ye ? -10 : 10)) * r, '#16a34a', 'center', true);
-          label(ctx, r, '손절 ' + won(stop) + ' (' + (loss > 0 ? '+' : '') + loss.toFixed(2) + '%)', (xl + xr) / 2 * r, (yst + (yst < ye ? -10 : 10)) * r, '#d1373d', 'center', true);
-          label(ctx, r, (k === 'long' ? '롱' : '숏') + ' 진입 ' + won(entry) + ' · 손익비 ' + rr.toFixed(2), xr * r, ye * r, '#0f2244', 'right', true); } }
+          label(ctx, r, '손절 ' + won(stop) + ' (' + (loss > 0 ? '+' : '') + loss.toFixed(2) + '%)', (xl + xr) / 2 * r, (yst + (yst < ye ? -10 : 10)) * r, '#f04452', 'center', true);
+          label(ctx, r, (k === 'long' ? '롱' : '숏') + ' 진입 ' + won(entry) + ' · 손익비 ' + rr.toFixed(2), xr * r, ye * r, '#191f28', 'right', true); } }
       else if (k === 'text' || k === 'note') { var t = String(s.text || ''); ctx.setLineDash([]); ctx.font = '600 ' + (13 * r) + 'px sans-serif'; var tw = ctx.measureText(t).width; if (k === 'note') { ctx.fillStyle = '#fff3d6'; ctx.strokeStyle = '#e0b04a'; ctx.lineWidth = r; ctx.beginPath(); ctx.rect(A[0] * r, (A[1] - 28) * r, tw + 16 * r, 22 * r); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo((A[0] + 6) * r, (A[1] - 6) * r); ctx.lineTo(A[0] * r, A[1] * r); ctx.lineTo((A[0] + 14) * r, (A[1] - 6) * r); ctx.fill(); ctx.fillStyle = '#5b3d00'; ctx.textBaseline = 'middle'; ctx.fillText(t, (A[0] + 8) * r, (A[1] - 17) * r); } else { ctx.fillStyle = c; ctx.textBaseline = 'middle'; ctx.fillText(t, A[0] * r, A[1] * r); } }
-      else if (k === 'up' || k === 'down') { var dir = k === 'up' ? 1 : -1, mc2 = k === 'up' ? '#d1373d' : '#2a62c9', sz = 9; ctx.fillStyle = mc2; ctx.beginPath(); ctx.moveTo(A[0] * r, A[1] * r); ctx.lineTo((A[0] - sz) * r, (A[1] + dir * sz * 1.6) * r); ctx.lineTo((A[0] + sz) * r, (A[1] + dir * sz * 1.6) * r); ctx.closePath(); ctx.fill(); if (s.text) label(ctx, r, s.text, A[0] * r, (A[1] + dir * 26) * r, mc2, 'center'); }
+      else if (k === 'up' || k === 'down') { var dir = k === 'up' ? 1 : -1, mc2 = k === 'up' ? '#f04452' : '#3182f6', sz = 9; ctx.fillStyle = mc2; ctx.beginPath(); ctx.moveTo(A[0] * r, A[1] * r); ctx.lineTo((A[0] - sz) * r, (A[1] + dir * sz * 1.6) * r); ctx.lineTo((A[0] + sz) * r, (A[1] + dir * sz * 1.6) * r); ctx.closePath(); ctx.fill(); if (s.text) label(ctx, r, s.text, A[0] * r, (A[1] + dir * 26) * r, mc2, 'center'); }
       else if (k === 'brush' && P.length > 1) { ctx.beginPath(); ctx.moveTo(P[0][0] * r, P[0][1] * r); for (var j = 1; j < P.length; j++) ctx.lineTo(P[j][0] * r, P[j][1] * r); ctx.stroke(); }
       if (selected) { ctx.setLineDash([]); handles(s).forEach(function (h) { ctx.beginPath(); ctx.arc(h[0] * r, h[1] * r, 6 * r, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 2 * r; ctx.strokeStyle = c; ctx.stroke(); }); }
       ctx.restore();
@@ -292,7 +292,7 @@ export const CHART_DRAW_JS = `
     var local = function (e) { var r = host.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     var showTip = function (pt, xy, touch) { if (!pt) { tip.hidden = true; return; } tip.hidden = false; tip.textContent = won(pt.p) + ' · ' + dayOf(pt); tip.style.left = xy[0] + 'px'; tip.style.top = (xy[1] - (touch ? 46 : 14)) + 'px'; };
     var finish = function () { if (!draft) return; var before = snap(); var s = draft; draft = null; step = 0; if (s.k === 'long' || s.k === 'short') s.stop = s.pts[0].p - (s.pts[1].p - s.pts[0].p) / 2; shapes.push(s); commit(before); tip.hidden = true; var i = shapes.length - 1; setTool(null); select(i); if (s.k === 'text' || s.k === 'note') editText(i, true); };
-    var newShape = function (pt) { var t = TOOL[tool]; return { k: tool, pts: t.n === 1 ? [pt] : [pt, { t: pt.t, d: pt.d, p: pt.p }], st: { c: tool === 'text' ? '#0f2244' : COLORS[0], w: tool === 'brush' ? 3 : 2 } }; };
+    var newShape = function (pt) { var t = TOOL[tool]; return { k: tool, pts: t.n === 1 ? [pt] : [pt, { t: pt.t, d: pt.d, p: pt.p }], st: { c: tool === 'text' ? '#191f28' : COLORS[0], w: tool === 'brush' ? 3 : 2 } }; };
     // A press that starts a shape and is dragged places its second point on release; a press without a drag
     // waits for the next tap (or click) for each further point, with a live preview under the mouse.
     var down = null;

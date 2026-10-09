@@ -21,7 +21,7 @@ export function sparkline(values: readonly number[], label: string, width = 120,
   const lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1;
   const pts = values.map((v, i) => `${((i / (values.length - 1)) * width).toFixed(1)},${(height - 3 - ((v - lo) / span) * (height - 6)).toFixed(1)}`).join(' ');
   const rising = up ?? values.at(-1)! >= values[0]!;
-  return `<svg viewBox="0 0 ${width} ${height}" class="spark" role="img" aria-label="${esc(label)}"><polyline fill="none" stroke="${rising ? '#d1373d' : '#2a62c9'}" stroke-width="1.6" points="${pts}"/></svg>`;
+  return `<svg viewBox="0 0 ${width} ${height}" class="spark" role="img" aria-label="${esc(label)}"><polyline fill="none" stroke="${rising ? '#f04452' : '#3182f6'}" stroke-width="1.6" points="${pts}"/></svg>`;
 }
 
 const FOOTPRINT_WORD = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' } as const;
@@ -83,7 +83,7 @@ export function heroChart(report: DailyReport): string {
   const w = 320, h = 72, lo = Math.min(...pts.map((x) => x.close)), hi = Math.max(...pts.map((x) => x.close)), span = hi - lo || 1;
   const xy = pts.map((x, i) => [(i / (pts.length - 1)) * w, h - 4 - ((x.close - lo) / span) * (h - 10)] as const);
   const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-  const chg = (pts.at(-1)!.close / pts[0]!.close - 1) * 100, color = chg >= 0 ? '#d1373d' : '#2a62c9';
+  const chg = (pts.at(-1)!.close / pts[0]!.close - 1) * 100, color = chg >= 0 ? '#f04452' : '#3182f6';
   // G-141: closes for the period chips under the mini chart (1주·1달·3달·6달·1년), drawn in the browser.
   const src = (report.recentBars?.length ? report.recentBars : report.recentCloses ?? []).slice(-250), series = src.map((b) => b.close);
   return `<a class="hero-chart" href="#tab-chart" data-c="${esc(JSON.stringify(series))}" data-d="${esc(JSON.stringify(src.map((b) => b.date)))}" aria-label="최근 3개월 차트, 눌러서 전체 화면 차트 열기"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".22"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><polygon points="0,${h} ${line} ${w},${h}" fill="url(#hc-g)"/><polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg><span class="hc-meta"><span>3개월 <b class="${chg > 0 ? 'up' : chg < 0 ? 'down' : ''}">${chg > 0 ? '▲ +' : chg < 0 ? '▼ ' : ''}${chg.toFixed(1)}%</b> · 최고 ${esc(won(hi))} · 최저 ${esc(won(lo))}</span><span class="hc-go">차트 자세히 보기 ›</span></span></a>`;
@@ -219,7 +219,7 @@ window.addEventListener('DOMContentLoaded', function () {
   if (bars.length < 2) return;
   var marks = JSON.parse(document.getElementById('marks').textContent) || [];
   var ov = JSON.parse(document.getElementById('overlays').textContent) || {};
-  var UP = '#d1373d', DOWN = '#2a62c9', GOLD = '#2e4268';
+  var UP = '#f04452', DOWN = '#3182f6', GOLD = '#2e4268';
   var mobile = window.matchMedia('(max-width: 820px)').matches;
   var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
   var chart = L.createChart(el, {
@@ -360,13 +360,13 @@ window.addEventListener('DOMContentLoaded', function () {
 
   // ---- panes (below the price) ----
   var paneMakers = {
-    volume: function (p) { var s = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false }, p); s.setData(bars.map(function (b, i) { return { time: b.date, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(42,98,201,.45)' : 'rgba(209,55,61,.45)' }; })); return [s]; },
+    volume: function (p) { var s = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false }, p); s.setData(bars.map(function (b, i) { return { time: b.date, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(49,130,246,.45)' : 'rgba(240,68,82,.45)' }; })); return [s]; },
     rsi: function (p) { var q = ip('rsi'), s = line(rsi(q.n), '#7a4fb3', p, { lastValueVisible: true, title: 'RSI ' + q.n }); s.createPriceLine({ price: q.hi, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: q.lo, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
     macd: function (p) {
       var q = ip('macd'), f = ema(C, q.f), s = ema(C, q.s), m = C.map(function (_, i) { return i < q.s - 1 ? null : f[i] - s[i]; });
       var sig = ema(m, q.sig).map(function (x, i) { return i < q.s + q.sig - 2 ? null : x; });
       var hist = chart.addSeries(L.HistogramSeries, { priceLineVisible: false, lastValueVisible: false }, p);
-      hist.setData(m.map(function (x, i) { return x == null || sig[i] == null ? null : { time: t(i), value: x - sig[i], color: x - sig[i] >= 0 ? 'rgba(209,55,61,.5)' : 'rgba(42,98,201,.5)' }; }).filter(Boolean));
+      hist.setData(m.map(function (x, i) { return x == null || sig[i] == null ? null : { time: t(i), value: x - sig[i], color: x - sig[i] >= 0 ? 'rgba(240,68,82,.5)' : 'rgba(49,130,246,.5)' }; }).filter(Boolean));
       return [hist, line(m, '#1b2230', p, { title: 'MACD' }), line(sig, '#d97706', p, { title: '시그널' })];
     },
     stoch: function (p) { var q = ip('stoch'), k = C.map(function (c, i) { if (i < q.n - 1) return null; var h = hh(q.n, i), l = ll(q.n, i); return h === l ? 50 : (c - l) / (h - l) * 100; }); var ks = sma(k.map(function (x) { return x == null ? 0 : x; }), q.k).map(function (x, i) { return i < q.n + q.k - 2 ? null : x; }); var ds = sma(ks.map(function (x) { return x == null ? 0 : x; }), q.d).map(function (x, i) { return i < q.n + q.k + q.d - 3 ? null : x; }); return [line(ks, '#00968a', p, { title: '%K' }), line(ds, '#d97706', p, { title: '%D' })]; },
@@ -375,7 +375,7 @@ window.addEventListener('DOMContentLoaded', function () {
     value: function (p) {
       var vn = ip('value').n, tv = bars.map(function (b) { return b.close * b.volume / 1e8; }), m = sma(tv, vn);
       var s = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'price', precision: 1, minMove: 0.1 }, priceLineVisible: false, lastValueVisible: true, title: '거래대금(억)' }, p);
-      s.setData(bars.map(function (b, i) { var big = i >= 20 && m[i - 1] && tv[i] >= m[i - 1] * 3, up = !i || b.close >= bars[i - 1].close; return { time: b.date, value: tv[i], color: big ? (up ? 'rgba(209,55,61,.95)' : 'rgba(42,98,201,.95)') : (up ? 'rgba(209,55,61,.35)' : 'rgba(42,98,201,.35)') }; }));
+      s.setData(bars.map(function (b, i) { var big = i >= 20 && m[i - 1] && tv[i] >= m[i - 1] * 3, up = !i || b.close >= bars[i - 1].close; return { time: b.date, value: tv[i], color: big ? (up ? 'rgba(240,68,82,.95)' : 'rgba(49,130,246,.95)') : (up ? 'rgba(240,68,82,.35)' : 'rgba(49,130,246,.35)') }; }));
       return [s, line(m, '#64748b', p, { title: vn + '일 평균' })];
     },
     ad: function (p) { var a = 0; return [line(bars.map(function (b) { a += b.high > b.low ? ((b.close - b.low) - (b.high - b.close)) / (b.high - b.low) * b.volume : 0; return a; }), '#0f766e', p, { title: 'A/D', lastValueVisible: false })]; },
@@ -394,7 +394,7 @@ window.addEventListener('DOMContentLoaded', function () {
   };
   // Volume spikes: 3× the 20-session average, marked under the candle.
   var spikeMarks = null;
-  var spikeList = function () { var avg = sma(V, 20), out = []; for (var i = 20; i < bars.length; i++) if (avg[i - 1] && V[i] >= avg[i - 1] * 3) { var up = C[i] >= C[i - 1]; out.push({ time: t(i), position: 'belowBar', shape: up ? 'arrowUp' : 'arrowDown', color: up ? '#d1373d' : '#2a62c9', text: (V[i] / avg[i - 1]).toFixed(1) + '배' }); } return out; };
+  var spikeList = function () { var avg = sma(V, 20), out = []; for (var i = 20; i < bars.length; i++) if (avg[i - 1] && V[i] >= avg[i - 1] * 3) { var up = C[i] >= C[i - 1]; out.push({ time: t(i), position: 'belowBar', shape: up ? 'arrowUp' : 'arrowDown', color: up ? '#f04452' : '#3182f6', text: (V[i] / avg[i - 1]).toFixed(1) + '배' }); } return out; };
   var setOverlay = function (k, on) {
     if (k === 'spikes') { if (!spikeMarks) spikeMarks = L.createSeriesMarkers(candle, []); spikeMarks.setMarkers(on ? spikeList() : []); return; }
     if (lineMakers[k]) { (priceLines[k] || []).forEach(function (pl) { candle.removePriceLine(pl); }); priceLines[k] = on ? lineMakers[k]() : []; return; }

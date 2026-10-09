@@ -18,12 +18,12 @@ html.mo .mo-bars rect.neg{transform-origin:50% 0}
 html.mo .mo-bars.mo-in rect{transform:none;transition:transform .6s cubic-bezier(.16,1,.3,1) calc(min(var(--i,0),12) * 45ms),opacity .15s}
 html.mo .mo-bars .ig-bl{opacity:0}html.mo .mo-bars.mo-in .ig-bl{opacity:1;transition:opacity .4s .55s}
 .mo-bars rect{transition:opacity .15s}.mo-bars[data-hi] rect:not(.hi){opacity:.28}
-.mo-bars svg,.mo-scrub,.hero-chart svg{touch-action:pan-y;cursor:crosshair}.mo-bars svg:focus-visible,.mo-scrub:focus-visible{outline:2px solid #3182f6;outline-offset:2px;border-radius:6px}
+.mo-bars svg,.mo-scrub,.hero-chart svg{touch-action:pan-y;cursor:crosshair}.mo-bars svg:focus-visible,.mo-scrub:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 html.mo .ig-radar .area{transform:scale(0);transform-box:view-box;transform-origin:110px 104px;opacity:0}
 html.mo .ig-radar.mo-in .area{transform:none;opacity:1;transition:transform .8s cubic-bezier(.16,1,.3,1),opacity .4s}
 html.mo .ig-radar .dot{opacity:0}html.mo .ig-radar.mo-in .dot{opacity:1;transition:opacity .3s calc(.5s + var(--i,0) * 70ms),r .15s}
-.ig-radar .dot{transition:r .15s}.ig-radar .dot.hi{r:6.5px;fill:#3182f6}
-.ig-hl li{transition:background .15s}.ig-hl li.hi{background:#e8f3ff;border-radius:10px}
+.ig-radar .dot{transition:r .15s}.ig-radar .dot.hi{r:6.5px;fill:var(--accent)}
+.ig-hl li{transition:background .15s}.ig-hl li.hi{background:var(--accent-soft);border-radius:10px}
 html.mo .ig-bs-bar i{transform:scaleX(0);transform-origin:left}
 html.mo .ig-bs.mo-in .ig-bs-bar i{transform:none;transition:transform .7s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 90ms)}
 html.mo .mini-gauge:not(.mo-in) .needle{animation:none;transform:rotate(0deg)}
@@ -100,7 +100,7 @@ export const MOTION_JS = `
       var D = data(); if (D.c.length < 2) return;
       var r = svg.getBoundingClientRect(), ar = a.getBoundingClientRect(), i = Math.max(0, Math.min(D.c.length - 1, Math.round((cx - r.left) / r.width * (D.c.length - 1))));
       var lo = Math.min.apply(null, D.c), hi = Math.max.apply(null, D.c), sp = hi - lo || 1, x = r.left - ar.left + i / (D.c.length - 1) * r.width, y = r.top - ar.top + (68 - (D.c[i] - lo) / sp * 62) / 72 * r.height;
-      dot.style.color = (D.c[D.c.length - 1] >= D.c[0]) ? '#d1373d' : '#2a62c9'; dot.hidden = vl.hidden = false; dot.style.left = x + 'px'; dot.style.top = y + 'px'; vl.style.left = x + 'px'; vl.style.top = (r.top - ar.top) + 'px'; vl.style.height = r.height + 'px';
+      dot.style.color = (D.c[D.c.length - 1] >= D.c[0]) ? '#f04452' : '#3182f6'; dot.hidden = vl.hidden = false; dot.style.left = x + 'px'; dot.style.top = y + 'px'; vl.style.left = x + 'px'; vl.style.top = (r.top - ar.top) + 'px'; vl.style.height = r.height + 'px';
       tp.innerHTML = '<b>' + money(D.c[i]) + '</b>' + (D.d[i] ? ' · ' + esc(day(D.d[i])) : ''); place(tp, a, x, y);
     };
     svg.addEventListener('pointerdown', function (e) { sx = e.clientX; dragged = false; });
