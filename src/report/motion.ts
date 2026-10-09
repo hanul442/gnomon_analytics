@@ -102,7 +102,7 @@ export const MOTION_JS = `
     };
     var move = function (e) {
       var q = geo(), x = (e.clientX - q.r.left - (q.r.width - 420 * q.s) / 2) / q.s;
-      if (band && x > 232) { g.style.display = 'none'; tp.innerHTML = '예상 가격대 <b>' + esc(band[0]) + ' ~ ' + esc(band[1]) + '원</b>'; place(tp, fig, q.ox + 264 * q.s, q.oy + band[2] * q.s); return; }
+      if (band && x > 232) { g.style.display = 'none'; tp.innerHTML = '예상 가격대 <b>' + money(band[0]) + ' ~ ' + money(band[1]) + '</b>'; place(tp, fig, q.ox + 264 * q.s, q.oy + band[2] * q.s); return; }
       var best = 0, bd = 1e9; pts.forEach(function (p, i) { var d = Math.abs(p[1] - x); if (d < bd) { bd = d; best = i; } }); at(best);
     };
     svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move);

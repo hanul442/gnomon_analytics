@@ -75,8 +75,10 @@ test('the first settled run picks the week: core and the largest company get the
   // Core stocks still log forecasts and the paper ledger on a trading day without a report.
   const paper = (await readFile(join(root, 'data', 'paper', '000660.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l) as { date: string });
   assert.ok(paper.some((p) => p.date === '2026-10-05'));
-  // The live page carries the latest committee's commentary with its date.
-  assert.match(await readFile(join(root, 'site', '000660', 'index.html'), 'utf8'), /AI 리포트 2026-10-02 기준[\s\S]*새 데이터로 다시 분석/);
+  // The live page carries the latest committee's commentary with its date in the report status strip (G-178).
+  const live = await readFile(join(root, 'site', '000660', 'index.html'), 'utf8');
+  assert.match(live, /10\/02 위원회 리포트 · \d+거래일 지났어요/);
+  assert.match(live, /data-stale-ai/);
 });
 
 test('a requested stock gets one deep committee report, then dashboards only', async () => {

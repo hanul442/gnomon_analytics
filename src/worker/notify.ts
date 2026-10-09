@@ -11,8 +11,9 @@ import { noteBullets } from '../report/releases.js';
 
 export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'test';
 /** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
-export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
-export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
+/** updatePatch (G-177): off by default, only x.Y.0 releases are announced; on, every patch too. */
+export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; updatePatch: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
+export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, updatePatch: false, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
 const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', test: null };
 
 export async function prefsOf(db: D1, userId: string): Promise<Prefs> {
@@ -55,11 +56,19 @@ const once = async (db: D1, key: string, now: Date) => ((await db.prepare('INSER
 const kstDate = (d: Date) => new Date(d.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
 const reportLink = (s: string) => `${encodeURIComponent(s)}/index.html`;
 
+/** G-177: release notes wait out the night (22:00–08:00 KST) so nobody is woken by an update. */
+export const UPDATE_QUIET = { from: '22:00', to: '08:00' } as const;
+export const inUpdateQuiet = (now: Date) => inQuiet({ quiet: true, quietFrom: UPDATE_QUIET.from, quietTo: UPDATE_QUIET.to }, now);
+/** A minor release (x.Y.0) is news for everyone; a patch (x.Y.Z) only for readers who asked for patches. */
+export const isMinorRelease = (version: string) => /^\d+\.\d+\.0$/.test(version);
+
 /**
  * G-137: a new release tells everyone once (🔔, and the phone for those with push on): the site publishes
  * version.json with each build; the first check after a new version notes it for every active user.
+ * G-177: patches reach only readers with updatePatch on, and nothing goes out between 22:00 and 08:00 KST —
+ * the version stays pending (not marked done) until a morning run sends it.
  */
-export async function runUpdateNotify(ctx: Ctx): Promise<{ version: string | null; sent: number }> {
+export async function runUpdateNotify(ctx: Ctx): Promise<{ version: string | null; sent: number; deferred?: boolean }> {
   const r = await ctx.fetch(`${ctx.site.replace(/\/$/, '')}/version.json`, { signal: AbortSignal.timeout(10_000) }).catch(() => null);
   if (!r?.ok) return { version: null, sent: 0 };
   const v = await r.json().catch(() => null) as { version?: string; title?: string; note?: string } | null;
@@ -67,11 +76,15 @@ export async function runUpdateNotify(ctx: Ctx): Promise<{ version: string | nul
   // The first version a server sees is the baseline, not news.
   if (await once(ctx.db, 'update-seen-any', ctx.now)) { await once(ctx.db, `update-done:${v.version}`, ctx.now); return { version: v.version, sent: 0 }; }
   if (await ctx.db.prepare('SELECT 1 FROM notify_log WHERE key = ?').bind(`update-done:${v.version}`).first()) return { version: v.version, sent: 0 };
+  if (inUpdateQuiet(ctx.now)) return { version: v.version, sent: 0, deferred: true };
+  const minor = isMinorRelease(v.version);
   const users = (await ctx.db.prepare('SELECT id FROM users WHERE disabled = 0').all<{ id: string }>()).results;
   // G-153: the changes as a short bulleted list, not a paragraph.
   const note = String(v.note ?? '').trim(), body = noteBullets(note, 3);
   let sent = 0;
   for (const u of users) {
+    // A patch reaches only those who asked for them; notifyUser then reads the same prefs for the 'update' kind.
+    if (!minor && !(await prefsOf(ctx.db, u.id)).updatePatch) continue;
     if (!(await once(ctx.db, `update:${v.version}:${u.id}`, ctx.now))) continue;
     if (await notifyUser(ctx, u.id, 'update', { title: `업데이트 v${v.version}${v.title ? ` · ${v.title}` : ''}`, body: body || '새 기능과 바뀐 점을 확인해 보세요.', link: 'updates.html' })) sent += 1;
   }

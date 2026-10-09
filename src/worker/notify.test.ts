@@ -116,6 +116,20 @@ test('update note (G-137): the first version seen is the baseline; a new one rea
   assert.deepEqual(await runUpdateNotify(ctx), { version: '2.13.0', sent: 0 }, 'once');
   const rows = (await db.prepare("SELECT title, link FROM notifications WHERE kind = 'update'").all<{ title: string; link: string }>()).results;
   assert.equal(rows.length, 2); assert.match(rows[0]!.title, /v2\.13\.0/); assert.equal(rows[0]!.link, 'updates.html');
+  // G-177: a patch is news only for readers who asked for patches.
+  version = '2.13.1';
+  assert.deepEqual(await runUpdateNotify(ctx), { version: '2.13.1', sent: 0 }, 'patch: nobody opted in');
+  version = '2.13.2';
+  await db.prepare('INSERT INTO notify_prefs (user_id, prefs, updated_at) VALUES (?, ?, ?)').bind('u2', JSON.stringify({ updatePatch: true }), ctx.now.toISOString()).run();
+  assert.deepEqual(await runUpdateNotify(ctx), { version: '2.13.2', sent: 1 }, 'patch: only u2');
+  // G-177: a minor release in the night waits for the morning (22:00–08:00 KST), then goes out once.
+  version = '2.14.0';
+  const night = { ...ctx, now: new Date('2026-10-06T14:30:00Z') }; // 23:30 KST
+  assert.deepEqual(await runUpdateNotify(night), { version: '2.14.0', sent: 0, deferred: true });
+  assert.deepEqual(await runUpdateNotify(night), { version: '2.14.0', sent: 0, deferred: true }, 'still pending');
+  const morning = { ...ctx, now: new Date('2026-10-07T00:10:00Z') }; // 09:10 KST
+  assert.deepEqual(await runUpdateNotify(morning), { version: '2.14.0', sent: 2 });
+  assert.deepEqual(await runUpdateNotify(morning), { version: '2.14.0', sent: 0 }, 'once');
 });
 
 test('quiet hours (G-152): no phone push inside the window, which may cross midnight; 🔔 still keeps the note', async () => {

@@ -11,7 +11,8 @@ export function renderAlerts(): string {
     ['screen', '스크리너 조건', '저장한 조건에 새로 걸린 종목이 생기면 (조건별 켜기는 아래에서)'],
     ['price', '가격 알림 · 장중 급변', '내가 건 가격에 닿거나, 관심 종목이 장중 크게 움직이면'],
     ['request', '요청한 리포트', '즉시 생성하거나 요청한 리포트가 완성되면(실패하면 그 이유도)'],
-    ['update', '업데이트 소식', '새 기능이나 바뀐 점이 배포되면 한 번 알려요'],
+    ['update', '업데이트 소식', '큰 업데이트(x.Y.0)가 나오면 한 번 알려요. 밤 10시~아침 8시 사이 것은 아침에 보내요'],
+    ['updatePatch', '작은 업데이트도 알림', '기본은 꺼져 있어요. 켜면 작은 수리(x.Y.Z)도 알려요'],
   ];
   const body = `<style>
 .al{max-width:760px;margin:16px auto 32px}.al .card{padding:18px;margin-bottom:12px}.al h1{font-size:23px;margin:2px 0 6px}.al h2{font-size:17px;margin:0 0 8px}.al p{line-height:1.6}
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!L.watchReport) { var w = document.querySelector('[data-pref=watchReport]'); w.disabled = true; w.checked = false; w.closest('.al-row').classList.add('al-lock'); }
       if (!L.intraday) { var pr = document.querySelector('[data-pref=price]'); pr.closest('.al-row').querySelector('small').textContent = '내가 건 가격에 닿으면 (장중 급변 알림은 프로부터)'; }
       document.querySelectorAll('[data-qt]').forEach(function (t) { var k = t.getAttribute('data-qt'); if (r.prefs[k]) t.value = r.prefs[k]; t.onchange = function () { if (!/^\\d\\d:\\d\\d$/.test(t.value)) return; var p = {}; p[k] = t.value; G.call('POST', '/notify/prefs', { prefs: p }).then(function (x) { $('al-pref-msg').textContent = x.error ? x.message : '조용한 시간을 저장했어요.'; }); }; });
-      document.querySelectorAll('[data-pref]').forEach(function (i) { i.checked = i.getAttribute('data-pref') === 'quiet' ? r.prefs.quiet === true : r.prefs[i.getAttribute('data-pref')] !== false; i.onchange = function () { var p = {}; p[i.getAttribute('data-pref')] = i.checked; G.call('POST', '/notify/prefs', { prefs: p }).then(function (x) { $('al-pref-msg').textContent = x.error ? x.message : '저장했어요.'; }); }; });
+      document.querySelectorAll('[data-pref]').forEach(function (i) { i.checked = i.getAttribute('data-pref') === 'quiet' || i.getAttribute('data-pref') === 'updatePatch' ? r.prefs[i.getAttribute('data-pref')] === true : r.prefs[i.getAttribute('data-pref')] !== false; i.onchange = function () { var p = {}; p[i.getAttribute('data-pref')] = i.checked; G.call('POST', '/notify/prefs', { prefs: p }).then(function (x) { $('al-pref-msg').textContent = x.error ? x.message : '저장했어요.'; }); }; });
       var sc = r.screens || [];
       $('al-screens').innerHTML = sc.length ? sc.map(function (s) { return '<label class="al-row"><span><b>' + esc(s.name) + '</b></span><span class="sw"><input type="checkbox" data-screen="' + s.id + '"' + (s.alert ? ' checked' : '') + '><i></i></span></label>'; }).join('') : '<p class="muted small">저장한 조건이 없어요.</p>';
       $('al-screens').querySelectorAll('[data-screen]').forEach(function (i) { i.onchange = function () { G.call('POST', '/screens/' + i.getAttribute('data-screen'), { alert: i.checked }).then(function (x) { if (x.error) { i.checked = !i.checked; $('al-pref-msg').textContent = x.message; } }); }; });

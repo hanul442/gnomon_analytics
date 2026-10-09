@@ -9,7 +9,7 @@ import { buildMarketSection } from '../report/marketSection.js';
 import type { Commentary } from '../analysis/commentary.js';
 import { usdOf } from './ask.js';
 import { conclusionCard } from '../report/conclusion.js';
-import { committeeTab } from '../report/renderHtml.js';
+import { committeeTab, newsTabBody } from '../report/renderHtml.js';
 import { decisionTrace } from '../report/renderReportExtras.js';
 import { flowsPanel, fundamentalsPanel } from '../report/renderMarket.js';
 import { esc } from '../report/html.js';
@@ -111,6 +111,7 @@ export function reportFragments(report:DailyReport,base=''){
 function fragmentsOf(report:DailyReport,base:string){
  const c=report.commentary!;
  const claim=(title:string,items:readonly {text:string}[])=>`<div class="card"><h3>${title}</h3>${items.map(x=>`<p>${esc(x.text)}</p>`).join('')||'<p>확인된 근거가 없어요.</p>'}</div>`;
- const news=`<div class="card"><h3>뉴스·공시</h3>${report.filings.map(f=>`<p>${esc(f.filedDate)} · ${esc(f.title)}</p>`).join('')}${(report.news?.clusters??[]).map(n=>`<p>${esc(n.title)}</p>`).join('')||'<p>추가 뉴스 근거가 없어요.</p>'}</div>`;
+ // G-178: the same 뉴스·공시 body as a daily page (links, importance, clusters, filings table, past events).
+ const news=newsTabBody(report);
  return {chart:aiSummaryCard(c.summary?.text??'','차트 AI 요약',report.date),scenarios:JSON.stringify(scenarioLayer(report)),home:aiSummaryCard(c.summary?.text??'','AI 요약',report.date)+conclusionCard(report,{id:'conclusion-live'}),ai:committeeTab(report,{base,from:null})+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
 }
