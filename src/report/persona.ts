@@ -53,7 +53,7 @@ export const PERSONA_JS = `
   markTheme();
   document.addEventListener('click', function (e) {
     var tb = e.target.closest && e.target.closest('.theme-bar [data-theme-pick]');
-    if (tb) { var t = tb.getAttribute('data-theme-pick'); try { localStorage.setItem('gnm-theme', t); } catch (x) {} var on = t === 'auto' ? (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : t; document.documentElement.setAttribute('data-theme', on); var mc = document.querySelector('meta[name=theme-color]'); if (mc) mc.setAttribute('content', on === 'dark' ? '#0A1626' : '#EEF3F8'); markTheme(); window.dispatchEvent(new Event('gnm-theme')); if (window.GNM && GNM.track) GNM.track('theme', { t: t }); return; }
+    if (tb) { var t = tb.getAttribute('data-theme-pick'); if (window.GNMTheme) GNMTheme.set(t); markTheme(); if (window.GNM && GNM.track) GNM.track('theme', { t: t }); return; }
     var o = e.target.closest && e.target.closest('[data-open-view]');
     if (o) { e.preventDefault(); var m = [].slice.call(document.querySelectorAll('[data-all-menu]')).filter(function (x) { return x.getClientRects().length; })[0]; if (m) { m.click(); var g = document.getElementById('sm-view'); if (g) g.scrollIntoView({ block: 'nearest' }); } return; }
     var b = e.target.closest && e.target.closest('.persona-bar [data-persona]'); if (!b) return;

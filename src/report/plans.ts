@@ -136,13 +136,18 @@ export const won = (v: number) => `${v.toLocaleString('ko-KR')}원`;
 /** Runs in <head> before paint so locked sections never flash open. */
 /** With the alpha API, the plan comes from the signed-in account (cached by alpha.ts). */
 export const PLAN_BOOT = `<script>try{var p;if(document.querySelector('meta[name=gnm-api]')){var m=localStorage.getItem('gnm-session')&&JSON.parse(localStorage.getItem('gnm-me')||'null');p=m&&m.user&&m.user.rankAs}else p=(JSON.parse(localStorage.getItem('gnm-account')||'{}')||{}).plan;if(p==='plus'||p==='pro'||p==='max')document.documentElement.setAttribute('data-plan',p)}catch(e){}</script>`
-/** G-181: the theme before the first paint — saved choice, or the system's when 'auto', dark by default. */
-// G-181: the theme is decided before the first paint (no flash), and GNMTheme lets scripts read the live
-// tokens (charts get their text, grid and candle colours from CSS variables and follow a theme switch).
-export const THEME_BOOT = `<script>(function(){var t='dark';try{t=localStorage.getItem('gnm-theme')||'dark'}catch(e){}if(t==='auto')t=window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='dark'?'#0A1626':'#EEF3F8');
-var v=function(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();};
-window.GNMTheme={v:v,chart:function(chart,more){var ap=function(){try{chart.applyOptions({layout:{textColor:v('--muted'),panes:{separatorColor:v('--line-strong')}},grid:{horzLines:{color:v('--line')}}});if(more)more({up:v('--up'),down:v('--down'),muted:v('--muted'),line:v('--line'),fg:v('--fg')});}catch(e){}};ap();window.addEventListener('gnm-theme',ap);return ap;}};
-if(window.matchMedia){matchMedia('(prefers-color-scheme: light)').addEventListener('change',function(){var s='dark';try{s=localStorage.getItem('gnm-theme')||'dark'}catch(e){}if(s!=='auto')return;var on=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.setAttribute('data-theme',on);window.dispatchEvent(new Event('gnm-theme'));});}})();</script>`;
+// G-181: the theme is decided before the first paint (no flash). GNMTheme.set(choice) is the one place that
+// resolves 'auto', sets data-theme and the browser bar colour, and tells listeners; GNMTheme.chart(chart, cb)
+// gives lightweight-charts its text, grid and candle colours from the CSS tokens and re-applies them on a switch.
+export const THEME_BOOT = `<script>(function(){var d=document.documentElement,mq=window.matchMedia?matchMedia('(prefers-color-scheme: light)'):null;
+var resolve=function(t){return t==='auto'?(mq&&mq.matches?'light':'dark'):(t==='light'?'light':'dark');};
+var saved=function(){try{return localStorage.getItem('gnm-theme')||'dark'}catch(e){return 'dark'}};
+var paint=function(on){d.setAttribute('data-theme',on);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',on==='dark'?'#0A1626':'#EEF3F8');};
+paint(resolve(saved()));
+var v=function(n){return getComputedStyle(d).getPropertyValue(n).trim();};
+window.GNMTheme={v:v,set:function(t){try{localStorage.setItem('gnm-theme',t)}catch(e){}paint(resolve(t));window.dispatchEvent(new Event('gnm-theme'));},
+chart:function(chart,more){var ap=function(){var c={up:v('--up')||'#F04452',down:v('--down')||'#0582CA',muted:v('--muted')||'#6B7A8C',line:v('--line')||'rgba(127,127,127,.15)',strong:v('--line-strong')||'rgba(127,127,127,.3)',fg:v('--fg')||'#0A1626'};try{chart.applyOptions({layout:{textColor:c.muted,panes:{separatorColor:c.strong}},grid:{horzLines:{color:c.line}}});if(more)more(c);}catch(e){}};ap();window.addEventListener('gnm-theme',ap);return ap;}};
+if(mq&&mq.addEventListener)mq.addEventListener('change',function(){if(saved()!=='auto')return;paint(resolve('auto'));window.dispatchEvent(new Event('gnm-theme'));});})();</script>`;
 
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
@@ -160,8 +165,8 @@ html[data-plan=free] .gate>.gate-cta,html[data-plan=plus] .gate[data-need=pro]>.
 html[data-plan=free] .need-plus{display:none}html:not([data-plan=free]) .only-free{display:none}
 .gate-cta .lock{width:22px;height:22px;color:var(--navy)}.gate-cta div{display:flex;flex-direction:column;flex:1;min-width:0}.gate-cta b{font-size:15px}.gate-cta span{font-size:13px;color:var(--muted)}.gate-cta .btn-primary{margin:0;padding:10px 14px;font-size:14px;white-space:nowrap}
 .acct{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;text-decoration:none;color:#fff}.acct:hover{background:rgba(255,255,255,.1)}.acct i{font-style:normal;opacity:.75;font-weight:500}
-.promo-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:var(--warn-soft);color:#5b3d00;font-size:13px;padding:8px 14px;border-bottom:1px solid #f1d9a6}.promo-bar button{border:0;border-radius:999px;background:var(--accent);color:#fff;font:inherit;font-weight:700;padding:4px 12px;cursor:pointer}.promo-bar .promo-x{background:none;color:#5b3d00;font-size:16px;padding:0 4px}
-.mock-note{background:var(--warn-soft);border:1px solid #f1d9a6;color:#6d4a00;border-radius:12px;padding:10px 14px;font-size:13px}
+.promo-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:var(--warn-soft);color:var(--warn-strong);font-size:13px;padding:8px 14px;border-bottom:1px solid var(--line-strong)}.promo-bar button{border:0;border-radius:999px;background:var(--accent);color:#fff;font:inherit;font-weight:700;padding:4px 12px;cursor:pointer}.promo-bar .promo-x{background:none;color:#5b3d00;font-size:16px;padding:0 4px}
+.mock-note{background:var(--warn-soft);border:1px solid var(--line-strong);color:var(--warn-strong);border-radius:12px;padding:10px 14px;font-size:13px}
 .credit-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:12px;background:var(--navy);color:#fff;font:inherit;font-weight:700;padding:11px 16px;cursor:pointer}.credit-btn:hover{background:var(--accent-strong)}.credit-btn small{font-weight:600;opacity:.75}
 .ask{display:flex;flex-direction:column;gap:8px}.ask textarea{width:100%;min-height:76px;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}.ask-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .ask-btns{display:flex;gap:8px;flex-wrap:wrap}.credit-btn.ghost{background:var(--surface);color:var(--navy);border:1px solid var(--navy)}.credit-btn.ghost:hover{background:var(--accent-soft)}
