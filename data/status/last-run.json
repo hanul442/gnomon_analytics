@@ -1,5 +1,5 @@
 {
- "at": "2026-10-09T10:05:46.891Z",
+ "at": "2026-10-09T10:23:28.025Z",
  "selected": null,
  "universe": [
   {
@@ -35,14 +35,18 @@
   },
   {
    "source": "opendart:risk-filings",
-   "ok": false,
-   "count": 218,
-   "error": "fetch failed"
+   "ok": true,
+   "count": 408
   }
  ],
  "stocks": [
   {
    "symbol": "000660",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "005930",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -107,6 +111,11 @@
    "failedSources": []
   },
   {
+   "symbol": "036930",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "267250",
    "report": "SKIPPED",
    "failedSources": []
@@ -167,7 +176,7 @@
    "failedSources": []
   },
   {
-   "symbol": "207940",
+   "symbol": "082740",
    "report": "EXISTS",
    "failedSources": []
   },
@@ -182,13 +191,18 @@
    "failedSources": []
   },
   {
-   "symbol": "222800",
+   "symbol": "012330",
    "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "051910",
    "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "105560",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
@@ -284,15 +298,7 @@
  ],
  "failed": [
   {
-   "symbol": "005930",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "036930",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "082740",
+   "symbol": "207940",
    "error": "fetch failed"
   },
   {
@@ -300,11 +306,7 @@
    "error": "fetch failed"
   },
   {
-   "symbol": "012330",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "105560",
+   "symbol": "222800",
    "error": "fetch failed"
   }
  ]
