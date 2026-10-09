@@ -278,11 +278,11 @@ ul.claims{margin:0;padding-left:18px}ul.claims li{margin:6px 0;font-size:14px}.d
 .chip{display:inline-block;font-size:11px;font-weight:600;color:var(--accent-strong);background:var(--accent-soft);border-radius:6px;padding:0 6px;margin-left:3px;text-decoration:none}.chip:hover{background:var(--accent);color:#fff}
 .evid li{font-size:13px}.desk-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.desk-top{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}.desk-grid p,.why-grid p{margin:4px 0;font-size:14px}
 .red-team{margin-top:12px;border-left:4px solid #f04452;background:#fdf3f2;border-radius:0 12px 12px 0;padding:10px 14px}.red-team h3{font-size:14px;margin:0 0 4px;color:#9f1d24}.red-team p{margin:4px 0}
-.flow-chart,.earn-chart{width:100%;height:auto;display:block}.flow-chart .zero,.earn-chart .zero{stroke:#b6c0cf;stroke-width:1}.flow-chart .hit{fill:transparent}.flow-chart .hit:hover{fill:rgba(46,66,104,.08)}
+.flow-chart{width:100%;height:auto;display:block}.flow-chart .zero{stroke:#b6c0cf;stroke-width:1}.flow-chart .hit{fill:transparent}.flow-chart .hit:hover{fill:rgba(46,66,104,.08)}
 .flow-label{font-size:12px;fill:var(--fg);font-weight:600}.axis-label{font-size:11px;fill:var(--muted)}
 .legend-inline{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}.legend-inline i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
-.b-rev{fill:#00968a}.b-op{fill:#7a4fb3}.b-rev.est{fill:url(#hatch);color:#00968a;stroke:#00968a}.b-op.est{fill:url(#hatch);color:#7a4fb3;stroke:#7a4fb3}
-.sw-rev{background:#00968a}.sw-op{background:#7a4fb3}.sw-est{background:repeating-linear-gradient(45deg,#6a7673 0 2px,#fff 2px 4px)}.research li{font-size:14px}
+
+.research li{font-size:14px}
 .signal-label.up,.hz-label.up{color:var(--up)}
 .panel{display:block}.panel[hidden]{display:none}.panel+.panel{margin-top:32px}.js-tabs .panel+.panel{margin-top:0}.js-tabs .panel-title{display:none}.panel-title{margin:0 0 12px}.panel:focus{outline:none}
 footer{max-width:1180px;margin:0 auto;padding:0 24px 40px;color:var(--muted);font-size:12px}footer p{margin:2px 0}

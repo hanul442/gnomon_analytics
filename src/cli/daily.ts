@@ -367,7 +367,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const r = results.find((x) => x.symbol === j.ticker.symbol);
     if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
   }
-  // Daily AI reports (G-56): five stocks, an ETF and a coin drawn from the lists just computed, after
+  // Daily AI reports (G-56, G-168): two stocks and the ETF or the coin drawn from the lists just computed, after
   // the close; on a day without a stock session (weekend, holiday) the coin only. They run last, so
   // the monthly AI budget goes to the core stocks and the weekly picks first.
   if (today.hour >= SETTLED_HOUR_KST && options.dailyPicks !== false) {
