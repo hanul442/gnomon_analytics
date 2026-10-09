@@ -129,6 +129,7 @@ export function renderInbox(): string {
 // G-161: the account script loads after this page's own; wait for it, or a signed-in reader is asked to log in.
 document.addEventListener('DOMContentLoaded', function () {
   var G = window.GNM || {}, box = document.getElementById('ib-list'), clear = document.getElementById('ib-clear');
+  var siteLink = function (l) { var c = l.charAt(0); return /^[a-z]+:/i.test(l) || c === '/' || c === '#' ? l : (document.body.getAttribute('data-base') || '') + l; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ICON = { watchReport: '⭐', daily: '📰', request: '📄', price: '🔔', screen: '🔎', update: '✨', intraday: '⚡' };
   var kst = function (t) { var d = new Date(Date.parse(t) + 9 * 3600e3).toISOString(); return { day: d.slice(0, 10), hm: d.slice(11, 16) }; };
@@ -138,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!items.length) { box.innerHTML = '<div class="ib-empty card">알림이 없어요.<br>새 리포트, 관심 종목, 가격 알림, 스크리너 조건, 업데이트 소식이 여기와 휴대폰으로 와요.</div>'; return; }
     var last = '';
     box.innerHTML = items.map(function (n) { var t = kst(n.created_at), head = t.day !== last ? '<div class="ib-day">' + t.day.slice(5).replace('-', '/') + '</div>' : ''; last = t.day;
-      return head + '<div class="ib-item' + (n.read_at ? '' : ' new') + '" data-nid="' + n.id + '"><span class="ib-ic" aria-hidden="true">' + (ICON[n.kind] || '🔔') + '</span><a href="' + esc(n.link || '#') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small><time>' + t.hm + '</time></a><button type="button" class="ib-x" data-del="' + n.id + '" aria-label="이 알림 지우기">×</button></div>'; }).join('');
+      return head + '<div class="ib-item' + (n.read_at ? '' : ' new') + '" data-nid="' + n.id + '"><span class="ib-ic" aria-hidden="true">' + (ICON[n.kind] || '🔔') + '</span><a href="' + esc(n.link ? siteLink(n.link) : '#') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small><time>' + t.hm + '</time></a><button type="button" class="ib-x" data-del="' + n.id + '" aria-label="이 알림 지우기">×</button></div>'; }).join('');
   };
   box.addEventListener('click', function (e) {
     var del = e.target.closest && e.target.closest('[data-del]'); if (!del) return;

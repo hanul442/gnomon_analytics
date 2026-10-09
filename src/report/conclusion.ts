@@ -24,6 +24,20 @@ export function scenarioCondition(report: DailyReport, kind: 'BULL' | 'BEAR'): {
   return prices.length === 1 ? { price: prices[0]!, source: 'base-exit' } : undefined;
 }
 
+/** G-165: the committee's odds as one bar, or '' when no scenario carries a probability. */
+function oddsBarOf(c: { scenarios?: readonly { kind: string; probability?: number }[] } | undefined): string {
+  const pr = (['BULL', 'BASE', 'BEAR'] as const).map((k) => { const v = c?.scenarios?.find((s) => s.kind === k)?.probability; return typeof v === 'number' ? v : 0; });
+  if (!pr.some((v) => v > 0)) return '';
+  return `<div class="cl-odds"><div class="cl-odds-k">시나리오 확률</div><div class="sc-prob" role="img" aria-label="시나리오 확률 ${(['강세', '기본', '약세'] as const).map((n, i) => (pr[i]! > 0 ? `${n} ${pr[i]}%` : '')).filter(Boolean).join(' ')}">${(['bull', 'base', 'bear'] as const).map((k, i) => (pr[i]! > 0 ? `<span class="sp-${k}" style="flex:${pr[i]}">${pr[i]}%</span>` : '')).join('')}</div><div class="cl-odds-l"><span class="up">강세 ${pr[0]}%</span><span>기본 ${pr[1]}%</span><span class="down">약세 ${pr[2]}%</span></div></div>`;
+}
+
+/** The AI tab's short conclusion (G-166): the committee's one line and its odds; the scenarios themselves stay in 요약 (G-163). */
+export function conclusionMini(report: DailyReport): string {
+  const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
+  const line = (c?.summary?.text ?? report.headline ?? '').split(/(?<=[.?!요])\s/)[0] ?? '';
+  return `<section class="block" id="conclusion"><div class="card cl-mini"><div class="head"><h2>결론</h2></div>${line ? `<p>${esc(line)}</p>` : '<p class="muted">아직 위원회 결론이 없어요.</p>'}${oddsBarOf(c)}<a class="cl-go" href="#tab-home">요약 탭에서 시나리오 자세히 보기 ›</a></div></section>`;
+}
+
 export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string } = {}): string {
   const p = report.price;
   if (!p) return `<section class="block cl-card"${opts.id?` id="${opts.id}"`:''}><div class="card"><div class="cl-k">${esc(opts.title??'지금 판단')}</div><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 가격 자료와 시나리오가 아직 준비되지 않았어요.</p></div></div></section>`;
@@ -66,16 +80,14 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
     row('cl-down', bear, '약세', px('BEAR', '▼'), '성립 근거와 무효화 조건 함께 확인'),
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
-  // G-165: the committee's odds as one bar at the top of the card (it lived in the AI tab before G-163 moved the scenarios here).
-  const pr = [bull, base, bear].map((s) => (typeof s?.probability === 'number' ? s.probability : 0));
-  const oddsBar = hasOdds ? `<div class="cl-odds"><div class="cl-odds-k">시나리오 확률</div><div class="sc-prob" role="img" aria-label="시나리오 확률 ${(['강세', '기본', '약세'] as const).map((n, i) => (pr[i]! > 0 ? `${n} ${pr[i]}%` : '')).filter(Boolean).join(' ')}">${(['bull', 'base', 'bear'] as const).map((k, i) => (pr[i]! > 0 ? `<span class="sp-${k}" style="flex:${pr[i]}">${pr[i]}%</span>` : '')).join('')}</div><div class="cl-odds-l"><span class="up">강세 ${pr[0]}%</span><span>기본 ${pr[1]}%</span><span class="down">약세 ${pr[2]}%</span></div></div>` : '';
+  const oddsBar = oddsBarOf(c);
   const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : `조건 가격 도달만으로 전개가 확정되지는 않아요. 예상 범위와 조건 가격은 다릅니다. 분석 기준은 ${esc(report.date)} 종가 ${won(p.close)}이며, 현재 가격과 차이가 날 수 있어요`;
   return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')}</div><h2 class="cl-line">${esc(line)}</h2>${oddsBar}
 <div class="cl-ladder">${rows}</div>
 <p class="fine">${bull || bear || base ? '줄을 누르면 시나리오가 펼쳐져요. ' : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
 }
 
-export const CONCLUSION_CSS = `.cl-odds{margin:10px 0 14px}.cl-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.cl-odds .sc-prob{height:10px;margin:0;border-radius:5px;gap:2px;font-size:0}.cl-odds .sc-prob span{min-width:6px}.cl-odds-l{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.cl-odds-l span:nth-child(2){color:var(--fg2)}
+export const CONCLUSION_CSS = `.cl-mini p{margin:4px 0 8px;line-height:1.55}.cl-go{display:inline-block;font-size:13px;font-weight:700;padding:6px 0;color:var(--accent-strong);text-decoration:none}.cl-odds{margin:10px 0 14px}.cl-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.cl-odds .sc-prob{height:10px;margin:0;border-radius:5px;gap:2px;font-size:0}.cl-odds .sc-prob span{min-width:6px}.cl-odds-l{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.cl-odds-l span:nth-child(2){color:var(--fg2)}
 @media (min-width:821px){.cl-row{grid-template-columns:minmax(0,1fr) minmax(230px,30%) 20px!important}.cl-what{justify-self:stretch}}.cl-card .card{border:1.5px solid var(--navy)}.cl-k{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.cl-line{font-size:19px;line-height:1.5;margin:0 0 8px}.cl-tally{font-size:13px;color:var(--fg2);margin:0 0 14px}
 .cl-ladder{position:relative;display:flex;flex-direction:column;gap:8px;padding-left:4px}.cl-ladder::before{content:'';position:absolute;left:15px;top:14px;bottom:14px;width:2px;background:linear-gradient(#f04452,#7b8798,#3182f6);opacity:.35}
 .cl-item{display:flex;flex-direction:column}.cl-row{position:relative;display:grid;grid-template-columns:minmax(150px,auto) 1fr auto;gap:6px 16px;align-items:center;border-radius:14px;padding:12px 14px;border:0;font:inherit;color:inherit;text-align:left;width:100%;cursor:pointer}.cl-row:disabled{cursor:default}.cl-row:not(:disabled):hover{outline:2px solid rgba(15,34,68,.15)}.cl-more{font-size:20px;color:var(--muted);transition:transform .15s}.cl-row[aria-expanded=true] .cl-more{transform:rotate(90deg)}.cl-row[aria-expanded=true]{border-bottom-left-radius:0;border-bottom-right-radius:0}.cl-sc{position:relative;z-index:1;background:#fff;border:1px solid var(--line);border-top:0;border-radius:0 0 14px 14px;padding:10px 14px 4px;font-size:14px;line-height:1.6}.cl-sc p{margin:0 0 8px}.cl-sc-k{font-size:13px;color:var(--fg2)}.cl-worst{margin:4px 0 10px;background:#fff5f5;border:1px solid #f3c7c9;border-radius:10px;padding:9px 11px}.cl-worst>b{color:#9b1c1c;font-size:13px}.cl-worst p{margin:3px 0 6px}.cl-worst ul{list-style:none;padding:0;margin:0 0 4px;font-size:13px}.cl-worst li{margin:2px 0}.cl-worst small{color:var(--muted);font-size:11.5px}.cl-sc-k b{color:var(--fg);margin-right:4px}.cl-up{background:#fdf0f0}.cl-now{background:#f2f4f7}.cl-down{background:#eef3fc}
