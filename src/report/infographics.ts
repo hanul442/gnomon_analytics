@@ -36,7 +36,6 @@ export function healthAxes(m: MarketSection, close: number | null): Axis[] {
   ];
 }
 
-let radarSeq = 0;
 function radar(axes: readonly Axis[]): string {
   const cx = 110, cy = 104, r = 78, n = axes.length;
   const pt = (i: number, v: number) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [cx + Math.cos(a) * r * v, cy + Math.sin(a) * r * v] as const; };
@@ -44,7 +43,8 @@ function radar(axes: readonly Axis[]): string {
   const shape = axes.map((a, i) => pt(i, (a.score ?? 0) / 100).map((x) => x.toFixed(1)).join(',')).join(' ');
   const labels = axes.map((a, i) => { const [x, y] = pt(i, 1.2); return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" class="${a.score == null ? 'na' : ''}">${esc(a.label)}</text>`; }).join('');
   // G-184: the shape is filled with a light that is brightest in the middle (stop colours come from CSS so both themes work).
-  const gid = `ig-rg${++radarSeq}`;
+  // The id comes from the scores, so the same report renders the same page (two equal radars share an identical gradient).
+  const gid = `ig-rg-${axes.map((a) => (a.score == null ? 'x' : Math.round(a.score))).join('-')}`;
   return `<svg class="ig-radar" viewBox="0 0 220 210" role="img" aria-label="${axes.map((a) => `${a.label} ${a.score == null ? '자료 없음' : Math.round(a.score) + '점'}`).join(', ')}"><defs><radialGradient id="${gid}" cx="50%" cy="50%" r="60%"><stop offset="0" class="s0"/><stop offset="1" class="s1"/></radialGradient></defs>
 ${[0.33, 0.66, 1].map((v) => `<polygon points="${ring(v)}" class="grid"/>`).join('')}${axes.map((_, i) => { const [x, y] = pt(i, 1); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" class="grid"/>`; }).join('')}
 <polygon points="${shape}" class="area" fill="url(#${gid})"/>${axes.map((a, i) => a.score == null ? '' : (() => { const [x, y] = pt(i, a.score / 100); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" class="dot" data-i="${i}" style="--i:${i}"><title>${esc(a.label)} ${Math.round(a.score)}점</title></circle>`; })()).join('')}${labels}</svg>`;

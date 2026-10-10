@@ -98,13 +98,20 @@ ${LETTER_DELAYS.slice(1).map((i) => `.gen-btn:focus-visible .gen-l:nth-child(${i
 export const GEN_BUTTON_JS = `
 // G-185: gnmBusy(button, label) shows short work (a few seconds, length unknown) inside the button: a sweeping
 // light, a spinner, the label and the seconds so far. gnmBusy(button, false) puts the button back.
+// One save/restore for every in-button state (gnmBusy here, the report job in JOBS_JS): label, size, effects.
+window.gnmBtnKeep = function (b) { if (b._keep) return; b._keep = { html: b.innerHTML, label: b.getAttribute('aria-label'), w: b.style.minWidth }; if (b.offsetWidth) b.style.minWidth = b.offsetWidth + 'px'; };
+window.gnmBtnRestore = function (b) {
+  clearInterval(b._bz); if (b._tk) { b._tk.stop(); b._tk = null; } if (b.__liquid) b.__liquid.stop();
+  if (b._keep) { b.innerHTML = b._keep.html; if (b._keep.label == null) b.removeAttribute('aria-label'); else b.setAttribute('aria-label', b._keep.label); b.style.minWidth = b._keep.w; b._keep = null; }
+  delete b.dataset.job; b.removeAttribute('aria-busy');
+};
 window.gnmBusy = function (b, label) {
   if (!b) return;
-  if (label === false) { clearInterval(b._bz); if (b._tk) { b._tk.stop(); b._tk = null; } if (b._bo != null) { b.innerHTML = b._bo; b._bo = null; } b.style.minWidth = ''; delete b.dataset.job; b.removeAttribute('aria-busy'); return; }
-  if (b._bo == null) { b._bo = b.innerHTML; b.style.minWidth = b.offsetWidth ? b.offsetWidth + 'px' : ''; }
+  if (label === false) { gnmBtnRestore(b); return; }
+  gnmBtnKeep(b);
   b.dataset.job = 'running'; b.setAttribute('aria-busy', 'true');
   b.innerHTML = '<i class="job-fill indet"></i><span class="job-spin" aria-hidden="true"></span><span class="job-main"></span><small class="job-sub">0초</small>';
-  b.querySelector('.job-main').textContent = label; var t0 = Date.now();
+  b.querySelector('.job-main').textContent = label; b.setAttribute('aria-label', label); var t0 = Date.now();
   // The ThreeUI Thinking light runs round the button while it works (G-185); the label counts the seconds.
   if (window.gnmThinking && !b._tk) b._tk = gnmThinking(b, label);
   clearInterval(b._bz); b._bz = setInterval(function () { var s = b.querySelector('.job-sub'); if (!s) { clearInterval(b._bz); return; } var n = Math.round((Date.now() - t0) / 1000); s.textContent = n + '초'; if (b._tk) b._tk.text(label + ' · ' + n + '초'); }, 1000);

@@ -98,13 +98,15 @@ export const THINKING_JS = `
       plate(ctx); label(ctx, ph);
     };
     var now = 0, last = null, raf = 0, alive = true, reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var frame = function (ts) { if (!alive) return; if (!reduced) { if (last != null) now = (now + (ts - last) / 1000) % DUR; last = ts; } render(now); raf = requestAnimationFrame(frame); };
-    var ro = window.ResizeObserver ? new ResizeObserver(resize) : null; if (ro) ro.observe(btn); window.addEventListener('resize', resize);
-    resize(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (alive) fitText(); });
-    raf = requestAnimationFrame(frame);
+    // Reduced motion: one still frame, redrawn only when the label or the size changes.
+    var frame = function (ts) { if (!alive) return; if (last != null) now = (now + (ts - last) / 1000) % DUR; last = ts; render(now); raf = requestAnimationFrame(frame); };
+    var redraw = function () { resize(); if (reduced && alive) render(now); };
+    var ro = window.ResizeObserver ? new ResizeObserver(redraw) : null; if (ro) ro.observe(btn); window.addEventListener('resize', redraw);
+    resize(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (alive) { fitText(); if (reduced) render(now); } });
+    if (reduced) render(now); else raf = requestAnimationFrame(frame);
     return {
-      text: function (s) { if (s !== text) { text = s; fitText(); } },
-      stop: function () { alive = false; cancelAnimationFrame(raf); if (ro) ro.disconnect(); window.removeEventListener('resize', resize); cv.remove(); btn.classList.remove('has-thinking'); }
+      text: function (s) { if (s !== text) { text = s; fitText(); if (reduced) render(now); } },
+      stop: function () { alive = false; cancelAnimationFrame(raf); if (ro) ro.disconnect(); window.removeEventListener('resize', redraw); cv.remove(); btn.classList.remove('has-thinking'); }
     };
   };
 })();`;

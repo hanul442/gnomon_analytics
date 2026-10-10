@@ -296,7 +296,7 @@ function adminParts(): { body: string; script: string } {
     action: function () {
       var K = { report: '심층 리포트', brief: '요약 리포트(이전)', upgrade: '심층 업그레이드(이전)', invite: '전문가 초청' };
       return '<p class="muted small">알파에서는 손으로 처리해요. 리포트는 requests.json에 종목을 넣고 다음 실행을 기다리면 돼요. 반려하면 크레딧이 돌아가요.</p>' + table(['때', '사용자', '종류', '종목', '내용', '크레딧', '상태', '처리'], D.actions.map(function (a) {
-        return '<tr><td>' + when(a.created_at) + '</td><td>' + esc(a.email) + '</td><td>' + (K[a.kind] || a.kind) + '</td><td><a href="stock.html?c=' + esc(a.symbol) + '">' + esc(a.symbol) + '</a></td><td>' + esc(a.detail) + '</td><td class="num">' + a.credits + '</td><td>' + pill(a.status) + '</td><td>' + (a.status === 'pending' ? '<div class="act" data-act="' + a.id + '"><button class="ok" data-s="done">완료</button><button data-s="rejected">반려·환불</button></div>' : '') + '</td></tr>';
+        return '<tr><td>' + when(a.created_at) + '</td><td>' + esc(a.email) + '</td><td>' + (K[a.kind] || a.kind) + '</td><td><a href="' + esc(String(window.GNM_SITE || '').replace(/\\/$/, '')) + '/stock.html?c=' + esc(a.symbol) + '" target="_blank" rel="noopener">' + esc(a.symbol) + '</a></td><td>' + esc(a.detail) + '</td><td class="num">' + a.credits + '</td><td>' + pill(a.status) + '</td><td>' + (a.status === 'pending' ? '<div class="act" data-act="' + a.id + '"><button class="ok" data-s="done">완료</button><button data-s="rejected">반려·환불</button></div>' : '') + '</td></tr>';
       }));
     },
     users: function () {
@@ -360,7 +360,7 @@ function adminParts(): { body: string; script: string } {
       D = r; document.getElementById('adm-line').textContent = '가입 ' + r.users.length + '명 · 오늘 AI ' + usd(r.spend.today) + ' (하루 한도 ' + usd(r.spend.dailyCap) + ')'; draw();
     });
   };
-  load();
+  window.__opsReload = load; load();
 })();
 </script>`;
   return { body, script };
@@ -381,7 +381,7 @@ export function renderOps(opts: { api: string; site: string }): string {
 :root{--page:#0A1626;--surface:rgba(255,255,255,.045);--surface-solid:#13223A;--soft:rgba(255,255,255,.06);--line:rgba(255,255,255,.09);--line-strong:rgba(255,255,255,.18);--fg:#F4F7FA;--fg2:#C3CDD6;--muted:#8593A1;--accent:#00A6FB;--accent-strong:#3DB9FF;--accent-soft:rgba(0,166,251,.14);--navy:#00A6FB;--up:#FF7A7A;--down:#5CBBFF;--up-soft:rgba(255,122,122,.16);--up-strong:#FF9B9B;--good-soft:rgba(134,227,181,.16);--good-strong:#86E3B5;--warn-soft:rgba(242,193,78,.16);--warn:#F2C14E;color-scheme:dark}
 *{box-sizing:border-box}html,body{margin:0}body{min-height:100vh;background:var(--page);background-image:radial-gradient(1100px 700px at 20% -20%,rgba(0,100,148,.45),transparent 60%),radial-gradient(900px 600px at 110% 30%,rgba(0,53,84,.6),transparent 60%);background-attachment:fixed;color:var(--fg);font:15px/1.6 "Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased;word-break:keep-all}
 .ops-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:rgba(6,16,28,.82);border-bottom:1px solid var(--line);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
-.ops-top b{letter-spacing:.2em;font-weight:700}.ops-top small{color:var(--muted);margin-left:10px;letter-spacing:0}
+.ops-top>div:last-child{display:flex;align-items:center;gap:10px;min-width:0}#ops-who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}@media (max-width:560px){#ops-who{display:none}}.ops-top b{letter-spacing:.2em;font-weight:700}.ops-top small{color:var(--muted);margin-left:10px;letter-spacing:0}
 .ops-top button,.ops-login button{border:0;border-radius:999px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer;background:#fff;color:#0A1626}
 .ops-top button.ghost{background:transparent;color:var(--fg2);border:1px solid var(--line-strong)}
 main{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
@@ -418,7 +418,7 @@ a{color:var(--accent-strong)}input,select,textarea,button{color:inherit}input,se
   var open = function (me) {
     document.getElementById('ops-login').hidden = true; document.getElementById('ops-main').hidden = false; document.getElementById('ops-out').hidden = false;
     document.getElementById('ops-who').textContent = me.user.email;
-    if (!started) { started = true; window.__opsConsole(); }
+    if (!started) { started = true; window.__opsConsole(); } else if (window.__opsReload) window.__opsReload();
   };
   document.getElementById('ops-form').addEventListener('submit', function (e) {
     e.preventDefault(); var f = e.target, err = document.getElementById('ops-err'); err.textContent = '';

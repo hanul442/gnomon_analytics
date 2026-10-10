@@ -318,14 +318,18 @@ export const LIVE_JS = `
     var sg = function (v) { return (v > 0 ? '+' : '') + v.toFixed(2) + '%'; };
     var paint = function (sym, q) {
       var prev = last[sym]; last[sym] = q;
-      document.querySelectorAll('[data-live="' + sym + '"]').forEach(function (el) {
+      // G-185: positions are read once before any write (no layout thrash), and an element rolls at most every 1.5 s
+      // so a fast feed (Upbit) sets the text instead of restarting the roll.
+      var els = [].slice.call(document.querySelectorAll('[data-live="' + sym + '"]')), nowMs = Date.now();
+      var shown = els.map(function (el) { var r = el.getBoundingClientRect(); return !!(r.width && r.bottom > 0 && r.top < innerHeight); });
+      els.forEach(function (el, idx) {
         var f = el.getAttribute('data-live-f'), t = q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : '';
         if (f === 'nowlabel') { el.textContent = q.open ? '지금' : '현재가'; return; }
         // The time of the last trade, so the reader sees how fresh the number is (G-128).
         var hm = q.at ? String(q.at).replace(/^.*T(\\d\\d:\\d\\d(:\\d\\d)?).*$/, '$1') : '';
         if (f === 'tag') { el.hidden = false; el.textContent = q.open ? (q.session === 'pre' ? (isUs(sym) ? '● 프리마켓' : '● NXT 프리마켓') : q.session === 'after' ? (isUs(sym) ? '● 애프터마켓' : '● NXT 애프터마켓') : '● 실시간') + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); return; }
         // G-185: numbers on screen roll to the new value (up or down with the tick); off screen they are just set.
-        var dir = prev ? (q.price > prev.price ? 1 : q.price < prev.price ? -1 : 0) : 1, put = function (t) { var r = el.getBoundingClientRect(); if (window.gnmRoll && r.bottom > 0 && r.top < innerHeight && r.width) gnmRoll(el, t, dir || 1); else { el.textContent = t; el.setAttribute('data-rv', t); } };
+        var dir = prev ? (q.price > prev.price ? 1 : q.price < prev.price ? -1 : 0) : 1, put = function (t) { if (window.gnmRoll && shown[idx] && nowMs - (el.__rlAt || 0) > 1500) { el.__rlAt = nowMs; gnmRoll(el, t, dir || 1); } else if (el.getAttribute('data-rv') !== t || el.textContent !== t) { el.textContent = t; el.setAttribute('data-rv', t); } };
         if (f === 'price') put(won(q.price, sym));
         else if (f === 'pct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
         else if (f === 'arrowpct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));

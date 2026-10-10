@@ -49,15 +49,15 @@ export const JOBS_JS = `
  var STEPS=[['queued','접수'],['searching','자료 확인'],['working','토론·분석'],['composing','작성']];
  var FUN=['위원 11명이 자리에 앉고 있어요 🪑','기술 데스크가 차트를 확대하는 중이에요 🔍','수급 데스크가 외국인 지갑을 들여다보는 중 👀','레드팀이 반론거리를 찾고 있어요 🥊','펀더멘털 데스크가 실적표에 형광펜 칠하는 중 🖍️','공시 데스크가 DART를 정독하고 있어요 📑','분석가들이 목표가를 두고 토론 중이에요 🗣️','강세파와 약세파가 팽팽해요 ⚖️','최악의 경우도 꼼꼼히 따져 보는 중 🧯','시나리오 확률을 계산기로 두드리는 중 🧮','근거 없는 말은 지우는 중이에요 ✂️','커피 한 모금… 거의 다 써 가요 ☕','토론 순서를 정리하고 있어요 🎙️','마지막으로 숫자를 한 번 더 확인해요 ✅'];
  var base=document.body.dataset.base||'';
- var job={id:null,symbol:'',name:'',state:'',stage:'queued',est:150,started:null,iv:null,tick:0,fun:Math.floor(Math.random()*FUN.length),href:''};
+ var job={id:null,symbol:'',name:'',state:'',stage:'queued',est:150,started:null,iv:null,tick:0,fun:Math.floor(Math.random()*FUN.length),href:'',floatClosed:false};
  var mmss=function(t){t=Math.max(0,Math.round(t));return Math.floor(t/60)+':'+String(t%60).padStart(2,'0');};
  var pageSymbol=function(){var q=new URLSearchParams(location.search);return q.get('c')||q.get('m')||q.get('s')||((document.querySelector('[data-symbol]')||{}).dataset||{}).symbol||'';};
- var floatEl=function(make){var f=document.querySelector('.job-float');if(!f&&make){f=document.createElement('div');f.className='job-float';f.setAttribute('role','status');f.innerHTML=gnmGenButton('AI 리포트','data-job-float','')+'<button type="button" class="job-x" aria-label="닫기">×</button>';document.body.appendChild(f);f.querySelector('.job-x').onclick=function(){f.remove();};}return f;};
+ var floatEl=function(make){var f=document.querySelector('.job-float');if(!f&&make&&!job.floatClosed){f=document.createElement('div');f.className='job-float';f.setAttribute('role','status');f.innerHTML=gnmGenButton('AI 리포트','data-job-float','')+'<button type="button" class="job-x" aria-label="닫기">×</button>';document.body.appendChild(f);f.querySelector('.job-x').onclick=function(){job.floatClosed=true;f.remove();};}return f;};
  // The buttons that show the job: every report button on the page, else the floating pill.
  var targets=function(){var list=[].slice.call(document.querySelectorAll('[data-create-report]'));if(list.length)return list;var f=floatEl(job.state==='running'||job.state==='done'||job.state==='failed');return f?[f.querySelector('.gen-btn')]:[];};
- var keep=function(b){if(b._orig==null){b._orig=b.innerHTML;b._label=b.getAttribute('aria-label')||'';b.style.minWidth=b.offsetWidth?b.offsetWidth+'px':'';}};
+ var keep=function(b){if(window.gnmBtnKeep)gnmBtnKeep(b);};
  var fx=function(b,state,pct){if(state!=='running'&&b.__liquid)b.__liquid.stop();if(state!=='sending'&&b._tk){b._tk.stop();b._tk=null;}if(state==='running'&&window.gnmLiquid){var lq=gnmLiquid(b);if(lq&&pct!=null)lq.level(pct/100);}if(state==='sending'&&window.gnmThinking&&!b._tk)b._tk=gnmThinking(b,'접수하는 중');};
- var reset=function(b){clearTimeout(b._cf);fx(b,'');if(b._orig!=null){b.innerHTML=b._orig;b.setAttribute('aria-label',b._label);b._orig=null;b.style.minWidth='';}delete b.dataset.job;b.removeAttribute('aria-busy');var x=b.parentNode&&b.parentNode.querySelector('.job-cancel');if(x)x.remove();var bar=b.closest('.rs-bar');if(bar&&bar._tx){bar.querySelector('.sa-tx').innerHTML=bar._tx;bar._tx=null;}};
+ var reset=function(b){clearTimeout(b._cf);fx(b,'');if(window.gnmBtnRestore)gnmBtnRestore(b);var x=b.parentNode&&b.parentNode.querySelector('.job-cancel');if(x)x.remove();var bar=b.closest('.rs-bar');if(bar&&bar._tx){bar.querySelector('.sa-tx').innerHTML=bar._tx;bar._tx=null;}};
  var dress=function(b,state,main,sub,pct){keep(b);b.dataset.job=state;b.setAttribute('aria-busy',String(state==='running'||state==='sending'));
   var busy=state==='running'||state==='sending';
   b.innerHTML=(busy?'<i class="job-fill" style="width:'+(pct||4)+'%"></i><span class="job-spin" aria-hidden="true"></span>':state==='done'?'<span class="job-ok" aria-hidden="true">✓</span>':'')+'<span class="job-main">'+esc(main)+'</span>'+(sub?'<small class="job-sub">'+esc(sub)+'</small>':'');
@@ -73,7 +73,7 @@ export const JOBS_JS = `
   targets().forEach(function(b){if(b.dataset.job!=='running')dress(b,'running',main,sub,pct);else text(b,main,sub,pct);strip(b,'위원회가 리포트를 쓰고 있어요',line);});
  };
  var run=function(){if(job.state!=='running'){job.state='running';job.tick=0;}clearInterval(job.iv);paintRun();job.iv=setInterval(paintRun,1000);};
- var finish=function(state){clearInterval(job.iv);job.iv=null;job.state=state;
+ var finish=function(state){clearInterval(job.iv);job.iv=null;job.state=state;if(!state){var fl=floatEl(false);if(fl)fl.remove();}
   targets().forEach(function(b){reset(b);if(state==='done')dress(b,'done','리포트 보기','방금 완성됐어요');else if(state==='failed')dress(b,'failed','다시 요청하기','크레딧은 돌려드렸어요');});
  };
  var openDone=function(){if(job.symbol&&job.symbol===pageSymbol()){var t=document.querySelector('[aria-controls=tab-ai]');if(t){t.click();scrollTo({top:0,behavior:'smooth'});return;}}if(job.href)location.href=job.href;};
@@ -88,12 +88,13 @@ export const JOBS_JS = `
    if(r.status==='done'){
     job.href=base+(String(r.symbol).indexOf('KRW-')===0?'coin.html?m=':'stock.html?c=')+encodeURIComponent(r.symbol)+'&job='+id+'#tab-ai';
     if(!r.fragments||!r.fragments.ai){finish('');if(G.toast)G.toast('완료된 리포트 본문을 불러오지 못했어요. 크레딧을 다시 쓰지 말고 새로고침하거나 문의해 주세요.','error');return;}
-    var was=job.state==='running';finish('done');
+    // An older finished job (found on page load) is only painted; the buttons keep offering a new report.
+    var was=job.state==='running';finish(was?'done':'');
     if(r.symbol===pageSymbol())paint(r);
     if(was&&G.toast)G.toast((job.name||'')+' 리포트가 완성됐어요');
     if(G.refresh)G.refresh();return;
    }
-   if(r.status==='failed'){finish('failed');if(G.toast)G.toast(r.error&&typeof r.error==='string'?r.error:'리포트를 만들지 못했어요. 크레딧은 돌려드렸어요.','error');if(G.refresh)G.refresh();return;}
+   if(r.status==='failed'){var ran=job.state==='running';finish(ran?'failed':'');if(ran&&G.toast)G.toast(r.error&&typeof r.error==='string'?r.error:'리포트를 만들지 못했어요. 크레딧은 돌려드렸어요.','error');if(ran&&G.refresh)G.refresh();return;}
    job.stage=STEPS.some(function(x){return x[0]===r.stage;})?r.stage:'working';run();
    timer=setTimeout(poll,1000);
   });};poll();
@@ -133,7 +134,7 @@ export const JOBS_JS = `
    b._go=function(){clearTimeout(b._cf);x.remove();dress(b,'sending','접수하는 중','잠시만요',3);
     G.call('POST','/reports',{kind:kind,symbol:symbol}).then(function(r){
      if(r.error){reset(b);G.toast(r.message||'요청하지 못했어요.','error');done(false);return;}
-     job.started=Date.now();job.stage='queued';watch(r.id,true);G.refresh();done(true);
+     job.started=Date.now();job.stage='queued';job.floatClosed=false;watch(r.id,true);G.refresh();done(true);
     }).catch(function(){reset(b);G.toast('연결을 확인한 뒤 다시 눌러 주세요.','error');done(false);});
    };
    b._cf=setTimeout(function(){if(b.dataset.job==='confirm'){reset(b);done(false);}},8000);

@@ -20,5 +20,7 @@ export const GLASS_JS = `
     if (c !== cur) { if (cur) cur.classList.remove('gl-on'); cur = c; if (cur) cur.classList.add('gl-on'); }
     x = e.clientX; y = e.clientY; if (cur && !raf) raf = requestAnimationFrame(paint);
   }, { passive: true });
-  document.addEventListener('pointerleave', function () { if (cur) cur.classList.remove('gl-on'); cur = null; });
+  var off = function () { if (cur) cur.classList.remove('gl-on'); cur = null; };
+  document.addEventListener('pointerout', function (e) { if (!e.relatedTarget) off(); }, { passive: true });
+  window.addEventListener('blur', off);
 })();`;
