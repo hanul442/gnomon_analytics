@@ -1,5 +1,5 @@
 {
- "at": "2026-10-10T08:01:14.734Z",
+ "at": "2026-10-10T08:23:01.449Z",
  "selected": null,
  "universe": [
   {
@@ -41,11 +41,6 @@
  "stocks": [
   {
    "symbol": "000660",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "005930",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -105,17 +100,17 @@
    "failedSources": []
   },
   {
-   "symbol": "006400",
+   "symbol": "036930",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "267250",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "042660",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "012450",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -135,11 +130,6 @@
    "failedSources": []
   },
   {
-   "symbol": "329180",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
    "symbol": "353200",
    "report": "NOT_SETTLED",
    "failedSources": []
@@ -151,6 +141,11 @@
   },
   {
    "symbol": "005380",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "267270",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -180,27 +175,12 @@
    "failedSources": []
   },
   {
-   "symbol": "012330",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
    "symbol": "051910",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "105560",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "267260",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "007660",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -216,11 +196,6 @@
   },
   {
    "symbol": "452190",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "003490",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -282,11 +257,19 @@
  ],
  "failed": [
   {
-   "symbol": "036930",
+   "symbol": "005930",
    "error": "fetch failed"
   },
   {
-   "symbol": "267250",
+   "symbol": "006400",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "012450",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "329180",
    "error": "fetch failed"
   },
   {
@@ -294,11 +277,23 @@
    "error": "fetch failed"
   },
   {
-   "symbol": "267270",
+   "symbol": "012330",
    "error": "fetch failed"
   },
   {
    "symbol": "222800",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "007660",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "267260",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "003490",
    "error": "fetch failed"
   }
  ]
