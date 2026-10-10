@@ -1,11 +1,10 @@
-import { genButton } from './generateButton.js';
+import { reportButton } from './generateButton.js';
 import { MT_INNER } from './modernSwitch.js';
 // App-style sections (BLACK ORACLE mobile mockup v1 tone, docs/DESIGN.md G-15):
 // hero with key points, market strip with sparklines, council consensus ring,
 // latest news and filings lists, and the interactive candlestick chart with an
 // indicator menu (Lightweight Charts v5 panes).
 
-import { CREDIT_COST } from './plans.js';
 import { CHART_V6_JS, chartToolbar } from './chartTools.js';
 import { starButton } from './ui.js';
 import { scenarioCheck, scenarioLayer } from './scenarioChart.js';
@@ -79,7 +78,7 @@ export function marketChip(report: DailyReport): string {
 export function reportStatusBar(report: DailyReport, from: string | null): string {
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
   const priceDate = report.price?.sessionDate ?? report.date, date = c ? from ?? report.date : null;
-  const btn = (label: string) => genButton(label, `data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}"`, `${CREDIT_COST.report}크레딧`);
+  const btn = (label: string) => reportButton(report.symbol, report.name, label);
   if (!c || !date) return `<div class="rs-bar rs-none" data-report-status role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>AI 위원회 리포트가 아직 없어요</b><small>요청하면 지금 데이터로 위원회가 분석해요. 크레딧 요청은 플러스부터예요.</small></div>${btn('심층 리포트 만들기')}</div>`;
   const sessions = new Set((report.recentCloses ?? []).filter((p) => p.date > date).map((p) => p.date)).size;
   const stale = date < priceDate;

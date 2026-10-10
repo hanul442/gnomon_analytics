@@ -1,7 +1,7 @@
 import { COMMAND_BAR_CSS, COMMAND_BAR_JS, REPORT_TABS_CSS, REPORT_TABS_JS } from './commandBar.js';
 import { US_EXCHANGE_LETTER } from '../sources/naverWorld.js';
 import { MODERN_SWITCH_CSS, MODERN_SWITCH_JS } from './modernSwitch.js';
-import { GEN_BUTTON_CSS, GEN_BUTTON_JS, genButton } from './generateButton.js';
+import { GEN_BUTTON_CSS, GEN_BUTTON_JS, genButton, reportButton } from './generateButton.js';
 import { ROLL_CSS, ROLL_JS } from './rollNumber.js';
 import { LIQUID_CSS, LIQUID_JS } from './liquidButton.js';
 import { GLASS_CSS, GLASS_JS } from './glass.js';
@@ -650,14 +650,14 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   const flowsTab = insightLine(report, 'flow', base) + (report.kind==='coin' ? coinFlow(report) : `<div data-slot="flows">${m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>'}</div>`) + edgeFlows(report) + (report.kind === 'coin' || report.currency === 'USD' ? '' : shortSlot(report.symbol));
   const fundTab = insightLine(report, 'fundamental', base) + `<div data-slot="fundamentals">${(m ? fundamentalsPanel(m, report.price?.close ?? null, report.name, report.recentBars ?? [], report.statements) : '') || '<div class="card empty">기업 정보를 아직 받지 못했어요.</div>'}</div>` + edgeFundamentals(report);
   // G-168: a report written before v3.5.0 may carry the old short summary; it offers the committee report in its place.
-  const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>이전 형식의 간단 해설이에요</b><p class="muted small">이제 AI 리포트는 모두 AI 위원회 심층 리포트(데스크 5곳·분석가 6명·레드팀·시나리오)로 써요. 이 종목도 심층 리포트로 새로 만들 수 있어요.</p></div><button type="button" class="credit-btn" data-create-report data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">심층 리포트 만들기 <small>${CREDIT_COST.report}크레딧</small></button></div></section>` : '';
+  const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>이전 형식의 간단 해설이에요</b><p class="muted small">이제 AI 리포트는 모두 AI 위원회 심층 리포트(데스크 5곳·분석가 6명·레드팀·시나리오)로 써요. 이 종목도 심층 리포트로 새로 만들 수 있어요.</p></div>${reportButton(report.symbol, report.name)}</div></section>` : '';
   // G-114: an older committee says so with a way to a fresh one, on the AI tab as on the summary.
   const fromNote = ctx.commentaryFrom ? (ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? reportStatusBar(report, ctx.commentaryFrom) : `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요.</p>`) : '';
   const sealedDeep = !!ctx.deep && report.commentary?.status === 'OK' && report.commentary.tier !== 'brief';
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary?.status === 'OK'
     ? `${upgrade}${fromNote}${committeeTab(report, { base, from: ctx.commentaryFrom ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
-    : `${report.commentary?whySection(report):''}${conclusionMini(report)}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 토론이 아직 생성되지 않았어요</b><button type="button" class="chip-toggle" data-create-report data-symbol="${escape(report.symbol)}" data-name="${escape(report.name)}">리포트 생성</button></div></div>${joinBox(report)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
+    : `${report.commentary?whySection(report):''}${conclusionMini(report)}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 위원회 토론이 아직 없어요</b>${reportButton(report.symbol, report.name)}</div></div>${joinBox(report)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsTabBody(report)}`;
   const p = report.price;
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
@@ -950,7 +950,7 @@ ${coin || us ? '' : `<section class="block"><div class="block-head"><h2>AI 리�
   const ending=body.indexOf('<footer id="sources"');
   const techAt=body.indexOf('<section class="block"><div class="grid-eq">',split);
   const head=body.slice(0,split), chart=body.slice(split,techAt), technical=body.slice(techAt,ending);
-  const missing=(label:string)=>`<section class="block" data-missing>${label?`<h2>${label}</h2>`:''}<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 생성되지 않은 분석이에요</b><p>리포트를 생성하면 이 영역에서 확인할 수 있어요.</p><button type="button" class="btn-primary" data-create-report>심층 리포트 생성하기</button></div></div></section>`;
+  const missing=(label:string)=>`<section class="block" data-missing>${label?`<h2>${label}</h2>`:''}<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 만들지 않은 분석이에요</b><p>심층 리포트를 만들면 여기서 볼 수 있어요.</p>${reportButton()}</div></div></section>`;
   // G-192: a US stock's 기업 체력 and 뉴스·공시 are filled from the API (/usinfo) instead of locked until a report.
   const usSlot=(key:string)=>`<div data-slot="us-${key}"><section class="block"><div class="card us-wait" style="display:flex;align-items:center;gap:10px;color:var(--fg2);font-size:14px"><span class="orbs" aria-hidden="true"><i></i><i></i><i></i></span> ${key==='news'?'SEC 공시와 영문 뉴스를 불러오고 있어요.':'재무·밸류에이션·내부자 거래를 불러오고 있어요.'}</div></section></div>`;
   const usHome=us?'<div data-slot="us-edge"></div><div data-slot="us-latest"></div>':'';
@@ -1025,7 +1025,8 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
       $('pb-change').textContent = prev ? (pc > 0 ? '▲ +' : pc < 0 ? '▼ ' : '') + pc.toFixed(2) + '%' : ''; $('pb-change').className = ch > 0 ? 'up' : ch < 0 ? 'down' : '';
       document.querySelectorAll('.skel').forEach(function (x) { x.classList.remove('skel'); });
     }
-    ['sp-request-credit'].forEach(function (id) { var rb = $(id); if (rb) { rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name); } });
+    // Every report button on this page (the request card and the locked sections) is for this stock.
+    document.querySelectorAll('[data-create-report]').forEach(function (rb) { rb.setAttribute('data-symbol', d.symbol); rb.setAttribute('data-name', d.name); });
     if(window.GNM_coinChartReady)GNM_coinChartReady();
     var c = d.calc, VOTE = { BULLISH: '강세', NEUTRAL: '중립', BEARISH: '약세' };
     var signed = function (v) { return v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(1) + '%'; };
