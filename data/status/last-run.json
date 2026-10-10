@@ -1,5 +1,5 @@
 {
- "at": "2026-10-10T00:37:19.412Z",
+ "at": "2026-10-10T07:37:57.893Z",
  "selected": null,
  "universe": [
   {
@@ -65,6 +65,11 @@
    "failedSources": []
   },
   {
+   "symbol": "066570",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
    "symbol": "034020",
    "report": "NOT_SETTLED",
    "failedSources": []
@@ -90,7 +95,17 @@
    "failedSources": []
   },
   {
+   "symbol": "196170",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
    "symbol": "032830",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "006400",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -290,18 +305,5 @@
    ]
   }
  ],
- "failed": [
-  {
-   "symbol": "066570",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "006400",
-   "error": "fetch failed"
-  },
-  {
-   "symbol": "196170",
-   "error": "fetch failed"
-  }
- ]
+ "failed": []
 }
