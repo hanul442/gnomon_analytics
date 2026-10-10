@@ -766,8 +766,6 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'updates.html'), renderUpdates());
   // G-137: what the API's update note reads after each deploy.
   await writeFile(join(siteDir, 'version.json'), JSON.stringify({ version: VERSION, date: RELEASES[0]?.[1] ?? '', note: RELEASES[0]?.[2] ?? '' }));
-  // Guide screenshots (G-74) live in docs/guide and are published next to the page.
-  await cp(join(root, 'docs', 'guide'), join(siteDir, 'guide'), { recursive: true }).catch(() => {});
   await writeFile(join(siteDir, 'survey.html'), renderSurvey());
   const banners = validBanners(JSON.parse(await readFile(join(root, 'banners.json'), 'utf8').catch(() => '[]')), kstParts(new Date()).date);
   await writeFile(join(siteDir, 'checkout.html'), renderCheckout());

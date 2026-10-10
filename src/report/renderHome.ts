@@ -380,11 +380,13 @@ ${MY_SCREENS}${movers(data.universe, covered)}</div>
 }
 
 /** My feed (G-46): from the onboarding survey, kept in this browser. Leads with my stocks and puts first what I said I want to see. */
-const FEED = `<section class="block" id="feed" hidden><div class="card feed"><div class="feed-head"><div><div class="pl-k">내 피드</div><b id="feed-title">관심 종목과 투자 스타일에 맞춘 순서예요</b></div><a class="muted small" href="onboarding.html">설문 다시 하기</a></div><div id="feed-chips" class="feed-chips"></div></div></section>`;
+const FEED = `<section class="block" id="feed" hidden><div class="card feed"><div class="feed-head"><div><div class="pl-k">내 피드</div><b id="feed-title">내 종목과 투자 스타일에 맞춘 화면이에요</b></div><a class="feed-redo" href="onboarding.html">설문 다시 하기</a></div><div id="feed-sum" class="feed-sum" hidden></div><ul id="feed-list" class="feed-list"></ul><div id="feed-chips" class="feed-chips"></div></div></section>`;
 const FEED_SCRIPT = `<script>
 (function () {
   var prefs = null; try { prefs = JSON.parse(localStorage.getItem('gnm-prefs') || 'null'); } catch (e) {}
-  var box = document.getElementById('feed'); if (!box || !prefs) return;
+  var box = document.getElementById('feed'); if (!box) return;
+  // G-190: without answers, the card invites the survey instead of staying hidden.
+  if (!prefs || !prefs.tickers && !prefs.sectors && !prefs.horizon) { document.getElementById('feed-title').textContent = '내 종목과 관심 업종을 알려 주면 여기 모아 보여 드려요'; var redo = document.querySelector('#feed .feed-redo'); if (redo) redo.remove(); document.getElementById('feed-chips').innerHTML = '<a class="btn-primary feed-go" href="onboarding.html">맞춤 설문 시작하기 (약 7분)</a>'; box.hidden = false; return; }
   // Say at the top that this page follows their answers, with a way to change them.
   var bits = [prefs.experience && '경험 ' + prefs.experience, prefs.horizon && '보유 ' + prefs.horizon, (prefs.sectors || []).length && '관심 ' + prefs.sectors.slice(0, 2).join('·') + (prefs.sectors.length > 2 ? ' 외 ' + (prefs.sectors.length - 2) : '')].filter(Boolean);
   var note = document.getElementById('pz-note');
@@ -400,10 +402,21 @@ const FEED_SCRIPT = `<script>
   order.forEach(function (id) { var el = document.getElementById(id); if (el && el.parentNode === main) { main.insertBefore(el, after.nextSibling); after = el; } });
   // A screener preset that fits how long they hold.
   var h = prefs.horizon || '', preset = /며칠/.test(h) ? ['hot', '거래 급증·급등'] : /몇 주/.test(h) ? ['rebound', '반등 후보'] : /몇 달/.test(h) ? ['value', '적정가 아래'] : /1년/.test(h) ? ['large', '대형주 강세'] : null;
+  // My stocks as rows with the last close and move (search.json: symbol, name, market, close, change%, report).
+  var mine = (prefs.tickers || []).slice(0, 6), list = document.getElementById('feed-list');
+  var row = function (t, it) { var ch = it && it[4] != null ? Number(it[4]) : null, cls = ch == null ? '' : ch > 0 ? 'up' : ch < 0 ? 'down' : '';
+    return '<li><a class="feed-row" href="stock.html?c=' + esc(t[0]) + '"><span class="feed-n"><b>' + esc(it ? it[1] : t[1]) + '</b>' + (it && it[5] ? '<small class="feed-rep">AI 리포트</small>' : '') + '</span><span class="feed-p">' + (it && it[3] != null ? Number(it[3]).toLocaleString('ko-KR') + '원' : '') + '</span><span class="feed-c ' + cls + '">' + (ch == null ? '—' : (ch > 0 ? '+' : '') + ch.toFixed(2) + '%') + '</span></a></li>'; };
+  list.innerHTML = mine.map(function (t) { return row(t, null); }).join('');
+  // One download of search.json per page, shared with the watchlist below.
+  if (mine.length) (window.gnmSearchJson = window.gnmSearchJson || fetch('search.json').then(function (r) { return r.json(); })).then(function (d) {
+    var by = {}; (d.items || []).forEach(function (x) { by[x[0]] = x; });
+    var up = 0, dn = 0; mine.forEach(function (t) { var x = by[t[0]]; if (x && x[4] > 0) up++; else if (x && x[4] < 0) dn++; });
+    list.innerHTML = mine.map(function (t) { return row(t, by[t[0]]); }).join('');
+    var sum = document.getElementById('feed-sum'); sum.innerHTML = '내 종목 <b>' + mine.length + '</b>개 · <span class="up">▲ ' + up + '</span> · <span class="down">▼ ' + dn + '</span>'; sum.hidden = false;
+  }).catch(function () {});
   var chips = [];
-  (prefs.tickers || []).slice(0, 6).forEach(function (t) { chips.push('<a class="chip-link" href="stock.html?c=' + esc(t[0]) + '">' + esc(t[1]) + '</a>'); });
-  if (preset) chips.push('<a class="chip-link alt" href="screener.html#' + preset[0] + '">스크리너: ' + preset[1] + '</a>');
-  (prefs.sectors || []).slice(0, 4).forEach(function (s) { chips.push('<span class="chip-link muted-chip">' + esc(s) + '</span>'); });
+  if (preset) chips.push('<a class="feed-preset" href="screener.html#' + preset[0] + '"><small>보유 기간 ' + esc(h) + '에 맞는 조건</small><b>' + preset[1] + ' 종목 보기 ›</b></a>');
+  (prefs.sectors || []).slice(0, 4).forEach(function (s) { chips.push('<a class="chip-link" href="themes.html">' + esc(s) + '</a>'); });
   document.getElementById('feed-chips').innerHTML = chips.join('');
   box.hidden = false;
   if (location.hash === '#feed') box.scrollIntoView({ block: 'start' });
@@ -489,7 +502,10 @@ const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-
 .dl-day{font-size:12px;font-weight:700;color:var(--accent-strong);padding:10px 0 2px}.dl-old{border-top:1px solid var(--line);margin-top:4px;color:var(--muted)}.tier.t-k{background:var(--soft);color:var(--fg2)}
 .mkt-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}.mkt-tabs a{display:flex;flex-direction:column;gap:1px;border:1px solid var(--line-strong);border-radius:12px;padding:9px 12px;background:var(--surface);text-decoration:none;color:var(--fg);font-weight:700;font-size:14px}.mkt-tabs a small{font-weight:500;font-size:11px;color:var(--muted)}.mkt-tabs a:hover{border-color:var(--accent)}
 
-.feed{background:linear-gradient(135deg,var(--accent-soft),var(--surface))}.feed-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.feed-head b{font-size:16px}.feed-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.feed{background:linear-gradient(135deg,var(--accent-soft),var(--surface))}.feed-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.feed-head b{display:block;font-size:16px;line-height:1.45;margin-top:2px}.feed-redo{flex:none;font-size:13px;font-weight:700;color:var(--fg2)}
+.feed-sum{margin:12px 0 2px;font-size:13.5px;color:var(--fg2)}.feed-sum b{color:var(--fg)}
+.feed-list{list-style:none;margin:8px 0 0;padding:0}.feed-list:empty{display:none}.feed-row{display:grid;grid-template-columns:minmax(0,1fr) auto 76px;align-items:center;gap:10px;padding:11px 2px;border-top:1px solid var(--line);text-decoration:none;color:var(--fg)}.feed-list li:first-child .feed-row{border-top:0}.feed-n{display:flex;align-items:center;gap:6px;min-width:0}.feed-n b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.feed-rep{flex:none;font-size:10.5px;font-weight:800;color:var(--accent-strong);background:var(--accent-soft);border-radius:999px;padding:1px 7px}.feed-p{font-size:14px;font-variant-numeric:tabular-nums;color:var(--fg2)}.feed-c{justify-self:end;min-width:68px;text-align:center;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;border-radius:8px;padding:4px 6px;background:var(--soft)}.feed-c.up{background:var(--up-soft);color:var(--up-strong)}.feed-c.down{background:var(--down-soft);color:var(--down-strong)}
+.feed-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.feed-chips:empty{display:none}.feed-preset{flex:1 1 100%;display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);text-decoration:none;color:var(--fg)}.feed-preset small{font-size:12px;color:var(--muted)}.feed-preset b{font-size:14.5px;color:var(--accent-strong)}.feed-go{width:100%;justify-content:center}
 .chip-link{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:999px;padding:5px 11px;font-size:13px;text-decoration:none;background:var(--surface)}.chip-link.alt{border-color:var(--navy);color:var(--navy);font-weight:700}.muted-chip{color:var(--muted);background:var(--soft)}
 .home-hero{grid-template-columns:minmax(0,1fr)}.home-hero h1{font-size:30px}.home-hero .search-block{margin-top:14px;position:relative}
 .ix-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ix-row.ix-4{grid-template-columns:repeat(4,minmax(0,1fr))}.ix-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.ix-v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}.ix-c{font-weight:600;font-size:14px}
@@ -542,7 +558,7 @@ const HOME_SCRIPT = `<script>
     // Stocks from search.json; ETFs and coins from their lists (same row shape: code, name, market, price, change, report).
     if (!items) {
       var list = function (url, kind) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { return (d.rows || []).map(function (x) { return [x[0], x[1], kind, x[4], x[5], 0]; }); }).catch(function () { return []; }); };
-      Promise.all([fetch('search.json').then(function (r) { return r.json(); }).then(function (d) { return d.items; }).catch(function () { return []; }), list('etfs.json', 'ETF'), list('coins.json', 'COIN')]).then(function (all) {
+      Promise.all([(window.gnmSearchJson = window.gnmSearchJson || fetch('search.json').then(function (r) { return r.json(); })).then(function (d) { return d.items; }).catch(function () { return []; }), list('etfs.json', 'ETF'), list('coins.json', 'COIN')]).then(function (all) {
         var seen = {}; items = [];
         all.forEach(function (xs) { xs.forEach(function (x) { if (!seen[x[0]]) { seen[x[0]] = 1; items.push(x); } }); });
         show();
