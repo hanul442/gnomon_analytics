@@ -1,7 +1,7 @@
 // What most readers miss (G-99): earnings and surprises, dividends, buybacks, insider and large-holder
 // moves, supply contracts and trading-value surges, gathered per stock and across the market. Pure.
 
-import type { FinancePeriod, PriceBar } from '../types.js';
+import type { Disclosure, FinancePeriod, PriceBar } from '../types.js';
 import { bigMoney, won } from '../report/format.js';
 
 export type EventKey = 'earnings' | 'dividend' | 'buyback' | 'buybackSell' | 'insider' | 'holder' | 'contract' | 'ir';
@@ -85,14 +85,21 @@ export function surprises(log: readonly FinancePeriod[], metrics: readonly strin
   return out;
 }
 
+type Q = { y: number; q: number };
+const nextQ = (q: Q): Q => (q.q === 4 ? { y: q.y + 1, q: 1 } : { y: q.y, q: q.q + 1 });
+/** More than `days` (`yearDays` for the 4th quarter) since quarter q ended, so its reporting deadline is past. */
+const pastWindow = (d: Date, q: Q, days: number) => d.getTime() - Date.UTC(q.y, q.q * 3, 0) > days * 864e5;
+const reportedLately = (date: string, events: readonly EventFiling[], filed: readonly string[] = []) => [...events.filter((e) => e.key === 'earnings').map((e) => e.date), ...filed].some((x) => x >= daysBefore(date, 40) && x <= date);
+
 /** The next quarter to be reported and when it usually comes: preliminary numbers early, the quarterly report by the legal deadline. */
-export function nextEarnings(date: string, events: readonly EventFiling[], us = false): { period: string; label: string; basis: string } {
-  if (us) return nextEarningsUs(date);
+export function nextEarnings(date: string, events: readonly EventFiling[], us = false, /** US: dates of earnings 8-Ks, 10-Qs and 10-Ks. */ filed: readonly string[] = []): { period: string; label: string; basis: string } {
+  if (us) return nextEarningsUs(date, filed);
   const d = new Date(`${date}T00:00:00Z`), y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
   // Quarter ends: Mar, Jun, Sep, Dec. The quarter being reported is the last one that has ended.
   const qEnd = m <= 3 ? { y: y - 1, q: 4 } : m <= 6 ? { y, q: 1 } : m <= 9 ? { y, q: 2 } : { y, q: 3 };
-  const reported = events.some((e) => e.key === 'earnings' && e.date >= daysBefore(date, 40));
-  const q = reported ? (qEnd.q === 4 ? { y: qEnd.y + 1, q: 1 } : { y: qEnd.y, q: qEnd.q + 1 }) : qEnd;
+  // G-194: past the quarterly report's 45 days it has been reported. The year report has until the end of March, when the quarter rolls anyway.
+  const reported = reportedLately(date, events) || (qEnd.q !== 4 && pastWindow(d, qEnd, 45));
+  const q = reported ? nextQ(qEnd) : qEnd;
   // Preliminary numbers usually come in the month after the quarter; the report is due 45 days after it (90 for the year).
   const endMonth = q.q * 3, deadline = q.q === 4 ? `${q.y + 1}년 3월 말(사업보고서)` : `${q.y}년 ${endMonth + 2}월 중순(분기보고서)`;
   const early = q.q === 4 ? `${q.y + 1}년 1월 말~2월` : `${q.y}년 ${endMonth + 1}월 초~중순`;
@@ -101,9 +108,11 @@ export function nextEarnings(date: string, events: readonly EventFiling[], us = 
 }
 
 /** US companies report within weeks of a quarter's end; the 10-Q is due 40 days after it, the 10-K 60 days after the year. */
-function nextEarningsUs(date: string): { period: string; label: string; basis: string } {
+function nextEarningsUs(date: string, filed: readonly string[]): { period: string; label: string; basis: string } {
   const d = new Date(`${date}T00:00:00Z`), y = d.getUTCFullYear(), m = d.getUTCMonth() + 1;
-  const q = m <= 3 ? { y: y - 1, q: 4 } : m <= 6 ? { y, q: 1 } : m <= 9 ? { y, q: 2 } : { y, q: 3 };
+  const qEnd = m <= 3 ? { y: y - 1, q: 4 } : m <= 6 ? { y, q: 1 } : m <= 9 ? { y, q: 2 } : { y, q: 3 };
+  // G-194: an earnings filing in the last 40 days, or the 10-Q (40 days) or 10-K (60 days) deadline gone by, means it has been reported: name the one after it.
+  const q = reportedLately(date, [], filed) || pastWindow(d, qEnd, qEnd.q === 4 ? 60 : 40) ? nextQ(qEnd) : qEnd;
   const endMonth = q.q * 3, nextY = q.q === 4 ? q.y + 1 : q.y, early = `${nextY}년 ${(endMonth % 12) + 1}월 중순~${(endMonth % 12) + 2}월 초`;
   return { period: `${q.y}년 ${q.q}분기(달력 기준)`, label: `실적 발표 ${early} · 10-Q는 분기 끝 40일, 10-K는 연말 60일 안에 제출`, basis: 'SEC 제출 기한 기준. 회사 회계연도가 달력과 다르면 분기 이름이 달라요.' };
 }
@@ -125,7 +134,7 @@ export function valueSurge(bars: readonly Pick<PriceBar, 'close' | 'volume'>[]):
   return avg20 > 0 ? { today, avg20, ratio: today / avg20 } : null;
 }
 
-export function buildEdge(input: { date: string; close: number | null; bars: readonly Pick<PriceBar, 'close' | 'volume'>[]; finance: readonly FinancePeriod[]; financeLog: readonly FinancePeriod[]; events: readonly EventFiling[]; insider: readonly InsiderReport[]; holders: readonly HolderReport[]; us?: boolean }): EdgeSection {
+export function buildEdge(input: { date: string; close: number | null; bars: readonly Pick<PriceBar, 'close' | 'volume'>[]; finance: readonly FinancePeriod[]; financeLog: readonly FinancePeriod[]; events: readonly EventFiling[]; insider: readonly InsiderReport[]; holders: readonly HolderReport[]; us?: boolean; /** US: the SEC filings (G-194, for the next earnings). */ filings?: readonly Pick<Disclosure, 'title' | 'filedDate'>[] }): EdgeSection {
   const since = daysBefore(input.date, 180);
   const events = input.events.filter((e) => e.date >= since && e.date <= input.date).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 30).map((e) => { const r = EVENT_RULES.find((x) => x.key === e.key)!; return { ...e, label: r.label, why: r.why }; });
   const insider = insiderSummary(input.insider, input.date, input.close);
@@ -146,7 +155,7 @@ export function buildEdge(input: { date: string; close: number | null; bars: rea
   if (ct.length) highlights.push({ key: 'contract', tone: 'up', text: `최근 30일 수주·공급계약 ${ct.length}건` });
   if (value && value.ratio >= 2.5) highlights.push({ key: 'value', tone: '', text: `오늘 거래대금이 20일 평균의 ${value.ratio.toFixed(1)}배(${fmtWon(value.today)})` });
   if (dividend?.yieldEstPct != null && dividend.yieldEstPct >= 3) highlights.push({ key: 'dividend', tone: 'up', text: `예상 배당수익률 ${dividend.yieldEstPct.toFixed(1)}%(주당 ${won(Math.round(dividend.dpsEst!))})` });
-  return { insider, holders, events, surprises: surp, nextEarnings: nextEarnings(input.date, input.events, input.us), dividend, value, highlights };
+  return { insider, holders, events, surprises: surp, nextEarnings: nextEarnings(input.date, input.events, input.us, (input.filings ?? []).filter((f) => /실적 발표|분기보고서|사업보고서/.test(f.title)).map((f) => f.filedDate)), dividend, value, highlights };
 }
 
 /** Market-wide radar rows for the site (radar.json): the last `days` of surfaced filings, by kind. */

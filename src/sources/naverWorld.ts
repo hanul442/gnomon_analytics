@@ -10,6 +10,9 @@ export const NAVER_WORLD_SOURCE = 'naver:world:day';
 
 /** A Reuters code: the ticker, with a dot and an exchange letter for most (AAPL.O, DELL.K); some NYSE/AMEX ones have none (TSM, SPY). Never KRW- (coins). */
 export const US_CODE = /^(?!KRW-)[A-Z][A-Z0-9-]{0,9}(\.[A-Z])?$/;
+/** G-194: the ticker without Naver's exchange letter (.O NASDAQ, .K AMEX/Arca, .N NYSE); a share class such as BRK.B keeps its letter. */
+export const US_EXCHANGE_LETTER = '[.][OKN]$';
+export const usTicker = (code: string) => code.replace(new RegExp(US_EXCHANGE_LETTER), '');
 
 const num = (v: unknown) => { const n = typeof v === 'number' ? v : Number(String(v ?? '').replace(/,/g, '')); return Number.isFinite(n) ? n : null; };
 
@@ -82,7 +85,7 @@ export function parseUsRanking(body: unknown, exchange: UsListing['exchange']): 
     const code = String(r.reutersCode ?? '');
     if (!US_CODE.test(code)) return [];
     return [{
-      code, ticker: String(r.symbolCode ?? code.split('.')[0]), name: String(r.stockName ?? code), nameEng: String(r.stockNameEng ?? ''), exchange,
+      code, ticker: String(r.symbolCode ?? usTicker(code)), name: String(r.stockName ?? code), nameEng: String(r.stockNameEng ?? ''), exchange,
       kind: r.stockEndType === 'etf' ? 'etf' as const : 'stock' as const, industry: String((r.industryCodeType as { industryGroupKor?: string } | undefined)?.industryGroupKor ?? ''),
       marketCapUsd: num(r.marketValueFullRaw ?? r.marketValueFull) ?? usdHangeul(r.marketValueHangeul), close: num(r.closePrice), changePct: num(r.fluctuationsRatio), valueUsd: usdHangeul(r.accumulatedTradingValue),
     }];
