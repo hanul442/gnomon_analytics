@@ -289,10 +289,12 @@ window.addEventListener('DOMContentLoaded', function () {
     ema12: function () { var q = ip('ema12'); return [line(ema(C, q.f), '#c2410c', 0, { lineStyle: 2 }), line(ema(C, q.s), '#4338ca', 0, { lineStyle: 2 })]; },
     bb: function () { var q = ip('bb'), m = sma(C, q.n), s = std(C, q.n, m); return [line(m, '#8a96a3', 0, { lineStyle: 2 }), line(m.map(function (x, i) { return x == null ? null : x + q.k * s[i]; }), '#8a96a3'), line(m.map(function (x, i) { return x == null ? null : x - q.k * s[i]; }), '#8a96a3')]; },
     // G-186: rolling VWAP — the volume-weighted average of the typical price over n sessions.
-    vwap: function () { var n = ip('vwap').n, pv = 0, vv = 0, tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }); return [line(bars.map(function (b, i) { pv += tp[i] * b.volume; vv += b.volume; if (i >= n) { pv -= tp[i - n] * bars[i - n].volume; vv -= bars[i - n].volume; } return i < n - 1 || vv <= 0 ? null : pv / vv; }), '#d97706', 0, { lineWidth: 2, title: 'VWAP ' + n })]; },
+    vwap: function () { var n = ip('vwap').n, pv = 0, vv = 0, tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }); return [line(bars.map(function (b, i) { pv += tp[i] * b.volume; vv += b.volume; if (i >= n) { pv -= tp[i - n] * bars[i - n].volume; vv -= bars[i - n].volume; } return i < n - 1 || vv <= 0 ? null : pv / vv; }), '#e879f9', 0, { lineWidth: 2, title: 'VWAP ' + n })]; },
     // G-186: Parabolic SAR (Wilder): dots under a rising trend, above a falling one; the step grows at each new extreme up to max.
     psar: function () {
-      var q = ip('psar'), out = [], up = true, af = q.step, ep, sar;
+      // Saved settings are clamped here too (the sheet clamps only when it is opened): step 0.01–0.1, max ≥ step, ≤ 0.5.
+      var q0 = ip('psar'), q = { step: Math.min(0.1, Math.max(0.01, q0.step)), max: 0 }, out = [], up = true, af, ep, sar;
+      q.max = Math.min(0.5, Math.max(q.step, q0.max)); af = q.step;
       if (bars.length < 3) return [];
       up = bars[1].close >= bars[0].close; ep = up ? bars[0].high : bars[0].low; sar = up ? bars[0].low : bars[0].high; out.push(null);
       for (var i = 1; i < bars.length; i++) {
@@ -422,7 +424,7 @@ window.addEventListener('DOMContentLoaded', function () {
     },
     ad: function (p) { var a = 0; return [line(bars.map(function (b) { a += b.high > b.low ? ((b.close - b.low) - (b.high - b.close)) / (b.high - b.low) * b.volume : 0; return a; }), '#0f766e', p, { title: 'A/D', lastValueVisible: false })]; },
     // G-186: MFI — RSI with volume: the share of money flow on up days over n sessions (overbought 80, oversold 20 by default).
-    mfi: function (p) { var q = ip('mfi'), tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }), vals = bars.map(function (b, i) { if (i < q.n) return null; var pos = 0, neg = 0; for (var j = i - q.n + 1; j <= i; j++) { var f = tp[j] * bars[j].volume; if (tp[j] > tp[j - 1]) pos += f; else if (tp[j] < tp[j - 1]) neg += f; } return neg === 0 ? 100 : 100 - 100 / (1 + pos / neg); }); var s = line(vals, '#0f766e', p, { lastValueVisible: true, title: 'MFI ' + q.n }); s.createPriceLine({ price: q.hi, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: q.lo, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
+    mfi: function (p) { var q = ip('mfi'), tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }), vals = bars.map(function (b, i) { if (i < q.n) return null; var pos = 0, neg = 0; for (var j = i - q.n + 1; j <= i; j++) { var f = tp[j] * bars[j].volume; if (tp[j] > tp[j - 1]) pos += f; else if (tp[j] < tp[j - 1]) neg += f; } return pos + neg === 0 ? null : neg === 0 ? 100 : 100 - 100 / (1 + pos / neg); }); var s = line(vals, '#14b8a6', p, { lastValueVisible: true, title: 'MFI ' + q.n }); s.createPriceLine({ price: q.hi, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: q.lo, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
     obv: function (p) { var o = 0; return [line(C.map(function (c, i) { if (i) o += c > C[i - 1] ? V[i] : c < C[i - 1] ? -V[i] : 0; return o; }), '#475569', p, { title: 'OBV' })]; },
     atr: function (p) { var n = ip('atr').n, a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * (n - 1) + tr) / n; return i < n ? null : a; }), INK, p, { title: 'ATR ' + n })]; }
   };
