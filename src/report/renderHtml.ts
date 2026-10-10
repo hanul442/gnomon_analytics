@@ -701,7 +701,7 @@ export function renderDeep(report: DailyReport, ctx: { live: boolean; previous?:
   return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
 }
 
-export const DEEP_UNLOCK_CREDITS = 10;
+export const DEEP_UNLOCK_CREDITS = CREDIT_COST.unlock;
 const DEEP_WHAT = '위원회 토론 · 위원별 근거 · 시나리오 전개와 무효화 조건 · 최악의 경우 · 강세·약세 근거 전체 · 분석가 순위 · 지난 리포트 대비';
 /**
  * G-70: the commentary's summary and its evidence, folded at the bottom of the debate card: bull and
@@ -729,7 +729,7 @@ function recordSection(report: DailyReport, ctx: { previous?: DailyReport | null
 }
 
 export function deepSlot(symbol: string, date: string): string {
-  return `<section class="block deep-slot" id="deep-slot" data-symbol="${escape(symbol)}" data-date="${escape(date)}"><div class="card deep-lock v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="dl-ic" aria-hidden="true">🔒</div><div><b>심층 리포트</b><p class="muted small">${DEEP_WHAT}</p><div class="dl-row"><button type="button" class="btn-primary" id="deep-open" disabled>불러오는 중…</button><span class="muted small" id="deep-note"></span></div></div></div></section>`;
+  return `<section class="block deep-slot" id="deep-slot" data-symbol="${escape(symbol)}" data-date="${escape(date)}"><div class="card deep-lock v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="dl-ic" aria-hidden="true">🔒</div><div><b>심층 리포트</b><p class="muted small">${DEEP_WHAT}</p><div class="dl-row">${genButton('불러오는 중', 'id="deep-open" disabled')}<span class="muted small" id="deep-note"></span></div></div></div></section>`;
 }
 
 export const DEEP_SCRIPT = `<script>
@@ -746,28 +746,32 @@ export const DEEP_SCRIPT = `<script>
   var loader = null, cycle = null;
   var busy = function (text) { if (loader) { loader.querySelector('span').textContent = text; return; } loader = document.createElement('div'); loader.className = 'orbs-load deep-loader'; loader.setAttribute('role', 'status'); loader.innerHTML = '<canvas data-orb="connecting" aria-hidden="true"></canvas><span></span><small>위원 판단 · 시나리오 · 토론을 펼치는 중</small>'; loader.querySelector('span').textContent = text; slot.classList.add('deep-loading'); slot.appendChild(loader); var states = ['connecting', 'weaving', 'composing', 'shaping'], i = 0; cycle = setInterval(function () { var c = loader && loader.querySelector('canvas'); if (c) c.dataset.orb = states[++i % states.length]; }, 1600); };
   var idle = function () { clearInterval(cycle); cycle = null; if (loader) loader.remove(); loader = null; slot.classList.remove('deep-loading'); };
-  if (!window.GNM || !GNM.api) { btn.textContent = '알파 서버 연결 뒤 열 수 있어요'; return; }
+  // G-197: the button keeps the 리포트 만들기 look; only its words change.
+  var face = function (t, small) { if (window.gnmGenButtonInner) { btn.innerHTML = gnmGenButtonInner(t, small || ''); btn.setAttribute('aria-label', t + (small ? ' ' + small : '')); } else btn.textContent = t; };
+  if (!window.GNM || !GNM.api) { face('알파 서버 연결 뒤 열 수 있어요'); return; }
   (GNM.ready || Promise.resolve(null)).then(function (me) {
-    if (!me) { btn.disabled = false; btn.textContent = '로그인하고 열기'; btn.onclick = function () { location.href = (document.body.getAttribute('data-base') || '') + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/') + '#tab-ai'); }; return; }
+    if (!me) { btn.disabled = false; face('로그인하고 열기'); btn.onclick = function () { location.href = (document.body.getAttribute('data-base') || '') + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/') + '#tab-ai'); }; return; }
     busy('심층 리포트를 불러오고 있어요');
     GNM.call('GET', path).then(function (r) {
       idle();
       if (r.html) { show(r.html); return; }
-      if(r.error === 'PLAN_REQUIRED'){btn.disabled=false;btn.textContent='요금제 보기';say(r.message||'플러스부터 열 수 있어요');btn.onclick=function(){location.href=(document.body.getAttribute('data-base')||'')+'pricing.html';};return;}
-      if (r.error === 'NOT_SEALED') { btn.textContent = '아직 준비 중이에요'; say('심층 리포트는 다음 실행 뒤 열 수 있어요.'); return; }
+      if(r.error === 'PLAN_REQUIRED'){btn.disabled=false;face('요금제 보기');say(r.message||'플러스부터 열 수 있어요');btn.onclick=function(){location.href=(document.body.getAttribute('data-base')||'')+'pricing.html';};return;}
+      if (r.error === 'NOT_SEALED') { face('아직 준비 중이에요'); say('심층 리포트는 다음 실행 뒤 열 수 있어요.'); return; }
       var cost = r.cost || ${DEEP_UNLOCK_CREDITS}, bal = r.balance, free = r.freeLeft > 0;
-      var label = function () { return free ? '무료로 열기' : cost + '크레딧으로 열기'; };
-      btn.disabled = false; btn.textContent = label();
+      var label = function () { face('심층 리포트 열기', free ? '무료' : cost + '크레딧'); };
+      btn.disabled = false; label();
       say(free ? '이번 달 무료로 열 수 있는 리포트가 ' + r.freeLeft + '개 남았어요 · 한 번 열면 계속 볼 수 있어요' : bal == null ? '' : '남은 크레딧 ' + bal + '개 · 한 번 열면 계속 볼 수 있어요 · 7일 지나면 무료예요');
-      btn.onclick = function () {
-        btn.disabled = true; btn.textContent = '여는 중…'; busy('크레딧을 쓰고 심층 리포트를 여는 중이에요');
+      var open = function () {
+        if (window.gnmBusy) gnmBusy(btn, '여는 중'); btn.disabled = true; busy('심층 리포트를 여는 중이에요');
         GNM.call('POST', path + '/unlock', {}).then(function (u) {
           idle();
           if (u.html) { show(u.html); if (GNM.toast && (u.free || u.charged)) GNM.toast(u.free ? '무료로 열었어요. 이번 달 ' + (u.freeLeft || 0) + '개 더 무료예요' : u.charged ? u.charged + '크레딧을 썼어요. 남은 크레딧 ' + u.balance : ''); if (GNM.refresh) GNM.refresh(); if (GNM.track) GNM.track('deep_unlock', { symbol: sym }); return; }
-          btn.disabled = false; btn.textContent = label(); say(u.message || '열지 못했어요.');
-          if (u.error === 'NO_CREDITS' && GNM.openChat) GNM.openChat();
-        });
+          if (window.gnmBusy) gnmBusy(btn, false); btn.disabled = false; label(); say(u.message || '열지 못했어요.');
+          // Not enough credits: the button itself offers the top-up (not the chat).
+          if (u.error === 'NO_CREDITS') { bal = typeof u.balance === 'number' ? u.balance : 0; free = false; if (window.gnmConfirm) gnmConfirm(btn, { cost: cost, free: false, balance: bal, go: open }); }
+        }).catch(function () { idle(); if (window.gnmBusy) gnmBusy(btn, false); btn.disabled = false; label(); say('연결을 확인한 뒤 다시 눌러 주세요.'); });
       };
+      btn.onclick = function () { if (window.gnmConfirm) gnmConfirm(btn, { cost: cost, free: free, balance: bal, go: open, ask: '한 번 더 누르면 열어요' }); else open(); };
     });
   });
 })();
@@ -821,9 +825,23 @@ export function renderIndex(reports: readonly Pick<DailyReport, 'date' | 'headli
 }
 
 // Client-side search over search.json: name, code or Korean initial consonants (초성).
-export const SEARCH_SCRIPT = `<script>
+export const SEARCH_SCRIPT = `<style>.sr-recent{padding:4px 2px}.sr-rh{display:flex;justify-content:space-between;align-items:center;padding:6px 12px 8px}.sr-rh b{font-size:13px;color:var(--fg2)}.sr-clear{border:0;background:none;color:var(--muted);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;padding:6px 4px;min-height:32px}
+.sr-recent ul{list-style:none;margin:0;padding:0}.sr-recent li{display:flex;align-items:center;gap:4px;border-top:1px solid var(--line)}.sr-recent li a{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;padding:10px 12px;text-decoration:none;color:inherit}.sr-recent li a b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sr-recent li a small{font-size:12px;color:var(--muted)}
+.sr-del{flex:none;width:40px;height:40px;border:0;border-radius:50%;background:none;color:var(--muted);font-size:18px;cursor:pointer}.sr-del:hover{background:var(--soft);color:var(--fg)}</style><script>
 (function () {
   var q = document.getElementById('q'), out = document.getElementById('search-results'), items = null, timer = 0;
+  // G-197: recent picks from this box, newest first (10). gnm-recent follows the signed-in account (settings sync) and is cleared on sign-out.
+  var RK = 'gnm-recent';
+  var recent = function () { try { var v = JSON.parse(localStorage.getItem(RK) || '[]'); return Array.isArray(v) ? v.filter(function (x) { return x && x.c && x.h; }) : []; } catch (e) { return []; } };
+  var saveRecent = function (list) { try { if (list.length) localStorage.setItem(RK, JSON.stringify(list.slice(0, 10))); else localStorage.removeItem(RK); } catch (e) {} };
+  var remember = function (x) { saveRecent([x].concat(recent().filter(function (y) { return y.c !== x.c; }))); };
+  var showRecent = function () {
+    var list = recent(); if (!list.length || q.value.trim()) return;
+    out.hidden = false;
+    out.innerHTML = '<div class="sr-recent"><div class="sr-rh"><b>최근 검색</b><button type="button" class="sr-clear">전체 지우기</button></div><ul>' + list.map(function (x) {
+      return '<li><a href="' + esc(x.h) + '" data-recent="' + esc(x.c) + '"><b>' + esc(x.n) + '</b><small>' + esc(String(x.c).replace('KRW-', '')) + (x.m ? ' · ' + esc(MKT[x.m] || x.m) : '') + '</small></a><button type="button" class="sr-del" data-del="' + esc(x.c) + '" aria-label="' + esc(x.n) + ' 기록 지우기">×</button></li>';
+    }).join('') + '</ul></div>';
+  };
   var CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
   var LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
   var cho = function (s) { var r = ''; for (var i = 0; i < s.length; i++) { var c = s.charCodeAt(i) - 0xAC00; r += c >= 0 && c <= 11171 ? CHO[Math.floor(c / 588)] : s[i]; } return r; };
@@ -869,7 +887,8 @@ export const SEARCH_SCRIPT = `<script>
       var it = p[1], ch = it.x;
       var price = it.p == null ? '' : '<span class="sr-price"><b>' + (it.m === 'US' ? '$' + Number(it.p).toFixed(2) : won(it.p)) + '</b>' + (ch == null ? '' : ' <span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '+' : '') + ch.toFixed(2) + '%</span>') + '</span>';
       var right = it.r ? '<a class="sr-go" href="' + esc(it.c) + '/index.html">리포트 보기 ›</a>' : it.m === 'COIN' ? '<a class="sr-go" href="coin.html?m=' + esc(it.c) + '">차트 보기 ›</a>' : it.m === 'US' ? '<a class="sr-go" href="us.html?s=' + encodeURIComponent(it.c) + '">차트 보기 ›</a>' : '<a class="sr-go sr-lock" href="stock.html?c=' + esc(it.c) + '">' + LOCK + '차트 보기 ›</a>';
-      return '<div class="row-item sr-row"><div class="ri-main"><b>' + esc(it.n) + '</b><div class="muted small">' + esc(it.c.replace('KRW-', '')) + ' · ' + (MKT[it.m] || it.m) + '</div></div>' + price + right + '</div>';
+      var href = (right.match(/href="([^"]+)"/) || [])[1] || '';
+      return '<div class="row-item sr-row" data-c="' + esc(it.c) + '" data-n="' + esc(it.n) + '" data-m="' + esc(it.m) + '" data-h="' + href + '"><div class="ri-main"><b>' + esc(it.n) + '</b><div class="muted small">' + esc(it.c.replace('KRW-', '')) + ' · ' + (MKT[it.m] || it.m) + '</div></div>' + price + right + '</div>';
     }).join('');
   };
   q.addEventListener('input', function () {
@@ -879,6 +898,19 @@ export const SEARCH_SCRIPT = `<script>
     timer = setTimeout(function () { window.GNM_loading.min(load()).then(function (list) { if(norm(q.value)!==t)return;render(list, t); }, function () { out.hidden = false; out.innerHTML = '<p class="empty">종목 목록을 불러오지 못했어요.</p>'; }); }, 120);
   });
   q.addEventListener('focus', function () { load(); }, { once: true });
+  q.addEventListener('focus', showRecent);
+  q.addEventListener('input', function () { if (!q.value.trim()) showRecent(); });
+  out.addEventListener('click', function (e) {
+    var del = e.target.closest && e.target.closest('[data-del]');
+    if (del) { e.preventDefault(); e.stopPropagation(); var c = del.getAttribute('data-del'); saveRecent(recent().filter(function (x) { return x.c !== c; })); if (recent().length) showRecent(); else { out.hidden = true; out.innerHTML = ''; } q.focus(); return; }
+    if (e.target.closest && e.target.closest('.sr-clear')) { e.stopPropagation(); saveRecent([]); out.hidden = true; out.innerHTML = ''; q.focus(); return; }
+    var again = e.target.closest && e.target.closest('[data-recent]');
+    if (again) { var hit = recent().filter(function (x) { return x.c === again.getAttribute('data-recent'); })[0]; if (hit) remember(hit); return; }
+    var row = e.target.closest && e.target.closest('.sr-row');
+    if (row && row.getAttribute('data-h') && e.target.closest('a')) remember({ c: row.getAttribute('data-c'), n: row.getAttribute('data-n'), m: row.getAttribute('data-m'), h: row.getAttribute('data-h') });
+  });
+  // The recent list closes when the reader taps elsewhere (search results stay until the box is cleared).
+  document.addEventListener('click', function (e) { if (out.querySelector('.sr-recent') && !out.contains(e.target) && e.target !== q) { out.hidden = true; out.innerHTML = ''; } });
 })();
 </script>`;
 

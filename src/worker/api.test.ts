@@ -142,7 +142,9 @@ test('a question charges its tier, a failure is refunded, and limits hold', asyn
   assert.deepEqual((await t.call('GET', '/questions/mine', undefined, boss.session)).body.items, []);
   assert.equal((await t.call('POST', '/ask', { tier: 'question', question: '네 번째' }, u.session)).body.error, 'DAILY_LIMIT');
   // Spending past the balance is refused before any model call.
-  await t.call('POST', '/admin/grant', { userId: (await t.call('GET', '/admin/overview', undefined, boss.session)).body.users.find((x: any) => x.email === 'q@example.com').id, amount: -(ALPHA.monthlyCredits - 30) }, boss.session);
+  // Leave one credit short of a deep question, whatever the prices are.
+  const left = (await t.call('GET', '/me', undefined, u.session)).body.credits.balance;
+  await t.call('POST', '/admin/grant', { userId: (await t.call('GET', '/admin/overview', undefined, boss.session)).body.users.find((x: any) => x.email === 'q@example.com').id, amount: -(left - (CREDIT_COST.deep - 1)) }, boss.session);
   t.tick(86_400_000);
   const n = calls.length;
   const broke = await t.call('POST', '/ask', { tier: 'deep', question: '돈 없음' }, u.session);
@@ -583,7 +585,7 @@ test('one report kind (G-168): brief and upgrade requests are refused without ch
  assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits);
  const ok=await t.call('POST','/reports',{symbol:'000660',kind:'report'},t.user.session);assert.equal(ok.status,200);
  assert.equal((await t.call('GET','/me',undefined,t.user.session)).body.credits.balance,ALPHA.monthlyCredits-CREDIT_COST.report);
- assert.equal(CREDIT_COST.report,30);
+ assert.equal(CREDIT_COST.report,20);
 });
 test('on-demand reports charge once across concurrent retries; owner/pro read, others unlock once with credits; redelivery is idempotent',async()=>{
  const t=await reportSetup();
@@ -663,7 +665,7 @@ test('chat SSE emits text deltas then the charged result, without waiting for a 
  assert.match(response.headers.get('Content-Type')!,/text\/event-stream/);const reader=response.body!.getReader();let text='';
  while(!text.includes('첫 문장')){text+=new TextDecoder().decode((await reader.read()).value);}
  assert.match(text,/event: delta/);assert.doesNotMatch(text,/event: done/);finish();
- while(true){const chunk=await reader.read();if(chunk.done)break;text+=new TextDecoder().decode(chunk.value);}assert.match(text,/event: done/);assert.match(text,/"credits":5/);
+ while(true){const chunk=await reader.read();if(chunk.done)break;text+=new TextDecoder().decode(chunk.value);}assert.match(text,/event: done/);assert.match(text,new RegExp(`"credits":${CREDIT_COST.question}`));
 });
 
 test('custom experts are account-owned, bounded, exported and used at the invite price',async()=>{

@@ -95,7 +95,7 @@ function dailyRows(entries: readonly HomeEntry[]): string {
 <div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="daily"><div class="block-head"><h2>매일 AI 리포트</h2><span class="muted">평일 주식 2 + 미국 1 + ETF(월·수·금)·코인(화·목) 1, 주말 코인 1</span></div>
-<details class="card"><summary>선정 기준과 반복 종목 안내</summary><p>주식은 스크리너 추천 조건에 걸린 종목(과열·위험 조건과 1,000원 미만 제외) 가운데 날짜마다 무작위로 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목과 최근 28일 안에 리포트가 나온 종목은 빼고, 후보가 모자라면 그날은 덜 뽑아요.</p><p>모두 AI 위원회 심층 리포트예요. 아래 목록은 최근 7일 기록이에요.</p></details><div class="card list rr-list">${days.map((d, i) => `<div class="dl-day${i ? ' dl-old' : ''}">${esc(d.slice(5).replace('-', '/'))}${i ? '' : ' · 최신'}</div>${entries.filter((e) => e.pickDate === d).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1)).map(row).join('')}`).join('')}</div>
+<details class="card"><summary>선정 기준과 반복 종목 안내</summary><p>주식은 스크리너 추천 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. 후보에 시가총액 1조 원 이상 종목이 있으면 하나는 그중에서 고르고, 두 종목은 되도록 서로 다른 조건에서 골라요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목과 최근 28일 안에 리포트가 나온 종목은 빼고, 후보가 모자라면 그날은 덜 뽑아요.</p><p>모두 AI 위원회 심층 리포트예요. 아래 목록은 최근 7일 기록이에요.</p></details><div class="card list rr-list">${days.map((d, i) => `<div class="dl-day${i ? ' dl-old' : ''}">${esc(d.slice(5).replace('-', '/'))}${i ? '' : ' · 최신'}</div>${entries.filter((e) => e.pickDate === d).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1)).map(row).join('')}`).join('')}</div>
 <p class="muted small">스크리너 상위 종목, 거래대금 상위 ETF·코인 가운데 무작위로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></section>`;
 }
 
@@ -163,10 +163,16 @@ function viewFit(e: HomeEntry): Record<View, { score: number; why: string }> {
  * candidate is on the page with a score and a reason per view; the page shows the view's top four.
  */
 function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): string {
-  const last = [...new Set(daily.map((e) => e.pickDate ?? ''))].sort().at(-1);
+  // G-197: the last five pick days, newest first (a weekend or holiday day holds only a coin, so looking at one
+  // day filled the rest with the same standing names every time). Standing names rotate by date after them.
+  const days = [...new Set(daily.map((e) => e.pickDate ?? ''))].filter(Boolean).sort().reverse().slice(0, 5);
+  const age = new Map(days.map((d, i) => [d, i]));
   const deepFirst = (a: HomeEntry, b: HomeEntry) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1);
+  const recentDaily = daily.filter((e) => age.has(e.pickDate ?? '')).sort((a, b) => (age.get(a.pickDate!)! - age.get(b.pickDate!)!) || deepFirst(a, b));
+  const turn = days[0] ? Number(days[0].replace(/-/g, '')) : 0;
+  const rotated = weekly.length ? [...weekly.slice(turn % weekly.length), ...weekly.slice(0, turn % weekly.length)] : [];
   const seen = new Set<string>();
-  const picks = [...daily.filter((e) => e.pickDate === last).sort(deepFirst), ...weekly].filter((e) => e.report && !seen.has(e.symbol) && seen.add(e.symbol)).slice(0, 16);
+  const picks = [...recentDaily, ...rotated].filter((e) => e.report && !seen.has(e.symbol) && seen.add(e.symbol)).slice(0, 16);
   if (!picks.length) return '';
   const views = Object.keys(VIEW_LEAD) as View[];
   const card = (e: HomeEntry) => {
@@ -174,7 +180,7 @@ function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): 
     const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
     const fit = viewFit(e);
     const sub = e.group === 'daily' ? `일일 선정 · ${e.pickDate ?? ''}` : e.group === 'core' ? '대표 종목' : '주간 선정';
-    return `<div class="tp" data-pick-daily="${e.group==='daily'?'1':'0'}" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${aiPill(e)}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
+    return `<div class="tp" data-pick-daily="${e.group==='daily'?'1':'0'}" data-age="${e.group === 'daily' ? age.get(e.pickDate ?? '') ?? 4 : 0}" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top"><span class="tier t-k">${KIND[e.kind ?? 'stock']}</span>${aiPill(e)}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
 <p class="muted small">${esc(sub)}${e.reasons?.[0] && e.reasons[0] !== sub ? ` · ${esc(e.reasons[0])}` : ''}</p><div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 것</h2><a class="more-link" href="reports.html">AI 리포트 모음 ›</a></div>
@@ -432,7 +438,7 @@ const TODAY_SCRIPT = `<script>
     var cards = [].slice.call(grid.children);
     // G-85: stocks the reader holds or watches (survey, ☆) come first, marked as theirs.
     var mine = {}; try { (JSON.parse(localStorage.getItem('gnm-watch') || '[]') || []).forEach(function (x) { mine[x] = 1; }); ((JSON.parse(localStorage.getItem('gnm-prefs') || '{}') || {}).tickers || []).forEach(function (t) { mine[t[0]] = 2; }); } catch (e) {}
-    var sc = function (c) { return Number(c.getAttribute('data-s-' + p)) + (c.getAttribute('data-pick-daily')==='1'?100:0) + (mine[c.getAttribute('data-sym')] ? 1000 : 0); };
+    var sc = function (c) { return Number(c.getAttribute('data-s-' + p)) + (c.getAttribute('data-pick-daily')==='1'?100-15*Number(c.getAttribute('data-age')||0):0) + (mine[c.getAttribute('data-sym')] ? 1000 : 0); };
     cards.forEach(function (c) { var t = c.querySelector('.tp-top'), had = c.querySelector('.t-mine'); if (mine[c.getAttribute('data-sym')] && !had && t) t.insertAdjacentHTML('afterbegin', '<span class="tier t-mine">' + (mine[c.getAttribute('data-sym')] === 2 ? '내 보유' : '내 관심') + '</span>'); });
     cards.sort(function (a, b) { return sc(b) - sc(a); });
     cards.forEach(function (c, i) { grid.appendChild(c); c.hidden = i >= 4; });

@@ -102,6 +102,8 @@ ${LETTER_DELAYS.slice(1).map((i) => `.gen-btn:focus-visible .gen-l:nth-child(${i
 
 /** A press marks the button for one burst (the source used :focus, which a mouse click only briefly holds). */
 export const GEN_BUTTON_JS = `
+${GEN_BUTTON_JS_FN}
+window.gnmGenButton = gnmGenButton;
 // G-185: gnmBusy(button, label) shows short work (a few seconds, length unknown) inside the button: the rising
 // liquid (a sweeping light without WebGL), a spinner, the label and the seconds so far. gnmBusy(button, false) puts the button back.
 // One save/restore for every in-button state (gnmBusy here, the report job in JOBS_JS): label, size, effects.
@@ -136,6 +138,25 @@ window.gnmBusy = function (b, label) {
   var lq = window.gnmLiquid ? gnmLiquid(b) : null; if (lq) lq.level(0.12);
   clearInterval(b._bz); b._bz = setInterval(function () { var s = b.querySelector('.job-sub'); if (!s) { clearInterval(b._bz); return; } var sec = (Date.now() - t0) / 1000; s.textContent = Math.round(sec) + '초'; if (b.__liquid) b.__liquid.level(0.12 + 0.76 * (1 - Math.exp(-sec / 8))); }, 1000);
 };
+// G-197: spending credits to open something works like 리포트 만들기: the first press shows the price on the button
+// (with 취소), a second press within 8 seconds spends. Too few credits: the button offers the top-up instead.
+// o: { cost, free, balance, go: function () {}, ask, topUp }
+window.gnmConfirm = function (b, o) {
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var back = function () { clearTimeout(b._cf); var x = b.parentNode && b.parentNode.querySelector('.job-cancel'); if (x) x.remove(); gnmBtnRestore(b); };
+  var face = function (state, main, sub) { gnmBtnKeep(b); b.dataset.job = state; gnmBtnSwap(b, '<span class="job-main">' + esc(main) + '</span>' + (sub ? '<small class="job-sub">' + esc(sub) + '</small>' : '')); b.setAttribute('aria-label', main + (sub ? ' · ' + sub : '')); };
+  if (b.dataset.job === 'running' || b.dataset.job === 'sending') return;
+  if (b.dataset.job === 'short') { location.href = o.topUp || (document.body.getAttribute('data-base') || '') + 'pricing.html#credits'; return; }
+  if (b.dataset.job === 'confirm') { back(); o.go(); return; }
+  var after = !o.free && typeof o.balance === 'number' ? o.balance - o.cost : null;
+  if (after != null && after < 0) { face('short', '크레딧이 모자라요', '충전하러 가기 · ' + o.cost + '크레딧 필요'); b._cf = setTimeout(back, 6000); return; }
+  face('confirm', o.ask || '한 번 더 누르면 열기', o.free ? '이번 달 무료 열람' : o.cost + '크레딧' + (after != null ? ' · 남는 크레딧 ' + after : ''));
+  var x = document.createElement('button'); x.type = 'button'; x.className = 'job-cancel'; x.textContent = '취소';
+  x.onclick = function (e) { e.stopPropagation(); back(); }; b.after(x);
+  b._cf = setTimeout(function () { if (b.dataset.job === 'confirm') back(); }, 8000);
+};
+/** The inside of a 리포트 만들기-style button, to relabel an existing one. */
+window.gnmGenButtonInner = function (label, small) { var t = document.createElement('span'); t.innerHTML = gnmGenButton(label, '', small); return t.querySelector('.gen-btn').innerHTML; };
 document.addEventListener('pointerdown', function (e) {
   var b = e.target.closest && e.target.closest('.gen-btn'); if (!b) return;
   b.removeAttribute('data-pressed'); void b.offsetWidth; b.setAttribute('data-pressed', '');

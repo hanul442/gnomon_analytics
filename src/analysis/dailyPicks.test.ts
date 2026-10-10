@@ -54,3 +54,18 @@ test('daily picks: the same date draws the same names; weekends are one deep coi
   assert.ok(small.every((p) => allowed.has(p.symbol)), 'risky and excluded names are never drawn');
   assert.ok(seeded('x')() !== seeded('y')());
 });
+
+test('daily picks (G-197): one of the two stocks is a larger company when the pool has one, even when every candidate came from the same screen', () => {
+  // Only one stock is 1조+; on many dates it must still be drawn as one of the two.
+  const mixed = stocks.map((r, i) => (i === 7 ? stock(String(r[0]), Number(r[7]), 0, 25_000) : r));
+  const big = String(mixed[7]![0]);
+  let withBig = 0, days = 0;
+  for (let d = 1; d <= 28; d++) {
+    const date = `2026-09-${String(d).padStart(2, '0')}`;
+    const picks = chooseDailyPicks({ date, weekday: 2, stocks: mixed, etfs, coins, exclude: new Set() }).filter((p) => p.kind === 'stock');
+    if (picks.length < 2) continue;
+    days++;
+    if (picks.some((p) => p.symbol === big)) withBig++;
+  }
+  assert.ok(days > 0 && withBig === days, `the 1조+ stock is one of the two whenever it is in the pool (${withBig}/${days})`);
+});
