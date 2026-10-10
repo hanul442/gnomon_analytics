@@ -407,7 +407,8 @@ const FEED_SCRIPT = `<script>
   var row = function (t, it) { var ch = it && it[4] != null ? Number(it[4]) : null, cls = ch == null ? '' : ch > 0 ? 'up' : ch < 0 ? 'down' : '';
     return '<li><a class="feed-row" href="stock.html?c=' + esc(t[0]) + '"><span class="feed-n"><b>' + esc(it ? it[1] : t[1]) + '</b>' + (it && it[5] ? '<small class="feed-rep">AI 리포트</small>' : '') + '</span><span class="feed-p">' + (it && it[3] != null ? Number(it[3]).toLocaleString('ko-KR') + '원' : '') + '</span><span class="feed-c ' + cls + '">' + (ch == null ? '—' : (ch > 0 ? '+' : '') + ch.toFixed(2) + '%') + '</span></a></li>'; };
   list.innerHTML = mine.map(function (t) { return row(t, null); }).join('');
-  if (mine.length) fetch('search.json').then(function (r) { return r.json(); }).then(function (d) {
+  // One download of search.json per page, shared with the watchlist below.
+  if (mine.length) (window.gnmSearchJson = window.gnmSearchJson || fetch('search.json').then(function (r) { return r.json(); })).then(function (d) {
     var by = {}; (d.items || []).forEach(function (x) { by[x[0]] = x; });
     var up = 0, dn = 0; mine.forEach(function (t) { var x = by[t[0]]; if (x && x[4] > 0) up++; else if (x && x[4] < 0) dn++; });
     list.innerHTML = mine.map(function (t) { return row(t, by[t[0]]); }).join('');
@@ -557,7 +558,7 @@ const HOME_SCRIPT = `<script>
     // Stocks from search.json; ETFs and coins from their lists (same row shape: code, name, market, price, change, report).
     if (!items) {
       var list = function (url, kind) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { return (d.rows || []).map(function (x) { return [x[0], x[1], kind, x[4], x[5], 0]; }); }).catch(function () { return []; }); };
-      Promise.all([fetch('search.json').then(function (r) { return r.json(); }).then(function (d) { return d.items; }).catch(function () { return []; }), list('etfs.json', 'ETF'), list('coins.json', 'COIN')]).then(function (all) {
+      Promise.all([(window.gnmSearchJson = window.gnmSearchJson || fetch('search.json').then(function (r) { return r.json(); })).then(function (d) { return d.items; }).catch(function () { return []; }), list('etfs.json', 'ETF'), list('coins.json', 'COIN')]).then(function (all) {
         var seen = {}; items = [];
         all.forEach(function (xs) { xs.forEach(function (x) { if (!seen[x[0]]) { seen[x[0]] = 1; items.push(x); } }); });
         show();

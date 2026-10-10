@@ -78,8 +78,9 @@ export const MOTION_JS = `
   }); }, { threshold: [0, 0.15, 0.3, 0.45, 0.6, 0.8, 1] }) : null;
   // A card's own tabs (재무제표 손익·부채비율·당좌비율·현금흐름) play the picture again when switched.
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('[data-fs]'); if (!b || reduce) return; var c = b.closest('.card'); if (!c) return;
-    var els = (c.matches(SEL) ? [c] : []).concat(Array.prototype.slice.call(c.querySelectorAll(SEL)));
+    // G-190: only the tab bar's own panels (its siblings); the simple 재무제표 card also holds the 자세히 dialog.
+    var b = e.target.closest && e.target.closest('[data-fs]'); if (!b || reduce) return; var c = b.parentNode && b.parentNode.parentNode; if (!c) return;
+    var els = []; Array.prototype.forEach.call(c.children, function (x) { if (!x.hasAttribute('data-fsl')) return; if (x.matches(SEL)) els.push(x); els = els.concat(Array.prototype.slice.call(x.querySelectorAll(SEL))); });
     els.forEach(reset); void c.offsetWidth; requestAnimationFrame(function () { requestAnimationFrame(function () { els.forEach(function (x) { if (x.offsetParent) show(x); }); }); });
   });
   // ---- a value bubble above a point ----
