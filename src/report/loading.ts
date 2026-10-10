@@ -1,7 +1,7 @@
 import { THINKING_ORB_JS } from './thinkingOrbBundle.js';
 export const LOADING_CSS = `
 .compact-input,.compact-heading,.compact-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.compact-heading{justify-content:space-between;margin-bottom:8px}.compact-input{flex-wrap:nowrap}.compact-input textarea{flex:1;min-width:0;resize:vertical}.compact-input .btn-primary{width:44px;min-width:44px;padding:8px;align-self:stretch}
-.db-join{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.jn-input{align-items:flex-end!important}.jn-q textarea{margin:0!important;min-height:44px;max-height:120px;resize:vertical}.jn-send,.jn-plus{height:44px!important;width:44px!important;flex:none;border-radius:12px!important;cursor:pointer}.jn-send{background:var(--navy);color:#fff;border:0;font-size:20px}.jn-cost{display:block;font-size:11px;margin:5px 0 0 52px}.v2-dialog label:has([name^="custom-"]){display:grid;gap:5px;margin:10px 0}.v2-dialog input[name^="custom-"],.v2-dialog select{font:inherit;width:100%;padding:9px;border:1px solid var(--line);border-radius:10px}.custom-expert-row{display:flex;gap:6px;align-items:center}.custom-expert-row .ex{flex:1}.custom-expert-row button{background:none;border:0;padding:10px}
+.db-join{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.jn-input{align-items:flex-end!important}.jn-q textarea{margin:0!important;min-height:44px;max-height:120px;resize:vertical}.jn-send,.jn-plus{height:44px!important;width:44px!important;flex:none;border-radius:12px!important;cursor:pointer}.jn-send{background:var(--navy);color:var(--on-accent);border:0;font-size:20px}.jn-cost{display:block;font-size:11px;margin:5px 0 0 52px}.v2-dialog label:has([name^="custom-"]){display:grid;gap:5px;margin:10px 0}.v2-dialog input[name^="custom-"],.v2-dialog select{font:inherit;width:100%;padding:9px;border:1px solid var(--line);border-radius:10px}.custom-expert-row{display:flex;gap:6px;align-items:center}.custom-expert-row .ex{flex:1}.custom-expert-row button{background:none;border:0;padding:10px}
 button,.btn-primary,.chip-toggle{line-height:1.35}.block-head{gap:8px;flex-wrap:wrap}.sc-actions,.pl-chips{gap:6px}.sc-actions button,.chip-toggle,.seg button{min-height:34px}.paper-link p,.cl-card>.card>.fine{display:none}.paper-link{gap:8px}.db-ask-link{font-size:18px}.db-full summary{cursor:pointer;font-size:13px;padding:10px 0;color:var(--accent-strong)}
 
 html,body{max-width:100%;overflow-x:clip}*,*::before,*::after{box-sizing:border-box}
@@ -31,13 +31,27 @@ export const LOADING_JS = THINKING_ORB_JS + `
  // or preparing gets a small orb in front, picked by what it is doing. Covers static and script-drawn lines.
  var ORB_FOR=[[/검색|찾/,'searching'],[/계산|분석/,'solving'],[/만드는|작성|생성/,'composing'],[/준비/,'breathing'],[/확인|기다리/,'listening'],[/불러오|연결/,'connecting']];
  var LOADING=/^(?:[^.!?]{0,24})(불러오는 중|불러오고 있어요|계산 중|계산하고 있어요|준비하고 있어요|준비 중|확인하고 있어요|확인하는 중|만드는 중|만들고 있어요|기다리는 중|찾는 중|찾고 있어요)/;
- var orbLines=function(root){(root||document).querySelectorAll('p,span,div,li,small,td').forEach(function(el){
-  if(el.children.length||el.dataset.orbLine||el.closest('[data-job],.page-load,.gnm-loading,.gnm-network,.orbs-load,.chat,.db-typing,.job-steps,script,style'))return;
-  var t=(el.textContent||'').trim();if(t.length>40||!LOADING.test(t))return;
+ var LINE_SEL='p,span,div,li,small,td';
+ var orbLine=function(el){
+  if(el.children.length||el.dataset.orbLine)return;
+  // The cheap tests first: most elements are long or not a loading line, and closest() is the costly part.
+  var t=(el.textContent||'').trim();if(!t||t.length>40||!LOADING.test(t))return;
+  if(el.closest('[data-job],.page-load,.gnm-loading,.gnm-network,.orbs-load,.chat,.db-typing,.job-steps,script,style'))return;
   var st='working';for(var i=0;i<ORB_FOR.length;i++)if(ORB_FOR[i][0].test(t)){st=ORB_FOR[i][1];break;}
   el.dataset.orbLine='1';el.classList.add('orb-line');el.insertAdjacentHTML('afterbegin',orb(st,20));
- });};
- var orbQueued=false;new MutationObserver(function(){if(orbQueued)return;orbQueued=true;Promise.resolve().then(function(){orbQueued=false;orbLines();});}).observe(document.body,{childList:true,subtree:true,characterData:true});orbLines();
+ };
+ var orbLines=function(root){root=root||document;if(root.nodeType===1&&root.matches(LINE_SEL))orbLine(root);root.querySelectorAll(LINE_SEL).forEach(orbLine);};
+ // G-196: only what changed is looked at. Re-scanning the whole page on every change (live prices, animations) was
+ // a multi-second task on a report page on a slow phone.
+ var orbPending=[],orbQueued=false;
+ new MutationObserver(function(ms){
+  for(var i=0;i<ms.length;i++){var m=ms[i];if(m.type==='characterData'){if(m.target.parentElement)orbPending.push(m.target.parentElement);continue;}
+   // a removal can leave its parent as a bare loading line (the text without its child), so the parent is looked at too
+   if(m.removedNodes.length&&m.target.nodeType===1)orbPending.push(m.target);
+   for(var j=0;j<m.addedNodes.length;j++){var n=m.addedNodes[j];if(n.nodeType===1)orbPending.push(n);else if(n.nodeType===3&&n.parentElement)orbPending.push(n.parentElement);}}
+  if(orbQueued||!orbPending.length)return;orbQueued=true;
+  Promise.resolve().then(function(){orbQueued=false;var list=orbPending;orbPending=[];for(var k=0;k<list.length;k++)if(list[k].isConnected)orbLines(list[k]);});
+ }).observe(document.body,{childList:true,subtree:true,characterData:true});orbLines();
  window.GNM_loading={begin:begin,delay:delay,orb:orb,min:function(p){return Promise.resolve(p);}};
  var raw=window.fetch.bind(window),pending=new Set(),badgeTimer=null;
  var paint=function(){if(!pending.size||badge)return;badge=document.createElement('div');badge.className='gnm-network';badge.setAttribute('role','status');badge.innerHTML=orb('connecting',20)+'<span>불러오는 중이에요</span>';document.body.appendChild(badge);var mine=badge;setTimeout(function(){if(badge===mine){badge.remove();}},12000);};

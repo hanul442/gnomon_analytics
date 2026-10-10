@@ -60,7 +60,7 @@ export const JOBS_JS = `
  var reset=function(b){clearTimeout(b._cf);fx(b,'');if(window.gnmBtnRestore)gnmBtnRestore(b);var x=b.parentNode&&b.parentNode.querySelector('.job-cancel');if(x)x.remove();var bar=b.closest('.rs-bar');if(bar&&bar._tx){bar.querySelector('.sa-tx').innerHTML=bar._tx;bar._tx=null;}};
  var dress=function(b,state,main,sub,pct){keep(b);b.dataset.job=state;b.setAttribute('aria-busy',String(state==='running'||state==='sending'));
   var busy=state==='running'||state==='sending';
-  b.innerHTML=(busy?'<i class="job-fill" style="width:'+(pct||4)+'%"></i><span class="job-spin" aria-hidden="true"></span>':state==='done'?'<span class="job-ok" aria-hidden="true">✓</span>':'')+'<span class="job-main">'+esc(main)+'</span>'+(sub?'<small class="job-sub">'+esc(sub)+'</small>':'');
+  (window.gnmBtnSwap||function(x,h){x.innerHTML=h;})(b,(busy?'<i class="job-fill" style="width:'+(pct||4)+'%"></i><span class="job-spin" aria-hidden="true"></span>':state==='done'?'<span class="job-ok" aria-hidden="true">✓</span>':'')+'<span class="job-main">'+esc(main)+'</span>'+(sub?'<small class="job-sub">'+esc(sub)+'</small>':''));
   b.setAttribute('aria-label',main+(sub?' · '+sub:''));fx(b,state,pct);};
  var text=function(b,main,sub,pct){var m=b.querySelector('.job-main'),s=b.querySelector('.job-sub'),f=b.querySelector('.job-fill');if(m&&m.textContent!==main&&b.__liquid)b.__liquid.slosh(0.6);if(m)m.textContent=main;if(s)s.textContent=sub;if(f&&pct!=null)f.style.width=pct+'%';if(b.__liquid&&pct!=null)b.__liquid.level(pct/100);b.setAttribute('aria-label',main+' · '+sub);};
  // The strip around the button tells what the committee is doing, one line at a time.

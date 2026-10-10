@@ -21,7 +21,7 @@ export const SEG_THUMB_CSS = `
 .has-thumb:not(.thumb-off)>[aria-pressed=true],.has-thumb:not(.thumb-off)>[aria-selected=true]{background:transparent!important;box-shadow:none!important;border-color:transparent!important}
 .thumb-off>.seg-thumb{display:none}
 html.chart-fs .cfs-foot>.seg>.seg-thumb{background:var(--soft);box-shadow:none}
-.bn-dots>.seg-thumb{height:6px!important;margin:10px 6px 0;background:#fff;box-shadow:0 0 10px rgba(255,255,255,.45)}
+.bn-dots>.seg-thumb{height:6px!important;margin:10px 8px 0;background:#fff;box-shadow:0 0 10px rgba(255,255,255,.45)}
 .find-tabs>.seg-thumb,.adm-tabs>.seg-thumb{background:var(--navy);box-shadow:0 8px 18px -10px rgba(0,166,251,.6)}
 @media (prefers-reduced-motion:reduce){.has-thumb>.seg-thumb{transition:none!important;animation:none!important}}`;
 

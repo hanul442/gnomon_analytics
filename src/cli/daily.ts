@@ -45,7 +45,7 @@ import { render509, renderSupport } from '../report/renderSupport.js';
 import { renderInbox, MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
 import { renderMyReports } from '../report/renderMyReports.js';
 import { renderMyDebates } from '../report/renderMyDebates.js';
-import { renderSignalsPage, renderThemesPage, signalData, themeData } from '../report/renderThemes.js';
+import { renderSignalsPage, renderThemesPage, signalData, themeData, themesHome } from '../report/renderThemes.js';
 import { fetchThemes, type Theme } from '../sources/naverTheme.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
@@ -818,6 +818,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const themeFile = JSON.parse(await readFile(join(root, 'data', 'themes.json'), 'utf8').catch(() => 'null')) as { themes: Theme[] } | null;
   const td = themeData(themeFile?.themes ?? [], lite, dataDate ?? kstParts(new Date()).date);
   await writeFile(join(siteDir, 'themes.json'), JSON.stringify(td.themes));
+  await writeFile(join(siteDir, 'themes-home.json'), JSON.stringify(themesHome(td.themes)));
   await writeFile(join(siteDir, 'theme-index.json'), JSON.stringify(td.index));
   await writeThemePeers(root, siteDir, td.themes.themes);
   const eventLog = (await readFile(join(root, 'data', 'event-filings.jsonl'), 'utf8').catch(() => '')).split('\n').filter(Boolean).map((l) => JSON.parse(l) as EventFiling);

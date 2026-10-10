@@ -9,6 +9,7 @@ import { edgeCard, insiderSection } from '../report/renderEdge.js';
 import { latestLists } from '../report/appParts.js';
 import { newsTabBody } from '../report/renderHtml.js';
 import { fetchOkxDeriv, type DerivSnapshot } from '../sources/okxDeriv.js';
+import { fetchKrxShort, type CreditMemo, type ShortSnapshot } from '../sources/krxShort.js';
 import { UNLOCK, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
 import { fetchUpbitMinutes, fetchUpbitTicks } from '../sources/upbit.js';
@@ -348,6 +349,35 @@ route('GET', '/deriv', async ({ req, deps, now }) => {
   return { deriv: snap };
 });
 
+// G-195: short selling (KRX) and market credit (Naver) for a Korean stock. KRX posts the day after 15:40 and
+// again at 20:10, so an hour's cache is fresh enough; a code KRX does not know is remembered for ten minutes.
+// Fresh fetches share one per-IP budget (30 a minute); a cached answer costs nothing.
+const shortCache = new Map<string, { at: number; pending: Promise<ShortSnapshot | null> }>();
+const shortIsin = new Map<string, string>();
+const shortCredit: CreditMemo = { at: 0, rows: null };
+route('GET', '/short', async ({ req, deps, now }) => {
+  const code = (new URL(req.url).searchParams.get('code') ?? '').toUpperCase();
+  if (!/^[0-9][0-9A-Z]{5}$/.test(code)) fail(400, 'BAD_CODE', '종목 코드를 보내 주세요.');
+  // undefined: that fetch failed (and is being dropped); null: KRX has no such code.
+  const usable = async (e: { at: number; pending: Promise<ShortSnapshot | null> }) => { const kept = await e.pending.catch(() => undefined); return kept !== undefined && now.getTime() - e.at < (kept ? 60 : 10) * 60_000 ? { kept } : null; };
+  for (let hit = shortCache.get(code), round = 0; hit && round < 3; round++) {
+    const ok = await usable(hit);
+    if (ok) { if (!ok.kept) fail(404, 'NO_SHORT', '이 종목은 공매도 자료가 없어요.'); return { short: ok.kept, cached: true }; }
+    // Another request may have started the refresh while this one waited: share it rather than asking KRX again.
+    const now2 = shortCache.get(code); if (now2 === hit) break; hit = now2;
+  }
+  freshStart(req, now, 'short', 30, '종목을 너무 빠르게 열고 있어요. 1분 뒤 다시 열어 주세요.');
+  shortCache.delete(code); // re-inserted below, so it moves to the end and the oldest entry is the one evicted
+  if (shortCache.size >= 300) shortCache.delete(shortCache.keys().next().value!);
+  if (shortIsin.size >= 3000) shortIsin.clear();
+  const entry = { at: now.getTime(), pending: fetchKrxShort(code, deps.fetch, now, shortIsin, shortCredit) };
+  shortCache.set(code, entry);
+  const snap = await entry.pending.catch(() => undefined);
+  if (snap === undefined) { if (shortCache.get(code) === entry) shortCache.delete(code); fail(502, 'SHORT_UPSTREAM', '공매도 자료를 지금 받지 못했어요. 잠시 뒤 다시 열어 주세요.'); }
+  if (!snap) fail(404, 'NO_SHORT', '이 종목은 공매도 자료가 없어요.');
+  return { short: snap };
+});
+
 route('POST', '/auth/start', async ({ req, env, deps, now }) => {
   const b = await body(req), email = normEmail(b.email), db = env.DB;
   if (!email) fail(400, 'BAD_EMAIL', '이메일 주소를 확인해 주세요.');
@@ -567,11 +597,15 @@ route('GET','/ticks/(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})',async({deps,params,no
 const usPages=new Map<string,{at:number;pending:Promise<Record<string,unknown>|null>}>();
 // A fresh build costs a Naver call, so each address may start at most 20 a minute (cached opens are free).
 // Each route has its own budget, so opening one US page (its chart and its company information) costs one start in each.
-const usStarts={page:new Map<string,{at:number;n:number}>(),info:new Map<string,{at:number;n:number}>()};
-const usFreshStart=(req:Request,now:Date,kind:'page'|'info'='page')=>{
- const starts=usStarts[kind],ip=req.headers.get('cf-connecting-ip')??'-',w=starts.get(ip);
- if(w&&now.getTime()-w.at<60_000){if(w.n>=20)fail(429,'TOO_MANY','미국 종목을 너무 빠르게 열고 있어요. 1분 뒤 다시 열어 주세요.');w.n++;}
+// G-196: one limiter for every route that builds from an outside source (/short uses its own bucket of 30).
+const freshStarts={page:new Map<string,{at:number;n:number}>(),info:new Map<string,{at:number;n:number}>(),short:new Map<string,{at:number;n:number}>()};
+const freshStart=(req:Request,now:Date,kind:keyof typeof freshStarts,limit:number,message:string)=>{
+ const starts=freshStarts[kind],ip=req.headers.get('cf-connecting-ip')??'-',w=starts.get(ip);
+ if(w&&now.getTime()-w.at<60_000){if(w.n>=limit)fail(429,'TOO_MANY',message);w.n++;}
  else{if(starts.size>=1000)starts.clear();starts.set(ip,{at:now.getTime(),n:1});}
+};
+const usFreshStart=(req:Request,now:Date,kind:'page'|'info'='page')=>{
+ freshStart(req,now,kind,20,'미국 종목을 너무 빠르게 열고 있어요. 1분 뒤 다시 열어 주세요.');
 };
 // The same daily bars feed /us/page and /usinfo: one Naver request per code per 30 minutes; a failure is not kept.
 const usBars=new Map<string,{at:number;pending:Promise<PriceBar[]>}>();

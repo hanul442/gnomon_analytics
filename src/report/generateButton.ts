@@ -32,7 +32,7 @@ export const GEN_BUTTON_CSS = `
   font:inherit;font-size:14.5px;font-weight:700;color:#fff;background-color:var(--gc);border:solid 1px #ffffff22;border-radius:var(--gr);cursor:pointer;outline:none;
   box-shadow:inset 0 1px 1px rgba(255,255,255,.2),inset 0 2px 2px rgba(255,255,255,.15),inset 0 4px 4px rgba(255,255,255,.1),inset 0 8px 8px rgba(255,255,255,.05),inset 0 16px 16px rgba(255,255,255,.05),
     0 -1px 1px rgba(0,0,0,.02),0 -2px 2px rgba(0,0,0,.03),0 -4px 4px rgba(0,0,0,.05),0 -8px 8px rgba(0,0,0,.06),0 -16px 16px rgba(0,0,0,.08);
-  transition:box-shadow var(--gt),border var(--gt),background-color var(--gt)}
+  transition:box-shadow var(--gt),border var(--gt),background-color var(--gt),transform .18s cubic-bezier(.2,1.4,.4,1)}
 .gen-btn::before{content:"";position:absolute;top:calc(0px - var(--gp));left:calc(0px - var(--gp));width:calc(100% + var(--gp) * 2);height:calc(100% + var(--gp) * 2);
   border-radius:calc(var(--gr) + var(--gp));pointer-events:none;background-image:linear-gradient(0deg,#0004,#000a);z-index:-1;transition:box-shadow var(--gt),filter var(--gt);
   box-shadow:0 -8px 8px -6px #0000 inset,0 -16px 16px -8px #00000000 inset,1px 1px 1px #fff2,2px 2px 2px #fff1,-1px -1px 1px #0002,-2px -2px 2px #0001}
@@ -49,7 +49,7 @@ export const GEN_BUTTON_CSS = `
 @keyframes gen-appear{0%{opacity:0}100%{opacity:1}}
 .gen-btn small{font-size:12px;font-weight:600;color:#ffffff99}
 .gen-btn:focus-visible .gen-l,.gen-btn[data-pressed] .gen-l{animation:gen-burst 1s ease-in-out forwards,gen-letter 1.2s ease-in-out infinite;animation-delay:0s,1s}
-@keyframes gen-burst{0%,100%{filter:blur(0)}50%{transform:scale(2);filter:blur(10px) brightness(150%) drop-shadow(-36px 12px 12px hsl(var(--gh),100%,70%))}}
+@keyframes gen-burst{0%,100%{filter:blur(0)}45%{transform:translateY(-2px) scale(1.18);filter:blur(.6px) brightness(150%) drop-shadow(0 0 6px hsl(var(--gh),100%,70%))}}
 .gen-btn:focus-visible .gen-svg,.gen-btn[data-pressed] .gen-svg{animation-duration:1.2s;animation-delay:.2s}
 .gen-btn:focus-visible::before,.gen-btn[data-pressed]::before{box-shadow:0 -8px 12px -6px #fff3 inset,0 -16px 16px -8px hsla(var(--gh),100%,70%,20%) inset,1px 1px 1px #fff3,2px 2px 2px #fff1,-1px -1px 1px #0002,-2px -2px 2px #0001}
 .gen-btn:focus-visible::after,.gen-btn[data-pressed]::after{opacity:.6;-webkit-mask-image:linear-gradient(0deg,#fff,transparent);mask-image:linear-gradient(0deg,#fff,transparent);filter:brightness(100%)}
@@ -81,18 +81,24 @@ ${LETTER_DELAYS.slice(1).map((i) => `.gen-btn:focus-visible .gen-l:nth-child(${i
 @keyframes job-spin{to{transform:rotate(360deg)}}
 .job-ok{flex:none;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#86E3B5;color:#0A1626;font-size:11px;font-weight:900}
 [data-job=running],[data-job=sending]{cursor:progress}
-.gen-btn[data-job=confirm]{border-color:rgba(0,166,251,.75);animation:job-ask 1.4s ease-in-out infinite}
-@keyframes job-ask{50%{box-shadow:0 0 0 4px rgba(0,166,251,.22),inset 0 1px 1px rgba(255,255,255,.2)}}
+.gen-btn[data-job=confirm]{border-color:rgba(0,166,251,.75);animation:job-ask 2.4s ease-in-out infinite}
+@keyframes job-ask{50%{box-shadow:0 0 0 5px rgba(0,166,251,.16),inset 0 1px 1px rgba(255,255,255,.2)}}
+/* G-196: a state change (price → 접수 → 진행 → 완료 → back) no longer snaps: the new content rises in while the width eases to its size. */
+.gen-btn>.gen-txt,.gen-btn>small,.gen-btn>.job-main,.gen-btn>.job-sub,.gen-btn>.job-spin,.gen-btn>.job-ok{transition:opacity .24s var(--ease-out,ease-out),transform .34s cubic-bezier(.2,1.2,.4,1)}
+.gen-btn>.gen-svg{transition:opacity .24s var(--ease-out,ease-out),transform .34s cubic-bezier(.2,1.2,.4,1),fill var(--gt),filter var(--gt)}
+.gen-btn.sw-in>:not(.job-fill){opacity:0;transform:translateY(6px) scale(.97)}
+.gen-btn.sw-in>.job-sub{transform:translateY(8px)}
+.gen-btn:active{transform:scale(.97)}
 .gen-btn[data-job=done]{border-color:rgba(134,227,181,.6)}
 .gen-btn[data-job=short],.gen-btn[data-job=failed]{border-color:rgba(255,122,122,.55)}
 .job-cancel{margin-left:8px;height:32px;padding:0 12px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.06);color:#C3CDD6;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;vertical-align:middle}
-.gen-wrap>.job-cancel{position:absolute;right:8px;top:50%;margin:0;transform:translateY(-50%);z-index:2}.gen-btn[data-job=confirm]{padding-right:76px}
+.gen-wrap>.job-cancel{position:absolute;right:8px;top:50%;margin:0;transform:translateY(-50%);z-index:2;animation:job-cancel-in .3s .12s both cubic-bezier(.2,1.3,.4,1)}@keyframes job-cancel-in{from{opacity:0;transform:translate(6px,-50%) scale(.9)}}.gen-btn[data-job=confirm]{padding-right:76px}
 .rs-bar .sa-tx small{transition:opacity .16s}.rs-bar .sa-tx small.swap{opacity:0}
 .job-float{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:6px;max-width:calc(100% - 24px);animation:job-rise .35s var(--ease-out)}
 .job-float .job-x{width:34px;height:34px;border:0;border-radius:50%;background:rgba(10,22,38,.8);color:#fff;font-size:18px;cursor:pointer}
 @keyframes job-rise{from{opacity:0;transform:translate(-50%,16px)}}
 @media (min-width:821px){.job-float{bottom:24px}}
-@media (prefers-reduced-motion:reduce){.gen-l,.gen-svg,.gen-t1,.job-fill::after,.gen-btn[data-job=confirm]{animation:none!important;color:#fff}.job-fill.indet{animation-duration:3s}}`;
+@media (prefers-reduced-motion:reduce){.gen-l,.gen-svg,.gen-t1,.job-fill::after,.gen-btn[data-job=confirm],.gen-wrap>.job-cancel{animation:none!important;color:#fff}.job-fill.indet{animation-duration:3s}}`;
 
 /** A press marks the button for one burst (the source used :focus, which a mouse click only briefly holds). */
 export const GEN_BUTTON_JS = `
@@ -100,18 +106,31 @@ export const GEN_BUTTON_JS = `
 // liquid (a sweeping light without WebGL), a spinner, the label and the seconds so far. gnmBusy(button, false) puts the button back.
 // One save/restore for every in-button state (gnmBusy here, the report job in JOBS_JS): label, size, effects.
 window.gnmBtnKeep = function (b) { if (b._keep) return; b._keep = { html: b.innerHTML, label: b.getAttribute('aria-label'), w: b.style.minWidth }; if (b.offsetWidth) b.style.minWidth = b.offsetWidth + 'px'; };
+// G-196: new content in place at once (callers read it right away), then shown rising in while the width eases from the old size.
+window.gnmBtnSwap = function (b, html) {
+  var w0 = b.getBoundingClientRect().width;
+  if (!w0 || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { b.innerHTML = html; return; }
+  // sw-in goes on before the new content is styled at all, so it starts hidden instead of fading out first.
+  b.classList.add('sw-in'); b.innerHTML = html;
+  clearTimeout(b._sw); b.style.transition = 'none'; b.style.width = ''; var w1 = b.getBoundingClientRect().width;
+  b.style.width = w0 + 'px'; void b.offsetWidth;
+  b.style.transition = 'width .34s cubic-bezier(.3,1.15,.5,1),box-shadow var(--gt),border var(--gt),background-color var(--gt),transform .18s cubic-bezier(.2,1.4,.4,1)'; b.style.width = w1 + 'px';
+  requestAnimationFrame(function () { requestAnimationFrame(function () { b.classList.remove('sw-in'); }); });
+  b._sw = setTimeout(function () { b.style.width = ''; b.style.transition = ''; }, 380);
+};
 window.gnmBtnRestore = function (b) {
   clearInterval(b._bz); if (b.__liquid) b.__liquid.stop();
-  if (b._keep) { b.innerHTML = b._keep.html; if (b._keep.label == null) b.removeAttribute('aria-label'); else b.setAttribute('aria-label', b._keep.label); b.style.minWidth = b._keep.w; b._keep = null; }
+  // The state goes first, so the width it eases to is measured without the busy/confirm padding.
   delete b.dataset.job; b.removeAttribute('aria-busy');
+  if (b._keep) { var k = b._keep; b._keep = null; b.style.minWidth = k.w; if (k.label == null) b.removeAttribute('aria-label'); else b.setAttribute('aria-label', k.label); gnmBtnSwap(b, k.html); }
 };
 window.gnmBusy = function (b, label) {
   if (!b) return;
   if (label === false) { gnmBtnRestore(b); return; }
   gnmBtnKeep(b);
   b.dataset.job = 'running'; b.setAttribute('aria-busy', 'true');
-  b.innerHTML = '<i class="job-fill indet"></i><span class="job-spin" aria-hidden="true"></span><span class="job-main"></span><small class="job-sub">0초</small>';
-  b.querySelector('.job-main').textContent = label; b.setAttribute('aria-label', label); var t0 = Date.now();
+  var safe = String(label).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+  gnmBtnSwap(b, '<i class="job-fill indet"></i><span class="job-spin" aria-hidden="true"></span><span class="job-main">' + safe + '</span><small class="job-sub">0초</small>'); b.setAttribute('aria-label', label); var t0 = Date.now();
   // The Tactile liquid fills the button while it works, like a report job (G-185/G-187). The length is unknown, so the
   // level rises fast at first and then ever slower toward the top (never full until the work is done); the label counts the seconds.
   var lq = window.gnmLiquid ? gnmLiquid(b) : null; if (lq) lq.level(0.12);

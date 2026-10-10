@@ -27,6 +27,11 @@ export function themeData(themes: readonly Theme[], rows: readonly UniverseLite[
   return { themes: { date, fields: ['symbol', 'name', 'close', 'changePct', 'tradingValue', 'marketCap', 'reason'], themes: out }, index };
 }
 
+/** G-196: the home card's five strongest themes, without the member descriptions that make themes.json ~2MB. */
+export function themesHome(t: ReturnType<typeof themeData>['themes']) {
+  return { date: t.date, themes: t.themes.filter((x) => x.avg != null && x.members.length >= 3).slice(0, 5).map((x) => ({ ...x, members: x.members.map((m) => m.slice(0, 6)) })) };
+}
+
 /** The radar: surfaced filings of the last two weeks across the market, newest first. */
 export function signalData(events: readonly EventFiling[], rows: readonly UniverseLite[], today: string) {
   const by = new Map(rows.map((r) => [r.symbol, r]));
@@ -38,10 +43,10 @@ export function signalData(events: readonly EventFiling[], rows: readonly Univer
 
 const PAGE_CSS = `<style>
 .tm{max-width:980px;margin:14px auto 32px}.tm-hero{padding:18px}.tm-hero h1{font-size:23px;margin:2px 0 6px}.tm-hero p{margin:0;color:var(--fg2);line-height:1.6}
-.tm-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.tm-tools input{flex:1;min-width:180px;font:inherit;padding:11px 12px;border:1.5px solid var(--line-strong);border-radius:12px}.tm-tools select{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:white;color:var(--fg)}
+.tm-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.tm-tools input{flex:1;min-width:180px;font:inherit;padding:11px 12px;border:1.5px solid var(--line-strong);border-radius:12px}.tm-tools select{font:inherit;padding:8px 12px;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface-solid);color:var(--fg)}
 .tm-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}.tm-item{display:block;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-decoration:none;color:inherit}.tm-item:hover{border-color:var(--accent)}.tm-top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.tm-top b{font-size:15px}.tm-top span{font-weight:800;white-space:nowrap}.tm-meta{font-size:12px;color:var(--muted);margin-top:4px}.tm-lead{font-size:12.5px;color:var(--fg2);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tm-detail .card{padding:14px}.tm-back{display:inline-block;margin-bottom:8px;font-weight:700}.tm-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 12px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit}.tm-row:first-child{border-top:0}.tm-row b{font-size:14.5px}.tm-row small{grid-column:1/-1;color:var(--muted);font-size:12px;line-height:1.5}.tm-row .num{font-variant-numeric:tabular-nums;font-weight:700}
-.sg-chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.sg-chips button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.sg-chips button[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.sg-chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.sg-chips button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.sg-chips button[aria-pressed=true]{background:var(--navy);color:var(--on-accent);border-color:var(--navy)}
 .sg-day{font-size:13px;font-weight:800;color:var(--muted);margin:16px 0 6px}.sg-item{display:flex;flex-wrap:wrap;gap:0 8px;align-items:center;padding:4px 12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:6px}.sg-item a.nm{font-weight:800;display:inline-flex;align-items:center;min-height:36px}.sg-item .ti{flex-basis:100%;font-size:13px;color:var(--fg2)}.sg-item .ti a{color:inherit;display:inline-flex;align-items:center;min-height:32px}.sg-tag{font-size:11.5px;font-weight:800;border-radius:6px;padding:2px 7px;background:var(--soft)}.sg-why{font-size:12.5px;color:var(--muted);margin:0 0 4px}
 </style>`;
 

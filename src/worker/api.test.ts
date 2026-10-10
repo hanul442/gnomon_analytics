@@ -33,6 +33,9 @@ function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
       if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/FAIL.O/')) return new Response('busy', { status: 503 });
       if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/')) return Response.json(Array.from({ length: 160 }, (_, i) => { const d = new Date(Date.UTC(2026, 3, 1) + i * 86_400_000).toISOString().slice(0, 10).replace(/-/g, ''); const c = 100 + Math.sin(i / 7) * 5 + i * 0.1; return { localDate: d, openPrice: c - 0.5, highPrice: c + 1, lowPrice: c - 1, closePrice: c, accumulatedTradingVolume: 1_000_000 + i }; }));
       if (String(url).startsWith('https://polling.finance.naver.com/api/realtime/worldstock/')) return Response.json({ datas: [{ reutersCode: String(url).split('/').pop(), closePrice: '336.67', compareToPreviousClosePrice: '3.04', fluctuationsRatio: '0.91', marketStatus: 'OPEN', localTradedAt: '2026-10-08T10:00:00-04:00' }] });
+      if (String(url).startsWith('https://data.krx.co.kr/')) { const body = String(init?.body ?? ''); if (body.includes('finder')) { const q = new URLSearchParams(body).get('searchText') ?? ''; return Response.json({ block1: q === '999999' ? [] : [{ full_code: `KR7${q}001`, short_code: q }] }); } if (body.includes('KR7888888001')) return new Response('busy', { status: 503 }); return Response.json({ OutBlock_1: [{ TRD_DD: '2026/10/02', CVSRTSELL_TRDVOL: '100', CVSRTSELL_TRDVAL: '1,000', STR_CONST_VAL1: '5,000', STR_CONST_VAL2: '9,000' }] }); }
+      if (String(url).startsWith('https://m.stock.naver.com/api/stock/000660/trend')) return Response.json([{ bizdate: '20261002', accumulatedTradingVolume: '2,000' }]);
+      if (String(url).startsWith('https://stock.naver.com/api/domestic/market/trendDeposit')) return Response.json({ content: [{ bizdate: '20261002', customerDeposit: '1000000', creditLoan: '330000' }] });
       if (String(url).startsWith('https://www.okx.com/')) return Response.json(String(url).includes('XYZ') ? { code: '51001', data: [] } : String(url).includes('funding-rate') ? { code: '0', data: [{ fundingRate: '0.0001', fundingTime: '1791475200000' }] } : String(url).includes('/public/open-interest') ? { code: '0', data: [{ oiUsd: '2500000000' }] } : { code: '0', data: [] });
       if (String(url).startsWith('https://polling.finance.naver.com/')) return Response.json({ datas: [{ itemCode: '000660', closePrice: '1,860,000', compareToPreviousClosePrice: '18,000', fluctuationsRatio: '0.98', compareToPreviousPrice: { code: '2', name: 'RISING' }, marketStatus: 'OPEN', localTradedAt: '2026-10-05T12:00:00+09:00' }] });
       return new Response('no', { status: 404 });
@@ -497,6 +500,24 @@ test('US quotes (u=) and coin derivatives come through the API, cached (G-142, G
   assert.equal((await t.call('GET', '/deriv?ccy=BTC')).body.cached, true);
   assert.equal((await t.call('GET', '/deriv?ccy=XYZ')).status, 404);
   assert.equal((await t.call('GET', '/deriv?ccy=../x')).status, 400);
+});
+
+test('short selling and market credit for a Korean stock, cached; an unknown code 404, a KRX failure 502 and not kept (G-195)', async () => {
+  const t = setup();
+  const a = await t.call('GET', '/short?code=000660');
+  assert.equal(a.status, 200);
+  assert.equal(a.body.short.isin, 'KR7000660001');
+  assert.deepEqual(a.body.short.days, [['2026-10-02', 100, 1000, 5000, 9000]]);
+  assert.deepEqual(a.body.short.volume, [['2026-10-02', 2000]]);
+  assert.deepEqual(a.body.short.credit, [['2026-10-02', 1000000, 330000]]);
+  const krx = () => t.seen.filter((u) => u.includes('krx.co.kr')).length, before = krx();
+  assert.equal((await t.call('GET', '/short?code=000660')).body.cached, true);
+  assert.equal(krx(), before, 'the second open asks KRX nothing');
+  assert.equal((await t.call('GET', '/short?code=999999')).status, 404);
+  assert.equal((await t.call('GET', '/short?code=999999')).status, 404, 'the miss is remembered');
+  assert.equal((await t.call('GET', '/short?code=888888')).status, 502);
+  assert.equal((await t.call('GET', '/short?code=888888')).status, 502, 'a failure is not kept: KRX is asked again');
+  assert.equal((await t.call('GET', '/short?code=AAPL.O')).status, 400);
 });
 
 test('an invited expert answers in the debate at the invite price (G-80)', async () => {
