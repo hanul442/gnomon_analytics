@@ -96,7 +96,9 @@ export const CHART_DRAW_JS = `
   var GROUPS = ${JSON.stringify(DRAW_GROUPS.map((g) => ({ key: g.key, label: g.label, tools: g.tools })))};
   var TOOL = {}; GROUPS.forEach(function (g) { g.tools.forEach(function (t) { t.g = g.key; TOOL[t.key] = t; }); });
   var KEYS = { t: 'trend', h: 'hline', v: 'vline', f: 'fib', c: 'channel', r: 'rect', m: 'measure', l: 'long', s: 'short', x: 'text', p: 'brush' };
-  var COLORS = ['#2563eb', '#f04452', '#16a34a', '#f59e0b', '#7c3aed', '#191f28'];
+  // G-182: 'ink' is stored as a key and resolved when drawn, so a text label stays readable after a theme switch.
+  var ink = function () { return (window.GNMTheme && GNMTheme.v('--fg', '#191f28')) || '#191f28'; }, col = function (c) { return c === 'ink' || c === '#191f28' ? ink() : c; };
+  var COLORS = ['#2563eb', '#f04452', '#16a34a', '#f59e0b', '#7c3aed', 'ink'];
   var FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1], FIBX = [0, 0.618, 1, 1.272, 1.618, 2, 2.618], FIBT = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89], GANN = [[8, '1×8'], [4, '1×4'], [3, '1×3'], [2, '1×2'], [1, '1×1'], [0.5, '2×1'], [1 / 3, '3×1'], [0.25, '4×1'], [0.125, '8×1']];
   var G = null;
   var init = function () {
@@ -176,7 +178,7 @@ export const CHART_DRAW_JS = `
     };
     var drawShape = function (ctx, s, r, W, H, selected) {
       var P = s.pts.map(function (pt) { return [X(pt), Y(pt)]; }); if (P.some(function (p) { return p[0] == null || p[1] == null; })) return;
-      var c = (s.st && s.st.c) || '#2563eb', lw = ((s.st && s.st.w) || 2) * r;
+      var c = col((s.st && s.st.c) || '#2563eb'), lw = ((s.st && s.st.w) || 2) * r;
       ctx.save(); ctx.strokeStyle = c; ctx.fillStyle = c; ctx.lineWidth = lw; ctx.setLineDash(s.st && s.st.dash ? [6 * r, 4 * r] : []);
       var line = function (a, b) { ctx.beginPath(); ctx.moveTo(a[0] * r, a[1] * r); ctx.lineTo(b[0] * r, b[1] * r); ctx.stroke(); };
       var A = P[0], B = P[1] || P[0], k = s.k;
@@ -194,7 +196,7 @@ export const CHART_DRAW_JS = `
       else if (k === 'measure' && P[1]) { var up = s.pts[1].p >= s.pts[0].p, mc = up ? '#f04452' : '#3182f6'; ctx.fillStyle = mc; ctx.globalAlpha = 0.14; ctx.fillRect(Math.min(A[0], B[0]) * r, Math.min(A[1], B[1]) * r, Math.abs(B[0] - A[0]) * r, Math.abs(B[1] - A[1]) * r); ctx.globalAlpha = 1; ctx.strokeStyle = mc; line([A[0], (A[1] + B[1]) / 2], [B[0], (A[1] + B[1]) / 2]); line([(A[0] + B[0]) / 2, A[1]], [(A[0] + B[0]) / 2, B[1]]);
         var dv = s.pts[1].p - s.pts[0].p, dp = dv / s.pts[0].p * 100, nb = barsBetween(s.pts[0], s.pts[1]); label(ctx, r, (dv > 0 ? '+' : '') + won(dv) + ' (' + (dp > 0 ? '+' : '') + dp.toFixed(2) + '%) · ' + nb + '봉', (A[0] + B[0]) / 2 * r, (Math.min(A[1], B[1]) - 12) * r, mc, 'center', true); }
       else if ((k === 'long' || k === 'short') && P[1]) { var entry = s.pts[0].p, tgt = s.pts[1].p, stop = s.stop != null ? s.stop : entry - (tgt - entry) / 2, ye = A[1], yt = B[1], yst = candle.priceToCoordinate(stop); var xl = Math.min(A[0], B[0]), xr = Math.max(A[0], B[0], A[0] + 40);
-        if (yst != null) { ctx.setLineDash([]); ctx.globalAlpha = 0.2; ctx.fillStyle = '#16a34a'; ctx.fillRect(xl * r, Math.min(ye, yt) * r, (xr - xl) * r, Math.abs(yt - ye) * r); ctx.fillStyle = '#f04452'; ctx.fillRect(xl * r, Math.min(ye, yst) * r, (xr - xl) * r, Math.abs(yst - ye) * r); ctx.globalAlpha = 1; ctx.strokeStyle = '#191f28'; line([xl, ye], [xr, ye]);
+        if (yst != null) { ctx.setLineDash([]); ctx.globalAlpha = 0.2; ctx.fillStyle = '#16a34a'; ctx.fillRect(xl * r, Math.min(ye, yt) * r, (xr - xl) * r, Math.abs(yt - ye) * r); ctx.fillStyle = '#f04452'; ctx.fillRect(xl * r, Math.min(ye, yst) * r, (xr - xl) * r, Math.abs(yst - ye) * r); ctx.globalAlpha = 1; ctx.strokeStyle = ink(); line([xl, ye], [xr, ye]);
           var gain = (tgt / entry - 1) * 100 * (k === 'short' ? -1 : 1), loss = (stop / entry - 1) * 100 * (k === 'short' ? -1 : 1), rr = loss ? Math.abs(gain / loss) : 0;
           label(ctx, r, '목표 ' + won(tgt) + ' (' + (gain > 0 ? '+' : '') + gain.toFixed(2) + '%)', (xl + xr) / 2 * r, (yt + (yt < ye ? -10 : 10)) * r, '#16a34a', 'center', true);
           label(ctx, r, '손절 ' + won(stop) + ' (' + (loss > 0 ? '+' : '') + loss.toFixed(2) + '%)', (xl + xr) / 2 * r, (yst + (yst < ye ? -10 : 10)) * r, '#f04452', 'center', true);
@@ -222,6 +224,7 @@ export const CHART_DRAW_JS = `
       } }; } }]; }
     });
     var paint = function () { if (req) req(); renderEdit(); };
+    window.addEventListener('gnm-theme', function () { paint(); });
 
     // ---- hit test ----
     var near = function (x, y) {
@@ -292,7 +295,7 @@ export const CHART_DRAW_JS = `
     var local = function (e) { var r = host.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     var showTip = function (pt, xy, touch) { if (!pt) { tip.hidden = true; return; } tip.hidden = false; tip.textContent = won(pt.p) + ' · ' + dayOf(pt); tip.style.left = xy[0] + 'px'; tip.style.top = (xy[1] - (touch ? 46 : 14)) + 'px'; };
     var finish = function () { if (!draft) return; var before = snap(); var s = draft; draft = null; step = 0; if (s.k === 'long' || s.k === 'short') s.stop = s.pts[0].p - (s.pts[1].p - s.pts[0].p) / 2; shapes.push(s); commit(before); tip.hidden = true; var i = shapes.length - 1; setTool(null); select(i); if (s.k === 'text' || s.k === 'note') editText(i, true); };
-    var newShape = function (pt) { var t = TOOL[tool]; return { k: tool, pts: t.n === 1 ? [pt] : [pt, { t: pt.t, d: pt.d, p: pt.p }], st: { c: tool === 'text' ? '#191f28' : COLORS[0], w: tool === 'brush' ? 3 : 2 } }; };
+    var newShape = function (pt) { var t = TOOL[tool]; return { k: tool, pts: t.n === 1 ? [pt] : [pt, { t: pt.t, d: pt.d, p: pt.p }], st: { c: tool === 'text' ? 'ink' : COLORS[0], w: tool === 'brush' ? 3 : 2 } }; };
     // A press that starts a shape and is dragged places its second point on release; a press without a drag
     // waits for the next tap (or click) for each further point, with a live preview under the mouse.
     var down = null;
@@ -360,7 +363,7 @@ export const CHART_DRAW_JS = `
     var renderEdit = function () {
       var s = shapes[sel]; if (!s || hideAll) { edit.hidden = true; return; }
       var st = s.st || (s.st = { c: COLORS[0], w: 2 });
-      edit.innerHTML = COLORS.map(function (c) { return '<button type="button" data-e="c" data-v="' + c + '" aria-pressed="' + (st.c === c) + '" title="색"><span class="sw" style="background:' + c + '"></span></button>'; }).join('') +
+      edit.innerHTML = COLORS.map(function (c) { return '<button type="button" data-e="c" data-v="' + c + '" aria-pressed="' + (col(st.c) === col(c)) + '" title="색"><span class="sw" style="background:' + col(c) + '"></span></button>'; }).join('') +
         '<button type="button" data-e="w" title="굵기">' + (st.w || 2) + 'px</button><button type="button" data-e="dash" aria-pressed="' + !!st.dash + '" title="점선">┄</button>' +
         (s.k === 'text' || s.k === 'note' || s.k === 'up' || s.k === 'down' ? '<button type="button" data-e="text" title="글 고치기">글</button>' : '') +
         '<button type="button" data-e="lock" aria-pressed="' + !!s.locked + '" title="잠금">' + ${JSON.stringify(ICON.lock)} + '</button><button type="button" data-e="copy" title="복사">' + ${JSON.stringify(ICON.copy)} + '</button><button type="button" data-e="del" title="삭제 (Delete)">' + ${JSON.stringify(ICON.trash)} + '</button>';

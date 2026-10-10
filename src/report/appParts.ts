@@ -238,7 +238,8 @@ window.addEventListener('DOMContentLoaded', function () {
   if (bars.length < 2) return;
   var marks = JSON.parse(document.getElementById('marks').textContent) || [];
   var ov = JSON.parse(document.getElementById('overlays').textContent) || {};
-  var UP = '#f04452', DOWN = '#3182f6', GOLD = '#2e4268';
+  // G-182: up/down follow the theme (re-read on a switch below); overlay ink is a mid slate-blue that reads on the light and the dark page alike.
+  var TH = window.GNMTheme, UP = TH ? TH.v('--up', '#f04452') : '#f04452', DOWN = TH ? TH.v('--down', '#3182f6') : '#3182f6', INK = '#6F86A8', GOLD = INK;
   var mobile = window.matchMedia('(max-width: 820px)').matches;
   var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
   var chart = L.createChart(el, {
@@ -285,10 +286,10 @@ window.addEventListener('DOMContentLoaded', function () {
     ma120: function () { return [line(sma(C, ip('ma120').n), '#00968a')]; },
     ema12: function () { var q = ip('ema12'); return [line(ema(C, q.f), '#c2410c', 0, { lineStyle: 2 }), line(ema(C, q.s), '#4338ca', 0, { lineStyle: 2 })]; },
     bb: function () { var q = ip('bb'), m = sma(C, q.n), s = std(C, q.n, m); return [line(m, '#8a96a3', 0, { lineStyle: 2 }), line(m.map(function (x, i) { return x == null ? null : x + q.k * s[i]; }), '#8a96a3'), line(m.map(function (x, i) { return x == null ? null : x - q.k * s[i]; }), '#8a96a3')]; },
-    env: function () { var q = ip('env'), m = sma(C, q.n); return [line(m.map(function (x) { return x == null ? null : x * (1 + q.pct / 100); }), '#34496f', 0, { lineStyle: 1 }), line(m.map(function (x) { return x == null ? null : x * (1 - q.pct / 100); }), '#34496f', 0, { lineStyle: 1 })]; },
+    env: function () { var q = ip('env'), m = sma(C, q.n); return [line(m.map(function (x) { return x == null ? null : x * (1 + q.pct / 100); }), INK, 0, { lineStyle: 1 }), line(m.map(function (x) { return x == null ? null : x * (1 - q.pct / 100); }), INK, 0, { lineStyle: 1 })]; },
     ichimoku: function () {
       var q = ip('ichimoku'), conv = C.map(function (_, i) { return i < q.conv - 1 ? null : (hh(q.conv, i) + ll(q.conv, i)) / 2; }), basev = C.map(function (_, i) { return i < q.base - 1 ? null : (hh(q.base, i) + ll(q.base, i)) / 2; });
-      return [line(conv, '#e11d48'), line(basev, '#2563eb'), line(C.map(function (_, i) { return i < q.span - 1 ? null : (hh(q.span, i) + ll(q.span, i)) / 2; }), '#2e4268', 0, { lineStyle: 2 }), line(conv.map(function (x, i) { return x == null || basev[i] == null ? null : (x + basev[i]) / 2; }), '#16a34a', 0, { lineStyle: 2 })];
+      return [line(conv, '#e11d48'), line(basev, '#2563eb'), line(C.map(function (_, i) { return i < q.span - 1 ? null : (hh(q.span, i) + ll(q.span, i)) / 2; }), INK, 0, { lineStyle: 2 }), line(conv.map(function (x, i) { return x == null || basev[i] == null ? null : (x + basev[i]) / 2; }), '#16a34a', 0, { lineStyle: 2 })];
     }
   };
   var lineMakers = {
@@ -296,7 +297,7 @@ window.addEventListener('DOMContentLoaded', function () {
     // the other levels stay as lines (the 가격 구조 table lists them all).
     levels: function () { var lv = ov.levels || [], now = bars.length ? bars[bars.length - 1].close : 0, near = {}; lv.forEach(function (l) { var d = Math.abs(l.price - now); if (!near[l.kind] || d < near[l.kind].d) near[l.kind] = { d: d, l: l }; }); return lv.map(function (l) { var top = near[l.kind] && near[l.kind].l === l; return candle.createPriceLine({ price: l.price, color: l.kind === 'SUPPORT' ? DOWN : UP, lineWidth: 1, lineStyle: top ? 0 : 2, axisLabelVisible: top, title: top ? (l.kind === 'SUPPORT' ? '지지' : '저항') : '' }); }); },
     fib: function () { return (ov.fib || []).map(function (f) { return candle.createPriceLine({ price: f.price, color: GOLD, lineWidth: 1, lineStyle: 1, axisLabelVisible: false, title: f.ratio === 0 ? 'Fib 0% (끝)' : f.ratio === 1 ? 'Fib 100% (시작)' : 'Fib ' + (f.ratio * 100).toFixed(1) + '%' }); }); },
-    fair: function () { if (!ov.fair) return []; return [['low', '적정 하단'], ['center', '적정가'], ['high', '적정 상단']].map(function (k) { return candle.createPriceLine({ price: ov.fair[k[0]], color: '#223456', lineWidth: k[0] === 'center' ? 2 : 1, lineStyle: k[0] === 'center' ? 0 : 2, axisLabelVisible: true, title: k[1] }); }); }
+    fair: function () { if (!ov.fair) return []; return [['low', '적정 하단'], ['center', '적정가'], ['high', '적정 상단']].map(function (k) { return candle.createPriceLine({ price: ov.fair[k[0]], color: INK, lineWidth: k[0] === 'center' ? 2 : 1, lineStyle: k[0] === 'center' ? 0 : 2, axisLabelVisible: true, title: k[1] }); }); }
   };
   var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); var w = d.getUTCDay(); if (w !== 0 && w !== 6) n--; } return d.toISOString().slice(0, 10); };
   overlayMakers.forecast = function () {
@@ -309,7 +310,7 @@ window.addEventListener('DOMContentLoaded', function () {
       var k = Math.min(1, Math.max(0, (h - 20) / 40)), sg = f20.sigma + (f60.sigma - f20.sigma) * k, mu = f20.drift * h, sp = z * sg * Math.sqrt(h);
       fan.p10.push({ time: d, value: f20.baseClose * Math.exp(mu - sp) }); fan.p50.push({ time: d, value: f20.baseClose * Math.exp(mu) }); fan.p90.push({ time: d, value: f20.baseClose * Math.exp(mu + sp) });
     }
-    return [['p90', UP, 2, '상단 90%'], ['p50', '#223456', 0, '예측 중앙'], ['p10', DOWN, 2, '하단 10%']].map(function (q) {
+    return [['p90', UP, 2, '상단 90%'], ['p50', INK, 0, '예측 중앙'], ['p10', DOWN, 2, '하단 10%']].map(function (q) {
       var s = chart.addSeries(L.LineSeries, { color: q[1], lineWidth: q[0] === 'p50' ? 2 : 1, lineStyle: q[2], priceLineVisible: false, lastValueVisible: true, title: q[3], crosshairMarkerVisible: false });
       s.setData(fan[q[0]]); return s;
     });
@@ -403,7 +404,7 @@ window.addEventListener('DOMContentLoaded', function () {
     },
     ad: function (p) { var a = 0; return [line(bars.map(function (b) { a += b.high > b.low ? ((b.close - b.low) - (b.high - b.close)) / (b.high - b.low) * b.volume : 0; return a; }), '#0f766e', p, { title: 'A/D', lastValueVisible: false })]; },
     obv: function (p) { var o = 0; return [line(C.map(function (c, i) { if (i) o += c > C[i - 1] ? V[i] : c < C[i - 1] ? -V[i] : 0; return o; }), '#475569', p, { title: 'OBV' })]; },
-    atr: function (p) { var n = ip('atr').n, a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * (n - 1) + tr) / n; return i < n ? null : a; }), '#223456', p, { title: 'ATR ' + n })]; }
+    atr: function (p) { var n = ip('atr').n, a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * (n - 1) + tr) / n; return i < n ? null : a; }), INK, p, { title: 'ATR ' + n })]; }
   };
   var paneOrder = [];
   var clearPanes=function(){Object.keys(paneMakers).forEach(function(k){(built['pane:'+k]||[]).forEach(function(s){chart.removeSeries(s);});delete built['pane:'+k];});while(chart.panes().length>1)chart.removePane(chart.panes().length-1);};

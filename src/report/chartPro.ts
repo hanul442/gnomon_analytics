@@ -186,7 +186,13 @@ export const HERO_RANGE_JS = `
 export const CHART_PRO_JS = `
 (function () {
   var panel = document.getElementById('tab-chart'); if (!panel) return;
-  var root = document.documentElement, UP = '#f04452', DOWN = '#3182f6', NAVY = '#2e4268', T = 'rgba(0,0,0,0)';
+  // G-181: line colours come from the theme tokens (navy ink on light, pale ink on dark).
+  // G-182: colours come from the theme tokens and are read again on a theme switch (see the gnm-theme listener).
+  var TH = window.GNMTheme, tv = function (n, d) { return TH ? TH.v(n, d) : d; };
+  var rgbOf = function (c) { var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(c); return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)].join(',') : '46,66,104'; };
+  var root = document.documentElement, UP, DOWN, NAVY, INK_RGB, T = 'rgba(0,0,0,0)';
+  var readColors = function () { UP = tv('--up', '#f04452'); DOWN = tv('--down', '#3182f6'); NAVY = tv('--ink', '#2e4268'); INK_RGB = rgbOf(NAVY); };
+  readColors();
   var ICON_CT = ${JSON.stringify(ICONS)}, P = ${JSON.stringify(CHART_PRO_PARTS)}, FIELDS = ${JSON.stringify(IND_FIELDS)};
   var svg = function (d) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + d + '</svg>'; };
   var PREF = 'gnm-chart-pro', pref = { ct: 'candle', scale: 0, hilo: true, magnet: false };
@@ -367,7 +373,7 @@ export const CHART_PRO_JS = `
       if (k === 'hollow') view = chart.addSeries(L.CandlestickSeries, Object.assign({ upColor: T, downColor: DOWN, borderVisible: true, borderUpColor: UP, borderDownColor: DOWN, wickUpColor: UP, wickDownColor: DOWN }, o));
       if (k === 'bar') view = chart.addSeries(L.BarSeries, Object.assign({ upColor: UP, downColor: DOWN, thinBars: false }, o));
       if (k === 'line') view = chart.addSeries(L.LineSeries, Object.assign({ color: NAVY, lineWidth: 2 }, o));
-      if (k === 'area') view = chart.addSeries(L.AreaSeries, Object.assign({ lineColor: NAVY, topColor: 'rgba(46,66,104,.28)', bottomColor: 'rgba(46,66,104,.02)', lineWidth: 2 }, o));
+      if (k === 'area') view = chart.addSeries(L.AreaSeries, Object.assign({ lineColor: NAVY, topColor: 'rgba(' + INK_RGB + ',.28)', bottomColor: 'rgba(' + INK_RGB + ',.02)', lineWidth: 2 }, o));
       if (k === 'base') view = chart.addSeries(L.BaselineSeries, Object.assign({ topLineColor: UP, topFillColor1: 'rgba(240,68,82,.22)', topFillColor2: 'rgba(240,68,82,.03)', bottomLineColor: DOWN, bottomFillColor1: 'rgba(49,130,246,.03)', bottomFillColor2: 'rgba(49,130,246,.22)', lineWidth: 2 }, o));
       sync();
     };
@@ -419,6 +425,8 @@ export const CHART_PRO_JS = `
     bar.querySelector('[data-hilo]').setAttribute('aria-pressed', String(pref.hilo));
     if (pref.ct !== 'candle') setType(pref.ct); if (pref.scale) setScale(pref.scale); if (pref.magnet) setMagnet(true);
     window.GNM_chartPro = { type: setType, scale: setScale, view: function () { return view; }, extremes: ext };
+    // After the candle colours are re-applied (GNMTheme.chart), rebuild the chosen chart type in the new colours.
+    window.addEventListener('gnm-theme', function () { setTimeout(function () { readColors(); orig = Object.assign({}, orig, { upColor: UP, downColor: DOWN, wickUpColor: UP, wickDownColor: DOWN }); if (pref.ct !== 'candle') setType(pref.ct); }, 0); });
   };
   // The free chart pages build GNMChart after their data arrives; try again until it exists.
   var tries = 0, poll = setInterval(function () { init(); if (G || ++tries > 60) clearInterval(poll); }, 500);
