@@ -1,5 +1,5 @@
 {
- "at": "2026-10-10T07:37:57.893Z",
+ "at": "2026-10-10T08:01:14.734Z",
  "selected": null,
  "universe": [
   {
@@ -110,16 +110,6 @@
    "failedSources": []
   },
   {
-   "symbol": "036930",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "267250",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
    "symbol": "042660",
    "report": "NOT_SETTLED",
    "failedSources": []
@@ -145,11 +135,6 @@
    "failedSources": []
   },
   {
-   "symbol": "298040",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
    "symbol": "329180",
    "report": "NOT_SETTLED",
    "failedSources": []
@@ -166,11 +151,6 @@
   },
   {
    "symbol": "005380",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "267270",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -201,11 +181,6 @@
   },
   {
    "symbol": "012330",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "222800",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -305,5 +280,26 @@
    ]
   }
  ],
- "failed": []
+ "failed": [
+  {
+   "symbol": "036930",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "267250",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "298040",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "267270",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "222800",
+   "error": "fetch failed"
+  }
+ ]
 }
