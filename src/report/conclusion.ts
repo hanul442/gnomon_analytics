@@ -8,6 +8,7 @@ import { LOCKED_TEXT } from '../analysis/commentary.js';
 import { esc } from './html.js';
 import { won } from './format.js';
 import { CREDIT_COST } from './plans.js';
+import { reportButton } from './generateButton.js';
 
 const gap = (to: number, from: number) => { const g = (to / from - 1) * 100; return `${g > 0 ? '+' : ''}${g.toFixed(1)}%`; };
 const zone = (z?: [number, number]) => (z ? `${won(z[0])} ~ ${won(z[1])}` : '');
@@ -53,7 +54,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const worst = w ? `<div class="cl-worst"><b>최악의 경우</b><p>${esc(w.narrative.text)}</p>${w.checks.length ? `<ul>${w.checks.map((x) => `<li>☐ ${esc(x)}</li>`).join('')}</ul>` : ''}<small>매수·매도 지시가 아니라 위험을 점검하는 목록이에요.</small></div>` : '';
   // Each row opens its scenario (G-69): what would happen, what would set it off, when it would be wrong.
   const detail = (sc: typeof bull, label: string) => {
-    if (!sc) return missing?`<div class="cl-sc" hidden><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 ${label} 시나리오 미생성</b><button type="button" class="chip-toggle" data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}">리포트 생성</button></div></div></div>`:'';
+    if (!sc) return missing?`<div class="cl-sc" hidden><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 ${label} 시나리오가 아직 없어요</b>${reportButton(report.symbol, report.name)}</div></div></div>`:'';
     const locked = sc.narrative.text === LOCKED_TEXT;
     return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>시나리오 전개·근거·무효화 조건은 심층 리포트에 있어요.</p><button type="button" class="btn-primary dl-go" data-deep-go>심층 리포트 열기</button></div></div>` : `${scenarioPlot(report,sc.kind)}<div class="scenario-evidence"><b>조건·근거</b><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>성립 근거·촉매</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>무효화 조건 · 가정 재검토</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${!locked && sc.zone ? `<p class="cl-sc-k"><b>20거래일 예상 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</div>'}</div>`;
   };

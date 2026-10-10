@@ -7,6 +7,9 @@
 // padding). The source's second label ("Generating" on focus) is left out: the click opens a credit
 // confirmation first, so nothing is generating yet when the button is pressed.
 
+import { CREDIT_COST } from './plans.js';
+import { esc } from './html.js';
+
 const LETTER_DELAYS = Array.from({ length: 16 }, (_, i) => i);
 
 /** Splits a label into breathing letters (a space becomes a gap, not a letter). */
@@ -22,12 +25,18 @@ export function genButton(label: string, attrs: string, small = ''): string {
   return `<span class="gen-wrap"><button type="button" class="gen-btn" ${attrs} aria-label="${label.replace(/"/g, '&quot;')}${small ? ` ${small.replace(/<[^>]+>/g, '')}` : ''}">${SPARKLE}<span class="gen-txt"><span class="gen-t1">${letters(label)}</span></span>${small ? `<small>${small}</small>` : ''}</button></span>`;
 }
 
+/** The one "make a committee report" button (G-198): every place that offers a new report uses it, so they look and price alike.
+ * Without a symbol (stock.html) the page script fills data-symbol/data-name once it knows the stock. */
+export function reportButton(symbol?: string, name?: string, label = '심층 리포트 만들기'): string {
+  return genButton(label, `data-create-report${symbol ? ` data-symbol="${esc(symbol)}" data-name="${esc(name ?? symbol)}"` : ''}`, `${CREDIT_COST.report}크레딧`);
+}
+
 /** The same markup for page scripts (ES5), so a bar drawn in the browser looks the same. */
 export const GEN_BUTTON_JS_FN = `function gnmGenButton(label, attrs, small) { var L = function (s) { return s.split('').map(function (c) { return c === ' ' ? '<span class="gen-l gen-sp"> </span>' : '<span class="gen-l">' + c.replace(/[&<>"]/g, function (x) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[x]; }) + '</span>'; }).join(''); };
   return '<span class="gen-wrap"><button type="button" class="gen-btn" ' + attrs + ' aria-label="' + label + (small ? ' ' + String(small).replace(/<[^>]+>/g, '') : '') + '">' + ${JSON.stringify(SPARKLE)} + '<span class="gen-txt"><span class="gen-t1">' + L(label) + '</span></span>' + (small ? '<small>' + small + '</small>' : '') + '</button></span>'; }`;
 
 export const GEN_BUTTON_CSS = `
-.gen-wrap{position:relative;display:inline-block;isolation:isolate;flex:none}
+.gen-wrap{position:relative;display:inline-block;isolation:isolate;flex:none;max-width:100%}
 .gen-btn{--gr:24px;--gp:4px;--gt:.4s;--gc:#101010;--gh:200deg;user-select:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;
   font:inherit;font-size:14.5px;font-weight:700;color:#fff;background-color:var(--gc);border:solid 1px #ffffff22;border-radius:var(--gr);cursor:pointer;outline:none;
   box-shadow:inset 0 1px 1px rgba(255,255,255,.2),inset 0 2px 2px rgba(255,255,255,.15),inset 0 4px 4px rgba(255,255,255,.1),inset 0 8px 8px rgba(255,255,255,.05),inset 0 16px 16px rgba(255,255,255,.05),
@@ -81,6 +90,7 @@ ${LETTER_DELAYS.slice(1).map((i) => `.gen-btn:focus-visible .gen-l:nth-child(${i
 @keyframes job-spin{to{transform:rotate(360deg)}}
 .job-ok{flex:none;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#86E3B5;color:#0A1626;font-size:11px;font-weight:900}
 [data-job=running],[data-job=sending]{cursor:progress}
+.gen-btn{max-width:100%}.gen-btn[data-job]{flex-wrap:wrap;row-gap:1px}
 .gen-btn[data-job=confirm]{border-color:rgba(0,166,251,.75);animation:job-ask 2.4s ease-in-out infinite}
 @keyframes job-ask{50%{box-shadow:0 0 0 5px rgba(0,166,251,.16),inset 0 1px 1px rgba(255,255,255,.2)}}
 /* G-196: a state change (price → 접수 → 진행 → 완료 → back) no longer snaps: the new content rises in while the width eases to its size. */

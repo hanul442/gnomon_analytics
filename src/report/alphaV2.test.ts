@@ -32,7 +32,7 @@ test('unreported stock and coin pages use the full report template and keep miss
  for(const kind of [undefined,'coin'] as const){
   const html=renderCalculationPage({symbol:kind?'KRW-BTC':'999999',name:'미생성',...(kind?{kind}:{}),bars:Array.from({length:80},(_,i)=>({symbol:kind?'KRW-BTC':'999999',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10),open:100+i,high:105+i,low:95+i,close:102+i,volume:1000})),now:new Date('2026-10-06T00:00:00Z')});
   for(const id of ['tab-home','tab-chart','tab-technical','tab-strategy','tab-ai','tab-flows','tab-fundamentals','tab-news','home-conclusion','chart-card','ind-sheet','structure','parliament-ai','debate','join'])assert.ok(html.includes(`id="${id}"`),id);assert.match(html,/id="scen"/);
-  assert.match(html,/data-chart-indicator="fib"/);assert.match(html,/시나리오 미생성/);assert.match(html,/토론이 아직 생성되지 않았어요/);assert.match(html,/v2-mask/);assert.doesNotMatch(html,/AI 위원회가 고른 테스트 가격/);
+  assert.match(html,/data-chart-indicator="fib"/);assert.match(html,/시나리오가 아직 없어요/);assert.match(html,/위원회 토론이 아직 없어요/);assert.match(html,/v2-mask/);assert.doesNotMatch(html,/AI 위원회가 고른 테스트 가격/);
   for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g))if(!match[1]!.includes('application/json'))new vm.Script(match[2]!);
  }
  const empty=renderCalculationPage({symbol:'999999',name:'가격 미수집',bars:[],now:new Date()});for(const id of ['home-conclusion','chart-card','structure','parliament-ai','debate','join'])assert.ok(empty.includes(`id="${id}"`),id);
