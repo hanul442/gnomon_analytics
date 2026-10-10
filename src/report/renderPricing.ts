@@ -50,7 +50,7 @@ const STYLE = `<style>.soon-more{margin:4px 0 8px}.soon-more summary{cursor:poin
 @media (prefers-reduced-motion:reduce){.plan.top::before{animation:none}}.plan{display:flex;flex-direction:column;gap:10px;position:relative}
 .plan h3{margin:0;font-size:18px}.plan .price{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.plan .price small{font-size:14px;font-weight:600;color:var(--muted)}
 .plan ul{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:7px;font-size:14px;flex:1}.plan li{display:flex;gap:7px;align-items:flex-start}.ck{width:17px;height:17px;flex:none;color:var(--accent);margin-top:2px}
-.plan.featured{border:2px solid var(--navy)}.plan .ribbon{position:absolute;top:-11px;left:16px;background:var(--navy);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px}
+.plan.featured{border:2px solid var(--navy)}.plan .ribbon{position:absolute;top:-11px;left:16px;background:var(--navy);color:var(--on-accent);font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px}
 .plan .btn-primary,.pack .btn-primary{justify-content:center}.plan .is-current{display:none;text-align:center;font-weight:700;color:var(--muted);padding:12px}
 html[data-plan=free] .plan[data-key=free] .is-current,html[data-plan=plus] .plan[data-key=plus] .is-current,html[data-plan=pro] .plan[data-key=pro] .is-current,html[data-plan=max] .plan[data-key=max] .is-current{display:block}
 html[data-plan=free] .plan[data-key=free] .btn-primary,html[data-plan=plus] .plan[data-key=plus] .btn-primary,html[data-plan=pro] .plan[data-key=pro] .btn-primary,html[data-plan=pro] .plan[data-key=pro] .glow-cta,html[data-plan=max] .plan[data-key=max] .btn-primary{display:none}
