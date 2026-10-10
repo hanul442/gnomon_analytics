@@ -7,38 +7,38 @@
 
 export const MOTION_CSS = `
 html.mo .mo-line,html.mo .hero-chart:not(.mo-in) polyline,html.mo .hero-chart:not(.mo-in) polygon,html.mo .flow-chart:not(.mo-in) polyline{clip-path:inset(0 100% 0 0)}
-html.mo .mo-in .mo-line,html.mo .hero-chart.mo-in polyline,html.mo .hero-chart.mo-in polygon,html.mo .flow-chart.mo-in polyline{clip-path:inset(0 0 0 0);transition:clip-path 1.4s cubic-bezier(.16,1,.3,1)}
+html.mo .mo-in .mo-line,html.mo .hero-chart.mo-in polyline,html.mo .hero-chart.mo-in polygon,html.mo .flow-chart.mo-in polyline{clip-path:inset(0 0 0 0);transition:clip-path 1.4s var(--ease-out)}
 html.mo .flow-chart:not(.mo-in) .flow-label{opacity:0}html.mo .flow-chart.mo-in .flow-label{opacity:1;transition:opacity .4s 1.1s}
 html.mo .scenario-band{opacity:0;transform:scaleY(.2);transform-box:fill-box;transform-origin:center}
-html.mo .mo-in .scenario-band{opacity:1;transform:none;transition:opacity .6s .9s,transform .8s .9s cubic-bezier(.16,1,.3,1)}
+html.mo .mo-in .scenario-band{opacity:1;transform:none;transition:opacity .6s .9s,transform .8s .9s var(--ease-out)}
 html.mo .scenario-figure:not(.mo-in) .mo-dot,html.mo .scenario-figure:not(.mo-in) .mo-pulse{opacity:0}
 html.mo .scenario-figure.mo-in .mo-dot{transition:opacity .3s 1.3s}
 .mo-pulse{transform-box:fill-box;transform-origin:center;animation:mo-pulse 2.2s ease-out 1s infinite}
 @keyframes mo-pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.4);opacity:0}}
 html.mo .mo-bars rect{transform:scaleY(0);transform-box:fill-box;transform-origin:50% 100%}
 html.mo .mo-bars rect.neg{transform-origin:50% 0}
-html.mo .mo-bars.mo-in rect{transform:none;transition:transform .9s cubic-bezier(.16,1,.3,1) calc(min(var(--i,0),12) * 70ms),opacity .15s}
+html.mo .mo-bars.mo-in rect{transform:none;transition:transform .9s var(--ease-out) calc(min(var(--i,0),12) * 70ms),opacity .15s}
 html.mo .mo-bars .ig-bl{opacity:0}html.mo .mo-bars.mo-in .ig-bl{opacity:1;transition:opacity .5s .9s}
 .mo-bars rect{transition:opacity .15s}.mo-bars[data-hi] rect:not(.hi){opacity:.28}
 .mo-bars svg,.mo-scrub,.hero-chart svg{touch-action:pan-y;cursor:crosshair}.mo-bars svg:focus-visible,.mo-scrub:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 html.mo .ig-radar .area{transform:scale(0);transform-box:view-box;transform-origin:110px 104px;opacity:0}
-html.mo .ig-radar.mo-in .area{transform:none;opacity:1;transition:transform 1.1s cubic-bezier(.16,1,.3,1),opacity .5s}
+html.mo .ig-radar.mo-in .area{transform:none;opacity:1;transition:transform 1.1s var(--ease-out),opacity .5s}
 html.mo .ig-radar .dot{opacity:0}html.mo .ig-radar.mo-in .dot{opacity:1;transition:opacity .35s calc(.8s + var(--i,0) * 90ms),r .15s}
 .ig-radar .dot{transition:r .15s}.ig-radar .dot.hi{r:6.5px;fill:var(--accent)}
 .ig-hl li{transition:background .15s}.ig-hl li.hi{background:var(--accent-soft);border-radius:10px}
 html.mo .ig-bs-bar i{transform:scaleX(0);transform-origin:left}
-html.mo .ig-bs.mo-in .ig-bs-bar i{transform:none;transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 120ms)}
+html.mo .ig-bs.mo-in .ig-bs-bar i{transform:none;transition:transform 1s var(--ease-out) calc(var(--i,0) * 120ms)}
 html.mo .mini-gauge:not(.mo-in) .needle,html.mo .gauge:not(.mo-in) .needle{animation:none;transform:rotate(0deg)}
-html.mo .gbars:not(.mo-in) .track i{transform:scaleX(0)}.gbars .track i{transform-origin:left;transition:transform .9s cubic-bezier(.16,1,.3,1)}.gbars .gbar+.gbar .track i{transition-delay:.15s}
+html.mo .gbars:not(.mo-in) .track i{transform:scaleX(0)}.gbars .track i{transform-origin:left;transition:transform .9s var(--ease-out)}.gbars .gbar+.gbar .track i{transition-delay:.15s}
 html.mo .si-card:not(.mo-in) .si-c{opacity:0;transform:translateY(6px)}
-html.mo .si-card.mo-in .si-c{transition:opacity .55s calc(min(var(--i,0),10) * 60ms),transform .7s cubic-bezier(.16,1,.3,1) calc(min(var(--i,0),10) * 60ms)}
-html.mo .si-card:not(.mo-in) .si-rbar{transform:scaleX(0)}.si-rbar{transform-origin:left;transition:transform 1s cubic-bezier(.16,1,.3,1)}
-html.mo .si-card:not(.mo-in) .si-rbar i{left:0!important;opacity:0}.si-rbar i{transition:left 1.3s cubic-bezier(.16,1,.3,1) .5s,opacity .3s .5s}
-html.mo .si-card:not(.mo-in) .si-fbar i{transform:scaleX(0)}.si-fbar i{transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 90ms)}.si-fbar i.pos{transform-origin:left}.si-fbar i.neg{transform-origin:right}
-html.mo .si-card:not(.mo-in) .si-cols i{transform:scaleY(0)}.si-cols i{transform-origin:bottom;transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 110ms)}
+html.mo .si-card.mo-in .si-c{transition:opacity .55s calc(min(var(--i,0),10) * 60ms),transform .7s var(--ease-out) calc(min(var(--i,0),10) * 60ms)}
+html.mo .si-card:not(.mo-in) .si-rbar{transform:scaleX(0)}.si-rbar{transform-origin:left;transition:transform 1s var(--ease-out)}
+html.mo .si-card:not(.mo-in) .si-rbar i{left:0!important;opacity:0}.si-rbar i{transition:left 1.3s var(--ease-out) .5s,opacity .3s .5s}
+html.mo .si-card:not(.mo-in) .si-fbar i{transform:scaleX(0)}.si-fbar i{transition:transform 1s var(--ease-out) calc(var(--i,0) * 90ms)}.si-fbar i.pos{transform-origin:left}.si-fbar i.neg{transform-origin:right}
+html.mo .si-card:not(.mo-in) .si-cols i{transform:scaleY(0)}.si-cols i{transform-origin:bottom;transition:transform 1s var(--ease-out) calc(var(--i,0) * 110ms)}
 html.mo .si-card:not(.mo-in) .si-cols span{opacity:0}.si-cols span{transition:opacity .4s calc(.6s + var(--i,0) * 110ms)}
-html.mo .fc-card:not(.mo-in) .fc-rng{transform:scaleX(0)}.fc-rng{transition:transform 1s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 130ms)}
-html.mo .fc-card:not(.mo-in) .fc-mid{opacity:0;transform:scale(.4)}.fc-mid{transition:opacity .35s calc(.7s + var(--i,0) * 130ms),transform .45s cubic-bezier(.34,1.56,.64,1) calc(.7s + var(--i,0) * 130ms)}
+html.mo .fc-card:not(.mo-in) .fc-rng{transform:scaleX(0)}.fc-rng{transition:transform 1s var(--ease-out) calc(var(--i,0) * 130ms)}
+html.mo .fc-card:not(.mo-in) .fc-mid{opacity:0;transform:scale(.4)}.fc-mid{transition:opacity .35s calc(.7s + var(--i,0) * 130ms),transform .45s var(--ease-spring) calc(.7s + var(--i,0) * 130ms)}
 .mo-tip{position:absolute;z-index:6;left:0;top:0;pointer-events:none;background:var(--tip-bg,#0A1626);color:var(--tip-fg,#fff);border:1px solid var(--line-strong);border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:500;line-height:1.55;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.28);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);transform:translate(-50%,calc(-100% - 10px))}
 .mo-tip.below{transform:translate(-50%,12px)}.mo-tip[hidden]{display:none}.mo-tip b{font-weight:800}.mo-tip .up{color:#FF8A8F}.mo-tip .down{color:#8db4ff}
 .mo-tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}

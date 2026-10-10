@@ -207,7 +207,7 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .pl-card{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:22px;align-items:start}
 .pl-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.pl-figure{position:relative;max-width:470px;margin:0 auto}
 .pl-svg{display:block;width:100%;height:auto;overflow:visible}
-.seat{cursor:pointer;stroke:var(--seat-ring,#fff);stroke-width:.6;transition:opacity .2s ease,transform .2s ease;transform-box:fill-box;transform-origin:center;animation:seat-in .45s cubic-bezier(.16,1,.3,1) backwards;animation-delay:calc(var(--i) * 22ms)}
+.seat{cursor:pointer;stroke:var(--seat-ring,#fff);stroke-width:.6;transition:opacity .2s ease,transform .2s ease;transform-box:fill-box;transform-origin:center;animation:seat-in .45s var(--ease-out) backwards;animation-delay:calc(var(--i) * 22ms)}
 .seat.s-bull{fill:var(--up);--sc:var(--up)}.seat.s-neutral{fill:var(--muted);--sc:var(--muted)}.seat.s-bear{fill:var(--down);--sc:var(--down)}.seat.s-abstain{fill:var(--surface-solid);stroke:var(--muted);stroke-width:.9;--sc:var(--muted)}
 .seat.f-ai,.seat.f-desk{stroke:var(--fg);stroke-width:1.1}
 /* G-185: the hemicycle stands on a glass stage lit from below in the majority's colour; voting seats glow softly. */

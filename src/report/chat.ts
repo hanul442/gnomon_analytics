@@ -12,7 +12,7 @@ const PAID = PLANS.filter((p) => p.price > 0).map((p) => ({ key: p.key, name: p.
 
 export const CHAT_CSS = `
 .chat-fab{position:fixed;right:20px;bottom:20px;z-index:60;display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;background:var(--navy);color:#fff;font:inherit;font-weight:700;font-size:15px;padding:13px 18px 13px 15px;box-shadow:0 10px 28px rgba(15,34,68,.35);cursor:pointer}
-.chat-fab{transition:transform .25s cubic-bezier(.16,1,.3,1),opacity .2s}.chat-fab.fab-away{transform:translateY(140%);opacity:0;pointer-events:none}.chat-fab:hover{background:var(--accent-strong)}.chat-fab svg{width:22px;height:22px}
+.chat-fab{transition:transform .25s var(--ease-out),opacity .2s}.chat-fab.fab-away{transform:translateY(140%);opacity:0;pointer-events:none}.chat-fab:hover{background:var(--accent-strong)}.chat-fab svg{width:22px;height:22px}
 .chat{position:fixed;right:20px;bottom:20px;z-index:75;width:min(400px,calc(100vw - 24px));height:min(620px,calc(100vh - 40px));display:flex;flex-direction:column;background:var(--surface-solid);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px rgba(15,27,45,.28);overflow:hidden}
 .chat[hidden]{display:none}
 .chat-head{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--navy);color:#fff}.chat-head b{font-size:15px}.chat-head .ctx{font-size:12px;opacity:.8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

@@ -42,7 +42,7 @@ export const COMMAND_BAR_CSS = `
   box-shadow:0 18px 40px -16px rgba(0,0,0,.65),inset 0 1px rgba(255,255,255,.05);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
 html[data-theme=dark] .bottom-nav{background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92))}
 .bottom-nav a,.bottom-nav button{flex-direction:row;flex:none;gap:6px;height:46px;min-width:48px;padding:0 13px;border-radius:999px;color:#9AA8B8;font-size:13.5px;font-weight:700;
-  transition:color .16s,background .2s,transform .32s cubic-bezier(.34,1.56,.64,1)}
+  transition:color .16s,background .2s,transform .32s var(--ease-spring)}
 .bottom-nav a span,.bottom-nav button span{display:none}
 .bottom-nav [aria-current=page] span,.bottom-nav [aria-expanded=true] span{display:inline}
 .bottom-nav [aria-current=page],.bottom-nav [aria-expanded=true]{color:#0A1626;font-weight:800;background:linear-gradient(180deg,#ffffff,#dfe6f0);box-shadow:0 10px 22px -12px rgba(0,166,251,.75),inset 0 -1px rgba(0,0,0,.14)}
@@ -143,7 +143,7 @@ export const REPORT_TABS_CSS = `
   box-shadow:0 14px 32px -16px rgba(0,0,0,.7),inset 0 1px rgba(255,255,255,.05);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);overflow-x:auto;scrollbar-width:none}
 .topbar>.chips:not(.analysis-tabs)::-webkit-scrollbar{display:none}
 .topbar>.chips:not(.analysis-tabs) a{position:relative;z-index:1;display:inline-flex;align-items:center;height:38px;min-height:0;padding:0 15px;border:0;border-radius:999px;background:transparent;color:#9AA8B8;font-size:14px;font-weight:700;white-space:nowrap;
-  transition:color .25s,transform .32s cubic-bezier(.34,1.56,.64,1)}
+  transition:color .25s,transform .32s var(--ease-spring)}
 .topbar>.chips:not(.analysis-tabs) a:hover{background:transparent;color:#F4F7FA}
 .topbar>.chips:not(.analysis-tabs) a[aria-selected=true]{color:#0A1626;background:transparent}
 .topbar>.chips:not(.has-ind) a[aria-selected=true]{background:linear-gradient(180deg,#ffffff,#dfe6f0)}
