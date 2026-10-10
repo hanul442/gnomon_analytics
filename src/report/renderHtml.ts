@@ -5,6 +5,7 @@ import { ROLL_CSS, ROLL_JS } from './rollNumber.js';
 import { LIQUID_CSS, LIQUID_JS } from './liquidButton.js';
 import { GLASS_CSS, GLASS_JS } from './glass.js';
 import { MOTION_TOKENS_CSS } from './motionTokens.js';
+import { SEG_THUMB_CSS, SEG_THUMB_JS } from './segThumb.js';
 import { GLOW_CTA_CSS } from './glowCta.js';
 import {contentMore,CONTENT_MORE_CSS} from './contentMore.js';
 import {indicatorKey,INDICATOR_LINK_CSS,INDICATOR_LINK_JS} from './indicatorLinks.js';
@@ -832,12 +833,13 @@ export const SEARCH_SCRIPT = `<script>
       items = d.items.map(function (x, i) { return { c: x[0], n: x[1], m: x[2], p: x[3], x: x[4], r: x[5], k: norm(x[1]), h: cho(norm(x[1])), e: '', i: i }; });
       // ETFs and coins come from their own lists; either may be missing.
       var have = {}; items.forEach(function (it) { have[it.c] = 1; });
+      // G-188: usnames.json (every listed US stock, names only) comes last, so a computed US row keeps its price.
       var extra = function (url, kind) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { (d.rows || []).forEach(function (x) {
-        if (have[x[0]]) return;
+        if (have[x[0]]) return; have[x[0]] = 1;
         var sym = kind === 'COIN' ? x[0].replace('KRW-', '') : kind === 'US' ? x[0].split('.')[0] : x[0];
         items.push({ c: x[0], n: x[1], m: kind, p: x[4], x: x[5], r: 0, k: norm(x[1]), h: cho(norm(x[1])), e: norm(sym + ' ' + (x[2] || '')), i: items.length });
       }); }).catch(function () {}); };
-      return Promise.all([extra('etfs.json', 'ETF'), extra('coins.json', 'COIN'), extra('usstocks.json', 'US')]).then(function () { return items; });
+      return Promise.all([extra('etfs.json', 'ETF'), extra('coins.json', 'COIN'), extra('usstocks.json', 'US')]).then(function () { return extra('usnames.json', 'US'); }).then(function () { return items; });
     });
   };
   var score = function (it, t, onlyCho) {
@@ -930,7 +932,12 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
   var loadPanels = function () { fetch('research/'+code+'.panels.json').then(function(r){if(!r.ok)return {};return r.json();}).then(function(parts){Object.keys(parts).forEach(function(key){var panel=document.getElementById('tab-'+key);if(panel&&parts[key]){panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});var section=document.createElement('section');section.setAttribute('data-public',key);section.innerHTML=parts[key];panel.prepend(section);}});}).catch(function(){}); };
   // Stocks with an AI report have their own page and no s/<code>.json: go there instead.
   var toReport = function () { if(new URLSearchParams(location.search).get('job')) return Promise.resolve(false);return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
-  fetch((COIN ? 'c/' : US ? 'u/' : 's/') + code + '.json').then(function (r) { if(r.status===404 && new URLSearchParams(location.search).get('job'))return fetch('research/'+code+'.json').then(function(rr){if(!rr.ok)throw new Error();return rr.json();}).then(function(x){loadPanels();return {name:x.name,symbol:x.symbol,market:x.kind||'주식',bars:(x.recentBars||[]).map(function(b){return [b.date,b.open,b.high,b.low,b.close,b.volume];})};}); if (r.status === 404 && !COIN && !US) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
+  // G-188: a US stock outside the daily set: the API builds its page on demand; the name comes from the directory list.
+  var usOnDemand = function () { var meta = document.querySelector('meta[name=gnm-api]'), api = meta && meta.content; if (!api) throw new Error('NO_API');
+    return Promise.all([fetch(api.replace(/[/]$/, '') + '/us/page/' + encodeURIComponent(code)).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }), fetch('usnames.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; }).catch(function () { return { rows: [] }; })]).then(function (all) {
+      var d = all[0], hit = (all[1].rows || []).filter(function (x) { return x[0] === code; })[0];
+      d.name = hit ? hit[1] : code.split('.')[0]; d.english = hit ? String(hit[2]).split(' · ').slice(2).join(' · ') : ''; d.market = hit ? String(hit[2]).split(' · ')[1] : 'US'; return d; }); };
+  fetch((COIN ? 'c/' : US ? 'u/' : 's/') + code + '.json').then(function (r) { if(r.status===404 && new URLSearchParams(location.search).get('job'))return fetch('research/'+code+'.json').then(function(rr){if(!rr.ok)throw new Error();return rr.json();}).then(function(x){loadPanels();return {name:x.name,symbol:x.symbol,market:x.kind||'주식',bars:(x.recentBars||[]).map(function(b){return [b.date,b.open,b.high,b.low,b.close,b.volume];})};}); if (r.status === 404 && !COIN && !US) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (r.status === 404 && US) return usOnDemand(); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     if(d.pageUrl && /^(?:[sc]\\/[0-9A-Z-]+\\.html|[0-9A-Z-]+\\/index\\.html)$/.test(d.pageUrl)){location.replace(d.pageUrl+location.search+location.hash);return;}
     if (d.research) loadPanels();
     document.title = d.name + ' 차트 | GNOMON';
@@ -1043,7 +1050,7 @@ html.chart-fs #tab-chart::after,.db-room:not([hidden])::after{content:"";positio
 @media(max-width:820px){.moms{grid-template-columns:repeat(2,minmax(0,1fr))}.momentum-axis{font-size:10px;gap:0}.market-scenarios{grid-template-columns:minmax(0,1fr)}.market-thermals{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 0 8px;scrollbar-width:none}.market-thermals::-webkit-scrollbar{display:none}.market-thermals>*{flex:0 0 84%;scroll-snap-align:start}.topbar.scrolled .gnomon-mark{width:28px;height:28px}.topbar.scrolled .price-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 7px;font-size:12px;overflow:visible;line-height:1.5}.price-bar>b{overflow:hidden;text-overflow:ellipsis;grid-column:1;grid-row:1/3}.price-bar .pb-price{grid-column:2;grid-row:1;white-space:nowrap}.price-bar [data-live-f=arrowpct]{grid-column:2;grid-row:2;text-align:right;white-space:nowrap}.price-bar .pb-code,.price-bar .freshness-badge{display:none}.topbar-in{gap:8px}.top-links,.topbar-in>.menu-button{flex:none}.chips button{padding:6px 12px;font-size:13px}.analysis-tabs{padding-top:0}.chips{gap:4px}}
 ${FS_CSS}${THEME_CSS}
 /* G-183: command bar, switch, generate button, and glow CTA are ported from ThreeUI Community (github.com/MengTo/threeui), MIT License, Copyright (c) 2026 Meng To. See docs/third-party/threeui-LICENSE.txt. */
-${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}
+${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}${SEG_THUMB_CSS}
 .page-load{position:fixed;inset:0;z-index:400;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center;background:var(--page);background-image:var(--page-grad);transition:opacity .35s ease,visibility .35s}.page-load.out{opacity:0;visibility:hidden}.page-load canvas{width:72px;height:72px}.page-load b{font-size:15px;color:var(--fg2);font-weight:700}.pl-track{position:relative;display:block;width:160px;height:3px;border-radius:3px;background:var(--line);overflow:hidden}.pl-track i{position:absolute;inset:0 auto 0 0;width:40%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:pl-run 1.1s ease-in-out infinite}@keyframes pl-run{from{transform:translateX(-100%)}to{transform:translateX(260%)}}@media (prefers-reduced-motion:reduce){.pl-track i{animation-duration:3s}}html.embed .page-load{display:none}${MODERN_SWITCH_CSS}${GEN_BUTTON_CSS}${GLOW_CTA_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 // G-169: the loading layer, the version banner and the ad strip used to be inlined in every page (about 19 KB each,
@@ -1051,7 +1058,7 @@ ${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION
 // "use strict" from becoming a directive for the whole file.
 export const APP_JS = `;${LOADING_JS};\n${VERSION_JS};\n${AD_JS};\n${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)};\n${FORMAT_JS}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${STOCK_INFO_TOGGLE_JS}\n${INFOGRAPHIC_JS}\n${INSTALL_JS}\n${DERIV_JS}\n${HERO_RANGE_JS}\n${CHART_PRO_JS}\n${CHART_DRAW_JS}\n${IND_LIMIT_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}\n${MOTION_JS}\n${COMMAND_BAR_JS}\n${REPORT_TABS_JS}\n${ROLL_JS}\n${LIQUID_JS}\n${GLASS_JS}\n${MODERN_SWITCH_JS}\n${GEN_BUTTON_JS}`;
+export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${STOCK_INFO_TOGGLE_JS}\n${INFOGRAPHIC_JS}\n${INSTALL_JS}\n${DERIV_JS}\n${HERO_RANGE_JS}\n${CHART_PRO_JS}\n${CHART_DRAW_JS}\n${IND_LIMIT_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}\n${MOTION_JS}\n${COMMAND_BAR_JS}\n${REPORT_TABS_JS}\n${ROLL_JS}\n${LIQUID_JS}\n${GLASS_JS}\n${MODERN_SWITCH_JS}\n${GEN_BUTTON_JS}\n${SEG_THUMB_JS}`;
 /** Two FNV-1a passes give a short, stable content hash without node:crypto (this module also runs in the Worker). */
 const contentHash = (text: string): string => {
   let a = 0x811c9dc5, b = 0x01000193 ^ text.length;

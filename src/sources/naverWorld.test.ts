@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { fetchUsUniverse, fetchWorldBars, parseUsRanking, parseUsSearch, parseWorldBars, parseWorldQuote, US_CODE, usdHangeul } from './naverWorld.js';
+import { fetchUsDirectory, fetchUsUniverse, fetchWorldBars, parseUsRanking, parseUsSearch, parseWorldBars, parseWorldQuote, US_CODE, usdHangeul } from './naverWorld.js';
 
 const AT = new Date('2026-10-08T13:00:00Z');
 // Shapes as Naver answered on 2026-10-08 (diag workflow), trimmed.
@@ -64,4 +64,20 @@ test('universe: each exchange by market value plus ETFs, duplicates once; bars a
   assert.equal(bars.length, 2);
   assert.match(asked.at(-1)!, /item\/NVDA\.O\/day\?startDateTime=\d{12}&endDateTime=202610090000$/);
   await assert.rejects(fetchWorldBars('005930', 30, { fetch: fake }), /BAD_US_CODE/);
+});
+
+test('directory (G-188): every page of each exchange until one comes back empty; the computed set can come from it', async () => {
+  const fake = (async (url: string | URL | Request) => {
+    const u = new URL(String(url)), page = Number(u.searchParams.get('page'));
+    if (!u.pathname.includes('/marketValue')) return new Response('nope', { status: 404 });
+    const ex = u.pathname.includes('NASDAQ') ? 'N' : u.pathname.includes('NYSE') ? 'Y' : 'A';
+    const rows = page <= (ex === 'N' ? 3 : ex === 'Y' ? 2 : 1) ? [RANK(`${ex}${page}A.O`), RANK(`${ex}${page}B.O`)] : [];
+    return new Response(JSON.stringify({ stocks: rows }));
+  }) as typeof fetch;
+  const dir = await fetchUsDirectory({ fetch: fake });
+  assert.equal(dir.length, 12);
+  assert.deepEqual(dir.filter((x) => x.exchange === 'NASDAQ').map((x) => x.code), ['N1A.O', 'N1B.O', 'N2A.O', 'N2B.O', 'N3A.O', 'N3B.O']);
+  assert.equal((await fetchUsDirectory({ fetch: fake, maxPages: 1 })).length, 6);
+  const top = await fetchUsUniverse({ fetch: fake, directory: dir, perExchange: { NASDAQ: 3, NYSE: 1, AMEX: 0 } });
+  assert.deepEqual(top.map((x) => x.code), ['N1A.O', 'N1B.O', 'N2A.O', 'Y1A.O']);
 });

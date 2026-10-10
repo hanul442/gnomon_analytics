@@ -101,11 +101,31 @@ export function parseUsSearch(body: unknown, ticker: string): UsListing | null {
 }
 
 /** The US universe: top stocks by market value on each exchange, plus the popular ETFs. */
-export async function fetchUsUniverse(options: { fetch?: typeof fetch; perExchange?: Partial<Record<UsListing['exchange'], number>> } = {}): Promise<UsListing[]> {
-  const f = options.fetch ?? fetch, want = { NASDAQ: 100, NYSE: 100, AMEX: 20, ...options.perExchange };
+/**
+ * G-188: every listed US stock, by market value, for search and on-demand pages (names only; no bars). Walks the
+ * same ranking pages until they run out (or `maxPages` per exchange); a page that fails ends that exchange.
+ */
+export async function fetchUsDirectory(options: { fetch?: typeof fetch; maxPages?: number } = {}): Promise<UsListing[]> {
+  const f = options.fetch ?? fetch, max = options.maxPages ?? 120, out = new Map<string, UsListing>();
+  const get = (url: string) => f(url, { signal: AbortSignal.timeout(15_000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  for (const ex of ['NASDAQ', 'NYSE', 'AMEX'] as const) {
+    for (let page = 1; page <= max; page += 1) {
+      const body = await get(`https://api.stock.naver.com/stock/exchange/${ex}/marketValue?page=${page}&pageSize=50`);
+      let rows: UsListing[] = []; try { rows = body ? parseUsRanking(body, ex) : []; } catch { rows = []; }
+      if (!rows.length) break;
+      for (const l of rows) if (!out.has(l.code)) out.set(l.code, l);
+    }
+  }
+  return [...out.values()];
+}
+
+/** The computed set: the top of each exchange by market value plus popular ETFs. With `directory`, the top is taken from it (no second walk). */
+export async function fetchUsUniverse(options: { fetch?: typeof fetch; perExchange?: Partial<Record<UsListing['exchange'], number>>; directory?: readonly UsListing[] } = {}): Promise<UsListing[]> {
+  const f = options.fetch ?? fetch, want = { NASDAQ: 300, NYSE: 300, AMEX: 40, ...options.perExchange };
   const get = (url: string) => f(url, { signal: AbortSignal.timeout(15_000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const out = new Map<string, UsListing>();
-  for (const ex of ['NASDAQ', 'NYSE', 'AMEX'] as const) {
+  if (options.directory?.length) for (const ex of ['NASDAQ', 'NYSE', 'AMEX'] as const) for (const l of options.directory.filter((x) => x.exchange === ex).slice(0, want[ex])) out.set(l.code, l);
+  else for (const ex of ['NASDAQ', 'NYSE', 'AMEX'] as const) {
     for (let page = 1; (page - 1) * 50 < want[ex]; page += 1) {
       const body = await get(`https://api.stock.naver.com/stock/exchange/${ex}/marketValue?page=${page}&pageSize=50`);
       if (!body) break;

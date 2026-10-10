@@ -7,13 +7,13 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { quickCalc } from '../analysis/quickCalc.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
-import { fetchUsUniverse, fetchWorldBars, type UsListing } from '../sources/naverWorld.js';
+import { fetchUsDirectory, fetchUsUniverse, fetchWorldBars, type UsListing } from '../sources/naverWorld.js';
 import { cikMap, edgarUserAgent, tickersUrl } from '../sources/edgar.js';
 import { coinCalc, type CoinRow } from './coins.js';
 import { pool } from './weekly.js';
 
-/** Two years of sessions, like the Korean pages. */
-export const US_PAGE_BARS = 500;
+import { US_PAGE_BARS } from './usPageBars.js';
+export { US_PAGE_BARS };
 
 const r1 = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10) / 10);
 const cents = (v: number) => Math.round(v * 100) / 100;
@@ -26,7 +26,13 @@ export async function writeUsPages(siteDir: string, options: { now: () => Date; 
   const now = options.now(), dir = join(siteDir, 'u');
   await mkdir(dir, { recursive: true });
   let list: readonly UsListing[];
-  try { list = options.universe ?? await fetchUsUniverse(options.fetch ? { fetch: options.fetch } : {}); } catch (e) {
+  // G-188: every listed US stock's name for search (pages for the rest are made on demand by the API). Best effort.
+  let directory: UsListing[] = [];
+  if (!options.universe) {
+    try { directory = await fetchUsDirectory(options.fetch ? { fetch: options.fetch } : {}); } catch { directory = []; }
+    if (directory.length) await writeFile(join(siteDir, 'usnames.json'), JSON.stringify({ date: now.toISOString(), rows: directory.map((l) => [l.code, l.name, `${l.ticker} · ${l.exchange}${l.kind === 'etf' ? ' ETF' : ''} · ${l.nameEng}`]) }));
+  }
+  try { list = options.universe ?? await fetchUsUniverse({ ...(options.fetch ? { fetch: options.fetch } : {}), directory }); } catch (e) {
     return { status: { source: 'naver:world:universe', ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }, rows: [], date: '' };
   }
   // G-179: the SEC CIK per ticker, from one download; a requested report then skips the 1 MB map. Best effort.

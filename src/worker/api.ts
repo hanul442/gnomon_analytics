@@ -1,5 +1,8 @@
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
-import { parseWorldQuote, US_CODE, worldQuoteUrl } from '../sources/naverWorld.js';
+import { fetchWorldBars, parseWorldQuote, US_CODE, worldQuoteUrl } from '../sources/naverWorld.js';
+import { quickCalc } from '../analysis/quickCalc.js';
+import { coinCalc } from '../analysis/compactCalc.js';
+import { US_PAGE_BARS } from '../cli/usPageBars.js';
 import { fetchOkxDeriv, type DerivSnapshot } from '../sources/okxDeriv.js';
 import { UNLOCK, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
@@ -553,6 +556,21 @@ route('GET','/ticks/(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})',async({deps,params,no
   ?fetchUpbitTicks(symbol,deps.fetch).then(points=>({symbol,kind:'trades',points,retrievedAt:iso(now)}))
   :fetchNaverMinuteCandles(symbol,1,{fetch:deps.fetch}).then(bars=>{const day=bars.length?new Date((bars.at(-1)!.time+9*3600)*1000).toISOString().slice(0,10):'';const today=bars.filter(b=>new Date((b.time+9*3600)*1000).toISOString().slice(0,10)===day);return {symbol,kind:'minuteCloses',points:today.map(b=>({time:b.time,price:b.close,volume:b.volume})),retrievedAt:iso(now)};}),
  '틱 데이터를 가져오지 못했어요. 잠시 후 다시 선택해 주세요.');
+});
+// G-188: a US stock outside the daily set, built on demand: two years of Naver daily bars and the same calculation
+// and rounding the daily run stores in site/u/<code>.json, so us.html draws it the same way. Kept 30 minutes per code.
+const usPages=new Map<string,{at:number;pending:Promise<unknown>}>();
+route('GET','/us/page/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({deps,params,now})=>{
+ const code=params[0]!;if(!US_CODE.test(code))fail(400,'BAD_CODE','미국 종목 코드가 아니에요.');
+ const old=usPages.get(code);if(old&&now.getTime()-old.at<30*60_000)return old.pending;
+ if(usPages.size>=200)usPages.delete(usPages.keys().next().value!);
+ const cents=(v:number)=>Math.round(v*100)/100;
+ const pending=fetchWorldBars(code,US_PAGE_BARS,{now:()=>now,fetch:deps.fetch}).then((bars)=>{
+  if(bars.length<2)throw new Error('empty');
+  const calc=quickCalc(code,bars,now);
+  return {symbol:code,ticker:code.split('.')[0],name:null,market:null,currency:'USD',onDemand:true,bars:bars.map((b)=>[b.date,cents(b.open),cents(b.high),cents(b.low),cents(b.close),b.volume]),calc:calc?coinCalc(calc):null,retrievedAt:iso(now)};
+ }).catch(()=>{usPages.delete(code);return fail(404,'US_NOT_FOUND','이 미국 종목의 가격을 가져오지 못했어요. 코드가 맞는지 확인하거나 잠시 후 다시 열어 주세요.');});
+ usPages.set(code,{at:now.getTime(),pending});return pending;
 });
 // G-118: PER and PBR for a handful of stocks (a theme's members), from Naver's per-stock summary.
 // Kept 6 hours per stock; one that fails is left out rather than failing the rest.
