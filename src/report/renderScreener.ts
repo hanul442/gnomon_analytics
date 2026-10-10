@@ -41,16 +41,16 @@ export function screenerRows(universe: readonly UniverseRow[], calcs: ReadonlyMa
  * G-191: one-tap filters. Each adds or removes one rule (or the risk and watchlist switches), so they stack with
  * the builder and the presets and stay editable there. `kinds` limits one to the markets that have its column.
  */
-const QUICK: readonly { key: string; label: string; rule?: { f: string; op: '>=' | '<=' | '='; v: number | string }; kinds?: string }[] = [
+const QUICK: readonly { key: string; label: string; rule?: { f: string; op: '>=' | '<=' | '='; v: number | string }; kinds?: string; not?: string }[] = [
   { key: 'bull', label: '강세 신호', rule: { f: 'level', op: '=', v: 'BULL' } },
-  { key: 'up', label: '오늘 오름', rule: { f: 'chg', op: '>=', v: 0.01 } },
-  { key: 'down', label: '오늘 내림', rule: { f: 'chg', op: '<=', v: -0.01 } },
+  { key: 'up', label: '오늘 오름', rule: { f: 'chg', op: '>=', v: 0.01 }, not: 'down' },
+  { key: 'down', label: '오늘 내림', rule: { f: 'chg', op: '<=', v: -0.01 }, not: 'up' },
   { key: 'vol2', label: '거래량 2배↑', rule: { f: 'vol1', op: '>=', v: 2 } },
   { key: 'hi52', label: '52주 고점 근처', rule: { f: 'hi52', op: '>=', v: -5 } },
-  { key: 'lo52', label: '52주 저점 근처', rule: { f: 'lo52', op: '<=', v: 10 } },
+  { key: 'lo52', label: '52주 저점 근처', rule: { f: 'lo52', op: '<=', v: 10 }, kinds: 'stock' },
   { key: 'fairB', label: '적정가 아래', rule: { f: 'pos', op: '=', v: 'B' } },
-  { key: 'r20up', label: '20일 +10%↑', rule: { f: 'r20', op: '>=', v: 10 } },
-  { key: 'r20dn', label: '20일 −10%↓', rule: { f: 'r20', op: '<=', v: -10 } },
+  { key: 'r20up', label: '20일 +10%↑', rule: { f: 'r20', op: '>=', v: 10 }, not: 'r20dn' },
+  { key: 'r20dn', label: '20일 −10%↓', rule: { f: 'r20', op: '<=', v: -10 }, not: 'r20up' },
   { key: 'accum', label: '매집 흔적', rule: { f: 'flow', op: '=', v: 'A' }, kinds: 'stock' },
   { key: 'cap1t', label: '시총 1조↑', rule: { f: 'cap', op: '>=', v: 10000 }, kinds: 'stock' },
   { key: 'tv100', label: '거래대금 100억↑', rule: { f: 'tv', op: '>=', v: 100 }, kinds: 'stock' },
@@ -135,7 +135,7 @@ const SCREENER_SCRIPT = `<script>
   var FIELDS = ${JSON.stringify(FIELDS)}, IDX = ${JSON.stringify(FIELD_INDEX)}, PRESETS = ${JSON.stringify(Object.fromEntries(PRESETS.map((p) => [p.key, p.screen])))};
   var QUICK = ${JSON.stringify(QUICK)};
   // G-191: a rule in words (the active chips, the AI proposal card): 항목 값 단위 이상/이하, a category by its option name.
-  var ruleText = function (x) { var f = FIELDS.filter(function (g) { return g.key === x.f; })[0]; if (!f) return ''; if (f.kind === 'cat') { var o = (f.options || []).filter(function (p) { return String(p[0]) === String(x.v); })[0]; return f.label + ' ' + (o ? o[1] : x.v) + (x.op === '!=' ? ' 아님' : ''); } return f.label + ' ' + Number(x.v).toLocaleString('ko-KR') + (f.unit && f.unit.charAt(0) !== '(' ? f.unit : '') + ' ' + (x.op === '<=' ? '이하' : '이상'); };
+  var ruleText = function (x) { var f = field(x.f); if (!f) return ''; if (f.kind === 'cat') { var o = (f.options || []).filter(function (p) { return String(p[0]) === String(x.v); })[0]; return f.label + ' ' + (o ? o[1] : x.v) + (x.op === '!=' ? ' 아님' : ''); } return f.label + ' ' + Number(x.v).toLocaleString('ko-KR') + (f.unit && f.unit.charAt(0) !== '(' ? f.unit : '') + ' ' + (x.op === '<=' ? '이하' : '이상'); };
   var onlyWatch = false, watchSet = function () { var m = {}; try { (JSON.parse(localStorage.getItem('gnm-watch') || '[]') || []).forEach(function (x) { m[x] = 1; }); } catch (e) {} return m; };
   // A value in a result row, in the field's own unit (the rows show what the conditions looked at).
   var fieldVal = function (f, x, us) { if (x == null || x === '') return '—'; if (f.kind === 'cat') { var o = (f.options || []).filter(function (p) { return String(p[0]) === String(x); })[0]; return o ? o[1].replace(/[(].*[)]/, '') : String(x); } var n = Number(x); if (f.unit === '%') return (n > 0 ? '+' : '') + n.toFixed(1) + '%'; if (f.unit === '배') return n.toFixed(1) + '배'; if (f.unit === '억 원') return us ? '$' + Math.round(n).toLocaleString('en-US') + 'M' : Math.round(n).toLocaleString('ko-KR') + '억'; if (f.unit === '원') return us ? '$' + n.toFixed(2) : Math.round(n).toLocaleString('ko-KR') + '원'; return String(Math.round(n * 10) / 10); };
@@ -193,7 +193,7 @@ const SCREENER_SCRIPT = `<script>
     document.querySelectorAll('.sc-q').forEach(function (b) {
       var q = QUICK.filter(function (x) { return x.key === b.getAttribute('data-q'); })[0], kinds = b.getAttribute('data-kinds');
       b.hidden = !!kinds && kinds.split(',').indexOf(currentMarket) < 0;
-      b.setAttribute('aria-pressed', String(q.key === 'watch' ? onlyWatch : q.key === 'norisk' ? !!sc.maxRisk : sc.rules.some(function (r) { return sameRule(r, q.rule); })));
+      b.setAttribute('aria-pressed', String(!free() && (q.key === 'watch' ? onlyWatch : q.key === 'norisk' ? !!sc.maxRisk : sc.rules.some(function (r) { return sameRule(r, q.rule); }))));
     });
     var act = $('sc-active'), chips = sc.rules.map(function (r, i) { return '<button type="button" class="sc-chip" data-rm="' + i + '" aria-label="' + esc(ruleText(r)) + ' 조건 빼기">' + esc(ruleText(r)) + ' <i aria-hidden="true">×</i></button>'; });
     if (onlyWatch) chips.push('<button type="button" class="sc-chip" data-rm="watch" aria-label="관심 종목만 보기 끄기">관심 종목만 <i aria-hidden="true">×</i></button>');
@@ -214,7 +214,9 @@ const SCREENER_SCRIPT = `<script>
     if (q.key === 'norisk') { el('norisk').checked = !el('norisk').checked; changed(); return; }
     var rowsEl = [].slice.call(document.querySelectorAll('.rule')), on = current().rules.some(function (r) { return sameRule(r, q.rule); });
     // Off: drop that rule. On: replace a rule on the same column and direction (one 거래량 condition, not two).
-    rowsEl.forEach(function (d) { var f = d.querySelector('[data-k=f]').value, op = d.querySelector('[data-k=op]').value; if (f === q.rule.f && (field(f).kind === 'cat' || op === q.rule.op)) d.remove(); });
+    // Its opposite (오늘 오름 ↔ 오늘 내림, 20일 ± 10%) goes too, so the two never sit together and empty the list.
+    var other = q.not ? QUICK.filter(function (x) { return x.key === q.not; })[0].rule : null;
+    rowsEl.forEach(function (d) { var f = d.querySelector('[data-k=f]').value, op = d.querySelector('[data-k=op]').value, v = d.querySelector('[data-k=v]').value; if (f === q.rule.f && (field(f).kind === 'cat' || op === q.rule.op) || other && sameRule({ f: f, op: op, v: v }, other)) d.remove(); });
     if (!on) ruleRow(q.rule);
     changed();
   });
@@ -253,7 +255,7 @@ const SCREENER_SCRIPT = `<script>
     var mine = onlyWatch ? watchSet() : null;
     var out = rows.filter(function (r) { return (currentMarket !== 'stock' || !mkt || r[2] === mkt) && (!mine || mine[r[0]]) && matches(r, sc, IDX); }), total = out.length;
     paintFilters(sc, out);
-    var key = JSON.stringify(sc) + '|' + rows.length + '|' + mkt; if (key !== lastKey) { lastKey = key; scShown = 50; }
+    var key = JSON.stringify(sc) + '|' + rows.length + '|' + mkt + '|' + onlyWatch; if (key !== lastKey) { lastKey = key; scShown = 50; }
     // G-119: any result list sorts by any column, both directions; missing values always go last.
     var col = SORT_COL[sortKey], sorted = function (list) { return list.slice().sort(function (a, b) {
       var x = a[col], y = b[col];

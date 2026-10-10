@@ -422,7 +422,7 @@ dialog.fs-dlg .ig-fs table{font-size:13.5px;min-width:100%!important;width:max-c
 dialog.fs-dlg .ig-fs th[scope=row]{background:var(--page);box-shadow:6px 0 8px -6px rgba(0,0,0,.45)}dialog.fs-dlg .ig-fs tbody tr:nth-child(even) td,dialog.fs-dlg .ig-fs tbody tr:nth-child(even) th[scope=row]{background:color-mix(in srgb,var(--page) 92%,var(--fg) 8%)}
 dialog.fs-dlg .ig-fs .cur{background:var(--accent-soft)!important;font-weight:800}dialog.fs-dlg .ig-fs thead .cur{color:var(--accent-strong)}dialog.fs-dlg .ig-fs .est{color:var(--muted)}dialog.fs-dlg .ig-fs thead th small{display:block;font-size:10.5px;font-weight:600}
 dialog.fs-dlg::backdrop{background:rgba(3,8,16,.72);backdrop-filter:blur(4px)}dialog.fs-dlg .ig-all>summary{cursor:pointer;font-size:13.5px;font-weight:800;color:var(--accent-strong);padding:10px 0}
-@media (min-width:821px){dialog.v2-dialog.fs-dlg[open]{width:min(920px,calc(100% - 48px))!important}dialog.fs-dlg .fs-full>.ig-seg{top:63px}}
+@media (min-width:821px){dialog.v2-dialog.fs-dlg[open]{width:min(920px,calc(100% - 48px))!important}}
 @media (max-width:820px){.si-wrap{columns:1}}`;
 
 /** Toggle of the investor-trend period inside 종목정보. */

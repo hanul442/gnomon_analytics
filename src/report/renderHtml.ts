@@ -951,7 +951,7 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
       put('fundamentals', x.fundamentals || empty('SEC에 올라온 재무 자료가 없어요.' + (d.kind === 'etf' ? ' ETF는 재무제표가 없어요.' : '')));
       put('news', x.news || empty('최근 공시와 뉴스가 없어요.'));
       put('latest', x.latest || ''); put('edge', x.edge || '');
-    }).catch(function (e) { fail((e && e.message) || '기업 정보를 불러오지 못했어요. 잠시 후 다시 열어 주세요.'); });
+    }).catch(function (e) { fail((e && e.error && e.message) || '기업 정보를 불러오지 못했어요. 잠시 후 다시 열어 주세요.'); });
   };
   var usOnDemand = function () { var meta = document.querySelector('meta[name=gnm-api]'), api = meta && meta.content; if (!api) throw new Error('NO_API');
     return Promise.all([fetch(api.replace(/[/]$/, '') + '/us/page/' + encodeURIComponent(code)).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }), fetch('usnames.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; }).catch(function () { return { rows: [] }; })]).then(function (all) {
