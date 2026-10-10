@@ -3,6 +3,7 @@
 
 import { CREDIT_ACTIONS, CREDIT_COST, CREDIT_PACKS, PLANS, UNLOCK, won } from './plans.js';
 import { shell } from './renderHtml.js';
+import { glowCta } from './glowCta.js';
 
 const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="ck"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
@@ -48,7 +49,7 @@ const STYLE = `<style>.soon-more{margin:4px 0 8px}.soon-more summary{cursor:poin
 .plan.featured{border:2px solid var(--navy)}.plan .ribbon{position:absolute;top:-11px;left:16px;background:var(--navy);color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px}
 .plan .btn-primary,.pack .btn-primary{justify-content:center}.plan .is-current{display:none;text-align:center;font-weight:700;color:var(--muted);padding:12px}
 html[data-plan=free] .plan[data-key=free] .is-current,html[data-plan=plus] .plan[data-key=plus] .is-current,html[data-plan=pro] .plan[data-key=pro] .is-current,html[data-plan=max] .plan[data-key=max] .is-current{display:block}
-html[data-plan=free] .plan[data-key=free] .btn-primary,html[data-plan=plus] .plan[data-key=plus] .btn-primary,html[data-plan=pro] .plan[data-key=pro] .btn-primary,html[data-plan=max] .plan[data-key=max] .btn-primary{display:none}
+html[data-plan=free] .plan[data-key=free] .btn-primary,html[data-plan=plus] .plan[data-key=plus] .btn-primary,html[data-plan=pro] .plan[data-key=pro] .btn-primary,html[data-plan=pro] .plan[data-key=pro] .glow-cta,html[data-plan=max] .plan[data-key=max] .btn-primary{display:none}
 .acct-card{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}.acct-card b{font-size:18px}.link-btn{border:0;background:none;color:var(--accent);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;padding:0}
 .cmp td:not(:first-child),.cmp th:not(:first-child){text-align:center;width:13%}.cmp .val{font-weight:700}.cmp .yes{color:var(--accent);font-weight:700}.cmp .no{color:#b8c0cc}
 .packs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.pack{display:flex;flex-direction:column;gap:6px}.pack b{font-size:22px}.pack .per{font-size:12px;color:var(--muted)}
@@ -65,7 +66,7 @@ export function renderPricing(): string {
   const plan = (p: (typeof PLANS)[number], i: number) => `<div class="card plan${p.key === 'pro' ? ' featured' : ''}${p.key === 'max' ? ' top' : ''}" data-key="${p.key}">${p.key === 'pro' ? '<span class="ribbon">추천</span>' : ''}
 <h3>${p.name}</h3><div class="muted small">${p.tagline}</div><div class="price">${p.price ? `${won(p.price)}<small> / 월</small>` : '0원'}</div>
 ${i ? `<div class="inherits">${PLANS[i - 1]!.name}의 모든 것에 더해</div>` : ''}<ul>${p.adds.map((f) => `<li>${CHECK}<span>${f}</span></li>`).join('')}</ul>${p.soon?.length ? `<details class="soon-more"><summary>출시 예정 ${p.soon.length}개</summary><ul>${p.soon.map((f) => `<li class="soon">${CHECK}<span>${f}</span></li>`).join('')}</ul></details>` : ''}
-<div class="is-current">지금 쓰는 요금제</div>${p.price ? `<a class="btn-primary" href="checkout.html?item=${p.key}">${p.name} 시작하기</a>` : '<button type="button" class="btn-primary" data-downgrade style="border:0;cursor:pointer">무료로 바꾸기</button>'}</div>`;
+<div class="is-current">지금 쓰는 요금제</div>${p.price ? (p.key === 'pro' ? glowCta(`checkout.html?item=${p.key}`, `${p.name} 시작하기`) : `<a class="btn-primary" href="checkout.html?item=${p.key}">${p.name} 시작하기</a>`) : '<button type="button" class="btn-primary" data-downgrade style="border:0;cursor:pointer">무료로 바꾸기</button>'}</div>`;
   const yes = (v: Cell) => (typeof v === 'string' ? `<td class="val">${v}</td>` : v ? `<td class="yes">${CHECK}</td>` : '<td class="no">—</td>');
   const base = CREDIT_PACKS[0]!.price / CREDIT_PACKS[0]!.credits;
   const body = `${STYLE}<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>요금제</span></div><h1>필요한 만큼 깊이 보세요</h1>

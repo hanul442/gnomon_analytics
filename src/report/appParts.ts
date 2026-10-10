@@ -1,3 +1,5 @@
+import { genButton } from './generateButton.js';
+import { MT_INNER } from './modernSwitch.js';
 // App-style sections (BLACK ORACLE mobile mockup v1 tone, docs/DESIGN.md G-15):
 // hero with key points, market strip with sparklines, council consensus ring,
 // latest news and filings lists, and the interactive candlestick chart with an
@@ -77,7 +79,7 @@ export function marketChip(report: DailyReport): string {
 export function reportStatusBar(report: DailyReport, from: string | null): string {
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
   const priceDate = report.price?.sessionDate ?? report.date, date = c ? from ?? report.date : null;
-  const btn = (label: string) => `<button type="button" class="sa-go" data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}">${label} <small>${CREDIT_COST.report}크레딧</small></button>`;
+  const btn = (label: string) => genButton(label, `data-create-report data-symbol="${esc(report.symbol)}" data-name="${esc(report.name)}"`, `${CREDIT_COST.report}크레딧`);
   if (!c || !date) return `<div class="rs-bar rs-none" data-report-status role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>AI 위원회 리포트가 아직 없어요</b><small>요청하면 지금 데이터로 위원회가 분석해요. 크레딧 요청은 플러스부터예요.</small></div>${btn('심층 리포트 만들기')}</div>`;
   const sessions = new Set((report.recentCloses ?? []).filter((p) => p.date > date).map((p) => p.date)).size;
   const stale = date < priceDate;
@@ -192,7 +194,7 @@ export function priceChart(report: DailyReport, overlays: unknown, base: string,
   const json = (v: unknown) => JSON.stringify(v).replace(/</g, '\\u003c');
   // G-90: the scenarios live on the chart as a layer (where each would take the price in ~20 sessions), not in a separate card.
   const scen = scenarioLayer(report);
-  const opt = (group: string, key: string, label: string, on: boolean, desc = DESC[key] ?? '') => `<button type="button" class="opt" data-${group}="${key}" aria-pressed="${on}"><span class="opt-t"><b>${esc(label)}</b>${desc ? `<small>${esc(desc)}</small>` : ''}</span><i class="tog" aria-hidden="true"></i></button>`;
+  const opt = (group: string, key: string, label: string, on: boolean, desc = DESC[key] ?? '') => `<button type="button" class="opt" data-${group}="${key}" aria-pressed="${on}"><span class="opt-t"><b>${esc(label)}</b>${desc ? `<small>${esc(desc)}</small>` : ''}</span><i class="tog mt" aria-hidden="true">${MT_INNER}</i></button>`;
   const html = `<section class="card chart-card" id="chart-card" data-symbol="${esc(report.symbol)}">
 <div class="chart-head"><div><div class="muted small">현재가 (${esc(last?.date ?? '')} 종가)</div>
 <div class="cur-price"><b>${last ? esc(won(last.close)) : '없음'}</b>${last && prev ? `<span class="${tone(last.close - prev.close)}">${last.close >= prev.close ? '▲' : '▼'} ${esc(num(Math.abs(last.close - prev.close)))} (${esc(pct((last.close / prev.close - 1) * 100))})</span>` : ''}</div>

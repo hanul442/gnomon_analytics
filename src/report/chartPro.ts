@@ -78,8 +78,7 @@ html.chart-fs .cfs-foot .minute-options{position:absolute;left:8px;bottom:calc(1
 #ind-sheet.st-page .st-pane .opt-group{margin:0}#ind-sheet.st-page .st-pane:not(.st-more) .opt-k{display:none}
 #ind-sheet.st-page .opt{border-top:0;padding:16px 0;gap:16px}#ind-sheet.st-page .opt:hover{background:none}
 #ind-sheet.st-page .opt-t b{font-size:18px;font-weight:700;color:var(--fg)}#ind-sheet.st-page .opt-t small{font-size:14.5px;color:var(--muted);line-height:1.45;margin-top:2px}
-#ind-sheet.st-page .tog{width:52px;height:32px;border-radius:16px;background:var(--line)}#ind-sheet.st-page .tog::after{top:4px;left:4px;width:24px;height:24px}
-#ind-sheet.st-page .opt[aria-pressed=true] .tog{background:var(--accent)}#ind-sheet.st-page .opt[aria-pressed=true] .tog::after{transform:translateX(20px)}
+#ind-sheet.st-page .tog.mt{width:52px}
 #ind-sheet.st-page .opt-k{font-size:14px;font-weight:700;color:var(--muted);margin:18px 0 2px}
 #ind-sheet.st-page .pro-bar{flex-direction:column;align-items:stretch;overflow:visible;gap:0;margin:0}
 #ind-sheet.st-page .pro-bar>*{width:100%}

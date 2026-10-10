@@ -159,7 +159,7 @@ const ALL_ICON = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 /** One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones). */
 export function tabBar(base: string, where: 'top' | 'bottom'): string {
-  return `<nav class="${where === 'top' ? 'top-tabs' : 'bottom-nav'}" aria-label="${where === 'top' ? '주 메뉴' : '빠른 이동'}">${TABS.map(([l, h, d]) => `<a href="${base}${h}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('')}<button type="button" class="nav-all" data-all-menu aria-haspopup="dialog" aria-expanded="false" aria-controls="side-menu">${svgI(ALL_ICON)}<span>전체</span></button></nav>`;
+  return `<nav class="${where === 'top' ? 'top-tabs' : 'bottom-nav'}" aria-label="${where === 'top' ? '주 메뉴' : '빠른 이동'}">${TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('')}<button type="button" class="nav-all" data-all-menu aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded="false" aria-controls="side-menu">${svgI(ALL_ICON)}<span>전체</span></button></nav>`;
 }
 
 
