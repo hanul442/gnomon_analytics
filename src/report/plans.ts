@@ -24,17 +24,28 @@ export interface Plan {
   soon?: string[];
 }
 
+/**
+ * What a credit action costs (G-37). Credits are bought and used from Plus.
+ * G-168 (v3.5.0): one report kind, the full committee, priced from its measured cost (economics.ts).
+ * G-197: lowered (report 30→20, unlock 10→5 …). About 335원 a report with the retry allowance, so 20 credits keeps
+ * it near a quarter of what the cheapest credits net; economics.test.ts holds every action and plan under half.
+ * `unlock` (G-61): opening one sealed deep report, once per user and report.
+ */
+export const CREDIT_COST = { report: 20, invite: 12, idea: 12, deep: 10, standard: 6, question: 4, unlock: 5 } as const;
+/** Max's monthly credits (G-197: 1,200→1,150 so the worst case stays under half of what the plan nets). */
+const MAX_CREDITS = 1150;
+
 export const PLANS: readonly Plan[] = [
   { key: 'free', name: '무료', price: 0, tagline: '한 줄 요약 (크레딧 없음)', monthlyCredits: 0, topUpBonus: 0, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
     adds: ['전 종목 검색과 1년 차트', '한 줄 요약과 지표 16개 판단', '시장 데일리 요약', '외국인·기관 수급, 실적·밸류에이션', 'AI 위원회 표 분포', '뉴스·공시', '성적표 대표 숫자 · 전략 챔피언 이름', '관심 종목 5개'] },
   { key: 'plus', name: '플러스', price: 14900, tagline: '계산 상세 + 심층 리포트 요청', monthlyCredits: 100, topUpBonus: 0, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
-    adds: ['기간별 신호 게이지(15분봉~월봉)', '기술적 적정가', '수급 흔적(매집·분산 분석)·가격 구조', '스크리너: 전 종목 조건 검색 전체', '차트 그리기 저장(10종목)', '매달 심층 리포트 5개 무료 열기', '시장 데일리 상세 열기(10크레딧)·위원회 질문', '제한된 AI 위원회: 결론 · 데스크 5곳 입장 · 레드팀 한 줄', '전략 순위표 · 전략 챔피언 레이스', '성적표 요약표(기간별 적중·분석가 순위) · 모의투자 평균 성과', '크레딧 충전과 사용: 리포트 요청·AI 질문', '관심 종목 30개'],
+    adds: ['기간별 신호 게이지(15분봉~월봉)', '기술적 적정가', '수급 흔적(매집·분산 분석)·가격 구조', '스크리너: 전 종목 조건 검색 전체', '차트 그리기 저장(10종목)', '매달 심층 리포트 5개 무료 열기', `시장 데일리 상세 열기(${CREDIT_COST.unlock}크레딧)·위원회 질문`, '제한된 AI 위원회: 결론 · 데스크 5곳 입장 · 레드팀 한 줄', '전략 순위표 · 전략 챔피언 레이스', '성적표 요약표(기간별 적중·분석가 순위) · 모의투자 평균 성과', '크레딧 충전과 사용: 리포트 요청·AI 질문', '관심 종목 30개'],
     soon: [] },
   { key: 'pro', name: '프로', price: 39000, tagline: 'AI 위원회 전체 + 전문가 초청', monthlyCredits: 400, topUpBonus: 10, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
     adds: ['AI 위원회 리포트 전체(위원별 근거·예측·레드팀·시나리오)', '시장 데일리 상세 전체 열람', '전문가 AI 초청: 업종·투자 스타일 전문가를 골라 위원회에 앉혀요(크레딧)', '예측 가격 범위(5·20·60·120거래일)와 분석가 예상가', '전략 대결 전체(매매 시점·수익 곡선·몬테카를로·차트 표시)', '모의투자 종목별 장부·매매 내역', '성적표 종목별 상세·빗나간 예측 하나하나', '매달 400크레딧', '충전할 때 크레딧 10% 더', '관심 종목 100개'],
     soon: ['내 매매 아이디어 검증: 레드팀이 근거로 반박', '스크리너 조건 백테스트(4년)', '공시 이벤트 스터디: 공시 뒤 N일 수익 분포', '외국인·기관 수급 랭킹', '공시·신호 변화 알림'] },
-  { key: 'max', name: '맥스', price: 99000, tagline: '내 종목 전담 위원회', monthlyCredits: 1200, topUpBonus: 20, weeklyCoverage: 10, includedInvites: 30, standingExperts: 5,
-    adds: ['관심 종목 10개를 매주 AI 위원회 전체로 자동 리포트', '모든 전문가 초청 매달 30회 포함(크레딧 없이)', '전문가 정기 초청: 내 종목 주간 위원회에 고정 전문가 5명', '매달 1,200크레딧', '충전할 때 크레딧 20% 더', '관심 종목 무제한'],
+  { key: 'max', name: '맥스', price: 99000, tagline: '내 종목 전담 위원회', monthlyCredits: MAX_CREDITS, topUpBonus: 20, weeklyCoverage: 10, includedInvites: 30, standingExperts: 5,
+    adds: ['관심 종목 10개를 매주 AI 위원회 전체로 자동 리포트', '모든 전문가 초청 매달 30회 포함(크레딧 없이)', '전문가 정기 초청: 내 종목 주간 위원회에 고정 전문가 5명', `매달 ${MAX_CREDITS.toLocaleString('ko-KR')}크레딧`, '충전할 때 크레딧 20% 더', '관심 종목 무제한'],
     soon: ['전략 랩: 내 규칙으로 백테스트·검증 구간·과최적화 경고', '내 가상 포트폴리오와 예측 실패 원인 분석', '포트폴리오 리스크: 상관·집중·변동성·시나리오', '시점 재현: 과거 그날 알았던 것만으로 다시 보기', '데이터 내보내기(CSV)·웹훅'] },
 ];
 
@@ -70,19 +81,12 @@ export const notifyLimit = (plan: string): NotifyLimit => NOTIFY_LIMITS[(plan ==
 export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 100, max: 1e9 };
 
 /**
- * What a credit action costs (G-37). Credits are bought and used from Plus.
- * G-168 (v3.5.0): one report kind, the full committee, priced from its measured cost (economics.ts):
- * about 330원 a report with the retry allowance, so 30 credits keeps it under a fifth of what the cheapest credits net.
- */
-/** `unlock` (G-61): opening one sealed deep report, once per user and report. */
-/**
  * Opening reports (G-126, 한서님 결정 10/8): plans that unlock pay CREDIT_COST.unlock per report after a monthly
  * allowance of free opens; reports older than UNLOCK.freeAfterDays open free for everyone signed in; and when
  * someone pays to open a report another user generated, its maker gets UNLOCK.makerShare credits back, up to
  * half of what they paid for it (UNLOCK.makerCap).
  */
-export const UNLOCK = { monthlyFree: { free: 0, plus: 5, alpha: 10, pro: 0, max: 0 } as Record<string, number>, freeAfterDays: 7, makerShare: 2, makerCap: 15 } as const;
-export const CREDIT_COST = { report: 30, invite: 20, idea: 20, deep: 15, standard: 10, question: 5, unlock: 10 } as const;
+export const UNLOCK = { monthlyFree: { free: 0, plus: 5, alpha: 10, pro: 0, max: 0 } as Record<string, number>, freeAfterDays: 7, makerShare: 2, makerCap: 10 } as const;
 export type CreditAction = keyof typeof CREDIT_COST;
 export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail: string; min: Exclude<PlanKey, 'free'> }[] = [
   { key: 'unlock', label: '심층 리포트 열기', detail: '이미 나온 AI 위원회 리포트(매일 리포트, 다른 사람이 만든 리포트)의 토론·근거·시나리오 전개·최악의 경우를 열어요. 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료이고, 7일 지난 리포트는 누구나 무료예요. 다른 사람이 만든 리포트를 열면 만든 사람에게 2크레딧이 돌아가요', min: 'plus' },

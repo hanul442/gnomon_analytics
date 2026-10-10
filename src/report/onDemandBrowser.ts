@@ -103,19 +103,21 @@ export const JOBS_JS = `
  var locked=function(id,r){
   var panel=document.getElementById('tab-ai');if(!panel)return;
   var old=panel.querySelector('[data-job-lock]');if(old)old.remove();
-  var cost=r.cost||10,bal=typeof r.balance==='number'?r.balance:(G.me&&G.me.credits),free=r.freeLeft>0,short=!free&&typeof bal==='number'&&bal<cost,label=free?'무료로 열기':cost+'크레딧으로 열기';
+  var cost=r.cost||${CREDIT_COST.unlock},bal=typeof r.balance==='number'?r.balance:(G.me&&G.me.credits),free=r.freeLeft>0;
   var day=r.createdAt?new Date(Date.parse(r.createdAt)+9*3600000).toISOString().slice(0,10):'';
   var card=document.createElement('section');card.className='block';card.setAttribute('data-job-lock','');
-  card.innerHTML='<div class="card locked"><div class="lk-head">🔒<b>다른 사용자가 만든 AI 위원회 리포트가 있어요</b></div><p>'+(day?esc(day)+'에 만든 리포트예요. ':'')+(free?'이번 달 무료로 열 수 있는 리포트가 '+esc(r.freeLeft)+'개 남았어요.':esc(cost)+'크레딧으로 한 번 열면 계속 볼 수 있어요.'+(typeof bal==='number'?' 남은 크레딧 '+esc(bal)+'.':''))+' 만든 날부터 7일이 지나면 무료예요.</p><p class="rj-err" hidden></p><div class="rj-actions"><button type="button" class="btn-primary" data-job-open'+(short?' disabled':'')+'>'+esc(label)+'</button>'+(short?'<a class="btn-ghost" href="'+(document.body.dataset.base||'')+'pricing.html">크레딧 충전</a>':'')+'</div></div>';
+  card.innerHTML='<div class="card locked"><div class="lk-head">🔒<b>다른 사용자가 만든 AI 위원회 리포트가 있어요</b></div><p>'+(day?esc(day)+'에 만든 리포트예요. ':'')+(free?'이번 달 무료로 열 수 있는 리포트가 '+esc(r.freeLeft)+'개 남았어요.':esc(cost)+'크레딧으로 한 번 열면 계속 볼 수 있어요.'+(typeof bal==='number'?' 남은 크레딧 '+esc(bal)+'.':''))+' 만든 날부터 7일이 지나면 무료예요.</p><p class="rj-err" hidden></p><div class="rj-actions">'+gnmGenButton('리포트 열기','data-job-open',free?'무료':cost+'크레딧')+'</div></div>';
   var title=panel.querySelector('.panel-title');if(title)title.after(card);else panel.prepend(card);
   document.querySelectorAll('[data-report-state]').forEach(function(x){x.textContent='다른 사용자 리포트 · '+cost+'크레딧';});
   var go=card.querySelector('[data-job-open]'),err=card.querySelector('.rj-err');
-  go.onclick=function(){go.disabled=true;go.textContent='여는 중';
+  // G-197: like 리포트 만들기, the first press shows the price (and 취소); the second opens. Too few credits: the button offers the top-up.
+  var open=function(){go.disabled=true;if(window.gnmBusy)gnmBusy(go,'여는 중');
    G.call('POST','/reports/'+id+'/unlock',{}).then(function(u){
-    if(u.error){go.disabled=false;go.textContent=label;err.hidden=false;err.textContent=u.message||'열지 못했어요.';return;}
-    card.remove();if(G.toast&&(u.free||u.charged))G.toast(u.free?'무료로 열었어요. 이번 달 '+(u.freeLeft||0)+'개 더 무료예요':u.charged+'크레딧을 사용했어요. 남은 크레딧 '+u.balance);if(G.refresh)G.refresh();watch(id,false);
-   }).catch(function(){go.disabled=false;go.textContent=label;err.hidden=false;err.textContent='연결을 확인한 뒤 다시 눌러 주세요.';});
+    if(u.error){go.disabled=false;if(window.gnmBusy)gnmBusy(go,false);err.hidden=false;err.textContent=u.message||'열지 못했어요.';if(u.error==='NO_CREDITS'&&window.gnmConfirm)gnmConfirm(go,{cost:cost,free:false,balance:typeof u.balance==='number'?u.balance:0,go:open});return;}
+    card.remove();if(G.toast&&(u.free||u.charged))G.toast(u.free?'무료로 열었어요. 이번 달 '+(u.freeLeft||0)+'개 더 무료예요':u.charged+'크레딧을 썼어요. 남은 크레딧 '+u.balance);if(G.refresh)G.refresh();watch(id,false);
+   }).catch(function(){go.disabled=false;if(window.gnmBusy)gnmBusy(go,false);err.hidden=false;err.textContent='연결을 확인한 뒤 다시 눌러 주세요.';});
   };
+  go.onclick=function(){err.hidden=true;if(window.gnmConfirm)gnmConfirm(go,{cost:cost,free:free,balance:bal,go:open,ask:'한 번 더 누르면 열어요'});else open();};
  };
  // First press: the price on the button itself (and a way back); a second press within 8 seconds starts the job.
  G.startReport=function(kind,symbol,name,btn){

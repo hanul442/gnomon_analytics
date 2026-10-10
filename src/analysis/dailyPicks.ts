@@ -67,7 +67,18 @@ export function chooseDailyPicks(input: {
       if (Number(r[21] ?? 0) >= 2 || Number(r[3] ?? 0) < 1000) continue;
       pool.set(s.symbol, label.get(s.preset) ?? s.preset);
     }
-    for (const symbol of shuffle([...pool.keys()], rand).slice(0, DAILY_STOCKS)) {
+    // G-197: the two stocks come from different screens, and one of them is a larger company (1조+) when the
+    // pool has one; the same few screens kept handing over small caps of one kind.
+    const order = shuffle([...pool.keys()], rand), chosen: string[] = [];
+    const big = (sym: string) => Number(rows.get(sym)![3] ?? 0) >= 10_000;
+    // Each next pick is the first (in the day's shuffled order) with the best rank: being a larger company while
+    // none of the picks is one yet counts most (3), then a screen not used yet (2).
+    while (chosen.length < DAILY_STOCKS && chosen.length < order.length) {
+      const rest = order.filter((x) => !chosen.includes(x));
+      const rank = (x: string) => (chosen.some((c) => pool.get(c) === pool.get(x)) ? 0 : 2) + (!chosen.some(big) && chosen.length === DAILY_STOCKS - 1 && big(x) ? 3 : 0);
+      chosen.push(rest.reduce((a, x) => (rank(x) > rank(a) ? x : a), rest[0]!));
+    }
+    for (const symbol of chosen) {
       const r = rows.get(symbol)!;
       out.push({ date: input.date, symbol, name: String(r[1]), kind: 'stock', market: r[2] === 'Q' ? 'KOSDAQ' : 'KOSPI', tier: 'deep', reason: `스크리너 '${pool.get(symbol)}' 신호 후보`  });
     }

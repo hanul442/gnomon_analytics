@@ -158,7 +158,7 @@ export const ALPHA_SCRIPT = `<script>
   // G-109: settings that follow the account — view, chart indicators and drawings, dismissed tours and popups.
   // Writes to these keys while signed in are noticed wherever they happen and sent a moment later; on a new
   // browser the account's copy is applied and the page reloads once. Changes made signed out stay local.
-  var SYNC = /^gnm-(persona|prefs|ind|theme-sort|theme-direction|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z.-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/, SAT = 'gnm-settings-at', applying = false, pushT = null;
+  var SYNC = /^gnm-(persona|prefs|recent|ind|theme-sort|theme-direction|scenario-layer|pop-week|pop-onb|draw:[0-9A-Z.-]{1,20}|tour[a-z0-9-]{0,40}|version-dismissed-[0-9.]{1,12})$/, SAT = 'gnm-settings-at', applying = false, pushT = null;
   // G-145: drawings stay on this device for the free plan; following the account is a paid feature.
   var paidDraw = function () { var p = document.documentElement.getAttribute('data-plan') || 'free'; return p !== 'free'; };
   var syncable = function (k) { return SYNC.test(k) && (k.indexOf('gnm-draw:') !== 0 || paidDraw()); };
@@ -199,7 +199,7 @@ export const ALPHA_SCRIPT = `<script>
   };
   window.addEventListener('gnm-watch', function () { if (!G.me) return; var w = []; try { w = JSON.parse(get('gnm-watch') || '[]'); } catch (e) {} G.call('POST', '/watch', { symbols: w }); });
   G.signIn = function (session, me) { set(SK, session); G.me = me; set(MK, JSON.stringify(me)); paint(); };
-  G.signOut = function () { return G.call('POST', '/auth/logout').then(function () { set(SK, null); set(MK, null); G.me = null; paint(); }); };
+  G.signOut = function () { return G.call('POST', '/auth/logout').then(function () { set(SK, null); set(MK, null); G.me = null; try { localStorage.removeItem('gnm-recent'); } catch (e) {} paint(); }); };
   // Usage events, batched (what people actually open and use).
   var queue = [], flush = function () {
     if (!queue.length || !get(SK)) { queue = []; return; }
