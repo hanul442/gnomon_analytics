@@ -8,6 +8,7 @@ import { buildDailyReport } from '../report/dailyReport.js';
 import { buildMarketSection } from '../report/marketSection.js';
 import type { Commentary } from '../analysis/commentary.js';
 import { usdOf } from './ask.js';
+import { usTicker } from '../sources/naverWorld.js';
 import { conclusionCard } from '../report/conclusion.js';
 import { committeeTab, newsTabBody } from '../report/renderHtml.js';
 import { decisionTrace } from '../report/renderReportExtras.js';
@@ -55,7 +56,7 @@ async function buildFromBars(symbol:string,d:UsPageJson,us:boolean,deps:ReportDe
  if(bars.some(b=>!/^\d{4}-\d{2}-\d{2}$/.test(b.date)||![b.open,b.high,b.low,b.close,b.volume].every(Number.isFinite)||b.close<=0))throw new Error('가격 데이터 형식을 확인하지 못했어요.');
  if(us){
   // G-179: a US stock's report carries SEC filings, XBRL financials, Form 4 trades, Naver's valuation snapshot and English news.
-  const research=await gatherUsResearch({symbol,ticker:d.ticker??symbol.split('.')[0]!,nameEng:d.english??d.name,cik:d.cik??null,fetch:deps.fetch,now:deps.now,...(deps.edgarContact?{contact:deps.edgarContact}:{})});
+  const research=await gatherUsResearch({symbol,ticker:d.ticker??usTicker(symbol),nameEng:d.english??d.name,cik:d.cik??null,fetch:deps.fetch,now:deps.now,...(deps.edgarContact?{contact:deps.edgarContact}:{})});
   return buildUsReport({symbol,name:d.name,...(d.english?{nameEng:d.english}:{}),...(d.ticker?{ticker:d.ticker}:{}),...(d.kind==='etf'?{kind:'etf' as const}:{}),...(d.market==='NASDAQ'||d.market==='NYSE'||d.market==='AMEX'?{exchange:d.market}:{}),bars,research,now});
  }
  const out=buildDailyReport({symbol,name:d.name,date:bars.at(-1)!.date,generatedAt:now,bars,disclosures:[],sources:[bars[0]!.source],...(us?{currency:'USD' as const,...(d.kind==='etf'?{kind:'etf' as const}:{}),...(d.market==='NASDAQ'||d.market==='NYSE'||d.market==='AMEX'?{exchange:d.market}:{})}:symbol.startsWith('KRW-')?{kind:'coin' as const,exchange:'UPBIT' as const}:{...(d.kind==='etf'?{kind:'etf' as const}:{}),...(d.market==='KOSPI'||d.market==='KOSDAQ'?{exchange:d.market}:{})})});

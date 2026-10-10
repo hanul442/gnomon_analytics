@@ -333,7 +333,7 @@ export const LIVE_JS = `
         if (f === 'price') put(won(q.price, sym));
         else if (f === 'pct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
         else if (f === 'arrowpct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
-        else if (f === 'full') put((q.change > 0 ? '▲' : q.change < 0 ? '▼' : '') + ' ' + Math.abs(q.change).toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + ' (' + sg(q.changePct) + ')');
+        else if (f === 'full') put((q.change > 0 ? '▲' : q.change < 0 ? '▼' : '') + ' ' + (isUs(sym) ? won(Math.abs(q.change), sym) : Math.abs(q.change).toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + ' (' + sg(q.changePct) + ')');
         if (f !== 'price') { el.classList.remove('up', 'down'); if (t) el.classList.add(t); }
         if (prev && prev.price !== q.price) { el.classList.remove('live-up', 'live-down'); void el.offsetWidth; el.classList.add(q.price > prev.price ? 'live-up' : 'live-down'); }
       });

@@ -1,5 +1,5 @@
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
-import { fetchWorldBars, parseWorldQuote, US_CODE, worldQuoteUrl } from '../sources/naverWorld.js';
+import { fetchWorldBars, parseWorldQuote, US_CODE, usTicker, worldQuoteUrl } from '../sources/naverWorld.js';
 import { US_PAGE_BARS, usPage } from '../analysis/usPage.js';
 import type { PriceBar } from '../types.js';
 import { buildUsReport, gatherUsResearch } from '../report/usResearch.js';
@@ -605,7 +605,7 @@ const usInfos=new Map<string,{at:number;pending:Promise<Record<string,string>|nu
 let cikCache:{at:number;map:Promise<Map<string,number>>}|null=null;
 route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,params,now})=>{
  const code=params[0]!;if(!US_CODE.test(code))fail(400,'BAD_CODE','미국 종목 코드가 아니에요.');
- const q=new URL(req.url).searchParams,ticker=code.split('.')[0]!;
+ const q=new URL(req.url).searchParams,ticker=usTicker(code);
  const nameEng=(q.get('name')??'').replace(/[^A-Za-z0-9 .,&'()/-]/g,'').trim().slice(0,80)||ticker,etf=q.get('kind')==='etf';
  // The panels depend on the name, CIK and kind the page passes, so they are part of the key (one caller cannot set another's).
  const given=q.get('cik'),key=[code,given&&/^\d{1,10}$/.test(given)?given:'',etf?'etf':'',nameEng.toLowerCase()].join('|');

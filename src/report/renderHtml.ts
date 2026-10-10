@@ -1,4 +1,5 @@
 import { COMMAND_BAR_CSS, COMMAND_BAR_JS, REPORT_TABS_CSS, REPORT_TABS_JS } from './commandBar.js';
+import { US_EXCHANGE_LETTER } from '../sources/naverWorld.js';
 import { MODERN_SWITCH_CSS, MODERN_SWITCH_JS } from './modernSwitch.js';
 import { GEN_BUTTON_CSS, GEN_BUTTON_JS, genButton } from './generateButton.js';
 import { ROLL_CSS, ROLL_JS } from './rollNumber.js';
@@ -838,7 +839,7 @@ export const SEARCH_SCRIPT = `<script>
       var rows = function (url) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { return d.rows || []; }).catch(function () { return []; }); };
       var merge = function (xs, kind) { xs.forEach(function (x) {
         if (have[x[0]]) return; have[x[0]] = 1;
-        var sym = kind === 'COIN' ? x[0].replace('KRW-', '') : kind === 'US' ? x[0].split('.')[0] : x[0];
+        var sym = kind === 'COIN' ? x[0].replace('KRW-', '') : kind === 'US' ? x[0].replace(/${US_EXCHANGE_LETTER}/, '') : x[0];
         items.push({ c: x[0], n: x[1], m: kind, p: x[4], x: x[5], r: 0, k: norm(x[1]), h: cho(norm(x[1])), e: norm(sym + ' ' + (x[2] || '')), i: items.length });
       }); };
       var lists = [['etfs.json', 'ETF'], ['coins.json', 'COIN'], ['usstocks.json', 'US'], ['usnames.json', 'US']];
@@ -894,7 +895,7 @@ export function renderStockPage(kindArg: 'stock' | 'coin' | 'us' | boolean = 'st
   const locked = LOCKED.map(([t, d]) => `<div class="card locked"><div class="lk-head">${LOCK}<b>${t}</b></div><p>${d}</p><div class="lk-ghost" aria-hidden="true"><i></i><i></i><i></i></div></div>`).join('');
   const open = `<section class="block"><div class="grid-eq"><div class="card"><div class="pl-k">기간별 등락</div><div class="sp-moves" id="sp-moves"></div></div>
 <div class="card"><div class="pl-k">지표 16개 판단</div><div class="sp-votes" id="sp-votes"></div></div></div></section>`;
-  const detail = `<section class="block"><div class="block-head"><h2>기술적 적정가</h2><span class="muted">매일 장 마감 뒤 다시 계산해요</span></div><div class="card"><div id="sp-fair"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div></div></section>`;
+  const detail = `<section class="block"><div class="block-head"><h2>기술적 적정가</h2><span class="muted small">장 마감 뒤 갱신</span></div><div class="card"><div id="sp-fair"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div></div></section>`;
   const forecast = `<section class="block"><div class="block-head"><h2>예측 가격 범위 (10~90%)</h2></div><div class="card"><div id="sp-fc"><p class="empty">기록이 모자라 계산하지 못했어요.</p></div><p class="fine">최근 변동성으로 계산한 범위예요. 확률이나 목표가가 아니에요.</p></div></section>`;
   // G-185: one loading screen until the stock's numbers are in, instead of a half-drawn page with placeholders.
   let body = `<div class="page-load" id="page-load" role="status" aria-live="polite"><canvas data-orb="connecting" data-size="72" aria-hidden="true"></canvas><b>종목 정보를 불러오고 있어요</b><i class="pl-track"><i></i></i></div>${priceBar({ name: '<span id="pb-name"></span>', symbol: '<span id="pb-code"></span>', price: '<span id="pb-price"></span>', change: '<span id="pb-change"></span>', tone: '', badge: '' })}<section class="hero stock-hero" id="top"><div class="hero-main"><div class="eyebrow"><span id="sp-code"></span><span id="sp-market"></span><span data-report-state>AI 리포트 확인 중</span></div>
@@ -957,7 +958,7 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
     return Promise.all([fetch(api.replace(/[/]$/, '') + '/us/page/' + encodeURIComponent(code)).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }), fetch('usnames.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; }).catch(function () { return { rows: [] }; })]).then(function (all) {
       var d = all[0], hit = (all[1].rows || []).filter(function (x) { return x[0] === code; })[0];
       var part = hit ? String(hit[2]).split(' · ') : [], ex = part[1] || 'US';
-      d.name = hit ? hit[1] : code.split('.')[0]; d.ticker = part[0] || d.ticker; d.english = part.slice(2).join(' · '); d.market = ex.replace(/ ETF$/, ''); d.kind = / ETF$/.test(ex) ? 'etf' : 'stock'; return d; }); };
+      d.name = hit ? hit[1] : code.replace(/${US_EXCHANGE_LETTER}/, ''); d.ticker = part[0] || d.ticker; d.english = part.slice(2).join(' · '); d.market = ex.replace(/ ETF$/, ''); d.kind = / ETF$/.test(ex) ? 'etf' : 'stock'; return d; }); };
   fetch((COIN ? 'c/' : US ? 'u/' : 's/') + code + '.json').then(function (r) { if(r.status===404 && new URLSearchParams(location.search).get('job'))return fetch('research/'+code+'.json').then(function(rr){if(!rr.ok)throw new Error();return rr.json();}).then(function(x){loadPanels();return {name:x.name,symbol:x.symbol,market:x.kind||'주식',bars:(x.recentBars||[]).map(function(b){return [b.date,b.open,b.high,b.low,b.close,b.volume];})};}); if (r.status === 404 && !COIN && !US) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (r.status === 404 && US) return usOnDemand(); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     if(d.pageUrl && /^(?:[sc]\\/[0-9A-Z-]+\\.html|[0-9A-Z-]+\\/index\\.html)$/.test(d.pageUrl)){location.replace(d.pageUrl+location.search+location.hash);return;}
     if (d.research) loadPanels();
@@ -971,7 +972,7 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
     var last = bars[bars.length - 1], prev = bars[bars.length - 2];
     if (last) {
       var ch = prev ? last.close - prev.close : 0, pc = prev ? (ch / prev.close) * 100 : 0;
-      $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + (US ? Math.abs(ch).toFixed(2) : Math.abs(ch) >= 100 ? Math.round(Math.abs(ch)).toLocaleString('ko-KR') : Number(Math.abs(ch).toPrecision(3)).toLocaleString('ko-KR', { maximumFractionDigits: 8 })) + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : ''); pageReady(); if (window.gnmRollIn) gnmRollIn($('sp-price'));
+      $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + (US ? won(Math.abs(ch)) : Math.abs(ch) >= 100 ? Math.round(Math.abs(ch)).toLocaleString('ko-KR') : Number(Math.abs(ch).toPrecision(3)).toLocaleString('ko-KR', { maximumFractionDigits: 8 })) + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : ''); pageReady(); if (window.gnmRollIn) gnmRollIn($('sp-price'));
       $('sp-date').textContent = last.time + (COIN ? ' 일봉 (09:00 KST 기준)' : US ? ' 종가 (미국 현지 날짜)' : ' 종가');
       // G-103: the 3-month mini chart under the price; tapping it opens the chart tab.
       var hp = bars.slice(-63);

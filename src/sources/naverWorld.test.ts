@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { fetchUsDirectory, fetchUsUniverse, fetchWorldBars, parseUsRanking, parseUsSearch, parseWorldBars, parseWorldQuote, US_CODE, usdHangeul } from './naverWorld.js';
+import { fetchUsDirectory, fetchUsUniverse, fetchWorldBars, parseUsRanking, parseUsSearch, parseWorldBars, parseWorldQuote, US_CODE, usdHangeul, usTicker } from './naverWorld.js';
 
 const AT = new Date('2026-10-08T13:00:00Z');
 // Shapes as Naver answered on 2026-10-08 (diag workflow), trimmed.
@@ -15,6 +15,7 @@ const RANK = (code: string, end = 'stock') => ({ stockEndType: end, reutersCode:
 test('US codes: with or without the exchange letter, never Korean codes or coins', () => {
   for (const ok of ['AAPL.O', 'DELL.K', 'TSM', 'SPY', 'BRK-B']) assert.ok(US_CODE.test(ok), ok);
   for (const no of ['005930', '0001A0', 'KRW-BTC', 'aapl.o', 'AAPL.OO']) assert.ok(!US_CODE.test(no), no);
+  assert.deepEqual(['AAPL.O', 'DELL.K', 'IBM.N', 'BRK.B', 'TSM'].map(usTicker), ['AAPL', 'DELL', 'IBM', 'BRK.B', 'TSM'], 'G-194: a share class keeps its letter');
 });
 
 test('daily bars: oldest first, bad rows dropped, dates as YYYY-MM-DD', () => {

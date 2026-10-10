@@ -33,6 +33,14 @@ test('next earnings: the quarter that just ended, or the following one once it w
   const reported: EventFiling[] = [{ symbol: 'x', date: '2026-10-05', title: '영업(잠정)실적', receiptNo: '20261005000001', key: 'earnings' }];
   assert.equal(nextEarnings('2026-10-06', reported).period, '2026년 4분기');
   assert.match(nextEarnings('2026-02-01', []).label, /2026년 3월 말/);
+  // G-194: past the filing deadline the quarter has been reported, even with no filing on record.
+  assert.equal(nextEarnings('2026-09-10', []).period, '2026년 3분기');
+  assert.equal(nextEarnings('2026-02-20', []).period, '2025년 4분기', 'the year report has 90 days');
+  assert.equal(nextEarnings('2026-09-10', [], true).period, '2026년 3분기(달력 기준)');
+  assert.match(nextEarnings('2026-09-10', [], true).label, /2026년 10월 중순~11월 초/);
+  assert.equal(nextEarnings('2026-08-05', [], true).period, '2026년 2분기(달력 기준)', 'still inside the 40 days');
+  assert.equal(nextEarnings('2026-08-05', [], true, ['2026-07-31']).period, '2026년 3분기(달력 기준)', 'an earnings 8-K or 10-Q already filed');
+  assert.equal(nextEarnings('2026-03-10', [], true).period, '2026년 1분기(달력 기준)', 'the 10-K is due 60 days after the year');
 });
 
 test('edge: insider net change, buyback and value surge become highlights; ownership wording stays neutral', () => {

@@ -15,7 +15,7 @@ import { collectRiskFilings } from './riskCollect.js';
 import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
 import { writeUsPages } from './usStocks.js';
 import type { SignalLevel } from '../analysis/technicals.js';
-import { fetchWorldBars } from '../sources/naverWorld.js';
+import { fetchWorldBars, usTicker } from '../sources/naverWorld.js';
 import { gatherUsResearch } from '../report/usResearch.js';
 import { US_NEWS_SOURCE, usNewsName } from '../sources/usNews.js';
 import { withCurrency } from '../report/format.js';
@@ -443,7 +443,7 @@ async function dailyPicksFor(root: string, date: string, choose: () => DailyPick
 export function dailyTicker(p: DailyPick, corpCodes: Readonly<Record<string, string>>): Ticker {
   // G-179: a US pick carries its ticker and English name; the CIK is read from u/<code>.json when the run reaches it.
   if (p.kind === 'stock' && isUsMarket(p.market)) {
-    const ticker = p.us?.ticker ?? p.symbol.split('.')[0]!, english = p.us?.english ?? p.name;
+    const ticker = p.us?.ticker ?? usTicker(p.symbol), english = p.us?.english ?? p.name;
     return { symbol: p.symbol, name: p.name, market: p.market, dartCorpCode: '', newsQuery: english || ticker, newsAliases: [escapeRegex(p.name), `\\b${escapeRegex(ticker)}\\b`, ...(usNewsName(english) ? [escapeRegex(usNewsName(english))] : [])], ai: true, us: { ticker, english, cik: null } };
   }
   if (p.kind === 'stock') return pickTicker({ symbol: p.symbol, name: p.name, market: p.market === 'KOSDAQ' ? 'KOSDAQ' : 'KOSPI' }, corpCodes);
@@ -471,7 +471,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
   let usResearch: Awaited<ReturnType<typeof gatherUsResearch>> | null = null;
   if (us) {
     const page = await readFile(join(root, 'site', 'u', `${SYMBOL}.json`), 'utf8').then((t) => JSON.parse(t) as { ticker?: string; english?: string; cik?: number | null }, () => null);
-    usResearch = await gatherUsResearch({ symbol: SYMBOL, ticker: ticker.us?.ticker ?? page?.ticker ?? SYMBOL.split('.')[0]!, nameEng: ticker.us?.english || page?.english || ticker.name, cik: ticker.us?.cik ?? page?.cik ?? null, now: clock, ...(options.fetch ? { fetch: options.fetch } : {}), ...(process.env.EDGAR_CONTACT ? { contact: process.env.EDGAR_CONTACT } : {}) });
+    usResearch = await gatherUsResearch({ symbol: SYMBOL, ticker: ticker.us?.ticker ?? page?.ticker ?? usTicker(SYMBOL), nameEng: ticker.us?.english || page?.english || ticker.name, cik: ticker.us?.cik ?? page?.cik ?? null, now: clock, ...(options.fetch ? { fetch: options.fetch } : {}), ...(process.env.EDGAR_CONTACT ? { contact: process.env.EDGAR_CONTACT } : {}) });
     const mp = marketPaths(root, SYMBOL);
     await appendUnseen(mp.finance, usResearch.finance, financeKey);
     if (usResearch.snapshot) await appendUnseen(mp.snapshots, [usResearch.snapshot], snapshotKey);
@@ -591,6 +591,7 @@ export async function composeReport(
   const daily = asOf(await readLog<PriceBar>(pricePath), priceKey, now);
   // G-179: a US stock's sections are built in dollars.
   const us = isUsMarket(ticker.market), inCurrency = <T>(f: () => T): T => (us ? withCurrency('USD', f) : f());
+  const disclosures = asOf(await readLog<Disclosure>(filingPath), filingKey, now);
   const built = buildDailyReport({
     symbol: SYMBOL,
     name: ticker.name,
@@ -600,7 +601,7 @@ export async function composeReport(
     date: today.date,
     generatedAt: now,
     bars: daily,
-    disclosures: asOf(await readLog<Disclosure>(filingPath), filingKey, now),
+    disclosures,
     news: asOf(await readLog<NewsItem>(newsPath), newsKey, now),
     newsStatus: options.newsStatus ?? [],
     newsAliases: aliasPattern(ticker),
@@ -637,7 +638,7 @@ export async function composeReport(
     const insider = (await readLog<InsiderReport>(join(root, 'data', 'insider', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString());
     const holders = (await readLog<HolderReport>(join(root, 'data', 'holders', `${SYMBOL}.jsonl`))).filter((r) => r.retrievedAt <= now.toISOString());
     built.edge = inCurrency(() => buildEdge({
-      date: today.date, close: built.price?.close ?? null, bars: daily, finance: asOf(financeLog, financeKey, now), financeLog: financeLog.filter((f) => f.retrievedAt <= now.toISOString()), events, us, insider, holders,
+      date: today.date, close: built.price?.close ?? null, bars: daily, finance: asOf(financeLog, financeKey, now), financeLog: financeLog.filter((f) => f.retrievedAt <= now.toISOString()), events, us, insider, holders, ...(us ? { filings: disclosures } : {}),
     }));
     const statements = await readFile(join(root, 'data', 'statements', `${SYMBOL}.json`), 'utf8').then((t) => JSON.parse(t) as FullStatements, () => null);
     if (statements && statements.retrievedAt <= now.toISOString()) built.statements = statements;

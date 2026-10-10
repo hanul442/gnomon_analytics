@@ -5,6 +5,7 @@
 
 import { PRESETS } from './screenRules.js';
 import { todaysSignals } from './signalLog.js';
+import { usTicker } from '../sources/naverWorld.js';
 
 export type PickKind = 'stock' | 'etf' | 'coin';
 export interface DailyPick { date: string; symbol: string; name: string; kind: PickKind; market: 'KOSPI' | 'KOSDAQ' | 'UPBIT' | 'NASDAQ' | 'NYSE' | 'AMEX'; tier: 'deep'; reason: string; /** G-179: a US pick's ticker and English name (from the usstocks row). */ us?: { ticker: string; english: string } }
@@ -77,7 +78,7 @@ export function chooseDailyPicks(input: {
     // G-179: one US stock (not an ETF) from the top of the list by trading value; the desc column carries ticker · exchange · English name.
     const usRows = (input.us ?? []).filter((r) => !input.exclude.has(String(r[0])) && Number(r[4]) > 0 && !/ ETF /.test(` ${String(r[2])} `)).sort((a, b) => Number(b[12] ?? 0) - Number(a[12] ?? 0)).slice(0, US_POOL);
     for (const r of shuffle(usRows, rand).slice(0, DAILY_US)) {
-      const [ticker = String(r[0]).split('.')[0]!, exchange = 'NASDAQ', ...rest] = String(r[2]).split(' · ');
+      const [head = '', exchange = 'NASDAQ', ...rest] = String(r[2] ?? '').split(' · '), ticker = head || usTicker(String(r[0]));
       const market = exchange === 'NYSE' ? 'NYSE' as const : exchange === 'AMEX' ? 'AMEX' as const : 'NASDAQ' as const;
       out.push({ date: input.date, symbol: String(r[0]), name: String(r[1]), kind: 'stock', market, tier: 'deep', reason: '미국 거래대금 상위 후보에서 선정', us: { ticker, english: rest.join(' · ') } });
     }

@@ -11,7 +11,7 @@ import { starButton } from './ui.js';
 import { scenarioCheck, scenarioLayer } from './scenarioChart.js';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import { esc } from './html.js';
-import { won, tone, pct as fmtPct } from './format.js';
+import { currency, won, tone, pct as fmtPct } from './format.js';
 const pct = (v: number | null, digits = 2) => fmtPct(v, digits, '없음');
 
 const num = (v: number, digits = 0) => v.toLocaleString('ko-KR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
@@ -122,7 +122,7 @@ export function hero(report: DailyReport, options: { live: boolean; asOf: string
   return `<section class="hero" id="top" data-session="${esc(p?.sessionDate ?? report.date)}"><div class="orb" aria-hidden="true"></div>
 <div class="hero-main"><div class="eyebrow"><span>${esc(report.kind === 'coin' ? report.symbol.replace('KRW-', '') : report.symbol)}</span>${marketChip(report)}<span>${options.live ? `${esc(options.asOf)} 기준` : `${esc(report.date)} 리포트`}</span>${freshnessBadge(freshness(report))}</div>
 <div class="h1-row"><h1>${esc(report.name)}</h1>${starButton(report.symbol, report.name)}</div>
-${p ? `<div class="hero-price"><b data-live="${esc(report.symbol)}" data-live-f="price">${esc(won(p.close))}</b><span class="live-tag" data-live="${esc(report.symbol)}" data-live-f="tag" hidden></span>${p.changePct === null ? '' : `<span class="${tone(p.changePct)}" data-live="${esc(report.symbol)}" data-live-f="full">${p.change! > 0 ? '▲' : p.change! < 0 ? '▼' : ''} ${esc(num(Math.abs(p.change!)))} (${esc(pct(p.changePct))})</span>`}</div>
+${p ? `<div class="hero-price"><b data-live="${esc(report.symbol)}" data-live-f="price">${esc(won(p.close))}</b><span class="live-tag" data-live="${esc(report.symbol)}" data-live-f="tag" hidden></span>${p.changePct === null ? '' : `<span class="${tone(p.changePct)}" data-live="${esc(report.symbol)}" data-live-f="full">${p.change! > 0 ? '▲' : p.change! < 0 ? '▼' : ''} ${esc(currency() === 'USD' ? won(Math.abs(p.change!)) : num(Math.abs(p.change!)))} (${esc(pct(p.changePct))})</span>`}</div>
 <div class="hero-sub">${esc(p.sessionDate ?? report.date)} ${report.kind === 'coin' ? '일봉 (09:00 KST 기준)' : '종가'}</div>${heroChart(report)}` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
 <p class="hero-line">${esc(report.headline)}</p></div>
 ${points.length ? `<div class="key-points"><div class="kp-title">핵심 포인트</div><ul>${points.map(([k, v, t]) => `<li><span>${esc(k!)}</span><b class="${t}">${esc(v!)}</b></li>`).join('')}</ul></div>` : ''}
