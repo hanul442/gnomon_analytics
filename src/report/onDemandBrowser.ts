@@ -1,8 +1,10 @@
 import { ORBS } from './ui.js';
 import { CREDIT_COST } from './plans.js';
+import { GEN_BUTTON_JS_FN } from './generateButton.js';
 export const JOBS_JS = `
 (function(){
  var G=window.GNM;if(!G)return;
+ ${GEN_BUTTON_JS_FN}
  var stage={queued:'작업을 시작하고 있어요',searching:'분석 자료를 확인하고 있어요',working:'근거와 시나리오를 분석하고 있어요',composing:'리포트를 작성하고 있어요'};
  var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
  var store=function(id){try{localStorage.setItem('gnm-report-job',id);}catch(e){}};
@@ -21,7 +23,7 @@ export const JOBS_JS = `
   // G-178: the status strip for the report just painted — stale (new prices since) or fresh.
   var stale=createdDay<sess&&r.dataDate&&/^\\d{4}-\\d{2}-\\d{2}$/.test(sess)&&r.dataDate<sess;
   var md=function(d){return String(d||'').slice(5).replace('-','/');};
-  var bar=stale?'<div class="rs-bar rs-stale" data-report-status data-stale-ai role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>'+md(r.dataDate)+' 위원회 리포트 · 그 뒤 새 가격이 있어요</b><small>가격 '+esc(sess)+' 기준으로 다시 분석할 수 있어요</small></div><button type="button" class="sa-go" data-create-report data-symbol="'+esc(r.symbol)+'" data-name="'+esc(r.name||r.symbol)+'">새 리포트 만들기 <small>'+((G.me&&G.me.costs&&G.me.costs.report)||${CREDIT_COST.report})+'크레딧</small></button></div>':'<div class="rs-bar" data-report-status role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>'+(md(r.dataDate)||'오늘')+' 위원회 리포트 · 가격과 같은 날</b><small>방금 만든 리포트예요</small></div></div>';
+  var bar=stale?'<div class="rs-bar rs-stale" data-report-status data-stale-ai role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>'+md(r.dataDate)+' 위원회 리포트 · 그 뒤 새 가격이 있어요</b><small>가격 '+esc(sess)+' 기준으로 다시 분석할 수 있어요</small></div>'+gnmGenButton('새 리포트 만들기','data-create-report data-symbol="'+esc(r.symbol)+'" data-name="'+esc(r.name||r.symbol)+'"',((G.me&&G.me.costs&&G.me.costs.report)||${CREDIT_COST.report})+'크레딧')+'</div>':'<div class="rs-bar" data-report-status role="note"><span class="rs-dot" aria-hidden="true"></span><div class="sa-tx"><b>'+(md(r.dataDate)||'오늘')+' 위원회 리포트 · 가격과 같은 날</b><small>방금 만든 리포트예요</small></div></div>';
   Object.keys(r.fragments||{}).forEach(function(key){
    if(key==='chart')return;
    if(key==='scenarios'){try{var list=JSON.parse(r.fragments[key]);if(window.GNM_scenarios)window.GNM_scenarios(list);}catch(e){}return;}

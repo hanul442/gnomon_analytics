@@ -19,7 +19,7 @@ html[data-theme=dark] .topbar,html[data-theme=dark] .bottom-nav{background:rgba(
 .chip-toggle{border-color:transparent;background:var(--soft);color:var(--fg2);font-weight:600}
 .chip-toggle:hover{background:var(--line);color:var(--fg)}
 .chip-toggle[aria-pressed=true]{background:var(--accent-soft);color:var(--accent-strong);border-color:var(--accent-line)}
-.tog{background:var(--line-strong)}.radio{border-color:var(--line-strong)}
+.radio{border-color:var(--line-strong)}
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 ::selection{background:var(--accent-soft);color:var(--fg)}
 input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--accent)}
