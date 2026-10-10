@@ -11,6 +11,7 @@ import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { renderCalculationPage } from '../report/calculationPage.js';
 import { pool } from './weekly.js';
 import { quickCalc, type StockCalc } from '../analysis/quickCalc.js';
+import { compactCalc } from '../analysis/compactCalc.js';
 
 /** About two years: enough history for the strategy race's in- and out-of-sample split and a long chart. */
 export const STOCK_PAGE_BARS = 500;
@@ -48,18 +49,3 @@ export async function writeStockPages(
   return { status: { source: 'naver:fchart:day:all', ok: failed <= todo.length * 0.05, count: ok, ...(failed ? { error: `${failed} failed ${errors.join(' ')}` } : {}) }, calcs };
 }
 
-const r0 = (v: number) => Math.round(v);
-const r1 = (v: number | null) => (v === null ? null : Math.round(v * 10) / 10);
-
-/** Rounded for the page: whole won, one decimal for percentages. */
-export function compactCalc(c: StockCalc): StockCalc {
-  return {
-    ...c,
-    signal: { ...c.signal, score: c.signal.score === null ? null : Math.round(c.signal.score * 100) / 100 },
-    moves: c.moves.map((m) => ({ ...m, pct: r1(m.pct) })),
-    fair: c.fair ? { ...c.fair, center: r0(c.fair.center), low: r0(c.fair.low), high: r0(c.fair.high), gapPct: r1(c.fair.gapPct)! } : null,
-    forecasts: c.forecasts.map((f) => ({ days: f.days, p10: r0(f.p10), p50: r0(f.p50), p90: r0(f.p90) })),
-    volume: c.volume ? { ratio1: r1(c.volume.ratio1)!, ratio5: r1(c.volume.ratio5)!, vwapGapPct: r1(c.volume.vwapGapPct)!, obvPct: r0(c.volume.obvPct), flow: c.volume.flow } : null,
-    hi52GapPct: c.hi52GapPct == null ? null : r1(c.hi52GapPct),
-  };
-}

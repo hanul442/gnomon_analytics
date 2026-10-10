@@ -1,5 +1,6 @@
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
-import { parseWorldQuote, US_CODE, worldQuoteUrl } from '../sources/naverWorld.js';
+import { fetchWorldBars, parseWorldQuote, US_CODE, worldQuoteUrl } from '../sources/naverWorld.js';
+import { US_PAGE_BARS, usPage } from '../analysis/usPage.js';
 import { fetchOkxDeriv, type DerivSnapshot } from '../sources/okxDeriv.js';
 import { UNLOCK, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
@@ -553,6 +554,28 @@ route('GET','/ticks/(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})',async({deps,params,no
   ?fetchUpbitTicks(symbol,deps.fetch).then(points=>({symbol,kind:'trades',points,retrievedAt:iso(now)}))
   :fetchNaverMinuteCandles(symbol,1,{fetch:deps.fetch}).then(bars=>{const day=bars.length?new Date((bars.at(-1)!.time+9*3600)*1000).toISOString().slice(0,10):'';const today=bars.filter(b=>new Date((b.time+9*3600)*1000).toISOString().slice(0,10)===day);return {symbol,kind:'minuteCloses',points:today.map(b=>({time:b.time,price:b.close,volume:b.volume})),retrievedAt:iso(now)};}),
  '틱 데이터를 가져오지 못했어요. 잠시 후 다시 선택해 주세요.');
+});
+// G-188: a US stock outside the daily set, built on demand: two years of Naver daily bars and the same calculation
+// and rounding the daily run stores in site/u/<code>.json, so us.html draws it the same way. Kept 30 minutes per code.
+const usPages=new Map<string,{at:number;pending:Promise<Record<string,unknown>|null>}>();
+// A fresh build costs a Naver call, so each address may start at most 20 a minute (cached opens are free).
+const usPageStarts=new Map<string,{at:number;n:number}>();
+route('GET','/us/page/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,deps,params,now})=>{
+ const code=params[0]!;if(!US_CODE.test(code))fail(400,'BAD_CODE','미국 종목 코드가 아니에요.');
+ let hit=usPages.get(code);
+ if(!hit||now.getTime()-hit.at>=30*60_000){
+  const ip=req.headers.get('cf-connecting-ip')??'-',w=usPageStarts.get(ip);
+  if(w&&now.getTime()-w.at<60_000){if(w.n>=20)fail(429,'TOO_MANY','미국 종목을 너무 빠르게 열고 있어요. 1분 뒤 다시 열어 주세요.');w.n++;}
+  else{if(usPageStarts.size>=1000)usPageStarts.clear();usPageStarts.set(ip,{at:now.getTime(),n:1});}
+  if(usPages.size>=200)usPages.delete(usPages.keys().next().value!);
+  // No bars means no such stock: remembered as null for the 30 minutes too. A failed call or calculation is not kept.
+  const entry={at:now.getTime(),pending:fetchWorldBars(code,US_PAGE_BARS,{now:()=>now,fetch:deps.fetch}).then((bars)=>bars.length<2?null:{...usPage(code,bars,now).body,onDemand:true,retrievedAt:iso(now)})};
+  entry.pending.catch(()=>{if(usPages.get(code)===entry)usPages.delete(code);});
+  usPages.set(code,entry);hit=entry;
+ }
+ const page=await hit.pending.catch(()=>fail(502,'US_DATA','미국 가격을 가져오지 못했어요. 잠시 후 다시 열어 주세요.'));
+ if(!page)fail(404,'US_NOT_FOUND','이 미국 종목의 가격이 없어요. 코드가 맞는지 확인해 주세요.');
+ return page;
 });
 // G-118: PER and PBR for a handful of stocks (a theme's members), from Naver's per-stock summary.
 // Kept 6 hours per stock; one that fails is left out rather than failing the rest.

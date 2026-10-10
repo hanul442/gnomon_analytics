@@ -59,8 +59,11 @@ const SCRIPT = `<script>
   var list = function (url, kind) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { return (d.rows || []).map(function (x) { return [x[0], x[1], kind, x[4], x[5], 0]; }); }).catch(function () { return []; }); };
   Promise.all([fetch('search.json').then(function (r) { return r.json(); }).then(function (d) { return d.items; }).catch(function () { return []; }), list('etfs.json', 'ETF'), list('coins.json', 'COIN'), list('usstocks.json', 'US'), fetch('watchinfo.json').then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })]).then(function (all) {
     var seen = {}; items = []; info = all[4];
-    all.slice(0, 4).forEach(function (xs) { (xs || []).forEach(function (x) { if (!seen[x[0]]) { seen[x[0]] = 1; items.push(x); } }); });
+    var add = function (xs) { (xs || []).forEach(function (x) { if (!seen[x[0]]) { seen[x[0]] = 1; items.push(x); } }); };
+    all.slice(0, 4).forEach(add);
     draw();
+    // G-188: a US stock opened on demand is in the full name list only; fetched only when one is starred.
+    if (read().some(function (s) { return isUs(s) && !seen[s]; })) list('usnames.json', 'US').then(function (xs) { add(xs); draw(); });
   });
 })();
 </script>`;
