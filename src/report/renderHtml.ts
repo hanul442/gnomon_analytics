@@ -915,7 +915,10 @@ ${coin || us ? '' : `<section class="block"><div class="block-head"><h2>AI 리�
   const techAt=body.indexOf('<section class="block"><div class="grid-eq">',split);
   const head=body.slice(0,split), chart=body.slice(split,techAt), technical=body.slice(techAt,ending);
   const missing=(label:string)=>`<section class="block" data-missing>${label?`<h2>${label}</h2>`:''}<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 아직 생성되지 않은 분석이에요</b><p>리포트를 생성하면 이 영역에서 확인할 수 있어요.</p><button type="button" class="btn-primary" data-create-report>심층 리포트 생성하기</button></div></div></section>`;
-  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${missing('전략 대결 · 모의투자')}</section></section>${[{key:'fundamentals',label:coin?'수급':'기업 체력'},{key:'ai',label:'AI 위원회'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${t.key==='fundamentals'&&coin?'':missing(t.label)}${t.key==='fundamentals'?`${us?'':`<section class="sub-sec${coin?' sub-first':''}" id="tab-flows"><h2 class="sub-h">수급</h2>${missing('')}</section>`}`:''}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
+  // G-192: a US stock's 기업 체력 and 뉴스·공시 are filled from the API (/usinfo) instead of locked until a report.
+  const usSlot=(key:string)=>`<div data-slot="us-${key}"><section class="block"><div class="card us-wait" style="display:flex;align-items:center;gap:10px;color:var(--fg2);font-size:14px"><span class="orbs" aria-hidden="true"><i></i><i></i><i></i></span> ${key==='news'?'SEC 공시와 영문 뉴스를 불러오고 있어요.':'재무·밸류에이션·내부자 거래를 불러오고 있어요.'}</div></section></div>`;
+  const usHome=us?'<div data-slot="us-edge"></div><div data-slot="us-latest"></div>':'';
+  body=`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}${usHome}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${missing('전략 대결 · 모의투자')}</section></section>${[{key:'fundamentals',label:coin?'수급':'기업 체력'},{key:'ai',label:'AI 위원회'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${t.key==='fundamentals'&&coin?'':us&&(t.key==='fundamentals'||t.key==='news')?usSlot(t.key):missing(t.label)}${t.key==='fundamentals'?`${us?'':`<section class="sub-sec${coin?' sub-first':''}" id="tab-flows"><h2 class="sub-h">수급</h2>${missing('')}</section>`}`:''}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`;
   return shell('', coin ? '코인 차트 | GNOMON' : us ? '미국 주식 차트 | GNOMON' : '종목 차트 | GNOMON', body, { tabs: tabsFor(kind), bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(kind)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}${PARLIAMENT_SCRIPT}` });
 }
 
@@ -936,6 +939,20 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
   // Stocks with an AI report have their own page and no s/<code>.json: go there instead.
   var toReport = function () { if(new URLSearchParams(location.search).get('job')) return Promise.resolve(false);return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
   // G-188: a US stock outside the daily set: the API builds its page on demand; the name comes from the directory list.
+  // G-192: 기업 체력, 뉴스·공시 and the summary's latest lists of a US stock, from the API (SEC, Naver, English news).
+  var usInfo = function (d) {
+    var meta = document.querySelector('meta[name=gnm-api]'), api = meta && meta.content;
+    var put = function (key, html) { var el = document.querySelector('[data-slot="us-' + key + '"]'); if (el) el.innerHTML = html; };
+    var empty = function (t) { return '<section class="block"><div class="card"><p class="empty">' + t + '</p></div></section>'; };
+    var fail = function (t) { put('fundamentals', empty(t)); put('news', empty(t)); };
+    if (!api) { fail('이 화면에서는 기업 정보를 불러올 수 없어요.'); return; }
+    var q = '?name=' + encodeURIComponent(d.english || '') + (d.cik ? '&cik=' + encodeURIComponent(d.cik) : '') + (d.kind === 'etf' ? '&kind=etf' : '');
+    fetch(api.replace(/[/]$/, '') + '/usinfo/' + encodeURIComponent(code) + q).then(function (r) { return r.json().then(function (x) { if (!r.ok) throw x; return x; }); }).then(function (x) {
+      put('fundamentals', x.fundamentals || empty('SEC에 올라온 재무 자료가 없어요.' + (d.kind === 'etf' ? ' ETF는 재무제표가 없어요.' : '')));
+      put('news', x.news || empty('최근 공시와 뉴스가 없어요.'));
+      put('latest', x.latest || ''); put('edge', x.edge || '');
+    }).catch(function (e) { fail((e && e.error && e.message) || '기업 정보를 불러오지 못했어요. 잠시 후 다시 열어 주세요.'); });
+  };
   var usOnDemand = function () { var meta = document.querySelector('meta[name=gnm-api]'), api = meta && meta.content; if (!api) throw new Error('NO_API');
     return Promise.all([fetch(api.replace(/[/]$/, '') + '/us/page/' + encodeURIComponent(code)).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }), fetch('usnames.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; }).catch(function () { return { rows: [] }; })]).then(function (all) {
       var d = all[0], hit = (all[1].rows || []).filter(function (x) { return x[0] === code; })[0];
@@ -944,6 +961,7 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
   fetch((COIN ? 'c/' : US ? 'u/' : 's/') + code + '.json').then(function (r) { if(r.status===404 && new URLSearchParams(location.search).get('job'))return fetch('research/'+code+'.json').then(function(rr){if(!rr.ok)throw new Error();return rr.json();}).then(function(x){loadPanels();return {name:x.name,symbol:x.symbol,market:x.kind||'주식',bars:(x.recentBars||[]).map(function(b){return [b.date,b.open,b.high,b.low,b.close,b.volume];})};}); if (r.status === 404 && !COIN && !US) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (r.status === 404 && US) return usOnDemand(); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     if(d.pageUrl && /^(?:[sc]\\/[0-9A-Z-]+\\.html|[0-9A-Z-]+\\/index\\.html)$/.test(d.pageUrl)){location.replace(d.pageUrl+location.search+location.hash);return;}
     if (d.research) loadPanels();
+    if (US) usInfo(d);
     document.title = d.name + ' 차트 | GNOMON';
     document.querySelectorAll('form.join').forEach(function(f){f.dataset.symbol=code;f.dataset.name=d.name;}); $('sp-star').setAttribute('data-star', code); if (window.GNM_starSync) GNM_starSync();
     // ETFs and coins picked for a daily AI report (G-56) keep their chart page; point to the report.

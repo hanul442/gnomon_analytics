@@ -25,6 +25,11 @@ function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
       if (String(url).startsWith('https://api.resend.com')) { const b = JSON.parse(String(init!.body)); mails.push({ to: b.to[0], text: b.text }); return new Response('{}', { status: 200 }); }
       if (String(url).endsWith('/s/000660.json')) return Response.json({ name: 'SK하이닉스', market: 'KOSPI', bars: [['2026-10-02', 1, 2, 1, 2, 10]] });
       if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/ZZZZ.O/')) return Response.json([]);
+      if (String(url) === 'https://www.sec.gov/files/company_tickers.json') return Response.json({ 0: { cik_str: 1682852, ticker: 'MRNA', title: 'Moderna, Inc.' } });
+      if (String(url).includes('/submissions/CIK0001682852.json')) return Response.json({ name: 'Moderna, Inc.', filings: { recent: { accessionNumber: ['0001682852-26-000040'], filingDate: ['2026-08-20'], form: ['8-K'], primaryDocument: ['a.htm'], items: ['2.02'] } } });
+      if (String(url).includes('/companyfacts/CIK0001682852.json')) return Response.json({ facts: { 'us-gaap': {} } });
+      if (/api\.stock\.naver\.com\/stock\/MRNA\.O\/basic$/.test(String(url))) return Response.json({ stockItemTotalInfos: [{ code: 'pbr', key: 'PBR', value: '1.3' }, { code: 'marketValue', key: '시가총액', value: '123억 USD' }] });
+      if (String(url).includes('news.google.com')) return new Response('<rss><channel><item><title>Moderna wins approval - Reuters</title><link>https://www.reuters.com/a</link><pubDate>Sat, 03 Oct 2026 20:00:00 GMT</pubDate><source url="https://www.reuters.com">Reuters</source></item></channel></rss>', { headers: { 'content-type': 'application/xml' } });
       if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/FAIL.O/')) return new Response('busy', { status: 503 });
       if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/')) return Response.json(Array.from({ length: 160 }, (_, i) => { const d = new Date(Date.UTC(2026, 3, 1) + i * 86_400_000).toISOString().slice(0, 10).replace(/-/g, ''); const c = 100 + Math.sin(i / 7) * 5 + i * 0.1; return { localDate: d, openPrice: c - 0.5, highPrice: c + 1, lowPrice: c - 1, closePrice: c, accumulatedTradingVolume: 1_000_000 + i }; }));
       if (String(url).startsWith('https://polling.finance.naver.com/api/realtime/worldstock/')) return Response.json({ datas: [{ reutersCode: String(url).split('/').pop(), closePrice: '336.67', compareToPreviousClosePrice: '3.04', fluctuationsRatio: '0.91', marketStatus: 'OPEN', localTradedAt: '2026-10-08T10:00:00-04:00' }] });
@@ -218,6 +223,23 @@ test('a US stock outside the daily set gets its page on demand (G-188), cached, 
   for (let i = 0; i < 20; i += 1) statuses.push((await t.call('GET', `/us/page/T${i}X.O`)).status);
   assert.deepEqual([statuses.indexOf(429), statuses.at(-1)], [16, 429]);
   assert.equal((await t.call('GET', '/us/page/SMCI.O')).status, 200, 'a cached page still opens');
+});
+
+test('a US stock page gets its company information from the API (G-192): SEC filings, financials, news and valuation as panels, cached', async () => {
+  const t = setup();
+  const get = async (path: string) => { const res = await handle(new Request(`https://api.test${path}`, { headers: { Origin: 'https://hanul442.github.io', 'cf-connecting-ip': '203.0.113.9' } }), t.env, t.deps); return { status: res.status, body: await res.json() as Record<string, any> }; };
+  const r = await get('/usinfo/MRNA.O?name=Moderna%2C%20Inc.');
+  assert.equal(r.status, 200, JSON.stringify(r.body).slice(0, 200));
+  assert.match(r.body.news, /Moderna wins approval/, 'English news in the 뉴스·공시 tab');
+  assert.match(r.body.news, /8-K|실적/, 'SEC filings in the same tab');
+  assert.match(r.body.latest, /data-slot="homeNews"/, "the summary's latest lists");
+  assert.ok(typeof r.body.fundamentals === 'string' && typeof r.body.edge === 'string');
+  assert.ok(t.seen.some((u) => u === 'https://www.sec.gov/files/company_tickers.json'), 'no CIK given: looked up once from the ticker map');
+  const subs = t.seen.filter((u) => u.includes('/submissions/')).length;
+  await get('/usinfo/MRNA.O?name=Moderna%2C%20Inc.');
+  assert.equal(t.seen.filter((u) => u.includes('/submissions/')).length, subs, 'second open is served from the cache');
+  assert.equal((await get('/usinfo/ZZZZ.O')).status, 404);
+  assert.equal((await get('/usinfo/005930')).status, 404, 'not a US code: no route');
 });
 
 test('the ops console is served by the API on its own origin, uncached and unframed, and its data stays admin-only', async () => {

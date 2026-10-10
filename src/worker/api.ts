@@ -1,6 +1,13 @@
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
 import { fetchWorldBars, parseWorldQuote, US_CODE, worldQuoteUrl } from '../sources/naverWorld.js';
 import { US_PAGE_BARS, usPage } from '../analysis/usPage.js';
+import type { PriceBar } from '../types.js';
+import { buildUsReport, gatherUsResearch } from '../report/usResearch.js';
+import { cikMap, edgarUserAgent, tickersUrl } from '../sources/edgar.js';
+import { fundamentalsPanel } from '../report/renderMarket.js';
+import { edgeCard, insiderSection } from '../report/renderEdge.js';
+import { latestLists } from '../report/appParts.js';
+import { newsTabBody } from '../report/renderHtml.js';
 import { fetchOkxDeriv, type DerivSnapshot } from '../sources/okxDeriv.js';
 import { UNLOCK, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
@@ -559,23 +566,74 @@ route('GET','/ticks/(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})',async({deps,params,no
 // and rounding the daily run stores in site/u/<code>.json, so us.html draws it the same way. Kept 30 minutes per code.
 const usPages=new Map<string,{at:number;pending:Promise<Record<string,unknown>|null>}>();
 // A fresh build costs a Naver call, so each address may start at most 20 a minute (cached opens are free).
-const usPageStarts=new Map<string,{at:number;n:number}>();
+// Each route has its own budget, so opening one US page (its chart and its company information) costs one start in each.
+const usStarts={page:new Map<string,{at:number;n:number}>(),info:new Map<string,{at:number;n:number}>()};
+const usFreshStart=(req:Request,now:Date,kind:'page'|'info'='page')=>{
+ const starts=usStarts[kind],ip=req.headers.get('cf-connecting-ip')??'-',w=starts.get(ip);
+ if(w&&now.getTime()-w.at<60_000){if(w.n>=20)fail(429,'TOO_MANY','미국 종목을 너무 빠르게 열고 있어요. 1분 뒤 다시 열어 주세요.');w.n++;}
+ else{if(starts.size>=1000)starts.clear();starts.set(ip,{at:now.getTime(),n:1});}
+};
+// The same daily bars feed /us/page and /usinfo: one Naver request per code per 30 minutes; a failure is not kept.
+const usBars=new Map<string,{at:number;pending:Promise<PriceBar[]>}>();
+const barsOf=(code:string,now:Date,f:typeof fetch)=>{
+ const hit=usBars.get(code);if(hit&&now.getTime()-hit.at<30*60_000)return hit.pending;
+ if(usBars.size>=200)usBars.delete(usBars.keys().next().value!);
+ const entry={at:now.getTime(),pending:fetchWorldBars(code,US_PAGE_BARS,{now:()=>now,fetch:f})};
+ entry.pending.catch(()=>{if(usBars.get(code)===entry)usBars.delete(code);});
+ usBars.set(code,entry);return entry.pending;
+};
 route('GET','/us/page/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,deps,params,now})=>{
  const code=params[0]!;if(!US_CODE.test(code))fail(400,'BAD_CODE','미국 종목 코드가 아니에요.');
  let hit=usPages.get(code);
  if(!hit||now.getTime()-hit.at>=30*60_000){
-  const ip=req.headers.get('cf-connecting-ip')??'-',w=usPageStarts.get(ip);
-  if(w&&now.getTime()-w.at<60_000){if(w.n>=20)fail(429,'TOO_MANY','미국 종목을 너무 빠르게 열고 있어요. 1분 뒤 다시 열어 주세요.');w.n++;}
-  else{if(usPageStarts.size>=1000)usPageStarts.clear();usPageStarts.set(ip,{at:now.getTime(),n:1});}
+  usFreshStart(req,now);
   if(usPages.size>=200)usPages.delete(usPages.keys().next().value!);
   // No bars means no such stock: remembered as null for the 30 minutes too. A failed call or calculation is not kept.
-  const entry={at:now.getTime(),pending:fetchWorldBars(code,US_PAGE_BARS,{now:()=>now,fetch:deps.fetch}).then((bars)=>bars.length<2?null:{...usPage(code,bars,now).body,onDemand:true,retrievedAt:iso(now)})};
+  const entry={at:now.getTime(),pending:barsOf(code,now,deps.fetch).then((bars)=>bars.length<2?null:{...usPage(code,bars,now).body,onDemand:true,retrievedAt:iso(now)})};
   entry.pending.catch(()=>{if(usPages.get(code)===entry)usPages.delete(code);});
   usPages.set(code,entry);hit=entry;
  }
  const page=await hit.pending.catch(()=>fail(502,'US_DATA','미국 가격을 가져오지 못했어요. 잠시 후 다시 열어 주세요.'));
  if(!page)fail(404,'US_NOT_FOUND','이 미국 종목의 가격이 없어요. 코드가 맞는지 확인해 주세요.');
  return page;
+});
+// G-192: a US stock's own information for its page (daily set or on demand): Naver's valuation snapshot, SEC
+// XBRL financials, filings and Form 4 insider trades, and English news, built into the same report as a requested
+// US report (minus the AI) and returned as the panels the page fills. Kept 3 hours per code; the SEC ticker→CIK
+// map is read once a day per isolate, so a page without a CIK does not download it each time.
+const usInfos=new Map<string,{at:number;pending:Promise<Record<string,string>|null>}>();
+let cikCache:{at:number;map:Promise<Map<string,number>>}|null=null;
+route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,params,now})=>{
+ const code=params[0]!;if(!US_CODE.test(code))fail(400,'BAD_CODE','미국 종목 코드가 아니에요.');
+ const q=new URL(req.url).searchParams,ticker=code.split('.')[0]!;
+ const nameEng=(q.get('name')??'').replace(/[^A-Za-z0-9 .,&'()/-]/g,'').trim().slice(0,80)||ticker,etf=q.get('kind')==='etf';
+ // The panels depend on the name, CIK and kind the page passes, so they are part of the key (one caller cannot set another's).
+ const given=q.get('cik'),key=[code,given&&/^\d{1,10}$/.test(given)?given:'',etf?'etf':'',nameEng.toLowerCase()].join('|');
+ let hit=usInfos.get(key);
+ if(!hit||now.getTime()-hit.at>=3*3600_000){
+  usFreshStart(req,now,'info');
+  if(usInfos.size>=200)usInfos.delete(usInfos.keys().next().value!);
+  const contact=env.EDGAR_CONTACT;
+  const cikOf=async():Promise<number|null>=>{
+   if(given&&/^\d{1,10}$/.test(given))return Number(given);if(etf)return null;
+   if(!cikCache||now.getTime()-cikCache.at>=24*3600_000){const map=deps.fetch(tickersUrl,{headers:{'User-Agent':edgarUserAgent(contact),Accept:'application/json'}}).then(r=>{if(!r.ok)throw new Error(`SEC_${r.status}`);return r.json();}).then(b=>cikMap(b));cikCache={at:now.getTime(),map};map.catch(()=>{cikCache=null;});}
+   return (await cikCache.map.catch(()=>new Map<string,number>())).get(ticker.replace(/\./g,'-'))??null;
+  };
+  const entry={at:now.getTime(),pending:Promise.all([barsOf(code,now,deps.fetch),cikOf()]).then(async([bars,cik])=>{
+   if(bars.length<2)return null;
+   const research=await gatherUsResearch({symbol:code,ticker,nameEng,cik,fetch:deps.fetch,now:()=>now,...(contact?{contact}:{})});
+   const report=buildUsReport({symbol:code,name:nameEng,nameEng,ticker,...(etf?{kind:'etf' as const}:{}),bars,research,now});
+   return withCurrency('USD',()=>({
+    fundamentals:(report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name,report.recentBars??[]):'')+insiderSection(report),
+    news:newsTabBody(report),latest:latestLists(report),edge:edgeCard(report),
+   }));
+  })};
+  entry.pending.catch(()=>{if(usInfos.get(key)===entry)usInfos.delete(key);});
+  usInfos.set(key,entry);hit=entry;
+ }
+ const info=await hit.pending.catch(()=>fail(502,'US_DATA','미국 종목 정보를 가져오지 못했어요. 잠시 후 다시 열어 주세요.'));
+ if(!info)fail(404,'US_NOT_FOUND','이 미국 종목의 가격이 없어요. 코드가 맞는지 확인해 주세요.');
+ return {symbol:code,...info,retrievedAt:iso(now)};
 });
 // G-118: PER and PBR for a handful of stocks (a theme's members), from Naver's per-stock summary.
 // Kept 6 hours per stock; one that fails is left out rather than failing the rest.

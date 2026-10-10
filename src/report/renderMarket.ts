@@ -408,7 +408,20 @@ html.mo .lv-card:not(.mo-in) .lv-bar i{transform:scaleX(0)}
 .si-target{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.si-target div{display:flex;flex-direction:column;gap:2px}.si-target span{font-size:13px;color:var(--fg2)}.si-target b{font-size:22px;font-variant-numeric:tabular-nums}.si-target small{font-size:13px}
 
 .si-more{border:0;background:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 0}.si-h3{font-size:14px;margin:14px 0 4px}.si-card .research li{margin:6px 0;font-size:13.5px;line-height:1.5}
-dialog.fs-dlg>header{display:flex;align-items:center;gap:6px}dialog.fs-dlg>header h2{font-size:17px;margin:0}dialog.fs-dlg .fs-full{border:0;box-shadow:none;padding:0;margin:0;background:none;backdrop-filter:none}dialog.fs-dlg .ig-fs th[scope=row]{background:var(--page)}
+/* G-193: the 재무제표 window — a sticky title bar with a plain "✕ 닫기" button on the right (not the back chevron other
+   sheets use), the statement tabs pinned under it, tables only, the latest actual column tinted and estimates muted. */
+dialog.fs-dlg,dialog.v2-dialog.fs-dlg[open]{padding:0!important;overflow-y:auto}
+dialog.fs-dlg>header,dialog.v2-dialog.fs-dlg>header{position:sticky;top:0!important;z-index:4;display:flex!important;align-items:center;justify-content:space-between!important;gap:12px!important;margin:0!important;padding:12px 16px!important;background:var(--page);border-bottom:1px solid var(--line)}
+dialog.fs-dlg>header h2{font-size:18px;margin:0;flex:1;min-width:0}
+dialog.fs-dlg>header>.dialog-x,dialog.v2-dialog.fs-dlg>header>.dialog-x{order:2!important;flex:none;display:inline-flex!important;align-items:center;gap:6px;width:auto!important;height:38px!important;margin:0!important;padding:0 14px 0 12px!important;border:1px solid var(--line-strong)!important;border-radius:999px!important;background:var(--soft)!important;color:var(--fg)!important;font:inherit;font-size:14px!important;font-weight:700;cursor:pointer}
+dialog.fs-dlg>header>.dialog-x::before,dialog.v2-dialog.fs-dlg>header>.dialog-x::before{content:"✕"!important;font-size:13px!important;line-height:1!important;font-weight:800!important;margin:0!important}
+dialog.fs-dlg>header>.dialog-x:hover{background:var(--line)!important}dialog.fs-dlg>header>.dialog-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+dialog.fs-dlg .fs-full{border:0;box-shadow:none;padding:12px 16px 28px;margin:0;background:none;backdrop-filter:none}
+dialog.fs-dlg .fs-full>.ig-seg{position:sticky;top:63px;z-index:3;display:flex;width:100%;margin:0 0 12px;background:var(--surface-solid);box-shadow:0 0 0 8px var(--page),0 10px 14px -8px rgba(0,0,0,.6)}dialog.fs-dlg .fs-full>.ig-seg>button{flex:1}
+dialog.fs-dlg .ig-fs table{font-size:13.5px;min-width:100%!important;width:max-content}dialog.fs-dlg .ig-fs th,dialog.fs-dlg .ig-fs td{padding:9px 8px}dialog.fs-dlg .ig-fs th[scope=row]{max-width:118px;white-space:normal!important;word-break:keep-all}dialog.fs-dlg .ig-fs thead th{font-size:12.5px;color:var(--fg2);white-space:nowrap;border-bottom:1px solid var(--line-strong)}
+dialog.fs-dlg .ig-fs th[scope=row]{background:var(--page);box-shadow:6px 0 8px -6px rgba(0,0,0,.45)}dialog.fs-dlg .ig-fs tbody tr:nth-child(even) td,dialog.fs-dlg .ig-fs tbody tr:nth-child(even) th[scope=row]{background:color-mix(in srgb,var(--page) 92%,var(--fg) 8%)}
+dialog.fs-dlg .ig-fs .cur{background:var(--accent-soft)!important;font-weight:800}dialog.fs-dlg .ig-fs thead .cur{color:var(--accent-strong)}dialog.fs-dlg .ig-fs .est{color:var(--muted)}dialog.fs-dlg .ig-fs thead th small{display:block;font-size:10.5px;font-weight:600}
+dialog.fs-dlg::backdrop{background:rgba(3,8,16,.72);backdrop-filter:blur(4px)}dialog.fs-dlg .ig-all>summary{cursor:pointer;font-size:13.5px;font-weight:800;color:var(--accent-strong);padding:10px 0}
 @media (min-width:821px){dialog.v2-dialog.fs-dlg[open]{width:min(920px,calc(100% - 48px))!important}}
 @media (max-width:820px){.si-wrap{columns:1}}`;
 
