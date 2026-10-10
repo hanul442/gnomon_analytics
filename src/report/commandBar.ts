@@ -132,3 +132,40 @@ export const COMMAND_BAR_JS = `
   if (reduced.addEventListener) { reduced.addEventListener('change', measure); precise.addEventListener('change', measure); }
   measure();
 })();`;
+
+/**
+ * G-185: the report's own tabs (요약·타이밍·기업 체력·AI 위원회·뉴스·공시) sit in the same floating glass pill as the
+ * phone's bottom bar, and the white pill slides from tab to tab on a spring instead of jumping.
+ */
+export const REPORT_TABS_CSS = `
+.topbar>.chips:not(.analysis-tabs){position:relative;width:max-content;max-width:calc(100% - 24px);margin:2px auto 10px;padding:5px;gap:2px;
+  border:1px solid rgba(255,255,255,.07);border-radius:999px;background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92));
+  box-shadow:0 14px 32px -16px rgba(0,0,0,.7),inset 0 1px rgba(255,255,255,.05);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);overflow-x:auto;scrollbar-width:none}
+.topbar>.chips:not(.analysis-tabs)::-webkit-scrollbar{display:none}
+.topbar>.chips:not(.analysis-tabs) a{position:relative;z-index:1;display:inline-flex;align-items:center;height:38px;min-height:0;padding:0 15px;border:0;border-radius:999px;background:transparent;color:#9AA8B8;font-size:14px;font-weight:700;white-space:nowrap;
+  transition:color .25s,transform .32s cubic-bezier(.34,1.56,.64,1)}
+.topbar>.chips:not(.analysis-tabs) a:hover{background:transparent;color:#F4F7FA}
+.topbar>.chips:not(.analysis-tabs) a[aria-selected=true]{color:#0A1626;background:transparent}
+.topbar>.chips:not(.has-ind) a[aria-selected=true]{background:linear-gradient(180deg,#ffffff,#dfe6f0)}
+.topbar>.chips:not(.analysis-tabs) a:active{transform:scale(.92);transition-duration:.08s}
+.topbar>.chips:not(.analysis-tabs) a:focus-visible{outline:2px solid #00A6FB;outline-offset:-2px}
+.chips-ind{position:absolute;z-index:0;top:5px;bottom:5px;left:0;width:0;border-radius:999px;pointer-events:none;background:linear-gradient(180deg,#ffffff,#dfe6f0);
+  box-shadow:0 10px 22px -12px rgba(0,166,251,.75),inset 0 -1px rgba(0,0,0,.14);transition:transform .46s cubic-bezier(.34,1.32,.64,1),width .46s cubic-bezier(.34,1.32,.64,1)}
+@media (max-width:820px){.topbar>.chips:not(.analysis-tabs){margin:0 auto 8px}.topbar>.chips:not(.analysis-tabs) a{height:36px;padding:0 11px;font-size:13.5px}}
+@media (max-width:360px){.topbar>.chips:not(.analysis-tabs) a{padding:0 9px;font-size:13px}}
+@media (prefers-reduced-motion:reduce){.chips-ind{transition:none}.topbar>.chips:not(.analysis-tabs) a{transition:none}}`;
+
+export const REPORT_TABS_JS = `
+(function () {
+  var bar = document.querySelector('.topbar>.chips:not(.analysis-tabs)'); if (!bar) return;
+  var ind = document.createElement('i'); ind.className = 'chips-ind'; ind.setAttribute('aria-hidden', 'true'); bar.insertBefore(ind, bar.firstChild); bar.classList.add('has-ind');
+  var place = function () {
+    var on = bar.querySelector('a[aria-selected=true]'); if (!on || !on.offsetWidth) { ind.style.width = '0'; return; }
+    ind.style.width = on.offsetWidth + 'px'; ind.style.transform = 'translateX(' + on.offsetLeft + 'px)';
+    var l = on.offsetLeft - 12, r = on.offsetLeft + on.offsetWidth + 12;
+    if (l < bar.scrollLeft) bar.scrollTo({ left: l, behavior: 'smooth' }); else if (r > bar.scrollLeft + bar.clientWidth) bar.scrollTo({ left: r - bar.clientWidth, behavior: 'smooth' });
+  };
+  ind.style.transition = 'none'; place(); void ind.offsetWidth; ind.style.transition = '';
+  if (window.MutationObserver) new MutationObserver(place).observe(bar, { subtree: true, attributes: true, attributeFilter: ['aria-selected', 'hidden'] });
+  window.addEventListener('resize', place); if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+})();`;

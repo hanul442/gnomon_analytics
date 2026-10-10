@@ -12,6 +12,7 @@ import {chromium} from 'playwright';
 import {parseOkxDeriv} from '../dist/sources/okxDeriv.js';
 const OKX_PARTS=JSON.parse(await readFile(new URL('../test/fixtures/okx.json',import.meta.url),'utf8'));
 import {renderSite} from '../dist/cli/daily.js';
+import {renderOps} from '../dist/report/renderAlpha.js';
 import {loadTickers} from '../dist/config/tickers.js';
 import {quickCalc} from '../dist/analysis/quickCalc.js';
 import {scenarioPanel,SCENARIO_CSS,SCENARIO_JS} from '../dist/report/scenarioChart.js';
@@ -53,13 +54,14 @@ const marketClaim={text:'공개 시장 요약',kind:'FACT',refs:['M1']};
 const marketFixture={schema:'curia.market-report.v2',date:'2026-10-07',from:'2026-10-07',generatedAt:'2026-10-07T09:30:00Z',period:'daily',groups:[],ai:{status:'OK',summary:marketClaim,council:{summary:marketClaim,desks:[{name:'코스피',view:'중립',claims:[{...marketClaim,text:'유료 시장 담당자 근거'}]}],consensus:[],disagreements:[],scenarios:[],redTeam:[],watch:[],dataGaps:[]}}};
 marketFixture.groups=['코스피','코스닥','코인','ETF'].map((name,i)=>({id:'M'+(i+1),name,source:'검증 시장 데이터',universe:10,assets:[],snapshotDate:'2026-10-07',breadth:{up:3,down:6,flat:1},temperature:{date:'2026-10-07',counted:10,buckets:{STRONG_BULLISH:1,BULLISH:2,SLIGHTLY_BULLISH:1,NEUTRAL:1,SLIGHTLY_BEARISH:1,BEARISH:3,STRONG_BEARISH:1,WITHHELD:0},bull:4,neutral:1,bear:5,up20:.3}}));
 marketFixture.ai.council.experts=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'].map(speaker=>({speaker,stance:'NEUTRAL',claim:{...marketClaim,text:'유료 시장 담당자 근거'}}));marketFixture.ai.council.debate=[...marketFixture.ai.council.experts.map(e=>e.speaker),'RED_TEAM'].map((speaker,i)=>({speaker,stance:'NEUTRAL',replyTo:i===0||i===11?-1:i-1,claim:{...marketClaim,text:'유료 시장 담당자 근거'}}));
-await writeFile(root+'/site/market-fixture.html',renderMarketReport(marketFixture));let marketPlan='alpha';
+await writeFile(root+'/site/market-fixture.html',renderMarketReport(marketFixture));await writeFile(root+'/site/ops-preview.html',renderOps({api:origin,site:origin}));let marketPlan='alpha';
 const api=async(path,req,res)=>{
  res.setHeader('Content-Type','application/json');
  if(path==='/api/quote'){const u=new URL(req.url,origin).searchParams.get('u');return res.end(JSON.stringify({quotes:u&&u.includes('AAPL.O')?[{symbol:'AAPL.O',price:340.5,change:3.83,changePct:1.14,open:true,at:'2026-10-08T12:47:25.000Z',session:'pre'}]:[]}));}
  if(path==='/api/deriv')return res.end(JSON.stringify({deriv:parseOkxDeriv('BTC',OKX_PARTS,new Date('2026-10-08T12:47:47Z'))}));
  if(path==='/api/deep/MARKET-DAILY/2026-10-07')return res.end(JSON.stringify(marketPlan==='free'?{error:'PLAN_REQUIRED',message:'플러스부터 열 수 있어요'}:{html:renderMarketDeep(marketFixture)}));
  if(path==='/api/admin/overview')return res.end(JSON.stringify({users:[],creditRequests:[],actions:[{id:'fixture-action',created_at:'2026-10-06T08:00:00Z',email:'long-mobile-test@example.test',kind:'report',symbol:'005500',detail:'모바일에서 확인할 리포트 요청 내용',credits:100,status:'pending'}],invites:[],pulses:[],feedback:[],questions:[],events:[],spend:{today:0,month:0,dailyCap:5}}));
+ if(path==='/api/me'&&req.headers.authorization==='Bearer ops-fixture')return res.end(JSON.stringify({user:{email:'ops@example.test',admin:true}}));
  if(path==='/api/me')return res.end(JSON.stringify({user:{email:'fixture@example.test',rankAs:marketPlan==='alpha'?'pro':marketPlan,plan:marketPlan,planName:marketPlan==='alpha'?'알파':marketPlan},credits:{balance:400},costs:CREDIT_COST,survey:{onboarding:true,pulseDue:false}}));
  if(path==='/api/experts'){if(req.method==='POST'){let body='';for await(const x of req)body+=x;const expert={...JSON.parse(body),id:'00000000-0000-4000-8000-000000000001'};customExperts.push(expert);return res.end(JSON.stringify({expert}));}return res.end(JSON.stringify({items:customExperts}));}
  if(path==='/api/screens'){if(req.method==='POST'){let b='';for await(const x of req)b+=x;const body=JSON.parse(b);if(body.name==='실패테스트')return res.end(JSON.stringify({error:'TEST_FAILED',message:'저장에 실패했어요.'}));savedScreens.push({...body,id:savedScreens.length+1});return res.end(JSON.stringify({id:savedScreens.length}));}return res.end(JSON.stringify({screens:savedScreens}));}
@@ -97,7 +99,8 @@ try{
  await page.locator('#debate textarea[name=q]').fill('약세 반론은?');await page.locator('#debate [type=submit]').click();await page.locator('#debate .db-answer').last().waitFor();assert.ok((await page.locator('#debate .db-answer').innerText()).includes('테스트 답변'));
 
  for(const width of [375,390,768,1280]){console.log('Checking viewport',width);
-  await page.setViewportSize({width,height:850});await page.goto(origin+'/stock.html?c=999999');
+  // The first-visit tour has its own check below; here it would cover the controls under test.
+  await page.setViewportSize({width,height:850});await page.evaluate(()=>{try{localStorage.setItem('gnm-tour-done','1');}catch(e){}}).catch(()=>{});await page.goto(origin+'/stock.html?c=999999');
   await page.locator('h1').filter({hasText:'UI 테스트'}).waitFor();await page.locator('#main[aria-busy]').waitFor({state:'detached'});await page.waitForFunction(()=>document.documentElement.dataset.reportJob==='done');if(width===390){await page.locator('#tab-ai [data-stale-ai] .gen-btn[data-create-report]').waitFor({state:'attached'});}assert.equal(await page.locator('#tab-ai [data-generated=ai]').count(),1);assert.doesNotMatch(await page.locator('#tab-ai').innerText(),/아직 위원회 리포트가 없어요/);
   assert.equal(await page.locator('[role=tab][aria-controls]:visible').count(),5,'chart is not a tab (G-139)');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
@@ -180,7 +183,8 @@ try{
  await page.goto(origin+'/screener.html#us');await page.locator('#sc-body a[href^="us.html?s=AAPL.O"]').waitFor();assert.match(await page.locator('#sc-body tr').first().innerText(),/\$\d/);
  await page.goto(origin+'/index.html');await page.locator('#q, input[type=search]').first().fill('AAPL');await page.locator('a.sr-go[href^="us.html?s=AAPL.O"]').waitFor();
  for(const width of [375,390,768,1280]){
-  await page.setViewportSize({width,height:850});await page.goto(origin+'/admin.html');await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();
+  // G-185: the ops console is its own page (the API serves it at /ops); here it signs in with a fixture admin session.
+  await page.setViewportSize({width,height:850});await page.goto(origin+'/ops-preview.html');await page.evaluate(()=>localStorage.setItem('gnm-ops-session','ops-fixture'));await page.reload();await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   for(const selector of ['td[data-label="사용자"]','td[data-label="내용"]','[data-act=fixture-action] button[data-s=done]','[data-act=fixture-action] button[data-s=rejected]']){const box=await page.locator(selector).boundingBox();assert.ok(box&&box.x>=0&&box.x+box.width<=width,'admin field clipped: '+selector);}
   await page.screenshot({path:`test-artifacts/admin-${width}.png`});
@@ -249,12 +253,12 @@ try{
   await page.evaluate(()=>{const t=document.querySelector('[aria-controls=tab-home]');if(t)t.click();});
   const xs=await page.$$eval('#tab-home .cl-row .cl-what',x=>x.map(e=>Math.round(e.getBoundingClientRect().left)));if(xs.length>1)assert.equal(new Set(xs).size,1,'scenario titles aligned: '+xs.join(','));
   const cl=page.locator('#tab-home .cl-card').first();if(await cl.count())await cl.screenshot({path:'test-artifacts/scenario-rows-'+width+'.png'});
-  // The generation progress: content-sized on desktop, full screen on a phone; the fun line is the status.
+  // G-185: the generation progress lives on the report button itself (no popup): stage n/4 and the time left.
   await page.evaluate(()=>{const G=window.GNM;G.call=function(){return new Promise(function(){});};G.showReport('ui-progress',true);});
-  await page.locator('dialog.rj[open] .rj-status').waitFor();const box=await page.locator('dialog.rj[open]').boundingBox();
-  if(width>800)assert.ok(box.height<700,'progress dialog fits its content: '+box.height);else assert.ok(box.height>=840);
-  assert.equal(await page.locator('dialog.rj[open] [data-fun]').count(),1);await page.waitForTimeout(1200);
-  await page.screenshot({path:'test-artifacts/job-progress-'+width+'.png'});await page.evaluate(()=>document.querySelector('dialog.rj[open]').close());
+  const run=page.locator('[data-job=running]').first();await run.waitFor({state:'attached'});
+  assert.match(await run.locator('.job-main').textContent(),/\d\/4/);assert.match(await run.locator('.job-sub').textContent(),/남음|지남/);
+  assert.equal(await page.locator('dialog.rj').count(),0,'no progress popup (G-185)');await page.waitForTimeout(1200);
+  await page.screenshot({path:'test-artifacts/job-progress-'+width+'.png'});
  }
  // G-134: 공시 레이더 sorts and filters.
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/signals.html');await page.locator('#sg-list .sg-item').first().waitFor();

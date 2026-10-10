@@ -324,10 +324,12 @@ export const LIVE_JS = `
         // The time of the last trade, so the reader sees how fresh the number is (G-128).
         var hm = q.at ? String(q.at).replace(/^.*T(\\d\\d:\\d\\d(:\\d\\d)?).*$/, '$1') : '';
         if (f === 'tag') { el.hidden = false; el.textContent = q.open ? (q.session === 'pre' ? (isUs(sym) ? '● 프리마켓' : '● NXT 프리마켓') : q.session === 'after' ? (isUs(sym) ? '● 애프터마켓' : '● NXT 애프터마켓') : '● 실시간') + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); return; }
-        if (f === 'price') el.textContent = won(q.price, sym);
-        else if (f === 'pct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
-        else if (f === 'arrowpct') el.textContent = (q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct);
-        else if (f === 'full') el.textContent = (q.change > 0 ? '▲' : q.change < 0 ? '▼' : '') + ' ' + Math.abs(q.change).toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + ' (' + sg(q.changePct) + ')';
+        // G-185: numbers on screen roll to the new value (up or down with the tick); off screen they are just set.
+        var dir = prev ? (q.price > prev.price ? 1 : q.price < prev.price ? -1 : 0) : 1, put = function (t) { var r = el.getBoundingClientRect(); if (window.gnmRoll && r.bottom > 0 && r.top < innerHeight && r.width) gnmRoll(el, t, dir || 1); else { el.textContent = t; el.setAttribute('data-rv', t); } };
+        if (f === 'price') put(won(q.price, sym));
+        else if (f === 'pct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
+        else if (f === 'arrowpct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
+        else if (f === 'full') put((q.change > 0 ? '▲' : q.change < 0 ? '▼' : '') + ' ' + Math.abs(q.change).toLocaleString('ko-KR', { maximumFractionDigits: 4 }) + ' (' + sg(q.changePct) + ')');
         if (f !== 'price') { el.classList.remove('up', 'down'); if (t) el.classList.add(t); }
         if (prev && prev.price !== q.price) { el.classList.remove('live-up', 'live-down'); void el.offsetWidth; el.classList.add(q.price > prev.price ? 'live-up' : 'live-down'); }
       });

@@ -260,8 +260,9 @@ export function renderAccount(): string {
   return shell('', '내 계정 · 그노몬', body, { scripts: script, active: 'account', noFeedback: true });
 }
 
-export function renderAdmin(): string {
-  const body = `${PAGE_CSS}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>운영</span></div><h1>알파 운영</h1><p class="hero-line" id="adm-line">불러오는 중이에요…</p></div></section>${NO_API}
+/** The ops console (G-185): body and script, served only by the API Worker at /ops (renderOps below), never by the user site. */
+function adminParts(): { body: string; script: string } {
+  const body = `${PAGE_CSS}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>운영</span></div><h1>알파 운영</h1><p class="hero-line" id="adm-line">불러오는 중이에요…</p></div></section>
 <div class="adm-tabs" role="group" aria-label="운영 메뉴">${[['sum', '요약'], ['credit', '크레딧 요청'], ['action', '리포트 요청'], ['users', '사용자'], ['invites', '초대 코드'], ['voice', '설문·피드백'], ['asks', 'AI 질문'], ['usage', '사용 현황']].map(([k, l], i) => `<button type="button" data-tab="${k}" aria-pressed="${i === 0}">${l}<span data-count="${k}"></span></button>`).join('')}</div>
 <div class="card adm" id="adm"></div>`;
   const script = `<script>
@@ -309,7 +310,7 @@ export function renderAdmin(): string {
       return '<form class="inline" id="inv-new"><label>코드 <input name="code" placeholder="비우면 자동" style="width:130px"></label><label>인원 <input name="maxUses" type="number" min="1" max="500" value="1" style="width:70px"></label><label>가입 크레딧 <input name="credits" type="number" min="0" max="1000" value="0" style="width:80px"></label><label>만료 <input name="expiresAt" type="date"></label><label>메모 <input name="note" placeholder="예: 투자 동호회"></label><button>만들기</button></form>' +
         '<form class="inline" id="link-new" style="margin-top:10px"><label>로그인 링크 직접 발급 <input name="email" type="email" placeholder="이메일" required></label><label>초대 코드(신규만) <input name="invite" style="width:130px"></label><button>발급</button><span id="link-out" class="muted small"></span></form>' +
         '<div style="margin-top:12px">' + table(['코드', '메모', '사용', '가입 크레딧', '만료', '공유 링크', ''], D.invites.map(function (i) {
-          var url = location.href.replace(/admin\\.html.*$/, 'login.html?invite=' + encodeURIComponent(i.code));
+          var url = String(window.GNM_SITE || '').replace(/\\/$/, '') + '/login.html?invite=' + encodeURIComponent(i.code);
           return '<tr><td><b>' + esc(i.code) + '</b></td><td>' + esc(i.note) + '</td><td class="num">' + i.uses + ' / ' + i.max_uses + '</td><td class="num">' + i.credits + '</td><td>' + (i.expires_at ? when(i.expires_at) : '—') + '</td><td><button type="button" data-copy="' + esc(url) + '">링크 복사</button></td><td>' + (i.uses < i.max_uses ? '<button type="button" data-close="' + esc(i.code) + '">마감</button>' : '<span class="muted">마감</span>') + '</td></tr>';
         })) + '</div>';
     },
@@ -355,13 +356,84 @@ export function renderAdmin(): string {
   document.querySelectorAll('[data-tab]').forEach(function (b) { b.addEventListener('click', function () { tab = b.dataset.tab; document.querySelectorAll('[data-tab]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); draw(); }); });
   var load = function () {
     GNM.call('GET', '/admin/overview').then(function (r) {
-      if (r.error) { document.getElementById('adm-line').textContent = r.message; if (r._status === 401) location.replace('login.html?return=admin.html'); return; }
+      if (r.error) { document.getElementById('adm-line').textContent = r.message; if (r._status === 401 && window.opsSignIn) opsSignIn(); return; }
       D = r; document.getElementById('adm-line').textContent = '가입 ' + r.users.length + '명 · 오늘 AI ' + usd(r.spend.today) + ' (하루 한도 ' + usd(r.spend.dailyCap) + ')'; draw();
     });
   };
   load();
 })();
 </script>`;
-  return shell('', '운영 · 그노몬', body, { scripts: script, chat: false, noFeedback: true });
+  return { body, script };
 }
 
+
+
+/**
+ * G-185: the ops site, apart from the user site. The API Worker serves it at /ops on its own origin, so it has its own
+ * sign-in (an admin's email and password), its own session key, and nothing of it ships with the public pages.
+ * `api` is the API origin; `site` is the user site, for the invite links the console hands out.
+ */
+export function renderOps(opts: { api: string; site: string }): string {
+  const { body, script } = adminParts();
+  const js = (v: string) => JSON.stringify(v).replace(/</g, '\\u003c');
+  return `<!doctype html><html lang="ko" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0A1626"><title>GNOMON 운영</title>
+<style>
+:root{--page:#0A1626;--surface:rgba(255,255,255,.045);--surface-solid:#13223A;--soft:rgba(255,255,255,.06);--line:rgba(255,255,255,.09);--line-strong:rgba(255,255,255,.18);--fg:#F4F7FA;--fg2:#C3CDD6;--muted:#8593A1;--accent:#00A6FB;--accent-strong:#3DB9FF;--accent-soft:rgba(0,166,251,.14);--navy:#00A6FB;--up:#FF7A7A;--down:#5CBBFF;--up-soft:rgba(255,122,122,.16);--up-strong:#FF9B9B;--good-soft:rgba(134,227,181,.16);--good-strong:#86E3B5;--warn-soft:rgba(242,193,78,.16);--warn:#F2C14E;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}body{min-height:100vh;background:var(--page);background-image:radial-gradient(1100px 700px at 20% -20%,rgba(0,100,148,.45),transparent 60%),radial-gradient(900px 600px at 110% 30%,rgba(0,53,84,.6),transparent 60%);background-attachment:fixed;color:var(--fg);font:15px/1.6 "Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased;word-break:keep-all}
+.ops-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:rgba(6,16,28,.82);border-bottom:1px solid var(--line);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.ops-top b{letter-spacing:.2em;font-weight:700}.ops-top small{color:var(--muted);margin-left:10px;letter-spacing:0}
+.ops-top button,.ops-login button{border:0;border-radius:999px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer;background:#fff;color:#0A1626}
+.ops-top button.ghost{background:transparent;color:var(--fg2);border:1px solid var(--line-strong)}
+main{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.card{background:linear-gradient(165deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:inset 0 1px rgba(255,255,255,.06);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px)}
+.hero h1{margin:4px 0;font-size:26px}.eyebrow{color:var(--accent);font-size:13px;font-weight:700}.hero-line,.muted{color:var(--muted)}small{font-size:12px}
+a{color:var(--accent-strong)}input,select,textarea,button{color:inherit}input,select{background:var(--soft)}
+.ops-login{max-width:400px;margin:12vh auto 0}.ops-login h1{margin:0 0 4px;font-size:24px}.ops-login label{display:flex;flex-direction:column;gap:6px;margin-top:14px;font-size:13px;color:var(--fg2)}
+.ops-login input{border:1px solid var(--line-strong);border-radius:12px;padding:12px;font:inherit;font-size:15px;background:var(--soft)}.ops-login button{width:100%;margin-top:18px;padding:13px}
+.ops-err{color:var(--up-strong);font-size:13px;min-height:1.4em;margin:10px 0 0}
+.ops-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--surface-solid);border:1px solid var(--line-strong);border-radius:999px;padding:10px 18px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+[hidden]{display:none!important}
+</style>
+</head><body>
+<header class="ops-top"><div><b>GNOMON</b><small>운영</small></div><div><span class="muted" id="ops-who"></span> <button type="button" class="ghost" id="ops-out" hidden>로그아웃</button></div></header>
+<section class="card ops-login" id="ops-login" hidden><div class="eyebrow">운영자 전용</div><h1>운영 화면 로그인</h1><p class="muted">사용자 사이트와 따로 로그인해요. 운영자 계정만 들어올 수 있어요.</p>
+<form id="ops-form"><label>이메일<input name="email" type="email" autocomplete="username" required></label><label>비밀번호<input name="password" type="password" autocomplete="current-password" required></label><p class="ops-err" id="ops-err" role="alert"></p><button type="submit">로그인</button></form></section>
+<main id="ops-main" hidden>${body}</main>
+<script>
+(function () {
+  var API = ${js(opts.api)}, KEY = 'gnm-ops-session';
+  window.GNM_SITE = ${js(opts.site)};
+  var get = function () { try { return localStorage.getItem(KEY); } catch (e) { return null; } }, put = function (v) { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {} };
+  var toastEl = null;
+  window.GNM = {
+    api: API,
+    toast: function (m) { if (toastEl) toastEl.remove(); toastEl = document.createElement('div'); toastEl.className = 'ops-toast'; toastEl.setAttribute('role', 'status'); toastEl.textContent = m; document.body.appendChild(toastEl); var el = toastEl; setTimeout(function () { el.remove(); }, 3200); },
+    call: function (method, path, body) {
+      var h = { 'Content-Type': 'application/json' }, t = get(); if (t) h.Authorization = 'Bearer ' + t;
+      return fetch(API + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j._status = r.status; return j; }); }).catch(function () { return { error: 'NETWORK', message: '연결을 확인한 뒤 다시 해 주세요.' }; });
+    }
+  };
+  var started = false;
+  window.opsSignIn = function () { put(null); document.getElementById('ops-main').hidden = true; document.getElementById('ops-out').hidden = true; document.getElementById('ops-who').textContent = ''; document.getElementById('ops-login').hidden = false; };
+  var open = function (me) {
+    document.getElementById('ops-login').hidden = true; document.getElementById('ops-main').hidden = false; document.getElementById('ops-out').hidden = false;
+    document.getElementById('ops-who').textContent = me.user.email;
+    if (!started) { started = true; window.__opsConsole(); }
+  };
+  document.getElementById('ops-form').addEventListener('submit', function (e) {
+    e.preventDefault(); var f = e.target, err = document.getElementById('ops-err'); err.textContent = '';
+    GNM.call('POST', '/auth/login', { email: f.email.value, password: f.password.value }).then(function (r) {
+      if (r.error || !r.session) { err.textContent = r.message || '로그인하지 못했어요.'; return; }
+      if (!r.user || !r.user.admin) { put(r.session); GNM.call('POST', '/auth/logout', {}); put(null); err.textContent = '운영자 계정이 아니에요.'; return; }
+      put(r.session); f.password.value = ''; open(r);
+    });
+  });
+  document.getElementById('ops-out').addEventListener('click', function () { GNM.call('POST', '/auth/logout', {}).then(function () { window.opsSignIn(); }); });
+  window.__opsConsole = function () {
+${script.replace(/^<script>\n?/, '').replace(/<\/script>\s*$/, '')}
+  };
+  if (!get()) { window.opsSignIn(); return; }
+  GNM.call('GET', '/me').then(function (m) { if (m.user && m.user.admin) open(m); else window.opsSignIn(); });
+})();
+</script></body></html>`;
+}
