@@ -1,5 +1,5 @@
 {
- "at": "2026-10-09T19:16:47.952Z",
+ "at": "2026-10-10T00:11:45.316Z",
  "selected": null,
  "universe": [
   {
@@ -25,8 +25,7 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 293,
-   "error": "1 failed "
+   "count": 294
   },
   {
    "source": "naver:world:day:all",
@@ -61,12 +60,12 @@
    "failedSources": []
   },
   {
-   "symbol": "066570",
+   "symbol": "373220",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
-   "symbol": "034020",
+   "symbol": "066570",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -86,7 +85,7 @@
    "failedSources": []
   },
   {
-   "symbol": "009540",
+   "symbol": "196170",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -101,12 +100,22 @@
    "failedSources": []
   },
   {
+   "symbol": "267250",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
    "symbol": "042660",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "012450",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "096770",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -131,32 +140,17 @@
    "failedSources": []
   },
   {
-   "symbol": "353200",
+   "symbol": "069540",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
-   "symbol": "005380",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "207940",
+   "symbol": "267270",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "082740",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "058470",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
-   "symbol": "028260",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -171,7 +165,7 @@
    "failedSources": []
   },
   {
-   "symbol": "051910",
+   "symbol": "222800",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -181,7 +175,7 @@
    "failedSources": []
   },
   {
-   "symbol": "007660",
+   "symbol": "267260",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -201,11 +195,6 @@
    "failedSources": []
   },
   {
-   "symbol": "003490",
-   "report": "NOT_SETTLED",
-   "failedSources": []
-  },
-  {
    "symbol": "439090",
    "report": "NOT_SETTLED",
    "failedSources": []
@@ -221,7 +210,12 @@
    "failedSources": []
   },
   {
-   "symbol": "403870",
+   "symbol": "327260",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "490470",
    "report": "NOT_SETTLED",
    "failedSources": []
   },
@@ -253,11 +247,11 @@
  ],
  "failed": [
   {
-   "symbol": "373220",
+   "symbol": "034020",
    "error": "fetch failed"
   },
   {
-   "symbol": "196170",
+   "symbol": "009540",
    "error": "fetch failed"
   },
   {
@@ -265,35 +259,39 @@
    "error": "fetch failed"
   },
   {
-   "symbol": "267250",
+   "symbol": "353200",
    "error": "fetch failed"
   },
   {
-   "symbol": "096770",
+   "symbol": "005380",
    "error": "fetch failed"
   },
   {
-   "symbol": "069540",
+   "symbol": "207940",
    "error": "fetch failed"
   },
   {
-   "symbol": "267270",
+   "symbol": "058470",
    "error": "fetch failed"
   },
   {
-   "symbol": "222800",
+   "symbol": "028260",
    "error": "fetch failed"
   },
   {
-   "symbol": "267260",
+   "symbol": "051910",
    "error": "fetch failed"
   },
   {
-   "symbol": "327260",
+   "symbol": "007660",
    "error": "fetch failed"
   },
   {
-   "symbol": "490470",
+   "symbol": "003490",
+   "error": "fetch failed"
+  },
+  {
+   "symbol": "403870",
    "error": "fetch failed"
   }
  ]
