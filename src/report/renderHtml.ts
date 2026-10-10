@@ -3,7 +3,6 @@ import { MODERN_SWITCH_CSS, MODERN_SWITCH_JS } from './modernSwitch.js';
 import { GEN_BUTTON_CSS, GEN_BUTTON_JS, genButton } from './generateButton.js';
 import { ROLL_CSS, ROLL_JS } from './rollNumber.js';
 import { LIQUID_CSS, LIQUID_JS } from './liquidButton.js';
-import { THINKING_CSS, THINKING_JS } from './thinkingButton.js';
 import { GLASS_CSS, GLASS_JS } from './glass.js';
 import { MOTION_TOKENS_CSS } from './motionTokens.js';
 import { GLOW_CTA_CSS } from './glowCta.js';
@@ -1044,7 +1043,7 @@ html.chart-fs #tab-chart::after,.db-room:not([hidden])::after{content:"";positio
 @media(max-width:820px){.moms{grid-template-columns:repeat(2,minmax(0,1fr))}.momentum-axis{font-size:10px;gap:0}.market-scenarios{grid-template-columns:minmax(0,1fr)}.market-thermals{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 0 8px;scrollbar-width:none}.market-thermals::-webkit-scrollbar{display:none}.market-thermals>*{flex:0 0 84%;scroll-snap-align:start}.topbar.scrolled .gnomon-mark{width:28px;height:28px}.topbar.scrolled .price-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 7px;font-size:12px;overflow:visible;line-height:1.5}.price-bar>b{overflow:hidden;text-overflow:ellipsis;grid-column:1;grid-row:1/3}.price-bar .pb-price{grid-column:2;grid-row:1;white-space:nowrap}.price-bar [data-live-f=arrowpct]{grid-column:2;grid-row:2;text-align:right;white-space:nowrap}.price-bar .pb-code,.price-bar .freshness-badge{display:none}.topbar-in{gap:8px}.top-links,.topbar-in>.menu-button{flex:none}.chips button{padding:6px 12px;font-size:13px}.analysis-tabs{padding-top:0}.chips{gap:4px}}
 ${FS_CSS}${THEME_CSS}
 /* G-183: command bar, switch, generate button, and glow CTA are ported from ThreeUI Community (github.com/MengTo/threeui), MIT License, Copyright (c) 2026 Meng To. See docs/third-party/threeui-LICENSE.txt. */
-${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${ROLL_CSS}${LIQUID_CSS}${THINKING_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}
+${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}
 .page-load{position:fixed;inset:0;z-index:400;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center;background:var(--page);background-image:var(--page-grad);transition:opacity .35s ease,visibility .35s}.page-load.out{opacity:0;visibility:hidden}.page-load canvas{width:72px;height:72px}.page-load b{font-size:15px;color:var(--fg2);font-weight:700}.pl-track{position:relative;display:block;width:160px;height:3px;border-radius:3px;background:var(--line);overflow:hidden}.pl-track i{position:absolute;inset:0 auto 0 0;width:40%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:pl-run 1.1s ease-in-out infinite}@keyframes pl-run{from{transform:translateX(-100%)}to{transform:translateX(260%)}}@media (prefers-reduced-motion:reduce){.pl-track i{animation-duration:3s}}html.embed .page-load{display:none}${MODERN_SWITCH_CSS}${GEN_BUTTON_CSS}${GLOW_CTA_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 // G-169: the loading layer, the version banner and the ad strip used to be inlined in every page (about 19 KB each,
@@ -1052,7 +1051,7 @@ ${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${ROLL_CSS}${LIQUID_CSS}${THINKING_CSS}${GLA
 // "use strict" from becoming a directive for the whole file.
 export const APP_JS = `;${LOADING_JS};\n${VERSION_JS};\n${AD_JS};\n${stripTag(ACCOUNT_SCRIPT)};\n${stripTag(ALPHA_SCRIPT)};\n${FORMAT_JS}`;
 /** After the page's scripts: the chat (no-op without its markup) and the shared UI layer. */
-export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${STOCK_INFO_TOGGLE_JS}\n${INFOGRAPHIC_JS}\n${INSTALL_JS}\n${DERIV_JS}\n${HERO_RANGE_JS}\n${CHART_PRO_JS}\n${CHART_DRAW_JS}\n${IND_LIMIT_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}\n${MOTION_JS}\n${COMMAND_BAR_JS}\n${REPORT_TABS_JS}\n${ROLL_JS}\n${LIQUID_JS}\n${THINKING_JS}\n${GLASS_JS}\n${MODERN_SWITCH_JS}\n${GEN_BUTTON_JS}`;
+export const UI_JS = `${PEERS_JS};${INDICATOR_LINK_JS};${SCENARIO_JS};${JOBS_JS};\n${COIN_CHART_JS};\n${stripTag(CHAT_SCRIPT)};\n${stripTag(UI_SCRIPT)};\n${MENU_JS}\n${PERSONA_JS}\n${CONCLUSION_JS}\n${SEATS_JS}\n${LIVE_JS}\n${STOCK_INFO_TOGGLE_JS}\n${INFOGRAPHIC_JS}\n${INSTALL_JS}\n${DERIV_JS}\n${HERO_RANGE_JS}\n${CHART_PRO_JS}\n${CHART_DRAW_JS}\n${IND_LIMIT_JS}\n${FS_JS}\n${TAP_JS}\n${TOUR_JS}\n${SURVEY_POP_JS}\n${PUSH_JS}\n${PRICE_ALERT_JS}\n${THEME_CHIPS_JS}\n${STOCK_INFO_JS}\n${MOTION_JS}\n${COMMAND_BAR_JS}\n${REPORT_TABS_JS}\n${ROLL_JS}\n${LIQUID_JS}\n${GLASS_JS}\n${MODERN_SWITCH_JS}\n${GEN_BUTTON_JS}`;
 /** Two FNV-1a passes give a short, stable content hash without node:crypto (this module also runs in the Worker). */
 const contentHash = (text: string): string => {
   let a = 0x811c9dc5, b = 0x01000193 ^ text.length;

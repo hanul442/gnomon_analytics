@@ -56,7 +56,7 @@ export const JOBS_JS = `
  // The buttons that show the job: every report button on the page, else the floating pill.
  var targets=function(){var list=[].slice.call(document.querySelectorAll('[data-create-report]'));if(list.length)return list;var f=floatEl(job.state==='running'||job.state==='done'||job.state==='failed');return f?[f.querySelector('.gen-btn')]:[];};
  var keep=function(b){if(window.gnmBtnKeep)gnmBtnKeep(b);};
- var fx=function(b,state,pct){if(state!=='running'&&b.__liquid)b.__liquid.stop();if(state!=='sending'&&b._tk){b._tk.stop();b._tk=null;}if(state==='running'&&window.gnmLiquid){var lq=gnmLiquid(b);if(lq&&pct!=null)lq.level(pct/100);}};
+ var fx=function(b,state,pct){if(state!=='running'&&b.__liquid)b.__liquid.stop();if(state==='running'&&window.gnmLiquid){var lq=gnmLiquid(b);if(lq&&pct!=null)lq.level(pct/100);}};
  var reset=function(b){clearTimeout(b._cf);fx(b,'');if(window.gnmBtnRestore)gnmBtnRestore(b);var x=b.parentNode&&b.parentNode.querySelector('.job-cancel');if(x)x.remove();var bar=b.closest('.rs-bar');if(bar&&bar._tx){bar.querySelector('.sa-tx').innerHTML=bar._tx;bar._tx=null;}};
  var dress=function(b,state,main,sub,pct){keep(b);b.dataset.job=state;b.setAttribute('aria-busy',String(state==='running'||state==='sending'));
   var busy=state==='running'||state==='sending';

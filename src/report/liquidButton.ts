@@ -135,7 +135,7 @@ export const LIQUID_JS = `
 
 export const LIQUID_CSS = `
 .lq-gl{position:absolute;inset:0;width:100%;height:100%;display:block;border-radius:inherit;z-index:0;pointer-events:none}
-.has-liquid .job-fill{display:none}
+.has-liquid .job-fill,.has-liquid .job-spin{display:none}
 .gen-btn.has-liquid{background-color:#050b11;border-color:rgba(6,182,212,.3)}
 .gen-btn.has-liquid .job-main,.gen-btn.has-liquid .job-sub{color:#e0faff;text-shadow:0 1px 10px rgba(0,18,25,.85)}
 .pl-bg{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:-1;opacity:0;transition:opacity 2s ease-in-out;pointer-events:none}
