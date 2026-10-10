@@ -833,13 +833,16 @@ export const SEARCH_SCRIPT = `<script>
       items = d.items.map(function (x, i) { return { c: x[0], n: x[1], m: x[2], p: x[3], x: x[4], r: x[5], k: norm(x[1]), h: cho(norm(x[1])), e: '', i: i }; });
       // ETFs and coins come from their own lists; either may be missing.
       var have = {}; items.forEach(function (it) { have[it.c] = 1; });
-      // G-188: usnames.json (every listed US stock, names only) comes last, so a computed US row keeps its price.
-      var extra = function (url, kind) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { (d.rows || []).forEach(function (x) {
+      // G-188: the lists download side by side and merge in this order; usnames.json (every listed US stock, names
+      // only) comes last, so a computed US row keeps its price.
+      var rows = function (url) { return fetch(url).then(function (r) { return r.json(); }).then(function (d) { return d.rows || []; }).catch(function () { return []; }); };
+      var merge = function (xs, kind) { xs.forEach(function (x) {
         if (have[x[0]]) return; have[x[0]] = 1;
         var sym = kind === 'COIN' ? x[0].replace('KRW-', '') : kind === 'US' ? x[0].split('.')[0] : x[0];
         items.push({ c: x[0], n: x[1], m: kind, p: x[4], x: x[5], r: 0, k: norm(x[1]), h: cho(norm(x[1])), e: norm(sym + ' ' + (x[2] || '')), i: items.length });
-      }); }).catch(function () {}); };
-      return Promise.all([extra('etfs.json', 'ETF'), extra('coins.json', 'COIN'), extra('usstocks.json', 'US')]).then(function () { return extra('usnames.json', 'US'); }).then(function () { return items; });
+      }); };
+      var lists = [['etfs.json', 'ETF'], ['coins.json', 'COIN'], ['usstocks.json', 'US'], ['usnames.json', 'US']];
+      return Promise.all(lists.map(function (l) { return rows(l[0]); })).then(function (all) { all.forEach(function (xs, i) { merge(xs, lists[i][1]); }); return items; });
     });
   };
   var score = function (it, t, onlyCho) {
@@ -936,7 +939,8 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
   var usOnDemand = function () { var meta = document.querySelector('meta[name=gnm-api]'), api = meta && meta.content; if (!api) throw new Error('NO_API');
     return Promise.all([fetch(api.replace(/[/]$/, '') + '/us/page/' + encodeURIComponent(code)).then(function (r) { if (!r.ok) throw new Error(); return r.json(); }), fetch('usnames.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; }).catch(function () { return { rows: [] }; })]).then(function (all) {
       var d = all[0], hit = (all[1].rows || []).filter(function (x) { return x[0] === code; })[0];
-      d.name = hit ? hit[1] : code.split('.')[0]; d.english = hit ? String(hit[2]).split(' · ').slice(2).join(' · ') : ''; d.market = hit ? String(hit[2]).split(' · ')[1] : 'US'; return d; }); };
+      var part = hit ? String(hit[2]).split(' · ') : [], ex = part[1] || 'US';
+      d.name = hit ? hit[1] : code.split('.')[0]; d.ticker = part[0] || d.ticker; d.english = part.slice(2).join(' · '); d.market = ex.replace(/ ETF$/, ''); d.kind = / ETF$/.test(ex) ? 'etf' : 'stock'; return d; }); };
   fetch((COIN ? 'c/' : US ? 'u/' : 's/') + code + '.json').then(function (r) { if(r.status===404 && new URLSearchParams(location.search).get('job'))return fetch('research/'+code+'.json').then(function(rr){if(!rr.ok)throw new Error();return rr.json();}).then(function(x){loadPanels();return {name:x.name,symbol:x.symbol,market:x.kind||'주식',bars:(x.recentBars||[]).map(function(b){return [b.date,b.open,b.high,b.low,b.close,b.volume];})};}); if (r.status === 404 && !COIN && !US) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (r.status === 404 && US) return usOnDemand(); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     if(d.pageUrl && /^(?:[sc]\\/[0-9A-Z-]+\\.html|[0-9A-Z-]+\\/index\\.html)$/.test(d.pageUrl)){location.replace(d.pageUrl+location.search+location.hash);return;}
     if (d.research) loadPanels();

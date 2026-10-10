@@ -25,6 +25,7 @@ function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
       if (String(url).startsWith('https://api.resend.com')) { const b = JSON.parse(String(init!.body)); mails.push({ to: b.to[0], text: b.text }); return new Response('{}', { status: 200 }); }
       if (String(url).endsWith('/s/000660.json')) return Response.json({ name: 'SK하이닉스', market: 'KOSPI', bars: [['2026-10-02', 1, 2, 1, 2, 10]] });
       if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/ZZZZ.O/')) return Response.json([]);
+      if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/FAIL.O/')) return new Response('busy', { status: 503 });
       if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/')) return Response.json(Array.from({ length: 160 }, (_, i) => { const d = new Date(Date.UTC(2026, 3, 1) + i * 86_400_000).toISOString().slice(0, 10).replace(/-/g, ''); const c = 100 + Math.sin(i / 7) * 5 + i * 0.1; return { localDate: d, openPrice: c - 0.5, highPrice: c + 1, lowPrice: c - 1, closePrice: c, accumulatedTradingVolume: 1_000_000 + i }; }));
       if (String(url).startsWith('https://polling.finance.naver.com/api/realtime/worldstock/')) return Response.json({ datas: [{ reutersCode: String(url).split('/').pop(), closePrice: '336.67', compareToPreviousClosePrice: '3.04', fluctuationsRatio: '0.91', marketStatus: 'OPEN', localTradedAt: '2026-10-08T10:00:00-04:00' }] });
       if (String(url).startsWith('https://www.okx.com/')) return Response.json(String(url).includes('XYZ') ? { code: '51001', data: [] } : String(url).includes('funding-rate') ? { code: '0', data: [{ fundingRate: '0.0001', fundingTime: '1791475200000' }] } : String(url).includes('/public/open-interest') ? { code: '0', data: [{ oiUsd: '2500000000' }] } : { code: '0', data: [] });
@@ -201,8 +202,22 @@ test('a US stock outside the daily set gets its page on demand (G-188), cached, 
   const calls = t.seen.filter((u) => u.includes('/chart/foreign/item/SMCI.O/')).length;
   await t.call('GET', '/us/page/SMCI.O');
   assert.equal(t.seen.filter((u) => u.includes('/chart/foreign/item/SMCI.O/')).length, calls, 'second open is served from the cache');
-  assert.equal((await t.call('GET', '/us/page/ZZZZ.O')).status, 404);
+  assert.equal(r.body.kind, null, 'same keys as a daily page; the browser fills name, market and kind from usnames.json');
+  assert.ok('cik' in r.body && 'english' in r.body && 'marketCapUsd' in r.body);
+  const empty = await t.call('GET', '/us/page/ZZZZ.O');
+  assert.equal(empty.status, 404); assert.equal(empty.body.error, 'US_NOT_FOUND');
+  await t.call('GET', '/us/page/ZZZZ.O');
+  assert.equal(t.seen.filter((u) => u.includes('/chart/foreign/item/ZZZZ.O/')).length, 1, 'a code with no prices is remembered too');
+  const down = await t.call('GET', '/us/page/FAIL.O');
+  assert.equal(down.status, 502, 'an upstream failure is not "no such stock"'); assert.equal(down.body.error, 'US_DATA');
+  await t.call('GET', '/us/page/FAIL.O');
+  assert.equal(t.seen.filter((u) => u.includes('/chart/foreign/item/FAIL.O/')).length, 2, 'a failure is not cached');
   assert.equal((await t.call('GET', '/us/page/005930')).status, 404, 'not a US code: no route');
+  // Fresh builds per address are capped (4 so far: SMCI, ZZZZ, FAIL twice); cached opens stay free.
+  const statuses: number[] = [];
+  for (let i = 0; i < 20; i += 1) statuses.push((await t.call('GET', `/us/page/T${i}X.O`)).status);
+  assert.deepEqual([statuses.indexOf(429), statuses.at(-1)], [16, 429]);
+  assert.equal((await t.call('GET', '/us/page/SMCI.O')).status, 200, 'a cached page still opens');
 });
 
 test('the ops console is served by the API on its own origin, uncached and unframed, and its data stays admin-only', async () => {

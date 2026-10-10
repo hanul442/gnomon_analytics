@@ -18,7 +18,7 @@ export function compactCalc(c: StockCalc): StockCalc {
 }
 
 /** Six significant digits: coins and US stocks trade with decimals. */
-const sig = (v: number) => Number(v.toPrecision(6));
+export const sig = (v: number) => Number(v.toPrecision(6));
 
 /** compactCalc rounds prices to whole won; coins and US stocks keep their decimals. */
 export function coinCalc(c: StockCalc): StockCalc {

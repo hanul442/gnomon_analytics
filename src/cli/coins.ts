@@ -10,14 +10,11 @@ import type { NewsSourceStatus } from '../report/dailyReport.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import { fetchUpbitDaysLong, fetchUpbitMarkets, fetchUpbitTickers } from '../sources/upbit.js';
 import { renderCalculationPage } from '../report/calculationPage.js';
-import { coinCalc } from '../analysis/compactCalc.js';
+import { coinCalc, sig } from '../analysis/compactCalc.js';
 
 /** [market, name, english, warning, close, change24h%, level, score×100, r5, r20, r120, vol1×, value24h(억), fairGap%, position, hi52Gap%]. */
 export type CoinRow = [string, string, string, 0 | 1, number, number | null, string, number | null, number | null, number | null, number | null, number | null, number | null, number | null, 'A' | 'I' | 'B' | null, number | null];
 
-export { coinCalc };
-/** Six significant digits: coins trade from fractions of a won to tens of millions. */
-const sig = (v: number) => Number(v.toPrecision(6));
 
 /** ETFs (G-55) in the coins list's row shape: no caution flag, trading value of the day. */
 export function etfRows(rows: readonly UniverseRow[], calcs: ReadonlyMap<string, StockCalc>): CoinRow[] {

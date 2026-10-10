@@ -1,4 +1,4 @@
-// G-189: every segmented control (.seg, the screener's market tabs, the ops menu) gets one pill that slides to the
+// G-189: every segmented control (.seg, the screener's market tabs, the ops menu, the home banner's dots) gets one pill that slides to the
 // chosen button instead of the colour jumping. The move is "chewy": the leading edge leaves first and stops dead at
 // the new button, the trailing edge follows a beat later on a spring that overshoots inward, so the pill stretches,
 // then snaps back narrower than its width before settling, and squashes a little on the way. Only the trailing edge
@@ -7,7 +7,7 @@
 // The report's top tabs (.topbar>.chips) keep their own pill (REPORT_TABS_JS).
 
 export const SEG_THUMB_CSS = `
-.has-thumb{position:relative;isolation:isolate}
+:where(.has-thumb){position:relative;isolation:isolate}
 .has-thumb>.seg-thumb{position:absolute;z-index:0;left:0;right:100%;top:0;height:0;border-radius:999px;pointer-events:none;opacity:0;
   background:var(--btn-bg);box-shadow:0 1px 3px rgba(0,0,0,.12),0 8px 18px -10px rgba(0,166,251,.55),inset 0 -1px rgba(0,0,0,.08);
   transition:left .42s cubic-bezier(.34,1.4,.64,1),right .42s cubic-bezier(.34,1.4,.64,1),top .3s var(--ease-out),height .3s var(--ease-out),opacity var(--dur-fast) var(--ease-out)}
@@ -21,12 +21,13 @@ export const SEG_THUMB_CSS = `
 .has-thumb:not(.thumb-off)>[aria-pressed=true],.has-thumb:not(.thumb-off)>[aria-selected=true]{background:transparent!important;box-shadow:none!important;border-color:transparent!important}
 .thumb-off>.seg-thumb{display:none}
 html.chart-fs .cfs-foot>.seg>.seg-thumb{background:var(--soft);box-shadow:none}
+.bn-dots>.seg-thumb{height:6px!important;margin:10px 6px 0;background:#fff;box-shadow:0 0 10px rgba(255,255,255,.45)}
 .find-tabs>.seg-thumb,.adm-tabs>.seg-thumb{background:var(--navy);box-shadow:0 8px 18px -10px rgba(0,166,251,.6)}
 @media (prefers-reduced-motion:reduce){.has-thumb>.seg-thumb{transition:none!important;animation:none!important}}`;
 
 export const SEG_THUMB_JS = `
 (function () {
-  var SEL = '.seg,.find-tabs,.adm-tabs';
+  var SEL = '.seg,.find-tabs,.adm-tabs,.bn-dots';
   var ON = '[aria-pressed=true],[aria-selected=true]';
   var kids = function (g) { var out = [], c = g.children; for (var i = 0; i < c.length; i++) if (c[i] !== g.__thumb) out.push(c[i]); return out; };
   var place = function (g, lean) {
@@ -62,21 +63,20 @@ export const SEG_THUMB_JS = `
     ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (k) { g.addEventListener(k, function () { setTimeout(settle, 0); }); });
     place(g);
   };
-  var scan = function (root) {
-    if (!root || root.nodeType !== 1) return;
-    if (root.matches(SEL)) setup(root);
-    var list = root.querySelectorAll(SEL); for (var i = 0; i < list.length; i++) setup(list[i]);
-  };
   var start = function () {
-    scan(document.body);
+    var all = document.querySelectorAll(SEL); for (var i = 0; i < all.length; i++) setup(all[i]);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { var l = document.querySelectorAll('.has-thumb'); for (var i = 0; i < l.length; i++) place(l[i]); });
     if (!window.MutationObserver) return;
-    var queued = [], raf = 0;
+    // Groups built later (the coin chart's units, lists filled by script): one query per frame that added elements,
+    // for groups not yet set up, rather than a scan of every added node.
+    var raf = 0, NEW = SEL.split(',').map(function (x) { return x + ':not(.has-thumb)'; }).join(',');
     new MutationObserver(function (ms) {
-      for (var i = 0; i < ms.length; i++) for (var j = 0; j < ms[i].addedNodes.length; j++) { var n = ms[i].addedNodes[j]; if (n.nodeType === 1 && n.className !== 'seg-thumb') queued.push(n); }
-      if (queued.length && !raf) raf = requestAnimationFrame(function () { raf = 0; var q = queued; queued = []; q.forEach(scan); });
+      if (raf) return;
+      for (var i = 0; i < ms.length; i++) for (var j = 0; j < ms[i].addedNodes.length; j++) if (ms[i].addedNodes[j].nodeType === 1) {
+        raf = requestAnimationFrame(function () { raf = 0; var l = document.querySelectorAll(NEW); for (var k = 0; k < l.length; k++) setup(l[k]); });
+        return;
+      }
     }).observe(document.body, { childList: true, subtree: true });
   };
-  window.gnmSegPlace = function (g) { if (g) place(g); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();`;

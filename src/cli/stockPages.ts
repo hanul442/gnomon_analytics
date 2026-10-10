@@ -49,6 +49,3 @@ export async function writeStockPages(
   return { status: { source: 'naver:fchart:day:all', ok: failed <= todo.length * 0.05, count: ok, ...(failed ? { error: `${failed} failed ${errors.join(' ')}` } : {}) }, calcs };
 }
 
-
-/** Rounded for the page: whole won, one decimal for percentages. */
-export { compactCalc };

@@ -101,35 +101,53 @@ export function parseUsSearch(body: unknown, ticker: string): UsListing | null {
 }
 
 /** The US universe: top stocks by market value on each exchange, plus the popular ETFs. */
+type Exchange = UsListing['exchange'];
+const EXCHANGES = ['NASDAQ', 'NYSE', 'AMEX'] as const;
+const PAGE = 50;
+const rankingUrl = (ex: Exchange, page: number) => `https://api.stock.naver.com/stock/exchange/${ex}/marketValue?page=${page}&pageSize=${PAGE}`;
+/** A JSON GET with Naver's headers; null on any failure. */
+const naverGet = (f: typeof fetch) => (url: string): Promise<unknown> => f(url, { signal: AbortSignal.timeout(15_000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
 /**
- * G-188: every listed US stock, by market value, for search and on-demand pages (names only; no bars). Walks the
- * same ranking pages until they run out (or `maxPages` per exchange); a page that fails ends that exchange.
+ * G-188: every listed US stock, by market value, for search and on-demand pages (names only; no bars). The three
+ * exchanges are walked side by side; each walks its ranking pages until a short or empty page, a page that adds no
+ * new code (an out-of-range page answered with the last one), or `maxPages`. A page is tried three times; if it
+ * still fails the exchange stops there and is listed in `partial`, so callers know its tail is missing.
  */
-export async function fetchUsDirectory(options: { fetch?: typeof fetch; maxPages?: number } = {}): Promise<UsListing[]> {
-  const f = options.fetch ?? fetch, max = options.maxPages ?? 120, out = new Map<string, UsListing>();
-  const get = (url: string) => f(url, { signal: AbortSignal.timeout(15_000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  for (const ex of ['NASDAQ', 'NYSE', 'AMEX'] as const) {
+export async function fetchUsDirectory(options: { fetch?: typeof fetch; maxPages?: number } = {}): Promise<{ listings: UsListing[]; partial: Exchange[] }> {
+  const get = naverGet(options.fetch ?? fetch), max = options.maxPages ?? 120, partial: Exchange[] = [];
+  const walk = async (ex: Exchange): Promise<UsListing[]> => {
+    const out = new Map<string, UsListing>();
     for (let page = 1; page <= max; page += 1) {
-      const body = await get(`https://api.stock.naver.com/stock/exchange/${ex}/marketValue?page=${page}&pageSize=50`);
-      let rows: UsListing[] = []; try { rows = body ? parseUsRanking(body, ex) : []; } catch { rows = []; }
-      if (!rows.length) break;
+      let rows: UsListing[] | null = null;
+      for (let tries = 0; tries < 3 && rows === null; tries += 1) { const body = await get(rankingUrl(ex, page)); if (body) try { rows = parseUsRanking(body, ex); } catch { rows = null; } }
+      if (rows === null) { partial.push(ex); break; }
+      const before = out.size;
       for (const l of rows) if (!out.has(l.code)) out.set(l.code, l);
+      if (rows.length < PAGE || out.size === before) break;
     }
-  }
-  return [...out.values()];
+    return [...out.values()];
+  };
+  const lists = await Promise.all(EXCHANGES.map(walk));
+  const seen = new Set<string>(), listings: UsListing[] = [];
+  for (const l of lists.flat()) if (!seen.has(l.code)) { seen.add(l.code); listings.push(l); }
+  return { listings, partial };
 }
 
-/** The computed set: the top of each exchange by market value plus popular ETFs. With `directory`, the top is taken from it (no second walk). */
-export async function fetchUsUniverse(options: { fetch?: typeof fetch; perExchange?: Partial<Record<UsListing['exchange'], number>>; directory?: readonly UsListing[] } = {}): Promise<UsListing[]> {
-  const f = options.fetch ?? fetch, want = { NASDAQ: 300, NYSE: 300, AMEX: 40, ...options.perExchange };
-  const get = (url: string) => f(url, { signal: AbortSignal.timeout(15_000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+/**
+ * The computed set: the top of each exchange by market value plus popular ETFs. With `directory`, an exchange's top
+ * is taken from it unless that exchange's walk stopped early and holds fewer than wanted (then it is walked here).
+ */
+export async function fetchUsUniverse(options: { fetch?: typeof fetch; perExchange?: Partial<Record<Exchange, number>>; directory?: { listings: readonly UsListing[]; partial: readonly Exchange[] } } = {}): Promise<UsListing[]> {
+  const get = naverGet(options.fetch ?? fetch), want = { NASDAQ: 300, NYSE: 300, AMEX: 40, ...options.perExchange };
   const out = new Map<string, UsListing>();
-  if (options.directory?.length) for (const ex of ['NASDAQ', 'NYSE', 'AMEX'] as const) for (const l of options.directory.filter((x) => x.exchange === ex).slice(0, want[ex])) out.set(l.code, l);
-  else for (const ex of ['NASDAQ', 'NYSE', 'AMEX'] as const) {
-    for (let page = 1; (page - 1) * 50 < want[ex]; page += 1) {
-      const body = await get(`https://api.stock.naver.com/stock/exchange/${ex}/marketValue?page=${page}&pageSize=50`);
+  for (const ex of EXCHANGES) {
+    const known = options.directory?.listings.filter((x) => x.exchange === ex) ?? [];
+    if (known.length && (known.length >= want[ex] || !options.directory!.partial.includes(ex))) { for (const l of known.slice(0, want[ex])) out.set(l.code, l); continue; }
+    for (let page = 1; (page - 1) * PAGE < want[ex]; page += 1) {
+      const body = await get(rankingUrl(ex, page));
       if (!body) break;
-      for (const l of parseUsRanking(body, ex).slice(0, want[ex] - (page - 1) * 50)) out.set(l.code, l);
+      for (const l of parseUsRanking(body, ex).slice(0, want[ex] - (page - 1) * PAGE)) out.set(l.code, l);
     }
   }
   for (const t of US_ETFS) {
