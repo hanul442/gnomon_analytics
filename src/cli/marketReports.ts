@@ -95,8 +95,10 @@ export async function publishMarketReports(root:string,siteDir:string):Promise<M
  const dir=join(root,'reports','market'); const reports:MarketReport[]=[];await mkdir(join(siteDir,'market'),{recursive:true});
  for(const file of (await readdir(dir).catch(()=>[])).filter(f=>/^daily-\d{4}-\d{2}-\d{2}\.json$/.test(f))){const report=await savePrivateMarketReport(join(dir,file),await json(join(dir,file)) as MarketReport);reports.push(report);
   if(report.ai.sealed&&process.env.GNM_DEEP_KEY){const full={...report,ai:{...report.ai,council:MarketCouncilSchema.parse(JSON.parse(await unseal(report.ai.sealed,process.env.GNM_DEEP_KEY)))}};const target=join(siteDir,deepPath(marketSymbol(report.period),report.date));await mkdir(join(siteDir,marketSymbol(report.period),'deep'),{recursive:true});await writeFile(target,await seal(renderMarketDeep(full),process.env.GNM_DEEP_KEY));}
-  await writeFile(join(siteDir,'market',file.replace('.json','.html')),renderMarketReport(report,'../'));
   await writeFile(join(siteDir,'market',file),JSON.stringify({...report,groups:report.groups.map(g=>({...g,assets:g.assets.slice(0,1)})),ai:{status:report.ai.status,summary:report.ai.summary,error:report.ai.error,model:report.ai.model}}));}
+ // G-190: each day's page links the day before and after, so the dailies read in a row.
+ const days=reports.map(r=>r.date).sort();
+ for(const report of reports){const i=days.indexOf(report.date);await writeFile(join(siteDir,'market',`daily-${report.date}.html`),renderMarketReport(report,'../',{prev:days[i-1],next:days[i+1]}));}
  await writeFile(join(siteDir,'market-reports.html'),renderMarketReportIndex(reports));
  return reports;
 }

@@ -98,40 +98,86 @@ ${head}${gate(forecastCard.replace('<section class="block">', '<section class="b
   return shell('', '성적표 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS });
 }
 
+/**
+ * G-190: terms and disclaimer that match what the service does today (accounts, credits, the API's data, the AI
+ * provider, mail and push). Articles are numbered because terms are cited by article. Still a draft before legal
+ * review, and it says so.
+ */
+export const TERMS_UPDATED = '2026-10-10';
 export function renderTerms(): string {
-  const sec = (id: string, title: string, items: string[]) => `<section class="block" id="${id}"><div class="card terms"><h2>${title}</h2><ul class="plain">${items.map((i) => `<li>${i}</li>`).join('')}</ul></div></section>`;
+  const arts: { id: string; title: string; items: string[] }[] = [
+    { id: 'nature', title: '서비스의 성격', items: [
+      'GNOMON는 공개 데이터로 계산한 기술 지표, 적정가·예측 범위와 AI 위원회 해설을 보여 주는 리서치 도구예요.',
+      '<b>투자 자문이나 매매 권유가 아니에요.</b> 특정 종목을 사거나 팔라고 권하지 않고, 개인의 재산 상황에 맞춘 조언을 하지 않아요.',
+      '화면의 강세·약세, 조건 가격, 예측 범위는 계산과 해설의 결과예요. 매수·매도 시점이나 목표가로 쓰라는 뜻이 아니에요.',
+      '투자 판단과 그 결과의 책임은 이용자 본인에게 있어요. GNOMON는 이용자의 투자 손실을 책임지지 않아요.',
+      '유료로 정보를 제공하기 전에 자본시장법상 유사투자자문업 신고 등 필요한 절차를 확인하고 따를 거예요.',
+    ] },
+    { id: 'account', title: '계정', items: [
+      '지금은 초대받은 분만 가입하는 클로즈드 알파예요. 가입할 때 이메일과 비밀번호를 쓰고, 이 약관과 투자 유의 사항에 동의해요.',
+      '한 사람이 계정 하나를 써요. 비밀번호는 본인이 관리하고, 다른 사람과 계정을 나눠 쓰지 않아요.',
+      '아래 금지 행위가 확인되면 미리 알린 뒤 이용을 멈추거나 계정을 정리할 수 있어요.',
+    ] },
+    { id: 'credits', title: '요금제와 크레딧', items: [
+      '알파 기간의 요금제와 결제는 <b>MOCK</b>이에요. 실제로 돈이 나가지 않아요.',
+      '크레딧은 리포트 만들기, AI 질문, 심층 리포트 열기 같은 AI 기능에 써요. 쓰기 전에 버튼에 필요한 크레딧이 보여요.',
+      'AI 작업이 실패하면 쓴 크레딧을 자동으로 돌려드려요.',
+      '크레딧은 현금으로 바꾸거나 다른 계정에 넘길 수 없어요.',
+      '정식 운영의 가격, 크레딧 유효기간, 환불 기준은 출시 전에 이 페이지에 확정해 알려요.',
+      '요금제는 볼 수 있는 깊이만 바꿔요. 같은 종목의 신호·숫자·기록은 누구에게나 같아요.',
+    ] },
+    { id: 'data', title: '데이터 출처와 한계', items: [
+      '가격과 지표는 다음에서 가져와요.<br>국내·해외 주식: 네이버 금융·네이버 증권<br>코인: 업비트, 파생 지표는 OKX',
+      '공시와 재무는 다음에서 가져와요.<br>국내: OpenDART<br>미국: SEC EDGAR',
+      '뉴스는 네이버 뉴스 검색과 RSS(미국은 Google News RSS)에서 가져와요.',
+      '출처의 오류나 지연이 그대로 반영될 수 있어요. 실시간 가격도 몇 초에서 몇 분 늦을 수 있고, 미국 주식은 현지 날짜 기준이에요.',
+      '데이터를 받지 못한 날은 화면에 그 사실을 적고, 없는 숫자를 만들어 넣지 않아요.',
+    ] },
+    { id: 'calc', title: '계산과 AI 해설의 한계', items: [
+      '기술 신호는 여러 지표를 요약한 값이에요. 오를 확률이 아니에요.',
+      '예측 범위는 최근 변동성으로 계산한 범위예요. 목표가가 아니에요.',
+      '백테스트와 모의투자 성과는 과거 데이터로 계산한 가상의 결과예요. 실제 수익을 보장하지 않아요.',
+      'AI 위원회는 하나의 AI가 여러 관점을 나눠 맡아 쓴 해설이에요. 실제 사람의 의견이 아니에요.',
+      'AI 해설은 그 리포트에 모은 근거만 쓰도록 하고 근거 번호를 달지만, 틀리거나 빠뜨릴 수 있어요.',
+      '판단과 예측은 만든 날 그대로 남기고, 나중에 실제 가격으로 채점해 <a href="scorecard.html">성적표</a>에 공개해요.',
+    ] },
+    { id: 'rules', title: '하지 말아 주세요', items: [
+      '리포트·해설·계산 결과를 그대로 팔거나 유료로 다시 배포하는 일',
+      '자동 프로그램으로 화면이나 API를 대량으로 긁어 가거나 요청 한도를 피하려는 일',
+      '다른 사람의 계정을 쓰거나 계정을 사고파는 일',
+      'AI 질문에 다른 사람의 개인정보나 불법적인 내용을 넣는 일',
+    ] },
+    { id: 'privacy', title: '개인정보', items: [
+      '<b>받는 것</b><br>계정: 이메일, 비밀번호(되돌릴 수 없게 바꾼 값만 저장)<br>쓰기 기록: 요금제, 크레딧 내역<br>저장한 것: 관심 종목, 저장한 조건, 가격 알림, 알림 설정<br>보낸 것: AI 질문과 답, 리포트 요청, 설문·의견<br>사용 기록: 어떤 화면과 기능을 썼는지(종목 이름 수준)<br>푸시: 알림 주소(푸시를 켠 경우만)',
+      '<b>받지 않는 것</b><br>실명, 전화번호, 증권 계좌, 실제 결제 정보',
+      '<b>맡기는 곳</b><br>서버와 데이터베이스: Cloudflare<br>메일 발송: Resend<br>AI 처리: Anthropic(질문과 리포트 근거)<br>푸시 전달: 브라우저 회사의 푸시 서비스<br>AI 질문에는 개인정보를 적지 마세요.',
+      '<b>브라우저에만 남는 것</b><br>화면 모드, 둘러보기 여부, 보기 설정',
+      '<b>보관 기간</b><br>계정을 지울 때까지 보관해요. 로그인 시도 기록은 잠금 판단에만 써요.',
+      '<a href="account.html">내 계정</a>에서 <b>내 데이터 내려받기</b>로 저장된 내용을 받을 수 있어요. <b>계정 삭제</b>로 위 기록을 모두 지울 수 있어요.',
+    ] },
+    { id: 'change', title: '약관이 바뀔 때', items: [
+      '바뀌면 이 페이지와 업데이트 알림으로 먼저 알려요. 이용자에게 불리한 변경은 적용 7일 전에 알려요.',
+      '바뀐 약관에 동의하지 않으면 계정을 지우고 이용을 그만둘 수 있어요.',
+    ] },
+    { id: 'contact', title: '문의', items: [
+      '오류 신고와 질문은 <a href="faq.html#ask">FAQ · 1:1 문의</a>에서 받아요.',
+    ] },
+  ];
+  const toc = arts.map((a, i) => `<a href="#${a.id}">제${i + 1}조 ${a.title}</a>`).join('');
   const body = `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>이용약관 · 면책</span><span>초안</span></div><h1>이용약관과 면책</h1>
-<p class="hero-line">법률 검토 전 초안이에요. 유료 서비스를 열기 전에 검토를 거쳐 바뀔 수 있어요.</p></div></section>
-<section class="block"><p class="mock-note"><b>초안이에요.</b> 지금 GNOMON는 무료 시험 운영 중이고, 요금제와 결제는 MOCK이에요.</p></section>
-${sec('nature', '서비스의 성격', [
-    'GNOMON는 공개 데이터로 계산한 기술 지표, 적정가·예측 범위, AI 해설을 보여 주는 리서치 도구예요.',
-    '<b>투자 자문이나 매매 권유가 아니에요.</b> 특정 종목을 사고팔라고 권하지 않고, 매수·매도 신호나 목표가를 제시하지 않아요.',
-    '투자 판단과 그 결과는 이용자 본인의 책임이에요.',
-    '유료로 정보를 제공하기 전에 자본시장법상 유사투자자문업 신고 등 필요한 절차를 확인하고 따를 예정이에요.',
-  ])}
-${sec('data', '데이터와 계산의 한계', [
-    '가격·수급·실적은 Naver 금융·네이버 증권, 공시는 OpenDART, 뉴스는 네이버 뉴스 검색과 RSS에서 가져와요. 출처의 오류나 지연이 그대로 반영될 수 있어요.',
-    '데이터를 받지 못한 날은 페이지에 그 사실을 표시하고, 없는 숫자를 만들어 넣지 않아요.',
-    '기술 신호는 지표를 요약한 값이고 오를 확률이 아니에요. 예측 범위는 최근 변동성으로 계산한 범위이고 목표가가 아니에요.',
-    '백테스트와 모의투자 성과는 과거 데이터로 계산한 가상의 결과이고, 실제 수익을 보장하지 않아요.',
-  ])}
-${sec('ai', 'AI 해설의 한계', [
-    'AI 해설은 그 리포트에 모은 근거만 보고 쓰도록 하고, 주장마다 근거 표시를 달아요. 그래도 틀리거나 빠뜨릴 수 있어요.',
-    'AI 분석가들은 같은 AI가 서로 다른 관점을 맡아 쓴 의견이에요. 실제 사람의 의견이 아니에요.',
-    '예측과 판단은 만든 날 그대로 기록하고, 나중에 실제 가격으로 채점해 성적표에 공개해요.',
-  ])}
-${sec('plans', '요금제와 크레딧 (초안)', [
-    '지금 요금제와 결제는 MOCK이에요. 실제로 결제되지 않고, 요금제와 크레딧은 이용자 브라우저에만 저장돼요.',
-    '정식 운영 때의 가격, 크레딧 유효기간, 환불 기준은 출시 전에 이 페이지에 확정해서 알려요.',
-    '결제는 볼 수 있는 깊이만 바꿔요. 같은 종목의 신호·숫자·기록은 누구에게나 같아요.',
-  ])}
-${sec('privacy', '개인정보', [
-    '지금은 회원가입이 없고, 이름·연락처·결제 정보를 받지 않아요.',
-    '관심 종목, 요금제(MOCK), 크레딧(MOCK)은 이용자 브라우저의 저장소(localStorage)에만 남아요. 브라우저 데이터를 지우면 함께 사라져요.',
-    '로그인이 생기면 수집 항목과 보관 기간을 이 페이지에 먼저 알려요.',
-  ])}
-${sec('contact', '문의', ['오류 신고와 리포트 요청은 GitHub 이슈로 받아요.'])}
-<footer id="sources" style="padding:24px 0 0"><p>마지막 수정: 초안. 투자 권유가 아니에요.</p></footer>`;
+<p class="hero-line">법률 검토 전 초안이에요. 유료 서비스를 열기 전에 검토를 거쳐 바뀔 수 있어요. 마지막 수정 ${TERMS_UPDATED}.</p></div></section>
+<section class="block"><div class="card tm-key"><h2>꼭 알아 두세요</h2><ol class="tm-keys">
+<li><b>투자 권유가 아니에요</b><span>계산과 해설일 뿐이고, 판단과 결과는 본인 책임이에요.</span></li>
+<li><b>데이터는 늦거나 틀릴 수 있어요</b><span>공개 출처를 그대로 쓰고, 없는 숫자는 만들지 않아요.</span></li>
+<li><b>AI도 틀려요</b><span>모든 판단은 나중에 실제 가격으로 채점해 공개해요.</span></li>
+</ol><p class="fine" style="margin:12px 0 0">법률 검토 전 초안이에요 · 마지막 수정 ${TERMS_UPDATED}</p></div></section>
+<nav class="block tm-toc" aria-label="조항 목록">${toc}</nav>
+${arts.map((a, i) => `<section class="block" id="${a.id}"><div class="card terms"><h2><span class="tm-no">제${i + 1}조</span>${a.title}</h2><ul class="tm-list">${a.items.map((x) => `<li>${x}</li>`).join('')}</ul></div></section>`).join('\n')}
+<footer id="sources" style="padding:24px 0 0"><p>마지막 수정 ${TERMS_UPDATED} · 초안. 투자 권유가 아니에요.</p></footer>
+<style>.tm-key h2{margin:0 0 12px}.tm-keys{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;counter-reset:k}.tm-keys li{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:16px;background:var(--soft);border:1px solid var(--line)}.tm-keys b{font-size:15.5px}.tm-keys span{font-size:13.5px;line-height:1.6;color:var(--fg2)}
+.tm-toc{display:flex;flex-wrap:wrap;gap:6px}.tm-toc a{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;text-decoration:none;color:var(--fg)}
+.terms{scroll-margin-top:90px}.terms h2{display:flex;align-items:baseline;gap:10px;margin:0 0 12px}.tm-no{font-size:13px;font-weight:800;color:var(--accent-strong)}.tm-list{margin:0;padding-left:20px}.tm-list li{margin:0 0 10px;line-height:1.75}.tm-list li:last-child{margin-bottom:0}
+@media (max-width:820px){.tm-keys{grid-template-columns:1fr}}</style>`;
   return shell('', '이용약관·면책 | GNOMON', body, {});
 }
 

@@ -408,7 +408,7 @@ html.mo .lv-card:not(.mo-in) .lv-bar i{transform:scaleX(0)}
 .si-target{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.si-target div{display:flex;flex-direction:column;gap:2px}.si-target span{font-size:13px;color:var(--fg2)}.si-target b{font-size:22px;font-variant-numeric:tabular-nums}.si-target small{font-size:13px}
 
 .si-more{border:0;background:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 0}.si-h3{font-size:14px;margin:14px 0 4px}.si-card .research li{margin:6px 0;font-size:13.5px;line-height:1.5}
-dialog.fs-dlg>header{display:flex;align-items:center;gap:6px}dialog.fs-dlg>header h2{font-size:17px;margin:0}dialog.fs-dlg .fs-full{border:0;box-shadow:none;padding:0;margin:0}
+dialog.fs-dlg>header{display:flex;align-items:center;gap:6px}dialog.fs-dlg>header h2{font-size:17px;margin:0}dialog.fs-dlg .fs-full{border:0;box-shadow:none;padding:0;margin:0;background:none;backdrop-filter:none}dialog.fs-dlg .ig-fs th[scope=row]{background:var(--page)}
 @media (min-width:821px){dialog.v2-dialog.fs-dlg[open]{width:min(920px,calc(100% - 48px))!important}}
 @media (max-width:820px){.si-wrap{columns:1}}`;
 
