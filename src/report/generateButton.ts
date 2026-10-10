@@ -88,7 +88,7 @@ ${LETTER_DELAYS.slice(1).map((i) => `.gen-btn:focus-visible .gen-l:nth-child(${i
 .job-cancel{margin-left:8px;height:32px;padding:0 12px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.06);color:#C3CDD6;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;vertical-align:middle}
 .gen-wrap>.job-cancel{position:absolute;right:8px;top:50%;margin:0;transform:translateY(-50%);z-index:2}.gen-btn[data-job=confirm]{padding-right:76px}
 .rs-bar .sa-tx small{transition:opacity .16s}.rs-bar .sa-tx small.swap{opacity:0}
-.job-float{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:6px;max-width:calc(100% - 24px);animation:job-rise .35s cubic-bezier(.16,1,.3,1)}
+.job-float{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:6px;max-width:calc(100% - 24px);animation:job-rise .35s var(--ease-out)}
 .job-float .job-x{width:34px;height:34px;border:0;border-radius:50%;background:rgba(10,22,38,.8);color:#fff;font-size:18px;cursor:pointer}
 @keyframes job-rise{from{opacity:0;transform:translate(-50%,16px)}}
 @media (min-width:821px){.job-float{bottom:24px}}
@@ -96,12 +96,12 @@ ${LETTER_DELAYS.slice(1).map((i) => `.gen-btn:focus-visible .gen-l:nth-child(${i
 
 /** A press marks the button for one burst (the source used :focus, which a mouse click only briefly holds). */
 export const GEN_BUTTON_JS = `
-// G-185: gnmBusy(button, label) shows short work (a few seconds, length unknown) inside the button: a sweeping
-// light, a spinner, the label and the seconds so far. gnmBusy(button, false) puts the button back.
+// G-185: gnmBusy(button, label) shows short work (a few seconds, length unknown) inside the button: the rising
+// liquid (a sweeping light without WebGL), a spinner, the label and the seconds so far. gnmBusy(button, false) puts the button back.
 // One save/restore for every in-button state (gnmBusy here, the report job in JOBS_JS): label, size, effects.
 window.gnmBtnKeep = function (b) { if (b._keep) return; b._keep = { html: b.innerHTML, label: b.getAttribute('aria-label'), w: b.style.minWidth }; if (b.offsetWidth) b.style.minWidth = b.offsetWidth + 'px'; };
 window.gnmBtnRestore = function (b) {
-  clearInterval(b._bz); if (b._tk) { b._tk.stop(); b._tk = null; } if (b.__liquid) b.__liquid.stop();
+  clearInterval(b._bz); if (b.__liquid) b.__liquid.stop();
   if (b._keep) { b.innerHTML = b._keep.html; if (b._keep.label == null) b.removeAttribute('aria-label'); else b.setAttribute('aria-label', b._keep.label); b.style.minWidth = b._keep.w; b._keep = null; }
   delete b.dataset.job; b.removeAttribute('aria-busy');
 };
@@ -112,9 +112,10 @@ window.gnmBusy = function (b, label) {
   b.dataset.job = 'running'; b.setAttribute('aria-busy', 'true');
   b.innerHTML = '<i class="job-fill indet"></i><span class="job-spin" aria-hidden="true"></span><span class="job-main"></span><small class="job-sub">0초</small>';
   b.querySelector('.job-main').textContent = label; b.setAttribute('aria-label', label); var t0 = Date.now();
-  // The ThreeUI Thinking light runs round the button while it works (G-185); the label counts the seconds.
-  if (window.gnmThinking && !b._tk) b._tk = gnmThinking(b, label);
-  clearInterval(b._bz); b._bz = setInterval(function () { var s = b.querySelector('.job-sub'); if (!s) { clearInterval(b._bz); return; } var n = Math.round((Date.now() - t0) / 1000); s.textContent = n + '초'; if (b._tk) b._tk.text(label + ' · ' + n + '초'); }, 1000);
+  // The Tactile liquid fills the button while it works, like a report job (G-185/G-187). The length is unknown, so the
+  // level rises fast at first and then ever slower toward the top (never full until the work is done); the label counts the seconds.
+  var lq = window.gnmLiquid ? gnmLiquid(b) : null; if (lq) lq.level(0.12);
+  clearInterval(b._bz); b._bz = setInterval(function () { var s = b.querySelector('.job-sub'); if (!s) { clearInterval(b._bz); return; } var sec = (Date.now() - t0) / 1000; s.textContent = Math.round(sec) + '초'; if (b.__liquid) b.__liquid.level(0.12 + 0.76 * (1 - Math.exp(-sec / 8))); }, 1000);
 };
 document.addEventListener('pointerdown', function (e) {
   var b = e.target.closest && e.target.closest('.gen-btn'); if (!b) return;

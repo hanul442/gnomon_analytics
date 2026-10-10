@@ -367,7 +367,7 @@ export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:fle
 .mini-gauge:not(:has(.on)) .g-seg,.gauge:not(:has(.on)) .g-seg{opacity:.55}
 .g-tip{fill:#fff;filter:drop-shadow(0 0 4px rgba(0,166,251,.95))}.g-end{fill:var(--muted)}
 html[data-theme=dark] .g-hub{fill:var(--surface-solid);stroke:var(--fg);stroke-width:1.5}
-.hz{position:relative;overflow:hidden;background:linear-gradient(165deg,rgba(255,255,255,.07),rgba(255,255,255,.015))!important;border:1px solid var(--line)!important;box-shadow:inset 0 1px rgba(255,255,255,.06),0 10px 30px -18px rgba(0,0,0,.6);-webkit-backdrop-filter:blur(var(--glass-blur));backdrop-filter:blur(var(--glass-blur));transition:transform .25s cubic-bezier(.34,1.56,.64,1),border-color .25s}
+.hz{position:relative;overflow:hidden;background:linear-gradient(165deg,rgba(255,255,255,.07),rgba(255,255,255,.015))!important;border:1px solid var(--line)!important;box-shadow:inset 0 1px rgba(255,255,255,.06),0 10px 30px -18px rgba(0,0,0,.6);-webkit-backdrop-filter:blur(var(--glass-blur));backdrop-filter:blur(var(--glass-blur));transition:transform .25s var(--ease-spring),border-color .25s}
 .hz::before{content:"";position:absolute;inset:-40% -20% auto;height:90%;pointer-events:none;background:radial-gradient(closest-side,var(--hz-glow,transparent),transparent);opacity:.55}
 .hz-up{--hz-glow:rgba(255,122,122,.35);border-color:rgba(255,122,122,.25)!important}.hz-down{--hz-glow:rgba(92,187,255,.35);border-color:rgba(92,187,255,.25)!important}
 .hz:hover{transform:translateY(-2px)}
@@ -388,7 +388,7 @@ html:not([data-theme=dark]) .hz{background:linear-gradient(165deg,rgba(255,255,2
 .lv-res .lv-k{background:var(--up-soft);color:var(--up-strong)}.lv-sup .lv-k{background:var(--down-soft);color:var(--down-strong)}
 .lv-p{font-weight:800;color:var(--fg)}
 .lv-bar{position:relative;height:8px;border-radius:8px;background:var(--soft);overflow:hidden}
-.lv-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;transform-origin:left;transition:transform .9s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 70ms)}
+.lv-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;transform-origin:left;transition:transform .9s var(--ease-out) calc(var(--i,0) * 70ms)}
 .lv-res .lv-bar i{background:linear-gradient(90deg,rgba(255,122,122,.25),var(--up));box-shadow:0 0 10px -2px var(--up)}
 .lv-sup .lv-bar i{background:linear-gradient(90deg,rgba(92,187,255,.25),var(--down));box-shadow:0 0 10px -2px var(--down)}
 .lv-row em{font-style:normal;font-weight:700;text-align:right}
