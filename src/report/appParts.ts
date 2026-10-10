@@ -166,22 +166,22 @@ export function chartMarks(report: DailyReport): ChartMark[] {
 
 const OVERLAYS: [string, string, boolean][] = [
   ['ma5', '이동평균 5', false], ['ma20', '이동평균 20', true], ['ma60', '이동평균 60', true], ['ma120', '이동평균 120', false],
-  ['ema12', '지수이동평균 12·26', false], ['bb', '볼린저 밴드', false], ['ichimoku', '일목균형표', false], ['env', '엔벨로프', false],
+  ['ema12', '지수이동평균 12·26', false], ['bb', '볼린저 밴드', false], ['ichimoku', '일목균형표', false], ['env', '엔벨로프', false], ['vwap', 'VWAP', false], ['psar', '파라볼릭 SAR', false],
   ['levels', '지지·저항', false], ['fib', '피보나치', false], ['fair', '적정가 범위', false], ['forecast', '예측 범위', false],
   ['spikes', '거래량 폭발일', false],
 ];
 const PANES: [string, string, boolean][] = [
   ['volume', '거래량', true], ['rsi', 'RSI', false], ['macd', 'MACD', false], ['stoch', '스토캐스틱', false],
   ['value', '거래대금', false], ['ad', '매집·분산(A/D)', false],
-  ['cci', 'CCI', false], ['wr', '윌리엄스 %R', false], ['obv', 'OBV', false], ['atr', 'ATR', false],
+  ['cci', 'CCI', false], ['wr', '윌리엄스 %R', false], ['obv', 'OBV', false], ['mfi', 'MFI', false], ['atr', 'ATR', false],
 ];
 const DESC: Record<string, string> = {
   ma5: '최근 5거래일 평균 가격', ma20: '한 달 평균 가격, 단기 추세', ma60: '석 달 평균 가격, 중기 추세', ma120: '반년 평균 가격, 장기 추세',
-  ema12: '최근 가격에 무게를 둔 평균 두 개', bb: '20일 평균 ± 표준편차 2배, 변동 범위', ichimoku: '구름대로 보는 추세와 지지', env: '20일 평균 ±5% 띠',
+  ema12: '최근 가격에 무게를 둔 평균 두 개', bb: '20일 평균 ± 표준편차 2배, 변동 범위', ichimoku: '구름대로 보는 추세와 지지', env: '20일 평균 ±5% 띠', vwap: '최근 20거래일 거래량으로 가중한 평균 가격(거래가 많이 된 값의 중심)', psar: '추세를 따라오는 점. 가격 아래면 오름세, 위면 내림세이고 점이 뒤집히면 추세 전환 신호',
   levels: '자주 막히거나 받친 가격대', fib: '최근 120거래일 최고·최저를 잇는 흐름의 되돌림 비율', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위(10~90%)',
   volume: '하루 거래된 주식 수', rsi: '과열(70 이상)·과매도(30 이하)', macd: '단기·장기 평균의 차이로 보는 추세 전환', stoch: '최근 범위 안에서 지금 가격의 위치',
   spikes: '20일 평균의 3배 넘게 거래된 날을 캔들 아래에 표시(▲ 오른 날 · ▼ 내린 날)', value: '하루 거래대금(종가 × 거래량, 억 원). 진하게 칠한 날은 20일 평균의 3배 이상', ad: '거래가 많은 날 종가가 하루 범위의 위쪽(매집 쪽)·아래쪽(분산 쪽)에서 끝났는지 누적한 선',
-  cci: '평균에서 얼마나 벗어났는지', wr: '최근 고점 대비 위치(과열·과매도)', obv: '오른 날·내린 날 거래량 누적', atr: '하루 평균 움직임 폭',
+  cci: '평균에서 얼마나 벗어났는지', wr: '최근 고점 대비 위치(과열·과매도)', obv: '오른 날·내린 날 거래량 누적', mfi: '거래량을 함께 본 RSI. 80 이상 과열 · 20 이하 과매도', atr: '하루 평균 움직임 폭',
 };
 const GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true" class="gear"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const RANGES: [string, number][] = [['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250], ['3년', 750], ['전체', 100000]];
@@ -264,8 +264,8 @@ window.addEventListener('DOMContentLoaded', function () {
   if (window.GNMTheme) GNMTheme.chart(chart, function (c) { UP = c.up; DOWN = c.down; candle.applyOptions({ upColor: c.up, downColor: c.down, wickUpColor: c.up, wickDownColor: c.down }); });
 
   // ---- indicator settings (G-157): every period and multiple can be changed in 상세 설정하기; kept on this device ----
-  var IP0 = { ma5: { n: 5 }, ma20: { n: 20 }, ma60: { n: 60 }, ma120: { n: 120 }, ema12: { f: 12, s: 26 }, bb: { n: 20, k: 2 }, env: { n: 20, pct: 6 }, ichimoku: { conv: 9, base: 26, span: 52 },
-    rsi: { n: 14, hi: 70, lo: 30 }, macd: { f: 12, s: 26, sig: 9 }, stoch: { n: 14, k: 3, d: 3 }, cci: { n: 20 }, wr: { n: 14 }, atr: { n: 14 }, value: { n: 20 } };
+  var IP0 = { ma5: { n: 5 }, ma20: { n: 20 }, ma60: { n: 60 }, ma120: { n: 120 }, ema12: { f: 12, s: 26 }, bb: { n: 20, k: 2 }, env: { n: 20, pct: 6 }, ichimoku: { conv: 9, base: 26, span: 52 }, vwap: { n: 20 }, psar: { step: 0.02, max: 0.2 },
+    rsi: { n: 14, hi: 70, lo: 30 }, macd: { f: 12, s: 26, sig: 9 }, stoch: { n: 14, k: 3, d: 3 }, cci: { n: 20 }, wr: { n: 14 }, atr: { n: 14 }, value: { n: 20 }, mfi: { n: 14, hi: 80, lo: 20 } };
   var IP = JSON.parse(JSON.stringify(IP0));
   try { var ips = JSON.parse(localStorage.getItem('gnm-ind-params') || 'null'); if (ips) Object.keys(ips).forEach(function (k) { if (IP[k]) Object.keys(IP[k]).forEach(function (f) { var v = Number(ips[k][f]); if (isFinite(v) && v > 0) IP[k][f] = v; }); }); } catch (e) {}
   var ip = function (k) { return IP[k]; };
@@ -288,6 +288,22 @@ window.addEventListener('DOMContentLoaded', function () {
     ma120: function () { return [line(sma(C, ip('ma120').n), '#00968a')]; },
     ema12: function () { var q = ip('ema12'); return [line(ema(C, q.f), '#c2410c', 0, { lineStyle: 2 }), line(ema(C, q.s), '#4338ca', 0, { lineStyle: 2 })]; },
     bb: function () { var q = ip('bb'), m = sma(C, q.n), s = std(C, q.n, m); return [line(m, '#8a96a3', 0, { lineStyle: 2 }), line(m.map(function (x, i) { return x == null ? null : x + q.k * s[i]; }), '#8a96a3'), line(m.map(function (x, i) { return x == null ? null : x - q.k * s[i]; }), '#8a96a3')]; },
+    // G-186: rolling VWAP — the volume-weighted average of the typical price over n sessions.
+    vwap: function () { var n = ip('vwap').n, pv = 0, vv = 0, tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }); return [line(bars.map(function (b, i) { pv += tp[i] * b.volume; vv += b.volume; if (i >= n) { pv -= tp[i - n] * bars[i - n].volume; vv -= bars[i - n].volume; } return i < n - 1 || vv <= 0 ? null : pv / vv; }), '#d97706', 0, { lineWidth: 2, title: 'VWAP ' + n })]; },
+    // G-186: Parabolic SAR (Wilder): dots under a rising trend, above a falling one; the step grows at each new extreme up to max.
+    psar: function () {
+      var q = ip('psar'), out = [], up = true, af = q.step, ep, sar;
+      if (bars.length < 3) return [];
+      up = bars[1].close >= bars[0].close; ep = up ? bars[0].high : bars[0].low; sar = up ? bars[0].low : bars[0].high; out.push(null);
+      for (var i = 1; i < bars.length; i++) {
+        var b = bars[i], pb = bars[i - 1], p2 = bars[Math.max(0, i - 2)];
+        sar = sar + af * (ep - sar);
+        if (up) { sar = Math.min(sar, pb.low, p2.low); if (b.low < sar) { up = false; sar = ep; ep = b.low; af = q.step; } else if (b.high > ep) { ep = b.high; af = Math.min(q.max, af + q.step); } }
+        else { sar = Math.max(sar, pb.high, p2.high); if (b.high > sar) { up = true; sar = ep; ep = b.high; af = q.step; } else if (b.low < ep) { ep = b.low; af = Math.min(q.max, af + q.step); } }
+        out.push(sar);
+      }
+      return [line(out, '#0ea5e9', 0, { lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 2, title: 'SAR' })];
+    },
     env: function () { var q = ip('env'), m = sma(C, q.n); return [line(m.map(function (x) { return x == null ? null : x * (1 + q.pct / 100); }), INK, 0, { lineStyle: 1 }), line(m.map(function (x) { return x == null ? null : x * (1 - q.pct / 100); }), INK, 0, { lineStyle: 1 })]; },
     ichimoku: function () {
       var q = ip('ichimoku'), conv = C.map(function (_, i) { return i < q.conv - 1 ? null : (hh(q.conv, i) + ll(q.conv, i)) / 2; }), basev = C.map(function (_, i) { return i < q.base - 1 ? null : (hh(q.base, i) + ll(q.base, i)) / 2; });
@@ -393,7 +409,7 @@ window.addEventListener('DOMContentLoaded', function () {
       var sig = ema(m, q.sig).map(function (x, i) { return i < q.s + q.sig - 2 ? null : x; });
       var hist = chart.addSeries(L.HistogramSeries, { priceLineVisible: false, lastValueVisible: false }, p);
       hist.setData(m.map(function (x, i) { return x == null || sig[i] == null ? null : { time: t(i), value: x - sig[i], color: x - sig[i] >= 0 ? 'rgba(240,68,82,.5)' : 'rgba(49,130,246,.5)' }; }).filter(Boolean));
-      return [hist, line(m, '#1b2230', p, { title: 'MACD' }), line(sig, '#d97706', p, { title: '시그널' })];
+      return [hist, line(m, INK, p, { title: 'MACD' }), line(sig, '#d97706', p, { title: '시그널' })];
     },
     stoch: function (p) { var q = ip('stoch'), k = C.map(function (c, i) { if (i < q.n - 1) return null; var h = hh(q.n, i), l = ll(q.n, i); return h === l ? 50 : (c - l) / (h - l) * 100; }); var ks = sma(k.map(function (x) { return x == null ? 0 : x; }), q.k).map(function (x, i) { return i < q.n + q.k - 2 ? null : x; }); var ds = sma(ks.map(function (x) { return x == null ? 0 : x; }), q.d).map(function (x, i) { return i < q.n + q.k + q.d - 3 ? null : x; }); return [line(ks, '#00968a', p, { title: '%K' }), line(ds, '#d97706', p, { title: '%D' })]; },
     cci: function (p) { var n = ip('cci').n, tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }), m = sma(tp, n); return [line(tp.map(function (x, i) { if (m[i] == null) return null; var md = 0; for (var j = i - n + 1; j <= i; j++) md += Math.abs(tp[j] - m[i]); md /= n; return md === 0 ? 0 : (x - m[i]) / (0.015 * md); }), '#0e7490', p, { title: 'CCI ' + n })]; },
@@ -405,6 +421,8 @@ window.addEventListener('DOMContentLoaded', function () {
       return [s, line(m, '#64748b', p, { title: vn + '일 평균' })];
     },
     ad: function (p) { var a = 0; return [line(bars.map(function (b) { a += b.high > b.low ? ((b.close - b.low) - (b.high - b.close)) / (b.high - b.low) * b.volume : 0; return a; }), '#0f766e', p, { title: 'A/D', lastValueVisible: false })]; },
+    // G-186: MFI — RSI with volume: the share of money flow on up days over n sessions (overbought 80, oversold 20 by default).
+    mfi: function (p) { var q = ip('mfi'), tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }), vals = bars.map(function (b, i) { if (i < q.n) return null; var pos = 0, neg = 0; for (var j = i - q.n + 1; j <= i; j++) { var f = tp[j] * bars[j].volume; if (tp[j] > tp[j - 1]) pos += f; else if (tp[j] < tp[j - 1]) neg += f; } return neg === 0 ? 100 : 100 - 100 / (1 + pos / neg); }); var s = line(vals, '#0f766e', p, { lastValueVisible: true, title: 'MFI ' + q.n }); s.createPriceLine({ price: q.hi, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: q.lo, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
     obv: function (p) { var o = 0; return [line(C.map(function (c, i) { if (i) o += c > C[i - 1] ? V[i] : c < C[i - 1] ? -V[i] : 0; return o; }), '#475569', p, { title: 'OBV' })]; },
     atr: function (p) { var n = ip('atr').n, a = null; return [line(bars.map(function (b, i) { if (!i) return null; var tr = Math.max(b.high - b.low, Math.abs(b.high - C[i - 1]), Math.abs(b.low - C[i - 1])); a = a == null ? tr : (a * (n - 1) + tr) / n; return i < n ? null : a; }), INK, p, { title: 'ATR ' + n })]; }
   };

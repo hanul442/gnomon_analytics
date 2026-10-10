@@ -44,6 +44,9 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   for (const text of ['기술적 적정가', '예측 범위', '누적 순매수', '수급 흔적', '투자 지표', '평균 목표가', '가격 구조', '시장 대비 수익률']) assert.ok(page.includes(text), text);
   assert.ok(page.includes('data-ov="forecast"'));
   for (const key of ['rsi', 'macd', 'stoch', 'volume']) assert.ok(page.includes(`data-pane="${key}"`), key);
+  // G-186: VWAP and Parabolic SAR on the price, MFI as a pane.
+  for (const key of ['vwap', 'psar']) assert.ok(page.includes(`data-ov="${key}"`), key);
+  assert.ok(page.includes('data-pane="mfi"'));
   // Strategy chips put buy/sell points on the chart; filings and news are dashed vertical lines.
   assert.ok(page.includes('data-strategy="macd"') && page.includes('id="strat-info"') && page.includes('data-show-strategy'));
   // The parliament: every vote as a seat, with faction chips and seat details.
