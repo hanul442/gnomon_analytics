@@ -8,6 +8,7 @@ import { reportInput, inputHash, refundJob, reportFragments, type ReportQueue, t
 import type { DailyReport } from '../report/dailyReport.js';
 import type { Commentary } from '../analysis/commentary.js';
 import { renderDeep } from '../report/renderHtml.js';
+import { renderOps } from '../report/renderAlpha.js';
 import { mailButton, mailLayout, mailList, sendMail as deliverMail } from './mail.js';
 import { withCurrency } from '../report/format.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
@@ -1166,12 +1167,19 @@ route('POST', '/admin/login-link', async ({ req, env, now }) => {
   return { link: loginLink(env, await createLoginToken(db, email, invite, now)), expiresInMinutes: LOGIN_TTL_MIN };
 });
 
+const OPS_HEADERS = {
+  'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer', 'X-Content-Type-Options': 'nosniff',
+  'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+};
+
 export async function handle(req: Request, env: Env, deps: Deps): Promise<Response> {
   const cors = corsHeaders(req, env);
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   const path = new URL(req.url).pathname.replace(/\/+$/, '') || '/';
   // The API's own address opened in a browser: send people to the site.
   if (path === '/' && req.method === 'GET') return Response.redirect(`${env.SITE_URL.replace(/\/$/, '')}/index.html`, 302);
+  // G-185: the ops console, apart from the user site: its own origin (this Worker), its own sign-in, never cached or framed.
+  if (path === '/ops' && req.method === 'GET') return new Response(renderOps({ api: new URL(req.url).origin, site: env.SITE_URL }), { headers: OPS_HEADERS });
   try {
     if (path === '/ask/stream' && req.method === 'POST') {
       const now=deps.now(), u=await authed(req,env,now), b=await body(req), enc=new TextEncoder();

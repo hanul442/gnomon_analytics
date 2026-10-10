@@ -32,7 +32,7 @@ export const LOADING_JS = THINKING_ORB_JS + `
  var ORB_FOR=[[/검색|찾/,'searching'],[/계산|분석/,'solving'],[/만드는|작성|생성/,'composing'],[/준비/,'breathing'],[/확인|기다리/,'listening'],[/불러오|연결/,'connecting']];
  var LOADING=/^(?:[^.!?]{0,24})(불러오는 중|불러오고 있어요|계산 중|계산하고 있어요|준비하고 있어요|준비 중|확인하고 있어요|확인하는 중|만드는 중|만들고 있어요|기다리는 중|찾는 중|찾고 있어요)/;
  var orbLines=function(root){(root||document).querySelectorAll('p,span,div,li,small,td').forEach(function(el){
-  if(el.children.length||el.dataset.orbLine||el.closest('.gnm-loading,.gnm-network,.orbs-load,.chat,.db-typing,.job-steps,script,style'))return;
+  if(el.children.length||el.dataset.orbLine||el.closest('.page-load,.gnm-loading,.gnm-network,.orbs-load,.chat,.db-typing,.job-steps,script,style'))return;
   var t=(el.textContent||'').trim();if(t.length>40||!LOADING.test(t))return;
   var st='working';for(var i=0;i<ORB_FOR.length;i++)if(ORB_FOR[i][0].test(t)){st=ORB_FOR[i][1];break;}
   el.dataset.orbLine='1';el.classList.add('orb-line');el.insertAdjacentHTML('afterbegin',orb(st,20));

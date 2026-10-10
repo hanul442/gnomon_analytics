@@ -12,7 +12,7 @@ export const CHART_V6_CSS = `
 .coin-tf{max-width:100%;overflow-x:auto;flex-wrap:nowrap;white-space:nowrap}.coin-tf button{flex:none}.dt:disabled{opacity:.4;cursor:not-allowed}
 .v6-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:6px 0}
 .draw-tools{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
-.dt{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 8px;font:inherit;font-size:12px;font-weight:600;color:var(--fg2);cursor:pointer;min-height:32px}
+.dt{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface-solid);color:var(--fg);border-radius:8px;padding:5px 8px;font:inherit;font-size:12px;font-weight:600;color:var(--fg2);cursor:pointer;min-height:32px}
 .dt svg{width:16px;height:16px}.dt:hover{border-color:var(--accent)}.dt[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
 .draw-note{min-height:18px;margin:0 0 4px}
 .chart-card.drawing #chart{cursor:crosshair}.chart-card.tf-agg #vlines,.chart-card.tf-agg #ev-strip,.chart-card.tf-agg #mark-pop{visibility:hidden}

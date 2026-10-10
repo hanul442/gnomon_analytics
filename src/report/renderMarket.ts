@@ -43,13 +43,14 @@ export function miniGauge(score: number | null, label: string): string {
   const pt = (deg: number, rad = r) => [cx + rad * Math.cos((deg * Math.PI) / 180), cy - rad * Math.sin((deg * Math.PI) / 180)] as const;
   const arcs = GAUGE_COLORS.map((color, i) => {
     const [x1, y1] = pt(angle(BOUNDS[i]!) - (i ? 1.5 : 0)), [x2, y2] = pt(angle(BOUNDS[i + 1]!) + (i < 6 ? 1.5 : 0));
-    return `<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${color}" stroke-width="8" fill="none"/>`;
+    const on = score !== null && score >= BOUNDS[i]! && (score < BOUNDS[i + 1]! || i === 6);
+    return `<path class="g-seg${on ? ' on' : ''}" style="color:${color}" d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${color}" stroke-width="8" fill="none"/>`;
   }).join('');
   const needle = score === null
     ? `<circle cx="${cx}" cy="${cy}" r="5" fill="#c4cbc9"/>`
     : (() => {
         const turn = (90 - angle(score)).toFixed(1);
-        return `<g class="needle" style="--r:${turn}deg;transform-origin:${cx}px ${cy}px" transform="rotate(${turn} ${cx} ${cy})"><path d="M${cx - 4} ${cy} L${cx} ${cy - (r - 14)} L${cx + 4} ${cy} Z" fill="#18201f"/></g><circle cx="${cx}" cy="${cy}" r="5" fill="#18201f"/>`;
+        return `<g class="needle" style="--r:${turn}deg;transform-origin:${cx}px ${cy}px" transform="rotate(${turn} ${cx} ${cy})"><path d="M${cx - 3} ${cy} L${cx} ${cy - (r - 14)} L${cx + 3} ${cy} Z" fill="#18201f"/><circle class="g-tip" cx="${cx}" cy="${cy - (r - 14)}" r="3"/></g><circle class="g-hub" cx="${cx}" cy="${cy}" r="5" fill="#18201f"/>`;
       })();
   return `<svg viewBox="0 0 120 62" class="mini-gauge" role="img" aria-label="${esc(label)}">${arcs}${needle}</svg>`;
 }
@@ -58,7 +59,7 @@ export function horizonRow(horizons: readonly HorizonGauge[]): string {
   const cards = horizons.map((h) => {
     const s = h.summary;
     const t = s.score === null ? '' : s.score >= 0.1 ? 'up' : s.score <= -0.1 ? 'down' : '';
-    return `<div class="hz"><div class="hz-top"><b>${esc(h.label)}</b><span>${esc(h.barLabel)}</span></div>
+    return `<div class="hz${t ? ' hz-' + t : ''}"><div class="hz-top"><b>${esc(h.label)}</b><span>${esc(h.barLabel)}</span></div>
 ${miniGauge(s.score, `${h.label} ${s.label}`)}
 <div class="hz-label ${t}">${esc(s.label)}</div>
 <div class="hz-meta"><span>${esc(h.span)}</span><span>강세 ${s.counts.bullish}</span><span>약세 ${s.counts.bearish}</span></div></div>`;
@@ -69,30 +70,36 @@ ${miniGauge(s.score, `${h.label} ${s.label}`)}
 ${notes.length ? `<p class="fine">${notes.map(esc).join(' ')}</p>` : ''}</div>`;
 }
 
-/** A horizontal price axis: fair-value band, center, close, consensus and forecast p50 marks. */
+/**
+ * G-185: the fair-value band drawn like the forecast ranges (one shared look): the band as a lit bar, the centre as a dot,
+ * today's close as a dashed line, and the consensus target and the 20-session forecast as small ticks above the bar.
+ */
 function valueStrip(fv: TechnicalFairValue, consensus: number | null, p50: number | null): string {
   const marks = [fv.low, fv.high, fv.close, fv.center, ...(consensus ? [consensus] : []), ...(p50 ? [p50] : [])];
-  const lo = Math.min(...marks) * 0.97, hi = Math.max(...marks) * 1.03;
-  // G-176: drawn at phone width (360 units) so the labels stay readable instead of shrinking to 6px.
-  const x = (v: number) => 8 + ((v - lo) / (hi - lo)) * 344;
-  const short = (v: number) => (v >= 1e8 ? `${(v / 1e8).toFixed(1)}억` : v >= 1e6 ? `${Math.round(v / 1e4).toLocaleString('ko-KR')}만` : v >= 1e4 ? `${(v / 1e4).toFixed(1)}만` : won(v));
-  // Labels sit above or below the axis; a label too close to another on its side drops to an outer row.
-  // Each label's width is estimated from its text (about 6.5 units a character) so longer labels drop to an outer row instead of overprinting.
-  const placed: { side: number; x: number; row: number; w: number }[] = [];
-  const mark = (v: number, label: string, cls: string, side: -1 | 1) => {
-    const px = x(v), w = (label.length + short(v).length + 1) * 6.5;
-    let row = 0;
-    while (placed.some((p) => p.side === side && p.row === row && Math.abs(p.x - px) < (p.w + w) / 2 + 6)) row += 1;
-    placed.push({ side, x: px, row, w });
-    const ty = side < 0 ? 30 - row * 15 : 84 + row * 15;
-    const anchor = px < 48 ? 'start' : px > 312 ? 'end' : 'middle';
-    return `<g class="vs-${cls}"><line x1="${px.toFixed(1)}" x2="${px.toFixed(1)}" y1="40" y2="68"/><text x="${px.toFixed(1)}" y="${ty}" text-anchor="${anchor}">${esc(label)} <tspan class="vs-v">${short(v)}</tspan></text><title>${esc(label)} ${won(v)}</title></g>`;
+  const span = Math.max(...marks) - Math.min(...marks) || fv.center * 0.02, lo = Math.min(...marks) - span * 0.06, hi = Math.max(...marks) + span * 0.06;
+  const at = (v: number) => (((v - lo) / (hi - lo)) * 100).toFixed(1);
+  const tick = (v: number, cls: string, label: string) => `<i class="fc-tick ${cls}" style="left:${at(v)}%" title="${esc(label)} ${won(v)}"></i>`;
+  const gap = (fv.close / fv.center - 1) * 100;
+  return `<div class="fc-legend"><span><i class="lg-rng"></i>적정 범위</span><span><i class="lg-mid"></i>적정가 중심</span><span><i class="lg-now"></i>현재가</span>${consensus ? '<span><i class="lg-tick cons"></i>증권가 목표가</span>' : ''}${p50 ? '<span><i class="lg-tick p50"></i>20일 뒤 중앙 예측</span>' : ''}</div>
+<div class="fc-row"><div class="fc-h"><b>적정 범위</b><span>현재가 <b>${won(fv.close)}</b> <em class="${tone(gap)}">중심 대비 ${pct(gap)}</em></span></div>
+<div class="fc-bar" role="img" aria-label="적정 범위 ${won(fv.low)}에서 ${won(fv.high)}, 중심 ${won(fv.center)}, 현재가 ${won(fv.close)}"><i class="fc-rng" style="left:${at(fv.low)}%;width:${(Number(at(fv.high)) - Number(at(fv.low))).toFixed(1)}%"></i><i class="fc-now" style="left:${at(fv.close)}%"></i><i class="fc-mid" style="left:${at(fv.center)}%"></i>${consensus ? tick(consensus, 'cons', '증권가 목표가') : ''}${p50 ? tick(p50, 'p50', '20일 뒤 중앙 예측') : ''}</div>
+<div class="fc-ends"><span>하단 ${won(fv.low)}</span><small>중심 ${won(fv.center)}</small><span>상단 ${won(fv.high)}</span></div></div>
+${consensus || p50 ? `<div class="fc-notes">${consensus ? `<span><i class="lg-tick cons"></i>증권가 목표가 <b>${won(consensus)}</b></span>` : ''}${p50 ? `<span><i class="lg-tick p50"></i>20일 뒤 중앙 <b>${won(p50)}</b></span>` : ''}</div>` : ''}`;
+}
+
+/**
+ * G-185: support and resistance as a price ladder instead of a table: resistance above today's price, support below,
+ * each with a bar as long as its distance from the close and one dot per touch.
+ */
+function levelLadder(levels: StructureSnapshot['levels'], close: number): string {
+  if (!levels.length) return '';
+  const rows = [...levels].sort((a, b) => b.price - a.price), far = Math.max(...rows.map((l) => Math.abs(l.price / close - 1))) || 1;
+  const row = (l: StructureSnapshot['levels'][number], i: number) => {
+    const d = (l.price / close - 1) * 100, res = l.kind === 'RESISTANCE';
+    return `<div class="lv-row ${res ? 'lv-res' : 'lv-sup'}" style="--i:${i}"><span class="lv-k">${res ? '저항' : '지지'}</span><b class="lv-p">${won(l.price)}</b><span class="lv-bar"><i style="width:${Math.max(6, (Math.abs(d / 100) / far) * 100).toFixed(1)}%"></i></span><em class="${tone(d)}">${pct(d)}</em><span class="lv-t" title="닿은 횟수 ${l.touches}회">${'<i></i>'.repeat(Math.min(5, l.touches))}<small>${l.touches}회</small></span></div>`;
   };
-  return `<svg viewBox="0 0 360 108" class="value-strip" role="img" aria-label="기술적 적정 범위 ${won(fv.low)}~${won(fv.high)}, 현재가 ${won(fv.close)}">
-<line x1="8" x2="352" y1="54" y2="54" class="vs-axis"/>
-<rect x="${x(fv.low).toFixed(1)}" y="46" width="${(x(fv.high) - x(fv.low)).toFixed(1)}" height="16" rx="4" class="vs-band"><title>적정 범위 ${won(fv.low)}~${won(fv.high)}</title></rect>
-${mark(fv.center, '적정가', 'center', -1)}${consensus ? mark(consensus, '증권가 목표가', 'cons', -1) : ''}${mark(fv.close, '현재가', 'close', 1)}${p50 ? mark(p50, '20일 예측', 'p50', 1) : ''}
-</svg>`;
+  const above = rows.filter((l) => l.price >= close), below = rows.filter((l) => l.price < close);
+  return `<div class="lv-ladder" role="list" aria-label="지지·저항 가격">${above.map(row).join('')}<div class="lv-now" style="--i:${above.length}"><span>현재가</span><b>${won(close)}</b></div>${below.map((l, k) => row(l, above.length + 1 + k)).join('')}</div>`;
 }
 
 const POSITION = { ABOVE: '적정 범위보다 위', INSIDE: '적정 범위 안', BELOW: '적정 범위보다 아래' } as const;
@@ -103,7 +110,7 @@ export function valueCard(market: MarketSection, withForecast = true): string {
   if (!fv) return '<div class="card"><div class="head"><h2>기술적 적정가</h2></div><p class="empty">일봉이 120개보다 적어서 계산하지 않았어요.</p></div>';
   const consensus = market.snapshot?.consensus?.targetPriceMean ?? null;
   const p20 = withForecast ? market.forecasts.find((f) => f.horizon === 20)?.p50 ?? null : null;
-  return `<div class="card" id="value"><div class="head"><h2>기술적 적정가</h2><span class="sub" style="margin:0">${esc(fv.sessionDate)} 종가 기준</span></div>
+  return `<div class="card fc-card" id="value"><div class="head"><h2>기술적 적정가</h2><span class="sub" style="margin:0">${esc(fv.sessionDate)} 종가 기준</span></div>
 <div class="value-head"><div><div class="label">적정가 중심</div><div class="big">${won(fv.center)}</div></div>
 <div><div class="label">적정 범위</div><div class="mid">${won(fv.low)} ~ ${won(fv.high)}</div></div>
 <div><div class="label">현재가 위치</div><div class="mid ${fv.position === 'ABOVE' ? 'up' : fv.position === 'BELOW' ? 'down' : ''}">${POSITION[fv.position]} (${pct(fv.gapPct)})</div></div></div>
@@ -144,8 +151,7 @@ export function structureCard(s: StructureSnapshot | null, weekly: StructureSnap
     ? `${esc(lastBreak.date)} 종가 ${won(lastBreak.close)}가 ${lastBreak.direction === 'BULLISH' ? '스윙 고점' : '스윙 저점'} ${won(lastBreak.brokenSwing.price)}을 ${lastBreak.direction === 'BULLISH' ? '넘었어요' : '깨뜨렸어요'} (${lastBreak.type === 'CHOCH' ? '추세 전환 신호' : '추세 지속'}).`
     : '최근 확정된 스윙을 넘거나 깨뜨린 종가가 없어요.';
   const fib = s.fibonacci;
-  const levels = s.levels.map((l) => `<tr><td><span class="badge ${l.kind === 'RESISTANCE' ? 'v-BULLISH' : 'v-BEARISH'}">${l.kind === 'RESISTANCE' ? '저항' : '지지'}</span></td><td class="num">${won(l.price)}</td><td class="num ${tone(l.price / s.close - 1)}">${pct((l.price / s.close - 1) * 100)}</td><td class="num">${l.touches}회</td></tr>`).join('');
-  return `<div class="card" id="structure"><div class="head"><h2>가격 구조</h2><span class="sub" style="margin:0">일봉 스윙 기준</span></div>
+  return `<div class="card lv-card" id="structure"><div class="head"><h2>가격 구조</h2><span class="sub" style="margin:0">일봉 스윙 기준</span></div>
 <div class="facts">
 <div><span class="label">일봉 구조</span><b class="${s.bias === 'BULLISH' ? 'up' : s.bias === 'BEARISH' ? 'down' : ''}">${BIAS[s.bias]}</b></div>
 <div><span class="label">주봉 구조</span><b class="${weekly?.bias === 'BULLISH' ? 'up' : weekly?.bias === 'BEARISH' ? 'down' : ''}">${weekly ? BIAS[weekly.bias] : '없음'}</b></div>
@@ -156,7 +162,7 @@ export function structureCard(s: StructureSnapshot | null, weekly: StructureSnap
 </div>
 <p class="reason">${breakText}</p>
 ${fib ? `<p class="reason">피보나치 기준: 최근 ${fib.lookback ? `${fib.lookback}거래일의 ` : ''}${fib.from.type === 'LOW' ? '최저가' : '최고가'} ${won(fib.from.price)}(${esc(fib.from.date)}) → ${fib.to.type === 'HIGH' ? '최고가' : '최저가'} ${won(fib.to.price)}(${esc(fib.to.date)}). ${fib.to.type === 'HIGH' ? '오른 폭 가운데 얼마나 되돌려 내려왔는지' : '내린 폭 가운데 얼마나 되돌려 올라왔는지'}를 재요${fib.retracement !== null ? ` · 지금 ${(fib.retracement * 100).toFixed(1)}%` : ''}.</p>` : ''}
-${levels ? `<div class="table-wrap"><table class="compact"><thead><tr><th>구분</th><th class="num">가격</th><th class="num">현재가 대비</th><th class="num">닿은 횟수</th></tr></thead><tbody>${levels}</tbody></table></div>` : ''}
+${levelLadder(s.levels, s.close)}
 <p class="fine">스윙 고점·저점은 양쪽 3개 봉보다 높거나 낮은 봉이고, 오른쪽 3개 봉이 마감된 뒤에야 확정해요. 1.5% 안에 모인 스윙은 하나의 지지·저항으로 묶어요.</p></div>`;
 }
 
@@ -352,10 +358,48 @@ export function stockInfoCards(market: MarketSection, close: number | null, _nam
 
 export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:flex;justify-content:space-between;align-items:baseline}.qi-card h2{font-size:17px;margin:0 0 4px}.qi-more{font-size:13.5px;font-weight:800;color:var(--accent-strong);text-decoration:none}.qi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.qi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}.qi-k{color:var(--fg2);font-weight:700;margin-right:auto}.qi-who{display:inline-flex;gap:6px;align-items:baseline}.qi-who small{color:var(--muted)}@media (max-width:520px){.qi-k{width:100%}}
 .si-wrap{columns:2;column-gap:14px;margin-bottom:16px}.si-card{min-width:0;break-inside:avoid;margin:0 0 14px;display:block}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:17px;margin:0 0 10px}
-.si-range{margin:6px 0 14px}.tb-bar{position:relative;height:8px;margin:10px 0 4px;border-radius:99px;background:#eef0f4}.tb-fill{position:absolute;top:0;bottom:0;border-radius:99px;opacity:.85}.tb-fill.up{background:linear-gradient(90deg,#ffd3d7,var(--up))}.tb-fill.down{background:linear-gradient(90deg,var(--down),#d3e3ff)}.tb-tick{position:absolute;top:-3px;width:2px;height:14px;margin-left:-1px;background:#c3c9d2}.tb-now,.tb-tgt{display:inline-block}.tb-bar .tb-now{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--fg);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.tb-bar .tb-tgt{position:absolute;top:50%;width:4px;height:18px;margin:-9px 0 0 -2px;border-radius:2px;background:var(--accent)}.tb-key{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--fg2);margin-top:8px}.tb-key span{display:inline-flex;align-items:center;gap:6px}.tb-key .tb-now{width:10px;height:10px;border-radius:50%;background:var(--fg)}.tb-key .tb-tgt{width:4px;height:12px;border-radius:2px;background:var(--accent)}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
+.si-range{margin:6px 0 14px}.tb-bar{position:relative;height:8px;margin:10px 0 4px;border-radius:99px;background:var(--soft)}.tb-fill{position:absolute;top:0;bottom:0;border-radius:99px;opacity:.85}.tb-fill.up{background:linear-gradient(90deg,#ffd3d7,var(--up))}.tb-fill.down{background:linear-gradient(90deg,var(--down),#d3e3ff)}.tb-tick{position:absolute;top:-3px;width:2px;height:14px;margin-left:-1px;background:#c3c9d2}.tb-now,.tb-tgt{display:inline-block}.tb-bar .tb-now{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--fg);border:2px solid var(--surface-solid);box-shadow:0 1px 4px rgba(0,0,0,.25)}.tb-bar .tb-tgt{position:absolute;top:50%;width:4px;height:18px;margin:-9px 0 0 -2px;border-radius:2px;background:var(--accent)}.tb-key{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--fg2);margin-top:8px}.tb-key span{display:inline-flex;align-items:center;gap:6px}.tb-key .tb-now{width:10px;height:10px;border-radius:50%;background:var(--fg)}.tb-key .tb-tgt{width:4px;height:12px;border-radius:2px;background:var(--accent)}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
 .si-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.si-c{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.si-c span{color:var(--fg2)}.si-c b{font-variant-numeric:tabular-nums;text-align:right}
-.si-seg{margin-bottom:8px;width:max-content}.si-flow{display:grid;grid-template-columns:56px minmax(0,1fr) 84px;align-items:center;gap:8px;padding:7px 0;font-size:14px}.si-flow b{text-align:right;font-variant-numeric:tabular-nums}.si-fbar{position:relative;height:10px;background:#f1f3f7;border-radius:4px}.si-fbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}.si-fbar i{position:absolute;top:0;bottom:0;border-radius:3px}.si-fbar i.pos{background:var(--up)}.si-fbar i.neg{background:var(--accent)}
+.si-seg{margin-bottom:8px;width:max-content}.si-flow{display:grid;grid-template-columns:56px minmax(0,1fr) 84px;align-items:center;gap:8px;padding:7px 0;font-size:14px}.si-flow b{text-align:right;font-variant-numeric:tabular-nums}.si-fbar{position:relative;height:10px;background:var(--soft);border-radius:4px}.si-fbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}.si-fbar i{position:absolute;top:0;bottom:0;border-radius:3px}.si-fbar i.pos{background:var(--up)}.si-fbar i.neg{background:var(--accent)}
 .fc-row{margin:14px 0 4px}.fc-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}.fc-h span{font-size:13px;color:var(--fg2)}.fc-h span b{color:var(--fg)}.fc-h em{font-style:normal;font-weight:700;margin-left:4px}
+/* G-185: gauges on glass: the scored band lit with its own colour, a slim needle with a glowing tip, each horizon a glass tile tinted by its verdict. */
+.g-seg{opacity:.3;transition:opacity .4s,filter .4s}.g-seg.on{opacity:1;filter:drop-shadow(0 0 5px currentColor)}
+.mini-gauge:not(:has(.on)) .g-seg,.gauge:not(:has(.on)) .g-seg{opacity:.55}
+.g-tip{fill:#fff;filter:drop-shadow(0 0 4px rgba(0,166,251,.95))}.g-end{fill:var(--muted)}
+html[data-theme=dark] .g-hub{fill:var(--surface-solid);stroke:var(--fg);stroke-width:1.5}
+.hz{position:relative;overflow:hidden;background:linear-gradient(165deg,rgba(255,255,255,.07),rgba(255,255,255,.015))!important;border:1px solid var(--line)!important;box-shadow:inset 0 1px rgba(255,255,255,.06),0 10px 30px -18px rgba(0,0,0,.6);-webkit-backdrop-filter:blur(var(--glass-blur));backdrop-filter:blur(var(--glass-blur));transition:transform .25s cubic-bezier(.34,1.56,.64,1),border-color .25s}
+.hz::before{content:"";position:absolute;inset:-40% -20% auto;height:90%;pointer-events:none;background:radial-gradient(closest-side,var(--hz-glow,transparent),transparent);opacity:.55}
+.hz-up{--hz-glow:rgba(255,122,122,.35);border-color:rgba(255,122,122,.25)!important}.hz-down{--hz-glow:rgba(92,187,255,.35);border-color:rgba(92,187,255,.25)!important}
+.hz:hover{transform:translateY(-2px)}
+html:not([data-theme=dark]) .hz{background:linear-gradient(165deg,rgba(255,255,255,.9),rgba(255,255,255,.6))!important}
+/* G-185: glass bars: the range glows, the centre dot sits in a ring of the page colour. */
+.fc-card .fc-bar{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)),var(--soft);box-shadow:inset 0 1px 2px rgba(0,0,0,.25),inset 0 0 0 1px var(--line)}
+.fc-rng{background:linear-gradient(90deg,rgba(0,166,251,.32),rgba(0,166,251,.62),rgba(0,166,251,.32))!important;box-shadow:0 0 14px -2px rgba(0,166,251,.55)}
+.fc-mid{border-color:var(--surface-solid)!important;box-shadow:0 0 0 1px var(--accent),0 0 12px rgba(0,166,251,.7)!important}
+.fc-tick{position:absolute;top:-9px;width:2px;height:10px;margin-left:-1px;border-radius:2px}.fc-tick::after{content:"";position:absolute;left:50%;top:-5px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:inherit}
+.fc-tick.cons,.lg-tick.cons{background:#F2C14E}.fc-tick.p50,.lg-tick.p50{background:#B794F6}
+.lg-tick{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:0}
+.fc-notes{display:flex;flex-wrap:wrap;gap:4px 16px;margin:8px 0 2px;font-size:12.5px;color:var(--fg2)}.fc-notes b{color:var(--fg)}
+.value-head{margin-bottom:6px}
+.lv-ladder{position:relative;display:flex;flex-direction:column;gap:2px;margin:12px 0 8px}
+.lv-row{display:grid;grid-template-columns:42px minmax(78px,auto) minmax(0,1fr) 54px 64px;align-items:center;gap:10px;padding:7px 10px;border-radius:12px;font-size:13.5px;font-variant-numeric:tabular-nums;transition:background .2s}
+.lv-row:hover{background:var(--soft)}
+.lv-k{justify-self:start;font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:999px}
+.lv-res .lv-k{background:var(--up-soft);color:var(--up-strong)}.lv-sup .lv-k{background:var(--down-soft);color:var(--down-strong)}
+.lv-p{font-weight:800;color:var(--fg)}
+.lv-bar{position:relative;height:8px;border-radius:8px;background:var(--soft);overflow:hidden}
+.lv-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;transform-origin:left;transition:transform .9s cubic-bezier(.16,1,.3,1) calc(var(--i,0) * 70ms)}
+.lv-res .lv-bar i{background:linear-gradient(90deg,rgba(255,122,122,.25),var(--up));box-shadow:0 0 10px -2px var(--up)}
+.lv-sup .lv-bar i{background:linear-gradient(90deg,rgba(92,187,255,.25),var(--down));box-shadow:0 0 10px -2px var(--down)}
+.lv-row em{font-style:normal;font-weight:700;text-align:right}
+.lv-t{display:flex;align-items:center;justify-content:flex-end;gap:3px}.lv-t i{width:5px;height:5px;border-radius:50%;background:var(--fg2);opacity:.7}.lv-t small{margin-left:4px;color:var(--muted);font-size:11.5px}
+.lv-now{display:flex;align-items:center;gap:10px;margin:6px 0;padding:8px 12px;border-radius:12px;border:1px solid var(--accent-line);background:linear-gradient(90deg,var(--accent-soft),transparent);font-size:13px;color:var(--fg2);box-shadow:0 0 22px -12px rgba(0,166,251,.8)}
+.lv-now b{color:var(--fg);font-size:14.5px;font-variant-numeric:tabular-nums}
+.lv-now::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft),0 0 12px var(--accent);animation:lv-pulse 2.4s ease-in-out infinite}
+@keyframes lv-pulse{50%{box-shadow:0 0 0 7px transparent,0 0 12px var(--accent)}}
+html.mo .lv-card:not(.mo-in) .lv-bar i{transform:scaleX(0)}
+@media (max-width:560px){.lv-row{grid-template-columns:38px minmax(70px,auto) minmax(0,1fr) 50px;gap:8px;padding:7px 6px}.lv-t{display:none}}
+@media (prefers-reduced-motion:reduce){.lv-now::before{animation:none}.lv-bar i{transition:none}}
 .fc-bar{position:relative;height:14px;margin:8px 0 5px;background:var(--soft);border-radius:7px}.fc-rng{position:absolute;top:0;bottom:0;border-radius:7px;background:var(--accent-line)}.fc-mid{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--accent);border:2.5px solid #fff;box-shadow:0 0 0 1px var(--accent)}.fc-now{position:absolute;top:-5px;bottom:-5px;width:0;border-left:2px dashed var(--fg2)}
 .fc-ends{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--fg2);font-variant-numeric:tabular-nums}.fc-ends small{color:var(--muted);font-size:11.5px}
 .fc-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--fg2);margin:2px 0 2px}.fc-legend i{display:inline-block;vertical-align:-1px;margin-right:5px}.lg-rng{width:16px;height:9px;border-radius:5px;background:var(--accent-line)}.lg-mid{width:9px;height:9px;border-radius:50%;background:var(--accent)}.lg-now{width:0;height:11px;border-left:2px dashed var(--fg2)}

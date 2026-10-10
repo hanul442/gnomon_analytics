@@ -29,8 +29,8 @@ import { renderGuide, renderUpdates, renderSurvey, validBanners } from '../repor
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
 import { SITE_CONFIG } from '../report/alpha.js';
-import { renderAccount, renderAdmin, renderLogin, renderOnboarding } from '../report/renderAlpha.js';
-import { copyFile, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { renderAccount, renderLogin, renderOnboarding } from '../report/renderAlpha.js';
+import { copyFile, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
@@ -743,7 +743,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'login.html'), renderLogin());
   await writeFile(join(siteDir, 'onboarding.html'), renderOnboarding());
   await writeFile(join(siteDir, 'account.html'), renderAccount());
-  await writeFile(join(siteDir, 'admin.html'), renderAdmin());
+  // G-185: the ops console lives on the API Worker (/ops), apart from the user site; an old copy is removed.
+  await rm(join(siteDir, 'admin.html'), { force: true });
   await writeFile(join(siteDir, 'pricing.html'), renderPricing());
   // Trial-credit promotions (G-38): edited by hand in promos.json, published as-is when valid.
   const promos = validPromos(JSON.parse(await readFile(join(root, 'promos.json'), 'utf8').catch(() => '[]')));

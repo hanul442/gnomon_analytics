@@ -189,6 +189,21 @@ test('CORS answers the site only; the quick tier skips thinking', async () => {
   assert.deepEqual([p.model, 'thinking' in p], ['claude-haiku-4-5', false]);
 });
 
+test('the ops console is served by the API on its own origin, uncached and unframed, and its data stays admin-only', async () => {
+  const t = setup();
+  const page = await handle(new Request('https://api.test/ops'), t.env, t.deps);
+  assert.equal(page.status, 200);
+  assert.match(page.headers.get('Content-Type') ?? '', /text\/html/);
+  assert.equal(page.headers.get('Cache-Control'), 'no-store');
+  assert.equal(page.headers.get('X-Frame-Options'), 'DENY');
+  assert.match(page.headers.get('Content-Security-Policy') ?? '', /frame-ancestors 'none'/);
+  const html = await page.text();
+  assert.ok(html.includes('"https://api.test"') && html.includes('gnm-ops-session') && html.includes(`${JSON.stringify(SITE)}`), 'API origin, own session key and the site for invite links');
+  assert.ok(!html.includes('gnm-session\''), 'the user site session is not read');
+  const user = await t.login('w@example.com', (await t.call('POST', '/admin/invites', {}, (await t.login('boss@example.com')).session)).body.code);
+  assert.equal((await t.call('GET', '/admin/overview', undefined, user.session)).status, 403);
+});
+
 test('saved screens alert once per data date, only on newly matching stocks', async () => {
   const t = setup();
   const boss = await t.login('boss@example.com');

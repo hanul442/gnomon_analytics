@@ -1,7 +1,6 @@
 import { ANALYSTS } from '../analysis/analysts.js';
 import type { MarketPulse } from '../analysis/quickCalc.js';
 import { marketTemperature } from './marketTemperature.js';
-import { tempGauge } from './tempGauge.js';
 import { renderCommitteeDebate, SPEAKER } from './renderReportExtras.js';
 import { aiSummaryCard } from './aiSummary.js';
 import { z } from 'zod';
@@ -146,8 +145,8 @@ export function renderMarketReport(r:MarketReport, base=''):string {
  const points=`<section class="card block"><h2>핵심 포인트</h2><ul class="mk-points">${marketPoints(r).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p class="fine">수집한 숫자만으로 정리했어요. 해석은 아래 AI 요약과 위원회 판단을 보세요.</p></section>`;
  const row=(a:MarketAsset)=>`<div class="mk-row"><span>${esc(a.name)}</span><b class="${toneOf(a.returnPct)}">${moveText(a.returnPct)}</b></div>`;
  const panels=r.groups.map((g,i)=>{const rest=g.assets.filter(a=>!isIndex(a)&&a.returnPct!=null).sort((a,b)=>b.returnPct!-a.returnPct!);
-  const card=marketTemperature(g.temperature??null,g.breadth,g.name,(g.id==='M5'?base+'us.html':base+'screener.html'+(g.id==='M3'?'#coin':g.id==='M4'?'#etf':''))),dial=tempGauge(g.temperature,g.name);
-  return `<div class="mk-panel" data-mk="${esc(g.id)}"${i?' hidden':''}>${dial?`<div class="mk-temp">${dial}${card}</div>`:card}${rest.length>1?`<div class="mk-movers"><div><h3>표본 상승 상위</h3>${rest.slice(0,3).map(row).join('')}</div><div><h3>표본 하락 상위</h3>${rest.slice(-3).reverse().map(row).join('')}</div></div>`:''}<p class="fine">${esc(g.source)} · 표본 ${g.assets.length}개 / 전체 ${g.universe.toLocaleString('ko-KR')}개</p></div>`;}).join('');
+  const card=marketTemperature(g.temperature??null,g.breadth,g.name,(g.id==='M5'?base+'us.html':base+'screener.html'+(g.id==='M3'?'#coin':g.id==='M4'?'#etf':'')));
+  return `<div class="mk-panel" data-mk="${esc(g.id)}"${i?' hidden':''}>${card}${rest.length>1?`<div class="mk-movers"><div><h3>표본 상승 상위</h3>${rest.slice(0,3).map(row).join('')}</div><div><h3>표본 하락 상위</h3>${rest.slice(-3).reverse().map(row).join('')}</div></div>`:''}<p class="fine">${esc(g.source)} · 표본 ${g.assets.length}개 / 전체 ${g.universe.toLocaleString('ko-KR')}개</p></div>`;}).join('');
  const markets=`<section class="card block" id="markets"><h2>시장별로 보기</h2><div class="seg mk-tabs" role="group" aria-label="시장">${r.groups.map((g,i)=>`<button type="button" data-mk-tab="${esc(g.id)}" aria-pressed="${i===0}">${esc(g.name)}</button>`).join('')}</div>${panels}</section>`;
  const ai=aiSummaryCard(marketClaimText(summary?.text??(r.ai.status==='FAILED'?'AI 요약 생성에 실패했습니다. '+(r.ai.error??''):'AI 요약을 준비하고 있어요.')),'AI 위원회 요약',r.date,true);
  const kstTime=(iso:string)=>new Date(Date.parse(iso)+9*3600000).toISOString().slice(11,16);

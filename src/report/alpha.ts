@@ -86,7 +86,7 @@ export const ALPHA_SCRIPT = `<script>
     });
     document.querySelectorAll('[data-acct-tab]').forEach(function (a) { a.href = base + (m ? 'account.html' : 'login.html'); });
     var nav = document.querySelector('.top-links'), adm = document.getElementById('nav-admin');
-    if (m && m.user.admin && !adm) { var slot = document.getElementById('sm-admin'); if (slot) slot.innerHTML = '<div class="sm-group"><div class="sm-title">운영</div><a id="nav-admin" href="' + base + 'admin.html">운영 화면</a></div>'; }
+    if (m && m.user.admin && !adm) { var slot = document.getElementById('sm-admin'); if (slot) slot.innerHTML = '<div class="sm-group"><div class="sm-title">운영</div><a id="nav-admin" href="' + API + '/ops" target="_blank" rel="noopener">운영 사이트 (따로 로그인)</a></div>'; }
     // Locked sections point signed-out visitors to the alpha sign-in instead of the price list.
     document.querySelectorAll('.gate-cta .btn-primary').forEach(function (b) { if (!m) { b.href = base + 'login.html'; b.textContent = '알파 로그인'; } });
   };
