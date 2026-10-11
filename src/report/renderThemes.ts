@@ -4,6 +4,7 @@
 import { shell } from './renderHtml.js';
 import type { Theme } from '../sources/naverTheme.js';
 import { EVENT_RULES, type EventFiling } from '../analysis/edge.js';
+import { SECTORS, SECTOR_THEME_SKIP, SECTOR_THEME_WORDS } from './sectors.js';
 
 export interface UniverseLite { symbol: string; name: string; close: number | null; changePct: number | null; tradingValue: number | null; marketCap: number | null }
 
@@ -29,7 +30,22 @@ export function themeData(themes: readonly Theme[], rows: readonly UniverseLite[
 
 /** G-196: the home card's five strongest themes, without the member descriptions that make themes.json ~2MB. */
 export function themesHome(t: ReturnType<typeof themeData>['themes']) {
-  return { date: t.date, themes: t.themes.filter((x) => x.avg != null && x.members.length >= 3).slice(0, 5).map((x) => ({ ...x, members: x.members.map((m) => m.slice(0, 6)) })) };
+  return { date: t.date, themes: t.themes.filter((x) => x.avg != null && x.members.length >= 3).slice(0, 5).map((x) => ({ ...x, members: x.members.map((m) => m.slice(0, 6)) })), sectors: sectorThemes(t.themes) };
+}
+
+/**
+ * G-201: for each survey sector, its themes (name has one of the sector's words, at least three members) strongest
+ * today first, up to three: [no, name, avg %]. The home chip opens the first.
+ */
+export function sectorThemes(themes: readonly { no: string; name: string; avg: number | null; members: readonly unknown[] }[]): Record<string, [string, string, number | null][]> {
+  const out: Record<string, [string, string, number | null][]> = {};
+  for (const s of SECTORS) {
+    const words = SECTOR_THEME_WORDS[s].map((w) => w.toLowerCase()), skip = (SECTOR_THEME_SKIP[s] ?? []).map((w) => w.toLowerCase());
+    const hit = themes.filter((t) => { const n = t.name.toLowerCase(); return t.members.length >= 3 && words.some((w) => n.includes(w)) && !skip.some((w) => n.includes(w)); })
+      .sort((a, b) => (b.avg ?? -999) - (a.avg ?? -999)).slice(0, 3);
+    if (hit.length) out[s] = hit.map((t) => [t.no, t.name, t.avg == null ? null : Math.round(t.avg * 100) / 100]);
+  }
+  return out;
 }
 
 /** The radar: surfaced filings of the last two weeks across the market, newest first. */
