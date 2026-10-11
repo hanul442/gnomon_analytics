@@ -10,6 +10,7 @@ import { latestLists } from '../report/appParts.js';
 import { newsTabBody } from '../report/renderHtml.js';
 import { fetchOkxDeriv, type DerivSnapshot } from '../sources/okxDeriv.js';
 import { fetchKrxShort, type CreditMemo, type ShortSnapshot } from '../sources/krxShort.js';
+import { fetchCompanyProfile, type CompanyProfile, type IndustryMemo } from '../sources/companyProfile.js';
 import { UNLOCK, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
 import { fetchUpbitMinutes, fetchUpbitTicks } from '../sources/upbit.js';
@@ -595,10 +596,41 @@ route('GET','/ticks/(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})',async({deps,params,no
 // G-188: a US stock outside the daily set, built on demand: two years of Naver daily bars and the same calculation
 // and rounding the daily run stores in site/u/<code>.json, so us.html draws it the same way. Kept 30 minutes per code.
 const usPages=new Map<string,{at:number;pending:Promise<Record<string,unknown>|null>}>();
+// G-200: the company card (회사 정보): WiseReport's overview and sales mix, Naver's logo and industry rank. These
+// change a few times a year, so a card is kept a day (one with a part missing because a source was down, ten
+// minutes; a code nobody knows or an ETF, an hour); a failed fetch is not kept. Concurrent opens share one refresh,
+// and an industry's stock list is shared by every stock in it.
+const companyCache = new Map<string, { at: number; pending: Promise<(CompanyProfile & { partial?: true }) | null> }>();
+const companyIndustries: IndustryMemo = new Map();
+route('GET', '/company', async ({ req, deps, now }) => {
+  const code = (new URL(req.url).searchParams.get('code') ?? '').toUpperCase();
+  if (!/^[0-9][0-9A-Z]{5}$/.test(code)) fail(400, 'BAD_CODE', '종목 코드를 보내 주세요.');
+  const keep = (c: (CompanyProfile & { partial?: true }) | null) => (c ? (c.partial ? 10 : 24 * 60) : 60) * 60_000;
+  const show = (c: (CompanyProfile & { partial?: true }) | null, cached: boolean) => {
+    if (!c) fail(404, 'NO_COMPANY', '이 종목은 회사 정보가 없어요.');
+    const { partial: _p, ...company } = c!;
+    return cached ? { company, cached: true } : { company };
+  };
+  for (let hit = companyCache.get(code), round = 0; hit && round < 3; round++) {
+    const kept = await hit.pending.catch(() => undefined);
+    if (kept !== undefined && now.getTime() - hit.at < keep(kept)) return show(kept, true);
+    // Another request may have started the refresh while this one waited: share it.
+    const next = companyCache.get(code); if (next === hit) break; hit = next;
+  }
+  freshStart(req, now, 'company', 30, '종목을 너무 빠르게 열고 있어요. 1분 뒤 다시 열어 주세요.');
+  companyCache.delete(code);
+  if (companyCache.size >= 500) companyCache.delete(companyCache.keys().next().value!);
+  const entry = { at: now.getTime(), pending: fetchCompanyProfile(code, deps.fetch, now, companyIndustries) };
+  companyCache.set(code, entry);
+  const card = await entry.pending.catch(() => undefined);
+  if (card === undefined) { if (companyCache.get(code) === entry) companyCache.delete(code); fail(502, 'COMPANY_UPSTREAM', '회사 정보를 지금 받지 못했어요. 잠시 뒤 다시 열어 주세요.'); }
+  return show(card ?? null, false);
+});
+
 // A fresh build costs a Naver call, so each address may start at most 20 a minute (cached opens are free).
 // Each route has its own budget, so opening one US page (its chart and its company information) costs one start in each.
 // G-196: one limiter for every route that builds from an outside source (/short uses its own bucket of 30).
-const freshStarts={page:new Map<string,{at:number;n:number}>(),info:new Map<string,{at:number;n:number}>(),short:new Map<string,{at:number;n:number}>()};
+const freshStarts={page:new Map<string,{at:number;n:number}>(),info:new Map<string,{at:number;n:number}>(),short:new Map<string,{at:number;n:number}>(),company:new Map<string,{at:number;n:number}>()};
 const freshStart=(req:Request,now:Date,kind:keyof typeof freshStarts,limit:number,message:string)=>{
  const starts=freshStarts[kind],ip=req.headers.get('cf-connecting-ip')??'-',w=starts.get(ip);
  if(w&&now.getTime()-w.at<60_000){if(w.n>=limit)fail(429,'TOO_MANY',message);w.n++;}
