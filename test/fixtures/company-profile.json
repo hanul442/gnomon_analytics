@@ -1,0 +1,66 @@
+{
+ "wise1": "1-200-1114 &#13;[주식담당] 02-2255-9000 \"><img src=\"/images/icon_tel.gif\" hspace=\"1\" align=\"absmiddle\"></a>\n\t\t\t\t\t\t\t<b class=\"num\">005930</b>\n\t\t\t\t\t\t</dt>\n\t\t\t\t\t\t<dt class=\"line-left\">SamsungElec</dt>\n\t\t\t\t\t\t<dt class=\"line-left\">KOSPI : 코스피 전기·전자</dt>\n\t\t\t\t\t\t<dt class=\"line-left\">WICS : 반도체와반도체장비</dt>\n\t\t\t\t\t</dl>\n\t\t\t\t</td>\n\t\t\t</tr>\n\t\t\t<tr class=\"cmp-table-row\">\n\t\t\t\t<td class=\"cmp-table-cell td0201\">\n\t\t\t\t\t<\nnoline-right num\"><@= formatCurrency_price(v.VOLHBI, 2) @></td>\n\t\t\t\t\t\t\t\t\t\t\t</tr>\n\t\t\t\t\t\t\t\t\t\t\t<@})@>\n\t\t\t\t\t\t\t\t\t\t</script>\n\t\t\t\t\t\t\t\t\t\t<p class=\"disc table\">* 보유지분 : 보유지분주식수/지수산정주식수*100 </p>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t<div class=\"tit-empty\"></div>\n\t\t\t\t\t\t\t\t<div class=\"all-width\">\n\t\t\t\t\t\t\t\t\t<div class=\"header-table\">\n\t\t\t\t\t\t\t\t\t\t<dl class=\"header-table-row\">\n\t\t\t\t\t\t\t\t\t\t\t<dd class=\"header-table-cell\">\n\t\t\t\t\t\t\t\t\t\t\t\t<h5><span>기업개요</span></h5>\n\t\t\t\t\t\t\t\t\t\t\t</dd>\n\t\t\t\t\t\t\t\t\t\t\t<dd class=\"header-table-cell unit\">\n\t\t\t\t\t\t\t\t\t\t\t\t<p>[기준:2026.09.14]</p>\n\t\t\t\t\t\t\t\t\t\t\t</dd>\n\t\t\t\t\t\t\t\t\t\t</dl>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<div class=\"cmp_comment\">\n\t\t\t\t\t\t\t\t\t\t<ul class=\"dot_cmp\">\n\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t<li class=\"dot_cmp\" data-cd=\"005930\">동사는 1969년 설립된 글로벌 전자 기업으로, 309개의 종속기업을 보유하고 있음.</li>\n\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t<li class=\"dot_cmp\" data-cd=\"005930\">DX 부문은 TV, 냉장고, 스마트폰을, DS 부문은 DRAM, NAND Flash 등의 반도체를, SDC는 OLED 패널을, Harman은 전장부품 및 오디오 제품을 생산·판매하고 있음.</li>\n\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t\t<li class=\"dot_cmp\" data-cd=\"005930\">동사는 AI 기술 도입과 친환경·고효율 기술 혁신, 고부가 솔루션 중심의 사업 포트폴리오 운영을 통해 질적 성장에 주력하고 있음.</li>\n\t\t\t\t\t\t\t\t\t\t\t\n\t\t\t\t\t\t\t\t\t\t</ul>",
+ "wise2": "<h6 class=\"spanCT\">주요제품 매출구성(2026 / 06)</h6>\n\t\t\t\t\t\t\t\t\t\t\t<div id=\"chart1\" class='\n<script>var chartData1 = [[\"DS(반도체 등)\",68.52],[\"DX(가전, 스마트폰 등)\",32.97],[\"SDC(OLED 패널 등)\",4.64],[\"Harman\",2.75]];</script>",
+ "integration": {
+  "itemCode": "005930",
+  "stockName": "삼성전자",
+  "industryCode": "278"
+ },
+ "basic": {
+  "itemCode": "005930",
+  "stockName": "삼성전자",
+  "itemLogoUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/stock/Stock005930.svg",
+  "itemLogoPngUrl": "https://ssl.pstatic.net/imgstock/fn/real/logo/png/stock/Stock005930.png",
+  "sosok": "0"
+ },
+ "industry": {
+  "groupInfo": {
+   "no": 278,
+   "name": "반도체와반도체장비",
+   "totalCount": 172,
+   "changeRate": "-2.10",
+   "riseCount": 95,
+   "fallCount": 72,
+   "steadyCount": 5
+  },
+  "totalCount": "172",
+  "stocks": [
+   {
+    "itemCode": "323350",
+    "stockName": "다원넥스뷰",
+    "sosok": "1",
+    "marketValue": "904"
+   },
+   {
+    "itemCode": "042700",
+    "stockName": "한미반도체",
+    "sosok": "0",
+    "marketValue": "250,671"
+   },
+   {
+    "itemCode": "005935",
+    "stockName": "삼성전자우",
+    "sosok": "0",
+    "marketValue": "1,560,612"
+   },
+   {
+    "itemCode": "005930",
+    "stockName": "삼성전자",
+    "sosok": "0",
+    "marketValue": "15,375,713"
+   },
+   {
+    "itemCode": "000660",
+    "stockName": "SK하이닉스",
+    "sosok": "0",
+    "marketValue": "12,316,101"
+   },
+   {
+    "itemCode": "402340",
+    "stockName": "SK스퀘어",
+    "sosok": "0",
+    "marketValue": "1,397,075"
+   }
+  ]
+ }
+}
