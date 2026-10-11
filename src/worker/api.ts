@@ -11,7 +11,7 @@ import { newsTabBody } from '../report/renderHtml.js';
 import { fetchOkxDeriv, type DerivSnapshot } from '../sources/okxDeriv.js';
 import { fetchKrxShort, type CreditMemo, type ShortSnapshot } from '../sources/krxShort.js';
 import { fetchCompanyProfile, type CompanyProfile, type IndustryMemo } from '../sources/companyProfile.js';
-import { UNLOCK, notifyLimit } from '../report/plans.js';
+import { UNLOCK, allows, needText, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
 import { fetchUpbitMinutes, fetchUpbitTicks } from '../sources/upbit.js';
 import { reportInput, inputHash, refundJob, reportFragments, previousReport, type ReportQueue, type ReportJob } from './reports.js';
@@ -25,7 +25,7 @@ import { withCurrency } from '../report/format.js';
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
 
-import { ALPHA, ASK_TIERS, CREDIT_ACTIONS, CREDIT_COST, EXPERTS, type AskTier, type CreditAction } from '../report/plans.js';
+import { ALPHA, ASK_TIERS, CREDIT_COST, EXPERTS, type AskTier, type CreditAction } from '../report/plans.js';
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, FIELDS, matches } from '../analysis/screenRules.js';
@@ -62,7 +62,6 @@ export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient; wa
 
 interface User { id: string; email: string; plan: string; role: string; created_at: string; disabled: number; viewAs?: string }
 
-const RANK: Record<string, number> = { free: 0, plus: 1, pro: 2, max: 3, alpha: 2 };
 const LOGIN_TTL_MIN = 20, SESSION_DAYS = 30, MAX_BODY = 24_000;
 const ACTION_KINDS = ['report', 'invite'] as const;
 
@@ -235,8 +234,8 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   const invited = !!expert && expert.key !== 'committee';
   const source = b.source === 'debate' || expert ? 'debate' : 'chat', speaker = expert?.name ?? null;
   const db = env.DB, cost = invited ? CREDIT_COST.invite : CREDIT_COST[tier!];
-  if (RANK[u.plan]! < RANK.plus!) fail(403, 'PLAN_REQUIRED', 'AI 질문은 플러스 요금제부터 쓸 수 있어요.');
-  if (invited && RANK[u.plan]! < RANK.pro!) fail(403, 'PLAN_REQUIRED', '전문가 초청은 프로 요금제부터 쓸 수 있어요.');
+  if (!allows(u.plan, 'ask')) fail(403, 'PLAN_REQUIRED', `AI 질문은 ${needText('ask')} 쓸 수 있어요.`);
+  if (invited && !allows(u.plan, 'invite')) fail(403, 'PLAN_REQUIRED', `전문가 초청은 ${needText('invite')} 쓸 수 있어요.`);
   const today = await db.prepare("SELECT COUNT(*) AS n FROM questions WHERE user_id = ? AND created_at >= ? AND status = 'OK'").bind(u.id, kstDayStart(now)).first<{ n: number }>();
   if ((today?.n ?? 0) >= Number(env.USER_DAILY_ASKS ?? 30)) fail(429, 'DAILY_LIMIT', '오늘 질문 한도를 다 썼어요. 내일 다시 물어봐 주세요.');
   if (!deps.ai) fail(503, 'AI_UNAVAILABLE', 'AI 연결이 아직 설정되지 않았어요.');
@@ -567,8 +566,7 @@ route('POST', '/actions', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   const kind = ACTION_KINDS.find((k) => k === b.kind) as CreditAction | undefined, symbol = str(b.symbol, 6);
   if (!kind || !/^\d{6}$/.test(symbol)) fail(400, 'BAD_ACTION', '요청 형식이 맞지 않아요.');
-  const min = CREDIT_ACTIONS.find((a) => a.key === kind)!.min;
-  if (RANK[u.plan]! < RANK[min]!) fail(403, 'PLAN_REQUIRED', '이 요청은 지금 요금제에서 쓸 수 없어요.');
+  if (!allows(u.plan, kind!)) fail(403, 'PLAN_REQUIRED', `이 요청은 ${needText(kind!)} 쓸 수 있어요.`);
   const dup = await env.DB.prepare("SELECT id FROM action_requests WHERE user_id = ? AND kind = ? AND symbol = ? AND status = 'pending'").bind(u.id, kind, symbol).first();
   if (dup) fail(409, 'DUPLICATE', '이미 요청했어요.');
   const cost = CREDIT_COST[kind!], ref = `action:${crypto.randomUUID()}`;
@@ -753,8 +751,7 @@ route('POST', '/reports', async ({ req, env, deps, now }) => {
   // G-168: one kind of report, the full committee ('brief' and 'upgrade' are gone).
   const symbol = str(b.symbol, 24), kind = b.kind === 'report' ? 'report' as const : undefined;
   if (!kind || !DEEP_SYMBOL.test(symbol)) fail(400, 'BAD_ACTION', '종목과 리포트 종류를 확인해 주세요.');
-  const min = CREDIT_ACTIONS.find(a => a.key === kind)!.min;
-  if (RANK[u.plan]! < RANK[min]!) fail(403, 'PLAN_REQUIRED', '이 리포트는 지금 요금제에서 생성할 수 없어요.');
+  if (!allows(u.plan, kind!)) fail(403, 'PLAN_REQUIRED', `리포트 만들기는 ${needText(kind!)} 쓸 수 있어요.`);
   if (!env.REPORT_QUEUE || !deps.generate) fail(503, 'REPORT_UNAVAILABLE', '리포트 생성 연결을 준비 중이에요. 크레딧은 차감하지 않았어요.');
   let input: DailyReport;
   try { input = await reportInput(env.SITE_URL, symbol, deps); } catch (e) { return fail(422, 'NO_DATA', e instanceof Error ? e.message : '분석 데이터가 없어요.'); }
@@ -911,7 +908,7 @@ route('GET', '/screens', async ({ req, env, now }) => {
 
 route('POST', '/screens', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
-  if (RANK[u.plan]! < RANK.plus!) fail(403, 'PLAN_REQUIRED', '조건 저장은 플러스부터 쓸 수 있어요.');
+  if (!allows(u.plan, 'screenSave')) fail(403, 'PLAN_REQUIRED', `조건 저장은 ${needText('screenSave')} 쓸 수 있어요.`);
   const screen = cleanScreen(b.screen), name = str(b.name, 40);
   if (!screen || !screen.rules.length || !name) fail(400, 'BAD_SCREEN', '조건과 이름을 확인해 주세요.');
   const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM screens WHERE user_id = ?').bind(u.id).first<{ n: number }>();
@@ -925,7 +922,7 @@ route('POST', '/screens/(\\d+)', async ({ req, env, now, params }) => {
   if (b.alert === true) {
     const on = await env.DB.prepare('SELECT COUNT(*) AS n FROM screens WHERE user_id = ? AND alert = 1 AND id != ?').bind(u.id, id).first<{ n: number }>();
     const limit = notifyLimit(u.plan).screenAlerts;
-    if ((on?.n ?? 0) >= limit) fail(403, 'ALERT_LIMIT', limit ? `알림은 ${limit}개 조건까지 켤 수 있어요.` : '알림은 플러스부터 쓸 수 있어요.');
+    if ((on?.n ?? 0) >= limit) fail(403, 'ALERT_LIMIT', limit ? `알림은 ${limit}개 조건까지 켤 수 있어요.` : `알림은 ${needText('screenAlerts')} 쓸 수 있어요.`);
   }
   // Turning alerts on starts from today's matches, so the first message lists only what is new afterwards.
   const r = await env.DB.prepare('UPDATE screens SET alert = ?, last_symbols = CASE WHEN ? = 1 THEN NULL ELSE last_symbols END WHERE id = ? AND user_id = ?').bind(b.alert ? 1 : 0, b.alert ? 1 : 0, id, u.id).run();
@@ -966,7 +963,7 @@ route('POST', '/push/subscribe', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req), keys = (b.keys ?? {}) as Record<string, unknown>;
   const endpoint = str(b.endpoint, 1000), p256dh = str(keys.p256dh, 200), auth = str(keys.auth, 100);
   if (!/^https:\/\//.test(endpoint) || !/^[A-Za-z0-9_-]{80,100}$/.test(p256dh) || !/^[A-Za-z0-9_-]{16,32}$/.test(auth)) fail(400, 'BAD_SUBSCRIPTION', '알림 구독 정보가 맞지 않아요.');
-  if (!notifyLimit(u.plan).push) fail(403, 'PLAN_REQUIRED', '휴대폰 알림은 플러스부터 받을 수 있어요. 무료는 🔔 알림함으로 받아요.');
+  if (!notifyLimit(u.plan).push) fail(403, 'PLAN_REQUIRED', `휴대폰 알림은 ${needText('push')} 받을 수 있어요. 무료는 🔔 알림함으로 받아요.`);
   const n = await env.DB.prepare('SELECT COUNT(*) AS n FROM push_subs WHERE user_id = ?').bind(u.id).first<{ n: number }>();
   if ((n?.n ?? 0) >= 10) await env.DB.prepare('DELETE FROM push_subs WHERE endpoint = (SELECT endpoint FROM push_subs WHERE user_id = ? ORDER BY created_at LIMIT 1)').bind(u.id).run();
   await env.DB.prepare('INSERT INTO push_subs (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth').bind(endpoint, u.id, p256dh, auth, iso(now)).run();
@@ -1059,7 +1056,8 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
 // The site holds <symbol>/deep/<date>.txt, sealed with DEEP_KEY. Opening one costs credits once per user
 // and report; admins and whoever requested the stock's report open it free.
 /** Plans that read every finished deep report without unlocking it. Alpha testers unlock with credits like everyone else. */
-const PAID_FULL = new Set(['pro', 'max']);
+// G-215: alpha ranks as Pro but reads sealed reports through its monthly unlocks (G-126), not deepFull.
+const fullAccess = (plan: string): boolean => plan !== 'alpha' && allows(plan, 'deepFull');
 /** Free opens left this KST month (G-126): unlock rows that charged nothing because of the allowance. */
 async function freeOpensLeft(db: D1, u: User, now: Date): Promise<number> {
   const quota = UNLOCK.monthlyFree[u.plan] ?? 0; if (!quota) return 0;
@@ -1086,12 +1084,12 @@ async function openOnce(db: D1, u: User, symbol: string, key: string, note: stri
 }
 /** Reading a generated report: its requester, admins, pro and max; anyone else once they unlock it with credits. */
 async function jobAccess(db: D1, u: User, job: { id: string; user_id: string; symbol: string; created_at?: string }, now: Date): Promise<boolean> {
-  if (job.user_id === u.id || u.role === 'admin' || PAID_FULL.has(u.plan)) return true;
+  if (job.user_id === u.id || u.role === 'admin' || fullAccess(u.plan)) return true;
   if (job.created_at && oldEnough(job.created_at, now)) return true;
   return !!(await db.prepare('SELECT 1 FROM unlocks WHERE user_id = ? AND symbol = ? AND date = ?').bind(u.id, job.symbol, 'job:' + job.id).first());
 }
 async function deepAccess(db: D1, u: User, symbol: string, date: string, now: Date): Promise<boolean> {
-  if (u.role === 'admin' || PAID_FULL.has(u.plan) || oldEnough(date, now)) return true;
+  if (u.role === 'admin' || fullAccess(u.plan) || oldEnough(date, now)) return true;
   if (await db.prepare('SELECT 1 FROM unlocks WHERE user_id = ? AND symbol = ? AND date = ?').bind(u.id, symbol, date).first()) return true;
   return !!(await db.prepare("SELECT 1 FROM action_requests WHERE user_id = ? AND symbol = ? AND kind IN ('report', 'upgrade') AND status = 'done' AND created_at <= ?").bind(u.id, symbol, `${date}T23:59:59Z`).first());
 }
@@ -1132,7 +1130,7 @@ const deepParams = (params: string[]) => {
 
 route('GET', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})', async ({ req, env, deps, now, params }) => {
   const u = await authed(req, env, now), { symbol, date } = deepParams(params);
-  if(symbol.startsWith('MARKET-')&&RANK[u.plan]!<RANK.plus!&&u.role!=='admin')fail(403,'PLAN_REQUIRED','시장 상세 리포트는 플러스부터 열 수 있어요. 무료는 요약을 볼 수 있어요.');
+  if(symbol.startsWith('MARKET-')&&!allows(u.plan,'marketDeep')&&u.role!=='admin')fail(403,'PLAN_REQUIRED',`시장 상세 리포트는 ${needText('marketDeep')} 열 수 있어요. 무료는 요약을 볼 수 있어요.`);
   // Locked is an answer, not an error (G-124): the page shows the unlock button without a failed request in the console.
   if (!(await deepAccess(env.DB, u, symbol, date, now))) {
     const own = await deepFromJob(env.DB, symbol, date, u.id);
@@ -1144,7 +1142,7 @@ route('GET', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})', async ({ req, env, deps, no
 
 route('POST', '/deep/([^/]+)/(\\d{4}-\\d{2}-\\d{2})/unlock', async ({ req, env, deps, now, params }) => {
   const u = await authed(req, env, now), { symbol, date } = deepParams(params), db = env.DB;
-  if(symbol.startsWith('MARKET-')&&RANK[u.plan]!<RANK.plus!&&u.role!=='admin')fail(403,'PLAN_REQUIRED','시장 상세 리포트는 플러스부터 열 수 있어요.');
+  if(symbol.startsWith('MARKET-')&&!allows(u.plan,'marketDeep')&&u.role!=='admin')fail(403,'PLAN_REQUIRED',`시장 상세 리포트는 ${needText('marketDeep')} 열 수 있어요.`);
   // The report must exist before anything is charged.
   const { html, job } = await deepHtmlOrJob(env, deps, db, symbol, date, u.id);
   const open = async () => job ? jobAccess(db, u, { ...job, symbol }, now) : deepAccess(db, u, symbol, date, now);
@@ -1210,7 +1208,7 @@ export async function runIntraday(env: Env, deps: Deps): Promise<{ symbols: numb
   if (dow === 0 || dow === 6 || hhmm < '09:10' || hhmm > '15:45') return { symbols: 0, alerts: 0 };
   const db = env.DB;
   const rows = (await db.prepare('SELECT w.user_id, w.symbols, u.plan FROM watchlists w JOIN users u ON u.id = w.user_id WHERE u.disabled = 0').all<{ user_id: string; symbols: string; plan: string }>()).results
-    .filter((r) => (RANK[r.plan] ?? 0) >= RANK.pro!);
+    .filter((r) => allows(r.plan, 'intraday'));
   const watchers = new Map<string, string[]>();
   // Coins trade around the clock on Upbit and are not scanned here; stocks and ETFs only.
   for (const r of rows) for (const sym of (JSON.parse(r.symbols) as string[]).filter((x) => /^[0-9A-Z]{6}$/.test(x))) (watchers.get(sym) ?? watchers.set(sym, []).get(sym)!).push(r.user_id);

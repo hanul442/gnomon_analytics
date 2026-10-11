@@ -95,8 +95,9 @@ export function parseResearch(payload: unknown, symbol: string, retrievedAt: Dat
   return out;
 }
 
-/** /finance/quarter and /finance/annual: one record per period column. */
+/** /finance/quarter and /finance/annual: one record per period column. ETFs have no statements (`financeInfo: null`). */
 export function parseFinance(payload: unknown, symbol: string, periodType: FinancePeriod['periodType'], retrievedAt: Date): FinancePeriod[] {
+  if (record(payload).financeInfo === null) return [];
   const info = record(record(payload).financeInfo);
   if (!Array.isArray(info.trTitleList) || !Array.isArray(info.rowList)) throw new Error('NAVER_FINANCE_UNEXPECTED_RESPONSE');
   return info.trTitleList.flatMap((rawCol) => {

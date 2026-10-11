@@ -63,6 +63,8 @@ test('unexpected payloads fail loudly', () => {
   assert.throws(() => parseInvestorFlows({ error: 'x' }, '000660', at), /NAVER_FLOW_UNEXPECTED_RESPONSE/);
   assert.throws(() => parseSnapshot('<html>', '000660', '2026-10-04', at), /NAVER_SNAPSHOT_UNEXPECTED_RESPONSE/);
   assert.throws(() => parseFinance({}, '000660', 'QUARTER', at), /NAVER_FINANCE_UNEXPECTED_RESPONSE/);
+  // An ETF (069500) answers with financeInfo: null; that is no statements, not a broken response.
+  assert.deepEqual(parseFinance({ itemCode: '069500', financePeriodType: 'quarter', financeInfo: null }, '069500', 'QUARTER', at), []);
 });
 
 test('parseStockNews keeps one article per cluster with a Naver mobile link', async () => {

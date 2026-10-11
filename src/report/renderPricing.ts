@@ -1,7 +1,7 @@
 // Pricing and a MOCK checkout (docs/DESIGN.md §5.8, G-30). Nothing is charged:
 // "paying" only changes the plan and credit balance stored in this browser.
 
-import { CREDIT_ACTIONS, CREDIT_COST, CREDIT_PACKS, PLANS, UNLOCK, won } from './plans.js';
+import { CREDIT_ACTIONS, CREDIT_COST, CREDIT_PACKS, needText, PLANS, UNLOCK, won } from './plans.js';
 import { shell } from './renderHtml.js';
 import { glowCta } from './glowCta.js';
 
@@ -80,7 +80,7 @@ ${i ? `<div class="inherits">${PLANS[i - 1]!.name}의 모든 것에 더해</div>
 <section class="block"><div class="seg pr-tabs" role="tablist" aria-label="요금제 고르기">${PLANS.map((p) => `<button type="button" role="tab" data-pr="${p.key}" aria-selected="${p.key === 'pro'}">${p.name}</button>`).join('')}</div><div class="pr-grid" data-show="pro">${PLANS.map(plan).join('')}</div></section>
 <section class="block"><details class="card fold" data-open-wide><summary><b>요금제별로 볼 수 있는 것</b><span class="muted small">기능 ${COMPARE.length}개 비교</span></summary><div class="table-wrap"><table class="cmp"><thead><tr><th>기능</th>${PLANS.map((p) => `<th>${p.name}</th>`).join('')}</tr></thead><tbody>
 ${COMPARE.map(([label, ...cells]) => `<tr><td>${label}</td>${cells.map(yes).join('')}</tr>`).join('')}</tbody></table></div></details></section>
-<section class="block" id="credits"><div class="block-head"><h2>크레딧 충전</h2><span class="muted">플러스부터 충전하고 쓸 수 있어요</span></div>
+<section class="block" id="credits"><div class="block-head"><h2>크레딧 충전</h2><span class="muted">${needText('ask')} 충전하고 쓸 수 있어요</span></div>
 <div class="packs">${CREDIT_PACKS.map((k) => {
     const per = k.price / k.credits, off = Math.round((1 - per / base) * 100);
     return `<div class="card pack"><span class="muted small">${off > 0 ? `${off}% 더 저렴` : '기본'}</span><b>${k.credits}크레딧</b><div class="price" style="font-size:20px;font-weight:800">${won(k.price)}</div><span class="per">크레딧당 ${Math.round(per)}원</span><a class="btn-primary" href="checkout.html?item=${k.key}">충전하기</a></div>`;
@@ -124,7 +124,7 @@ const PRICING_SCRIPT = `<script>
 
 const ITEMS = [
   ...PLANS.filter((p) => p.price).map((p) => ({ key: p.key, title: `${p.name} 요금제 (월)`, price: p.price, plan: p.key, credits: p.monthlyCredits, note: p.monthlyCredits ? `매달 ${p.monthlyCredits}크레딧 포함` : '상세 설명 전체' })),
-  ...CREDIT_PACKS.map((k) => ({ key: k.key, title: `${k.credits}크레딧 충전`, price: k.price, plan: null as string | null, credits: k.credits, note: '플러스부터 사용 · 프로 +10%, 맥스 +20%' })),
+  ...CREDIT_PACKS.map((k) => ({ key: k.key, title: `${k.credits}크레딧 충전`, price: k.price, plan: null as string | null, credits: k.credits, note: `${needText('ask')} 사용 · 프로 +10%, 맥스 +20%` })),
 ];
 
 export function renderCheckout(): string {

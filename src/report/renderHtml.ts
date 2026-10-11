@@ -647,12 +647,12 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   // G-130: the chart alone (the AI summary and the four number cards under it are gone).
   const chartTab = chart.html;
   // Free: the 16-indicator summary (public elsewhere too). Plus: our horizon gauges, fair value, forecasts and structure.
-  const technical = `${insightLine(report, 'technical', base)}${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', need: 'pro' })}</div>` : ''}`;
+  const technical = `${insightLine(report, 'technical', base)}${signalSection(report)}${gate(`<div class="block">${m ? horizonRow(m.horizons) : ''}</div>${m ? `${valueCard(m, false)}<div style="margin-top:16px">${structureCard(m.structure, m.weeklyStructure)}</div>` : ''}`, { base, what: '기간별 게이지 · 기술적 적정가 · 가격 구조', feature: 'technicalDetail' })}${m ? `<div style="margin-top:16px">${gate(forecastCard(m.forecasts, m.forecastScores), { base, what: '예측 가격 범위(5·20·60·120거래일)와 지난 예측 적중', feature: 'forecast' })}</div>` : ''}`;
   // Free: the champion's name. Plus: the ranking. Pro: trades, curves, Monte Carlo and chart markers.
-  const strategyTab = `${insightLine(report, 'strategy', base)}${m ? arenaHeadline(m.arena) : ''}${gate(m ? arenaPanel(m.arena) : '<div class="card empty">이 리포트에는 전략 대결 기록이 없어요.</div>', { base, what: '매매 시점 · 수익 곡선 · 몬테카를로 · 거래 기록', need: 'pro' })}
+  const strategyTab = `${insightLine(report, 'strategy', base)}${m ? arenaHeadline(m.arena) : ''}${gate(m ? arenaPanel(m.arena) : '<div class="card empty">이 리포트에는 전략 대결 기록이 없어요.</div>', { base, what: '매매 시점 · 수익 곡선 · 몬테카를로 · 거래 기록', feature: 'arenaDetail' })}
 <section class="block"><div class="card paper-link"><div><b>모의투자 장부</b><p class="muted small">전략 챔피언과 AI 분석가를 따라 했다면 어땠는지, 리포트 종목 전체를 모아 따로 보여 줘요.</p></div><a class="btn-primary" href="${base}scorecard.html#paper">성적표에서 보기</a></div></section>`;
   // Investor flows and fundamentals are public data: free. Our footprint reading is Plus.
-  const flowsTab = insightLine(report, 'flow', base) + (report.kind==='coin' ? coinFlow(report) : `<div data-slot="flows">${m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>'}</div>`) + edgeFlows(report) + (report.kind === 'coin' || report.currency === 'USD' ? '' : shortSlot(report.symbol));
+  const flowsTab = insightLine(report, 'flow', base) + (report.kind==='coin' ? coinFlow(report) : `<div data-slot="flows">${m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)', feature: 'flowTraces' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>'}</div>`) + edgeFlows(report) + (report.kind === 'coin' || report.currency === 'USD' ? '' : shortSlot(report.symbol));
   const fundTab = insightLine(report, 'fundamental', base) + (!report.kind && report.currency !== 'USD' ? companySlot(report.symbol) : '') + `<div data-slot="fundamentals">${(m ? fundamentalsPanel(m, report.price?.close ?? null, report.name, report.recentBars ?? [], report.statements) : '') || '<div class="card empty">기업 정보를 아직 받지 못했어요.</div>'}</div>` + edgeFundamentals(report);
   // G-168: a report written before v3.5.0 may carry the old short summary; it offers the committee report in its place.
   const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>이전 형식의 간단 해설이에요</b><p class="muted small">이제 AI 리포트는 모두 AI 위원회 심층 리포트(데스크 5곳·분석가 6명·레드팀·시나리오)로 써요. 이 종목도 심층 리포트로 새로 만들 수 있어요.</p></div>${reportButton(report.symbol, report.name)}</div></section>` : '';
@@ -685,17 +685,17 @@ ${panel('news', newsTab)}
 export function committeeTab(report: DailyReport, opts: { base: string; from: string | null; deepDate?: string; /** G-203: the report to compare with; undefined leaves the card out. */ previous?: DailyReport | null; previousHref?: string | null }): string {
   const base = opts.base, isBrief = report.commentary?.status === 'OK' && report.commentary.tier === 'brief';
   const aiBody = isBrief
-    ? gate(whySection(report), { base, what: '간단 해설(이전 형식): 요약 · 강세와 약세 근거 · 지켜볼 것' })
+    ? gate(whySection(report), { base, what: '간단 해설(이전 형식): 요약 · 강세와 약세 근거 · 지켜볼 것', feature: 'legacyCommentary' })
     : opts.deepDate
       ? ''
       : report.commentary?.status === 'OK'
-      ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요' })}<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', need: 'pro' })}`
+      ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요', feature: 'debate' })}<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', feature: 'debateRest' })}`
       : whySection(report);
   const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: { href: `${base}scorecard.html#analysts`, label: '위원별 지난 판단과 결과 ›' }, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(설정에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`);
   // G-172: the paid part's unlock card comes right under 결론, not after the seats at the bottom.
   // G-178: every report keeps the same order of blocks; a block this report cannot fill says so instead of vanishing.
   // G-203: Plus and up (한서님 10/11); free readers see the card faded with a way in, as other Plus blocks.
-  const diff = opts.previous === undefined || report.commentary?.status !== 'OK' ? '' : gate(reportDiffCard(report, opts.previous, { conclusionDate: opts.from, href: opts.previousHref ?? null }), { base, what: '지난 리포트와 달라진 점: 확률·표결·입장 바꾼 위원' });
+  const diff = opts.previous === undefined || report.commentary?.status !== 'OK' ? '' : gate(reportDiffCard(report, opts.previous, { conclusionDate: opts.from, href: opts.previousHref ?? null }), { base, what: '지난 리포트와 달라진 점: 확률·표결·입장 바꾼 위원', feature: 'reportDiff' });
   return `${conclusionMini(report)}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}${diff}${seats || absentBlock('위원회 표결', '이 리포트에는 위원별 표결이 없어요. 새 리포트를 만들면 분석가 6명과 데스크 5곳의 표결이 함께 나와요.')}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
 }
 /** A block the report does not have, folded, so pages of different vintages still line up. */
@@ -732,7 +732,7 @@ ${c.dataGaps.length ? `<h3 class="why-h">근거가 부족한 부분</h3><ul clas
 /** G-68: the paper trail, last and small: the inputs behind this report (what changed moved up, G-203). */
 function recordSection(report: DailyReport, ctx: { live: boolean }, base: string): string {
   const body = decisionTrace(report, ctx.live);
-  return body ? `<div class="ai-record">${gate(body, { base, what: '기록: 이 판단을 만든 입력', need: 'pro' })}</div>` : '';
+  return body ? `<div class="ai-record">${gate(body, { base, what: '기록: 이 판단을 만든 입력', feature: 'record' })}</div>` : '';
 }
 
 export function deepSlot(symbol: string, date: string): string {
@@ -762,7 +762,7 @@ export const DEEP_SCRIPT = `<script>
     GNM.call('GET', path).then(function (r) {
       idle();
       if (r.html) { show(r.html); return; }
-      if(r.error === 'PLAN_REQUIRED'){btn.disabled=false;face('요금제 보기');say(r.message||'플러스부터 열 수 있어요');btn.onclick=function(){location.href=(document.body.getAttribute('data-base')||'')+'pricing.html';};return;}
+      if(r.error === 'PLAN_REQUIRED'){btn.disabled=false;face('요금제 보기');say(r.message||'요금제를 올리면 열 수 있어요');btn.onclick=function(){location.href=(document.body.getAttribute('data-base')||'')+'pricing.html';};return;}
       if (r.error === 'NOT_SEALED') { face('아직 준비 중이에요'); say('심층 리포트는 다음 실행 뒤 열 수 있어요.'); return; }
       var cost = r.cost || ${DEEP_UNLOCK_CREDITS}, bal = r.balance, free = r.freeLeft > 0;
       var label = function () { face('심층 리포트 열기', free ? '무료' : cost + '크레딧'); };
@@ -950,7 +950,7 @@ ${coin || us ? '' : companySlot('')}${coin || us ? '' : peersSlot('')}${coin || 
 <div class="seg" role="group" aria-label="기간">${[['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250]].map(([l, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 126}">${l}</button>`).join('')}</div></div>
 <div id="chart" style="height:420px"><div class="orbs-load" id="sp-loading">${ORBS}<span>차트를 불러오는 중이에요</span></div><p class="empty" id="sp-empty" hidden>차트 데이터를 불러오지 못했어요. 상장 종목 코드가 맞는지 확인해 주세요.</p></div>
 <p class="fine" id="sp-ma-note">이동평균 20·60과 거래량이에요.</p></div></section>
-${open}${gate(detail, { base: '', what: '기술적 적정가' })}${gate(forecast, { base: '', what: '예측 가격 범위', need: 'pro' })}
+${open}${gate(detail, { base: '', what: '기술적 적정가', feature: 'technicalDetail' })}${gate(forecast, { base: '', what: '예측 가격 범위', feature: 'forecast' })}
 ${coin || us ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트가 생기면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>`}
 <footer id="sources" style="padding:24px 0 0"><p>${us ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜)과 지표, SEC EDGAR 공시·XBRL 재무·Form 4 내부자 거래, 영문 뉴스. 매일 저녁 갱신하고, 시세는 실시간이에요. 환율 변동은 반영하지 않아요.' : coin ? '데이터: 업비트 원화 마켓 일봉(09:00 KST 기준). 매일 저녁 갱신해요. 가상자산은 원금 손실 위험이 커요.' : '데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   const split=body.indexOf('<section class="block"><div class="card chart-card">');

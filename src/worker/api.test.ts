@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ALPHA, CREDIT_COST, UNLOCK } from '../report/plans.js';
+import { ALPHA, allows, CREDIT_COST, UNLOCK, type Feature } from '../report/plans.js';
 import { handle, type Deps, type Env } from './api.js';
 import { askParams } from './ask.js';
 import { testDb } from './testDb.js';
@@ -827,4 +827,30 @@ test('a report request uses the newest prices (G-153): stale research keeps its 
  const same=bars.filter(b=>b[0]!<=stale);
  const deps2={...deps,fetch:(async (url: RequestInfo|URL, init?:RequestInit)=>String(url).endsWith('/s/000660.json')?Response.json({name:'테스트',bars:same}):real(url,init)) as typeof fetch};
  assert.equal((await reportInput('https://site.test','000660',deps2)).price!.sessionDate,stale);
+});
+
+test('plan checks (G-215): every server gate answers by the permission table for all five plans', async () => {
+  const t = setup({ ai: { create: async () => ({ model: 'claude-haiku-4-5', stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: '답' }] }) } });
+  t.env.USER_DAILY_ASKS = '100';
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('plan@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  const sub = { endpoint: 'https://push.test/p', keys: { p256dh: 'B' + 'a'.repeat(86), auth: 'a'.repeat(22) } };
+  const checks: [Feature, () => Promise<{ status: number; body: Record<string, any> }>][] = [
+    ['ask', () => t.call('POST', '/ask', { tier: 'question', question: '질문', symbol: '000660' }, u.session)],
+    ['invite', () => t.call('POST', '/ask', { tier: 'question', source: 'debate', expert: 'semis', question: '초청', symbol: '000660' }, u.session)],
+    ['invite', () => t.call('POST', '/actions', { kind: 'invite', symbol: '000660' }, u.session)],
+    ['report', () => t.call('POST', '/reports', { kind: 'report', symbol: '000660' }, u.session)],
+    ['screenSave', () => t.call('POST', '/screens', { name: '급증', screen: { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 3 }] } }, u.session)],
+    ['marketDeep', () => t.call('GET', '/deep/MARKET-DAILY/2026-10-07', undefined, u.session)],
+    ['push', () => t.call('POST', '/push/subscribe', sub, u.session)],
+  ];
+  for (const plan of ['free', 'plus', 'pro', 'max', 'alpha']) {
+    await t.env.DB.prepare('UPDATE users SET plan = ? WHERE email = ?').bind(plan, 'plan@example.com').run();
+    for (const [feature, run] of checks) {
+      const r = await run();
+      assert.equal(r.body.error === 'PLAN_REQUIRED', !allows(plan, feature), `${plan} ${feature}: ${JSON.stringify(r.body)}`);
+      // Past the gate a request may still stop on setup this test leaves out (503: no report queue or key), never crash.
+      assert.notEqual(r.status, 500, `${plan} ${feature}: ${JSON.stringify(r.body)}`);
+    }
+  }
 });
