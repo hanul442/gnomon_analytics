@@ -1,6 +1,7 @@
 // 알림 (G-97): the phone push switch, what to hear about, screener alerts and price alerts in one page,
 // plus the service worker, the web app manifest, and the 가격 알림 button on every stock page.
 
+import { needText } from './plans.js';
 import { shell } from './renderHtml.js';
 import { MT } from './modernSwitch.js';
 export { SW_JS, MANIFEST } from './pushParts.js';
@@ -69,9 +70,9 @@ document.addEventListener('DOMContentLoaded', function () {
       var L = r.limits || {}, planName = { free: '무료', plus: '플러스', pro: '프로', max: '맥스', alpha: '알파' }[r.plan] || r.plan;
       $('al-plan').hidden = !(r.plan && L.priceAlerts != null);
       $('al-plan').innerHTML = '<b>' + esc(planName) + ' 요금제 알림</b><span>휴대폰 ' + (L.push ? '✓' : '—') + '</span><span>가격 알림 ' + L.priceAlerts + '개</span><span>스크리너 ' + (L.screenAlerts || '—') + (L.screenAlerts ? '개' : '') + '</span><span>장중 급변 ' + (L.intraday ? '✓' : '—') + '</span>' + (r.plan === 'free' || r.plan === 'plus' ? '<a href="pricing.html">요금제별 알림 비교 ›</a>' : '');
-      if (!L.push) { G.pushLocked = true; $('al-on').hidden = true; $('al-state').textContent = '휴대폰 알림은 플러스부터예요. 지금은 🔔 알림함으로 받아요.'; }
+      if (!L.push) { G.pushLocked = true; $('al-on').hidden = true; $('al-state').textContent = '휴대폰 알림은 ${needText('push')}예요. 지금은 🔔 알림함으로 받아요.'; }
       if (!L.watchReport) { var w = document.querySelector('[data-pref=watchReport]'); w.disabled = true; w.checked = false; w.closest('.al-row').classList.add('al-lock'); }
-      if (!L.intraday) { var pr = document.querySelector('[data-pref=price]'); pr.closest('.al-row').querySelector('small').textContent = '내가 건 가격에 닿으면 (장중 급변 알림은 프로부터)'; }
+      if (!L.intraday) { var pr = document.querySelector('[data-pref=price]'); pr.closest('.al-row').querySelector('small').textContent = '내가 건 가격에 닿으면 (장중 급변 알림은 ${needText('intraday')})'; }
       document.querySelectorAll('[data-qt]').forEach(function (t) { var k = t.getAttribute('data-qt'); if (r.prefs[k]) t.value = r.prefs[k]; t.onchange = function () { if (!/^\\d\\d:\\d\\d$/.test(t.value)) return; var p = {}; p[k] = t.value; G.call('POST', '/notify/prefs', { prefs: p }).then(function (x) { $('al-pref-msg').textContent = x.error ? x.message : '조용한 시간을 저장했어요.'; }); }; });
       document.querySelectorAll('[data-pref]').forEach(function (i) { i.checked = i.getAttribute('data-pref') === 'quiet' || i.getAttribute('data-pref') === 'updatePatch' ? r.prefs[i.getAttribute('data-pref')] === true : r.prefs[i.getAttribute('data-pref')] !== false; i.onchange = function () { var p = {}; p[i.getAttribute('data-pref')] = i.checked; G.call('POST', '/notify/prefs', { prefs: p }).then(function (x) { $('al-pref-msg').textContent = x.error ? x.message : '저장했어요.'; }); }; });
       var sc = r.screens || [];

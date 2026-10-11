@@ -64,16 +64,46 @@ export const ASK_TIERS = [
 export type AskTier = (typeof ASK_TIERS)[number]['key'];
 
 /**
+ * The lowest plan for each feature (G-215). The server's checks (worker/api.ts), the site's locked sections
+ * (`gate`) and the "플러스부터" hints all read this one table, so moving a feature to another plan here moves all
+ * three. Alpha counts as ALPHA.rankAs. Numbers that grow with the plan (watchlist size, alert counts) stay in
+ * WATCH_LIMIT and NOTIFY_LIMITS.
+ */
+export type PaidPlan = Exclude<PlanKey, 'free' | 'max'>;
+export const FEATURES = {
+  // Credit actions (CREDIT_ACTIONS reads its `min` from here).
+  unlock: 'plus', report: 'plus', invite: 'pro', idea: 'pro', deep: 'plus', standard: 'plus', question: 'plus',
+  // Server checks.
+  ask: 'plus', screenSave: 'plus', screenAlerts: 'plus', marketDeep: 'plus', push: 'plus', watchReport: 'plus', intraday: 'pro',
+  // Every sealed report readable without unlocking. Alpha (G-126) unlocks with its monthly allowance instead.
+  deepFull: 'pro',
+  // Site: screener tools beyond the top-signals preset and five rows.
+  screenTools: 'plus',
+  // Site: locked sections.
+  technicalDetail: 'plus', forecast: 'pro', arenaDetail: 'pro', flowTraces: 'plus', legacyCommentary: 'plus',
+  debate: 'plus', debateRest: 'pro', reportDiff: 'plus', record: 'pro', marketAsk: 'plus',
+  paperAverage: 'plus', paperLedger: 'pro', scoreSummary: 'plus', scoreMisses: 'pro', analystRanking: 'plus',
+} as const satisfies Record<string, PaidPlan>;
+export type Feature = keyof typeof FEATURES;
+/** Plan order; alpha sits where ALPHA.rankAs does. */
+const ORDER: Readonly<Record<PlanKey, number>> = { free: 0, plus: 1, pro: 2, max: 3 };
+export const PLAN_RANK: Readonly<Record<string, number>> = { ...ORDER, alpha: ORDER[ALPHA.rankAs] };
+export const PLAN_NAMES: Readonly<Record<PlanKey, string>> = { free: '무료', plus: '플러스', pro: '프로', max: '맥스' };
+/** Whether a stored plan (alpha included; unknown counts as free) may use a feature. */
+export const allows = (plan: string, feature: Feature): boolean => (PLAN_RANK[plan] ?? 0) >= PLAN_RANK[FEATURES[feature]]!;
+/** "플러스부터" / "프로부터": the hint for a feature's lowest plan. */
+export const needText = (feature: Feature): string => `${PLAN_NAMES[FEATURES[feature]]}부터`;
+
+/**
  * Notifications by plan (G-98). Everyone hears the day's reports and their own requested reports in 🔔;
  * the phone push, watched-stock reports and more alerts come with the paid plans.
  */
 export interface NotifyLimit { push: boolean; watchReport: boolean; priceAlerts: number; screenAlerts: number; intraday: boolean }
-export const NOTIFY_LIMITS: Record<PlanKey, NotifyLimit> = {
-  free: { push: false, watchReport: false, priceAlerts: 1, screenAlerts: 0, intraday: false },
-  plus: { push: true, watchReport: true, priceAlerts: 5, screenAlerts: 3, intraday: false },
-  pro: { push: true, watchReport: true, priceAlerts: 20, screenAlerts: 20, intraday: true },
-  max: { push: true, watchReport: true, priceAlerts: 50, screenAlerts: 50, intraday: true },
+const LIMIT_COUNTS: Record<PlanKey, Pick<NotifyLimit, 'priceAlerts' | 'screenAlerts'>> = {
+  free: { priceAlerts: 1, screenAlerts: 0 }, plus: { priceAlerts: 5, screenAlerts: 3 }, pro: { priceAlerts: 20, screenAlerts: 20 }, max: { priceAlerts: 50, screenAlerts: 50 },
 };
+export const NOTIFY_LIMITS = Object.fromEntries((Object.keys(LIMIT_COUNTS) as PlanKey[]).map((k) => [k,
+  { push: allows(k, 'push'), watchReport: allows(k, 'watchReport'), intraday: allows(k, 'intraday'), ...LIMIT_COUNTS[k] }])) as Record<PlanKey, NotifyLimit>;
 /** The plan a stored plan name counts as (alpha → pro). */
 export const notifyLimit = (plan: string): NotifyLimit => NOTIFY_LIMITS[(plan === 'alpha' ? ALPHA.rankAs : plan) as PlanKey] ?? NOTIFY_LIMITS.free;
 
@@ -88,15 +118,15 @@ export const WATCH_LIMIT: Record<PlanKey, number> = { free: 5, plus: 30, pro: 10
  */
 export const UNLOCK = { monthlyFree: { free: 0, plus: 5, alpha: 10, pro: 0, max: 0 } as Record<string, number>, freeAfterDays: 7, makerShare: 2, makerCap: 10 } as const;
 export type CreditAction = keyof typeof CREDIT_COST;
-export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail: string; min: Exclude<PlanKey, 'free'> }[] = [
-  { key: 'unlock', label: '심층 리포트 열기', detail: '이미 나온 AI 위원회 리포트(매일 리포트, 다른 사람이 만든 리포트)의 토론·근거·시나리오 전개·최악의 경우를 열어요. 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료이고, 7일 지난 리포트는 누구나 무료예요. 다른 사람이 만든 리포트를 열면 만든 사람에게 2크레딧이 돌아가요', min: 'plus' },
-  { key: 'report', label: '심층 리포트 요청', detail: '리포트가 없는 종목에 AI 위원회 전체 리포트를 한 번 써요', min: 'plus' },
-  { key: 'invite', label: '전문가 AI 초청', detail: '고른 전문가가 이 종목 리포트 근거를 보고 의견·위험·지켜볼 것을 써요. 맥스는 매달 30회까지 크레딧 없이', min: 'pro' },
-  { key: 'idea', label: '아이디어 검증 (출시 예정)', detail: '내 매매 아이디어를 레드팀이 근거로 반박하고 무효화 조건을 정리해요', min: 'pro' },
-  { key: 'deep', label: 'AI 심층 질문', detail: '위원회 모델(Opus)이 리포트 근거 전체를 다시 보고 답해요', min: 'plus' },
-  { key: 'standard', label: 'AI 표준 질문', detail: '중간 모델(Sonnet)이 근거를 꼼꼼히 보고 답해요', min: 'plus' },
-  { key: 'question', label: 'AI 빠른 질문', detail: '작은 모델(Haiku)이 리포트 근거 안에서 빠르게 답해요', min: 'plus' },
-];
+export const CREDIT_ACTIONS: readonly { key: CreditAction; label: string; detail: string; min: PaidPlan }[] = ([
+  { key: 'unlock', label: '심층 리포트 열기', detail: '이미 나온 AI 위원회 리포트(매일 리포트, 다른 사람이 만든 리포트)의 토론·근거·시나리오 전개·최악의 경우를 열어요. 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료이고, 7일 지난 리포트는 누구나 무료예요. 다른 사람이 만든 리포트를 열면 만든 사람에게 2크레딧이 돌아가요' },
+  { key: 'report', label: '심층 리포트 요청', detail: '리포트가 없는 종목에 AI 위원회 전체 리포트를 한 번 써요' },
+  { key: 'invite', label: '전문가 AI 초청', detail: '고른 전문가가 이 종목 리포트 근거를 보고 의견·위험·지켜볼 것을 써요. 맥스는 매달 30회까지 크레딧 없이' },
+  { key: 'idea', label: '아이디어 검증 (출시 예정)', detail: '내 매매 아이디어를 레드팀이 근거로 반박하고 무효화 조건을 정리해요' },
+  { key: 'deep', label: 'AI 심층 질문', detail: '위원회 모델(Opus)이 리포트 근거 전체를 다시 보고 답해요' },
+  { key: 'standard', label: 'AI 표준 질문', detail: '중간 모델(Sonnet)이 근거를 꼼꼼히 보고 답해요' },
+  { key: 'question', label: 'AI 빠른 질문', detail: '작은 모델(Haiku)이 리포트 근거 안에서 빠르게 답해요' },
+] as const).map((a) => ({ ...a, min: FEATURES[a.key] }));
 
 /**
  * Trial credits (G-38): handed out now and then through promotions in promos.json (not on a schedule),
@@ -155,10 +185,10 @@ if(mq&&mq.addEventListener)mq.addEventListener('change',function(){if(saved()!==
 
 const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
-/** A section shown in full from `need` up (Plus by default). Lower plans get a faded preview and a way in. */
-export function gate(html: string, opts: { base: string; what: string; need?: 'plus' | 'pro' }): string {
-  const need = opts.need ?? 'plus';
-  return `<div class="gate" data-need="${need}"><div class="gate-body">${html}</div><div class="gate-cta" role="note">${LOCK}<div><b>${opts.what}</b><span>${need === 'pro' ? '프로' : '플러스'}부터 볼 수 있어요</span></div><a class="btn-primary" href="${opts.base}pricing.html">요금제 보기</a></div></div>`;
+/** A section shown in full from its feature's lowest plan up (FEATURES). Lower plans get a faded preview and a way in. */
+export function gate(html: string, opts: { base: string; what: string; feature: Feature }): string {
+  const need = FEATURES[opts.feature];
+  return `<div class="gate" data-need="${need}"><div class="gate-body">${html}</div><div class="gate-cta" role="note">${LOCK}<div><b>${opts.what}</b><span>${needText(opts.feature)} 볼 수 있어요</span></div><a class="btn-primary" href="${opts.base}pricing.html">요금제 보기</a></div></div>`;
 }
 
 export const PLAN_CSS = `
@@ -181,7 +211,7 @@ html[data-plan=free] .need-plus{display:none}html:not([data-plan=free]) .only-fr
 /** Account state, credit spending and the mock AI question. Shared by every page. */
 export const ACCOUNT_SCRIPT = `<script>
 (function () {
-  var KEY = 'gnm-account', NAMES = { free: '무료', plus: '플러스', pro: '프로', max: '맥스' }, COST = ${JSON.stringify(CREDIT_COST)}, MIN = ${JSON.stringify(Object.fromEntries(CREDIT_ACTIONS.map((x) => [x.key, x.min])))}, RANK = { free: 0, plus: 1, pro: 2, max: 3 }, TRIAL = ${JSON.stringify(TRIAL)};
+  var KEY = 'gnm-account', NAMES = ${JSON.stringify(PLAN_NAMES)}, COST = ${JSON.stringify(CREDIT_COST)}, MIN = ${JSON.stringify(Object.fromEntries(CREDIT_ACTIONS.map((x) => [x.key, x.min])))}, RANK = ${JSON.stringify(PLAN_RANK)}, TRIAL = ${JSON.stringify(TRIAL)};
   var today = function () { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); };
   var read = function () {
     var a; try { a = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { a = {}; }

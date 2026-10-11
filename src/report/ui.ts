@@ -1,3 +1,4 @@
+import { ALPHA, WATCH_LIMIT } from './plans.js';
 // Shared UI layer (docs/DESIGN.md §4.5, G-41): design tokens, a sticky price bar for stock pages,
 // a glossary ("?" next to financial terms), loading skeletons and the active page in the header.
 // Everything here is presentation; it never changes what a page says.
@@ -89,7 +90,7 @@ export const UI_SCRIPT = `<script>
     var b = e.target.closest && e.target.closest('[data-star]'); if (!b) return;
     e.preventDefault();
     var sym = b.getAttribute('data-star'), w = readW(), i = w.indexOf(sym);
-    var plan = document.documentElement.getAttribute('data-plan') || 'free', LIMIT = { free: 5, plus: 30, pro: 100, alpha: 100, max: 1e9 };
+    var plan = document.documentElement.getAttribute('data-plan') || 'free', LIMIT = ${JSON.stringify({ ...WATCH_LIMIT, alpha: WATCH_LIMIT[ALPHA.rankAs] })};
     if (i >= 0) w.splice(i, 1);
     else if (w.length >= (LIMIT[plan] || 5)) { if (window.GNM && GNM.toast) GNM.toast('관심 종목은 ' + (LIMIT[plan] || 5) + '개까지예요. 요금제를 올리면 더 담을 수 있어요.'); return; }
     else w.unshift(sym);

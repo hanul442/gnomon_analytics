@@ -1,4 +1,4 @@
-import {CREDIT_COST} from './plans.js';
+import {CREDIT_COST, needText} from './plans.js';
 // Screener (docs/DESIGN.md §5.12, G-43): every listed stock's free daily computation, filterable in the
 // browser. Free: one preset and the top five rows. Plus: every condition and every row. Pro (coming):
 // back-testing a condition. Data: site/screener.json, rebuilt every run.
@@ -77,10 +77,10 @@ export function renderScreener(): string {
 <div class="rules" id="rules"></div>
 <div class="sc-actions"><button type="button" class="chip-toggle" id="add-rule">+ 조건</button><button type="button" class="chip-toggle" id="save-screen">저장</button><span class="muted small" id="sc-desc"></span></div>
 <div class="saved" id="saved" hidden><div class="pl-k">저장한 조건</div><div id="saved-list" class="saved-list"></div><p class="muted small" id="alert-note" hidden>🔔를 켜면 매일 장 마감 뒤 새로 걸린 종목을 알림으로 보내 드려요. 플러스는 3개, 프로·알파는 20개까지예요.</p></div>
-<p class="muted small only-free" style="margin:8px 0 0">무료는 '강세 신호 상위'와 결과 5개까지예요. 조건 빌더, 저장, 알림, 전체 결과는 플러스부터예요.</p></div></section>
+<p class="muted small only-free" style="margin:8px 0 0">무료는 '강세 신호 상위'와 결과 5개까지예요. 조건 빌더, 저장, 알림, 전체 결과는 ${needText('screenTools')}예요.</p></div></section>
 <div class="sc-sheet-foot"><button type="button" class="sc-sheet-go" id="sc-sheet-go">결과 보기</button></div></div>
 <section class="block sc-results"><div class="card list"><div class="sc-active" id="sc-active" hidden></div><div class="sc-stats" id="sc-stats" hidden></div><div class="sc-sortbar"><span class="muted small" id="sc-n"></span><label class="sc-inline"><span class="sc-sort-k">정렬</span><select id="sc-sort" aria-label="정렬 기준">${SORTS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label><button type="button" class="chip-toggle" id="sc-dir" title="정렬 방향 바꾸기">높은 순 ↓</button><details class="sc-tools"><summary class="chip-toggle" aria-label="더보기: 링크 복사·CSV" title="링크 복사·CSV">⋯</summary><div class="sc-tools-pop"><button type="button" id="sc-share">조건 링크 복사</button><button type="button" id="sc-csv">결과 CSV 받기</button></div></details></div><div class="table-wrap"><table class="compact sc-table"><thead><tr><th data-sk="name" aria-sort="none"><button type="button" class="th-sort">종목<i aria-hidden="true"></i></button></th><th class="num" data-sk="price" aria-sort="none"><button type="button" class="th-sort">종가<i aria-hidden="true"></i></button></th><th class="num" data-sk="chg" aria-sort="none"><button type="button" class="th-sort">오늘<i aria-hidden="true"></i></button></th><th data-sk="score" aria-sort="none"><button type="button" class="th-sort">기술 신호<i aria-hidden="true"></i></button></th><th class="num" data-sk="vol1" aria-sort="none"><button type="button" class="th-sort">거래량·거래대금<i aria-hidden="true"></i></button></th><th class="num" data-sk="r20" aria-sort="none"><button type="button" class="th-sort">20거래일<i aria-hidden="true"></i></button></th><th class="num" data-sk="gap" aria-sort="none"><button type="button" class="th-sort">적정가 대비<i aria-hidden="true"></i></button></th><th class="num" data-sk="cap" aria-sort="none"><button type="button" class="th-sort">시가총액<i aria-hidden="true"></i></button></th></tr></thead><tbody id="sc-body"><tr><td colspan="8"><div class="orbs-load">${ORBS}<span>종목 조회 중</span></div></td></tr></tbody></table></div>
-<div class="sc-more only-free" id="sc-more" hidden><p>결과가 <b id="sc-total"></b>개 더 있어요. 전체 결과와 직접 조건은 플러스부터 볼 수 있어요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></div></section>
+<div class="sc-more only-free" id="sc-more" hidden><p>결과가 <b id="sc-total"></b>개 더 있어요. 전체 결과와 직접 조건은 ${needText('screenTools')} 볼 수 있어요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></div></section>
 <style>/* G-185: the AI condition box: a full-width question, the same generate button as reports, busy inside the button. */
 .ai-q{display:block;width:100%;font:inherit;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--soft);color:var(--fg);resize:vertical;min-height:56px}.ai-q:focus{outline:none;border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}.ai-go{display:flex;justify-content:flex-end;margin-top:10px}#ai-screen-out:not(:empty){margin-top:16px}#ai-screen-out:not(:empty):not(:has(.ai-res)){padding:12px 14px;border-radius:14px;background:var(--soft);font-size:14px;color:var(--fg2)}.ai-res{border:1px solid var(--line);border-radius:18px;padding:16px 18px;background:var(--soft);animation:mt-open var(--dur-slow) var(--ease-out)}.ai-res-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:12px}.ai-res-head b{font-size:17px;line-height:1.35}.ai-res-n{font-size:12.5px;font-weight:700;color:var(--muted)}.ai-res-rules{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-wrap:wrap;gap:8px}.ai-res-rules li{padding:7px 12px;border-radius:999px;background:var(--surface-solid);border:1px solid var(--line);font-size:13.5px;font-weight:700;line-height:1.3}.ai-res-why{margin:0 0 16px;font-size:14px;line-height:1.7;color:var(--fg2)}.ai-res-go{display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--line)}.ai-res-go .btn-primary{width:100%;min-height:48px;font-size:15px}.ai-res-go small{text-align:center}@media (max-width:560px){.ai-go .gen-wrap,.ai-go .gen-btn{width:100%}}
 /* G-191: one-tap filters (scroll sideways on a phone), the active conditions as chips, a summary strip, and the values the conditions looked at in each row. */
@@ -216,7 +216,7 @@ const SCREENER_SCRIPT = `<script>
   };
   $('sc-quick').addEventListener('click', function (e) {
     var b = e.target.closest('.sc-q'); if (!b) return;
-    if (free()) { if (window.GNM) GNM.toast('한 번에 거르기는 플러스부터 쓸 수 있어요.'); return; }
+    if (free()) { if (window.GNM) GNM.toast('한 번에 거르기는 ${needText('screenTools')} 쓸 수 있어요.'); return; }
     var q = QUICK.filter(function (x) { return x.key === b.getAttribute('data-q'); })[0];
     if (q.key === 'watch') { onlyWatch = !onlyWatch; draw(); return; }
     if (q.key === 'norisk') { el('norisk').checked = !el('norisk').checked; changed(); return; }
@@ -243,7 +243,7 @@ const SCREENER_SCRIPT = `<script>
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, function () { prompt('이 링크를 복사하세요', url); }); else prompt('이 링크를 복사하세요', url);
   });
   $('sc-csv').addEventListener('click', function () {
-    if (free()) { if (window.GNM) GNM.toast('CSV 받기는 플러스부터 쓸 수 있어요.'); return; }
+    if (free()) { if (window.GNM) GNM.toast('CSV 받기는 ${needText('screenTools')} 쓸 수 있어요.'); return; }
     var sc = current(), mine = onlyWatch ? watchSet() : null, list = rows.filter(function (r) { return (currentMarket !== 'stock' || !mkt || r[2] === mkt) && (!mine || mine[r[0]]) && matches(r, sc, IDX); });
     var cols = [['코드', 0], ['이름', 1], ['종가', 4], ['오늘 등락(%)', 5], ['기술 신호', 6], ['신호 점수', 7], ['5일(%)', 8], ['20일(%)', 9], ['120일(%)', 10], ['적정가 대비(%)', 11], ['거래량 배수', 14], ['거래대금', 19], ['52주 고점 대비(%)', 20], ['52주 저점 대비(%)', 23], ['시가총액(억 원)', 3]];
     var NL = String.fromCharCode(10), q = function (v) { v = v == null ? '' : String(v); return /[",]/.test(v) || v.indexOf(NL) >= 0 ? '"' + v.replace(/"/g, '""') + '"' : v; };
@@ -294,7 +294,7 @@ const SCREENER_SCRIPT = `<script>
   };
   document.querySelectorAll('[data-preset]').forEach(function (b, i) {
     b.addEventListener('click', function () {
-      if (free() && i > 0) { if (window.GNM) window.GNM.toast('다른 빠른 조건은 플러스부터 쓸 수 있어요.'); return; }
+      if (free() && i > 0) { if (window.GNM) window.GNM.toast('다른 빠른 조건은 ${needText('screenTools')} 쓸 수 있어요.'); return; }
       document.querySelectorAll('[data-preset]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
       preset = b.getAttribute('data-preset'); load(PRESETS[preset]); preset = b.getAttribute('data-preset');
       var SORT_FOR = { bottomvol: 'spike10', volsurge: 'vol1', accum: 'ad' };
@@ -346,7 +346,7 @@ const SCREENER_SCRIPT = `<script>
   };
   $('sc-mine').addEventListener('click', function (e) {
     var b = e.target.closest('[data-mine]'); if (!b) return; var x = savedList[Number(b.getAttribute('data-mine'))]; if (!x || !x.screen) return;
-    if (free()) { if (window.GNM) GNM.toast('내 조건 적용은 플러스부터 쓸 수 있어요.'); return; }
+    if (free()) { if (window.GNM) GNM.toast('내 조건 적용은 ${needText('screenTools')} 쓸 수 있어요.'); return; }
     preset = ''; document.querySelectorAll('[data-preset]').forEach(function (p) { p.setAttribute('aria-pressed', 'false'); });
     load(x.screen); notify("'" + x.name + "' 조건을 적용했어요.");
   });
