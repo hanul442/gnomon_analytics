@@ -262,7 +262,7 @@ export const ALPHA_SCRIPT = `<script>
     costNote();
     // G-93: my questions and their answers stay in this browser, per stock, and come back on the next visit.
     var server=null;
-    var SKEY='gnm-debate:'+(f.getAttribute('data-symbol')||location.pathname);
+    var SKEY='gnm-debate:'+(f.getAttribute('data-symbol')||location.pathname)+(f.getAttribute('data-report-date')?'@'+f.getAttribute('data-report-date'):'');
     var saved=function(){try{return JSON.parse(localStorage.getItem(SKEY)||'[]');}catch(e){return [];}};
     var keep=function(x){var all=saved();all.push(x);try{localStorage.setItem(SKEY,JSON.stringify(all.slice(-20)));}catch(e){}if(server)server.push(x);};
     var spot=function(){var p=f.closest('.panel')||(f.closest('.join-wrap')||{}).parentNode,d=p&&p.querySelector('.card.debate'),box=d||f.closest('.card')||f.parentNode,a=box.querySelector('.db-ev');if(!a){a=document.createElement('div');a.className='db-ev';box.appendChild(a);}return a;};
@@ -270,8 +270,9 @@ export const ALPHA_SCRIPT = `<script>
     var answerTurn=function(x){var d=document.createElement('div');d.className='db-turn db-mid db-guest db-answer';d.innerHTML='<div class="db-who"><b>'+esc(x.speaker)+'</b> · '+(x.key==='committee'?'위원회 답변':'초청 전문가')+'</div><div class="db-bubble md">'+md(x.a)+'</div><div class="db-cost muted small">'+(x.at?esc(x.at)+' · ':'')+x.credits+'크레딧</div>';return d;};
     // Drawn again whenever the debate is rebuilt (a report made on request replaces it).
     // G-116: signed in, my questions come from the account (every device); signed out, from this browser.
-    var sym=f.getAttribute('data-symbol');
-    if(G.me&&sym)G.call('GET','/questions/mine?source=debate&symbol='+encodeURIComponent(sym)).then(function(r){if(r.error||!r.items)return;server=r.items.slice().reverse().map(function(x){return {q:x.question,a:x.answer||'',who:x.speaker||'AI 위원회',speaker:x.speaker||'AI 위원회',key:x.speaker?'expert':'committee',credits:x.credits,at:String(x.created_at||'').slice(0,16).replace('T',' ')};});renderPast();});
+    var sym=f.getAttribute('data-symbol'),rd=f.getAttribute('data-report-date');
+    // G-206: a dated report (market daily) shows only the questions asked on that day's report.
+    if(G.me&&sym)G.call('GET','/questions/mine?source=debate&symbol='+encodeURIComponent(sym)+(rd?'&date='+encodeURIComponent(rd):'')).then(function(r){if(r.error||!r.items)return;server=r.items.slice().reverse().map(function(x){return {q:x.question,a:x.answer||'',who:x.speaker||'AI 위원회',speaker:x.speaker||'AI 위원회',key:x.speaker?'expert':'committee',credits:x.credits,at:String(x.created_at||'').slice(0,16).replace('T',' ')};});renderPast();});
     var renderPast=function(){
      document.querySelectorAll('[data-past]').forEach(function(n){n.remove();});
      var past=server||saved();if(!past.length)return;

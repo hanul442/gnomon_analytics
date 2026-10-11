@@ -144,7 +144,7 @@ export const MENU: readonly { title: string; items: readonly [string, string, st
   // their own things, then help and the account.
   { title: '시장', items: [['📊', '시장 데일리', 'market-reports.html'], ['🧭', '테마별 종목', 'themes.html'], ['📡', '공시 레이더', 'signals.html'], ['🗽', '미국 주식', 'screener.html#us'], ['🧺', 'ETF', 'etfs.html'], ['🪙', '코인', 'coins.html']] },
   { title: '찾기·AI 리포트', items: [['🔎', '자세히 검색', 'screener.html'], ['🧩', '조건 만들기', 'screener.html?make=rule'], ['🗂️', 'AI 리포트 모음', 'reports.html'], ['🆕', '오늘 나온 리포트', 'reports.html#today'], ['🎯', '성적표', 'scorecard.html']] },
-  { title: '내 것', items: [['⭐', '관심 종목', 'watch.html'], ['🔔', '알림함', 'inbox.html'], ['📄', '내 리포트', 'myreports.html'], ['💬', '내 토론 기록', 'mydebates.html'], ['⚙️', '알림 설정', 'alerts.html']] },
+  { title: '내 것', items: [['⭐', '관심 종목', 'watch.html'], ['🔔', '알림함', 'inbox.html'], ['📄', '내 리포트', 'myreports.html'], ['🧑', '내 프로필', 'profile.html'], ['💬', '내 토론 기록', 'mydebates.html'], ['⚙️', '알림 설정', 'alerts.html']] },
   { title: '도움말', items: [['📘', '사용법', 'guide.html'], ['❓', 'FAQ', 'faq.html'], ['✉️', '1:1 문의', 'faq.html#ask'], ['✨', '업데이트 기록', 'updates.html'], ['📝', '이번 주 설문', 'survey.html?k=weekly']] },
   { title: '계정', items: [['💳', '요금제·크레딧', 'pricing.html'], ['📜', '이용약관·면책', 'terms.html'], ['🏢', 'HANUL 소개', 'hanul.html']] },
 ];

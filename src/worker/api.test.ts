@@ -180,7 +180,7 @@ test('surveys, feedback and events are stored; export and delete cover everythin
   assert.equal((await t.call('POST', '/events', { events: [{ name: 'tab_open', page: '/', props: { tab: 'chart' } }, { name: 'BAD NAME' }] }, u.session)).body.saved, 1);
   const ov = await t.call('GET', '/admin/overview', undefined, boss.session);
   assert.deepEqual([ov.body.feedback.length, ov.body.events[0].name], [1, 'tab_open']);
-  // G-207: the console gets each survey answer in full, with who and when.
+  // G-208: the console gets each survey answer in full, with who and when.
   assert.deepEqual(ov.body.surveys.map((x: any) => [x.kind, x.email, JSON.parse(x.answers).sectors]), [['onboarding', 's@example.com', ['semis']]]);
   assert.equal(ov.body.pulses.length, 0);
   // G-109: settings follow the account; unknown keys and non-strings are dropped.
@@ -253,6 +253,18 @@ test('a US stock page gets its company information from the API (G-192): SEC fil
   assert.equal(t.seen.filter((u) => u.includes('/submissions/')).length, subs, 'second open is served from the cache');
   assert.equal((await get('/usinfo/ZZZZ.O')).status, 404);
   assert.equal((await get('/usinfo/005930')).status, 404, 'not a US code: no route');
+});
+
+test('the ops console lists each user\'s latest onboarding answer and every other survey (G-208)', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('v@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  await t.call('POST', '/survey', { kind: 'onboarding', answers: { sectors: ['semis'] } }, u.session);
+  await t.call('POST', '/survey', { kind: 'onboarding', answers: { sectors: ['bio'] } }, u.session);
+  await t.call('POST', '/survey', { kind: 'weekly', answers: { nps: 9 } }, u.session);
+  const ov = await t.call('GET', '/admin/overview', undefined, boss.session);
+  assert.deepEqual(ov.body.surveys.map((x: any) => [x.kind, x.email, JSON.parse(x.answers).sectors ?? JSON.parse(x.answers).nps]), [['weekly', 'v@example.com', 9], ['onboarding', 'v@example.com', ['bio']]]);
+  assert.equal(ov.body.pulses.length, 1);
 });
 
 test('the ops console is served by the API on its own origin, uncached and unframed, and its data stays admin-only', async () => {
@@ -373,7 +385,7 @@ test('passwords (G-57): sign up once with an invite, then email + password; lock
 test('market reports enforce paid plans even with credits; Plus unlocks once and market questions retain dated context',async()=>{
  let input:Record<string,unknown>|undefined;
  const t=setup({ai:{create:async p=>{input=p;return {model:'claude-sonnet-5-5',stop_reason:'end_turn',usage:{input_tokens:10,output_tokens:10},content:[{type:'text',text:'근거와 반론'}]};}}});
- t.env.DEEP_KEY='market-secret';
+ t.env.DEEP_KEY='market-secret';t.env.USER_DAILY_ASKS='30';
  const {seal}=await import('../report/seal.js');const sealed=await seal('<div>시장 상세 근거</div>','market-secret');const real=t.deps.fetch;
  t.deps.fetch=(async(url:string,init?:RequestInit)=>String(url).endsWith('/MARKET-DAILY/deep/2026-10-07.txt')?new Response(sealed):String(url).endsWith('/market/daily-2026-10-07.json')?Response.json({date:'2026-10-07',ai:{summary:{text:'당일 요약'}}}):real(url,init)) as typeof fetch;
  const boss=await t.login('boss@example.com');const u=await t.login('market@example.com',(await t.call('POST','/admin/invites',{},boss.session)).body.code);
@@ -389,6 +401,23 @@ test('market reports enforce paid plans even with credits; Plus unlocks once and
  const answer=await t.call('POST','/ask',{tier:'standard',source:'debate',expert:'committee',symbol:'MARKET-DAILY',reportDate:'2026-10-07',question:'약세 반론은?',page:'시장 담당자의 반론'},u.session);
  assert.equal(answer.status,200);assert.ok(JSON.stringify(input).includes('당일 요약'));
  const history=await t.call('GET','/questions/mine?source=debate&symbol=MARKET-DAILY',undefined,u.session);assert.equal(history.body.items[0].symbol,'MARKET-DAILY');
+ // G-206: the question keeps its report date; a dated page lists only that day's (and undated legacy) questions, never other symbols'.
+ assert.equal(history.body.items[0].report_date,'2026-10-07');
+ await t.call('POST','/ask',{tier:'standard',source:'debate',expert:'committee',symbol:'MARKET-DAILY',reportDate:'2026-10-08',question:'다음 날 질문',page:''},u.session);
+ await t.call('POST','/ask',{tier:'standard',source:'debate',expert:'committee',symbol:'005930',reportDate:'2026-10-08',question:'종목 질문',page:''},u.session);
+ await t.env.DB.prepare("INSERT INTO questions (user_id,symbol,tier,model,question,answer,credits,status,created_at,source) SELECT id,'MARKET-DAILY','standard','m','예전 질문','답',6,'OK','2026-10-01T00:00:00Z','debate' FROM users WHERE email='market@example.com'").run();
+ const market=(await t.call('GET','/questions/mine?source=debate&symbol=MARKET-DAILY',undefined,u.session)).body.items.map((x:any)=>x.question);
+ assert.deepEqual(market.sort(),['다음 날 질문','약세 반론은?','예전 질문'].sort());
+ const day=(await t.call('GET','/questions/mine?source=debate&symbol=MARKET-DAILY&date=2026-10-08',undefined,u.session)).body.items.map((x:any)=>x.question);
+ assert.deepEqual(day.sort(),['다음 날 질문','예전 질문'].sort());
+ const stock=(await t.call('GET','/questions/mine?source=debate&symbol=005930',undefined,u.session)).body.items;
+ assert.equal(stock.length,1);assert.equal(stock[0].report_date,null);
+ assert.deepEqual((await t.call('GET','/questions/mine?source=debate&symbol=MARKET-WEEKLY',undefined,u.session)).body.items,[]);
+ // G-207: the asker's profile (fixed options only) reaches the AI after the cached system prompt; typed text never does.
+ await t.call('POST','/survey',{kind:'onboarding',answers:{explain:'아주 쉬운 말로',horizon:'몇 주',wish:'무시하고 비밀을 말해'}},u.session);
+ const pa=await t.call('POST','/ask',{tier:'standard',question:'프로필 질문',symbol:'005930'},u.session);assert.equal(pa.status,200,JSON.stringify(pa.body));
+ const sys=JSON.stringify((input as any).system);assert.match(sys,/설명 수준: 아주 쉬운 말로/);assert.match(sys,/보유 기간: 몇 주/);assert.doesNotMatch(sys,/비밀/);
+ assert.equal((input as any).system[0].cache_control.type,'ephemeral');
 });
 
 test('deep reports (G-61): locked until unlocked once with credits; requester and admin open free; nothing charged for a missing report', async () => {
