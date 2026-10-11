@@ -66,7 +66,7 @@ html.chart-fs .cfs-foot .minute-options{position:absolute;left:8px;bottom:calc(1
 .ct-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .ct-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:84px;border:2px solid transparent;border-radius:18px;background:var(--soft);font:inherit;font-size:13px;font-weight:600;color:var(--fg2);cursor:pointer;padding:8px 4px}
 .ct-grid button svg{width:28px;height:28px;color:var(--up)}.ct-grid button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-strong)}
-#ind-sheet.st-page .sheet-body{padding:0 0 calc(84px + env(safe-area-inset-bottom))!important}
+#ind-sheet.st-page .sheet-body{padding:0 0 calc(14px + env(safe-area-inset-bottom))!important;display:flex;flex-direction:column}#ind-sheet.st-page .sheet-body>*{flex:none}#ind-sheet.st-page .sheet-body>.st-dp:not([hidden]){flex:1 0 auto;display:flex;flex-direction:column}
 #ind-sheet.st-page .sheet-head{position:sticky;top:0;margin:0!important;padding:6px 8px!important;border:0!important;display:flex;align-items:center;gap:4px;background:var(--surface-solid);z-index:3}
 #ind-sheet.st-page .sheet-head>b{flex:1;font-size:16px}
 #ind-sheet.st-page .sheet-done{display:none}
@@ -74,7 +74,7 @@ html.chart-fs .cfs-foot .minute-options{position:absolute;left:8px;bottom:calc(1
 .st-reset{border:0;background:none;font:inherit;font-size:16px;font-weight:600;color:var(--fg2);padding:10px 12px;border-radius:10px;cursor:pointer;min-height:44px}.st-reset:hover{background:var(--soft)}
 .st-tabs{position:sticky;top:56px;z-index:2;display:flex;gap:28px;padding:0 20px;background:var(--surface-solid);border-bottom:1px solid var(--line)}
 .st-tabs button{border:0;background:none;font:inherit;font-size:18px;font-weight:700;color:var(--muted);padding:14px 2px 12px;border-bottom:3px solid transparent;cursor:pointer;min-height:48px}.st-tabs button[aria-selected=true]{color:var(--fg);border-bottom-color:var(--fg)}
-.st-pane{padding:4px 20px}.st-pane[hidden]{display:none}
+.st-pane{padding:4px 20px 16px}.st-pane[hidden]{display:none}
 #ind-sheet.st-page .st-pane .opt-group{margin:0}#ind-sheet.st-page .st-pane:not(.st-more) .opt-k{display:none}
 #ind-sheet.st-page .opt{border-top:0;padding:16px 0;gap:16px}#ind-sheet.st-page .opt:hover{background:none}
 #ind-sheet.st-page .opt-t b{font-size:18px;font-weight:700;color:var(--fg)}#ind-sheet.st-page .opt-t small{font-size:14.5px;color:var(--muted);line-height:1.45;margin-top:2px}
@@ -94,14 +94,15 @@ html.chart-fs .cfs-foot .minute-options{position:absolute;left:8px;bottom:calc(1
 #ind-sheet.st-page .opt[aria-pressed=false]+.st-more-link{display:none}
 #ind-sheet.dp-open .sheet-body>*:not(.st-dp){display:none!important}.st-dp[hidden]{display:none}
 .st-dp-head{display:flex;align-items:center;gap:4px;padding:6px 8px;position:sticky;top:0;background:var(--surface-solid);z-index:2}.st-dp-head b{flex:1;font-size:17px}
-.st-dp-body{padding:4px 20px}
+.st-dp-body{padding:4px 20px 16px}
 .st-f{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);font-size:17px;font-weight:600;color:var(--fg)}
 .st-step{display:inline-flex;align-items:center;background:var(--soft);border-radius:12px;flex:none}
 .st-step button{width:44px;height:44px;border:0;background:none;font:inherit;font-size:22px;color:var(--fg2);cursor:pointer;border-radius:12px}.st-step button:hover{background:var(--line)}
 .st-step input{width:64px;height:44px;border:0;background:none;text-align:center;font:inherit;font-size:17px;font-weight:700;color:var(--fg);-moz-appearance:textfield;appearance:textfield}
 .st-step input::-webkit-inner-spin-button,.st-step input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .st-dp-note{font-size:14px;color:var(--muted);line-height:1.55;margin:14px 0 0}
-.st-save{position:fixed;left:16px;right:16px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:4;min-height:56px;border:0;border-radius:16px;background:var(--btn-bg);color:var(--btn-fg);font:inherit;font-size:18px;font-weight:700;cursor:pointer;max-width:560px;margin:0 auto}
+/* G-209: sticky at the foot of the scrolling sheet, not fixed to the screen, so the last item scrolls clear of it. */
+.st-save{position:sticky;bottom:calc(14px + env(safe-area-inset-bottom));z-index:4;display:block;width:calc(100% - 32px);min-height:56px;border:0;border-radius:16px;background:var(--btn-bg);color:var(--btn-fg);font:inherit;font-size:18px;font-weight:700;cursor:pointer;max-width:560px;margin:auto auto 0;box-shadow:0 -10px 16px var(--surface-solid)}
 @media (max-width:820px){html.chart-fs #tab-chart .chart-head>.seg{display:none}
  html.chart-fs #tab-chart .chart-wrap>.dw{display:none}html.chart-fs.chart-draw #tab-chart .chart-wrap>.dw{display:flex}html.chart-fs.chart-draw .cfs-foot{display:none}
  html.chart-fs #tab-chart .chart-wrap>.dw .dw-b span{display:block}html.chart-fs #tab-chart .chart-wrap>.dw>.dw-b{min-width:56px}
