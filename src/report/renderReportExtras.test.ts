@@ -11,8 +11,8 @@ const report = (date: string, close: number, stance: 'BULLISH' | 'BEARISH', targ
 
 test('week changes: price, signal, fair value and analyst targets', () => {
   const rows = weekChanges(report('2026-10-09', 110, 'BEARISH', 100, 105), report('2026-10-02', 100, 'BULLISH', 120, 100));
-  assert.deepEqual(rows.map((r) => r.label), ['종가', '중기 기술 신호', '기술적 적정가 중심', '분석가 예상가 평균']);
-  assert.equal(rows[0]!.after, '110원 (+10.0%)');
+  assert.deepEqual(rows.map((r) => r.label), ['종가', '중기 기술 신호', '기술적 적정가', '분석가 예상가 평균']);
+  assert.deepEqual([rows[0]!.after, rows[0]!.delta], ['110원', '+10.0%']);
 });
 
 const committee = (date: string, odds: [number, number, number], stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL', summary: string) => {
@@ -34,8 +34,8 @@ test('report diff (G-203): odds, stance flips, vote tally and the two conclusion
   assert.deepEqual(d.summary, { before: '지난번엔 지켜보자는 결론이었어요. 둘째 문장.', after: '이번엔 강세 쪽이에요.' });
   const html = reportDiffCard(cur, prev, { href: 'reports/2026-10-02.html' });
   assert.match(html, /지난 리포트와 달라진 점/);
-  assert.match(html, /<a href="reports\/2026-10-02.html">2026-10-02<\/a> → 2026-10-09/);
-  assert.match(html, /30% → 50%/);
+  assert.match(html, /<a href="reports\/2026-10-02.html">2026-10-02<\/a>[\s\S]*<b>2026-10-09<\/b>/);
+  assert.match(html, /<s>30%<\/s><b>50%<\/b>/);
   assert.equal(reportDiff(cur, cur).lead, '위원회의 판단은 크게 달라지지 않았어요.');
   assert.match(reportDiffCard(cur, null), /이전 위원회 리포트가 아직 없어요/);
   // Conclusions that start alike but end apart still show side by side ('수요' is not a sentence end).
