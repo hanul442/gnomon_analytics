@@ -287,6 +287,8 @@ html:not([data-theme=dark]) .pl-figure{background:radial-gradient(70% 85% at 50%
 /* G-183: the switch itself is .mt (modernSwitch.ts) */
 .radio{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid #c3ccd8}.opt[aria-pressed=true] .radio{border:6px solid var(--accent)}
 body.sheet-open{overflow:hidden}
+/* G-209: a card's glass blur makes it the containing block for position:fixed, so a sheet inside a card would be clipped to the card. Drop the blur while one is open. */
+.card:has(.sheet:not([hidden])){backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 @media (max-width:820px){.sheet{align-items:flex-end}.sheet-body{width:100%;max-height:82vh;border-radius:18px 18px 0 0;padding-bottom:calc(18px + env(safe-area-inset-bottom))}.chart-tools{flex-direction:column;align-items:stretch}.preset-row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px}.preset-row>*{flex:none}.strat-pick{justify-content:space-between}}
 /* kpis */
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.kpi .row{display:flex;align-items:center;gap:12px}
