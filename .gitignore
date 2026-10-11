@@ -4,3 +4,4 @@ site/
 .wrangler/
 
 test-artifacts/
+.fetch-cache/
