@@ -20,12 +20,13 @@ export const PERSONAS: readonly { key: Persona; label: string; question: string 
 /** In <head>: sets html[data-persona] before paint, from the switch or the survey (default swing). */
 export const PERSONA_BOOT = `<script>(function(){var p='';try{p=localStorage.getItem('gnm-persona')||'';if(!p){var a=JSON.parse(localStorage.getItem('gnm-prefs')||'null');if(a){var e=a.experience||'',h=a.horizon||'',x=a.explain||'',st=(a.style||[]).join(' '),f=a.freq||'';p=/처음|1년 미만/.test(e)||/아주 쉬운/.test(x)?'beginner':/하루|며칠/.test(h)||/단타/.test(st)||/거의 매일/.test(f)?'trader':/1년/.test(h)||/배당|가치주/.test(st)||/모아요/.test(f)?'long':'swing';}}}catch(x){}document.documentElement.setAttribute('data-persona',p||'swing');})();</script>`;
 
-/** Home sections each view shows, in order; the rest wait behind "다른 정보도 보기". */
+/** Home sections each view shows, in order; the rest wait behind "시장 정보 더 보기". */
 export const HOME_ORDER: Record<Exclude<Persona, 'all'>, string[]> = {
-  beginner: ['watch', 'today', 'myscreens', 'movers'],
-  trader: ['watch', 'today', 'movers', 'myscreens'],
-  swing: ['watch', 'today', 'myscreens', 'movers'],
-  long: ['watch', 'today', 'myscreens', 'movers'],
+  // G-201: the same for every view (한서님 10/11: 내 것 먼저, 시장은 아래); trader keeps 움직인 종목 up.
+  beginner: ['watch', 'myscreens', 'today', 'themes-top'],
+  trader: ['watch', 'myscreens', 'today', 'movers', 'themes-top'],
+  swing: ['watch', 'myscreens', 'today', 'themes-top'],
+  long: ['watch', 'myscreens', 'today', 'themes-top'],
 };
 /** Report tabs each view keeps (the rest come back with "전체 보기"). */
 export const TAB_KEEP: Record<Exclude<Persona, 'all'>, string[]> = {

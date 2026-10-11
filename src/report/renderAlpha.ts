@@ -3,6 +3,7 @@
 
 import { shell } from './renderHtml.js';
 import { ALPHA } from './plans.js';
+import { SECTORS } from './sectors.js';
 
 const PAGE_CSS = `<style>
 .form-card{max-width:520px;margin:24px auto}.fld-err{display:block;color:var(--up-strong);font-size:13px;margin-top:4px}[aria-invalid=true]{border-color:var(--up)!important}.form-card h1{font-size:26px;margin:0 0 6px}.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}.fld label{font-weight:700;font-size:14px}
@@ -97,7 +98,6 @@ export function renderLogin(): string {
   return shell('', '로그인 · 그노몬', body, { scripts: script, chat: false, noFeedback: true, bottomNav: false });
 }
 
-const SECTORS = ['반도체', '2차전지·소재', '바이오·헬스케어', '자동차·조선', '방산·기계', '금융', '인터넷·게임', '화학·에너지', '소비재·유통', '건설·부동산', '통신·미디어', '지주·기타'];
 
 /** Onboarding survey: who is using this, and what their front page should lead with (G-46). */
 export const ONBOARDING_QUESTIONS = [
