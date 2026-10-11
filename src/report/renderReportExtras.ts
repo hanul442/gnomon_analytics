@@ -19,36 +19,108 @@ const DESK = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDAMENTA
 
 export interface WeekChange { label: string; before: string; after: string; tone?: string }
 
-/** Differences between two reports: price, medium-term signal, fair value, committee stances and targets. */
+/** Number differences between two reports: price, medium-term signal, fair value and the analysts' average target. */
 export function weekChanges(cur: DailyReport, prev: DailyReport): WeekChange[] {
   const out: WeekChange[] = [];
   if (cur.price && prev.price) {
     const d = (cur.price.close / prev.price.close - 1) * 100;
     out.push({ label: '종가', before: won(prev.price.close), after: `${won(cur.price.close)} (${pct(d)})`, tone: tone(d) });
   }
-  const mid = (r: DailyReport) => r.market?.horizons.find((h) => h.key === 'MEDIUM')?.summary.label;
+  const mid = (r: DailyReport) => r.market?.horizons?.find((h) => h.key === 'MEDIUM')?.summary.label;
   if (mid(cur) && mid(prev)) out.push({ label: '중기 기술 신호', before: mid(prev)!, after: mid(cur)! });
   const fv = (r: DailyReport) => r.market?.fairValue?.center;
   if (fv(cur) && fv(prev)) out.push({ label: '기술적 적정가 중심', before: won(fv(prev)!), after: `${won(fv(cur)!)} (${pct((fv(cur)! / fv(prev)! - 1) * 100)})` });
-  const c = cur.commentary?.status === 'OK' ? cur.commentary : undefined, p = prev.commentary?.status === 'OK' ? prev.commentary : undefined;
-  if (c && p) {
-    for (const d of c.desks ?? []) {
-      const before = p.desks?.find((x) => x.desk === d.desk);
-      if (before && before.stance !== d.stance) out.push({ label: `${DESK[d.desk]} 데스크`, before: STANCE[before.stance], after: STANCE[d.stance], tone: d.stance === 'BULLISH' ? 'up' : d.stance === 'BEARISH' ? 'down' : '' });
-    }
-    const avg = (x: Commentary) => (x.analysts?.length ? x.analysts.reduce((s, a) => s + a.target, 0) / x.analysts.length : null);
-    if (avg(c) && avg(p)) out.push({ label: '분석가 예상가 평균', before: won(avg(p)!), after: `${won(avg(c)!)} (${pct((avg(c)! / avg(p)! - 1) * 100)})` });
-  }
+  const c = okCommentary(cur), p = okCommentary(prev);
+  const avg = (x: Commentary | undefined) => (x?.analysts?.length ? x.analysts.reduce((s, a) => s + a.target, 0) / x.analysts.length : null);
+  if (avg(c) && avg(p)) out.push({ label: '분석가 예상가 평균', before: won(avg(p)!), after: `${won(avg(c)!)} (${pct((avg(c)! / avg(p)! - 1) * 100)})` });
   return out;
 }
 
-export function weekDiffSection(cur: DailyReport, prev: DailyReport | null): string {
-  if (!prev) return `<section class="block" id="diff"><div class="block-head"><h2>지난 리포트 대비</h2></div><div class="card"><p class="empty">비교할 지난 리포트가 아직 없어요. 이 종목 리포트가 다시 나오면 바뀐 점을 보여 드려요.</p></div></section>`;
-  const rows = weekChanges(cur, prev);
-  const cs = cur.commentary?.status === 'OK' ? cur.commentary.summary?.text : undefined, ps = prev.commentary?.status === 'OK' ? prev.commentary.summary?.text : undefined;
-  return `<section class="block" id="diff"><div class="block-head"><h2>지난 리포트 대비</h2><span class="muted">${esc(prev.date)} → ${esc(cur.date)}</span></div><div class="card">
-${rows.length ? `<table class="compact"><thead><tr><th>항목</th><th>지난 리포트</th><th>이번</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${esc(r.label)}</td><td class="muted">${esc(r.before)}</td><td class="${r.tone ?? ''}"><b>${esc(r.after)}</b></td></tr>`).join('')}</tbody></table>` : '<p class="empty">비교할 수 있는 항목이 없어요.</p>'}
-${cs && ps && cs !== ps ? `<details class="more"><summary>위원회 결론 두 개 나란히 보기</summary><div class="grid-eq" style="margin-top:8px"><div><div class="pl-k">${esc(prev.date)}</div><p>${esc(ps)}</p></div><div><div class="pl-k">${esc(cur.date)}</div><p>${esc(cs)}</p></div></div></details>` : ''}
+const okCommentary = (r: DailyReport) => (r.commentary?.status === 'OK' ? r.commentary : undefined);
+const SCENARIO = [['BULL', '강세'], ['BASE', '기본'], ['BEAR', '약세']] as const;
+
+/** A committee member whose stance differs between the two reports. */
+export interface StanceFlip { who: string; before: string; after: string; tone: string }
+export interface ReportDiff {
+  /** One sentence: what moved most. */
+  lead: string;
+  rows: WeekChange[];
+  odds: { label: string; before: number; after: number }[];
+  votes: { before: [number, number, number]; after: [number, number, number] } | null;
+  flips: StanceFlip[];
+  summary: { before: string; after: string } | null;
+}
+
+const firstSentence = (t: string | undefined) => (t ?? '').split(/(?<=[.?!요])\s/)[0] ?? '';
+
+/**
+ * G-203: what changed since the stock's previous committee report. Only the public part of a commentary
+ * (one line, each member's stance and target, scenario odds) is read, so the result can be shown to everyone.
+ */
+export function reportDiff(cur: DailyReport, prev: DailyReport): ReportDiff {
+  const c = okCommentary(cur), p = okCommentary(prev);
+  const flips: StanceFlip[] = [];
+  const toneOf = (s: string) => (s === 'BULLISH' ? 'up' : s === 'BEARISH' ? 'down' : '');
+  for (const a of c?.analysts ?? []) {
+    const before = p?.analysts?.find((x) => x.analyst === a.analyst);
+    if (before && before.stance !== a.stance) flips.push({ who: SPEAKER[a.analyst] ?? a.analyst, before: STANCE[before.stance], after: STANCE[a.stance], tone: toneOf(a.stance) });
+  }
+  for (const d of c?.desks ?? []) {
+    const before = p?.desks?.find((x) => x.desk === d.desk);
+    if (before && before.stance !== d.stance) flips.push({ who: `${DESK[d.desk]} 데스크`, before: STANCE[before.stance], after: STANCE[d.stance], tone: toneOf(d.stance) });
+  }
+  const prob = (x: Commentary | undefined, k: string) => x?.scenarios?.find((s) => s.kind === k)?.probability;
+  const odds = SCENARIO.flatMap(([k, label]) => { const b = prob(p, k), a = prob(c, k); return typeof a === 'number' && typeof b === 'number' ? [{ label, before: b, after: a }] : []; });
+  const tally = (x: Commentary | undefined): [number, number, number] | null => {
+    const all = [...(x?.analysts ?? []), ...(x?.desks ?? [])].map((m) => m.stance);
+    return all.length ? [all.filter((s) => s === 'BULLISH').length, all.filter((s) => s === 'NEUTRAL').length, all.filter((s) => s === 'BEARISH').length] : null;
+  };
+  const tb = tally(p), ta = tally(c);
+  const votes = tb && ta ? { before: tb, after: ta } : null;
+  const sb = firstSentence(p?.summary?.text), sa = firstSentence(c?.summary?.text);
+  const summary = sb && sa && sb !== sa ? { before: sb, after: sa } : null;
+  // The lead names the biggest move: odds first (the committee's own bottom line), then members, then price.
+  const parts: string[] = [];
+  const big = [...odds].sort((x, y) => Math.abs(y.after - y.before) - Math.abs(x.after - x.before))[0];
+  if (big && Math.abs(big.after - big.before) >= 5) parts.push(`${big.label} 시나리오 확률이 ${big.before}%에서 ${big.after}%로 ${big.after > big.before ? '올랐' : '내렸'}`);
+  if (flips.length) parts.push(`위원 ${flips.length}명이 입장을 바꿨`);
+  // "Nothing much changed" only when both reports had odds or members to compare (an old brief has neither).
+  const lead = parts.length ? `${parts.join('고, ')}어요.` : odds.length || votes ? '위원회의 판단은 크게 달라지지 않았어요.' : '';
+  return { lead, rows: weekChanges(cur, prev), odds, votes, flips, summary };
+}
+
+/** Only what reportDiff reads, so a previous report can travel small (research/<symbol>.last.json, the API). */
+export function diffBasis(r: DailyReport): DailyReport {
+  const c = okCommentary(r);
+  const mid = r.market?.horizons?.find((h) => h.key === 'MEDIUM');
+  return {
+    symbol: r.symbol, name: r.name, date: r.date, generatedAt: r.generatedAt, ...(r.currency ? { currency: r.currency } : {}),
+    ...(r.price ? { price: { close: r.price.close, sessionDate: r.price.sessionDate } } : {}),
+    ...(r.market ? { market: { horizons: mid ? [{ key: mid.key, summary: { label: mid.summary.label } }] : [], ...(r.market.fairValue ? { fairValue: { center: r.market.fairValue.center } } : {}) } } : {}),
+    ...(c ? { commentary: { status: 'OK', model: c.model, promptVersion: c.promptVersion, generatedAt: c.generatedAt, ...(c.summary ? { summary: { text: c.summary.text, evidenceIds: [] } } : {}),
+      bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [], dropped: 0, evidence: [],
+      desks: (c.desks ?? []).map((d) => ({ desk: d.desk, stance: d.stance, view: { text: '', evidenceIds: [] } })),
+      analysts: (c.analysts ?? []).map((a) => ({ analyst: a.analyst, stance: a.stance, confidence: a.confidence, target: a.target, rationale: { text: '', evidenceIds: [] } })),
+      scenarios: (c.scenarios ?? []).map((s) => ({ kind: s.kind, narrative: { text: '', evidenceIds: [] }, catalysts: [], invalidation: [], ...(typeof s.probability === 'number' ? { probability: s.probability } : {}) })) } } : {}),
+  } as unknown as DailyReport;
+}
+
+/** The AI tab's "지난 리포트와 달라진 점" card (G-203), right under the conclusion. */
+export function reportDiffCard(cur: DailyReport, prev: DailyReport | null, opts: { curDate?: string | null; href?: string | null } = {}): string {
+  const head = (meta: string) => `<div class="block-head"><h2>지난 리포트와 달라진 점</h2>${meta}</div>`;
+  if (!prev) return `<section class="block" id="diff">${head('')}<div class="card"><p class="empty">이 종목의 이전 위원회 리포트가 아직 없어요. 다음 리포트부터 무엇이 달라졌는지 여기서 보여 드려요.</p></div></section>`;
+  const d = reportDiff(cur, prev);
+  const curDate = opts.curDate ?? cur.date;
+  const prevLabel = opts.href ? `<a href="${esc(opts.href)}">${esc(prev.date)}</a>` : esc(prev.date);
+  const sign = (v: number) => `${v > 0 ? '+' : ''}${v}%p`;
+  const odds = d.odds.length ? `<div class="df-odds">${d.odds.map((o) => `<div class="df-o"><span class="pl-k">${o.label}</span><b>${o.before}% → ${o.after}%</b><small class="${o.after > o.before ? 'up' : o.after < o.before ? 'down' : 'muted'}">${o.after === o.before ? '그대로' : sign(o.after - o.before)}</small></div>`).join('')}</div>` : '';
+  const votes = d.votes ? `<p class="df-votes"><span class="muted">위원 표결</span> 강세 ${d.votes.before[0]} · 중립 ${d.votes.before[1]} · 약세 ${d.votes.before[2]} → <b>강세 ${d.votes.after[0]} · 중립 ${d.votes.after[1]} · 약세 ${d.votes.after[2]}</b></p>` : '';
+  const flips = d.flips.length ? `<h3 class="why-h">입장을 바꾼 위원</h3><ul class="plain df-flips">${d.flips.map((f) => `<li>${esc(f.who)} <span class="muted">${esc(f.before)}</span> → <b class="${f.tone}">${esc(f.after)}</b></li>`).join('')}</ul>` : '';
+  const table = d.rows.length ? `<table class="compact"><thead><tr><th>항목</th><th>지난 리포트</th><th>이번</th></tr></thead><tbody>${d.rows.map((r) => `<tr><td>${esc(r.label)}</td><td class="muted">${esc(r.before)}</td><td class="${r.tone ?? ''}"><b>${esc(r.after)}</b></td></tr>`).join('')}</tbody></table>` : '';
+  const summary = d.summary ? `<details class="more"><summary>위원회 결론 두 개 나란히 보기</summary><div class="grid-eq" style="margin-top:8px"><div><div class="pl-k">${esc(prev.date)}</div><p>${esc(d.summary.before)}</p></div><div><div class="pl-k">${esc(curDate)}</div><p>${esc(d.summary.after)}</p></div></div></details>` : '';
+  const body = odds + votes + flips + table + summary;
+  return `<section class="block" id="diff">${head(`<span class="muted">${prevLabel} → ${esc(curDate)}</span>`)}<div class="card">
+${d.lead ? `<p class="df-lead">${esc(d.lead)}</p>` : ''}${body || '<p class="empty">비교할 수 있는 항목이 없어요.</p>'}
 <p class="fine">두 리포트 모두 만든 날 그대로 보관돼요. 바뀐 점은 그 기록끼리 비교한 거예요.</p></div></section>`;
 }
 
@@ -218,7 +290,8 @@ export function insightLine(report: DailyReport, key: InsightKey, base: string):
   return `<div class="insight need-plus"><span class="ins-k">AI 한 줄 · ${INSIGHT_TAB[key]}</span>${kindChip(line.kind)}${esc(line.text)}</div>`;
 }
 
-export const EXTRAS_CSS = `.db-preview{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface)}.db-preview:hover{border-color:#b9cbea}.db-pv-top{display:flex;align-items:center;gap:10px}.db-avs{display:flex}.db-avs .db-av{margin-left:-8px;border:2px solid #fff}.db-avs .db-av:first-child{margin-left:0}.db-pv-n{display:flex;flex-direction:column;font-weight:800;font-size:15px}.db-pv-n small{font-weight:500;color:var(--muted);font-size:12.5px}.db-pv-l{display:block;font-size:13.5px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.db-pv-l b{color:var(--fg);margin-right:6px}.db-pv-cta{align-self:flex-end;font-weight:800;font-size:14px;color:var(--accent-strong)}
+export const EXTRAS_CSS = `.df-lead{font-weight:700;margin:0 0 10px}.df-odds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}.df-o{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:12px}.df-o b{font-size:15px}.df-o small{font-size:12.5px;font-weight:700}.df-votes{margin:0 0 8px;font-size:14px}.df-flips li{padding:2px 0}
+.db-preview{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface)}.db-preview:hover{border-color:#b9cbea}.db-pv-top{display:flex;align-items:center;gap:10px}.db-avs{display:flex}.db-avs .db-av{margin-left:-8px;border:2px solid #fff}.db-avs .db-av:first-child{margin-left:0}.db-pv-n{display:flex;flex-direction:column;font-weight:800;font-size:15px}.db-pv-n small{font-weight:500;color:var(--muted);font-size:12.5px}.db-pv-l{display:block;font-size:13.5px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.db-pv-l b{color:var(--fg);margin-right:6px}.db-pv-cta{align-self:flex-end;font-weight:800;font-size:14px;color:var(--accent-strong)}
 .db-av{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:14px;font-size:14px;font-weight:800;color:#fff;background:var(--muted)}.db-av-bull{background:var(--up)}.db-av-bear{background:var(--accent)}.db-av-mid{background:var(--muted)}.db-av-red{background:#1f2937}
 .db-room{position:fixed;inset:0;z-index:185;display:flex;flex-direction:column;background:var(--surface-solid)}.db-room[hidden]{display:none}.db-room-h{display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));background:var(--surface);border-bottom:1px solid var(--line)}.db-room-x{border:0;background:none;font-size:30px;line-height:1;width:36px;height:36px;cursor:pointer;color:var(--fg);border-radius:10px}.db-room-t{display:flex;flex-direction:column;flex:1;min-width:0}.db-room-t b{font-size:16px}.db-room-t small{font-size:12px;color:var(--muted)}
 .db-room-body{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column}.db-room .card.debate{flex:1 0 auto;width:100%;max-width:760px;margin:0 auto;background:transparent;border:0;box-shadow:none;padding:12px 12px 0;gap:4px;display:flex;flex-direction:column}.db-room .db-join{margin-top:auto!important}html.layer-open .chat-fab{display:none}

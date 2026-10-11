@@ -625,7 +625,15 @@ test('on-demand reports charge once across concurrent retries; owner/pro read, o
  const gen=t.deps.generate!;t.deps.generate=async(r)=>{runs++;return gen(r);};
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});
  await runReportJob(t.env.DB,a.body.id,{now:t.deps.now!,fetch:t.deps.fetch!,generate:t.deps.generate});assert.equal(runs,1);
+ // G-203: the stock's earlier finished report is what this one is compared with.
+ await t.env.DB.prepare("INSERT INTO report_jobs (id,user_id,symbol,kind,input_hash,input_json,status,stage,credits,reserved_usd,result_json,created_at,updated_at) VALUES ('prev-1','someone','000660','report','hp','{}','done','done',0,0,?,'2026-09-01T00:00:00.000Z','2026-09-01T00:05:00.000Z')").bind(JSON.stringify({symbol:'000660',name:'SK하이닉스',date:'2026-09-01',generatedAt:'2026-09-01T00:05:00.000Z',price:{close:1000,sessionDate:'2026-09-01'},commentary:{status:'OK',summary:{text:'예전 결론이에요.',evidenceIds:[]},bullish:[],bearish:[],uncertain:[],watch:[],dataGaps:[],dropped:0,evidence:[],analysts:[],desks:[],scenarios:[]}})).run();
  const done=await t.call('GET','/reports/'+a.body.id,undefined,t.user.session);
+ assert.match(done.body.fragments.ai,/지난 리포트와 달라진 점[\s\S]*2026-09-01 →/,'compared with the earlier finished report');
+ {const {previousReport}=await import('./reports.js');
+  await t.env.DB.prepare("INSERT INTO report_jobs (id,user_id,symbol,kind,input_hash,input_json,status,stage,credits,reserved_usd,result_json,created_at,updated_at) VALUES ('prev-2','someone','000660','report','hq','{}','done','done',0,0,?,'2026-09-02T00:00:00.000Z','2026-09-02T00:05:00.000Z')").bind(JSON.stringify({symbol:'000660',name:'SK하이닉스',date:'2026-09-02',generatedAt:'2026-09-02T00:05:00.000Z',commentary:{status:'OK',summary:{text:'잠긴 결론이에요.',evidenceIds:[]},analysts:[],desks:[],scenarios:[]}})).run();
+  const job={id:a.body.id,symbol:'000660',created_at:'2026-10-11T00:00:00.000Z'},rep={generatedAt:'2026-10-11T00:00:00.000Z'} as never;
+  assert.equal((await previousReport(t.env.DB,job,rep,'https://example.invalid',async()=>new Response('',{status:404}),async()=>true))?.report.date,'2026-09-02');
+  assert.equal((await previousReport(t.env.DB,job,rep,'https://example.invalid',async()=>new Response('',{status:404}),async(j)=>j.id!=='prev-2'))?.report.date,'2026-09-01','a report the reader cannot open is skipped');}
  assert.equal(done.body.status,'done');assert.match(done.body.fragments.home,/비공개 분석 본문/);assert.match(done.body.fragments.ai,/class="[^"]*parliament/,'the committee seats come with a generated report');assert.doesNotMatch(done.body.fragments.ai,/위원별 판단/,'one committee section: the seats carry each member\'s view');
  const other=await t.login('other@example.com',(await t.call('POST','/admin/invites',{},t.boss.session)).body.code);await spendFreeOpens(t,'other@example.com');
  // Someone else's report opens once for the unlock price, then stays open without charging again.

@@ -11,7 +11,7 @@ import { usdOf } from './ask.js';
 import { usTicker } from '../sources/naverWorld.js';
 import { conclusionCard } from '../report/conclusion.js';
 import { committeeTab, newsTabBody } from '../report/renderHtml.js';
-import { decisionTrace } from '../report/renderReportExtras.js';
+import { decisionTrace, diffBasis } from '../report/renderReportExtras.js';
 import { flowsPanel, fundamentalsPanel } from '../report/renderMarket.js';
 import { insiderSection } from '../report/renderEdge.js';
 import { esc } from '../report/html.js';
@@ -115,15 +115,34 @@ export async function runReportJob(db:D1,id:string,deps:ReportDeps):Promise<void
   if(deps.site)await notifyUser({db,fetch:deps.fetch,site:deps.site,now:deps.now()},job.user_id,'request',{title:`${job.symbol} 리포트를 만들지 못했어요`,body:reason,link:`${job.symbol.startsWith('KRW-')?'coin.html?m=':'stock.html?c='}${encodeURIComponent(job.symbol)}`}).catch(()=>false);}
 }
 /** Tabs of a report generated on request, painted onto the stock's page. The AI tab uses the daily pages' own renderer (G-115). */
-export function reportFragments(report:DailyReport,base=''){
- return withCurrency(report.currency,()=>fragmentsOf(report,base));
+/** What a report is compared with (G-203): the report itself (public fields only) and its page, when it has one. */
+export interface PreviousReport { report:DailyReport; href:string|null }
+/**
+ * G-203: the stock's report just before this one — the newer of the last finished request the reader can open
+ * (someone else's locked report is skipped) and the last daily committee report (research/<symbol>.last.json).
+ * Only public fields are kept.
+ */
+export async function previousReport(db:D1,job:Pick<ReportJob,'id'|'symbol'|'created_at'>,report:DailyReport,site:string,fetchFn:typeof fetch,canOpen:(j:Pick<ReportJob,'id'|'user_id'|'symbol'|'created_at'>)=>Promise<boolean>):Promise<PreviousReport|null>{
+ const rows=(await db.prepare("SELECT id,user_id,symbol,created_at,result_json FROM report_jobs WHERE symbol=? AND status='done' AND id!=? AND created_at<? AND result_json IS NOT NULL ORDER BY created_at DESC LIMIT 5").bind(job.symbol,job.id,job.created_at).all<Pick<ReportJob,'id'|'user_id'|'symbol'|'created_at'|'result_json'>>().catch(()=>null))?.results??[];
+ let fromJob:DailyReport|null=null;
+ for(const row of rows){if(!(await canOpen(row)))continue;try{fromJob=diffBasis(JSON.parse(row.result_json!) as DailyReport);}catch{/* unreadable: try the next */}if(fromJob)break;}
+ const base=site.replace(/\/?$/,'/');
+ const res=await fetchFn(`${base}research/${encodeURIComponent(job.symbol)}.last.json`,{signal:AbortSignal.timeout(4000)}).catch(()=>null);
+ const daily=res?.ok?await res.json().catch(()=>null) as DailyReport|null:null;
+ const fromDaily=daily&&daily.symbol===job.symbol&&daily.commentary?.status==='OK'&&daily.generatedAt<report.generatedAt?diffBasis(daily):null;
+ const pick=[fromJob,fromDaily].filter((r):r is DailyReport=>!!r).sort((a,b)=>(a.generatedAt<b.generatedAt?1:-1))[0];
+ if(!pick)return null;
+ return {report:pick,href:pick===fromDaily?`${base}${encodeURIComponent(job.symbol)}/reports/${pick.date}.html`:null};
 }
-function fragmentsOf(report:DailyReport,base:string){
+export function reportFragments(report:DailyReport,base='',previous?:PreviousReport|null){
+ return withCurrency(report.currency,()=>fragmentsOf(report,base,previous));
+}
+function fragmentsOf(report:DailyReport,base:string,previous?:PreviousReport|null){
  const c=report.commentary!;
  const claim=(title:string,items:readonly {text:string}[])=>`<div class="card"><h3>${title}</h3>${items.map(x=>`<p>${esc(x.text)}</p>`).join('')||'<p>확인된 근거가 없어요.</p>'}</div>`;
  // G-178: the same 뉴스·공시 body as a daily page (links, importance, clusters, filings table, past events).
  const news=newsTabBody(report);
- const frags:Record<string,string>={chart:aiSummaryCard(c.summary?.text??'','차트 AI 요약',report.date),scenarios:JSON.stringify(scenarioLayer(report)),home:aiSummaryCard(c.summary?.text??'','AI 요약',report.date)+conclusionCard(report,{id:'conclusion-live'}),ai:committeeTab(report,{base,from:null})+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
+ const frags:Record<string,string>={chart:aiSummaryCard(c.summary?.text??'','차트 AI 요약',report.date),scenarios:JSON.stringify(scenarioLayer(report)),home:aiSummaryCard(c.summary?.text??'','AI 요약',report.date)+conclusionCard(report,{id:'conclusion-live'}),ai:committeeTab(report,{base,from:null,...(previous!==undefined?{previous:previous?.report??null,previousHref:previous?.href??null}:{})})+decisionTrace(report,false),flows:report.kind==='coin'?coinFlow(report):report.market?flowsPanel(report.market.flows,report.market.footprint):claim('수급',[{text:'수집된 투자자별 수급 근거가 없어요. 판단을 보류합니다.'}]),fundamentals:report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name):claim('실적',[{text:'수집된 실적 근거가 없어요. 판단을 보류합니다.'}]),news};
  // G-179: a US stock has no investor flows; its Form 4 trades and trading value ride the 기업 체력 panel.
  if(report.currency==='USD'){frags.fundamentals=(frags.fundamentals??'')+insiderSection(report);delete frags.flows;}
  return frags;
