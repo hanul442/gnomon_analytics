@@ -2,6 +2,7 @@ import { VERSION, RELEASES } from '../report/releases.js';
 import { renderWatchPage } from '../report/renderWatch.js';
 import { writeMarketReports, publishMarketReports } from './marketReports.js';
 import { publicPanels } from '../report/publicPanels.js';
+import { diffBasis } from '../report/renderReportExtras.js';
 // One daily run: for every stock in tickers.json collect, append, write
 // today's report once; then render the site.
 //
@@ -141,7 +142,7 @@ async function writeReportPage(siteDir: string, path: string, report: DailyRepor
   await writeFile(path, renderReport({ ...report, commentary: publicCommentary(c) }, { ...links, deep: { date: deepDate } }));
   const file = join(siteDir, deepPath(report.symbol, deepDate));
   await mkdir(dirname(file), { recursive: true });
-  const ctx: Pick<PageContext, 'live' | 'previous'> = { live: !!links.live, previous: links.previous ?? null };
+  const ctx: Pick<PageContext, 'live'> = { live: !!links.live };
   await writeFile(file, await seal(renderDeep(report, ctx), DEEP_KEY));
 }
 const SETTLED_HOUR_KST = 18;
@@ -704,7 +705,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const sorted = [...reports].sort((a, b) => (a.date < b.date ? -1 : 1));
     for (const report of sorted) {
       const previous = sorted.filter((r) => r.date < report.date && r.commentary?.status === 'OK').at(-1) ?? null;
-      await writeReportPage(siteDir, join(dir, 'reports', `${report.date}.html`), report, { index: '../archive.html', base: '../../', homeHref: '../index.html', archiveHref: '../archive.html', previous }, report.date);
+      await writeReportPage(siteDir, join(dir, 'reports', `${report.date}.html`), report, { index: '../archive.html', base: '../../', homeHref: '../index.html', archiveHref: '../archive.html', previous, previousHref: previous ? `${previous.date}.html` : null }, report.date);
     }
     await writeFile(join(dir, 'archive.html'), renderIndex(reports, { base: '../', name: ticker.name }));
     const latest = [...reports].sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
@@ -715,10 +716,11 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
       const ai = [...reports].filter((r) => r.commentary?.status === 'OK').sort((a, b) => (a.date < b.date ? -1 : 1));
       const withAi = ai.at(-1) ?? [...reports].filter((r) => r.commentary).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
       page = { ...live, ...(withAi?.commentary ? { commentary: withAi.commentary } : {}) };
-      await writeReportPage(siteDir, join(dir, 'index.html'), page, { ...links, live: true, commentaryFrom: withAi?.date ?? null, previous: ai.length > 1 ? ai.at(-2)! : null }, withAi?.date ?? null);
+      await writeReportPage(siteDir, join(dir, 'index.html'), page, { ...links, live: true, commentaryFrom: withAi?.date ?? null, previous: ai.length > 1 ? ai.at(-2)! : null, previousHref: ai.length > 1 ? `reports/${ai.at(-2)!.date}.html` : null }, withAi?.date ?? null);
     } else if (latest) {
       page = latest;
-      await writeReportPage(siteDir, join(dir, 'index.html'), latest, links, latest.date);
+      const previous = sorted.filter((r) => r.date < latest.date && r.commentary?.status === 'OK').at(-1) ?? null;
+      await writeReportPage(siteDir, join(dir, 'index.html'), latest, { ...links, previous, previousHref: previous ? `reports/${previous.date}.html` : null }, latest.date);
     } else {
       await writeFile(join(dir, 'index.html'), renderIndex(reports, { base: '../', name: ticker.name }));
     }
@@ -730,6 +732,9 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
       await mkdir(join(siteDir, 'research'), { recursive: true });
       await writeFile(join(siteDir, 'research', ticker.symbol + '.json'), JSON.stringify(input));
       await writeFile(join(siteDir, 'research', ticker.symbol + '.panels.json'), JSON.stringify(withCurrency(input.currency, () => publicPanels(input))));
+      // G-203: the newest committee report, public part only, for a report made on request to compare with.
+      const lastAi = sorted.filter((r) => r.commentary?.status === 'OK').at(-1);
+      if (lastAi) await writeFile(join(siteDir, 'research', ticker.symbol + '.last.json'), JSON.stringify(diffBasis(lastAi)));
     }
     const pick = picks.get(ticker.symbol);
     const day = daily.get(ticker.symbol);

@@ -37,7 +37,7 @@ import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, THEME_BOOT, PLAN
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
 import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, conclusionMini, parliamentViewNote, SEATS_JS, VIEW_FOCUS_CSS } from './conclusion.js';
 import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
-import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, weekDiffSection } from './renderReportExtras.js';
+import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, reportDiffCard } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 import { CHART_PRO_CSS, CHART_PRO_JS, HERO_RANGE_JS } from './chartPro.js';
 import { derivSlot, DERIV_CSS, DERIV_JS } from './deriv.js';
@@ -617,8 +617,10 @@ export interface PageContext {
   archiveHref: string;
   /** Date of the report whose AI commentary is shown, when it is not this page's own. */
   commentaryFrom?: string | null;
-  /** The report before the one whose commentary is shown (for "지난 리포트 대비"). */
+  /** The report before the one whose commentary is shown (for "지난 리포트와 달라진 점", G-203). */
   previous?: DailyReport | null;
+  /** Where the previous report's own page is, relative to this page (G-203). */
+  previousHref?: string | null;
   /** G-61: the commentary given is the public part; the paid part is fetched from the API for this report date. */
   deep?: { date: string } | null;
 }
@@ -629,7 +631,7 @@ export function renderReport(report: DailyReport, links: { index: string; base?:
 }
 function renderReportIn(report: DailyReport, links: { index: string; base?: string } & Partial<PageContext>): string {
   const base = links.base ?? '../';
-  const ctx: PageContext = { base, live: links.live ?? false, homeHref: links.homeHref ?? `${base}index.html`, archiveHref: links.archiveHref ?? `${base}archive.html`, commentaryFrom: links.commentaryFrom ?? null, previous: links.previous ?? null, deep: links.deep ?? null };
+  const ctx: PageContext = { base, live: links.live ?? false, homeHref: links.homeHref ?? `${base}index.html`, archiveHref: links.archiveHref ?? `${base}archive.html`, commentaryFrom: links.commentaryFrom ?? null, ...(links.previous !== undefined ? { previous: links.previous } : {}), previousHref: links.previousHref ?? null, deep: links.deep ?? null };
   const m = report.market;
   const chart = priceChart(report, chartOverlays(m), base, CHART_ASSET);
   const panel = (key: TabKey, html: string) => `<section class="panel" id="tab-${key}" role="tabpanel" aria-labelledby="t-${key}" tabindex="-1"><h2 class="panel-title">${tabsFor(report.kind).find((t) => t.key === key)!.label}</h2>${html}</section>`;
@@ -657,7 +659,7 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   const sealedDeep = !!ctx.deep && report.commentary?.status === 'OK' && report.commentary.tier !== 'brief';
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary?.status === 'OK'
-    ? `${upgrade}${fromNote}${committeeTab(report, { base, from: ctx.commentaryFrom ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
+    ? `${upgrade}${fromNote}${committeeTab(report, { base, from: ctx.commentaryFrom ?? null, ...(ctx.previous !== undefined ? { previous: ctx.previous } : {}), previousHref: ctx.previousHref ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
     : `${report.commentary?whySection(report):''}${conclusionMini(report)}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 위원회 토론이 아직 없어요</b>${reportButton(report.symbol, report.name)}</div></div>${joinBox(report)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
   const newsTab = `${insightLine(report, 'news', base)}${newsTabBody(report)}`;
   const p = report.price;
@@ -678,7 +680,7 @@ ${panel('news', newsTab)}
  * G-115: the AI committee tab's body — conclusion, the seat chart, then the debate with its evidence, the
  * reader's turn and what is left open. One renderer for daily pages and for reports generated on request.
  */
-export function committeeTab(report: DailyReport, opts: { base: string; from: string | null; deepDate?: string }): string {
+export function committeeTab(report: DailyReport, opts: { base: string; from: string | null; deepDate?: string; /** G-203: the report to compare with; undefined leaves the card out. */ previous?: DailyReport | null; previousHref?: string | null }): string {
   const base = opts.base, isBrief = report.commentary?.status === 'OK' && report.commentary.tier === 'brief';
   const aiBody = isBrief
     ? gate(whySection(report), { base, what: '간단 해설(이전 형식): 요약 · 강세와 약세 근거 · 지켜볼 것' })
@@ -690,7 +692,9 @@ export function committeeTab(report: DailyReport, opts: { base: string; from: st
   const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(전체 메뉴의 내 보기 방식에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`);
   // G-172: the paid part's unlock card comes right under 결론, not after the seats at the bottom.
   // G-178: every report keeps the same order of blocks; a block this report cannot fill says so instead of vanishing.
-  return `${conclusionMini(report)}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}${seats || absentBlock('위원회 표결', '이 리포트에는 위원별 표결이 없어요. 새 리포트를 만들면 분석가 6명과 데스크 5곳의 표결이 함께 나와요.')}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
+  // G-203: Plus and up (한서님 10/11); free readers see the card faded with a way in, as other Plus blocks.
+  const diff = opts.previous === undefined || report.commentary?.status !== 'OK' ? '' : gate(reportDiffCard(report, opts.previous, { conclusionDate: opts.from, href: opts.previousHref ?? null }), { base, what: '지난 리포트와 달라진 점: 확률·표결·입장 바꾼 위원' });
+  return `${conclusionMini(report)}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}${diff}${seats || absentBlock('위원회 표결', '이 리포트에는 위원별 표결이 없어요. 새 리포트를 만들면 분석가 6명과 데스크 5곳의 표결이 함께 나와요.')}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
 }
 /** A block the report does not have, folded, so pages of different vintages still line up. */
 export function absentBlock(title: string, why: string): string {
@@ -698,12 +702,12 @@ export function absentBlock(title: string, why: string): string {
 }
 
 /** The paid part of a committee report (G-61), rendered from the full commentary and sealed into <symbol>/deep/<date>.txt. */
-export function renderDeep(report: DailyReport, ctx: { live: boolean; previous?: DailyReport | null }): string {
-  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${weekDiffSection(report, ctx.previous ?? null)}${decisionTrace(report, ctx.live)}</div>`;
+export function renderDeep(report: DailyReport, ctx: { live: boolean }): string {
+  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${decisionTrace(report, ctx.live)}</div>`;
 }
 
 export const DEEP_UNLOCK_CREDITS = CREDIT_COST.unlock;
-const DEEP_WHAT = '위원회 토론 · 위원별 근거 · 시나리오 전개와 무효화 조건 · 최악의 경우 · 강세·약세 근거 전체 · 분석가 순위 · 지난 리포트 대비';
+const DEEP_WHAT = '위원회 토론 · 위원별 근거 · 시나리오 전개와 무효화 조건 · 최악의 경우 · 강세·약세 근거 전체 · 분석가 순위';
 /**
  * G-70: the commentary's summary and its evidence, folded at the bottom of the debate card: bull and
  * bear claims, uncertain points, and every numbered source (the debate's evidence chips jump here).
@@ -723,10 +727,10 @@ ${c.dataGaps.length ? `<h3 class="why-h">근거가 부족한 부분</h3><ul clas
 <p class="fine">AI(${escape(c.servedBy ?? c.model)})가 이 리포트의 근거만 보고 썼어요. 근거 번호가 없는 주장은 뺐어요${c.dropped ? `(이번에 ${c.dropped}개)` : ''}. 틀릴 수 있고, 투자 권유가 아니에요.</p></details>`;
 }
 
-/** G-68: the paper trail, last and small: what changed since the last report, and the inputs behind this one. */
-function recordSection(report: DailyReport, ctx: { previous?: DailyReport | null; live: boolean }, base: string): string {
-  const body = weekDiffSection(report, ctx.previous ?? null) + decisionTrace(report, ctx.live);
-  return body ? `<div class="ai-record">${gate(body, { base, what: '기록: 지난 리포트 대비 · 이 판단을 만든 입력', need: 'pro' })}</div>` : '';
+/** G-68: the paper trail, last and small: the inputs behind this report (what changed moved up, G-203). */
+function recordSection(report: DailyReport, ctx: { live: boolean }, base: string): string {
+  const body = decisionTrace(report, ctx.live);
+  return body ? `<div class="ai-record">${gate(body, { base, what: '기록: 이 판단을 만든 입력', need: 'pro' })}</div>` : '';
 }
 
 export function deepSlot(symbol: string, date: string): string {

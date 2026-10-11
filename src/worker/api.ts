@@ -14,7 +14,7 @@ import { fetchCompanyProfile, type CompanyProfile, type IndustryMemo } from '../
 import { UNLOCK, notifyLimit } from '../report/plans.js';
 import { vapid } from './push.js';
 import { fetchUpbitMinutes, fetchUpbitTicks } from '../sources/upbit.js';
-import { reportInput, inputHash, refundJob, reportFragments, type ReportQueue, type ReportJob } from './reports.js';
+import { reportInput, inputHash, refundJob, reportFragments, previousReport, type ReportQueue, type ReportJob } from './reports.js';
 import type { DailyReport } from '../report/dailyReport.js';
 import type { Commentary } from '../analysis/commentary.js';
 import { renderDeep } from '../report/renderHtml.js';
@@ -786,7 +786,7 @@ route('GET', '/reports/latest/([^/]+)', async ({ req, env, now, params }) => {
   const locked=!(await jobAccess(env.DB,u,job,now));
   return { job:{id:job.id,status:job.status,stage:job.stage,error:job.error,kind:job.kind,mine:job.user_id===u.id,...(locked?{locked:true,cost:CREDIT_COST.unlock,freeLeft:await freeOpensLeft(env.DB,u,now)}:{})} };
 });
-route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
+route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, deps, now, params }) => {
   const u=await authed(req,env,now), job=await env.DB.prepare('SELECT * FROM report_jobs WHERE id=?').bind(params[0]).first<ReportJob>();
   if (!job || (job.user_id!==u.id && job.status!=='done')) fail(404,'NOT_FOUND','리포트를 찾지 못했어요.');
   if (!(await jobAccess(env.DB,u,job!,now))) return {...(await lockInfo(env.DB,u,now)),message:`다른 사용자가 만든 리포트예요. ${CREDIT_COST.unlock}크레딧으로 열 수 있어요.`,id:job!.id,symbol:job!.symbol,kind:job!.kind,createdAt:job!.created_at};
@@ -798,7 +798,9 @@ route('GET', '/reports/([a-f0-9-]+)', async ({ req, env, now, params }) => {
     const took=(await env.DB.prepare("SELECT (julianday(updated_at)-julianday(created_at))*86400 AS s FROM report_jobs WHERE kind=? AND status='done' ORDER BY created_at DESC LIMIT 20").bind(job!.kind).all<{s:number}>()).results.map((x)=>x.s).filter((x)=>x>=5&&x<=900).sort((a,b)=>a-b);
     if (took.length>=3) etaSec=Math.round(took[Math.min(took.length-1,Math.floor(took.length*0.7))]!);
   }
-  return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(etaSec?{etaSec}:{}),...(report?{name:report.name,generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report,env.SITE_URL.replace(/\/?$/,'/'))}:{})};
+  // G-203: a finished report is compared with the stock's report before it.
+  const previous=report?await previousReport(env.DB,job!,report,env.SITE_URL,deps.fetch,(j)=>jobAccess(env.DB,u,j,now)):null;
+  return {id:job!.id,symbol:job!.symbol,kind:job!.kind,status:job!.status,stage:job!.stage,error:job!.error,createdAt:job!.created_at,...(etaSec?{etaSec}:{}),...(report?{name:report.name,generatedAt:report.generatedAt,dataDate:report.price?.sessionDate,fragments:reportFragments(report,env.SITE_URL.replace(/\/?$/,'/'),previous)}:{})};
 });
 // Someone else's finished report opens once for CREDIT_COST.unlock credits, then stays open (unlocks row 'job:<id>').
 route('POST', '/reports/([a-f0-9-]+)/unlock', async ({ req, env, now, params }) => {
