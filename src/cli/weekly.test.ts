@@ -60,7 +60,7 @@ test('the first settled run picks the week: core and the largest company get the
   await assert.rejects(readFile(join(root, 'site', 'admin.html')));
   assert.ok((await readFile(join(root, 'site', 'pricing.html'), 'utf8')).includes('플러스') && (await readFile(join(root, 'site', 'checkout.html'), 'utf8')).includes('MOCK'));
   const scorecard = await readFile(join(root, 'site', 'scorecard.html'), 'utf8');
-  assert.ok(scorecard.includes('예측 범위 적중') && scorecard.includes('AI 분석가 순위') && scorecard.includes('href="222220/index.html"'));
+  assert.ok(scorecard.includes('예측 범위 적중') && scorecard.includes('위원별 판단') && scorecard.includes('href="222220/index.html"'));
   // The screener presets' track record is public; today's picks are written down for scoring.
   assert.ok(scorecard.includes('id="signals"') && (await readFile(join(root, 'data', 'signals.jsonl'), 'utf8')).includes('"preset":"top"'));
   assert.ok((await readFile(join(root, 'site', 'terms.html'), 'utf8')).includes('투자 자문이나 매매 권유가 아니에요'));

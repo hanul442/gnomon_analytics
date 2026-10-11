@@ -45,7 +45,26 @@ export interface AnalystScore {
   pending: number;
   latest: AnalystCall | null;
   rank: number | null;
+  /** G-213: this analyst's last calls on the stock, newest first, each with how it is doing or how it ended. */
+  calls?: AnalystTrack[];
 }
+
+/**
+ * G-213: one call followed to today. `done` once 20 sessions have passed: `close` is then the scored close and
+ * `hit` the verdict. Before that `close` is the latest close and `hit` says whether the move so far agrees
+ * (null while the price has not moved, or the call's base session is missing from the bars).
+ */
+export interface AnalystTrack {
+  reportDate: string; baseDate: string; baseClose: number;
+  stance: AnalystCall['stance']; confidence: number; target: number;
+  sessions: number; close: number | null; closeDate: string | null; done: boolean; hit: boolean | null;
+}
+export const TRACK_KEEP = 5;
+const hitOf = (c: AnalystCall, close: number) => {
+  const move = close / c.baseClose - 1;
+  if (c.stance === 'NEUTRAL') return Math.abs(move) <= 0.02;
+  return Math.sign(c.target - c.baseClose) === Math.sign(move);
+};
 
 const median = (xs: readonly number[]) => {
   const s = [...xs].sort((a, b) => a - b); const m = Math.floor(s.length / 2);
@@ -64,19 +83,30 @@ export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { da
     const mine = calls.filter((c) => c.analyst === a.id).sort((x, y) => (x.baseDate < y.baseDate ? -1 : 1));
     const results: { hit: boolean; err: number }[] = [];
     let pending = 0;
+    const last = sorted.at(-1);
+    const track = (c: AnalystCall, i: number | undefined, outcome: { date: string; close: number } | undefined): AnalystTrack => {
+      const at = outcome ?? (i === undefined ? undefined : last);
+      const sessions = outcome ? ANALYST_HORIZON : i === undefined ? 0 : sorted.length - 1 - i;
+      return {
+        reportDate: c.reportDate, baseDate: c.baseDate, baseClose: c.baseClose, stance: c.stance, confidence: c.confidence, target: c.target,
+        sessions, close: at?.close ?? null, closeDate: at?.date ?? null, done: !!outcome,
+        hit: !at || (!outcome && (sessions === 0 || (c.stance !== 'NEUTRAL' && at.close === c.baseClose))) ? null : hitOf(c, at.close),
+      };
+    };
+    const tracked: AnalystTrack[] = [];
     for (const c of mine) {
       const i = idx.get(c.baseDate);
       const outcome = i === undefined ? undefined : sorted[i + ANALYST_HORIZON];
+      tracked.push(track(c, i, outcome));
       if (!outcome) { pending += 1; continue; }
-      const actual = outcome.close / c.baseClose - 1;
-      const hit = c.stance === 'NEUTRAL' ? Math.abs(actual) <= 0.02 : Math.sign(c.target - c.baseClose) === Math.sign(actual);
-      results.push({ hit, err: Math.abs(outcome.close / c.target - 1) * 100 });
+      results.push({ hit: hitOf(c, outcome.close), err: Math.abs(outcome.close / c.target - 1) * 100 });
     }
     return {
       analyst: a.id, name: a.name, scored: results.length,
       hitRate: results.length ? results.filter((r) => r.hit).length / results.length : null,
       medianErrorPct: results.length ? median(results.map((r) => r.err)) : null,
       pending, latest: mine.at(-1) ?? null, rank: null as number | null,
+      calls: tracked.slice(-TRACK_KEEP).reverse(),
     };
   });
   // Rank only analysts with scored calls: hit rate first, then smaller error.

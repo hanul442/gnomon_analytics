@@ -28,3 +28,18 @@ test('a call is scored 20 sessions later on direction and target error', () => {
   assert.deepEqual([fundamental.rank, fundamental.scored], [null, 0]);
   assert.equal(board[0]!.analyst, 'trend_momentum');
 });
+
+test('each analyst keeps its last calls followed to today, scored or in progress (G-213)', () => {
+  const calls = [
+    call('trend_momentum', 0, 'BULLISH', 125),
+    call('trend_momentum', 30, 'BEARISH', 120),
+    call('mean_reversion', 39, 'BULLISH', 150), // made on the last bar: nothing to compare yet
+    ...Array.from({ length: 7 }, (_, i) => call('fundamental', 10 + i, 'BULLISH', 200)),
+  ];
+  const board = scoreAnalysts(calls, bars);
+  const trend = board.find((b) => b.analyst === 'trend_momentum')!.calls!;
+  assert.deepEqual(trend.map((c) => [c.baseDate, c.done, c.hit, c.sessions, c.close]), [[day(30), false, false, 9, 139], [day(0), true, true, 20, 120]]);
+  assert.deepEqual(board.find((b) => b.analyst === 'mean_reversion')!.calls!.map((c) => [c.sessions, c.hit]), [[0, null]]);
+  const fund = board.find((b) => b.analyst === 'fundamental')!.calls!;
+  assert.deepEqual(fund.map((c) => c.baseDate), [16, 15, 14, 13, 12].map(day));
+});
