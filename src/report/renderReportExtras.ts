@@ -17,22 +17,22 @@ export const kindChip = (kind: ClaimKind | undefined) => (kind ? `<span class="c
 const STANCE = { BULLISH: '강세', BEARISH: '약세', NEUTRAL: '중립', INSUFFICIENT_DATA: '근거 부족' } as const;
 const DESK = { MARKET: '시장', TECHNICAL: '기술', FLOW: '수급', FUNDAMENTAL: '펀더멘털', EVENT: '공시·뉴스' } as const;
 
-export interface WeekChange { label: string; before: string; after: string; tone?: string }
+export interface WeekChange { label: string; before: string; after: string; /** The change as a percent, when it is a number. */ delta?: string; tone?: string }
 
 /** Number differences between two reports: price, medium-term signal, fair value and the analysts' average target. */
 export function weekChanges(cur: DailyReport, prev: DailyReport): WeekChange[] {
   const out: WeekChange[] = [];
   if (cur.price && prev.price) {
     const d = (cur.price.close / prev.price.close - 1) * 100;
-    out.push({ label: '종가', before: won(prev.price.close), after: `${won(cur.price.close)} (${pct(d)})`, tone: tone(d) });
+    out.push({ label: '종가', before: won(prev.price.close), after: won(cur.price.close), delta: pct(d), tone: tone(d) });
   }
   const mid = (r: DailyReport) => r.market?.horizons?.find((h) => h.key === 'MEDIUM')?.summary.label;
   if (mid(cur) && mid(prev)) out.push({ label: '중기 기술 신호', before: mid(prev)!, after: mid(cur)! });
   const fv = (r: DailyReport) => r.market?.fairValue?.center;
-  if (fv(cur) && fv(prev)) out.push({ label: '기술적 적정가 중심', before: won(fv(prev)!), after: `${won(fv(cur)!)} (${pct((fv(cur)! / fv(prev)! - 1) * 100)})` });
+  if (fv(cur) && fv(prev)) { const d = (fv(cur)! / fv(prev)! - 1) * 100; out.push({ label: '기술적 적정가', before: won(fv(prev)!), after: won(fv(cur)!), delta: pct(d), tone: tone(d) }); }
   const c = okCommentary(cur), p = okCommentary(prev);
   const avg = (x: Commentary | undefined) => (x?.analysts?.length ? x.analysts.reduce((s, a) => s + a.target, 0) / x.analysts.length : null);
-  if (avg(c) && avg(p)) out.push({ label: '분석가 예상가 평균', before: won(avg(p)!), after: `${won(avg(c)!)} (${pct((avg(c)! / avg(p)! - 1) * 100)})` });
+  if (avg(c) && avg(p)) { const d = (avg(c)! / avg(p)! - 1) * 100; out.push({ label: '분석가 예상가 평균', before: won(avg(p)!), after: won(avg(c)!), delta: pct(d), tone: tone(d) }); }
   return out;
 }
 
@@ -111,19 +111,23 @@ export function diffBasis(r: DailyReport): DailyReport {
  * The header and numbers are the page's own date; `conclusionDate` labels the conclusion when it is an earlier report's (a live page).
  */
 export function reportDiffCard(cur: DailyReport, prev: DailyReport | null, opts: { conclusionDate?: string | null; href?: string | null } = {}): string {
-  const head = (meta: string) => `<div class="block-head"><h2>지난 리포트와 달라진 점</h2>${meta}</div>`;
-  if (!prev) return `<section class="block" id="diff">${head('')}<div class="card"><p class="empty">이 종목의 이전 위원회 리포트가 아직 없어요. 다음 리포트부터 무엇이 달라졌는지 여기서 보여 드려요.</p></div></section>`;
+  const head = '<div class="block-head"><h2>지난 리포트와 달라진 점</h2></div>';
+  if (!prev) return `<section class="block" id="diff">${head}<div class="card"><p class="empty">이 종목의 이전 위원회 리포트가 아직 없어요. 다음 리포트부터 무엇이 달라졌는지 여기서 보여 드려요.</p></div></section>`;
   const d = reportDiff(cur, prev);
-  const curDate = cur.date, conclusionDate = opts.conclusionDate ?? cur.date;
-  const prevLabel = opts.href ? `<a href="${esc(opts.href)}">${esc(prev.date)}</a>` : esc(prev.date);
+  const conclusionDate = opts.conclusionDate ?? cur.date;
+  // The dates ride inside the card (a line above it slid under the sticky tab bar on phones).
+  const prevLabel = opts.href ? `<a href="${esc(opts.href)}">${esc(prev.date)}</a>` : `<span>${esc(prev.date)}</span>`;
+  const dates = `<div class="df-dates"><span class="df-dk">지난 리포트</span>${prevLabel}<span class="df-ar" aria-hidden="true">→</span><span class="df-dk">이번</span><b>${esc(cur.date)}</b></div>`;
   const sign = (v: number) => `${v > 0 ? '+' : ''}${v}%p`;
-  const odds = d.odds.length ? `<div class="df-odds">${d.odds.map((o) => `<div class="df-o"><span class="pl-k">${o.label}</span><b>${o.before}% → ${o.after}%</b><small class="${o.after > o.before ? 'up' : o.after < o.before ? 'down' : 'muted'}">${o.after === o.before ? '그대로' : sign(o.after - o.before)}</small></div>`).join('')}</div>` : '';
-  const votes = d.votes ? `<p class="df-votes"><span class="muted">위원 표결</span> 강세 ${d.votes.before[0]} · 중립 ${d.votes.before[1]} · 약세 ${d.votes.before[2]} → <b>강세 ${d.votes.after[0]} · 중립 ${d.votes.after[1]} · 약세 ${d.votes.after[2]}</b></p>` : '';
-  const flips = d.flips.length ? `<h3 class="why-h">입장을 바꾼 위원</h3><ul class="plain df-flips">${d.flips.map((f) => `<li>${esc(f.who)} <span class="muted">${esc(f.before)}</span> → <b class="${f.tone}">${esc(f.after)}</b></li>`).join('')}</ul>` : '';
-  const table = d.rows.length ? `<table class="compact"><thead><tr><th>항목</th><th>지난 리포트</th><th>이번</th></tr></thead><tbody>${d.rows.map((r) => `<tr><td>${esc(r.label)}</td><td class="muted">${esc(r.before)}</td><td class="${r.tone ?? ''}"><b>${esc(r.after)}</b></td></tr>`).join('')}</tbody></table>` : '';
-  const summary = d.summary ? `<details class="more"><summary>위원회 결론 두 개 나란히 보기</summary><div class="grid-eq" style="margin-top:8px"><div><div class="pl-k">${esc(prev.date)}</div><p>${esc(d.summary.before)}</p></div><div><div class="pl-k">${esc(conclusionDate)}</div><p>${esc(d.summary.after)}</p></div></div></details>` : '';
-  const body = odds + votes + flips + table + summary;
-  return `<section class="block" id="diff">${head(`<span class="muted">${prevLabel} → ${esc(curDate)}</span>`)}<div class="card">
+  const odds = d.odds.length ? `<div class="df-odds">${d.odds.map((o) => `<div class="df-o"><span class="df-ok">${o.label}</span><span class="df-ov"><s>${o.before}%</s><b>${o.after}%</b></span><small class="${o.after > o.before ? 'up' : o.after < o.before ? 'down' : 'muted'}">${o.after === o.before ? '그대로' : sign(o.after - o.before)}</small></div>`).join('')}</div>` : '';
+  // The tally as two stacked bars (seats per side), last report over this one.
+  const bar = (v: [number, number, number], k: string) => `<div class="df-vrow"><span class="df-vk">${k}</span><div class="sc-prob df-bar" role="img" aria-label="${k} 강세 ${v[0]}명, 중립 ${v[1]}명, 약세 ${v[2]}명">${(['bull', 'base', 'bear'] as const).map((c, i) => (v[i]! > 0 ? `<span class="sp-${c}" style="flex:${v[i]}">${v[i]}</span>` : '')).join('')}</div></div>`;
+  const votes = d.votes ? `<div class="df-sec"><h3 class="df-h">위원 표결</h3>${bar(d.votes.before, '지난')}${bar(d.votes.after, '이번')}<div class="df-leg"><span class="up">● 강세</span><span class="muted">● 중립</span><span class="down">● 약세</span></div></div>` : '';
+  const flips = d.flips.length ? `<div class="df-sec"><h3 class="df-h">입장을 바꾼 위원 <span class="muted">${d.flips.length}명</span></h3><ul class="df-flips">${d.flips.map((f) => `<li><span class="df-who">${esc(f.who)}</span><span class="df-chg"><s>${esc(f.before)}</s><span aria-hidden="true">→</span><b class="${f.tone}">${esc(f.after)}</b></span></li>`).join('')}</ul></div>` : '';
+  const stats = d.rows.length ? `<div class="df-sec"><h3 class="df-h">숫자</h3><ul class="df-stats">${d.rows.map((r) => `<li><span class="df-sk">${esc(r.label)}</span><span class="df-sv"><s>${esc(r.before)}</s><b class="${r.delta ? '' : r.tone ?? ''}">${esc(r.after)}</b></span>${r.delta && r.delta !== '0.0%' ? `<em class="df-pill ${r.tone ?? ''}">${esc(r.delta)}</em>` : r.before === r.after ? '<em class="df-pill muted">그대로</em>' : ''}</li>`).join('')}</ul></div>` : '';
+  const summary = d.summary ? `<details class="more df-sum"><summary>위원회 결론 두 개 나란히 보기</summary><div class="grid-eq" style="margin-top:8px"><div><div class="pl-k">${esc(prev.date)}</div><p>${esc(d.summary.before)}</p></div><div><div class="pl-k">${esc(conclusionDate)}</div><p>${esc(d.summary.after)}</p></div></div></details>` : '';
+  const body = odds + votes + flips + stats + summary;
+  return `<section class="block" id="diff">${head}<div class="card df">${dates}
 ${d.lead ? `<p class="df-lead">${esc(d.lead)}</p>` : ''}${body || '<p class="empty">비교할 수 있는 항목이 없어요.</p>'}
 <p class="fine">두 리포트 모두 만든 날 그대로 보관돼요. 바뀐 점은 그 기록끼리 비교한 거예요.</p></div></section>`;
 }
@@ -294,7 +298,7 @@ export function insightLine(report: DailyReport, key: InsightKey, base: string):
   return `<div class="insight need-plus"><span class="ins-k">AI 한 줄 · ${INSIGHT_TAB[key]}</span>${kindChip(line.kind)}${esc(line.text)}</div>`;
 }
 
-export const EXTRAS_CSS = `.df-lead{font-weight:700;margin:0 0 10px}.df-odds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}.df-o{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:12px}.df-o b{font-size:15px}.df-o small{font-size:12.5px;font-weight:700}.df-votes{margin:0 0 8px;font-size:14px}.df-flips li{padding:2px 0}
+export const EXTRAS_CSS = `.df-dates{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;font-size:13px;color:var(--muted);margin:0 0 10px}.df-dates a,.df-dates span,.df-dates b{white-space:nowrap}.df-dates b{color:var(--fg)}.df-dk{font-size:12px}.df-ar{margin:0 2px}.df-lead{font-size:17px;font-weight:800;line-height:1.45;margin:0 0 14px}.df-sec{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.df-h{font-size:14px;font-weight:800;margin:0 0 8px}.df-h .muted{font-weight:600;margin-left:4px}.df-odds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.df-o{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}.df-ok{font-size:12.5px;color:var(--muted);font-weight:700}.df-ov{display:flex;align-items:baseline;gap:6px;white-space:nowrap}.df-ov s{color:var(--muted);text-decoration:none;font-size:13px}.df-ov b{font-size:18px}.df-o small{font-size:12.5px;font-weight:700}.df-vrow{display:flex;align-items:center;gap:10px}.df-vk{flex:none;width:28px;font-size:12.5px;color:var(--muted);font-weight:700}.df-bar{flex:1;height:24px;margin:3px 0}.df-leg{display:flex;gap:12px;font-size:12px;margin:6px 0 0 38px}.df-flips,.df-stats{list-style:none;margin:0;padding:0}.df-flips li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}.df-flips li:last-child,.df-stats li:last-child{border-bottom:0}.df-who{min-width:0;font-size:14.5px}.df-chg{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}.df-chg s{color:var(--muted);text-decoration:none}.df-chg b{font-weight:800}.df-stats li{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'k p' 'v v';gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}.df-sk{grid-area:k;font-size:13.5px;color:var(--fg2)}.df-sv{grid-area:v;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px}.df-sv s{color:var(--muted);text-decoration:none;font-size:13.5px;white-space:nowrap}.df-sv s::after{content:' →'}.df-sv b{font-size:16px;white-space:nowrap}.df-pill{grid-area:p;align-self:start;font-style:normal;font-size:12.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,currentColor 12%,transparent);white-space:nowrap}.df-sum{margin-top:14px}@media(min-width:720px){.df-stats li{grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:'k v p';align-items:center}.df-sv{justify-content:flex-end}}
 .db-preview{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface)}.db-preview:hover{border-color:#b9cbea}.db-pv-top{display:flex;align-items:center;gap:10px}.db-avs{display:flex}.db-avs .db-av{margin-left:-8px;border:2px solid #fff}.db-avs .db-av:first-child{margin-left:0}.db-pv-n{display:flex;flex-direction:column;font-weight:800;font-size:15px}.db-pv-n small{font-weight:500;color:var(--muted);font-size:12.5px}.db-pv-l{display:block;font-size:13.5px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.db-pv-l b{color:var(--fg);margin-right:6px}.db-pv-cta{align-self:flex-end;font-weight:800;font-size:14px;color:var(--accent-strong)}
 .db-av{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:14px;font-size:14px;font-weight:800;color:#fff;background:var(--muted)}.db-av-bull{background:var(--up)}.db-av-bear{background:var(--accent)}.db-av-mid{background:var(--muted)}.db-av-red{background:#1f2937}
 .db-room{position:fixed;inset:0;z-index:185;display:flex;flex-direction:column;background:var(--surface-solid)}.db-room[hidden]{display:none}.db-room-h{display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));background:var(--surface);border-bottom:1px solid var(--line)}.db-room-x{border:0;background:none;font-size:30px;line-height:1;width:36px;height:36px;cursor:pointer;color:var(--fg);border-radius:10px}.db-room-t{display:flex;flex-direction:column;flex:1;min-width:0}.db-room-t b{font-size:16px}.db-room-t small{font-size:12px;color:var(--muted)}
