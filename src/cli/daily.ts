@@ -76,6 +76,7 @@ import { marketPulse, quickCalc, type MarketPulse, type StockCalc } from '../ana
 import type { Selection, SelectionParams } from '../analysis/selection.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
+import { retryingFetch } from '../sources/retryFetch.js';
 
 const KST_MS = 9 * 60 * 60_000;
 
@@ -851,6 +852,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const rootFlag = process.argv.indexOf('--root');
   const root = rootFlag >= 0 ? process.argv[rootFlag + 1] ?? '.' : '.';
   setDeepKey(process.env.GNM_DEEP_KEY);
+  // #150: a dropped Naver connection used to lose the stock for the day; GETs are tried twice more.
+  // Wrapped globally (not passed as options.fetch) so injected-fetch paths such as the DART zip download keep their own transport.
+  globalThis.fetch = retryingFetch(globalThis.fetch);
   Promise.all([loadTickers(join(root, 'tickers.json')), loadRequests(join(root, 'requests.json'))])
     .then(([tickers, requests]) => runDaily({
       root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '', tickers, requests,
