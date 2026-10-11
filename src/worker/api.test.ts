@@ -386,6 +386,18 @@ test('market reports enforce paid plans even with credits; Plus unlocks once and
  const answer=await t.call('POST','/ask',{tier:'standard',source:'debate',expert:'committee',symbol:'MARKET-DAILY',reportDate:'2026-10-07',question:'약세 반론은?',page:'시장 담당자의 반론'},u.session);
  assert.equal(answer.status,200);assert.ok(JSON.stringify(input).includes('당일 요약'));
  const history=await t.call('GET','/questions/mine?source=debate&symbol=MARKET-DAILY',undefined,u.session);assert.equal(history.body.items[0].symbol,'MARKET-DAILY');
+ // G-206: the question keeps its report date; a dated page lists only that day's (and undated legacy) questions, never other symbols'.
+ assert.equal(history.body.items[0].report_date,'2026-10-07');
+ await t.call('POST','/ask',{tier:'standard',source:'debate',expert:'committee',symbol:'MARKET-DAILY',reportDate:'2026-10-08',question:'다음 날 질문',page:''},u.session);
+ await t.call('POST','/ask',{tier:'standard',source:'debate',expert:'committee',symbol:'005930',reportDate:'2026-10-08',question:'종목 질문',page:''},u.session);
+ await t.env.DB.prepare("INSERT INTO questions (user_id,symbol,tier,model,question,answer,credits,status,created_at,source) SELECT id,'MARKET-DAILY','standard','m','예전 질문','답',6,'OK','2026-10-01T00:00:00Z','debate' FROM users WHERE email='market@example.com'").run();
+ const market=(await t.call('GET','/questions/mine?source=debate&symbol=MARKET-DAILY',undefined,u.session)).body.items.map((x:any)=>x.question);
+ assert.deepEqual(market.sort(),['다음 날 질문','약세 반론은?','예전 질문'].sort());
+ const day=(await t.call('GET','/questions/mine?source=debate&symbol=MARKET-DAILY&date=2026-10-08',undefined,u.session)).body.items.map((x:any)=>x.question);
+ assert.deepEqual(day.sort(),['다음 날 질문','예전 질문'].sort());
+ const stock=(await t.call('GET','/questions/mine?source=debate&symbol=005930',undefined,u.session)).body.items;
+ assert.equal(stock.length,1);assert.equal(stock[0].report_date,null);
+ assert.deepEqual((await t.call('GET','/questions/mine?source=debate&symbol=MARKET-WEEKLY',undefined,u.session)).body.items,[]);
 });
 
 test('deep reports (G-61): locked until unlocked once with credits; requester and admin open free; nothing charged for a missing report', async () => {

@@ -218,6 +218,8 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   const question = str(b.question, 1000);
   if (question.length < 2) fail(400, 'EMPTY', '질문을 적어 주세요.');
   const symbol = typeof b.symbol === 'string' && (/^(?:\d{6}|[0-9][0-9A-Z]{5}|KRW-[A-Z0-9]{1,15}|MARKET-DAILY)$/.test(b.symbol) || isUsSymbol(b.symbol)) ? b.symbol : undefined;
+  // G-206: the market report the question was asked on, kept so 내 토론 기록 can reopen that day's report.
+  const reportDate = symbol?.startsWith('MARKET-') && typeof b.reportDate === 'string' && DEEP_DATE.test(b.reportDate) ? b.reportDate : null;
   const page = str(b.page, 6000);
   const history = (Array.isArray(b.history) ? b.history : []).slice(-3)
     .map((h) => ({ q: str((h as { q?: unknown })?.q, 1000), a: str((h as { a?: unknown })?.a, 2000) })).filter((h) => h.q && h.a);
@@ -259,12 +261,12 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   let res: Awaited<ReturnType<AskClient['create']>>;
   try {
     let siteData = symbol && !symbol.startsWith('MARKET-') ? await fetchStock(env, deps, symbol) : '';
-    if(symbol?.startsWith('MARKET-')&&typeof b.reportDate==='string'&&DEEP_DATE.test(b.reportDate)){const r=await deps.fetch(`${env.SITE_URL.replace(/\/$/,'')}/market/${symbol==='MARKET-DAILY'?'daily':'weekly'}-${b.reportDate}.json`).catch(()=>null);if(r?.ok)siteData=(await r.text()).slice(0,12000);}
+    if(symbol?.startsWith('MARKET-')&&reportDate){const r=await deps.fetch(`${env.SITE_URL.replace(/\/$/,'')}/market/${symbol==='MARKET-DAILY'?'daily':'weekly'}-${reportDate}.json`).catch(()=>null);if(r?.ok)siteData=(await r.text()).slice(0,12000);}
     const params = askParams({ tier: tier!, question, ...(symbol ? { symbol } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) });
     res = onText && deps.ai!.stream ? await deps.ai!.stream(params, onText) : await deps.ai!.create(params);
   } catch {
     await refund('AI 응답 실패로 돌려드림');
-    await db.prepare("INSERT INTO questions (user_id, symbol, tier, model, question, credits, status, created_at, source, speaker) VALUES (?, ?, ?, ?, ?, 0, 'FAILED', ?, ?, ?)").bind(u.id, symbol ?? null, tier, model, question, iso(now), source, speaker).run();
+    await db.prepare("INSERT INTO questions (user_id, symbol, tier, model, question, credits, status, created_at, source, speaker, report_date) VALUES (?, ?, ?, ?, ?, 0, 'FAILED', ?, ?, ?, ?)").bind(u.id, symbol ?? null, tier, model, question, iso(now), source, speaker, reportDate).run();
     await release();
     return fail(502, 'AI_FAILED', 'AI가 답하지 못했어요. 크레딧은 돌려드렸어요.');
   }
@@ -272,9 +274,9 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   const answer = answerText(res.content);
   const ok = res.stop_reason !== 'refusal' && answer.length > 0;
   if (!ok) await refund('AI가 답하지 않아 돌려드림');
-  const row = await db.prepare(`INSERT INTO questions (user_id, symbol, tier, model, question, answer, credits, input_tokens, output_tokens, usd, status, created_at, source, speaker)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(u.id, symbol ?? null, tier, res.model || model, question, answer, ok ? cost : 0,
-    res.usage.input_tokens, res.usage.output_tokens, usd, ok ? 'OK' : 'REFUSED', iso(now), source, speaker).first<{ id: number }>();
+  const row = await db.prepare(`INSERT INTO questions (user_id, symbol, tier, model, question, answer, credits, input_tokens, output_tokens, usd, status, created_at, source, speaker, report_date)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`).bind(u.id, symbol ?? null, tier, res.model || model, question, answer, ok ? cost : 0,
+    res.usage.input_tokens, res.usage.output_tokens, usd, ok ? 'OK' : 'REFUSED', iso(now), source, speaker, reportDate).first<{ id: number }>();
   await release();
   if (!ok) fail(422, 'NO_ANSWER', '이 질문에는 답하지 않았어요. 크레딧은 돌려드렸어요.');
   return { id: row?.id, answer, tier, model: res.model || model, credits: cost, ...(expert ? { speaker: expert.name } : {}), balance: await balanceOf(db, u.id), usage: { input: res.usage.input_tokens, output: res.usage.output_tokens } };
@@ -837,12 +839,18 @@ route('POST', '/screens/compose', async ({req,env,deps,now}) => {
 // G-116: my questions and the answers, kept with the account — the debate ones per stock, or all of them.
 route('GET', '/questions/mine', async ({ req, env, now }) => {
   const u = await authed(req, env, now), url = new URL(req.url);
-  const symbol = url.searchParams.get('symbol'), source = url.searchParams.get('source');
+  const symbol = url.searchParams.get('symbol'), source = url.searchParams.get('source'), date = url.searchParams.get('date');
   const where = ["user_id = ?", "status = 'OK'"], args: unknown[] = [u.id];
-  if (symbol && /^(?:\d{6}|[0-9][0-9A-Z]{5}|KRW-[A-Z0-9]{1,15})$/.test(symbol)) { where.push('symbol = ?'); args.push(symbol); }
+  // MARKET-DAILY and US tickers used to fall through here, so the market page listed every debate question.
+  if (symbol) {
+    if (!(/^(?:\d{6}|[0-9][0-9A-Z]{5}|KRW-[A-Z0-9]{1,15}|MARKET-DAILY)$/.test(symbol) || isUsSymbol(symbol))) return { items: [] };
+    where.push('symbol = ?'); args.push(symbol);
+  }
+  // G-206: one report's questions; ones asked before dates were kept (NULL) still show everywhere.
+  if (date && DEEP_DATE.test(date)) { where.push('(report_date = ? OR report_date IS NULL)'); args.push(date); }
   if (source === 'debate') where.push("(source = 'debate' OR speaker IS NOT NULL)");
   else if (source === 'chat') where.push("(source IS NULL OR source = 'chat')");
-  const items = (await env.DB.prepare(`SELECT id, symbol, source, speaker, question, answer, credits, created_at FROM questions WHERE ${where.join(' AND ')} ORDER BY id DESC LIMIT 200`).bind(...args).all()).results;
+  const items = (await env.DB.prepare(`SELECT id, symbol, source, speaker, question, answer, credits, created_at, report_date FROM questions WHERE ${where.join(' AND ')} ORDER BY id DESC LIMIT 200`).bind(...args).all()).results;
   return { items };
 });
 
