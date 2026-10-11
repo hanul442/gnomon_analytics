@@ -180,6 +180,9 @@ test('surveys, feedback and events are stored; export and delete cover everythin
   assert.equal((await t.call('POST', '/events', { events: [{ name: 'tab_open', page: '/', props: { tab: 'chart' } }, { name: 'BAD NAME' }] }, u.session)).body.saved, 1);
   const ov = await t.call('GET', '/admin/overview', undefined, boss.session);
   assert.deepEqual([ov.body.feedback.length, ov.body.events[0].name], [1, 'tab_open']);
+  // G-207: the console gets each survey answer in full, with who and when.
+  assert.deepEqual(ov.body.surveys.map((x: any) => [x.kind, x.email, JSON.parse(x.answers).sectors]), [['onboarding', 's@example.com', ['semis']]]);
+  assert.equal(ov.body.pulses.length, 0);
   // G-109: settings follow the account; unknown keys and non-strings are dropped.
   assert.deepEqual((await t.call('GET', '/me/settings', undefined, u.session)).body, { data: {}, updatedAt: null });
   const saved = await t.call('POST', '/me/settings', { data: { 'gnm-persona': 'trader', 'gnm-ind': '["rsi"]', 'gnm-draw:005930': '[]', 'gnm-session': 'secret', 'gnm-prefs': 5, other: 'x' } }, u.session);

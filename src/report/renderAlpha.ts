@@ -4,6 +4,7 @@
 import { shell } from './renderHtml.js';
 import { ALPHA } from './plans.js';
 import { SECTORS } from './sectors.js';
+import { SURVEYS } from './alphaPages.js';
 
 const PAGE_CSS = `<style>
 .form-card{max-width:520px;margin:24px auto}.fld-err{display:block;color:var(--up-strong);font-size:13px;margin-top:4px}[aria-invalid=true]{border-color:var(--up)!important}.form-card h1{font-size:26px;margin:0 0 6px}.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}.fld label{font-weight:700;font-size:14px}
@@ -260,15 +261,32 @@ export function renderAccount(): string {
   return shell('', '내 계정 · 그노몬', body, { scripts: script, active: 'account', noFeedback: true });
 }
 
+/** The pop-up weekly pulse (alpha.ts) has no question list of its own; these are its fields. */
+const PULSE_QUESTIONS = [
+  { key: 'nps', title: '투자하는 친구에게 추천할 만한가요?', type: 'nps' },
+  { key: 'worst', title: '이번 주 가장 아쉬웠던 점', type: 'text' },
+  { key: 'best', title: '가장 좋았던 점', type: 'text' },
+  { key: 'page', title: '설문을 연 화면', type: 'text' },
+] as const;
+
+/** G-207: what each survey kind asked, so the ops console shows every answer next to its question. */
+function surveyDefs(): string {
+  type Def = { key: string; title: string; type: string; options?: readonly string[]; section?: string };
+  const pack = (name: string, qs: readonly Def[]) => ({ name, questions: qs.map((q) => ({ key: q.key, title: q.title, type: q.type, options: q.options ?? [], ...(q.section ? { section: q.section } : {}) })) });
+  const defs = { onboarding: pack('가입 설문', ONBOARDING_QUESTIONS), midterm: pack('중간 설문', SURVEYS.midterm.questions), weekly: pack('주간 설문', SURVEYS.weekly.questions), pulse: pack('팝업 설문', PULSE_QUESTIONS) };
+  return JSON.stringify(defs).replace(/</g, '\\u003c');
+}
+
 /** The ops console (G-185): body and script, served only by the API Worker at /ops (renderOps below), never by the user site. */
 function adminParts(): { body: string; script: string } {
-  const body = `${PAGE_CSS}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>운영</span></div><h1>알파 운영</h1><p class="hero-line" id="adm-line">불러오는 중이에요…</p></div></section>
-<div class="adm-tabs" role="group" aria-label="운영 메뉴">${[['sum', '요약'], ['credit', '크레딧 요청'], ['action', '리포트 요청'], ['users', '사용자'], ['invites', '초대 코드'], ['voice', '설문·피드백'], ['asks', 'AI 질문'], ['usage', '사용 현황']].map(([k, l], i) => `<button type="button" data-tab="${k}" aria-pressed="${i === 0}">${l}<span data-count="${k}"></span></button>`).join('')}</div>
+  const body = `${PAGE_CSS}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>운영</span></div><h1>알파 운영</h1><p class="hero-line"><span id="adm-line">불러오는 중이에요…</span> <button type="button" class="adm-reload" id="adm-reload">새로 고침</button></p></div></section>
+<div class="adm-tabs" role="group" aria-label="운영 메뉴">${[['sum', '요약'], ['credit', '크레딧 요청'], ['action', '리포트 요청'], ['users', '사용자'], ['invites', '초대 코드'], ['surveys', '설문 응답'], ['voice', '화면 피드백'], ['asks', 'AI 질문'], ['usage', '사용 현황']].map(([k, l], i) => `<button type="button" data-tab="${k}" aria-pressed="${i === 0}">${l}<span data-count="${k}"></span></button>`).join('')}</div>
 <div class="card adm" id="adm"></div>`;
   const script = `<script>
 (function () {
   if (!window.GNM || !GNM.api) return;
-  var D = null, tab = 'sum', root = document.getElementById('adm');
+  var D = null, root = document.getElementById('adm'), loadedAt = null;
+  var TABS = ['sum', 'credit', 'action', 'users', 'invites', 'surveys', 'voice', 'asks', 'usage'], tab = TABS.indexOf(location.hash.slice(1)) >= 0 ? location.hash.slice(1) : 'sum';
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var when = function (t) { return t ? new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'; };
   var usd = function (v) { return '$' + Number(v || 0).toFixed(2); };
@@ -279,13 +297,76 @@ function adminParts(): { body: string; script: string } {
   };
   var post = function (path, body) { return GNM.call('POST', path, body).then(function (r) { if (r.error) GNM.toast(r.message); else load(); return r; }); };
   var avg = function (xs) { return xs.length ? (xs.reduce(function (s, x) { return s + x; }, 0) / xs.length).toFixed(1) : '—'; };
+  var npsOf = function (xs) { return xs.length ? Math.round((xs.filter(function (x) { return x >= 9; }).length - xs.filter(function (x) { return x <= 6; }).length) / xs.length * 100) : '—'; };
+  // G-207: survey answers in full. DEFS holds each kind's questions; answers the form no longer asks still show, by key.
+  var DEFS = ${surveyDefs()}, KINDS = ['onboarding', 'midterm', 'weekly', 'pulse'], sv = { kind: '', q: '', view: 'each', exact: false };
+  var kindName = function (k) { return (DEFS[k] || { name: k }).name; };
+  var parse = function (s) { try { var v = JSON.parse(s || 'null'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } };
+  var empty = function (v) { return v == null || v === '' || (Array.isArray(v) && !v.length); };
+  var items = function (q, v) { return [].concat(v).map(function (x) { return q.type === 'tickers' && Array.isArray(x) ? x[1] + ' ' + x[0] : typeof x === 'object' ? JSON.stringify(x) : String(x); }); };
+  var answerText = function (q, v) { return empty(v) ? '' : items(q, v).join(', '); };
+  var answerHtml = function (q, v) {
+    if (empty(v)) return '<span class="muted">건너뜀</span>';
+    if (Array.isArray(v)) return '<span class="sv-chips">' + items(q, v).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</span>';
+    if (q.type === 'nps') return '<b>' + esc(v) + '</b><span class="muted"> / 10</span>';
+    return '<span class="sv-text">' + esc(items(q, v)[0]) + '</span>';
+  };
+  var questionsOf = function (s) {
+    var a = parse(s.answers), qs = (DEFS[s.kind] || { questions: [] }).questions, known = {};
+    qs.forEach(function (q) { known[q.key] = 1; });
+    return { a: a, qs: qs.concat(Object.keys(a).filter(function (k) { return !known[k] && !(k === 'page' && a[k] === 'survey'); }).map(function (k) { return { key: k, title: k, type: 'text' }; })) };
+  };
+  var svList = function () { var q = sv.q.trim().toLowerCase(); return D.surveys.filter(function (s) { var e = String(s.email).toLowerCase(); return (!sv.kind || s.kind === sv.kind) && (!q || (sv.exact ? e === q : e.indexOf(q) >= 0)); }); };
+  var svItem = function (s, open) {
+    var o = questionsOf(s), a = o.a, n = o.qs.filter(function (q) { return !empty(a[q.key]); }).length;
+    var snip = o.qs.filter(function (q) { return q.type === 'text' && q.key !== 'page' && typeof a[q.key] === 'string' && a[q.key]; }).map(function (q) { return a[q.key]; })[0] || '';
+    return '<details class="sv-item"' + (open ? ' open' : '') + '><summary><span class="sv-when">' + when(s.created_at) + '</span><span class="pill">' + esc(kindName(s.kind)) + '</span><b class="sv-who">' + esc(s.email) + '</b>' + (typeof a.nps === 'number' ? '<span class="pill">추천 ' + a.nps + '</span>' : '') + '<span class="muted small">' + n + '/' + o.qs.length + '문항</span>' + (snip ? '<span class="sv-snip">' + esc(snip) + '</span>' : '') + '</summary>' +
+      '<dl class="sv-qa">' + o.qs.map(function (q, i) { return (q.section ? '<dt class="sv-sec">' + esc(q.section) + '</dt>' : '') + '<dt>' + (i + 1) + '. ' + esc(q.title) + '</dt><dd>' + answerHtml(q, a[q.key]) + '</dd>'; }).join('') + '</dl></details>';
+  };
+  var byQuestion = function (xs) {
+    if (!sv.kind) return '<p class="muted">문항별로 보려면 위에서 설문 종류를 하나 골라 주세요.</p>';
+    var seen = {}, rows = xs.filter(function (s) { if (sv.kind !== 'onboarding') return true; if (seen[s.user_id || s.email]) return false; seen[s.user_id || s.email] = 1; return true; }).map(function (s) { return { s: s, a: parse(s.answers) }; });
+    return '<p class="muted small">' + rows.length + '개 응답을 문항마다 모았어요' + (sv.kind === 'onboarding' ? ' (다시 한 사람은 마지막 답만)' : '') + '.</p>' + DEFS[sv.kind].questions.map(function (q, i) {
+      var got = rows.filter(function (r) { return !empty(r.a[q.key]); }), head = '<h3>' + (i + 1) + '. ' + esc(q.title) + ' <small class="muted">' + got.length + '명 답함</small></h3>';
+      if (q.type === 'text') return '<section class="sv-q">' + head + (got.length ? '<ul class="sv-texts">' + got.map(function (r) { return '<li><span class="sv-text">' + esc(answerText(q, r.a[q.key])) + '</span><small class="muted">' + esc(r.s.email) + ' · ' + when(r.s.created_at) + '</small></li>'; }).join('') + '</ul>' : '<p class="muted small">답이 없어요.</p>') + '</section>';
+      var c = {};
+      got.forEach(function (r) { items(q, r.a[q.key]).forEach(function (k) { c[k] = (c[k] || 0) + 1; }); });
+      var opts = q.type === 'nps' ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(String) : q.options.map(String);
+      var keys = opts.concat(Object.keys(c).filter(function (k) { return opts.indexOf(k) < 0; }).sort(function (x, y) { return c[y] - c[x]; }));
+      var max = Math.max.apply(null, keys.map(function (k) { return c[k] || 0; }).concat([1]));
+      var ns = q.type === 'nps' ? got.map(function (r) { return r.a[q.key]; }).filter(function (x) { return typeof x === 'number'; }) : [];
+      return '<section class="sv-q">' + head + (ns.length ? '<p class="small">평균 ' + avg(ns) + ' · NPS ' + npsOf(ns) + '</p>' : '') + '<div class="bars">' + keys.map(function (k) { return '<div><span>' + esc(k) + '</span><i style="width:' + ((c[k] || 0) / max * 100) + '%"></i><span class="num">' + (c[k] || 0) + '</span></div>'; }).join('') + '</div></section>';
+    }).join('');
+  };
+  var svOut = function () {
+    var xs = svList();
+    if (!xs.length) return '<p class="muted">' + (D.surveys.length ? '조건에 맞는 응답이 없어요. 종류나 사용자 검색을 바꿔 보세요.' : '아직 받은 설문 응답이 없어요.') + '</p>';
+    if (sv.view === 'byq') return byQuestion(xs);
+    return '<p class="muted small">' + xs.length + '개 응답 · 줄을 누르면 모든 문항과 답이 펼쳐져요</p>' + xs.slice(0, 300).map(function (s) { return svItem(s, xs.length === 1); }).join('') + (xs.length > 300 ? '<p class="muted small">최근 300개만 보여요. 나머지는 CSV로 받아 보세요.</p>' : '');
+  };
+  var csv = function () {
+    var xs = svList(); if (!xs.length) { GNM.toast('받을 응답이 없어요.'); return; }
+    var cell = function (v) { v = String(v == null ? '' : v); if (/^[=+@\\t\\r-]/.test(v)) v = "'" + v; return /[",\\r\\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    // One column per question of the chosen kind, plus any answer key the form no longer asks.
+    var qs = null;
+    if (sv.kind) { qs = DEFS[sv.kind].questions.slice(); var has = {}; qs.forEach(function (q) { has[q.key] = 1; }); xs.forEach(function (s) { questionsOf(s).qs.forEach(function (q) { if (!has[q.key]) { has[q.key] = 1; qs.push(q); } }); }); }
+    var rows = [['때', '종류', '이메일'].concat(qs ? qs.map(function (q) { return q.title; }) : ['답'])].concat(xs.map(function (s) {
+      var o = questionsOf(s);
+      return [s.created_at, kindName(s.kind), s.email].concat(qs ? qs.map(function (q) { return answerText(q, o.a[q.key]); }) : [o.qs.filter(function (q) { return !empty(o.a[q.key]); }).map(function (q) { return q.title + ': ' + answerText(q, o.a[q.key]); }).join(' / ')]);
+    }));
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\\ufeff' + rows.map(function (r) { return r.map(cell).join(','); }).join('\\r\\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'gnomon-surveys-' + (sv.kind || 'all') + '-' + new Date().toISOString().slice(0, 10) + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  };
   var V = {
     sum: function () {
       var week = Date.now() - 7 * 864e5, active = D.users.filter(function (u) { return u.last_seen_at && Date.parse(u.last_seen_at) > week; }).length;
-      var nps = D.pulses.map(function (p) { try { return JSON.parse(p.answers).nps; } catch (e) { return null; } }).filter(function (x) { return typeof x === 'number'; });
-      var npsScore = nps.length ? Math.round((nps.filter(function (x) { return x >= 9; }).length - nps.filter(function (x) { return x <= 6; }).length) / nps.length * 100) : '—';
+      var nps = D.surveys.filter(function (s) { return s.kind !== 'onboarding'; }).map(function (p) { return parse(p.answers).nps; }).filter(function (x) { return typeof x === 'number'; });
       var up = D.feedback.filter(function (f) { return f.rating === 1; }).length, down = D.feedback.filter(function (f) { return f.rating === -1; }).length;
-      return '<div class="kpis">' + [[D.users.length, '가입자'], [active, '7일 활성'], [D.creditRequests.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 크레딧 요청'], [D.actions.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 리포트 요청'], [usd(D.spend.today) + ' / ' + usd(D.spend.dailyCap), '오늘 AI 비용 / 한도'], [usd(D.spend.month), '30일 AI 비용'], [npsScore, 'NPS (' + nps.length + '명, 평균 ' + avg(nps) + ')'], ['👍 ' + up + ' · 👎 ' + down, '화면 피드백']].map(function (k) { return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>'; }).join('') + '</div>';
+      var fresh = D.surveys.filter(function (s) { return Date.parse(s.created_at) > week; }).length;
+      // Each tile opens the tab that holds its detail.
+      return '<div class="kpis">' + [[D.users.length, '가입자', 'users'], [active, '7일 활성', 'users'], [D.creditRequests.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 크레딧 요청', 'credit'], [D.actions.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 리포트 요청', 'action'], [usd(D.spend.today) + ' / ' + usd(D.spend.dailyCap), '오늘 AI 비용 / 한도', 'asks'], [usd(D.spend.month), '30일 AI 비용', 'asks'], [D.surveys.length, '설문 응답 (7일 새로 ' + fresh + ')', 'surveys'], [npsOf(nps), 'NPS (' + nps.length + '명, 평균 ' + avg(nps) + ')', 'surveys'], ['👍 ' + up + ' · 👎 ' + down, '화면 피드백', 'voice']].map(function (k) { return '<button type="button" class="kpi" data-go="' + k[2] + '"><b>' + k[0] + '</b><span>' + k[1] + '</span></button>'; }).join('') + '</div>' +
+        '<div class="sv-head"><h3>최근 설문 응답</h3><button type="button" data-go="surveys">전체 보기</button></div>' + (D.surveys.length ? D.surveys.slice(0, 5).map(function (s) { return svItem(s, false); }).join('') : '<p class="muted small">아직 받은 설문 응답이 없어요.</p>');
     },
     credit: function () {
       return table(['때', '사용자', '요청', '사유', '상태', '처리'], D.creditRequests.map(function (r) {
@@ -300,10 +381,11 @@ function adminParts(): { body: string; script: string } {
       }));
     },
     users: function () {
-      return table(['가입', '이메일', '요금제', '크레딧', '질문', '비용', '마지막 접속', '설문', '조정'], D.users.map(function (u) {
+      var cnt = {}; D.surveys.forEach(function (s) { cnt[s.email] = (cnt[s.email] || 0) + 1; });
+      return '<label class="sv-search">찾기 <input type="search" id="u-q" placeholder="이메일·초대 코드"></label>' + table(['가입', '이메일', '요금제', '크레딧', '질문', '비용', '마지막 접속', '설문', '조정'], D.users.map(function (u) {
         var s = null; try { s = JSON.parse(u.onboarding || 'null'); } catch (e) {}
-        var survey = s ? esc([s.experience, s.horizon, (s.sectors || []).join('·'), (s.tickers || []).map(function (t) { return t[1]; }).join('·'), s.pay, s.interview === '네, 좋아요' ? '인터뷰 OK' : ''].filter(Boolean).join(' / ')) : '<span class="muted">안 함</span>';
-        return '<tr><td>' + when(u.created_at) + '</td><td>' + esc(u.email) + (u.role === 'admin' ? ' <span class="pill">운영자</span>' : '') + (u.disabled ? ' <span class="pill rejected">중지</span>' : '') + '<br><small class="muted">' + esc(u.invite_code || '') + '</small></td><td>' + esc(u.plan) + '</td><td class="num">' + u.balance + '</td><td class="num">' + u.asks + '</td><td class="num">' + usd(u.usd) + '</td><td>' + when(u.last_seen_at) + '</td><td><small>' + survey + '</small></td><td><div class="act" data-user="' + esc(u.id) + '"><input type="number" placeholder="±크레딧" aria-label="크레딧 조정"><button data-u="grant">지급</button><button data-u="toggle">' + (u.disabled ? '다시 허용' : '중지') + '</button></div></td></tr>';
+        var survey = (s ? esc([s.experience, s.horizon, (s.sectors || []).join('·'), (s.tickers || []).map(function (t) { return t[1]; }).join('·'), s.pay, s.interview === '네, 좋아요' ? '인터뷰 OK' : ''].filter(Boolean).join(' / ')) : '<span class="muted">가입 설문 안 함</span>') + (cnt[u.email] ? '<br><button type="button" class="sv-open" data-open-user="' + esc(u.email) + '">응답 ' + cnt[u.email] + '개 자세히</button>' : '');
+        return '<tr data-find="' + esc((u.email + ' ' + (u.invite_code || '')).toLowerCase()) + '"><td>' + when(u.created_at) + '</td><td>' + esc(u.email) + (u.role === 'admin' ? ' <span class="pill">운영자</span>' : '') + (u.disabled ? ' <span class="pill rejected">중지</span>' : '') + '<br><small class="muted">' + esc(u.invite_code || '') + '</small></td><td>' + esc(u.plan) + '</td><td class="num">' + u.balance + '</td><td class="num">' + u.asks + '</td><td class="num">' + usd(u.usd) + '</td><td>' + when(u.last_seen_at) + '</td><td><small>' + survey + '</small></td><td><div class="act" data-user="' + esc(u.id) + '"><input type="number" placeholder="±크레딧" aria-label="크레딧 조정"><button data-u="grant">지급</button><button data-u="toggle">' + (u.disabled ? '다시 허용' : '중지') + '</button></div></td></tr>';
       }));
     },
     invites: function () {
@@ -314,12 +396,15 @@ function adminParts(): { body: string; script: string } {
           return '<tr><td><b>' + esc(i.code) + '</b></td><td>' + esc(i.note) + '</td><td class="num">' + i.uses + ' / ' + i.max_uses + '</td><td class="num">' + i.credits + '</td><td>' + (i.expires_at ? when(i.expires_at) : '—') + '</td><td><button type="button" data-copy="' + esc(url) + '">링크 복사</button></td><td>' + (i.uses < i.max_uses ? '<button type="button" data-close="' + esc(i.code) + '">마감</button>' : '<span class="muted">마감</span>') + '</td></tr>';
         })) + '</div>';
     },
+    surveys: function () {
+      var n = function (k) { return D.surveys.filter(function (s) { return !k || s.kind === k; }).length; };
+      return '<div class="sv-bar"><div class="sv-seg" role="group" aria-label="설문 종류">' + [''].concat(KINDS).map(function (k) { return '<button type="button" data-sv-kind="' + k + '" aria-pressed="' + (sv.kind === k) + '">' + (k ? kindName(k) : '전체') + ' <small>' + n(k) + '</small></button>'; }).join('') + '</div>' +
+        '<div class="sv-seg" role="group" aria-label="보기"><button type="button" data-sv-view="each" aria-pressed="' + (sv.view === 'each') + '">응답별</button><button type="button" data-sv-view="byq" aria-pressed="' + (sv.view === 'byq') + '">문항별</button></div>' +
+        '<label class="sv-search">사용자 <input type="search" id="sv-q" placeholder="이메일 일부" value="' + esc(sv.q) + '"></label><button type="button" class="sv-open" data-csv>CSV로 받기</button></div><div id="sv-out">' + svOut() + '</div>';
+    },
     voice: function () {
-      var pulses = D.pulses.map(function (p) { var a = {}; try { a = JSON.parse(p.answers); } catch (e) {} var K = { pulse: '팝업', weekly: '주간', midterm: '중간' }; return '<tr><td>' + when(p.created_at) + '</td><td>' + (K[p.kind] || '') + '</td><td>' + esc(p.email) + '</td><td class="num">' + esc(a.nps) + '</td><td>' + esc([a.worst, a.hard, a.bug].filter(Boolean).join(' / ')) + '</td><td>' + esc([a.best, a.want].filter(Boolean).join(' / ')) + '</td></tr>'; });
       var fb = D.feedback.map(function (f) { return '<tr><td>' + when(f.created_at) + '</td><td>' + esc(f.email) + '</td><td>' + esc(f.target) + '<br><small class="muted">' + esc(f.page) + '</small></td><td>' + (f.rating === 1 ? '👍' : f.rating === -1 ? '👎' : '') + '</td><td>' + esc(f.text) + '</td></tr>'; });
-      var dist = function (key) { var c = {}; D.users.forEach(function (u) { var s = null; try { s = JSON.parse(u.onboarding || 'null'); } catch (e) {} if (!s) return; [].concat(s[key] || []).forEach(function (v) { if (v) c[v] = (c[v] || 0) + 1; }); }); var max = Math.max.apply(null, Object.values(c).concat([1])); return '<div class="bars">' + Object.keys(c).sort(function (a, b) { return c[b] - c[a]; }).map(function (k) { return '<div><span>' + esc(k) + '</span><i style="width:' + (c[k] / max * 100) + '%"></i><span class="num">' + c[k] + '</span></div>'; }).join('') + '</div>'; };
-      return '<h3>설문 (주간·중간, NPS)</h3>' + table(['때', '종류', '사용자', '점수', '아쉬운 점·헷갈린 점·오류', '좋은 점·바라는 기능'], pulses) + '<h3 style="margin-top:18px">화면 피드백</h3>' + table(['때', '사용자', '화면', '평가', '의견'], fb) +
-        '<h3 style="margin-top:18px">가입 설문 분포</h3><div class="grid-eq">' + [['experience', '경험'], ['horizon', '보유 기간'], ['interests', '보고 싶은 것'], ['sectors', '업종'], ['pay', '지불 의향'], ['tools', '쓰는 도구']].map(function (k) { return '<div><div class="pl-k">' + k[1] + '</div>' + dist(k[0]) + '</div>'; }).join('') + '</div>';
+      return '<p class="muted small">화면 곳곳의 👍·👎와 의견이에요. 설문 답은 설문 응답 탭에 있어요.</p>' + table(['때', '사용자', '화면', '평가', '의견'], fb);
     },
     asks: function () {
       return table(['때', '사용자', '종목', '모델', '질문', '크레딧', '비용', '상태', '평가'], D.questions.map(function (x) { return '<tr><td>' + when(x.created_at) + '</td><td>' + esc(x.email) + '</td><td>' + esc(x.symbol || '') + '</td><td>' + esc(x.tier) + '<br><small class="muted">' + esc(x.model) + '</small></td><td>' + esc(x.question) + '</td><td class="num">' + x.credits + '</td><td class="num">' + usd(x.usd) + '</td><td>' + pill(x.status) + '</td><td>' + (x.rating === 1 ? '👍' : x.rating === -1 ? '👎' : '') + '</td></tr>'; }));
@@ -334,11 +419,22 @@ function adminParts(): { body: string; script: string } {
     var pend = function (xs) { return xs.filter(function (r) { return r.status === 'pending'; }).length; };
     document.querySelector('[data-count=credit]').textContent = pend(D.creditRequests) ? ' ' + pend(D.creditRequests) : '';
     document.querySelector('[data-count=action]').textContent = pend(D.actions) ? ' ' + pend(D.actions) : '';
+    document.querySelector('[data-count=surveys]').textContent = D.surveys.length ? ' ' + D.surveys.length : '';
+  };
+  var show = function (t) {
+    tab = t; document.querySelectorAll('[data-tab]').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.tab === t)); });
+    try { history.replaceState(null, '', '#' + t); } catch (e) {}
+    draw(); window.scrollTo(0, 0);
   };
   root.addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
     var row = b.closest('[data-req]'), act = b.closest('[data-act]'), user = b.closest('[data-user]');
-    if (row && b.dataset.d) { var ins = row.querySelectorAll('input'); post('/admin/credit-requests/' + row.dataset.req, { decision: b.dataset.d, amount: Number(ins[0].value), note: ins[1].value }); }
+    if (b.dataset.go) show(b.dataset.go);
+    else if (b.dataset.svKind !== undefined) { sv.kind = b.dataset.svKind; draw(); }
+    else if (b.dataset.svView) { sv.view = b.dataset.svView; draw(); }
+    else if (b.hasAttribute('data-csv')) csv();
+    else if (b.dataset.openUser) { sv = { kind: '', q: b.dataset.openUser.toLowerCase(), view: 'each', exact: true }; show('surveys'); }
+    else if (row && b.dataset.d) { var ins = row.querySelectorAll('input'); post('/admin/credit-requests/' + row.dataset.req, { decision: b.dataset.d, amount: Number(ins[0].value), note: ins[1].value }); }
     else if (act && b.dataset.s) post('/admin/actions/' + act.dataset.act, { status: b.dataset.s });
     else if (user && b.dataset.u === 'grant') { var n = Number(user.querySelector('input').value); if (n) post('/admin/grant', { userId: user.dataset.user, amount: n, note: prompt('메모 (사용자에게 보여요)', '운영자 지급') || '운영자 조정' }); }
     else if (user && b.dataset.u === 'toggle') { var u = D.users.filter(function (x) { return x.id === user.dataset.user; })[0]; if (confirm(u.email + (u.disabled ? ' 다시 허용할까요?' : ' 사용을 중지할까요? 바로 로그아웃돼요.'))) post('/admin/users/' + u.id, { disabled: !u.disabled }); }
@@ -353,11 +449,19 @@ function adminParts(): { body: string; script: string } {
       navigator.clipboard.writeText(r.link).then(function () { out.textContent = '복사했어요 (' + r.expiresInMinutes + '분, 한 번만). 본인에게만 전해 주세요.'; }, function () { out.textContent = r.link; });
     });
   });
-  document.querySelectorAll('[data-tab]').forEach(function (b) { b.addEventListener('click', function () { tab = b.dataset.tab; document.querySelectorAll('[data-tab]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); draw(); }); });
+  root.addEventListener('input', function (e) {
+    var el = e.target;
+    if (el.id === 'sv-q') { sv.q = el.value; sv.exact = false; document.getElementById('sv-out').innerHTML = svOut(); }
+    if (el.id === 'u-q') { var v = el.value.trim().toLowerCase(); root.querySelectorAll('tr[data-find]').forEach(function (r) { r.hidden = !!v && r.dataset.find.indexOf(v) < 0; }); }
+  });
+  document.querySelectorAll('[data-tab]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.tab === tab)); b.addEventListener('click', function () { show(b.dataset.tab); }); });
+  document.getElementById('adm-reload').addEventListener('click', function () { load(); });
+  window.addEventListener('hashchange', function () { var t = location.hash.slice(1); if (TABS.indexOf(t) >= 0 && t !== tab && D) show(t); });
   var load = function () {
     GNM.call('GET', '/admin/overview').then(function (r) {
       if (r.error) { document.getElementById('adm-line').textContent = r.message; if (r._status === 401 && window.opsSignIn) opsSignIn(); return; }
-      D = r; document.getElementById('adm-line').textContent = '가입 ' + r.users.length + '명 · 오늘 AI ' + usd(r.spend.today) + ' (하루 한도 ' + usd(r.spend.dailyCap) + ')'; draw();
+      if (!r.surveys) r.surveys = r.pulses || [];
+      D = r; loadedAt = new Date(); document.getElementById('adm-line').textContent = '가입 ' + r.users.length + '명 · 오늘 AI ' + usd(r.spend.today) + ' (하루 한도 ' + usd(r.spend.dailyCap) + ') · ' + loadedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 기준'; draw();
     });
   };
   window.__opsReload = load; load();
@@ -393,6 +497,18 @@ a{color:var(--accent-strong)}input,select,textarea,button{color:inherit}input,se
 .ops-err{color:var(--up-strong);font-size:13px;min-height:1.4em;margin:10px 0 0}
 .ops-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--surface-solid);border:1px solid var(--line-strong);border-radius:999px;padding:10px 18px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.4)}
 [hidden]{display:none!important}
+button.kpi{display:block;text-align:left;font:inherit;color:inherit;cursor:pointer}button.kpi:hover{border-color:var(--line-strong)}
+.adm-reload,.adm .sv-open,.sv-head button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:4px 12px;font:inherit;font-size:13px;cursor:pointer;margin-left:6px}.adm .sv-open{margin:4px 0 0}
+.sv-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}.sv-seg{display:inline-flex;flex-wrap:wrap;gap:2px;background:var(--soft);border-radius:12px;padding:3px}
+.sv-seg button{border:0;background:none;border-radius:9px;padding:6px 11px;font:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}.sv-seg button[aria-pressed=true]{background:var(--surface-solid);color:var(--fg)}
+.sv-search{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--fg2);margin-bottom:8px}.sv-search input{border:1px solid var(--line-strong);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px;width:180px;max-width:50vw}.sv-bar .sv-search{margin:0}
+.sv-head{display:flex;align-items:center;justify-content:space-between;margin:20px 0 6px}.sv-head h3{margin:0}
+.sv-item{border:1px solid var(--line);border-radius:14px;margin:8px 0;background:var(--surface)}.sv-item summary{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:10px 14px;cursor:pointer;font-size:14px}
+.sv-item[open] summary{border-bottom:1px solid var(--line)}.sv-when{color:var(--muted);font-size:13px}.sv-who{overflow-wrap:anywhere}.sv-snip{flex-basis:100%;color:var(--fg2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sv-qa{margin:0;padding:6px 14px 14px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px 16px;font-size:14px}.sv-qa dt{color:var(--fg2)}.sv-qa dd{margin:0}.sv-qa .sv-sec{grid-column:1/-1;color:var(--accent);font-weight:700;font-size:13px;margin-top:8px}
+.sv-text{white-space:pre-wrap;overflow-wrap:anywhere}.sv-chips{display:inline-flex;flex-wrap:wrap;gap:4px}.sv-chips span{background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:13px}
+.sv-q{margin:18px 0}.sv-q h3{font-size:15px;margin:0 0 8px}.sv-texts{margin:0;padding-left:18px}.sv-texts li{margin:6px 0}.sv-texts small{display:block}
+@media (max-width:640px){.sv-qa{grid-template-columns:1fr;gap:2px}.sv-qa dd{margin-bottom:8px}.bars div{grid-template-columns:110px 1fr 32px}}
 </style>
 </head><body>
 <header class="ops-top"><div><b>GNOMON</b><small>운영</small></div><div><span class="muted" id="ops-who"></span> <button type="button" class="ghost" id="ops-out" hidden>로그아웃</button></div></header>
