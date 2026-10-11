@@ -360,7 +360,7 @@ const SIGNALS_SCRIPT = `<script>
 </script>`;
 // G-201: one "내 종목" card: the stocks starred (☆) and the ones named in the survey, then the survey's sector chips
 // (each opens its strongest theme today) and the screener preset that fits the holding period.
-const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" aria-hidden="true"></span><div class="block-head"><h2>내 종목</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card my-card"><p class="feed-sum" id="feed-sum" hidden></p><div class="list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div><div id="feed-chips" class="feed-chips"></div><a class="feed-redo" href="profile.html" id="feed-redo">내 프로필 바꾸기 ›</a></div></section>`;
+const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" aria-hidden="true"></span><div class="block-head"><h2>내 종목</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card my-card"><p class="feed-sum" id="feed-sum" hidden></p><div class="list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div><div id="feed-chips" class="feed-chips"></div><a class="feed-redo" href="settings.html#profile" id="feed-redo">내 투자 방식 바꾸기 ›</a></div></section>`;
 
 /** The filter menu (G-94): presets grouped by what the reader is looking for, each with its one-line meaning. */
 

@@ -5,7 +5,8 @@ import { shell } from './renderHtml.js';
 import { MT } from './modernSwitch.js';
 export { SW_JS, MANIFEST } from './pushParts.js';
 
-export function renderAlerts(): string {
+/** The alerts settings (G-97) as parts, so 설정 (G-210) can hold them with the rest. */
+export function alertsParts(): { css: string; html: string; script: string } {
   const PREFS: [string, string, string][] = [
     ['daily', '매일 리포트', '장 마감 뒤 그날 리포트가 나오면 알려요. 관심 종목 리포트가 있으면 그 종목을 먼저 알려요.'],
     ['watchReport', '관심 종목 새 리포트', '☆ 해 둔 종목의 리포트가 새로 나오면'],
@@ -16,7 +17,7 @@ export function renderAlerts(): string {
     ['updatePatch', '작은 업데이트도 알림', '기본은 꺼져 있어요. 켜면 작은 수리(x.Y.Z)도 알려요'],
     ['weekly', '주간 요약 메일', '일요일 저녁에 관심 종목·내 조건·이번 주 리포트를 메일로 모아 보내요'],
   ];
-  const body = `<style>
+  const css = `<style>
 .al{max-width:760px;margin:16px auto 32px}.al .card{padding:18px;margin-bottom:12px}.al h1{font-size:23px;margin:2px 0 6px}.al h2{font-size:17px;margin:0 0 8px}.al p{line-height:1.6}
 .al-push{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.al-state{font-weight:800}.al-state.on{color:var(--good)}.al-btns{display:flex;gap:6px;flex-wrap:wrap}.al-btns button{font:inherit;font-weight:800;border-radius:12px;padding:10px 14px;cursor:pointer;border:1.5px solid var(--navy);background:var(--navy);color:var(--on-accent)}.al-btns .ghost{background:var(--surface);color:var(--navy)}.al-btns button[hidden]{display:none}
 .al-help{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.6}.al-help b{color:var(--fg2)}
@@ -26,9 +27,8 @@ export function renderAlerts(): string {
 .al-plan{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13.5px}.al-plan[hidden]{display:none}.al-now{margin:2px 0 4px;font-size:13.5px;color:var(--fg2)}.al-now[hidden]{display:none}.al-plan b{font-size:15px}.al-plan span{color:var(--fg2)}.al-plan a{font-weight:800;margin-left:auto}.al-lock{opacity:.55}.al-lock small::after{content:' · 플러스부터';font-weight:700;color:var(--accent-strong)}
 .al-quiet{display:flex;gap:12px;flex-wrap:wrap;padding-top:4px}.al-quiet label{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--fg2)}.al-quiet input{font:inherit;padding:8px 10px;border:1px solid var(--line-strong);border-radius:10px}
 .al-msg{font-size:13px;color:var(--muted);margin:6px 0 0}.al-msg:empty{display:none}.al-login{text-align:center}
-</style><div class="al">
-<section class="card"><div class="pl-k">알림</div><h1>알림 설정</h1><p class="muted">새 리포트, 스크리너 조건, 내가 건 가격, 요청한 리포트를 🔔과 휴대폰으로 알려 드려요.</p></section>
-<section class="card al-login" id="al-login" hidden><p>알림은 로그인한 계정으로 받아요.</p><a class="btn" href="login.html?return=alerts.html">로그인</a></section>
+</style>`;
+  const html = `<section class="card al-login" id="al-login" hidden><p>알림은 로그인한 계정으로 받아요.</p><a class="btn" href="login.html?return=settings.html%23alerts">로그인</a></section>
 <div id="al-body" hidden>
 <section class="card"><div class="al-push"><div><h2>휴대폰 알림</h2><span class="al-state" id="al-state">확인 중…</span></div><div class="al-btns"><button type="button" id="al-on">이 기기에서 켜기</button><button type="button" class="ghost" id="al-test" hidden>테스트 알림</button><button type="button" class="ghost" id="al-off" hidden>끄기</button></div></div>
 <p class="al-msg" id="al-push-msg" role="status"></p>
@@ -40,7 +40,8 @@ export function renderAlerts(): string {
 <section class="card"><h2>가격 알림</h2><div class="al-list" id="al-prices"><p class="muted small">불러오는 중…</p></div>
 <form class="al-add" id="al-add"><input class="wide" name="q" placeholder="종목·ETF·코인 이름이나 코드" autocomplete="off" aria-label="종목"><div class="al-sugg" id="al-sugg"></div><p class="al-now" id="al-now" hidden></p><input name="price" inputmode="decimal" placeholder="가격(원, 미국은 달러)" aria-label="가격"><select name="op" aria-label="조건"><option value=">=">이상이 되면</option><option value="<=">이하가 되면</option></select><button type="submit">가격 알림 걸기</button></form>
 <p class="al-msg" id="al-add-msg" role="status"></p><p class="al-help">종목 화면의 🔔 가격 알림 버튼으로도 걸 수 있어요. 강세·약세 시나리오 가격대에 들어오면 알려 주는 빠른 선택이 있어요. 주식·ETF는 장중, 미국 주식은 프리·정규·애프터마켓, 코인은 언제든 10분마다 확인해요.</p></section>
-</div></div><script>
+</div>`;
+  const script = `<script>
 document.addEventListener('DOMContentLoaded', function () {
   var G = window.GNM || {}, $ = function (id) { return document.getElementById(id); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -113,7 +114,12 @@ document.addEventListener('DOMContentLoaded', function () {
   if (G.ready) G.ready.then(start); else start(null);
 });
 </script>`;
-  return shell('', '알림 설정 | GNOMON', body, { noFeedback: true });
+  return { css, html, script };
+}
+
+/** G-210: a page that moved into 설정: old links (mail, push, bell, bookmarks) land on its part there. */
+export function movedPage(part: string): string {
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><title>설정 | GNOMON</title><meta http-equiv="refresh" content="0;url=settings.html#${part}"><script>location.replace('settings.html' + location.search + '#${part}');</script></head><body style="font-family:sans-serif"><p><a href="settings.html#${part}">설정으로 가기</a></p></body></html>`;
 }
 
 /**

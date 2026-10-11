@@ -206,7 +206,7 @@ test('the weekly summary mail (G-180): Sunday evening only, once a week, to user
   assert.doesNotMatch(sent[0]!.html, /꺼진 조건/);
   assert.match(sent[0]!.html, /거래량 증가<\/b> 걸린 종목 2개/);
   assert.match(sent[0]!.html, /이번 주 리포트 1개/);
-  assert.match(sent[0]!.html, /alerts\.html/, 'the footer links the settings');
+  assert.match(sent[0]!.html, /settings\.html#alerts/, 'the footer links the settings');
   assert.match(sent[0]!.text, /관심 종목: SK하이닉스 1,842,000원, 애플 \$250\.12/);
   // The same week again sends nothing more; the log carries the delivery.
   assert.deepEqual(await runWeeklySummary({ db, fetch: fetchFn, site: SITE, now: new Date('2026-10-11T11:10:00Z') }, env), { week: '2026-10-11', sent: 0 });

@@ -105,7 +105,7 @@ export const PRICE_ALERT_JS = `
       '<div class="pa-chips" role="group" aria-label="빠른 선택">' + chips.map(function (c, i) { return '<button type="button" data-chip="' + i + '">' + esc(c[0]) + '</button>'; }).join('') + '</div>' +
       '<button type="button" class="pa-save">알림 받기</button><p class="pa-msg muted small" role="status"></p>' +
       '<div class="pa-mine" hidden><b>이 종목에 건 알림</b><div class="pa-list"></div></div>' +
-      '<a class="pa-all" href="' + base + 'alerts.html">내 알림 모두 보기 · 휴대폰 알림 켜기 ›</a>';
+      '<a class="pa-all" href="' + base + 'settings.html#alerts">내 알림 모두 보기 · 휴대폰 알림 켜기 ›</a>';
     document.body.appendChild(d); d.showModal();
     var inp = d.querySelector('#pa-price'), hint = d.querySelector('.pa-hint'), msg = d.querySelector('.pa-msg'), saveB = d.querySelector('.pa-save'), note = '';
     var val = function () { return Number(String(inp.value).replace(/[^0-9.]/g, '')); };
@@ -141,7 +141,7 @@ export const PRICE_ALERT_JS = `
         saveB.disabled = false;
         if (r.error) { msg.textContent = r.message; return; }
         msg.textContent = won(v) + ' ' + (o === '>=' ? '이상이' : '이하가') + ' 되면 🔔으로 알려 드려요.'; mine();
-        if (G.push) G.push.state().then(function (s) { if (!s.on) msg.innerHTML = esc(msg.textContent) + ' <a href="' + base + 'alerts.html">휴대폰 알림도 켜기 ›</a>'; });
+        if (G.push) G.push.state().then(function (s) { if (!s.on) msg.innerHTML = esc(msg.textContent) + ' <a href="' + base + 'settings.html#alerts">휴대폰 알림도 켜기 ›</a>'; });
       });
     });
     mine();

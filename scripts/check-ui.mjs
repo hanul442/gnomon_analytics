@@ -239,7 +239,7 @@ try{
  await page.locator('#pa-price').fill('175');assert.equal(await page.locator('.pa-save').isDisabled(),true,'the price now cannot be an alert');await page.locator('#pa-price').fill('190');assert.match(await page.locator('.pa-save').innerText(),/190원 이상/);
  assert.equal(await page.locator('.pa-dialog').evaluate(d=>d.getBoundingClientRect().right<=innerWidth),true);await page.screenshot({path:'test-artifacts/price-alert.png'});
  await page.locator('.pa-save').click();await page.locator('.pa-msg').filter({hasText:'알려 드려요'}).waitFor();assert.equal(priceAlerts[0].symbol,'999999');assert.equal(priceAlerts[0].op,'>=');assert.equal(priceAlerts[0].price,190);
- await page.goto(origin+'/alerts.html');await page.locator('#al-body').waitFor();await page.locator('#al-prices .al-item').first().waitFor();
+ await page.goto(origin+'/alerts.html');await page.waitForURL(/\/settings\.html#alerts$/);await page.locator('#al-body').waitFor();await page.locator('#al-prices .al-item').first().waitFor();
  assert.equal(await page.locator('[data-pref=screen]').isChecked(),false);assert.equal(await page.locator('[data-screen="1"]').isChecked(),true);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/alerts.png',fullPage:true});
  // G-108: my reports — mine only, filterable by state.
@@ -370,12 +370,15 @@ try{
  await page.goto(origin+'/mydebates.html');await page.locator('#md-list .md-group').first().waitFor();
  {const hrefs=await page.locator('#md-list .md-gh a').evaluateAll(a=>a.map(x=>x.getAttribute('href')));assert.ok(hrefs.includes('market/daily-2026-10-07.html#join'),hrefs.join());assert.ok(hrefs.includes('market/daily-2026-10-08.html#join'));
   assert.match(await page.locator('#md-list .md-gh a[href="market/daily-2026-10-07.html#join"]').innerText(),/시장 데일리 · 10월 7일/);}
- // G-207: 내 프로필 saves each pick at once: the view to gnm-persona, the rest to gnm-prefs and the account's answers.
- for(const width of [375,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/profile.html');await page.locator('#pf-form').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'profile fits '+width);}
+ // G-207/G-210: 설정 (내 투자 방식) saves each pick at once: the view to gnm-persona, the rest to gnm-prefs and the account's answers.
+ await page.goto(origin+'/profile.html');await page.waitForURL(/\/settings\.html#profile$/);
+ for(const width of [375,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/settings.html');await page.locator('#pf-form').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'profile fits '+width);}
  await page.locator('#pf-form label',{hasText:'아주 쉬운 말로'}).click();await page.locator('#pf-form label',{hasText:'반도체'}).click();await page.locator('#pf-form label',{hasText:'장기'}).click();
  await page.waitForFunction(()=>/저장했어요/.test(document.getElementById('pf-state').textContent));
  {const st=await page.evaluate(()=>({p:JSON.parse(localStorage.getItem('gnm-prefs')||'{}'),v:localStorage.getItem('gnm-persona'),h:document.documentElement.getAttribute('data-persona')}));assert.equal(st.p.explain,'아주 쉬운 말로');assert.deepEqual(st.p.sectors,['반도체']);assert.equal(st.v,'long');assert.equal(st.h,'long');}
  await new Promise(r=>setTimeout(r,1200));assert.equal(surveys.at(-1)?.kind,'onboarding',await page.locator('#pf-state').innerText()+JSON.stringify(surveys));assert.deepEqual(surveys.at(-1).answers.sectors,['반도체']);
+ // G-210: the same page holds 화면, 알림 (alerts.html now lands here) and 계정.
+ {for(const id of ['profile','screen','alerts','account'])assert.equal(await page.locator('.st-nav a[href="#'+id+'"]').count(),1);assert.equal(await page.locator('#al-body').count(),1);assert.equal(await page.locator('#screen ~ section .theme-bar [data-theme-pick]').count()>=3,true);}
  await page.reload();await page.locator('#pf-form').waitFor();assert.equal(await page.locator('#pf-form input[value="아주 쉬운 말로"]').isChecked(),true);assert.equal(await page.locator('#pf-form input[name=persona][value="장기"]').isChecked(),true);
  await page.goto(origin+'/guide.html');await page.waitForLoadState('networkidle');
  {const api=await page.evaluate(()=>(window.GNM&&window.GNM.api)||'');const slow=async(r)=>{await new Promise(f=>setTimeout(f,1200));await r.fulfill({body:'{}',contentType:'application/json'}).catch(()=>{});};await page.route(/\/(quote|slow-test)\b/,slow);

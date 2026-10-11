@@ -206,7 +206,7 @@ export function renderAccount(): string {
 <form id="pwf" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><div class="fld" style="margin:0" id="pw-cur-f"><label for="pw-cur">지금 비밀번호</label><input id="pw-cur" type="password" autocomplete="current-password"></div><div class="fld" style="margin:0"><label for="pw-new">새 비밀번호</label><input id="pw-new" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></div><button class="credit-btn" type="submit">저장</button></form>
 <p class="muted small" style="margin:8px 0 0">8자 이상, 영문과 숫자를 함께 넣어 주세요. 정해 두면 다음부터 이메일과 비밀번호로 로그인해요.</p><div id="pw-out" aria-live="polite"></div></div></section>
 <section class="block"><div class="block-head"><h2>설정</h2></div><div class="card" style="display:flex;gap:8px;flex-wrap:wrap">
-<a class="credit-btn ghost" href="profile.html">내 프로필</a><a class="credit-btn ghost" href="onboarding.html">설문 다시 하기</a><button class="credit-btn ghost" type="button" id="export">내 데이터 내려받기</button><button class="credit-btn ghost" type="button" id="logout">로그아웃</button><button class="credit-btn ghost" type="button" id="delete" style="color:var(--up-strong);border-color:var(--up-strong)">계정 삭제</button></div></section>`;
+<a class="credit-btn ghost" href="settings.html">설정</a><a class="credit-btn ghost" href="onboarding.html">설문 다시 하기</a><button class="credit-btn ghost" type="button" id="export">내 데이터 내려받기</button><button class="credit-btn ghost" type="button" id="logout">로그아웃</button><button class="credit-btn ghost" type="button" id="delete" style="color:var(--up-strong);border-color:var(--up-strong)">계정 삭제</button></div></section>`;
   const script = `<script>
 (function () {
   if (!window.GNM || !GNM.api) return;

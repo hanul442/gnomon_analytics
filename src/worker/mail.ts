@@ -31,7 +31,7 @@ ${options.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opa
 <tr><td style="background:#18143a;padding:18px 24px"><a href="${esc(base)}/index.html" style="color:#ffffff;text-decoration:none;font-weight:800;letter-spacing:.12em;font-size:15px">GNOMON</a> <span style="color:#b9b3ff;font-size:11px;letter-spacing:.14em">AI COMMITTEE</span></td></tr>
 <tr><td style="padding:24px 24px 8px"><h1 style="margin:0 0 12px;font-size:20px;line-height:1.35">${esc(title)}</h1>${body}</td></tr>
 <tr><td style="padding:16px 24px 24px;font-size:12px;line-height:1.6;color:#6b7684;border-top:1px solid #e5e8ec">
-${options.settings === false ? '' : `<p style="margin:0 0 6px">이 메일은 그노몬 알림 설정에 따라 보냈어요. <a href="${esc(base)}/alerts.html" style="color:#4f46e5">알림 설정</a>에서 종류별로 끄거나 켤 수 있어요.</p>`}
+${options.settings === false ? '' : `<p style="margin:0 0 6px">이 메일은 그노몬 알림 설정에 따라 보냈어요. <a href="${esc(base)}/settings.html#alerts" style="color:#4f46e5">알림 설정</a>에서 종류별로 끄거나 켤 수 있어요.</p>`}
 <p style="margin:0">계산 결과와 AI 의견이에요. 투자 권유가 아니고, 틀릴 수 있어요. · <a href="${esc(base)}/terms.html" style="color:#6b7684">이용약관·면책</a></p>
 </td></tr></table></td></tr></table></body></html>`;
 }
