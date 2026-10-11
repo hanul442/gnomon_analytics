@@ -8,13 +8,13 @@ const PAGES = (process.env.PAGES ?? [
   'index.html', 'reports.html', 'market-reports.html', 'themes.html', 'signals.html', 'screener.html',
   '005930/index.html', '005930/index.html#tab-technical', '005930/index.html#tab-ai', '005930/index.html#tab-fundamentals', '005930/index.html#tab-news',
   '000660/index.html', 'stock.html?c=015760', 'stock.html?c=015760#tab-fundamentals', 'coin.html?m=KRW-BTC', 'guide.html', 'pricing.html',
-  'us.html?s=AAPL.O', 'us.html?s=NVDA.O', 'screener.html#us', 'screener.html#coin', 'watch.html', 'inbox.html', 'alerts.html', 'updates.html', 'scorecard.html',
+  'us.html?s=AAPL.O', 'us.html?s=NVDA.O', 'screener.html#us', 'screener.html#coin', 'watch.html', 'inbox.html', 'settings.html', 'updates.html', 'scorecard.html',
 ].join(',')).split(',');
 const WIDTHS = [390, 1280];
 // Logged-in passes: {plan: session token} for throwaway audit accounts the workflow creates (never real users).
 const SESSIONS = JSON.parse(process.env.AUDIT_SESSIONS || '{}');
 const LOGGED = (process.env.LOGGED_PAGES ?? [
-  'index.html', 'pricing.html', 'myreports.html', 'mydebates.html', 'profile.html', 'alerts.html', 'screener.html', 'reports.html',
+  'index.html', 'pricing.html', 'myreports.html', 'mydebates.html', 'settings.html', 'screener.html', 'reports.html',
   '000660/index.html', '000660/index.html#tab-ai', '005930/index.html#tab-ai', 'stock.html?c=015760', 'stock.html?c=015760#tab-ai', 'coin.html?m=KRW-BTC',
 ].join(',')).split(',');
 

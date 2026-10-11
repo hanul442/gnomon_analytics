@@ -981,7 +981,7 @@ route('POST', '/push/unsubscribe', async ({ req, env, now }) => {
 
 route('POST', '/push/test', async ({ req, env, deps, now }) => {
   const u = await authed(req, env, now);
-  await notifyUser({ db: env.DB, fetch: deps.fetch, site: env.SITE_URL, now }, u.id, 'test', { title: '알림이 잘 와요', body: '그노몬 알림이 이 기기로 와요. 설정은 전체 → 알림 설정에서 바꿀 수 있어요.', link: 'alerts.html' });
+  await notifyUser({ db: env.DB, fetch: deps.fetch, site: env.SITE_URL, now }, u.id, 'test', { title: '알림이 잘 와요', body: '그노몬 알림이 이 기기로 와요. 설정은 전체 → 설정의 알림에서 바꿀 수 있어요.', link: 'settings.html#alerts' });
   return { ok: true, devices: (await env.DB.prepare('SELECT COUNT(*) AS n FROM push_subs WHERE user_id = ?').bind(u.id).first<{ n: number }>())?.n ?? 0 };
 });
 

@@ -98,7 +98,7 @@ export const ALPHA_SCRIPT = `<script>
   var paintHomeAlerts = function () {
     var watch = document.getElementById('watch'); if (!watch || !G.me) return;
     var line = document.getElementById('home-alerts');
-    if (!line) { line = document.createElement('a'); line.id = 'home-alerts'; line.className = 'home-alerts'; line.href = base + 'alerts.html'; var head = watch.querySelector('.block-head'); (head || watch).after(line); }
+    if (!line) { line = document.createElement('a'); line.id = 'home-alerts'; line.className = 'home-alerts'; line.href = base + 'settings.html#alerts'; var head = watch.querySelector('.block-head'); (head || watch).after(line); }
     Promise.all([G.push && G.push.supported ? G.push.state() : Promise.resolve({ on: false }), G.call('GET', '/alerts/price')]).then(function (x) {
       var open = (x[1].items || []).filter(function (a) { return !a.fired_at; }).length;
       line.className = 'home-alerts' + (x[0].on ? ' on' : '');
@@ -121,7 +121,7 @@ export const ALPHA_SCRIPT = `<script>
       G.track('bell_open', {});
       pop = document.createElement('div'); pop.className = 'bell-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '알림');
       var r0 = b.getBoundingClientRect(); pop.style.top = Math.round(r0.bottom + 8) + 'px';
-      pop.innerHTML = '<div class="bell-head"><b>알림</b><span class="bell-head-r"><button type="button" class="bell-clear" hidden>모두 지우기</button><a href="' + base + 'alerts.html">설정</a></span></div><div class="bell-list"><p class="muted small" style="padding:10px">불러오는 중이에요…</p></div><a class="bell-all" href="' + base + 'inbox.html">알림함 전체 보기 ›</a>';
+      pop.innerHTML = '<div class="bell-head"><b>알림</b><span class="bell-head-r"><button type="button" class="bell-clear" hidden>모두 지우기</button><a href="' + base + 'settings.html#alerts">설정</a></span></div><div class="bell-list"><p class="muted small" style="padding:10px">불러오는 중이에요…</p></div><a class="bell-all" href="' + base + 'inbox.html">알림함 전체 보기 ›</a>';
       document.body.appendChild(pop); b.setAttribute('aria-expanded', 'true');
       G.call('GET', '/notifications').then(function (r) {
         if (!pop) return; var list = pop.querySelector('.bell-list');

@@ -184,7 +184,7 @@ function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): 
 <p class="muted small">${esc(sub)}${e.reasons?.[0] && e.reasons[0] !== sub ? ` · ${esc(e.reasons[0])}` : ''}</p><div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
   };
   return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 것</h2><a class="more-link" href="reports.html">AI 리포트 모음 ›</a></div>
-<p class="tp-lead">${views.map((v) => `<span class="pw pw-${v}">${VIEW_LEAD[v]}</span>`).join('')} <a href="#" data-open-view>보기 방식 바꾸기</a></p>
+<p class="tp-lead">${views.map((v) => `<span class="pw pw-${v}">${VIEW_LEAD[v]}</span>`).join('')} <a href="settings.html#profile">보기 방식 바꾸기</a></p>
 <div class="tp-grid" id="tp-grid">${picks.map(card).join('')}</div><p class="muted small">내 보기 방식에 맞는 네 종목이에요. 최근 일일 선정과 내 관심 종목이 먼저 나와요. <a href="reports.html#daily">일일 선정 전체 보기 ›</a> 투자 권유가 아니에요.</p></section>`;
 }
 
@@ -360,7 +360,7 @@ const SIGNALS_SCRIPT = `<script>
 </script>`;
 // G-201: one "내 종목" card: the stocks starred (☆) and the ones named in the survey, then the survey's sector chips
 // (each opens its strongest theme today) and the screener preset that fits the holding period.
-const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" aria-hidden="true"></span><div class="block-head"><h2>내 종목</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card my-card"><p class="feed-sum" id="feed-sum" hidden></p><div class="list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div><div id="feed-chips" class="feed-chips"></div><a class="feed-redo" href="profile.html" id="feed-redo">내 프로필 바꾸기 ›</a></div></section>`;
+const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" aria-hidden="true"></span><div class="block-head"><h2>내 종목</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card my-card"><p class="feed-sum" id="feed-sum" hidden></p><div class="list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div><div id="feed-chips" class="feed-chips"></div><a class="feed-redo" href="settings.html#profile" id="feed-redo">내 투자 방식 바꾸기 ›</a></div></section>`;
 
 /** The filter menu (G-94): presets grouped by what the reader is looking for, each with its one-line meaning. */
 

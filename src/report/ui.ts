@@ -1,4 +1,3 @@
-import { PERSONA_BAR } from './persona.js';
 // Shared UI layer (docs/DESIGN.md §4.5, G-41): design tokens, a sticky price bar for stock pages,
 // a glossary ("?" next to financial terms), loading skeletons and the active page in the header.
 // Everything here is presentation; it never changes what a page says.
@@ -140,14 +139,14 @@ export const UI_SCRIPT = `<script>
 const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 /** Menu groups: [label, href]. Hrefs are relative to the site root. */
 export const MENU: readonly { title: string; items: readonly [string, string, string][] }[] = [
-  // G-138: grouped by what people come for, each item a tile with an icon: the market, finding and AI,
-  // their own things, then help and the account.
-  { title: '시장', items: [['📊', '시장 데일리', 'market-reports.html'], ['🧭', '테마별 종목', 'themes.html'], ['📡', '공시 레이더', 'signals.html'], ['🗽', '미국 주식', 'screener.html#us'], ['🧺', 'ETF', 'etfs.html'], ['🪙', '코인', 'coins.html']] },
-  { title: '찾기·AI 리포트', items: [['🔎', '자세히 검색', 'screener.html'], ['🧩', '조건 만들기', 'screener.html?make=rule'], ['🗂️', 'AI 리포트 모음', 'reports.html'], ['🆕', '오늘 나온 리포트', 'reports.html#today'], ['🎯', '성적표', 'scorecard.html']] },
-  { title: '내 것', items: [['⭐', '관심 종목', 'watch.html'], ['🔔', '알림함', 'inbox.html'], ['📄', '내 리포트', 'myreports.html'], ['🧑', '내 프로필', 'profile.html'], ['💬', '내 토론 기록', 'mydebates.html'], ['⚙️', '알림 설정', 'alerts.html']] },
-  { title: '도움말', items: [['📘', '사용법', 'guide.html'], ['❓', 'FAQ', 'faq.html'], ['✉️', '1:1 문의', 'faq.html#ask'], ['✨', '업데이트 기록', 'updates.html'], ['📝', '이번 주 설문', 'survey.html?k=weekly']] },
-  { title: '계정', items: [['💳', '요금제·크레딧', 'pricing.html'], ['📜', '이용약관·면책', 'terms.html'], ['🏢', 'HANUL 소개', 'hanul.html']] },
+  // G-211: two groups of tiles (한서님 10/11 '합칠 수 있는 건 합치자'): what to look at, and their own things.
+  // 미국 주식·ETF·코인·조건 만들기 are tabs of 종목 찾기, 오늘 나온 리포트 is the top of AI 리포트, 1:1 문의 is in
+  // FAQ, 요금제·크레딧 is the 내 계정 row on top, and the view/theme switches live in 설정.
+  { title: '둘러보기', items: [['📊', '시장 데일리', 'market-reports.html'], ['🧭', '테마별 종목', 'themes.html'], ['📡', '공시 레이더', 'signals.html'], ['🔎', '종목 찾기', 'screener.html'], ['🗂️', 'AI 리포트', 'reports.html'], ['🎯', '성적표', 'scorecard.html']] },
+  { title: '내 것', items: [['⭐', '관심 종목', 'watch.html'], ['🔔', '알림함', 'inbox.html'], ['⚙️', '설정', 'settings.html'], ['📄', '내 리포트', 'myreports.html'], ['💬', '내 토론 기록', 'mydebates.html'], ['📘', '사용법', 'guide.html']] },
 ];
+/** G-211: the small links under the tiles. */
+export const MENU_FOOT: readonly [string, string][] = [['FAQ·1:1 문의', 'faq.html'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly'], ['이용약관·면책', 'terms.html'], ['HANUL 소개', 'hanul.html']];
 /** The app's tabs (G-95): the bottom bar on phones, the same links in the top bar on wide screens. 전체 opens the sheet. */
 export const TABS: readonly [string, string, string][] = [
   ['홈', 'index.html#top', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'],
@@ -167,7 +166,7 @@ export function tabBar(base: string, where: 'top' | 'bottom'): string {
 export function menuHtml(base: string, archiveHref?: string): { button: string; drawer: string } {
   return {
     button: tabBar(base, 'top'),
-    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체</b><button type="button" class="sm-close" aria-label="닫기">×</button></div><div class="sm-group sm-acct"><a href="${base}pricing.html" data-acct-tab="1"><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></a><button type="button" class="sm-install" data-install hidden><b>📲 그노몬 앱 설치</b><small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div class="sm-group sm-view" id="sm-view"><div class="sm-title">내 보기 방식</div>${PERSONA_BAR}<p class="sm-hint">고르면 홈의 '오늘 볼 것'과 종목 화면이 바뀌어요.</p><div class="sm-title sm-sub">화면</div><div class="theme-bar" role="group" aria-label="화면 색"><button type="button" data-theme-pick="dark">어둡게</button><button type="button" data-theme-pick="light">밝게</button><button type="button" data-theme-pick="auto">기기 설정</button></div><a class="sm-row" href="${base}onboarding.html"><span>설문 다시 하기</span><small>관심사·보기 방식을 다시 골라요</small><i aria-hidden="true">›</i></a></div><div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div><div class="sm-grid">${g.items.map(([icon, label, href]) => `<a class="sm-tile" href="${base}${href}"><span class="sm-ic" aria-hidden="true">${icon}</span><span>${escM(label)}</span></a>`).join('')}</div></div>`).join('')}<p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
+    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체</b><button type="button" class="sm-close" aria-label="닫기">×</button></div><div class="sm-group sm-acct"><a href="${base}pricing.html" data-acct-tab="1"><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></a><button type="button" class="sm-install" data-install hidden><b>📲 그노몬 앱 설치</b><small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div><div class="sm-grid">${g.items.map(([icon, label, href]) => `<a class="sm-tile" href="${base}${href}"><span class="sm-ic" aria-hidden="true">${icon}</span><span>${escM(label)}</span></a>`).join('')}</div></div>`).join('')}<p class="sm-links">${MENU_FOOT.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</p><p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
   };
 }
 
@@ -522,10 +521,10 @@ export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);bac
 @keyframes sm-in{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}.sm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.sm-head b{font-size:17px}.sm-close{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);width:38px;height:38px}
 .sm-group{border-top:1px solid var(--line);padding:10px 0 6px}.sm-title{font-size:12px;font-weight:800;color:var(--muted);margin:2px 2px 8px}
 /* G-197: the view settings read as two labelled rows and one link row, not a label squeezed beside chips and a bare text link. */
-.sm-title.sm-sub{margin-top:14px}.sm-view .theme-bar{display:flex;flex-wrap:wrap;gap:8px;margin:0}
+.sm-title.sm-sub{margin-top:14px}
 .side-menu .sm-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 8px;margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--soft);text-decoration:none;color:var(--fg)}
 .side-menu .sm-row span{font-weight:700;font-size:14.5px}.side-menu .sm-row small{display:block;grid-row:2;color:var(--muted);font-size:12px;margin-top:2px}.side-menu .sm-row i{grid-row:1/3;grid-column:2;font-style:normal;color:var(--muted);font-size:18px}.side-menu .sm-row:active{transform:scale(.98)}.sm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.side-menu .sm-tile{display:flex!important;flex-direction:column!important;align-items:center;justify-content:center;gap:5px;min-height:74px;padding:10px 6px;border-radius:14px;background:var(--soft);text-decoration:none;color:var(--fg);font-size:13px;font-weight:700;text-align:center;line-height:1.3}.side-menu .sm-tile:hover{background:var(--accent-soft)}.sm-ic{font-size:22px;line-height:1}@media(min-width:821px){.sm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}.side-menu a{display:block;padding:10px 6px;border-radius:10px;text-decoration:none;color:var(--fg);font-weight:600;font-size:15px}.side-menu a:hover,.side-menu a[aria-current=page]{background:var(--soft);color:var(--accent-strong)}.sm-foot{font-size:12px;color:var(--muted);margin-top:12px}.sm-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 10px}.side-menu .sm-quick a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border:1px solid var(--line);border-radius:12px;font-size:13px}.sm-quick svg{width:22px;height:22px}
-html.menu-open{overflow:hidden}.sm-view .persona-bar{margin:6px 0 4px}.sm-view .persona-bar .lbl{display:none}.sm-hint{font-size:12px;color:var(--muted);margin:4px 2px}
+html.menu-open{overflow:hidden}.side-menu .sm-links{display:flex;flex-wrap:wrap;gap:4px 16px;margin:16px 2px 0;font-size:13px}.side-menu .sm-links a{display:inline-flex;align-items:center;min-height:36px;color:var(--fg2)}.sm-hint{font-size:12px;color:var(--muted);margin:4px 2px}
 @media(max-width:820px){.side-menu{top:auto;bottom:0;right:0;top:auto;left:0;width:auto;max-height:82vh;border-radius:20px 20px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom));animation:sm-up .2s ease-out}}@keyframes sm-up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}`;
 
 export const MENU_JS = `
