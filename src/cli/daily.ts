@@ -77,8 +77,11 @@ import type { Selection, SelectionParams } from '../analysis/selection.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
 import { retryingFetch } from '../sources/retryFetch.js';
+import { recordingFetch, replayingFetch } from '../sources/fetchCache.js';
 
 const KST_MS = 9 * 60 * 60_000;
+/** A merge's run replays the last full run's answers only while they are this fresh (a missed day falls back to the network). */
+const FETCH_CACHE_MAX_AGE_MS = 36 * 60 * 60_000;
 
 /**
  * G-61: the secret that seals committee reports (env GNM_DEEP_KEY). Without it nothing is sealed and
@@ -855,6 +858,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   // #150: a dropped Naver connection used to lose the stock for the day; GETs are tried twice more.
   // Wrapped globally (not passed as options.fetch) so injected-fetch paths such as the DART zip download keep their own transport.
   globalThis.fetch = retryingFetch(globalThis.fetch);
+  // #150: full runs record what they fetched (GNM_FETCH_CACHE=record); a merge's run replays it (=replay) and only rebuilds the site.
+  const cacheDir = process.env.GNM_FETCH_CACHE_DIR ?? join(root, '.fetch-cache');
+  if (process.env.GNM_FETCH_CACHE === 'record') globalThis.fetch = recordingFetch(globalThis.fetch, cacheDir);
+  if (process.env.GNM_FETCH_CACHE === 'replay') globalThis.fetch = replayingFetch(globalThis.fetch, cacheDir, FETCH_CACHE_MAX_AGE_MS);
   Promise.all([loadTickers(join(root, 'tickers.json')), loadRequests(join(root, 'requests.json'))])
     .then(([tickers, requests]) => runDaily({
       root, now: new Date(), apiKey: process.env.OPENDART_API_KEY ?? '', tickers, requests,

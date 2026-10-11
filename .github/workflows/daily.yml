@@ -42,6 +42,15 @@ jobs:
           node-version: 22
       - run: npm ci --ignore-scripts
       - run: npm run build
+      # #150: a merge (push) rebuilds the site from the last full run's recorded answers instead of fetching
+      # everything again; scheduled and manual runs fetch for real and record. A miss or a stale cache goes to the network.
+      - name: Restore the last full run's fetches
+        if: github.event_name == 'push'
+        uses: actions/cache/restore@v4
+        with:
+          path: .fetch-cache
+          key: fetch-cache-${{ github.run_id }}
+          restore-keys: fetch-cache-
       - name: Collect and build today's report
         env:
           OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
@@ -51,7 +60,14 @@ jobs:
           GNM_DEEP_KEY: ${{ secrets.GNM_DEEP_KEY }}
           EDGAR_CONTACT: ${{ secrets.EDGAR_CONTACT }}
           MARKET_REGEN: ${{ inputs.regen_market && '1' || '' }}
+          GNM_FETCH_CACHE: ${{ github.event_name == 'push' && 'replay' || 'record' }}
         run: npm run daily
+      - name: Keep this run's fetches for the next merge
+        if: github.event_name != 'push' && success()
+        uses: actions/cache/save@v4
+        with:
+          path: .fetch-cache
+          key: fetch-cache-${{ github.run_id }}
       - name: Commit collected data and reports
         run: |
           git config user.name "gnomon-bot"
