@@ -142,7 +142,7 @@ async function writeReportPage(siteDir: string, path: string, report: DailyRepor
   await writeFile(path, renderReport({ ...report, commentary: publicCommentary(c) }, { ...links, deep: { date: deepDate } }));
   const file = join(siteDir, deepPath(report.symbol, deepDate));
   await mkdir(dirname(file), { recursive: true });
-  const ctx: Pick<PageContext, 'live' | 'previous'> = { live: !!links.live, previous: links.previous ?? null };
+  const ctx: Pick<PageContext, 'live'> = { live: !!links.live };
   await writeFile(file, await seal(renderDeep(report, ctx), DEEP_KEY));
 }
 const SETTLED_HOUR_KST = 18;

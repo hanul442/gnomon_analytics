@@ -123,16 +123,27 @@ export interface PreviousReport { report:DailyReport; href:string|null }
  * Only public fields are kept.
  */
 export async function previousReport(db:D1,job:Pick<ReportJob,'id'|'symbol'|'created_at'>,report:DailyReport,site:string,fetchFn:typeof fetch,canOpen:(j:Pick<ReportJob,'id'|'user_id'|'symbol'|'created_at'>)=>Promise<boolean>):Promise<PreviousReport|null>{
- const rows=(await db.prepare("SELECT id,user_id,symbol,created_at,result_json FROM report_jobs WHERE symbol=? AND status='done' AND id!=? AND created_at<? AND result_json IS NOT NULL ORDER BY created_at DESC LIMIT 5").bind(job.symbol,job.id,job.created_at).all<Pick<ReportJob,'id'|'user_id'|'symbol'|'created_at'|'result_json'>>().catch(()=>null))?.results??[];
- let fromJob:DailyReport|null=null;
- for(const row of rows){if(!(await canOpen(row)))continue;try{fromJob=diffBasis(JSON.parse(row.result_json!) as DailyReport);}catch{/* unreadable: try the next */}if(fromJob)break;}
  const base=site.replace(/\/?$/,'/');
- const res=await fetchFn(`${base}research/${encodeURIComponent(job.symbol)}.last.json`,{signal:AbortSignal.timeout(4000)}).catch(()=>null);
- const daily=res?.ok?await res.json().catch(()=>null) as DailyReport|null:null;
- const fromDaily=daily&&daily.symbol===job.symbol&&daily.commentary?.status==='OK'&&daily.generatedAt<report.generatedAt?diffBasis(daily):null;
- const pick=[fromJob,fromDaily].filter((r):r is DailyReport=>!!r).sort((a,b)=>(a.generatedAt<b.generatedAt?1:-1))[0];
+ // The earlier request and the daily file are looked up side by side; only the chosen request's result is read.
+ const fromJob=async():Promise<DailyReport|null>=>{
+  const rows=(await db.prepare("SELECT id,user_id,symbol,created_at FROM report_jobs WHERE symbol=? AND status='done' AND id!=? AND created_at<? AND result_json IS NOT NULL ORDER BY created_at DESC LIMIT 5").bind(job.symbol,job.id,job.created_at).all<Pick<ReportJob,'id'|'user_id'|'symbol'|'created_at'>>()).results;
+  for(const row of rows){
+   if(!(await canOpen(row)))continue;
+   const got=await db.prepare('SELECT result_json FROM report_jobs WHERE id=?').bind(row.id).first<{result_json:string}>();
+   try{return diffBasis(JSON.parse(got!.result_json) as DailyReport);}catch{/* unreadable: try the next */}
+  }
+  return null;
+ };
+ const fromDaily=async():Promise<DailyReport|null>=>{
+  const res=await fetchFn(`${base}research/${encodeURIComponent(job.symbol)}.last.json`,{signal:AbortSignal.timeout(2500)});
+  const daily=res.ok?await res.json() as DailyReport:null;
+  return daily&&daily.symbol===job.symbol&&daily.commentary?.status==='OK'&&daily.generatedAt<report.generatedAt?diffBasis(daily):null;
+ };
+ // The comparison is extra: a failed lookup leaves it out rather than failing the report.
+ const [j,d]=await Promise.all([fromJob().catch(()=>null),fromDaily().catch(()=>null)]);
+ const pick=[j,d].filter((r):r is DailyReport=>!!r).sort((a,b)=>(a.generatedAt<b.generatedAt?1:-1))[0];
  if(!pick)return null;
- return {report:pick,href:pick===fromDaily?`${base}${encodeURIComponent(job.symbol)}/reports/${pick.date}.html`:null};
+ return {report:pick,href:pick===d?`${base}${encodeURIComponent(job.symbol)}/reports/${pick.date}.html`:null};
 }
 export function reportFragments(report:DailyReport,base='',previous?:PreviousReport|null){
  return withCurrency(report.currency,()=>fragmentsOf(report,base,previous));

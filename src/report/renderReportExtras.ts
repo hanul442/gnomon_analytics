@@ -51,8 +51,6 @@ export interface ReportDiff {
   summary: { before: string; after: string } | null;
 }
 
-const firstSentence = (t: string | undefined) => (t ?? '').split(/(?<=[.?!요])\s/)[0] ?? '';
-
 /**
  * G-203: what changed since the stock's previous committee report. Only the public part of a commentary
  * (one line, each member's stance and target, scenario odds) is read, so the result can be shown to everyone.
@@ -77,13 +75,16 @@ export function reportDiff(cur: DailyReport, prev: DailyReport): ReportDiff {
   };
   const tb = tally(p), ta = tally(c);
   const votes = tb && ta ? { before: tb, after: ta } : null;
-  const sb = firstSentence(p?.summary?.text), sa = firstSentence(c?.summary?.text);
+  // Whole conclusions: two that start alike can still end apart.
+  const sb = p?.summary?.text?.trim(), sa = c?.summary?.text?.trim();
   const summary = sb && sa && sb !== sa ? { before: sb, after: sa } : null;
   // The lead names the biggest move: odds first (the committee's own bottom line), then members, then price.
   const parts: string[] = [];
   const big = [...odds].sort((x, y) => Math.abs(y.after - y.before) - Math.abs(x.after - x.before))[0];
   if (big && Math.abs(big.after - big.before) >= 5) parts.push(`${big.label} 시나리오 확률이 ${big.before}%에서 ${big.after}%로 ${big.after > big.before ? '올랐' : '내렸'}`);
   if (flips.length) parts.push(`위원 ${flips.length}명이 입장을 바꿨`);
+  // A tally can move with no one flipping (members added or dropped between prompt versions).
+  else if (votes && (votes.before[0] !== votes.after[0] || votes.before[2] !== votes.after[2])) parts.push('위원 표결의 강세·약세 수가 바뀌었');
   // "Nothing much changed" only when both reports had odds or members to compare (an old brief has neither).
   const lead = parts.length ? `${parts.join('고, ')}어요.` : odds.length || votes ? '위원회의 판단은 크게 달라지지 않았어요.' : '';
   return { lead, rows: weekChanges(cur, prev), odds, votes, flips, summary };
@@ -105,19 +106,22 @@ export function diffBasis(r: DailyReport): DailyReport {
   } as unknown as DailyReport;
 }
 
-/** The AI tab's "지난 리포트와 달라진 점" card (G-203), right under the conclusion (the caller gates it to Plus). */
-export function reportDiffCard(cur: DailyReport, prev: DailyReport | null, opts: { curDate?: string | null; href?: string | null } = {}): string {
+/**
+ * The AI tab's "지난 리포트와 달라진 점" card (G-203), right under the conclusion (the caller gates it to Plus).
+ * The header and numbers are the page's own date; `conclusionDate` labels the conclusion when it is an earlier report's (a live page).
+ */
+export function reportDiffCard(cur: DailyReport, prev: DailyReport | null, opts: { conclusionDate?: string | null; href?: string | null } = {}): string {
   const head = (meta: string) => `<div class="block-head"><h2>지난 리포트와 달라진 점</h2>${meta}</div>`;
   if (!prev) return `<section class="block" id="diff">${head('')}<div class="card"><p class="empty">이 종목의 이전 위원회 리포트가 아직 없어요. 다음 리포트부터 무엇이 달라졌는지 여기서 보여 드려요.</p></div></section>`;
   const d = reportDiff(cur, prev);
-  const curDate = opts.curDate ?? cur.date;
+  const curDate = cur.date, conclusionDate = opts.conclusionDate ?? cur.date;
   const prevLabel = opts.href ? `<a href="${esc(opts.href)}">${esc(prev.date)}</a>` : esc(prev.date);
   const sign = (v: number) => `${v > 0 ? '+' : ''}${v}%p`;
   const odds = d.odds.length ? `<div class="df-odds">${d.odds.map((o) => `<div class="df-o"><span class="pl-k">${o.label}</span><b>${o.before}% → ${o.after}%</b><small class="${o.after > o.before ? 'up' : o.after < o.before ? 'down' : 'muted'}">${o.after === o.before ? '그대로' : sign(o.after - o.before)}</small></div>`).join('')}</div>` : '';
   const votes = d.votes ? `<p class="df-votes"><span class="muted">위원 표결</span> 강세 ${d.votes.before[0]} · 중립 ${d.votes.before[1]} · 약세 ${d.votes.before[2]} → <b>강세 ${d.votes.after[0]} · 중립 ${d.votes.after[1]} · 약세 ${d.votes.after[2]}</b></p>` : '';
   const flips = d.flips.length ? `<h3 class="why-h">입장을 바꾼 위원</h3><ul class="plain df-flips">${d.flips.map((f) => `<li>${esc(f.who)} <span class="muted">${esc(f.before)}</span> → <b class="${f.tone}">${esc(f.after)}</b></li>`).join('')}</ul>` : '';
   const table = d.rows.length ? `<table class="compact"><thead><tr><th>항목</th><th>지난 리포트</th><th>이번</th></tr></thead><tbody>${d.rows.map((r) => `<tr><td>${esc(r.label)}</td><td class="muted">${esc(r.before)}</td><td class="${r.tone ?? ''}"><b>${esc(r.after)}</b></td></tr>`).join('')}</tbody></table>` : '';
-  const summary = d.summary ? `<details class="more"><summary>위원회 결론 두 개 나란히 보기</summary><div class="grid-eq" style="margin-top:8px"><div><div class="pl-k">${esc(prev.date)}</div><p>${esc(d.summary.before)}</p></div><div><div class="pl-k">${esc(curDate)}</div><p>${esc(d.summary.after)}</p></div></div></details>` : '';
+  const summary = d.summary ? `<details class="more"><summary>위원회 결론 두 개 나란히 보기</summary><div class="grid-eq" style="margin-top:8px"><div><div class="pl-k">${esc(prev.date)}</div><p>${esc(d.summary.before)}</p></div><div><div class="pl-k">${esc(conclusionDate)}</div><p>${esc(d.summary.after)}</p></div></div></details>` : '';
   const body = odds + votes + flips + table + summary;
   return `<section class="block" id="diff">${head(`<span class="muted">${prevLabel} → ${esc(curDate)}</span>`)}<div class="card">
 ${d.lead ? `<p class="df-lead">${esc(d.lead)}</p>` : ''}${body || '<p class="empty">비교할 수 있는 항목이 없어요.</p>'}

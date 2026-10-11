@@ -31,13 +31,21 @@ test('report diff (G-203): odds, stance flips, vote tally and the two conclusion
   assert.equal(d.lead, '강세 시나리오 확률이 30%에서 50%로 올랐고, 위원 2명이 입장을 바꿨어요.');
   assert.deepEqual(d.flips.map((f) => [f.who, f.before, f.after]), [['실적·밸류에이션 분석가', '중립', '강세'], ['기술 데스크', '중립', '강세']]);
   assert.deepEqual(d.votes, { before: [0, 3, 0], after: [2, 1, 0] });
-  assert.deepEqual(d.summary, { before: '지난번엔 지켜보자는 결론이었어요.', after: '이번엔 강세 쪽이에요.' });
+  assert.deepEqual(d.summary, { before: '지난번엔 지켜보자는 결론이었어요. 둘째 문장.', after: '이번엔 강세 쪽이에요.' });
   const html = reportDiffCard(cur, prev, { href: 'reports/2026-10-02.html' });
   assert.match(html, /지난 리포트와 달라진 점/);
   assert.match(html, /<a href="reports\/2026-10-02.html">2026-10-02<\/a> → 2026-10-09/);
   assert.match(html, /30% → 50%/);
   assert.equal(reportDiff(cur, cur).lead, '위원회의 판단은 크게 달라지지 않았어요.');
   assert.match(reportDiffCard(cur, null), /이전 위원회 리포트가 아직 없어요/);
+  // Conclusions that start alike but end apart still show side by side ('수요' is not a sentence end).
+  assert.ok(reportDiff(committee('2026-10-09', [30, 40, 30], 'NEUTRAL', '반도체 수요 회복이면 강세예요.'), committee('2026-10-02', [30, 40, 30], 'NEUTRAL', '반도체 수요 둔화면 약세예요.')).summary);
+  // A tally that moved with no one flipping (a desk-only report before) is the lead, not "nothing changed".
+  const deskOnly = committee('2026-10-02', [30, 40, 30], 'NEUTRAL', 'a') as unknown as { commentary: { analysts: unknown[] } };
+  deskOnly.commentary.analysts = [];
+  const withAnalysts = committee('2026-10-09', [30, 40, 30], 'BULLISH', 'b') as unknown as { commentary: { desks: { stance: string }[] } };
+  withAnalysts.commentary.desks[0]!.stance = 'NEUTRAL';
+  assert.equal(reportDiff(withAnalysts as never, deskOnly as never).lead, '위원 표결의 강세·약세 수가 바뀌었어요.');
 });
 
 test('diff basis keeps only the public fields the comparison reads', () => {
