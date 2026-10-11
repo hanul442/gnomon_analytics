@@ -290,7 +290,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
 async function adminOverview(env: Env, now: Date) {
   const db = env.DB, week = iso(new Date(now.getTime() - 7 * 86_400_000)), month = iso(new Date(now.getTime() - 30 * 86_400_000));
   const q = <T>(sql: string, ...v: unknown[]) => db.prepare(sql).bind(...v).all<T>().then((r) => r.results);
-  const [users, creditRequests, actions, invites, feedback, pulses, events, questions, spend] = await Promise.all([
+  const [users, creditRequests, actions, invites, feedback, surveys, events, questions, spend] = await Promise.all([
     q(`SELECT u.id, u.email, u.plan, u.role, u.disabled, u.invite_code, u.created_at, u.last_seen_at,
         (SELECT COALESCE(SUM(delta), 0) FROM ledger l WHERE l.user_id = u.id) AS balance,
         (SELECT COUNT(*) FROM questions x WHERE x.user_id = u.id AND x.status = 'OK') AS asks,
@@ -301,12 +301,17 @@ async function adminOverview(env: Env, now: Date) {
     q(`SELECT a.*, u.email FROM action_requests a JOIN users u ON u.id = a.user_id ORDER BY (a.status = 'pending') DESC, a.id DESC LIMIT 100`),
     q('SELECT * FROM invites ORDER BY created_at DESC'),
     q('SELECT f.*, u.email FROM feedback f JOIN users u ON u.id = f.user_id ORDER BY f.id DESC LIMIT 200'),
-    q("SELECT s.kind, s.answers, s.created_at, u.email FROM surveys s JOIN users u ON u.id = s.user_id WHERE s.kind IN ('pulse', 'weekly', 'midterm') ORDER BY s.id DESC LIMIT 300"),
+    // G-208: every answer in full for the console: each user's latest onboarding answer (내 프로필 re-saves it on every
+    // change, G-207, so older copies are noise) and the latest 1000 of the other kinds.
+    q<{ kind: string }>(`SELECT s.id, s.user_id, s.kind, s.answers, s.created_at, u.email FROM surveys s JOIN users u ON u.id = s.user_id
+       WHERE s.id IN (SELECT MAX(id) FROM surveys WHERE kind = 'onboarding' GROUP BY user_id)
+          OR s.id IN (SELECT id FROM surveys WHERE kind <> 'onboarding' ORDER BY id DESC LIMIT 1000) ORDER BY s.id DESC`),
     q('SELECT name, COUNT(*) AS n, COUNT(DISTINCT user_id) AS users FROM events WHERE created_at >= ? GROUP BY name ORDER BY n DESC', week),
     q('SELECT x.id, x.symbol, x.tier, x.model, x.question, x.credits, x.usd, x.status, x.rating, x.created_at, u.email FROM questions x JOIN users u ON u.id = x.user_id ORDER BY x.id DESC LIMIT 100'),
     db.prepare('SELECT COALESCE(SUM(CASE WHEN created_at >= ? THEN usd END), 0) AS today, COALESCE(SUM(usd), 0) AS month FROM questions WHERE created_at >= ?').bind(kstDayStart(now), month).first<{ today: number; month: number }>(),
   ]);
-  return { users, creditRequests, actions, invites, feedback, pulses, events, questions, spend: { ...spend, dailyCap: Number(env.AI_DAILY_USD ?? 5) } };
+  const pulses = surveys.filter((x) => x.kind !== 'onboarding');
+  return { users, creditRequests, actions, invites, feedback, surveys, pulses, events, questions, spend: { ...spend, dailyCap: Number(env.AI_DAILY_USD ?? 5) } };
 }
 
 type Handler = (ctx: { req: Request; env: Env; deps: Deps; now: Date; params: string[] }) => Promise<unknown>;
