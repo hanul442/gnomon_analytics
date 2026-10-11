@@ -177,7 +177,7 @@ const PANES: [string, string, boolean][] = [
 const DESC: Record<string, string> = {
   ma5: '최근 5거래일 평균 가격', ma20: '한 달 평균 가격, 단기 추세', ma60: '석 달 평균 가격, 중기 추세', ma120: '반년 평균 가격, 장기 추세',
   ema12: '최근 가격에 무게를 둔 평균 두 개', bb: '20일 평균 ± 표준편차 2배, 변동 범위', ichimoku: '구름대로 보는 추세와 지지', env: '20일 평균 ±5% 띠', vwap: '최근 20거래일 거래량으로 가중한 평균 가격(거래가 많이 된 값의 중심)', psar: '추세를 따라오는 점. 가격 아래면 오름세, 위면 내림세이고 점이 뒤집히면 추세 전환 신호',
-  levels: '자주 막히거나 받친 가격대', fib: '최근 120거래일 최고·최저를 잇는 흐름의 되돌림 비율', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위(10~90%)',
+  levels: '자주 막히거나 받친 가격대', fib: '최근 120거래일 최고·최저를 잇는 흐름의 되돌림 비율', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위. 옅은 띠 80%(10~90%) · 진한 띠 50%(25~75%) · 점선 중앙',
   volume: '하루 거래된 주식 수', rsi: '과열(70 이상)·과매도(30 이하)', macd: '단기·장기 평균의 차이로 보는 추세 전환', stoch: '최근 범위 안에서 지금 가격의 위치',
   spikes: '20일 평균의 3배 넘게 거래된 날을 캔들 아래에 표시(▲ 오른 날 · ▼ 내린 날)', value: '하루 거래대금(종가 × 거래량, 억 원). 진하게 칠한 날은 20일 평균의 3배 이상', ad: '거래가 많은 날 종가가 하루 범위의 위쪽(매집 쪽)·아래쪽(분산 쪽)에서 끝났는지 누적한 선',
   cci: '평균에서 얼마나 벗어났는지', wr: '최근 고점 대비 위치(과열·과매도)', obv: '오른 날·내린 날 거래량 누적', mfi: '거래량을 함께 본 RSI. 80 이상 과열 · 20 이하 과매도', atr: '하루 평균 움직임 폭',
@@ -319,20 +319,40 @@ window.addEventListener('DOMContentLoaded', function () {
     fair: function () { if (!ov.fair) return []; return [['low', '적정 하단'], ['center', '적정가'], ['high', '적정 상단']].map(function (k) { return candle.createPriceLine({ price: ov.fair[k[0]], color: INK, lineWidth: k[0] === 'center' ? 2 : 1, lineStyle: k[0] === 'center' ? 0 : 2, axisLabelVisible: true, title: k[1] }); }); }
   };
   var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); var w = d.getUTCDay(); if (w !== 0 && w !== 6) n--; } return d.toISOString().slice(0, 10); };
+  // G-205: the forecast is a filled fan (80% outer, 50% inner band) under a dashed middle line, drawn by a primitive on that line.
   overlayMakers.forecast = function () {
     var f20 = (ov.forecasts || []).filter(function (f) { return f.horizon === 20; })[0], f60 = (ov.forecasts || []).filter(function (f) { return f.horizon === 60; })[0];
     if (!f20 || !f60) return [];
-    var z = 1.2815515655446004, fan = { p10: [], p50: [], p90: [] }, d = f20.baseDate;
-    ['p10', 'p50', 'p90'].forEach(function (q) { fan[q].push({ time: f20.baseDate, value: f20.baseClose }); });
+    var z80 = 1.2815515655446004, z50 = 0.6744897501960817, pts = [{ time: f20.baseDate, p10: f20.baseClose, p25: f20.baseClose, p50: f20.baseClose, p75: f20.baseClose, p90: f20.baseClose }], d = f20.baseDate;
     for (var h = 1; h <= 60; h++) {
       d = addDays(d, 1);
-      var k = Math.min(1, Math.max(0, (h - 20) / 40)), sg = f20.sigma + (f60.sigma - f20.sigma) * k, mu = f20.drift * h, sp = z * sg * Math.sqrt(h);
-      fan.p10.push({ time: d, value: f20.baseClose * Math.exp(mu - sp) }); fan.p50.push({ time: d, value: f20.baseClose * Math.exp(mu) }); fan.p90.push({ time: d, value: f20.baseClose * Math.exp(mu + sp) });
+      var k = Math.min(1, Math.max(0, (h - 20) / 40)), sg = (f20.sigma + (f60.sigma - f20.sigma) * k) * Math.sqrt(h), mu = f20.drift * h, c = f20.baseClose;
+      pts.push({ time: d, p10: c * Math.exp(mu - z80 * sg), p25: c * Math.exp(mu - z50 * sg), p50: c * Math.exp(mu), p75: c * Math.exp(mu + z50 * sg), p90: c * Math.exp(mu + z80 * sg) });
     }
-    return [['p90', UP, 2, '상단 90%'], ['p50', INK, 0, '예측 중앙'], ['p10', DOWN, 2, '하단 10%']].map(function (q) {
-      var s = chart.addSeries(L.LineSeries, { color: q[1], lineWidth: q[0] === 'p50' ? 2 : 1, lineStyle: q[2], priceLineVisible: false, lastValueVisible: true, title: q[3], crosshairMarkerVisible: false });
-      s.setData(fan[q[0]]); return s;
+    var edge = function (q, color, title) {
+      var s = chart.addSeries(L.LineSeries, { color: color, lineVisible: false, priceLineVisible: false, lastValueVisible: true, title: title, crosshairMarkerVisible: false });
+      s.setData(pts.map(function (p) { return { time: p.time, value: p[q] }; })); return s;
+    };
+    var hi = edge('p90', UP, '상단 90%'), lo = edge('p10', DOWN, '하단 10%');
+    var mid = chart.addSeries(L.LineSeries, { color: INK, lineWidth: 2, lineStyle: 2, priceLineVisible: false, lastValueVisible: true, title: '중앙', crosshairMarkerVisible: false });
+    mid.setData(pts.map(function (p) { return { time: p.time, value: p.p50 }; }));
+    var band = function (ctx, a, b, fill) {
+      var ts = chart.timeScale(), top = [], bot = [];
+      pts.forEach(function (p) { var x = ts.timeToCoordinate(p.time), y1 = mid.priceToCoordinate(p[b]), y0 = mid.priceToCoordinate(p[a]); if (x == null || y1 == null || y0 == null) return; top.push([x, y1]); bot.push([x, y0]); });
+      if (top.length < 2) return;
+      ctx.beginPath(); ctx.moveTo(top[0][0], top[0][1]);
+      for (var i = 1; i < top.length; i++) ctx.lineTo(top[i][0], top[i][1]);
+      for (var j = bot.length - 1; j >= 0; j--) ctx.lineTo(bot[j][0], bot[j][1]);
+      ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+    };
+    mid.attachPrimitive({
+      attached: function () {}, detached: function () {}, updateAllViews: function () {},
+      paneViews: function () { return [{ zOrder: function () { return 'bottom'; }, renderer: function () { return { draw: function (target) {
+        if (mid.options().visible === false) return;
+        target.useMediaCoordinateSpace(function (sc) { band(sc.context, 'p10', 'p90', 'rgba(111,134,168,.16)'); band(sc.context, 'p25', 'p75', 'rgba(111,134,168,.26)'); });
+      } }; } }]; }
     });
+    return [hi, lo, mid];
   };
 
   // ---- AI scenarios: a fan from today's close to each scenario's 20-session range ----
