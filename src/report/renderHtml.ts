@@ -692,7 +692,8 @@ export function committeeTab(report: DailyReport, opts: { base: string; from: st
   const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: null, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(전체 메뉴의 내 보기 방식에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`);
   // G-172: the paid part's unlock card comes right under 결론, not after the seats at the bottom.
   // G-178: every report keeps the same order of blocks; a block this report cannot fill says so instead of vanishing.
-  const diff = opts.previous === undefined || report.commentary?.status !== 'OK' ? '' : reportDiffCard(report, opts.previous, { curDate: opts.from, href: opts.previousHref ?? null });
+  // G-203: Plus and up (한서님 10/11); free readers see the card faded with a way in, as other Plus blocks.
+  const diff = opts.previous === undefined || report.commentary?.status !== 'OK' ? '' : gate(reportDiffCard(report, opts.previous, { curDate: opts.from, href: opts.previousHref ?? null }), { base, what: '지난 리포트와 달라진 점: 확률·표결·입장 바꾼 위원' });
   return `${conclusionMini(report)}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}${diff}${seats || absentBlock('위원회 표결', '이 리포트에는 위원별 표결이 없어요. 새 리포트를 만들면 분석가 6명과 데스크 5곳의 표결이 함께 나와요.')}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
 }
 /** A block the report does not have, folded, so pages of different vintages still line up. */

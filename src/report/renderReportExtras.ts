@@ -105,7 +105,7 @@ export function diffBasis(r: DailyReport): DailyReport {
   } as unknown as DailyReport;
 }
 
-/** The AI tab's "지난 리포트와 달라진 점" card (G-203), right under the conclusion. */
+/** The AI tab's "지난 리포트와 달라진 점" card (G-203), right under the conclusion (the caller gates it to Plus). */
 export function reportDiffCard(cur: DailyReport, prev: DailyReport | null, opts: { curDate?: string | null; href?: string | null } = {}): string {
   const head = (meta: string) => `<div class="block-head"><h2>지난 리포트와 달라진 점</h2>${meta}</div>`;
   if (!prev) return `<section class="block" id="diff">${head('')}<div class="card"><p class="empty">이 종목의 이전 위원회 리포트가 아직 없어요. 다음 리포트부터 무엇이 달라졌는지 여기서 보여 드려요.</p></div></section>`;
