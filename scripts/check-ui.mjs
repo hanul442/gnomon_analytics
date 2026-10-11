@@ -1,6 +1,7 @@
 import {renderMarketReport,renderMarketDeep} from '../dist/report/marketReport.js';
 import {renderThemesPage} from '../dist/report/renderThemes.js';
-import {ANALYSTS} from '../dist/analysis/analysts.js';
+import {ANALYSTS,scoreAnalysts} from '../dist/analysis/analysts.js';
+import {renderScorecard} from '../dist/report/renderScorecard.js';
 import {shell,joinBox} from '../dist/report/renderHtml.js';
 import {DEBATE_PLAY_SCRIPT,DEBATE_FILTER_SCRIPT} from '../dist/report/renderReportExtras.js';
 // Offline browser verification: fixture API, no production account or paid model calls.
@@ -54,6 +55,9 @@ const marketClaim={text:'공개 시장 요약',kind:'FACT',refs:['M1']};
 const marketFixture={schema:'curia.market-report.v2',date:'2026-10-07',from:'2026-10-07',generatedAt:'2026-10-07T09:30:00Z',period:'daily',groups:[],ai:{status:'OK',summary:marketClaim,council:{summary:marketClaim,desks:[{name:'코스피',view:'중립',claims:[{...marketClaim,text:'유료 시장 담당자 근거'}]}],consensus:[],disagreements:[],scenarios:[],redTeam:[],watch:[],dataGaps:[]}}};
 marketFixture.groups=['코스피','코스닥','코인','ETF'].map((name,i)=>({id:'M'+(i+1),name,source:'검증 시장 데이터',universe:10,assets:[],snapshotDate:'2026-10-07',breadth:{up:3,down:6,flat:1},temperature:{date:'2026-10-07',counted:10,buckets:{STRONG_BULLISH:1,BULLISH:2,SLIGHTLY_BULLISH:1,NEUTRAL:1,SLIGHTLY_BEARISH:1,BEARISH:3,STRONG_BEARISH:1,WITHHELD:0},bull:4,neutral:1,bear:5,up20:.3}}));
 marketFixture.ai.council.experts=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'].map(speaker=>({speaker,stance:'NEUTRAL',claim:{...marketClaim,text:'유료 시장 담당자 근거'}}));marketFixture.ai.council.debate=[...marketFixture.ai.council.experts.map(e=>e.speaker),'RED_TEAM'].map((speaker,i)=>({speaker,stance:'NEUTRAL',replyTo:i===0||i===11?-1:i-1,claim:{...marketClaim,text:'유료 시장 담당자 근거'}}));
+// G-213: the scorecard's member cards from calls on two stocks, one of them on the watchlist below.
+{const day=i=>new Date(Date.UTC(2026,0,1)+i*864e5).toISOString().slice(0,10),sb=Array.from({length:40},(_,i)=>({date:day(i),close:100+i})),entry=(symbol,name,n)=>({symbol,name,href:symbol+'/index.html',group:'core',report:{market:{forecasts:[],forecastScores:[],paper:[],analystBoard:scoreAnalysts(ANALYSTS.flatMap(a=>Array.from({length:n},(_,k)=>({symbol,analyst:a.id,reportDate:day(5+k*4),baseDate:day(4+k*4),baseClose:104+k*4,stance:k%3?'BULLISH':'BEARISH',confidence:55,target:130,promptVersion:'t',madeAt:''}))),sb)}}});
+ await writeFile(root+'/site/scorecard-fixture.html',renderScorecard([entry('999999','UI 테스트',3),entry('000660','아주 긴 이름의 다른 종목 주식회사',5)]));}
 await writeFile(root+'/site/market-fixture.html',renderMarketReport(marketFixture));await writeFile(root+'/site/ops-preview.html',renderOps({api:origin,site:origin}));let marketPlan='alpha';
 const api=async(path,req,res)=>{
  res.setHeader('Content-Type','application/json');
@@ -288,7 +292,13 @@ try{
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/index.html');await page.evaluate(()=>localStorage.setItem('gnm-watch',JSON.stringify(['999999'])));
  await page.locator('.bottom-nav a[href$="watch.html"]').click();await page.waitForURL(/watch\.html/);await page.locator('#wp-list .wp-row').first().waitFor();
  assert.equal(await page.locator('#wp-list .wp-row').count(),1);assert.equal(await page.locator('#wp-n').innerText(),'1');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
- await page.screenshot({path:'test-artifacts/watch-390.png'});await page.evaluate(()=>localStorage.removeItem('gnm-watch'));
+ await page.screenshot({path:'test-artifacts/watch-390.png'});
+ // G-213: 위원별 판단 narrows to the watchlist on one tap, at phone and desktop widths.
+ for(const width of [375,1280]){await page.setViewportSize({width,height:900});await page.goto(origin+'/scorecard-fixture.html');await page.locator('.mb-bar:not([hidden])').waitFor();
+  assert.equal(await page.locator('.mb-card').count(),6);assert.equal(await page.locator('#m-trend_momentum .mb-row:visible').count(),4,'four calls show before 모두 보기');assert.ok(await page.locator('.mb-row[data-sym="000660"]').first().isVisible());
+  await page.locator('.mb-watch').click();assert.equal(await page.locator('.mb-row[data-sym="000660"]:visible').count(),0);assert.equal(await page.locator('.mb-row[data-sym="999999"]:visible').count(),18,'every watched call shows, the 4-row cut aside');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#analysts').screenshot({path:'test-artifacts/scorecard-members-'+width+'.png'});}
+ await page.evaluate(()=>localStorage.removeItem('gnm-watch'));
  // G-125: the 🔔 '관심 종목 새 리포트' link opens the whole day's list with the watched stocks first.
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/reports.html?hl=000660#today');await page.locator('#today-list .rr').first().waitFor();
  assert.equal(await page.locator('#today-list .rr').first().getAttribute('data-sym'),'000660');assert.ok(await page.locator('#today-list .rr').first().locator('.t-mine').count());
