@@ -14,7 +14,7 @@ const WIDTHS = [390, 1280];
 // Logged-in passes: {plan: session token} for throwaway audit accounts the workflow creates (never real users).
 const SESSIONS = JSON.parse(process.env.AUDIT_SESSIONS || '{}');
 const LOGGED = (process.env.LOGGED_PAGES ?? [
-  'index.html', 'pricing.html', 'myreports.html', 'mydebates.html', 'alerts.html', 'screener.html', 'reports.html',
+  'index.html', 'pricing.html', 'myreports.html', 'mydebates.html', 'profile.html', 'alerts.html', 'screener.html', 'reports.html',
   '000660/index.html', '000660/index.html#tab-ai', '005930/index.html#tab-ai', 'stock.html?c=015760', 'stock.html?c=015760#tab-ai', 'coin.html?m=KRW-BTC',
 ].join(',')).split(',');
 

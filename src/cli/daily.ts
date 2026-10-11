@@ -46,6 +46,7 @@ import { render509, renderSupport } from '../report/renderSupport.js';
 import { renderInbox, MANIFEST, renderAlerts, SW_JS } from '../report/renderAlerts.js';
 import { renderMyReports } from '../report/renderMyReports.js';
 import { renderMyDebates } from '../report/renderMyDebates.js';
+import { renderProfile } from '../report/renderProfile.js';
 import { renderSignalsPage, renderThemesPage, signalData, themeData, themesHome } from '../report/renderThemes.js';
 import { fetchThemes, type Theme } from '../sources/naverTheme.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
@@ -766,6 +767,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'alerts.html'), renderAlerts());
   await writeFile(join(siteDir, 'myreports.html'), renderMyReports());
   await writeFile(join(siteDir, 'mydebates.html'), renderMyDebates());
+  await writeFile(join(siteDir, 'profile.html'), renderProfile());
   await writeFile(join(siteDir, 'sw.js'), SW_JS);
   await writeFile(join(siteDir, 'manifest.webmanifest'), MANIFEST);
   await mkdir(join(siteDir, 'assets'), { recursive: true });

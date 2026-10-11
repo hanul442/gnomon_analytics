@@ -12,23 +12,26 @@ export function renderMyDebates(): string {
 .md-q summary b{font-size:14.5px;font-weight:700}.md-q summary small{grid-column:1/-1;color:var(--muted);font-size:12px}.md-q summary i{font-style:normal;color:var(--muted);grid-row:1;grid-column:2}
 .md-a{padding:0 12px 12px;font-size:14px;line-height:1.65;white-space:pre-wrap;color:var(--fg2)}.md-login{text-align:center}
 </style><div class="md">
-<section class="card"><div class="pl-k">내 토론 기록</div><h1>내가 위원회에 한 질문</h1><p class="muted">토론에 참여해 물어본 것과 받은 답을 종목별로 모아 봐요. 계정에 저장돼서 다른 기기에서도 그대로 보여요. 다른 사람의 질문은 나오지 않아요.</p></section>
+<section class="card"><div class="pl-k">내 토론 기록</div><h1>내가 위원회에 한 질문</h1><p class="muted">토론에 참여해 물어본 것과 받은 답을 종목별로 모아 봐요. 시장 데일리 질문은 날짜별로 묶이고, 누르면 그날 리포트가 열려요. 계정에 저장돼서 다른 기기에서도 그대로 보여요. 다른 사람의 질문은 나오지 않아요.</p></section>
 <section class="card md-login" id="md-login" hidden><p>로그인하면 내 토론 기록을 볼 수 있어요.</p><a class="btn" href="login.html?return=mydebates.html">로그인</a></section>
 <section class="card" id="md-body" hidden><div class="md-tools"><input id="md-q" type="search" placeholder="종목이나 질문 내용으로 찾기" aria-label="내 질문 찾기"><div class="seg md-seg" role="group" aria-label="어디서 물었는지"><button type="button" data-s="debate" aria-pressed="true">위원회 토론</button><button type="button" data-s="" aria-pressed="false">채팅 포함 전체</button></div></div><div id="md-list"><p class="muted small">불러오는 중…</p></div></section>
 </div><script>
 document.addEventListener('DOMContentLoaded', function () {
   var G = window.GNM || {}, $ = function (id) { return document.getElementById(id); }, rows = [], names = {'MARKET-DAILY':'시장 데일리'}, source = 'debate';
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var page = function (s) { if(s==='MARKET-DAILY')return 'market-reports.html';return (s.indexOf('KRW-') === 0 ? 'coin.html?m=' : 'stock.html?c=') + encodeURIComponent(s) + '#tab-ai'; };
+  // G-206: market questions are grouped by the day's report they were asked on and open that report.
+  var key = function (r) { return r.symbol === 'MARKET-DAILY' && r.report_date ? 'MARKET-DAILY@' + r.report_date : (r.symbol || '_'); };
+  var day = function (d) { var m = /^\\d{4}-(\\d{2})-(\\d{2})$/.exec(d || ''); return m ? (+m[1]) + '월 ' + (+m[2]) + '일' : ''; };
+  var page = function (s) { var at = s.indexOf('@'); if (at > 0) return 'market/daily-' + encodeURIComponent(s.slice(at + 1)) + '.html#join'; if(s==='MARKET-DAILY')return 'market-reports.html';return (s.indexOf('KRW-') === 0 ? 'coin.html?m=' : 'stock.html?c=') + encodeURIComponent(s) + '#tab-ai'; };
   var when = function (t) { var d = new Date(t); return isNaN(d) ? '' : (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   var paint = function () {
     var q = ($('md-q').value || '').trim().toLowerCase();
-    var list = rows.filter(function (r) { return !q || (r.symbol || '').toLowerCase().indexOf(q) >= 0 || (names[r.symbol] || '').toLowerCase().indexOf(q) >= 0 || (r.question || '').toLowerCase().indexOf(q) >= 0; });
+    var list = rows.filter(function (r) { return !q || (r.symbol || '').toLowerCase().indexOf(q) >= 0 || (names[r.symbol] || '').toLowerCase().indexOf(q) >= 0 || (r.question || '').toLowerCase().indexOf(q) >= 0 || (r.report_date && (r.report_date.indexOf(q) >= 0 || day(r.report_date).indexOf(q) >= 0)); });
     if (!list.length) { $('md-list').innerHTML = '<p class="muted small">' + (rows.length ? '찾는 질문이 없어요.' : '아직 위원회에 한 질문이 없어요. 종목의 AI 위원회 탭 아래 입력창에서 물어볼 수 있어요.') + '</p>'; return; }
     var groups = {}, order = [];
-    list.forEach(function (r) { var k = r.symbol || '_'; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(r); });
+    list.forEach(function (r) { var k = key(r); if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(r); });
     $('md-list').innerHTML = order.map(function (k) {
-      var g = groups[k], title = k === '_' ? '종목 없이 한 질문' : esc(names[k] || k) + ' <small>' + esc(k) + '</small>';
+      var g = groups[k], d = g[0].report_date, title = k === '_' ? '종목 없이 한 질문' : k.indexOf('@') > 0 ? '시장 데일리 · ' + esc(day(d)) + ' <small>' + esc(d) + '</small>' : esc(names[k] || k) + ' <small>' + esc(k) + '</small>';
       return '<div class="md-group"><div class="md-gh">' + (k === '_' ? '<b>' + title + '</b>' : '<a href="' + page(k) + '">' + title + ' ›</a>') + '<small>' + g.length + '개</small></div>' + g.map(function (r) {
         return '<details class="md-q"><summary><b>' + esc(r.question) + '</b><i>' + esc(r.speaker || (r.source === 'debate' ? 'AI 위원회' : '채팅')) + '</i><small>' + when(r.created_at) + ' · ' + (r.credits || 0) + '크레딧</small></summary><div class="md-a">' + esc(r.answer || '') + '</div></details>';
       }).join('') + '</div>';

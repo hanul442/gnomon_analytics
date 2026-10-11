@@ -4,6 +4,7 @@
 import { shell } from './renderHtml.js';
 import { ALPHA } from './plans.js';
 import { SECTORS } from './sectors.js';
+import { ASSETS, EXPERIENCE, EXPLAIN, HORIZON } from './profile.js';
 
 const PAGE_CSS = `<style>
 .form-card{max-width:520px;margin:24px auto}.fld-err{display:block;color:var(--up-strong);font-size:13px;margin-top:4px}[aria-invalid=true]{border-color:var(--up)!important}.form-card h1{font-size:26px;margin:0 0 6px}.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}.fld label{font-weight:700;font-size:14px}
@@ -101,10 +102,10 @@ export function renderLogin(): string {
 
 /** Onboarding survey: who is using this, and what their front page should lead with (G-46). */
 export const ONBOARDING_QUESTIONS = [
-  { key: 'experience', section: '1. 나의 투자', title: '주식 투자는 얼마나 하셨어요?', type: 'one', options: ['처음이거나 1년 미만', '1~3년', '3~10년', '10년 이상', '업으로 해요'] },
-  { key: 'horizon', title: '보통 얼마나 들고 가세요?', type: 'one', options: ['며칠 안(단기 매매)', '몇 주', '몇 달', '1년 이상'] },
+  { key: 'experience', section: '1. 나의 투자', title: '주식 투자는 얼마나 하셨어요?', type: 'one', options: EXPERIENCE },
+  { key: 'horizon', title: '보통 얼마나 들고 가세요?', type: 'one', options: HORIZON },
   { key: 'style', title: '내 투자 스타일에 가까운 것은?', note: '여러 개 골라도 돼요', type: 'many', options: ['저평가 가치주', '성장주', '추세·모멘텀', '배당', '지수·ETF 위주', '테마·이슈', '단타·스캘핑', '아직 정하지 않았어요'] },
-  { key: 'assets', title: '투자하는 자산은?', note: '여러 개 골라도 돼요', type: 'many', options: ['국내 주식', '해외 주식', '국내 ETF', '해외 ETF', '코인', '채권·예금성', '아직 투자 전'] },
+  { key: 'assets', title: '투자하는 자산은?', note: '여러 개 골라도 돼요', type: 'many', options: ASSETS },
   { key: 'size', title: '투자 금액은 어느 정도예요?', note: '답하고 싶지 않으면 마지막을 골라 주세요', type: 'one', options: ['500만 원 미만', '500만~3천만 원', '3천만~1억 원', '1억 원 이상', '답하지 않을게요'] },
   { key: 'freq', title: '얼마나 자주 사고파세요?', type: 'one', options: ['거의 매일', '일주일에 몇 번', '한 달에 몇 번', '몇 달에 한 번', '거의 안 팔고 모아요'] },
   { key: 'when', title: '시장을 주로 보는 때는?', note: '여러 개 골라도 돼요', type: 'many', options: ['장 시작 전', '장중 틈틈이', '점심시간', '장 마감 뒤 저녁', '주말에 몰아서'] },
@@ -118,7 +119,7 @@ export const ONBOARDING_QUESTIONS = [
   { key: 'tickers', title: '갖고 있거나 지켜보는 종목이 있나요?', note: '최대 10개 · 관심 종목에 바로 담아 드려요', type: 'tickers', options: [] },
   { key: 'interests', title: '그노몬에서 주로 보고 싶은 것은?', note: '여러 개 골라도 돼요', type: 'many', options: ['AI 해설·위원회', '기술적 신호·차트', '외국인·기관 수급', '실적·밸류에이션', '공시·뉴스', '전략·백테스트', '모의투자·성적표', '조건 검색(스크리너)'] },
   { key: 'alerts', title: '받고 싶은 알림은?', note: '여러 개 골라도 돼요', type: 'many', options: ['관심 종목 급등락', '관심 종목 공시', '강세·약세 전환 가격 돌파·이탈', '조건 검색에 새로 걸린 종목', '매일 아침 요약', '알림은 싫어요'] },
-  { key: 'explain', section: '4. 그노몬에 바라는 것', title: '설명은 어느 수준이 좋아요?', type: 'one', options: ['아주 쉬운 말로', '보통', '전문 용어 그대로'] },
+  { key: 'explain', section: '4. 그노몬에 바라는 것', title: '설명은 어느 수준이 좋아요?', type: 'one', options: EXPLAIN },
   { key: 'length', title: '종목 리포트는 어느 정도 길이가 좋아요?', type: 'one', options: ['결론 한 줄', '결론과 이유 세 줄', '근거까지 자세히', '데이터 전부'] },
   { key: 'tools', title: '지금 쓰는 도구는?', note: '여러 개 골라도 돼요', type: 'many', options: ['증권사 앱(MTS·HTS)', '네이버·다음 증권', '증권사 리포트', '유료 리딩방·구독', 'TradingView 같은 해외 도구', '엑셀·직접 만든 도구', '없어요'] },
   { key: 'pay', title: '이런 서비스에 한 달에 얼마까지 낼 수 있어요?', type: 'one', options: ['무료만 써요', '1만 원 안쪽', '1~3만 원', '3~5만 원', '5~10만 원', '10만 원 넘게도'] },
@@ -204,7 +205,7 @@ export function renderAccount(): string {
 <form id="pwf" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><div class="fld" style="margin:0" id="pw-cur-f"><label for="pw-cur">지금 비밀번호</label><input id="pw-cur" type="password" autocomplete="current-password"></div><div class="fld" style="margin:0"><label for="pw-new">새 비밀번호</label><input id="pw-new" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></div><button class="credit-btn" type="submit">저장</button></form>
 <p class="muted small" style="margin:8px 0 0">8자 이상, 영문과 숫자를 함께 넣어 주세요. 정해 두면 다음부터 이메일과 비밀번호로 로그인해요.</p><div id="pw-out" aria-live="polite"></div></div></section>
 <section class="block"><div class="block-head"><h2>설정</h2></div><div class="card" style="display:flex;gap:8px;flex-wrap:wrap">
-<a class="credit-btn ghost" href="onboarding.html">설문 다시 하기</a><button class="credit-btn ghost" type="button" id="export">내 데이터 내려받기</button><button class="credit-btn ghost" type="button" id="logout">로그아웃</button><button class="credit-btn ghost" type="button" id="delete" style="color:var(--up-strong);border-color:var(--up-strong)">계정 삭제</button></div></section>`;
+<a class="credit-btn ghost" href="profile.html">내 프로필</a><a class="credit-btn ghost" href="onboarding.html">설문 다시 하기</a><button class="credit-btn ghost" type="button" id="export">내 데이터 내려받기</button><button class="credit-btn ghost" type="button" id="logout">로그아웃</button><button class="credit-btn ghost" type="button" id="delete" style="color:var(--up-strong);border-color:var(--up-strong)">계정 삭제</button></div></section>`;
   const script = `<script>
 (function () {
   if (!window.GNM || !GNM.api) return;
