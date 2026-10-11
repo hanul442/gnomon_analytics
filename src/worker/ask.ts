@@ -47,6 +47,8 @@ export interface AskInput {
   history?: { q: string; a: string }[];
   /** G-80: answer as a guest on the stock's committee debate (an invited expert, or the committee itself). */
   persona?: { name: string; focus: string };
+  /** G-207: the asker's profile line (readerNote), after the cached system prompt. */
+  reader?: string;
 }
 
 /** The voice for a debate answer: who is speaking and what they look at. */
@@ -64,7 +66,7 @@ export function askParams(input: AskInput): Record<string, unknown> {
   const messages: { role: 'user' | 'assistant'; content: string }[] = [];
   for (const h of input.history ?? []) messages.push({ role: 'user', content: h.q }, { role: 'assistant', content: h.a });
   messages.push({ role: 'user', content: `${ctx ? `${ctx}\n\n` : ''}질문: ${input.question}` });
-  const params: Record<string, unknown> = { model: tier.model, max_tokens: tier.maxTokens, system: [{ type: 'text', text: ASK_SYSTEM, cache_control: { type: 'ephemeral' } }, ...(input.persona ? [{ type: 'text', text: personaSystem(input.persona).trim() }] : [])], messages };
+  const params: Record<string, unknown> = { model: tier.model, max_tokens: tier.maxTokens, system: [{ type: 'text', text: ASK_SYSTEM, cache_control: { type: 'ephemeral' } }, ...(input.persona ? [{ type: 'text', text: personaSystem(input.persona).trim() }] : []), ...(input.reader ? [{ type: 'text', text: input.reader.trim() }] : [])], messages };
   // The small model answers directly; the larger ones think as much as the question needs.
   if (tier.key !== 'question') {
     params.thinking = { type: 'adaptive' };

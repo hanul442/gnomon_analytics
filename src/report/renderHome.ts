@@ -360,7 +360,7 @@ const SIGNALS_SCRIPT = `<script>
 </script>`;
 // G-201: one "내 종목" card: the stocks starred (☆) and the ones named in the survey, then the survey's sector chips
 // (each opens its strongest theme today) and the screener preset that fits the holding period.
-const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" aria-hidden="true"></span><div class="block-head"><h2>내 종목</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card my-card"><p class="feed-sum" id="feed-sum" hidden></p><div class="list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div><div id="feed-chips" class="feed-chips"></div><a class="feed-redo" href="onboarding.html" id="feed-redo">설문 다시 하기 ›</a></div></section>`;
+const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" aria-hidden="true"></span><div class="block-head"><h2>내 종목</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card my-card"><p class="feed-sum" id="feed-sum" hidden></p><div class="list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div><div id="feed-chips" class="feed-chips"></div><a class="feed-redo" href="profile.html" id="feed-redo">내 프로필 바꾸기 ›</a></div></section>`;
 
 /** The filter menu (G-94): presets grouped by what the reader is looking for, each with its one-line meaning. */
 
@@ -394,7 +394,7 @@ const FEED_SCRIPT = `<script>
   var chipsEl = document.getElementById('feed-chips'), redo = document.getElementById('feed-redo'); if (!chipsEl) return;
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   // Without answers the card invites the survey (G-190).
-  if (!prefs || !prefs.tickers && !prefs.sectors && !prefs.horizon) { if (redo) redo.textContent = '설문하고 내 종목·관심 업종 채우기 ›'; return; }
+  if (!prefs || !prefs.tickers && !prefs.sectors && !prefs.horizon) { if (redo) { redo.textContent = '설문하고 내 종목·관심 업종 채우기 ›'; redo.href = 'onboarding.html'; } return; }
   // Say at the top that this page follows their answers, with a way to change them.
   var bits = [prefs.experience && '경험 ' + prefs.experience, prefs.horizon && '보유 ' + prefs.horizon, (prefs.sectors || []).length && '관심 ' + prefs.sectors.slice(0, 2).join('·') + (prefs.sectors.length > 2 ? ' 외 ' + (prefs.sectors.length - 2) : '')].filter(Boolean);
   var note = document.getElementById('pz-note');

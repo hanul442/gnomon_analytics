@@ -30,6 +30,7 @@ import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, FIELDS, matches } from '../analysis/screenRules.js';
 import { intradaySignals, readIntraday } from '../analysis/intraday.js';
+import { readerNote } from '../report/profile.js';
 import { deepPath, DEEP_DATE, DEEP_SYMBOL, isUsSymbol, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
 import { parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
@@ -260,9 +261,13 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   const refund = (why: string) => credit(db, u.id, cost, 'refund', why, `refund:${ref}`, now).run();
   let res: Awaited<ReturnType<AskClient['create']>>;
   try {
-    let siteData = symbol && !symbol.startsWith('MARKET-') ? await fetchStock(env, deps, symbol) : '';
+    // G-207: answers follow the asker's profile (explanation depth, holding period); read alongside the site data.
+    const [stock, prof] = await Promise.all([symbol && !symbol.startsWith('MARKET-') ? fetchStock(env, deps, symbol) : '',
+      db.prepare("SELECT answers FROM surveys WHERE user_id = ? AND kind = 'onboarding' ORDER BY id DESC LIMIT 1").bind(u.id).first<{ answers: string }>().catch(() => null)]);
+    let siteData = stock;
     if(symbol?.startsWith('MARKET-')&&reportDate){const r=await deps.fetch(`${env.SITE_URL.replace(/\/$/,'')}/market/${symbol==='MARKET-DAILY'?'daily':'weekly'}-${reportDate}.json`).catch(()=>null);if(r?.ok)siteData=(await r.text()).slice(0,12000);}
-    const params = askParams({ tier: tier!, question, ...(symbol ? { symbol } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) });
+    let reader = ''; try { reader = prof ? readerNote(JSON.parse(prof.answers)) : ''; } catch { /* unreadable answers: no profile line */ }
+    const params = askParams({ tier: tier!, question, ...(reader ? { reader } : {}), ...(symbol ? { symbol } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) });
     res = onText && deps.ai!.stream ? await deps.ai!.stream(params, onText) : await deps.ai!.create(params);
   } catch {
     await refund('AI 응답 실패로 돌려드림');
