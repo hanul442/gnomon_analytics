@@ -1,6 +1,6 @@
 # GNOMON 릴리스 노트
 
-현재 버전 **v3.19.8**. 이 파일은 `src/report/releases.ts`에서 `node scripts/release-notes.mjs`로 만들어요. 손으로 고치지 말고 releases.ts를 고친 뒤 다시 만드세요.
+현재 버전 **v3.19.9**. 이 파일은 `src/report/releases.ts`에서 `node scripts/release-notes.mjs`로 만들어요. 손으로 고치지 말고 releases.ts를 고친 뒤 다시 만드세요.
 
 ## 릴리스 절차 (G-177)
 
@@ -10,6 +10,10 @@
 4. 급한 버그 수정만 예외로 낮에 패치 버전으로 올려요.
 
 ## 버전별 변경 사항
+
+### v3.19.9 · 2026-10-11
+
+미국 종목 찾기에 AMEX(NYSE American)와 NYSE 종목이 다 나와요. 지금까지는 거래소 목록을 읽다가 우선주 같은 종목이 끼어 있는 페이지에서 멈춰서, 검색되는 AMEX 종목이 97개, NYSE 종목이 48개뿐이었어요. 이제 AMEX 약 300개, NYSE 약 2,300개가 검색되고, 매일 미리 계산하는 미국 종목도 NYSE 시가총액 상위 300개까지 채워져요(AMEX는 상위 40개 그대로).
 
 ### v3.19.8 · 2026-10-11
 

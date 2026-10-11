@@ -113,7 +113,7 @@ const naverGet = (f: typeof fetch) => (url: string): Promise<unknown> => f(url, 
 
 /**
  * G-188: every listed US stock, by market value, for search and on-demand pages (names only; no bars). The three
- * exchanges are walked side by side; each walks its ranking pages until a short or empty page, a page that adds no
+ * exchanges are walked side by side; each walks its ranking pages until a short or empty page (counted before the code filter), a page that adds no
  * new code (an out-of-range page answered with the last one), or `maxPages`. A page is tried three times; if it
  * still fails the exchange stops there and is listed in `partial`, so callers know its tail is missing.
  */
@@ -122,12 +122,14 @@ export async function fetchUsDirectory(options: { fetch?: typeof fetch; maxPages
   const walk = async (ex: Exchange): Promise<UsListing[]> => {
     const out = new Map<string, UsListing>();
     for (let page = 1; page <= max; page += 1) {
-      let rows: UsListing[] | null = null;
-      for (let tries = 0; tries < 3 && rows === null; tries += 1) { const body = await get(rankingUrl(ex, page)); if (body) try { rows = parseUsRanking(body, ex); } catch { rows = null; } }
+      let rows: UsListing[] | null = null, raw = 0;
+      for (let tries = 0; tries < 3 && rows === null; tries += 1) { const body = await get(rankingUrl(ex, page)); if (body) try { rows = parseUsRanking(body, ex); raw = (body as { stocks: unknown[] }).stocks.length; } catch { rows = null; } }
       if (rows === null) { partial.push(ex); break; }
       const before = out.size;
       for (const l of rows) if (!out.has(l.code)) out.set(l.code, l);
-      if (rows.length < PAGE || out.size === before) break;
+      // G-214: a page is short by what Naver sent, not by what survived the code filter (a preferred share such as
+      // BAC_pm on NYSE's first page cut NYSE to 48 and AMEX to 97 names).
+      if (raw < PAGE || out.size === before) break;
     }
     return [...out.values()];
   };

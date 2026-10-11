@@ -74,21 +74,22 @@ test('directory (G-188): each exchange to its short, empty or repeated page, a f
     const u = new URL(String(url)), page = Number(u.searchParams.get('page')); asked.push(u.pathname + page);
     if (!u.pathname.includes('/marketValue')) return new Response('nope', { status: 404 });
     if (u.pathname.includes('NASDAQ')) return new Response(JSON.stringify({ stocks: page <= 3 ? page50('N', page) : page === 4 ? page50('N', 4, 10) : [] }));
-    if (u.pathname.includes('NYSE')) return nyseFails && page === 2 ? new Response('busy', { status: 503 }) : new Response(JSON.stringify({ stocks: page <= 2 ? page50('Y', page) : [] }));
+    // G-214: NYSE's first page carries a preferred share the code filter drops; the walk must not stop there.
+    if (u.pathname.includes('NYSE')) return nyseFails && page === 2 ? new Response('busy', { status: 503 }) : new Response(JSON.stringify({ stocks: page === 1 ? [...page50('Y', 1, 49), RANK('BAC_pm')] : page === 2 ? page50('Y', 2) : [] }));
     return new Response(JSON.stringify({ stocks: page50('A', 1) })); // AMEX answers every page with its first one
   }) as typeof fetch;
   const dir = await fetchUsDirectory({ fetch: make(false) });
   assert.deepEqual(dir.partial, []);
   assert.equal(dir.listings.filter((x) => x.exchange === 'NASDAQ').length, 160, 'stops after the short 4th page');
-  assert.equal(dir.listings.filter((x) => x.exchange === 'NYSE').length, 100, 'stops at the empty 3rd page');
+  assert.equal(dir.listings.filter((x) => x.exchange === 'NYSE').length, 99, 'a page cut by the code filter is not short; stops at the empty 3rd page');
   assert.equal(dir.listings.filter((x) => x.exchange === 'AMEX').length, 50);
   assert.equal(asked.filter((x) => x.includes('AMEX')).length, 2, 'a page with no new code ends the walk');
-  assert.equal((await fetchUsDirectory({ fetch: make(false), maxPages: 1 })).listings.length, 150);
+  assert.equal((await fetchUsDirectory({ fetch: make(false), maxPages: 1 })).listings.length, 149);
   asked.length = 0;
   const cut = await fetchUsDirectory({ fetch: make(true) });
   assert.deepEqual(cut.partial, ['NYSE']);
   assert.equal(asked.filter((x) => x === '/stock/exchange/NYSE/marketValue2').length, 3, 'a failing page is tried three times');
-  assert.equal(cut.listings.filter((x) => x.exchange === 'NYSE').length, 50);
+  assert.equal(cut.listings.filter((x) => x.exchange === 'NYSE').length, 49);
   const top = await fetchUsUniverse({ fetch: make(true), directory: cut, perExchange: { NASDAQ: 3, NYSE: 1, AMEX: 0 } });
   assert.deepEqual(top.map((x) => x.code), ['N1X0.O', 'N1X1.O', 'N1X2.O', 'Y1X0.O']);
 });
