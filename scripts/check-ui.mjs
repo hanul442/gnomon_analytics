@@ -381,8 +381,17 @@ try{
  {const st=await page.evaluate(()=>({p:JSON.parse(localStorage.getItem('gnm-prefs')||'{}'),v:localStorage.getItem('gnm-persona'),h:document.documentElement.getAttribute('data-persona')}));assert.equal(st.p.explain,'아주 쉬운 말로');assert.deepEqual(st.p.sectors,['반도체']);assert.equal(st.v,'long');assert.equal(st.h,'long');}
  await new Promise(r=>setTimeout(r,1200));assert.equal(surveys.at(-1)?.kind,'onboarding',await page.locator('#pf-state').innerText()+JSON.stringify(surveys));assert.deepEqual(surveys.at(-1).answers.sectors,['반도체']);
  // G-210: the same page holds 화면, 알림 (alerts.html now lands here) and 계정.
- {for(const id of ['profile','screen','alerts','account'])assert.equal(await page.locator('.st-nav a[href="#'+id+'"]').count(),1);assert.equal(await page.locator('#al-body').count(),1);assert.equal(await page.locator('#screen ~ section .theme-bar [data-theme-pick]').count()>=3,true);}
+ {for(const id of ['profile','committee','screen','alerts','account'])assert.equal(await page.locator('.st-nav a[href="#'+id+'"]').count(),1);assert.equal(await page.locator('#al-body').count(),1);assert.equal(await page.locator('#screen ~ section .theme-bar [data-theme-pick]').count()>=3,true);}
+ // G-212: 내 위원회 — add, reorder, then the question box offers them as one-tap answerers.
+ await page.locator('#cm-add button',{hasText:'반도체 전문가'}).click();await page.locator('#cm-add button',{hasText:'가치투자 전문가'}).click();
+ await page.locator('#cm-list [data-down="0"]').click();
+ assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('gnm-committee')).map(x=>x.k)),['value','semis']);
+ assert.equal(await page.locator('#cm-add button[data-add="semis"]').count(),0);
  await page.reload();await page.locator('#pf-form').waitFor();assert.equal(await page.locator('#pf-form input[value="아주 쉬운 말로"]').isChecked(),true);assert.equal(await page.locator('#pf-form input[name=persona][value="장기"]').isChecked(),true);
+ await page.goto(origin+'/market-fixture.html');await page.locator('#debate [data-room-open]').click();await page.locator('#debate .jn-mine').waitFor();
+ assert.deepEqual(await page.locator('#debate .jn-mine [data-mine]').evaluateAll(b=>b.map(x=>x.textContent)),['위원회 전체','가치투자 전문가','반도체 전문가']);
+ await page.locator('#debate .jn-mine [data-mine="semis"]').click();assert.match(await page.locator('#debate [data-selected-expert]').innerText(),/반도체 전문가/);assert.equal(await page.locator('#debate .jn-mine [data-mine="semis"]').getAttribute('aria-pressed'),'true');
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.goto(origin+'/guide.html');await page.waitForLoadState('networkidle');
  {const api=await page.evaluate(()=>(window.GNM&&window.GNM.api)||'');const slow=async(r)=>{await new Promise(f=>setTimeout(f,1200));await r.fulfill({body:'{}',contentType:'application/json'}).catch(()=>{});};await page.route(/\/(quote|slow-test)\b/,slow);
   await page.evaluate((a)=>{fetch(a+'/quote?s=005930');},api);await page.waitForTimeout(700);assert.equal(await page.locator('.gnm-network').count(),0,'quote polling does not show the network badge');

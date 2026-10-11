@@ -185,10 +185,11 @@ test('surveys, feedback and events are stored; export and delete cover everythin
   assert.equal(ov.body.pulses.length, 0);
   // G-109: settings follow the account; unknown keys and non-strings are dropped.
   assert.deepEqual((await t.call('GET', '/me/settings', undefined, u.session)).body, { data: {}, updatedAt: null });
-  const saved = await t.call('POST', '/me/settings', { data: { 'gnm-persona': 'trader', 'gnm-ind': '["rsi"]', 'gnm-draw:005930': '[]', 'gnm-session': 'secret', 'gnm-prefs': 5, other: 'x' } }, u.session);
-  assert.equal(saved.body.count, 3);
+  const saved = await t.call('POST', '/me/settings', { data: { 'gnm-persona': 'trader', 'gnm-ind': '["rsi"]', 'gnm-draw:005930': '[]', 'gnm-committee': '[{"k":"semis","n":"반도체 전문가"}]', 'gnm-session': 'secret', 'gnm-prefs': 5, other: 'x' } }, u.session);
+  assert.equal(saved.body.count, 4);
   const got = await t.call('GET', '/me/settings', undefined, u.session);
-  assert.deepEqual(got.body.data, { 'gnm-persona': 'trader', 'gnm-ind': '["rsi"]', 'gnm-draw:005930': '[]' });
+  // G-212: 내 위원회 follows the account too.
+  assert.deepEqual(got.body.data, { 'gnm-persona': 'trader', 'gnm-ind': '["rsi"]', 'gnm-draw:005930': '[]', 'gnm-committee': '[{"k":"semis","n":"반도체 전문가"}]' });
   assert.ok(got.body.updatedAt);
   assert.equal((await t.call('POST', '/me/settings', { data: Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`gnm-draw:00000${i % 10}${i >= 10 ? 'A' : ''}`, 'x'.repeat(19_000)])) }, u.session)).status, 413);
   assert.equal((await t.call('GET', '/me/settings')).status, 401);
