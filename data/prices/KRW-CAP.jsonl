@@ -65,3 +65,4 @@
 {"symbol":"KRW-CAP","date":"2026-10-09","open":101,"high":119,"low":98.3,"close":118,"volume":82062420.96774644,"source":"upbit:candles:days","retrievedAt":"2026-10-11T09:10:25.696Z"}
 {"symbol":"KRW-CAP","date":"2026-10-10","open":118,"high":136,"low":110,"close":126,"volume":249921163.09814098,"source":"upbit:candles:days","retrievedAt":"2026-10-11T09:10:25.696Z"}
 {"symbol":"KRW-CAP","date":"2026-10-11","open":125,"high":130,"low":121,"close":126,"volume":25111020.93532133,"source":"upbit:candles:days","retrievedAt":"2026-10-11T09:10:25.696Z"}
+{"symbol":"KRW-CAP","date":"2026-10-11","open":125,"high":130,"low":121,"close":127,"volume":27616981.67821416,"source":"upbit:candles:days","retrievedAt":"2026-10-11T11:01:56.231Z"}

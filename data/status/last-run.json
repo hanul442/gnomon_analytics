@@ -1,5 +1,5 @@
 {
- "at": "2026-10-11T09:10:25.696Z",
+ "at": "2026-10-11T11:01:56.231Z",
  "selected": null,
  "universe": [
   {
@@ -11,6 +11,11 @@
    "source": "naver:m-stock:etf",
    "ok": true,
    "count": 1172
+  },
+  {
+   "source": "opendart:corpCode",
+   "ok": true,
+   "count": 3998
   },
   {
    "source": "naver:fchart:day:all",
@@ -297,16 +302,11 @@
   {
    "symbol": "069500",
    "report": "SKIPPED",
-   "failedSources": [
-    {
-     "source": "naver:m-stock",
-     "error": "NAVER_FINANCE_UNEXPECTED_RESPONSE"
-    }
-   ]
+   "failedSources": []
   },
   {
    "symbol": "KRW-CAP",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
