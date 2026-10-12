@@ -409,7 +409,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     }
   }
   if (today.hour >= SETTLED_HOUR_KST) await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget);
-  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp });
+  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp, now });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
   await mkdir(join(root, 'data', 'status'), { recursive: true });
@@ -684,7 +684,7 @@ export async function configureSite(root: string): Promise<void> {
   SITE_CONFIG.apiUrl = process.env.GNM_API_URL ?? config.apiUrl ?? '';
 }
 
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[]; us?: UsTemp | null } = {}): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[]; us?: UsTemp | null; now?: Date } = {}): Promise<void> {
   const siteDir = join(root, 'site');
   await configureSite(root);
   const home: HomeEntry[] = [];
@@ -697,7 +697,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   }
   const picks = new Map((selection?.picks ?? []).map((p) => [p.symbol, p]));
   // Daily picks of the last seven days stay on the front page (G-56), newest first.
-  const weekAgo = new Date(Date.parse(`${kstParts(new Date()).date}T00:00:00Z`) - 6 * 86_400_000).toISOString().slice(0, 10);
+  const weekAgo = new Date(Date.parse(`${kstParts(extras.now ?? new Date()).date}T00:00:00Z`) - 6 * 86_400_000).toISOString().slice(0, 10);
   const daily = new Map([...(extras.daily ?? [])].filter((p) => p.date >= weekAgo).sort((a, b) => (a.date < b.date ? -1 : 1)).map((p) => [p.symbol, p]));
   for (const ticker of [...tickers, ...past]) {
     const dir = join(siteDir, ticker.symbol);

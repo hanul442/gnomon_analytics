@@ -1,5 +1,7 @@
 // Pricing and a MOCK checkout (docs/DESIGN.md §5.8, G-30). Nothing is charged:
 // "paying" only changes the plan and credit balance stored in this browser.
+// G-216: with the alpha API the plan and credits live on the server, so the MOCK checkout would change
+// nothing. There the pages say payment is closed, show the server ledger and point to a credit request.
 
 import { CREDIT_ACTIONS, CREDIT_COST, CREDIT_PACKS, needText, PLANS, UNLOCK, won } from './plans.js';
 import { shell } from './renderHtml.js';
@@ -75,7 +77,7 @@ ${i ? `<div class="inherits">${PLANS[i - 1]!.name}의 모든 것에 더해</div>
   const base = CREDIT_PACKS[0]!.price / CREDIT_PACKS[0]!.credits;
   const body = `${STYLE}<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>요금제</span></div><h1>필요한 만큼 깊이 보세요</h1>
 <p class="hero-line">결제는 깊이를 바꿀 뿐, 진실을 바꾸지 않아요. 같은 종목의 신호·숫자·기록은 누구에게나 같고, 유료는 그 이유를 더 자세히 보여 줘요.</p></div></section>
-<section class="block"><p class="mock-note"><b>MOCK 화면이에요.</b> 실제로 결제되지 않고, 요금제와 크레딧은 이 브라우저에만 저장돼요. 가격과 구성은 출시 전에 바뀔 수 있어요.</p></section>
+<section class="block"><p class="mock-note" data-mock><b>MOCK 화면이에요.</b> 실제로 결제되지 않고, 요금제와 크레딧은 이 브라우저에만 저장돼요. 가격과 구성은 출시 전에 바뀔 수 있어요.</p><p class="mock-note" data-alpha hidden><b>알파 기간에는 결제를 받지 않아요.</b> 알파 테스터는 알파 요금제로 쓰고, 크레딧이 더 필요하면 <a href="account.html#req">내 계정에서 요청</a>하면 운영자가 확인해서 넣어 드려요. 아래 가격과 구성은 출시 전 초안이에요.</p></section>
 <section class="block"><div class="card acct-card"><div><div class="muted small">지금 요금제</div><b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧 <span class="muted small" data-trial></span></div><div><a href="#log" class="link-btn">크레딧 사용 내역</a></div></div></section>
 <section class="block"><div class="seg pr-tabs" role="tablist" aria-label="요금제 고르기">${PLANS.map((p) => `<button type="button" role="tab" data-pr="${p.key}" aria-selected="${p.key === 'pro'}">${p.name}</button>`).join('')}</div><div class="pr-grid" data-show="pro">${PLANS.map(plan).join('')}</div></section>
 <section class="block"><details class="card fold" data-open-wide><summary><b>요금제별로 볼 수 있는 것</b><span class="muted small">기능 ${COMPARE.length}개 비교</span></summary><div class="table-wrap"><table class="cmp"><thead><tr><th>기능</th>${PLANS.map((p) => `<th>${p.name}</th>`).join('')}</tr></thead><tbody>
@@ -88,9 +90,9 @@ ${COMPARE.map(([label, ...cells]) => `<tr><td>${label}</td>${cells.map(yes).join
 <details class="card fold" style="margin-top:12px" data-open-wide><summary><b>크레딧으로 하는 일</b><span class="muted small">${CREDIT_ACTIONS.length}가지 · 필요한 크레딧</span></summary><table class="compact"><thead><tr><th>크레딧으로 하는 일</th><th>필요한 크레딧</th><th>쓸 수 있는 요금제</th></tr></thead><tbody>
 ${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>${CREDIT_COST[a.key]}</b></td><td>${PLANS.find((p) => p.key === a.min)!.name}부터</td></tr>`).join('')}</tbody></table>
 <p class="fine">가끔 이벤트로 체험 크레딧을 드려요. 무료 이용자도 체험 크레딧으로 AI 빠른 질문을 해 볼 수 있고, 이벤트가 끝나면 남은 체험 크레딧은 사라져요. 프로는 충전할 때 10%, 맥스는 20%를 더 받아요. 요금제에 포함된 크레딧은 매달 새로 채워지고 이월되지 않아요. 충전한 크레딧은 1년 동안 써요.</p></details></section>
-<section class="block" id="log"><div class="block-head"><h2>크레딧 사용 내역</h2><span class="muted">이 브라우저 기록</span></div><div class="card"><div id="log-body"><p class="empty">아직 내역이 없어요.</p></div></div></section>
+<section class="block" id="log"><div class="block-head"><h2>크레딧 사용 내역</h2><span class="muted" data-mock>이 브라우저 기록</span><span class="muted" data-alpha hidden>내 계정 기록</span></div><div class="card"><div id="log-body"><p class="empty">아직 내역이 없어요.</p></div></div></section>
 <section class="block faq"><div class="block-head"><h2>자주 묻는 것</h2></div><div class="card">
-<details><summary>지금 결제하면 실제로 돈이 나가나요?</summary><p>아니요. 이 화면은 요금제 구조를 보여 주는 MOCK이에요. 결제 버튼은 이 브라우저의 요금제와 크레딧만 바꿔요.</p></details>
+<details><summary>지금 결제하면 실제로 돈이 나가나요?</summary><p>아니요. 아직 결제를 받지 않아요. 이 화면은 출시 전 요금제 구조를 보여 주는 초안이고, 실제 결제는 사업자 등록과 결제 대행 계약을 마친 뒤에 열어요.</p></details>
 <details><summary>잠긴 리포트는 어떻게 열리나요?</summary><p>플러스부터 상세 내용이 보여요. AI 위원회 심층 리포트(매일 리포트와 다른 사람이 만든 리포트)는 한 번 열 때 ${CREDIT_COST.unlock}크레딧이고, 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료로 열고, 만든 지 7일이 지난 리포트는 누구나 무료예요. 프로·맥스와 리포트를 만든 사람은 크레딧 없이 바로 봐요. 다른 사람이 내가 만든 리포트를 크레딧으로 열면 나에게 ${UNLOCK.makerShare}크레딧이 돌아와요(리포트 하나에 ${UNLOCK.makerCap}크레딧까지).</p></details>
 <details><summary>크레딧은 언제 사라지나요? (초안)</summary><p>프로·맥스에 포함된 크레딧은 매달 새로 채워지고, 남은 포함 크레딧은 이월되지 않아요. 따로 충전한 크레딧은 1년 동안 써요.</p></details>
 <details><summary>요금제마다 무엇이 달라요?</summary><p>AI 리포트는 모두 AI 위원회 심층 리포트 한 종류예요(한 번 만들 때 ${CREDIT_COST.report}크레딧). 플러스는 계산 상세를 보고 크레딧으로 심층 리포트를 요청해요. 프로는 AI 위원회 리포트 전체·전략·모의투자를 바로 봐요. 맥스는 관심 종목 10개를 매주 AI 위원회가 알아서 분석하고, 전문가용 도구(전략 랩·포트폴리오 리스크·시점 재현)를 써요.</p></details>
@@ -108,8 +110,21 @@ const PRICING_SCRIPT = `<script>
   var cur = document.documentElement.getAttribute('data-plan'); if (cur && cur !== 'free' && document.querySelector('[data-pr=' + cur + ']')) pick(cur);
   if (matchMedia('(min-width:821px)').matches) document.querySelectorAll('[data-open-wide]').forEach(function (d) { d.open = true; });
   var G = window.GNM; if (!G) return;
-  var KIND = { report: '심층 리포트 요청', brief: '요약 리포트 요청(이전)', upgrade: '심층 업그레이드(이전)', idea: '아이디어 검증', question: 'AI 빠른 질문', standard: 'AI 표준 질문', deep: 'AI 심층 질문', topup: '충전', trial: '체험 크레딧', plan: '요금제' };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  // G-216: alpha API: no browser plan to change; the log is the account's server ledger.
+  if (G.call) {
+    document.querySelectorAll('[data-mock]').forEach(function (el) { el.hidden = true; });
+    document.querySelectorAll('[data-alpha]').forEach(function (el) { el.hidden = false; });
+    document.querySelectorAll('[data-downgrade]').forEach(function (b) { b.style.display = 'none'; });
+    var box = document.getElementById('log-body');
+    if (!G.me) { box.innerHTML = '<p class="empty"><a href="login.html">알파 로그인</a>하면 내 크레딧 기록이 보여요.</p>'; return; }
+    G.call('GET', '/me/ledger').then(function (r) {
+      if (r.error || !r.rows) { box.innerHTML = '<p class="empty">' + esc(r.message || '기록을 불러오지 못했어요.') + '</p>'; return; }
+      box.innerHTML = r.rows.length ? '<table class="log"><tbody>' + r.rows.slice(0, 30).map(function (x) { return '<tr><td class="muted">' + esc(String(x.created_at).slice(0, 16).replace('T', ' ')) + '</td><td>' + esc(x.note || x.kind) + '</td><td style="text-align:right;font-weight:700">' + (x.delta > 0 ? '+' : '') + x.delta + '</td></tr>'; }).join('') + '</tbody></table><p class="muted small"><a href="account.html">내 계정에서 전체 보기</a></p>' : '<p class="empty">아직 내역이 없어요.</p>';
+    });
+    return;
+  }
+  var KIND = { report: '심층 리포트 요청', brief: '요약 리포트 요청(이전)', upgrade: '심층 업그레이드(이전)', idea: '아이디어 검증', question: 'AI 빠른 질문', standard: 'AI 표준 질문', deep: 'AI 심층 질문', topup: '충전', trial: '체험 크레딧', plan: '요금제' };
   var draw = function () {
     var a = G.read(), el = document.getElementById('log-body');
     if (!a.log.length) { el.innerHTML = '<p class="empty">아직 내역이 없어요.</p>'; return; }
@@ -129,7 +144,7 @@ const ITEMS = [
 
 export function renderCheckout(): string {
   const body = `${STYLE}<div class="co"><section class="hero" id="top" style="margin-bottom:0"><div class="hero-main"><div class="eyebrow"><span>결제</span></div><h1>주문 확인</h1></div></section>
-<p class="mock-note"><b>MOCK 결제예요.</b> 카드 정보를 받지 않고, 실제로 결제되지 않아요. 버튼을 누르면 이 브라우저의 요금제와 크레딧만 바뀌어요.</p>
+<p class="mock-note" id="co-mock"><b>MOCK 결제예요.</b> 카드 정보를 받지 않고, 실제로 결제되지 않아요. 버튼을 누르면 이 브라우저의 요금제와 크레딧만 바뀌어요.</p>
 <div id="co-form"><div class="card"><div class="pl-k">주문 내용</div><div class="co-row"><span id="co-title">상품을 고르지 않았어요</span><b id="co-price">—</b></div><div class="co-row"><span class="muted" id="co-note"></span><span></span></div><div class="co-row"><span>결제 금액</span><span class="co-total" id="co-total">—</span></div></div>
 <div class="card"><div class="pl-k" style="margin-bottom:8px">결제 수단 (MOCK)</div><div class="pay">
 <label><input type="radio" name="pay" value="card" checked> 신용·체크카드</label><label><input type="radio" name="pay" value="easy"> 간편결제</label><label><input type="radio" name="pay" value="bank"> 계좌이체</label></div></div>
@@ -145,7 +160,14 @@ export function renderCheckout(): string {
   var key = new URLSearchParams(location.search).get('item'), item = ITEMS.find(function (x) { return x.key === key; });
   var $ = function (id) { return document.getElementById(id); };
   var won = function (v) { return v.toLocaleString('ko-KR') + '원'; };
-  if (!item || !G) return;
+  if (!G) return;
+  // G-216: alpha API: plan and credits are on the server, so there is nothing for a MOCK payment to change.
+  if (G.call) {
+    $('co-mock').hidden = true;
+    $('co-form').innerHTML = '<div class="card"><div class="pl-k">알파 기간</div><p><b>지금은 결제를 받지 않아요.</b> 알파 테스터는 알파 요금제로 쓰고, 크레딧이 더 필요하면 내 계정에서 요청하면 운영자가 확인해서 넣어 드려요.</p>' + (item ? '<p class="muted small">고른 상품: ' + item.title + ' · ' + won(item.price) + ' (출시 전 초안 가격)</p>' : '') + '<p>' + (G.me ? '<a class="btn-primary" href="account.html#req">크레딧 요청하기</a>' : '<a class="btn-primary" href="login.html">알파 로그인</a>') + ' <a href="pricing.html" style="margin-left:10px">요금제 보기</a></p></div>';
+    return;
+  }
+  if (!item) return;
   if (!item.plan && G.read().plan === 'free') { document.getElementById('co-form').innerHTML = '<div class="card"><p>크레딧은 플러스 요금제부터 충전할 수 있어요.</p><p><a class="btn-primary" href="checkout.html?item=plus">플러스 시작하기</a></p></div>'; return; }
   $('co-title').textContent = item.title; $('co-price').textContent = won(item.price); $('co-note').textContent = item.note; $('co-total').textContent = won(item.price);
   $('co-agree').addEventListener('change', function (e) { $('co-pay').disabled = !e.target.checked; });
