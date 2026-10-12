@@ -208,7 +208,7 @@ html[data-plan=free] .need-plus{display:none}html:not([data-plan=free]) .only-fr
 @media (max-width:820px){html[data-plan=free] .gate>.gate-cta,html[data-plan=plus] .gate[data-need=pro]>.gate-cta{flex-wrap:wrap;top:80px}.gate-cta .btn-primary{width:100%}.acct i{display:none}}
 `;
 
-/** Account state, credit spending and the mock AI question. Shared by every page. */
+/** Account state and credit spending (browser MOCK without the alpha API). Shared by every page. */
 export const ACCOUNT_SCRIPT = `<script>
 (function () {
   var KEY = 'gnm-account', NAMES = ${JSON.stringify(PLAN_NAMES)}, COST = ${JSON.stringify(CREDIT_COST)}, MIN = ${JSON.stringify(Object.fromEntries(CREDIT_ACTIONS.map((x) => [x.key, x.min])))}, RANK = ${JSON.stringify(PLAN_RANK)}, TRIAL = ${JSON.stringify(TRIAL)};
@@ -292,22 +292,6 @@ export const ACCOUNT_SCRIPT = `<script>
     });
     bar.querySelector('.promo-x').addEventListener('click', function () { bar.remove(); });
   }).catch(function () {});
-  // Report requests: recorded in this browser (MOCK).
-  var WORD = { report: '심층 리포트 요청' };
-  document.querySelectorAll('[data-spend]').forEach(function (b) {
-    var kind = b.getAttribute('data-spend');
-    if (!WORD[kind]) return;
-    b.addEventListener('click', function () {
-      var sym = b.getAttribute('data-symbol') || (new URLSearchParams(location.search).get('c') || ''), name = b.getAttribute('data-name') || sym;
-      if (!sym) return;
-      var a = read();
-      if (a.requests.some(function (r) { return r.symbol === sym && r.kind === kind; })) { toast('이미 요청했어요.'); return; }
-      if ((RANK[a.plan] >= RANK[MIN[kind]] || (TRIAL.actions.indexOf(kind) >= 0 && a.trial >= COST[kind])) && !confirm(name + ' ' + WORD[kind] + ': ' + COST[kind] + '크레딧을 쓸까요? (MOCK: 실제로 처리되지는 않아요)')) return;
-      if (!spend(kind, name + ' ' + WORD[kind])) return;
-      a = read(); a.requests.unshift({ symbol: sym, name: name, kind: kind, at: new Date().toISOString() }); write(a);
-      toast('접수했어요 (MOCK). 남은 크레딧 ' + (a.credits + a.trial) + '개');
-    });
-  });
   // Expert invitations: Max uses its monthly allowance first (and may seat a standing expert); Pro pays credits.
   document.querySelectorAll('form.invite').forEach(function (f) {
     var out = f.querySelector('.ask-out');
@@ -326,24 +310,6 @@ export const ACCOUNT_SCRIPT = `<script>
       } else if (!spend('invite', name + ' · ' + who + (q ? ' · ' + q : ''))) return;
       out.hidden = false;
       out.innerHTML = '<p><b>' + esc(who) + '</b>를 ' + esc(name) + ' 위원회에 초청했어요' + (standing ? ' (매주 고정)' : '') + (q ? '. 질문: ' + esc(q) : '') + '. MOCK이라 답과 의견은 서버가 붙으면 다음 리포트에 실려요.</p>';
-    });
-  });
-  // AI questions (quick / deep). MOCK answer: the closest sentences from this page's evidence.
-  document.querySelectorAll('form.ask').forEach(function (f) {
-    var out = f.querySelector('.ask-out');
-    f.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var q = f.querySelector('textarea').value.trim();
-      if (q.length < 2) { toast('질문을 적어 주세요.'); return; }
-      var kind = (e.submitter && e.submitter.value) || 'question';
-      if (!spend(kind, (kind === 'deep' ? '[심층] ' : '') + q.slice(0, 40))) return;
-      var words = q.split(/[\\s,.?!]+/).filter(function (w) { return w.length >= 2; }).map(function (w) { return w.replace(/(은|는|이|가|을|를|의|에|도|요|까|나)$/, ''); }).filter(function (w) { return w.length >= 2; });
-      var pool = [].slice.call(document.querySelectorAll('.why-grid li, .claims li, .red-team p, .story-title, .pl-detail p, .headline'));
-      var hits = pool.map(function (el) { var t = el.textContent.replace(/\\s+/g, ' ').trim(); return [words.filter(function (w) { return t.indexOf(w) >= 0; }).length, t]; })
-        .filter(function (p) { return p[0] > 0; }).sort(function (x, y) { return y[0] - x[0]; }).slice(0, kind === 'deep' ? 6 : 3);
-      out.hidden = false;
-      out.innerHTML = '<p class="muted small">' + (kind === 'deep' ? '심층 질문 · ' : '') + 'MOCK 답변이에요. AI 연결 전이라 이 페이지의 근거에서 질문과 가까운 문장을 찾아 보여 드려요. 남은 크레딧 ' + (read().credits + read().trial) + '개.</p>' +
-        (hits.length ? '<ul>' + hits.map(function (h) { return '<li>' + esc(h[1]) + '</li>'; }).join('') + '</ul>' : '<p>관련 근거를 찾지 못했어요. 다른 낱말로 물어봐 주세요.</p>');
     });
   });
 })();

@@ -215,25 +215,6 @@ export const ALPHA_SCRIPT = `<script>
     else if (t.closest('.gate-cta')) G.track('gate_click', { need: t.closest('.gate').getAttribute('data-need') });
     else G.track(t.getAttribute('data-track'), {});
   });
-  // Credit actions through the server: report requests and expert invitations.
-  var WORD = { report: '심층 리포트 요청', invite: '전문가 AI 초청' };
-  var action = function (kind, sym, name, detail) {
-    if (!G.me) { location.href = base + 'login.html'; return Promise.resolve(false); }
-    if (kind === 'report' && G.startReport) return G.startReport(kind,sym,name);
-    var c = G.me.costs[kind];
-    if (!confirm(name + ' ' + WORD[kind] + (detail ? ' (' + detail + ')' : '') + ': ' + c + '크레딧을 쓸까요? 알파에서는 운영자가 확인하고 처리해요.')) return Promise.resolve(false);
-    return G.call('POST', '/actions', { kind: kind, symbol: sym, detail: detail || '' }).then(function (r) {
-      if (r.error) { toast(r.message); if (r.error === 'NO_CREDITS') { var b = document.querySelector('[data-open-chat]'); if (b) b.click(); } return false; }
-      toast('접수했어요. 남은 크레딧 ' + r.balance + '개'); G.track('action', { kind: kind, symbol: sym }); G.refresh(); return true;
-    });
-  };
-  document.querySelectorAll('[data-spend]').forEach(function (b) {
-    var kind = b.getAttribute('data-spend'); if (!WORD[kind]) return;
-    b.addEventListener('click', function () {
-      var sym = b.getAttribute('data-symbol') || new URLSearchParams(location.search).get('c') || '';
-      if (sym) action(kind, sym, b.getAttribute('data-name') || sym);
-    });
-  });
   // G-80: asking in the debate. The committee or an invited expert answers right away, as a new turn
   // at the bottom of the debate ('작성 중…' while it thinks). Experts cost the invite price (Pro).
   var md = function (t) { return esc(t).replace(/\\*\\*([^*]+)\\*\\*/g, '<b>$1</b>').split(/\\n{2,}/).map(function (p) { return '<p>' + p.replace(/\\n/g, '<br>') + '</p>'; }).join(''); };
