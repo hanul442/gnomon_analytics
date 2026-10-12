@@ -1475,11 +1475,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "005030",
-  "name": "부산주공",
-  "market": "KOSPI"
- },
- {
   "symbol": "005070",
   "name": "코스모신소재",
   "market": "KOSPI"
@@ -13305,11 +13300,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "472230",
-  "name": "에스케이증권제11호스팩",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "472850",
   "name": "폰드그룹",
   "market": "KOSDAQ"
@@ -13317,11 +13307,6 @@
  {
   "symbol": "473000",
   "name": "에스케이증권제12호스팩",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "473050",
-  "name": "유안타제15호스팩",
   "market": "KOSDAQ"
  },
  {

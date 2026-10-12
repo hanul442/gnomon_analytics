@@ -8,3 +8,12 @@
 {"symbol":"042660","receiptNo":"20260121000113","date":"2026-01-21","reporter":"김형석","position":"전무","isExec":true,"isMajor":false,"shares":5000,"delta":5000,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"042660","receiptNo":"20260408000663","date":"2026-04-08","reporter":"한화시스템","position":"-","isExec":false,"isMajor":true,"shares":22169660,"delta":-13281250,"ratio":7.24,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"042660","receiptNo":"20260716000581","date":"2026-07-16","reporter":"장연성","position":"전무","isExec":true,"isMajor":false,"shares":1500,"delta":500,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"042660","receiptNo":"20261012000205","date":"2026-10-12","reporter":"윤동원","position":"담당","isExec":true,"isMajor":false,"shares":0,"delta":0,"ratio":0,"retrievedAt":"2026-10-12T19:16:16.066Z"}
+{"symbol":"042660","receiptNo":"20261012000231","date":"2026-10-12","reporter":"노대규","position":"담당","isExec":true,"isMajor":false,"shares":160,"delta":160,"ratio":0,"retrievedAt":"2026-10-12T19:16:16.066Z"}
+{"symbol":"042660","receiptNo":"20261012000242","date":"2026-10-12","reporter":"조짐모","position":"상무","isExec":true,"isMajor":false,"shares":470,"delta":470,"ratio":0,"retrievedAt":"2026-10-12T19:16:16.066Z"}
+{"symbol":"042660","receiptNo":"20261012000260","date":"2026-10-12","reporter":"김훈민","position":"사업부장","isExec":true,"isMajor":false,"shares":600,"delta":600,"ratio":0,"retrievedAt":"2026-10-12T19:16:16.066Z"}
+{"symbol":"042660","receiptNo":"20261012000324","date":"2026-10-12","reporter":"박종민","position":"센터장","isExec":true,"isMajor":false,"shares":35,"delta":35,"ratio":0,"retrievedAt":"2026-10-12T19:16:16.066Z"}
+{"symbol":"042660","receiptNo":"20261012000340","date":"2026-10-12","reporter":"최준영","position":"담당","isExec":true,"isMajor":false,"shares":1,"delta":1,"ratio":0,"retrievedAt":"2026-10-12T19:16:16.066Z"}
+{"symbol":"042660","receiptNo":"20261012000139","date":"2026-10-12","reporter":"유상태","position":"담당","isExec":true,"isMajor":false,"shares":2870,"delta":2870,"ratio":0,"retrievedAt":"2026-10-12T19:16:16.066Z"}
+{"symbol":"042660","receiptNo":"20261012000060","date":"2026-10-12","reporter":"도규환","position":"상무","isExec":true,"isMajor":false,"shares":200,"delta":200,"ratio":0,"retrievedAt":"2026-10-12T19:16:16.066Z"}
+{"symbol":"042660","receiptNo":"20261012000156","date":"2026-10-12","reporter":"박호정","position":"실장","isExec":true,"isMajor":false,"shares":5843,"delta":5843,"ratio":0,"retrievedAt":"2026-10-12T19:16:16.066Z"}
