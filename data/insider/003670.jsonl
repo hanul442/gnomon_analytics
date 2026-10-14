@@ -13,3 +13,5 @@
 {"symbol":"003670","receiptNo":"20260907000274","date":"2026-09-07","reporter":"김무철","position":"실장","isExec":true,"isMajor":false,"shares":3443,"delta":65,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"003670","receiptNo":"20261007000443","date":"2026-10-07","reporter":"선주현","position":"실장","isExec":true,"isMajor":false,"shares":241,"delta":62,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"003670","receiptNo":"20261007000445","date":"2026-10-07","reporter":"김성진","position":"본부장","isExec":true,"isMajor":false,"shares":162,"delta":62,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"003670","receiptNo":"20261014000345","date":"2026-10-14","reporter":"박정엽","position":"실장","isExec":true,"isMajor":false,"shares":2310,"delta":62,"ratio":0,"retrievedAt":"2026-10-14T14:38:42.980Z"}
+{"symbol":"003670","receiptNo":"20261014000351","date":"2026-10-14","reporter":"김대인","position":"실장","isExec":true,"isMajor":false,"shares":64,"delta":62,"ratio":0,"retrievedAt":"2026-10-14T14:38:42.980Z"}

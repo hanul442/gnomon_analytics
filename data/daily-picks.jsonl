@@ -23,3 +23,7 @@
 {"date":"2026-10-09","symbol":"KRW-NEAR","name":"니어프로토콜","kind":"coin","market":"UPBIT","tier":"deep","reason":"24시간 거래대금 상위 코인 후보에서 선정"}
 {"date":"2026-10-10","symbol":"KRW-DOGE","name":"도지코인","kind":"coin","market":"UPBIT","tier":"deep","reason":"24시간 거래대금 상위 코인 후보에서 선정"}
 {"date":"2026-10-11","symbol":"KRW-CAP","name":"캡","kind":"coin","market":"UPBIT","tier":"deep","reason":"24시간 거래대금 상위 코인 후보에서 선정"}
+{"date":"2026-10-14","symbol":"225530","name":"HC보광산업","kind":"stock","market":"KOSDAQ","tier":"deep","reason":"스크리너 '거래량 급증·상승' 신호 후보"}
+{"date":"2026-10-14","symbol":"028670","name":"팬오션","kind":"stock","market":"KOSPI","tier":"deep","reason":"스크리너 '52주 고점 돌파 시도' 신호 후보"}
+{"date":"2026-10-14","symbol":"0219E0","name":"KODEX 200커버드콜액티브","kind":"etf","market":"KOSPI","tier":"deep","reason":"거래대금 상위 ETF 후보에서 선정"}
+{"date":"2026-10-14","symbol":"AMAT.O","name":"어플라이드 머티어리얼즈","kind":"stock","market":"NASDAQ","tier":"deep","reason":"미국 거래대금 상위 후보에서 선정","us":{"ticker":"AMAT","english":"Applied Materials Inc"}}
