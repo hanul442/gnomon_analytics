@@ -1,5 +1,5 @@
 {
- "at": "2026-10-14T14:38:42.980Z",
+ "at": "2026-10-15T14:08:36.528Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2683
+   "count": 2681
   },
   {
    "source": "naver:fchart:day:etf",
@@ -35,12 +35,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 850
-  },
-  {
-   "source": "naver:themes",
-   "ok": true,
-   "count": 264
+   "count": 849
   }
  ],
  "stocks": [
@@ -305,27 +300,7 @@
    "failedSources": []
   },
   {
-   "symbol": "0219E0",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "225530",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "AMAT.O",
-   "report": "WRITTEN",
-   "failedSources": [
-    {
-     "source": "sec:edgar",
-     "error": "EDGAR_HTTP_403"
-    }
-   ]
-  },
-  {
-   "symbol": "028670",
+   "symbol": "KRW-ENA",
    "report": "WRITTEN",
    "failedSources": []
   }
