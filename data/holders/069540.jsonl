@@ -14,3 +14,4 @@
 {"symbol":"069540","receiptNo":"20260904000520","date":"2026-09-04","reporter":"비엔에스조합","shares":32686959,"delta":-1120000,"ratio":29.01,"ratioDelta":-5.8,"reason":"장내매도 및 주식담보계약 계약 체결","retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"069540","receiptNo":"20260917000361","date":"2026-09-17","reporter":"비엔에스조합","shares":32686959,"delta":0,"ratio":29.01,"ratioDelta":0,"reason":"주식담보계약 계약 체결","retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"069540","receiptNo":"20261008000723","date":"2026-10-08","reporter":"비엔에스조합","shares":32686959,"delta":0,"ratio":29.01,"ratioDelta":0,"reason":"주식담보계약 연장","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"069540","receiptNo":"20261015000422","date":"2026-10-15","reporter":"비엔에스조합","shares":27356080,"delta":-5330879,"ratio":24.28,"ratioDelta":-4.73,"reason":"장내매도 및 주식담보계약 종료","retrievedAt":"2026-10-15T18:38:30.600Z"}

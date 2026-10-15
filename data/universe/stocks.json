@@ -1485,11 +1485,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "005110",
-  "name": "한창",
-  "market": "KOSPI"
- },
- {
   "symbol": "005160",
   "name": "동국산업",
   "market": "KOSDAQ"
@@ -9135,6 +9130,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "179880",
+  "name": "멜콘",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "179900",
   "name": "유티아이",
   "market": "KOSDAQ"
@@ -10297,6 +10297,11 @@
  {
   "symbol": "250000",
   "name": "보라티알",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "250030",
+  "name": "진코스텍",
   "market": "KOSDAQ"
  },
  {

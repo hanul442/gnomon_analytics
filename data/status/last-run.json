@@ -1,11 +1,11 @@
 {
- "at": "2026-10-15T14:08:36.528Z",
+ "at": "2026-10-15T18:38:30.600Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2763
+   "count": 2764
   },
   {
    "source": "naver:m-stock:etf",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2681
+   "count": 2682
   },
   {
    "source": "naver:fchart:day:etf",
@@ -25,7 +25,8 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 295
+   "count": 295,
+   "error": "1 failed "
   },
   {
    "source": "naver:world:day:all",
@@ -35,7 +36,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 849
+   "count": 601
   }
  ],
  "stocks": [
@@ -301,7 +302,7 @@
   },
   {
    "symbol": "KRW-ENA",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
