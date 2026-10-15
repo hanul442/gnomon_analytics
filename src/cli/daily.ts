@@ -80,8 +80,9 @@ import type { UniverseRow } from '../sources/naverList.js';
 import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVER_NEWS_SOURCE } from '../sources/news.js';
 import { retryingFetch } from '../sources/retryFetch.js';
 import { recordingFetch, replayingFetch } from '../sources/fetchCache.js';
+import { kstParts, runDay } from './kst.js';
+export { kstParts, runDay } from './kst.js';
 
-const KST_MS = 9 * 60 * 60_000;
 /** A merge's run replays the last full run's answers only while they are this fresh (a missed day falls back to the network). */
 const FETCH_CACHE_MAX_AGE_MS = 36 * 60 * 60_000;
 
@@ -148,12 +149,6 @@ async function writeReportPage(siteDir: string, path: string, report: DailyRepor
 }
 const SETTLED_HOUR_KST = 18;
 const daysBetween = (from: string, to: string) => (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000;
-
-export function kstParts(at: Date): { date: string; compact: string; hour: number } {
-  const kst = new Date(at.getTime() + KST_MS);
-  const date = kst.toISOString().slice(0, 10);
-  return { date, compact: date.replaceAll('-', ''), hour: kst.getUTCHours() };
-}
 
 const priceKey = (bar: PriceBar) => `${bar.symbol}:${bar.date}`;
 const filingKey = (filing: Disclosure) => filing.receiptNo;
@@ -222,7 +217,7 @@ export interface DailyRunResult {
 export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; usStocks?: boolean; dailyPicks?: boolean; weeklyReports?: boolean }): Promise<DailyRunResult> {
   const { root, now } = options;
   await configureSite(root);
-  const today = kstParts(now);
+  const today = runDay(now);
   const fetchOpt = options.fetch ? { fetch: options.fetch } : {};
   // Every listed stock, for search and the weekly selection (best effort).
   const universe = await collectUniverse(root, { apiKey: options.apiKey, now, ...fetchOpt });
@@ -465,7 +460,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
   const pricePath = join(root, 'data', 'prices', `${SYMBOL}.jsonl`);
   const filingPath = join(root, 'data', 'disclosures', `${SYMBOL}.jsonl`);
   const reportDir = join(root, 'reports', SYMBOL);
-  const today = kstParts(now);
+  const today = runDay(now);
   const monthAgo = kstParts(new Date(now.getTime() - 31 * 24 * 60 * 60_000));
   const fetchOptions = { now: clock, ...(options.fetch ? { fetch: options.fetch } : {}) };
 
@@ -586,7 +581,7 @@ export async function composeReport(
   now: Date,
   options: { newsStatus?: readonly NewsSourceStatus[]; marketStatus?: readonly NewsSourceStatus[]; barsLimit?: number } = {},
 ): Promise<DailyReport> {
-  const today = kstParts(now);
+  const today = runDay(now);
   const SYMBOL = ticker.symbol;
   const reportDir = join(root, 'reports', SYMBOL);
   const pricePath = join(root, 'data', 'prices', `${SYMBOL}.jsonl`);
@@ -697,7 +692,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   }
   const picks = new Map((selection?.picks ?? []).map((p) => [p.symbol, p]));
   // Daily picks of the last seven days stay on the front page (G-56), newest first.
-  const weekAgo = new Date(Date.parse(`${kstParts(extras.now ?? new Date()).date}T00:00:00Z`) - 6 * 86_400_000).toISOString().slice(0, 10);
+  const weekAgo = new Date(Date.parse(`${runDay(extras.now ?? new Date()).date}T00:00:00Z`) - 6 * 86_400_000).toISOString().slice(0, 10);
   const daily = new Map([...(extras.daily ?? [])].filter((p) => p.date >= weekAgo).sort((a, b) => (a.date < b.date ? -1 : 1)).map((p) => [p.symbol, p]));
   for (const ticker of [...tickers, ...past]) {
     const dir = join(siteDir, ticker.symbol);

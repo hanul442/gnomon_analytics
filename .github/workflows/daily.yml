@@ -4,10 +4,13 @@ on:
     branches: [main]
     paths: ['assets/**', 'src/report/**', 'src/cli/**', 'vendor/thinking-orbs/**', '.github/workflows/daily.yml']
   schedule:
-    # 18:30 KST on weekdays (09:30 UTC). GitHub may start scheduled runs late.
-    - cron: '30 9 * * 1-5'
-    # Weekends: the coin's daily AI report and the coin list (G-56); stock pages are rebuilt as they are.
-    - cron: '30 9 * * 0,6'
+    # 18:30 KST every day (09:30 UTC); on weekends the coin's daily AI report and the coin list (G-56).
+    # G-217: GitHub has started these 5–10 hours late and one late run failed, so two more tries follow.
+    # A run before 08:00 KST still settles the evening before, and a settled day's reports are kept, so a
+    # later try only refreshes the data and the site.
+    - cron: '30 9 * * *'
+    - cron: '13 12 * * *'
+    - cron: '43 14 * * *'
   workflow_dispatch:
     inputs:
       regen_market:
