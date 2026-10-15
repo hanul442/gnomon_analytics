@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
-import { kstParts, runDaily } from './daily.js';
+import { kstParts, runDaily, runDay } from './daily.js';
 import { loadTickers } from '../config/tickers.js';
 import type { DailyReport } from '../report/dailyReport.js';
 import { tempDir } from '../testTmp.js';
@@ -33,6 +33,20 @@ const run = async (options: Omit<Parameters<typeof runDaily>[0], 'tickers'>) => 
 test('KST date and hour', () => {
   assert.deepEqual(kstParts(new Date('2026-10-02T09:30:00Z')), { date: '2026-10-02', compact: '20261002', hour: 18 });
   assert.equal(kstParts(new Date('2026-10-02T15:30:00Z')).date, '2026-10-03');
+  // G-217: until 08:00 KST a run belongs to the evening before; from 08:00 it is the new day.
+  assert.deepEqual(runDay(new Date('2026-10-02T19:15:00Z')), { date: '2026-10-02', compact: '20261002', hour: 28 });
+  assert.deepEqual(runDay(new Date('2026-10-02T22:59:00Z')).date, '2026-10-02');
+  assert.deepEqual(runDay(new Date('2026-10-02T23:00:00Z')), { date: '2026-10-03', compact: '20261003', hour: 8 });
+  assert.deepEqual(runDay(new Date('2026-10-02T09:30:00Z')), kstParts(new Date('2026-10-02T09:30:00Z')));
+});
+
+test('a schedule that starts after midnight KST still settles the evening before (G-217)', async () => {
+  const root = await tempDir('gnm-');
+  // 04:15 KST on 10/03: GitHub started the 18:30 run of 10/02 ten hours late.
+  const late = await run({ root, now: new Date('2026-10-02T19:15:00Z'), apiKey: 'k', fetch: fakeFetch, naver });
+  assert.equal(late.report, 'WRITTEN');
+  assert.ok(await readFile(join(root, 'reports', '000660', '2026-10-02.json'), 'utf8'));
+  await assert.rejects(readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'));
 });
 
 test('a daily run before 18:00 KST collects but does not freeze a report', async () => {

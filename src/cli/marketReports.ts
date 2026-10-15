@@ -6,6 +6,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { seal, unseal, deepPath } from '../report/seal.js';
 import { AiBudget } from './aiBudget.js';
+import { runDay } from './kst.js';
 /** The market committee runs on the small model (one call a day over every group's numbers). */
 const MARKET_MODEL = 'claude-haiku-4-5';
 import { MarketCouncilSchema, MarketCouncilGenerationSchema, parseMarketCouncil, periodAsset, weekStart, validCouncil, marketNumberIssues, marketSymbol, renderMarketDeep, renderMarketReport, renderMarketReportIndex, type MarketReport, type MarketGroup, type Period } from '../report/marketReport.js';
@@ -52,7 +53,7 @@ export async function collectMarketNews(date:string, options:{fetch?:typeof fetc
  return out;
 }
 export async function writeMarketReports(root:string, now:Date, universe:readonly UniverseRow[], apiKey?:string, injectedClient?:Anthropic, sharedBudget?:AiBudget, regenerate=process.env.MARKET_REGEN==='1', newsFetch?:typeof fetch):Promise<void>{
- const date=new Date(now.getTime()+9*3600000).toISOString().slice(0,10), dir=join(root,'reports','market');await mkdir(dir,{recursive:true});
+ const date=runDay(now).date, dir=join(root,'reports','market');await mkdir(dir,{recursive:true});
  const budget=sharedBudget??await AiBudget.load(root,now);
  for(const period of ['daily'] as const){
   const file=join(dir,`${period}-${date}.json`); const old=await json(file) as MarketReport|null;
