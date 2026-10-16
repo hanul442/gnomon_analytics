@@ -125,6 +125,8 @@ export function publicCommentary(c: Commentary): Commentary {
     bullish: c.bullish.slice(0, 1), bearish: c.bearish.slice(0, 1), uncertain: [], watch: [],
     ...(c.desks ? { desks: c.desks.map((d) => ({ ...d, view: lock(d.view) })) } : {}),
     ...(c.analysts ? { analysts: c.analysts.map((a) => ({ ...a, rationale: lock(a.rationale) })) } : {}),
+    // G-218: the plain retelling explains the debate and what to watch, so it opens with the deep part; the words stay public.
+    ...(c.easy ? { easy: { summary: LOCKED_TEXT, terms: c.easy.terms } } : {}),
     ...(c.redTeam ? { redTeam: { counterargument: { ...c.redTeam.counterargument, text: c.redTeam.counterargument.text.split(/(?<=[.?!요])\s/)[0] ?? '' }, unresolved: [] } } : {}),
     ...(c.scenarios ? { scenarios: c.scenarios.map((s) => ({ kind: s.kind, narrative: lock(s.narrative), catalysts: [], invalidation: [], ...(s.probability !== undefined ? { probability: s.probability } : {}), ...(s.trigger !== undefined ? { trigger: s.trigger } : {}), ...(s.zone ? { zone: s.zone } : {}) })) } : {}),
   };
@@ -237,12 +239,13 @@ const InsightsSchema = z.object({
   news: ClaimSchema.describe('뉴스·공시 탭 한 줄: 이번 주 가장 중요한 공시·뉴스와 그 의미'),
 }).partial().describe('탭마다 한 줄. 근거가 없는 탭은 비워 둡니다');
 
+const PlainSchema = z.string().describe('이 차례의 말을 주식을 처음 하는 사람도 알아듣게 다시 쓴 한 문장(60자 안쪽). 지표 이름·영어 약어·근거 ID 없이, 새 사실이나 숫자를 더하지 않습니다');
 const DebateSchema = z.array(z.object({
   speaker: z.enum([...ANALYSTS.map((a) => a.id), 'MARKET', 'TECHNICAL', 'FLOW', 'FUNDAMENTAL', 'EVENT', 'RED_TEAM'] as unknown as [Speaker, ...Speaker[]]).describe('말하는 위원: 분석가 6명, 데스크 5곳, 또는 RED_TEAM'),
   stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']).describe('이 위원의 입장. 위의 analysts·desks에 쓴 입장과 같아야 합니다'),
   replyTo: z.number().optional().describe('반박하는 앞 차례의 번호. 0부터 셉니다(첫 차례가 0, 바로 앞 차례에 답하면 자기 번호-1). 첫 차례와 RED_TEAM은 비웁니다'),
   claim: ClaimSchema.describe('이 차례의 말 한두 문장. 두 번째 차례부터는 replyTo 차례의 주장을 직접 짚어 반박합니다'),
-  plain: z.string().optional().describe('이 차례의 말을 주식을 처음 하는 사람도 알아듣게 다시 쓴 한 문장(60자 안쪽). 지표 이름·영어 약어·근거 ID 없이, 새 사실이나 숫자를 더하지 않습니다'),
+  plain: PlainSchema.optional(),
 })).describe('5~7차례. 입장이 다른 위원들이 번갈아 말하고, 마지막은 RED_TEAM');
 
 const WorstCaseSchema = z.object({
@@ -287,7 +290,7 @@ export const CommentaryWireSchema = CommentarySchema.extend({
   insights: WireInsightsSchema.describe('모든 탭의 필드를 반환. 근거가 없는 탭은 text를 빈 문자열, evidenceIds를 빈 배열, kind를 INFERENCE로 반환'),
   debate: z.array(DebateSchema.element.extend({
     replyTo: z.number().describe('반박하는 앞 차례 번호. 답장 대상이 없는 첫 차례와 RED_TEAM은 -1'),
-    plain: DebateSchema.element.shape.plain.unwrap(),
+    plain: PlainSchema,
   })),
   easy: EasySchema.describe('쉬운 말 풀이'),
 });
@@ -507,6 +510,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       return [{ speaker: t.speaker, stance: t.stance, claim: t.claim, ...(to >= 0 ? { replyTo: to } : {}), ...(t.plain ? { plain: t.plain } : {}) }];
     });
     const [worst] = parsed.worstCase ? clean([parsed.worstCase.narrative]) : [];
+    const easy = easyOf(parsed.easy);
     const insights: Partial<Record<InsightKey, Claim>> = {};
     for (const [k, v] of Object.entries(parsed.insights ?? {}) as [InsightKey, Claim | undefined][]) { const [c] = v ? clean([v]) : []; if (c) insights[k] = c; }
     return {
@@ -519,7 +523,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       ...(summary ? { summary } : {}),
       bullish: clean(parsed.bullish), bearish: clean(parsed.bearish), uncertain: clean(parsed.uncertain), watch: clean(parsed.watch),
       dataGaps: parsed.dataGaps.map((g) => g.trim()).filter(Boolean),
-      ...(easyOf(parsed.easy) ? { easy: easyOf(parsed.easy)! } : {}),
+      ...(easy ? { easy } : {}),
       desks, scenarios, analysts,
       ...(counter ? { redTeam: { counterargument: counter, unresolved: (parsed.redTeam?.unresolved ?? []).map((u) => u.trim()).filter(Boolean) } } : {}),
       dropped, evidence,

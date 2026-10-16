@@ -5,7 +5,7 @@ import {ORBS} from './ui.js';
 
 import type { DailyReport } from './dailyReport.js';
 import { ANALYSTS } from '../analysis/analysts.js';
-import { replyIndex, type ClaimKind, type Commentary, type InsightKey } from '../analysis/commentary.js';
+import { LOCKED_TEXT, replyIndex, type ClaimKind, type Commentary, type InsightKey } from '../analysis/commentary.js';
 import { esc } from './html.js';
 import { won, tone } from './format.js';
 
@@ -206,11 +206,11 @@ export function easyCard(c: Pick<Commentary, 'status' | 'easy' | 'analysts' | 'd
   const voteLine = votes.length ? `위원 ${votes.length}명 가운데 <b class="up">오를 쪽 ${up}명</b>, <b>지켜보자 ${mid}명</b>, <b class="down">내릴 쪽 ${down}명</b>이에요. 위원회 전체로는 ${lean}.` : '';
   const pr = (k: string) => c.scenarios?.find((x) => x.kind === k)?.probability;
   const oddsLine = typeof pr('BULL') === 'number' && typeof pr('BEAR') === 'number'
-    ? `앞으로 20거래일(약 한 달) 동안 오르는 흐름 ${pr('BULL')}%, 지금과 비슷한 흐름 ${pr('BASE') ?? 0}%, 내리는 흐름 ${pr('BEAR')}%로 봤어요. 예보처럼 가능성을 나눈 것이고, 나중에 맞았는지 채점해요.` : '';
+    ? `앞으로 20거래일(약 한 달) 동안 오르는 흐름 ${pr('BULL')}%, ${typeof pr('BASE') === 'number' ? `지금과 비슷한 흐름 ${pr('BASE')}%, ` : ''}내리는 흐름 ${pr('BEAR')}%로 봤어요. 예보처럼 가능성을 나눈 것이고, 나중에 맞았는지 채점해요.` : '';
   if (!c.easy && !voteLine && !oddsLine) return '';
   const terms = c.easy?.terms ?? [];
   return `<section class="block ez-card" id="easy"><div class="card"><div class="head"><h2>쉽게 말하면</h2></div>
-${c.easy ? `<p class="ez-sum">${esc(c.easy.summary)}</p>` : ''}${voteLine || oddsLine ? `<ul class="ez-facts">${voteLine ? `<li><span aria-hidden="true">🗳️</span><span>${voteLine}</span></li>` : ''}${oddsLine ? `<li><span aria-hidden="true">🌦️</span><span>${oddsLine}</span></li>` : ''}</ul>` : ''}
+${c.easy ? c.easy.summary === LOCKED_TEXT ? '<p class="ez-lock muted">🔒 AI가 쉬운 말로 다시 쓴 요약은 심층 리포트를 열면 여기에 나와요.</p>' : `<p class="ez-sum">${esc(c.easy.summary)}</p>` : ''}${voteLine || oddsLine ? `<ul class="ez-facts">${voteLine ? `<li><span aria-hidden="true">🗳️</span><span>${voteLine}</span></li>` : ''}${oddsLine ? `<li><span aria-hidden="true">🌦️</span><span>${oddsLine}</span></li>` : ''}</ul>` : ''}
 ${terms.length ? `<div class="ez-terms"><div class="ez-k">이 리포트에 나온 말</div><dl>${terms.map((t) => `<div data-term-def="${esc(t.term)}"><dt>${esc(t.term)}</dt><dd>${esc(t.meaning)}</dd></div>`).join('')}</dl></div>` : ''}
 <details class="ez-how"><summary>위원회는 이렇게 판단해요</summary><ul>
 <li><b>분석가 6명</b>은 각자 보는 것이 달라요. 흐름, 되돌림, 가격 모양, 거래량·수급, 실적, 공시·뉴스를 하나씩 맡아요.</li>
@@ -338,7 +338,7 @@ export function insightLine(report: DailyReport, key: InsightKey, base: string):
   return `<div class="insight need-plus"><span class="ins-k">AI 한 줄 · ${INSIGHT_TAB[key]}</span>${kindChip(line.kind)}${esc(line.text)}</div>`;
 }
 
-export const EXTRAS_CSS = `.ez-only{display:none}html[data-explain=easy] .ez-only{display:inline}html[data-explain=easy] .db-role,html[data-explain=easy] .db-plain{display:block}html[data-explain=expert] .ez-card{display:none}
+export const EXTRAS_CSS = `.ez-only{display:none}html[data-explain=easy] .ez-only{display:inline}html[data-explain=easy] .db-role,html[data-explain=easy] .db-plain{display:block}html[data-explain=expert] .ez-card{display:none}html[data-explain=expert] .term{text-decoration:none;pointer-events:none;cursor:inherit}.ez-lock{font-size:14px;margin:0 0 10px}
 .db-role{font-weight:500;font-size:12px;color:var(--muted);margin-top:1px}.db-who .ez-only:not(.db-role){margin-left:3px}.db-plain{margin-top:8px;padding-top:7px;border-top:1px dashed var(--line-strong);font-size:14px;line-height:1.6}.db-plain b{display:block;font-size:12px;color:var(--accent-strong);margin-bottom:1px}
 .db-easy[aria-pressed=true]{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
 .ez-card .card{border:1px solid var(--accent);background:linear-gradient(180deg,var(--soft),var(--surface))}.ez-sum{font-size:16px;line-height:1.75;margin:0 0 10px}.ez-facts{list-style:none;margin:0;padding:0;display:grid;gap:8px}.ez-facts li{display:flex;gap:8px;font-size:14.5px;line-height:1.65}.ez-facts li>span:first-child{flex:none}

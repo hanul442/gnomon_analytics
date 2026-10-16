@@ -89,3 +89,13 @@ test('debate turns carry a plain line and the member\'s role, shown when plain e
   const old = renderCommitteeDebate({ ...c, debate: c.debate.map(({ plain: _p, ...t }) => t) } as never);
   assert.doesNotMatch(old, /data-easy-toggle/);
 });
+
+test('easy card on a sealed page: the AI retelling is locked, a dropped base scenario is not called 0% (G-218)', () => {
+  const c = (committee('2026-10-09', [50, 35, 15], 'BULLISH', '요약') as unknown as { commentary: Record<string, unknown> }).commentary;
+  c.easy = { summary: '심층 리포트를 열면 볼 수 있어요.', terms: [] };
+  c.scenarios = (c.scenarios as { kind: string }[]).filter((s) => s.kind !== 'BASE');
+  const html = easyCard(c as never);
+  assert.match(html, /🔒 AI가 쉬운 말로 다시 쓴 요약은 심층 리포트를 열면/);
+  assert.match(html, /오르는 흐름 50%, 내리는 흐름 15%/);
+  assert.doesNotMatch(html, /비슷한 흐름/);
+});

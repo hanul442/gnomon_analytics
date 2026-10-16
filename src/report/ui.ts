@@ -141,13 +141,18 @@ export const UI_SCRIPT = `<script>
   // Glossary: a "?" after the first few headings or labels that name a term.
   var G = ${JSON.stringify({ ...COMMITTEE_TERMS, ...GLOSSARY })}, keys = Object.keys(${JSON.stringify(GLOSSARY)}).sort(function (a, b) { return b.length - a.length; }), used = {};
   // G-218: how plain the committee reads. html[data-explain] = easy | normal | expert, from the level the reader
-  // picked (html[data-level], the 보기 방식 초보, or 설명 깊이 in the profile); the debate room's "쉬운 말" button
-  // overrides it on this device (gnm-easy). Plain lines, member roles and the words' underlines follow it.
+  // picked (html[data-level] once the level screen sets it, the 보기 방식 초보, or 설명 깊이 in the profile); the
+  // debate room's "쉬운 말" button overrides it on this device (gnm-easy, "on:base") until that level changes.
+  // Plain lines, member roles and the words' underlines follow it.
+  var baseLevel = function () {
+    var h = document.documentElement, l = h.getAttribute('data-level') || '', x = '';
+    try { x = (JSON.parse(localStorage.getItem('gnm-prefs') || 'null') || {}).explain || ''; } catch (e) {}
+    return l === 'beginner' || /아주 쉬운/.test(x) || (!l && h.getAttribute('data-persona') === 'beginner') ? 'easy' : l === 'expert' || /전문 용어/.test(x) ? 'expert' : 'normal';
+  };
   var explain = function () {
-    var h = document.documentElement, l = h.getAttribute('data-level') || '', x = '', o = null;
-    try { x = (JSON.parse(localStorage.getItem('gnm-prefs') || 'null') || {}).explain || ''; o = localStorage.getItem('gnm-easy'); } catch (e) {}
-    var v = l === 'beginner' || /아주 쉬운/.test(x) || (!l && h.getAttribute('data-persona') === 'beginner') ? 'easy' : l === 'expert' || /전문 용어/.test(x) ? 'expert' : 'normal';
-    if (o === '1') v = 'easy'; else if (o === '0' && v === 'easy') v = 'normal';
+    var h = document.documentElement, v = baseLevel(), o = '';
+    try { o = localStorage.getItem('gnm-easy') || ''; } catch (e) {}
+    var p = o.split(':'); if (p[1] === v) v = p[0] === '1' ? 'easy' : v === 'easy' ? 'normal' : v;
     h.setAttribute('data-explain', v);
     document.querySelectorAll('[data-easy-toggle]').forEach(function (b) { b.setAttribute('aria-pressed', String(v === 'easy')); });
     if (v === 'easy') document.querySelectorAll('.ez-how:not([data-seen])').forEach(function (d) { d.open = true; d.setAttribute('data-seen', ''); });
@@ -182,7 +187,7 @@ export const UI_SCRIPT = `<script>
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-easy-toggle]'); if (!b) return;
     var on = document.documentElement.getAttribute('data-explain') !== 'easy';
-    try { localStorage.setItem('gnm-easy', on ? '1' : '0'); } catch (x) {}
+    try { localStorage.setItem('gnm-easy', (on ? '1:' : '0:') + baseLevel()); } catch (x) {}
     explain(); window.GNM_terms(document);
     if (window.GNM && GNM.track) GNM.track('easy', { on: on ? 1 : 0 });
   });
@@ -204,14 +209,14 @@ export const UI_SCRIPT = `<script>
     pop = document.createElement('div'); pop.className = 'tip-pop'; pop.setAttribute('role', 'tooltip');
     pop.innerHTML = '<b></b><span></span>'; pop.firstChild.textContent = t.dataset.term; pop.lastChild.textContent = G[t.dataset.term];
     document.body.appendChild(pop);
-    var r = t.getBoundingClientRect(), w = Math.min(300, window.innerWidth - 24);
-    pop.style.left = Math.max(12, Math.min(window.scrollX + r.left - 12, window.scrollX + window.innerWidth - w - 12)) + 'px';
-    pop.style.top = (window.scrollY + r.bottom + 8) + 'px';
+    place(t);
     t.setAttribute('aria-expanded', 'true');
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
-  // Capture: the debate room scrolls inside itself, not the window.
-  document.addEventListener('scroll', close, { passive: true, capture: true });
+  // Capture: the debate room scrolls inside itself (and the replay scrolls it on each turn), so the popover
+  // follows its word there and closes only once the word leaves the screen.
+  var place = function (t) { var r = t.getBoundingClientRect(), w = Math.min(300, window.innerWidth - 24); pop.style.left = Math.max(12, Math.min(window.scrollX + r.left - 12, window.scrollX + window.innerWidth - w - 12)) + 'px'; pop.style.top = (window.scrollY + r.bottom + 8) + 'px'; return r; };
+  document.addEventListener('scroll', function () { var t = pop && document.querySelector('.tip[aria-expanded=true], .term[aria-expanded=true]'); if (!t) return close(); var r = place(t); if (r.bottom < 0 || r.top > window.innerHeight) close(); }, { passive: true, capture: true });
 })();
 </script>`;
 

@@ -2,6 +2,7 @@ import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import Anthropic from '@anthropic-ai/sdk';
+import { z } from 'zod';
 import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { buildDailyReport } from '../report/dailyReport.js';
 import { renderReport } from '../report/renderHtml.js';
@@ -247,9 +248,8 @@ test('v8 plain layer (G-218): easy summary, terms and each turn\'s plain line su
  assert.equal(c.status, 'OK', c.error);
  assert.deepEqual(c.easy, { summary: '쉽게 말하면 오를 쪽이 조금 많아요.', terms: [{ term: '정배열', meaning: '평균선이 차례로 놓인 상태' }] });
  assert.deepEqual(c.debate?.map((t) => t.plain), ['오르는 흐름이 이어지고 있어요', undefined]);
- // The easy retelling is public like the summary; the debate (and its plain lines) stays sealed.
+ // The debate (and its plain lines) stays sealed.
  const pub = publicCommentary(c);
- assert.equal(pub.easy?.summary, c.easy?.summary);
  assert.equal(pub.debate, undefined);
  // A reply without the layer still parses (older prompt shape).
  const { easy: _e, ...old } = reply;
@@ -257,4 +257,11 @@ test('v8 plain layer (G-218): easy summary, terms and each turn\'s plain line su
  const c2 = await writeCommentary(report, { client: client2 });
  assert.equal(c2.status, 'OK', c2.error);
  assert.equal(c2.easy, undefined);
+});
+
+test('v8 wire schema keeps the plain line\'s instructions; the public part locks the easy summary (G-218)', () => {
+ const json = JSON.stringify(z.toJSONSchema(CommentaryWireSchema));
+ assert.match(json, /처음 하는 사람도 알아듣게 다시 쓴 한 문장/);
+ const c = { status: 'OK', tier: 'deep', bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [], dropped: 0, evidence: [], easy: { summary: '쉽게', terms: [{ term: 'a', meaning: 'b' }] } } as never;
+ assert.deepEqual(publicCommentary(c).easy, { summary: '심층 리포트를 열면 볼 수 있어요.', terms: [{ term: 'a', meaning: 'b' }] });
 });
