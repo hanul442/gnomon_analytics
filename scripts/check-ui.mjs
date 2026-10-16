@@ -147,6 +147,10 @@ try{
  await page.goto(origin+'/s/999998.html#tab-chart');await page.locator('#chart-card').waitFor({state:'attached'});
  assert.equal(await page.locator('[data-sc]').count(),0,'no scenario layer on the chart (G-130)');
  assert.ok(await page.evaluate(()=>document.documentElement.classList.contains('chart-fs')),'chart opens full screen (G-139)');await page.waitForFunction(()=>!!window.GNM_chartPro);
+ // G-218: legend line with the change, indicator values at each pane's corner, and the » button back to the newest candle.
+ assert.match(await page.locator('#legend').textContent(),/종 [\d,.]+[+-]?[\d,.]* \(/);assert.ok((await page.locator('.pane-legends .pl-row').allTextContents()).some(t=>t.startsWith('거래량')),'volume pane legend');
+ {const cb=await page.locator('#chart').boundingBox();assert.equal(await page.locator('.to-latest').isVisible(),false);await page.mouse.move(cb.x+cb.width*.3,cb.y+60);await page.mouse.down();await page.mouse.move(cb.x+cb.width*.9,cb.y+60,{steps:8});await page.mouse.up();
+  await page.locator('.to-latest').waitFor();await page.locator('.to-latest').click();await page.waitForFunction(()=>document.querySelector('.to-latest').hidden);}
  await page.locator('.cfs-foot [data-ct-open]').click();await page.locator('.ct-pop [data-ct="line"]').click();assert.ok(await page.evaluate(()=>GNM_chartPro.view().data().length===GNMChart.candle.data().length));
  await page.locator('.cfs-foot [data-ct-open]').click();await page.locator('.ct-pop [data-ct="ha"]').click();await page.locator('[data-tf="W"]').click();assert.ok(await page.evaluate(()=>GNM_chartPro.view().data().length===GNMChart.candle.data().length&&GNM_chartPro.view().options().visible!==false),'chart type follows the weekly switch');
  await page.locator('[data-tf="D"]').click();assert.ok(await page.evaluate(()=>!!GNM_chartPro.extremes()),'period high/low');await page.waitForFunction(()=>!!window.GNM_draw);

@@ -259,6 +259,8 @@ window.addEventListener('DOMContentLoaded', function () {
   var C = bars.map(function (b) { return b.close; }), H = bars.map(function (b) { return b.high; }), Lo = bars.map(function (b) { return b.low; }), V = bars.map(function (b) { return b.volume; });
   var candle = chart.addSeries(L.CandlestickSeries, { upColor: UP, downColor: DOWN, borderVisible: false, wickUpColor: UP, wickDownColor: DOWN });
   candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
+  // G-218: candles fill the price pane like TradingView (the default keeps a fifth of it empty at the top; 0.16 still clears the high mark and the legend).
+  candle.priceScale().applyOptions({ scaleMargins: { top: 0.16, bottom: 0.1 } });
   // G-181: text, grid and candle colours come from the theme tokens and follow a dark/light switch.
   if (window.GNMTheme) GNMTheme.chart(chart, function (c) { UP = c.up; DOWN = c.down; candle.applyOptions({ upColor: c.up, downColor: c.down, wickUpColor: c.up, wickDownColor: c.down }); });
 
@@ -279,7 +281,7 @@ window.addEventListener('DOMContentLoaded', function () {
   var line = function (vals, color, pane, opts) { var s = chart.addSeries(L.LineSeries, Object.assign({ color: color, lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }, opts || {}), pane || 0); s.setData(series(vals)); return s; };
 
   // ---- overlays (on the price pane) ----
-  var built = {}, priceLines = {};
+  var built = {}, priceLines = {}, relegend = null, placeLatest = null;
   var overlayMakers = {
     ma5: function () { return [line(sma(C, ip('ma5').n), '#6b6f78')]; },
     ma20: function () { return [line(sma(C, ip('ma20').n), '#d97706')]; },
@@ -456,6 +458,7 @@ window.addEventListener('DOMContentLoaded', function () {
     paneOrder.forEach(function (k, i) { built['pane:' + k] = paneMakers[k](i + 1); });
     chart.panes().forEach(function (p, i) { p.setStretchFactor(i === 0 ? 3 : 1); });
     el.style.height = (mobile ? 360 : 440) + paneOrder.length * (mobile ? 90 : 110) + 'px';
+    if (relegend) relegend();
   };
   // Volume spikes: 3× the 20-session average, marked under the candle.
   var spikeMarks = null;
@@ -465,6 +468,7 @@ window.addEventListener('DOMContentLoaded', function () {
     if (lineMakers[k]) { (priceLines[k] || []).forEach(function (pl) { candle.removePriceLine(pl); }); priceLines[k] = on ? lineMakers[k]() : []; return; }
     (built[k] || []).forEach(function (s) { chart.removeSeries(s); });
     built[k] = on ? overlayMakers[k]() : [];
+    if (relegend) relegend();
   };
   var analysisSuspended=false;
   var suspendAnalysis=function(on){if(on===analysisSuspended)return;analysisSuspended=on;if(on){clearPanes();Object.keys(priceLines).forEach(function(k){priceLines[k].forEach(function(pl){candle.removePriceLine(pl);});priceLines[k]=[];});if(spikeMarks)spikeMarks.setMarkers([]);el.style.height=(mobile?360:440)+'px';}else{rebuildPanes();document.querySelectorAll('[data-ov][aria-pressed=true]').forEach(function(b){var k=b.dataset.ov;if(lineMakers[k]||k==='spikes')setOverlay(k,true);});}};
@@ -593,9 +597,94 @@ window.addEventListener('DOMContentLoaded', function () {
   // ---- legend, ranges and period change ----
   var legend = document.getElementById('legend'), stat = document.getElementById('period-stat');
   var activeBars=bars;var byDate = {}; bars.forEach(function (b, i) { byDate[b.date] = i; });
-  var show = function (i) { var b = activeBars[i]; if (!b) return; legend.textContent = b.date + '  시가 ' + won(b.open) + '  고가 ' + won(b.high) + '  저가 ' + won(b.low) + '  종가 ' + won(b.close) + '  거래량 ' + b.volume.toLocaleString('ko-KR') + '주'; };
+  // G-218: TradingView-style legends. The line above the chart colours each price against the previous close (red up,
+  // blue down, like Naver and Toss) and adds the change and a compact volume; each pane carries its indicators' values
+  // for the candle under the crosshair (the last candle otherwise) at its top-left corner.
+  // Won prices are whole numbers: no decimals on prices or price-pane lines when every close is whole (dollars and sub-won coins keep them).
+  var INT = bars.every(function (b) { return Math.round(b.close) === b.close; });
+  var fmtPx = function (v) { return INT ? Math.round(v).toLocaleString('ko-KR') : fmtP(v); };
+  var fmtP = function (v) { return Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('ko-KR') : Math.abs(v) >= 1 ? v.toFixed(2) : v.toPrecision(3); };
+  var fmtV = function (v) { var a = Math.abs(v); return a >= 1e8 ? (v / 1e8).toFixed(a >= 1e10 ? 0 : 1).replace(/\\.0$/, '') + '억' : a >= 1e4 ? (v / 1e4).toFixed(a >= 1e6 ? 0 : 1).replace(/\\.0$/, '') + '만' : Math.round(v).toLocaleString('ko-KR'); };
+  var cls = function (d) { return d > 0 ? 'up' : d < 0 ? 'down' : ''; };
+  var LG_NAME = {
+    ma5: function () { return 'MA ' + IP.ma5.n; }, ma20: function () { return 'MA ' + IP.ma20.n; }, ma60: function () { return 'MA ' + IP.ma60.n; }, ma120: function () { return 'MA ' + IP.ma120.n; },
+    ema12: function () { return 'EMA ' + IP.ema12.f + '·' + IP.ema12.s; }, bb: function () { return '볼린저 ' + IP.bb.n + '·' + IP.bb.k; }, ichimoku: function () { return '일목'; }, env: function () { return '엔벨로프 ' + IP.env.pct + '%'; },
+    vwap: function () { return 'VWAP ' + IP.vwap.n; }, psar: function () { return 'SAR'; },
+    volume: function () { return '거래량'; }, rsi: function () { return 'RSI ' + IP.rsi.n; }, macd: function () { return 'MACD ' + IP.macd.f + '·' + IP.macd.s + '·' + IP.macd.sig; }, stoch: function () { return '스토캐스틱 ' + IP.stoch.n; },
+    value: function () { return '거래대금(억)'; }, ad: function () { return 'A/D'; }, cci: function () { return 'CCI ' + IP.cci.n; }, wr: function () { return '%R ' + IP.wr.n; }, obv: function () { return 'OBV'; }, mfi: function () { return 'MFI ' + IP.mfi.n; }, atr: function () { return 'ATR ' + IP.atr.n; }
+  };
+  var LG_VOL = { volume: 1, obv: 1, ad: 1 };
+  var vcache = typeof WeakMap === 'function' ? new WeakMap() : null;
+  var valueAt = function (s, time) {
+    if (!vcache) return null;
+    var c = vcache.get(s), d;
+    if (!c) { d = s.data(); c = { m: {} }; for (var j = 0; j < d.length; j++) if (typeof d[j].time === 'string') c.m[d[j].time] = d[j]; vcache.set(s, c); }
+    return c.m[time] || null;
+  };
+  var paneTops = [];
+  // Pane tops change only on a resize or a rebuild (relegend), not on every crosshair move.
+  var measurePanes = function () { var top0 = el.getBoundingClientRect().top + el.clientTop; paneTops = chart.panes().map(function (p) { var pe = p.getHTMLElement && p.getHTMLElement(); return pe ? Math.round(pe.getBoundingClientRect().top - top0 + 2) : null; }); };
+  var bodyEl = el.parentElement, plWrap = document.createElement('div');
+  plWrap.className = 'pane-legends'; plWrap.setAttribute('aria-hidden', 'true'); if (bodyEl) bodyEl.appendChild(plWrap);
+  var paneLegends = function (i) {
+    if (!bodyEl) return;
+    var b = activeBars[i], time = b && b.date, html = '';
+    if (!time || activeBars !== bars) { plWrap.innerHTML = ''; return; }
+    var row = function (k, list, onPrice) {
+      var vals = list.map(function (s) {
+        if (s.options().visible === false) return '';
+        var p = valueAt(s, time); if (!p || p.value == null || !isFinite(p.value)) return '';
+        var col = String(p.color || s.options().color || INK).replace(/^rgba\\((.*),\\s*[.\\d]+\\)$/, 'rgb($1)');
+        return '<b style="color:' + col + '">' + (LG_VOL[k] ? fmtV(p.value) : onPrice ? fmtPx(p.value) : fmtP(p.value)) + '</b>';
+      }).filter(Boolean);
+      return vals.length ? '<span class="pl-row"><span class="pl-n">' + LG_NAME[k]() + '</span>' + vals.join(' ') + '</span>' : '';
+    };
+    var price = Object.keys(LG_NAME).filter(function (k) { return !paneMakers[k] && (built[k] || []).length; }).map(function (k) { return row(k, built[k], true); }).join('');
+    if (price) html += '<div class="pl" style="top:' + 4 + 'px">' + price + '</div>';
+    paneOrder.forEach(function (k, n) {
+      if (paneTops[n + 1] == null) return;
+      var r = row(k, built['pane:' + k] || []);
+      if (r) html += '<div class="pl" style="top:' + paneTops[n + 1] + 'px">' + r + '</div>';
+    });
+    plWrap.innerHTML = html;
+  };
+  var shown = bars.length - 1;
+  var show = function (i) {
+    var b = activeBars[i]; if (!b) return; shown = i;
+    var pc = i > 0 ? activeBars[i - 1].close : b.open, d = b.close - pc;
+    var v = function (label, x) { return '<span>' + label + ' <b class="' + cls(x - pc) + '">' + fmtPx(x) + '</b></span>'; };
+    legend.innerHTML = '<span class="lg-d">' + (b.date || '') + '</span>' + v('시', b.open) + v('고', b.high) + v('저', b.low) + v('종', b.close) +
+      '<b class="' + cls(d) + '">' + (d > 0 ? '+' : '') + fmtPx(d) + ' (' + (d > 0 ? '+' : '') + (pc ? (d / pc * 100).toFixed(2) : '0.00') + '%)</b>' +
+      (b.volume != null ? '<span>거래량 <b>' + fmtV(b.volume) + '</b></span>' : '');
+    legend.setAttribute('aria-label', (b.date || '') + ' 시가 ' + won(b.open) + ' 고가 ' + won(b.high) + ' 저가 ' + won(b.low) + ' 종가 ' + won(b.close));
+    paneLegends(i);
+  };
+  // Rebuilt series bring new data: forget the cached values and redraw once the panes have their new heights.
+  // Called after every rebuild (setOverlay, rebuildPanes, showBars) and resize: series may hold new data and panes new heights.
+  relegend = function () { if (vcache) vcache = new WeakMap(); requestAnimationFrame(function () { measurePanes(); show(Math.min(shown, activeBars.length - 1)); if (placeLatest) placeLatest(); }); };
+  // #chart's height animates when panes are added or removed; follow it to the end.
+  if (typeof ResizeObserver === 'function') new ResizeObserver(function () { relegend(); }).observe(el);
   show(bars.length - 1);
   chart.subscribeCrosshairMove(function (p) { show(p && p.time && byDate[p.time] != null ? byDate[p.time] : activeBars.length - 1); });
+  // G-218: like TradingView's » button — once the newest candle has scrolled off the right edge, one tap brings it
+  // back without changing the zoom.
+  var toLatest = document.createElement('button');
+  toLatest.type = 'button'; toLatest.className = 'to-latest'; toLatest.hidden = true; toLatest.setAttribute('aria-label', '최신 봉으로 이동'); toLatest.title = '최신 봉으로 이동';
+  toLatest.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5 8 8l-4.5 4.5M8.5 3.5 13 8l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  if (bodyEl) bodyEl.appendChild(toLatest);
+  placeLatest = function () {
+    // Only for candles: the coin trade/1-minute line keeps its own points, which activeBars does not count.
+    var r = chart.timeScale().getVisibleLogicalRange(), n = activeBars.length;
+    var off = !!r && candle.options().visible !== false && r.to < n - 1.5;
+    if (off !== !toLatest.hidden) toLatest.hidden = !off;
+    if (off) { toLatest.style.right = (chart.priceScale('right').width() + 10) + 'px'; toLatest.style.top = Math.max(8, chart.panes()[0].getHeight() - 44) + 'px'; }
+  };
+  chart.timeScale().subscribeVisibleLogicalRangeChange(placeLatest);
+  toLatest.addEventListener('click', function () {
+    var r = chart.timeScale().getVisibleLogicalRange(); if (!r) return;
+    var n = activeBars.length, extra = activeBars === bars ? currentExtra : 4, w = r.to - r.from;
+    chart.timeScale().setVisibleLogicalRange({ from: n - 0.5 + extra - w, to: n - 0.5 + extra });
+  });
   var currentRange = 63;
   var currentExtra = 0;
   // A chart built inside a hidden tab has no width; once the tab is shown, apply the chosen range again.
@@ -623,7 +712,7 @@ window.addEventListener('DOMContentLoaded', function () {
   if (scen.length) drawScen(scPick);
   setRange(63, scExtra);
   requestAnimationFrame(drawLines);
-  window.GNMChart = { L: L, chart: chart, candle: candle, bars: bars, series: function () { return allSeries.slice(); },suspendAnalysis:suspendAnalysis,showBars:function(list){activeBars=list;byDate={};list.forEach(function(b,i){byDate[b.date||b.time]=i;});show(list.length-1);} };
+  window.GNMChart = { L: L, chart: chart, candle: candle, bars: bars, series: function () { return allSeries.slice(); },suspendAnalysis:suspendAnalysis,showBars:function(list){activeBars=list;byDate={};list.forEach(function(b,i){byDate[b.date||b.time]=i;if(b.time!=null)byDate[b.time]=i;});show(list.length-1);relegend();} };
   if(window.GNM_coinChartReady)window.GNM_coinChartReady();
 });
 `;
