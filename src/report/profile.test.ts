@@ -11,7 +11,7 @@ test('readerNote (G-207): only the fixed options pass, and nothing when none is 
   assert.doesNotMatch(n, /규칙/);
 });
 
-test('readerNote (G-218): the screen level stands in for an unpicked explanation depth', () => {
+test('readerNote (G-219): the screen level stands in for an unpicked explanation depth', () => {
   const easy = readerNote({ level: '초보자' });
   assert.match(easy, /설명 수준: 아주 쉬운 말로\(화면 수준에 맞춤\) · 화면 수준: 초보자/);
   assert.match(easy, /전문 용어는 쓰지 않거나/);

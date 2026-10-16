@@ -41,6 +41,38 @@ export const GLOSSARY: Record<string, string> = {
   '전략 챔피언': '전략 8개 가운데 검증 구간 성과가 가장 좋은 전략이에요.',
 };
 
+/**
+ * G-218: words the committee uses in its debate, explained when tapped inside the text (dotted underline).
+ * Kept apart from GLOSSARY so headings like "강세 근거" do not each grow a "?".
+ */
+export const COMMITTEE_TERMS: Record<string, string> = {
+  '강세': '오를 쪽으로 보는 판단이에요.',
+  '약세': '내릴 쪽으로 보는 판단이에요.',
+  '모멘텀': '가격이 움직이는 힘이에요. 오르던 종목이 계속 오르는 힘을 말할 때 많이 써요.',
+  '추세': '가격이 한동안 같은 방향으로 움직이는 흐름이에요.',
+  '돌파': '막혀 있던 가격대를 뚫고 지나가는 거예요.',
+  '되돌림': '크게 움직인 뒤 반대 방향으로 일부 되돌아오는 움직임이에요.',
+  '과매수': '짧은 기간에 너무 많이 올라 쉬어 갈 수 있다고 보는 상태예요.',
+  '과매도': '짧은 기간에 너무 많이 내려 반등할 수 있다고 보는 상태예요.',
+  '과열': '짧은 기간에 너무 빨리 오른 상태예요.',
+  '수급': '외국인·기관·개인이 각각 얼마나 사고파는지예요.',
+  '밸류에이션': '회사가 버는 돈이나 가진 자산에 비해 주가가 비싼지 싼지 따지는 거예요.',
+  '상대강도': '시장 전체보다 더 올랐는지, 덜 내렸는지 비교한 거예요.',
+  '정배열': '짧은 기간 평균선이 긴 기간 평균선보다 위에 차례로 놓인 상태예요. 오르는 흐름에서 자주 나와요.',
+  '역배열': '짧은 기간 평균선이 긴 기간 평균선보다 아래에 놓인 상태예요. 내리는 흐름에서 자주 나와요.',
+  '골든크로스': '짧은 평균선이 긴 평균선을 아래에서 위로 뚫는 거예요. 오르는 신호로 봐요.',
+  '데드크로스': '짧은 평균선이 긴 평균선을 위에서 아래로 뚫는 거예요. 내리는 신호로 봐요.',
+  '거래량': '그날 사고판 주식 수예요. 많을수록 관심이 크다는 뜻이에요.',
+  '변동성': '가격이 얼마나 크게 오르내리는지예요.',
+  '영업이익': '회사가 본업으로 번 돈이에요.',
+  '반등': '내리던 가격이 다시 오르는 거예요.',
+  '확신도': '그 위원이 자기 판단을 얼마나 믿는지(0~100)예요.',
+  '촉매': '주가를 움직일 계기가 될 일(실적 발표, 공시 등)이에요.',
+  '박스권': '일정한 가격 범위 안에서 오르내리는 상태예요.',
+  '눌림목': '오르던 중 잠깐 내려와 쉬는 자리예요.',
+  '이격': '가격이 평균선에서 얼마나 떨어져 있는지예요.',
+};
+
 const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg>';
 /** A watchlist star; the shared script (UI_SCRIPT) toggles it. `symbol` may be empty and set later by a page script. */
 export const starButton = (symbol: string, label: string, id = '') => `<button type="button" class="star"${id ? ` id="${id}"` : ''} data-star="${symbol.replace(/"/g, '')}" aria-pressed="false" aria-label="${label.replace(/[<>"&]/g, '')} 관심 종목">${STAR_SVG}</button>`;
@@ -63,7 +95,7 @@ export const UI_CSS = `.deep-lock{display:flex;gap:14px;align-items:flex-start;b
 @media (max-width:820px){.topbar.scrolled .brand div{display:none}}
 .tip{display:inline-grid;place-items:center;width:17px;height:17px;margin-left:5px;border-radius:50%;border:1px solid var(--line-strong);background:var(--surface-solid);color:var(--muted);font:700 11px/1 inherit;cursor:help;vertical-align:1px;padding:0;position:relative}.tip::after{content:"";position:absolute;inset:-12px}
 .tip:hover,.tip[aria-expanded=true]{border-color:var(--accent);color:var(--accent)}
-.tip-pop{position:absolute;z-index:70;max-width:300px;background:#0f1b2d;color:#fff;border-radius:var(--r-md);padding:10px 12px;font-size:var(--fs-sm);line-height:1.55;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.tip-pop{position:absolute;z-index:200;max-width:300px;background:#0f1b2d;color:#fff;border-radius:var(--r-md);padding:10px 12px;font-size:var(--fs-sm);line-height:1.55;box-shadow:0 12px 30px rgba(0,0,0,.25)}
 .tip-pop b{display:block;margin-bottom:2px;color:#c9bfff}
 .skel{position:relative;overflow:hidden;background:var(--soft);border-radius:var(--r-sm);color:transparent!important}.skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);animation:shimmer 1.2s infinite}
 @keyframes shimmer{to{transform:translateX(100%)}}
@@ -107,9 +139,62 @@ export const UI_SCRIPT = `<script>
     new IntersectionObserver(function (es) { var off = !es[0].isIntersecting; top.classList.toggle('scrolled', off); bar.setAttribute('aria-hidden', String(!off)); }, { rootMargin: '-80px 0px 0px 0px' }).observe(hero);
   }
   // Glossary: a "?" after the first few headings or labels that name a term.
-  var G = ${JSON.stringify(GLOSSARY)}, keys = Object.keys(G).sort(function (a, b) { return b.length - a.length; }), used = {};
+  var G = ${JSON.stringify({ ...COMMITTEE_TERMS, ...GLOSSARY })}, keys = Object.keys(${JSON.stringify(GLOSSARY)}).sort(function (a, b) { return b.length - a.length; }), used = {};
+  // G-218: how plain the committee reads. html[data-explain] = easy | normal | expert, from the level the reader
+  // picked (html[data-level] once the level screen sets it, the 보기 방식 초보, or 설명 깊이 in the profile); the
+  // debate room's "쉬운 말" button overrides it on this device (gnm-easy, "on:base") until that level changes.
+  // Plain lines, member roles and the words' underlines follow it.
+  var baseLevel = function () {
+    // G-219: html[data-level] is easy | mid | adv | pro (level.ts); a level only counts once picked or derived from the survey.
+    var h = document.documentElement, l = h.getAttribute('data-level') || '', x = '', a = {};
+    try { a = JSON.parse(localStorage.getItem('gnm-prefs') || 'null') || {}; x = a.explain || ''; } catch (e) {}
+    if (!a.level && !a.experience) l = '';
+    return l === 'easy' || /아주 쉬운/.test(x) || (!l && h.getAttribute('data-persona') === 'beginner') ? 'easy' : l === 'pro' || /전문 용어/.test(x) ? 'expert' : 'normal';
+  };
+  var explain = function () {
+    var h = document.documentElement, v = baseLevel(), o = '';
+    try { o = localStorage.getItem('gnm-easy') || ''; } catch (e) {}
+    var p = o.split(':'); if (p[1] === v) v = p[0] === '1' ? 'easy' : v === 'easy' ? 'normal' : v;
+    h.setAttribute('data-explain', v);
+    document.querySelectorAll('[data-easy-toggle]').forEach(function (b) { b.setAttribute('aria-pressed', String(v === 'easy')); });
+    if (v === 'easy') document.querySelectorAll('.ez-how:not([data-seen])').forEach(function (d) { d.open = true; d.setAttribute('data-seen', ''); });
+    return v;
+  };
+  window.GNM_explain = explain;
+  explain();
+  ['gnm-persona', 'gnm-level', 'storage'].forEach(function (ev) { window.addEventListener(ev, function () { explain(); window.GNM_terms(document); }); });
+  // Underline the first few known words in the committee's own sentences; a tap explains them (the same popover).
+  var TK = Object.keys(G).sort(function (a, b) { return b.length - a.length; });
+  window.GNM_terms = function (root) {
+    if (document.documentElement.getAttribute('data-explain') === 'expert' || !root || !root.querySelectorAll) return;
+    root.querySelectorAll('[data-term-def]').forEach(function (d) { var k = d.getAttribute('data-term-def'), m = d.querySelector('dd'); if (k && m && !G[k]) { G[k] = m.textContent; TK.push(k); TK.sort(function (a, b) { return b.length - a.length; }); } });
+    root.querySelectorAll('.db-bubble, .ez-sum, .is-open li, .is-watch li, .cl-mini p').forEach(function (el) {
+      if (el.hasAttribute('data-termed')) return; el.setAttribute('data-termed', '');
+      var seen = {}, n = 0, walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: function (t) { return t.parentNode.closest('button, a, .db-quote, .ck, .ev-row, .db-plain b') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; } }), nodes = [];
+      while (walk.nextNode()) nodes.push(walk.currentNode);
+      nodes.forEach(function (t) {
+        while (n < 3) {
+          var s = t.nodeValue, best = -1, key = '';
+          TK.forEach(function (k) { if (seen[k]) return; var i = s.indexOf(k); if (i >= 0 && (best < 0 || i < best)) { best = i; key = k; } });
+          if (best < 0) return;
+          seen[key] = 1; n++;
+          var rest = t.splitText(best), after = rest.splitText(key.length), b = document.createElement('button');
+          b.type = 'button'; b.className = 'term'; b.dataset.term = key; b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-label', key + ' 뜻 보기'); b.textContent = key;
+          rest.parentNode.replaceChild(b, rest); t = after;
+        }
+      });
+    });
+  };
+  window.GNM_terms(document);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-easy-toggle]'); if (!b) return;
+    var on = document.documentElement.getAttribute('data-explain') !== 'easy';
+    try { localStorage.setItem('gnm-easy', (on ? '1:' : '0:') + baseLevel()); } catch (x) {}
+    explain(); window.GNM_terms(document);
+    if (window.GNM && GNM.track) GNM.track('easy', { on: on ? 1 : 0 });
+  });
   var pop = null;
-  var close = function () { if (pop) { pop.remove(); pop = null; } document.querySelectorAll('.tip[aria-expanded=true]').forEach(function (t) { t.setAttribute('aria-expanded', 'false'); }); };
+  var close = function () { if (pop) { pop.remove(); pop = null; } document.querySelectorAll('.tip[aria-expanded=true], .term[aria-expanded=true]').forEach(function (t) { t.setAttribute('aria-expanded', 'false'); }); };
   document.querySelectorAll('h2, h3, .pl-k, .label, th, .term-cell, .si-name, .hs-k, .kp-title, .sc-k, .opt-t b').forEach(function (el) {
     if (el.querySelector('.tip') || el.closest('.gate-cta, .tip-pop, .price-bar')) return;
     var text = el.textContent || '', k = keys.find(function (key) { return text.indexOf(key) >= 0; });
@@ -119,20 +204,21 @@ export const UI_SCRIPT = `<script>
     el.appendChild(b);
   });
   document.addEventListener('click', function (e) {
-    var t = e.target.closest && e.target.closest('.tip');
+    var t = e.target.closest && e.target.closest('.tip, .term');
     if (!t) { if (!(e.target.closest && e.target.closest('.tip-pop'))) close(); return; }
     e.preventDefault(); e.stopPropagation();
     var was = t.getAttribute('aria-expanded') === 'true'; close(); if (was) return;
     pop = document.createElement('div'); pop.className = 'tip-pop'; pop.setAttribute('role', 'tooltip');
     pop.innerHTML = '<b></b><span></span>'; pop.firstChild.textContent = t.dataset.term; pop.lastChild.textContent = G[t.dataset.term];
     document.body.appendChild(pop);
-    var r = t.getBoundingClientRect(), w = Math.min(300, window.innerWidth - 24);
-    pop.style.left = Math.max(12, Math.min(window.scrollX + r.left - 12, window.scrollX + window.innerWidth - w - 12)) + 'px';
-    pop.style.top = (window.scrollY + r.bottom + 8) + 'px';
+    place(t);
     t.setAttribute('aria-expanded', 'true');
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
-  window.addEventListener('scroll', close, { passive: true });
+  // Capture: the debate room scrolls inside itself (and the replay scrolls it on each turn), so the popover
+  // follows its word there and closes only once the word leaves the screen.
+  var place = function (t) { var r = t.getBoundingClientRect(), w = Math.min(300, window.innerWidth - 24); pop.style.left = Math.max(12, Math.min(window.scrollX + r.left - 12, window.scrollX + window.innerWidth - w - 12)) + 'px'; pop.style.top = (window.scrollY + r.bottom + 8) + 'px'; return r; };
+  document.addEventListener('scroll', function () { var t = pop && document.querySelector('.tip[aria-expanded=true], .term[aria-expanded=true]'); if (!t) return close(); var r = place(t); if (r.bottom < 0 || r.top > window.innerHeight) close(); }, { passive: true, capture: true });
 })();
 </script>`;
 

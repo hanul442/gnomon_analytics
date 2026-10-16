@@ -1,4 +1,4 @@
-// 화면 수준 (G-218): 초보자·중급자·고급·전문가 see a different stock page from the same report. The level is
+// 화면 수준 (G-219): 초보자·중급자·고급·전문가 see a different stock page from the same report. The level is
 // one answer in gnm-prefs (the settings page or the switch at the foot of each tab; it follows the account,
 // G-109) and, until picked, comes from the survey's 투자 경험. html[data-level] decides, in CSS:
 // - 초보자: a plain-words line at the top of each tab, the "쉽게 보면" card, and only the core cards; the

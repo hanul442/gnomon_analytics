@@ -1,4 +1,4 @@
-// 설정 (G-210): every setting in one page — 내 투자 방식 (G-207, G-218 화면 수준: view, holding period, explanation depth,
+// 설정 (G-210): every setting in one page — 내 투자 방식 (G-207, G-219 화면 수준: view, holding period, explanation depth,
 // assets, sectors, watched stocks), 화면 (theme), 알림 (G-97, the alerts page's parts) and 계정 links.
 // Profile picks save at once to gnm-prefs/gnm-persona (which follow the account, G-109) and, signed in,
 // to the onboarding answers on the server, which AI answers read.
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var k = i.name, v = k === 'persona' ? label : a[k];
       i.checked = Array.isArray(v) ? v.indexOf(i.value) >= 0 : v === i.value;
     });
-    // G-218: an unpicked level is named, not checked, so picking it still saves it.
+    // G-219: an unpicked level is named, not checked, so picking it still saves it.
     var lv = (LEVELS.filter(function (x) { return x[0] === document.documentElement.getAttribute('data-level'); })[0] || [])[1];
     $('lv-auto').textContent = !a.level && lv ? ' 아직 고르지 않아서 지금은 ' + (a.experience ? '설문의 투자 경험에 맞춘 ' : '기본값인 ') + lv + ' 화면이에요.' : '';
     var w = []; try { w = JSON.parse(get('gnm-watch') || '[]'); } catch (e) {}

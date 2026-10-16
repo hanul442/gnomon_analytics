@@ -396,7 +396,7 @@ try{
  await page.waitForFunction(()=>/저장했어요/.test(document.getElementById('pf-state').textContent));
  {const st=await page.evaluate(()=>({p:JSON.parse(localStorage.getItem('gnm-prefs')||'{}'),v:localStorage.getItem('gnm-persona'),h:document.documentElement.getAttribute('data-persona')}));assert.equal(st.p.explain,'아주 쉬운 말로');assert.deepEqual(st.p.sectors,['반도체']);assert.equal(st.v,'long');assert.equal(st.h,'long');}
  await new Promise(r=>setTimeout(r,1200));assert.equal(surveys.at(-1)?.kind,'onboarding',await page.locator('#pf-state').innerText()+JSON.stringify(surveys));assert.deepEqual(surveys.at(-1).answers.sectors,['반도체']);
- // G-218: 화면 수준 — 전문가 from settings; on a stock page 초보자 hides the heavy cards behind the tab's foot button.
+ // G-219: 화면 수준 — 전문가 from settings; on a stock page 초보자 hides the heavy cards behind the tab's foot button.
  await page.locator('#pf-form label',{hasText:'전문가'}).click();
  assert.equal(await page.evaluate(()=>[document.documentElement.getAttribute('data-level'),JSON.parse(localStorage.getItem('gnm-prefs')||'{}').level].join()),'pro,전문가');
  for(const width of [375,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/005930/index.html');await page.locator('#tab-home .lv-foot').waitFor();
