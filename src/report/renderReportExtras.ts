@@ -5,7 +5,7 @@ import {ORBS} from './ui.js';
 
 import type { DailyReport } from './dailyReport.js';
 import { ANALYSTS } from '../analysis/analysts.js';
-import { replyIndex, type ClaimKind, type Commentary, type InsightKey } from '../analysis/commentary.js';
+import { LOCKED_TEXT, replyIndex, type ClaimKind, type Commentary, type InsightKey } from '../analysis/commentary.js';
 import { esc } from './html.js';
 import { won, tone } from './format.js';
 
@@ -153,6 +153,16 @@ export function decisionTrace(report: DailyReport, live: boolean): string {
 
 export const SPEAKER: Record<string, string> = { ...Object.fromEntries(ANALYSTS.map((a) => [a.id, a.name])), MARKET: '시장 데스크', TECHNICAL: '기술 데스크', FLOW: '수급 데스크', FUNDAMENTAL: '펀더멘털 데스크', EVENT: '공시·뉴스 데스크', RED_TEAM: '레드팀' };
 const SIDE = { BULLISH: ['강세', 'bull'], BEARISH: ['약세', 'bear'], NEUTRAL: ['중립', 'mid'] } as const;
+/** G-218: each stance in everyday words, shown next to 강세·약세 when plain explanations are on. */
+const SIDE_PLAIN = { BULLISH: '오를 쪽', BEARISH: '내릴 쪽', NEUTRAL: '지켜보자' } as const;
+/** G-218: what each committee member looks at, in everyday words (under the name when plain explanations are on). */
+export const ROLE_PLAIN: Record<string, string> = {
+  trend_momentum: '오르는 흐름이 이어지는지 봐요', mean_reversion: '너무 오르거나 내려서 되돌아올 때인지 봐요',
+  wave_structure: '고점·저점이 그리는 모양과 꺾이는 자리를 봐요', volume_flow: '거래량과 외국인·기관이 사고파는 흐름을 봐요',
+  fundamental: '회사가 버는 돈과 주가가 비싼지 싼지 봐요', event_catalyst: '공시·뉴스와 앞으로 있을 일정을 봐요',
+  MARKET: '시장 전체와 비교해 이 종목이 강한지 봐요', TECHNICAL: '차트 지표와 가격 모양을 종합해요', FLOW: '누가 사고 누가 파는지 봐요',
+  FUNDAMENTAL: '실적과 가치 평가를 봐요', EVENT: '공시와 뉴스를 봐요', RED_TEAM: '우세한 의견에 일부러 반대해 빈틈을 찾아요',
+};
 
 /** v4: the committee's own members argue their stances in turn, answering each other; the red team closes. */
 export function debateSection(report: DailyReport, tail = ''): string {
@@ -170,16 +180,46 @@ export function renderCommitteeDebate(c:Pick<Commentary,'status'|'debate'|'evide
   const lines = turns.slice(-3).map((t) => `<span class="db-pv-l"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${esc(t.claim.text.length > 64 ? `${t.claim.text.slice(0, 64)}…` : t.claim.text)}</span>`).join('');
   return `<section class="block" id="debate"><div class="block-head"><h2>위원회 토론</h2><span class="muted small">위원 ${speakers.length}명 · 발언 ${turns.length}개</span></div>
 <button type="button" class="card db-preview" data-room-open aria-haspopup="dialog" aria-controls="db-room"><span class="db-pv-top"><span class="db-avs">${avs}</span><span class="db-pv-n">위원회 토론방<small>위원 ${speakers.length}명이 ${turns.length}번 주고받았어요</small></span></span>${lines}<span class="db-pv-cta">토론방 입장 ›</span></button>
-<div class="db-room" id="db-room" role="dialog" aria-modal="true" aria-label="위원회 토론방" hidden><header class="db-room-h"><button type="button" class="db-room-x" data-room-close aria-label="토론방 나가기">‹</button><div class="db-room-t"><b>위원회 토론방</b><small>위원 ${speakers.length}명 · 발언 ${turns.length}개</small></div><span class="db-head-r"><button type="button" class="db-skip chip-toggle" hidden>전체 바로 보기</button><a class="db-ask-link" href="#join" aria-label="질문 입력창으로 이동">질문</a></span></header>
+<div class="db-room" id="db-room" role="dialog" aria-modal="true" aria-label="위원회 토론방" hidden><header class="db-room-h"><button type="button" class="db-room-x" data-room-close aria-label="토론방 나가기">‹</button><div class="db-room-t"><b>위원회 토론방</b><small>위원 ${speakers.length}명 · 발언 ${turns.length}개</small></div><span class="db-head-r">${turns.some((t) => t.plain) ? '<button type="button" class="db-easy chip-toggle" data-easy-toggle aria-pressed="false">쉬운 말</button>' : ''}<button type="button" class="db-skip chip-toggle" hidden>전체 바로 보기</button><a class="db-ask-link" href="#join" aria-label="질문 입력창으로 이동">질문</a></span></header>
 <div class="db-room-body"><div class="card debate"><div class="db-chips" role="group" aria-label="발언자 고르기"></div>
 ${turns.map((t, i) => {
     const red = t.speaker === 'RED_TEAM', side = red ? 'red' : SIDE[t.stance][1];
     // Reports written before the fix may count from 1 (a turn answering itself); the red team sums up, it does not reply.
     const at = red ? undefined : replyIndex(t.replyTo, i), to = at != null ? turns[at] : undefined;
     const quote = to && to.speaker !== t.speaker ? `<div class="db-quote"><b>${esc(SPEAKER[to.speaker] ?? to.speaker)}</b>${esc(to.claim.text.length > 46 ? `${to.claim.text.slice(0, 46)}…` : to.claim.text)}</div>` : '';
-    return `<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"${at != null ? ` data-reply="${at}"` : ''}><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}`}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}</div></div>`;
+    return `<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"${at != null ? ` data-reply="${at}"` : ''}><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}<span class="ez-only">(${SIDE_PLAIN[t.stance]})</span>`}${ROLE_PLAIN[t.speaker] ? `<span class="db-role ez-only">${esc(ROLE_PLAIN[t.speaker]!)}</span>` : ''}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}${t.plain ? `<span class="db-plain ez-only"><b>쉽게 말하면</b>${esc(t.plain)}</span>` : ''}</div></div>`;
   }).join('')}
-<p class="fine db-room-note">말하는 위원은 위원회 표결의 분석가·데스크 그대로예요. 말 끝의 근거 번호를 누르면 그 근거가 펼쳐져요. 레드팀은 승패를 정하지 않아요.</p>${tail}</div></div></div></section>`;
+<p class="fine db-room-note">말하는 위원은 위원회 표결의 분석가·데스크 그대로예요. 밑줄 친 말을 누르면 뜻이 나와요. 말 끝의 근거 번호를 누르면 그 근거가 펼쳐져요. 레드팀은 승패를 정하지 않아요.</p>${tail}</div></div></div></section>`;
+}
+
+/**
+ * G-218: the committee in everyday words, at the top of the AI tab. The model's plain retelling (v8 reports),
+ * then the vote and the odds counted from the report itself (every committee report has them, so older reports
+ * get this card too), the words this report uses, and how the committee works. Hidden for "전문 용어 그대로".
+ */
+export function easyCard(c: Pick<Commentary, 'status' | 'easy' | 'analysts' | 'desks' | 'scenarios'> | undefined): string {
+  if (c?.status !== 'OK') return '';
+  const votes = [...(c.analysts ?? []).map((a) => a.stance), ...(c.desks ?? []).map((d) => d.stance).filter((x) => x !== 'INSUFFICIENT_DATA')];
+  const n = (k: string) => votes.filter((v) => v === k).length;
+  const up = n('BULLISH'), down = n('BEARISH'), mid = n('NEUTRAL');
+  const lean = up > down + mid ? '오를 쪽으로 기울었어요' : down > up + mid ? '내릴 쪽으로 기울었어요' : up > down ? '조금 오를 쪽이지만 의견이 갈렸어요' : down > up ? '조금 내릴 쪽이지만 의견이 갈렸어요' : '한쪽으로 모이지 않았어요';
+  const voteLine = votes.length ? `위원 ${votes.length}명 가운데 <b class="up">오를 쪽 ${up}명</b>, <b>지켜보자 ${mid}명</b>, <b class="down">내릴 쪽 ${down}명</b>이에요. 위원회 전체로는 ${lean}.` : '';
+  const pr = (k: string) => c.scenarios?.find((x) => x.kind === k)?.probability;
+  const oddsLine = typeof pr('BULL') === 'number' && typeof pr('BEAR') === 'number'
+    ? `앞으로 20거래일(약 한 달) 동안 오르는 흐름 ${pr('BULL')}%, ${typeof pr('BASE') === 'number' ? `지금과 비슷한 흐름 ${pr('BASE')}%, ` : ''}내리는 흐름 ${pr('BEAR')}%로 봤어요. 예보처럼 가능성을 나눈 것이고, 나중에 맞았는지 채점해요.` : '';
+  if (!c.easy && !voteLine && !oddsLine) return '';
+  const terms = c.easy?.terms ?? [];
+  return `<section class="block ez-card" id="easy"><div class="card"><div class="head"><h2>쉽게 말하면</h2></div>
+${c.easy ? c.easy.summary === LOCKED_TEXT ? '<p class="ez-lock muted">🔒 AI가 쉬운 말로 다시 쓴 요약은 심층 리포트를 열면 여기에 나와요.</p>' : `<p class="ez-sum">${esc(c.easy.summary)}</p>` : ''}${voteLine || oddsLine ? `<ul class="ez-facts">${voteLine ? `<li><span aria-hidden="true">🗳️</span><span>${voteLine}</span></li>` : ''}${oddsLine ? `<li><span aria-hidden="true">🌦️</span><span>${oddsLine}</span></li>` : ''}</ul>` : ''}
+${terms.length ? `<div class="ez-terms"><div class="ez-k">이 리포트에 나온 말</div><dl>${terms.map((t) => `<div data-term-def="${esc(t.term)}"><dt>${esc(t.term)}</dt><dd>${esc(t.meaning)}</dd></div>`).join('')}</dl></div>` : ''}
+<details class="ez-how"><summary>위원회는 이렇게 판단해요</summary><ul>
+<li><b>분석가 6명</b>은 각자 보는 것이 달라요. 흐름, 되돌림, 가격 모양, 거래량·수급, 실적, 공시·뉴스를 하나씩 맡아요.</li>
+<li><b>데스크 5곳</b>은 시장·차트·수급·실적·공시 자료를 분야별로 따로 판단해요.</li>
+<li><b>레드팀</b>은 많은 위원이 고른 쪽에 일부러 반대해서 놓친 위험을 찾아요.</li>
+<li>말마다 붙은 <span class="ck ck-FACT">사실</span>은 자료에 그대로 있는 것, <span class="ck ck-INFERENCE">해석</span>은 자료에서 읽어 낸 것, <span class="ck ck-ASSUMPTION">가정</span>은 아직 확인되지 않은 것이에요. 끝의 번호(P1, T1…)를 누르면 근거 자료가 나와요.</li>
+<li><b>강세</b>는 오를 쪽, <b>약세</b>는 내릴 쪽, <b>중립</b>은 아직 방향을 정하지 않은 거예요. 확신도는 그 위원이 자기 판단을 얼마나 믿는지(0~100)예요.</li>
+<li>다수결로 결론을 내지 않아요. 판단은 기록해 두고 20거래일 뒤 실제 가격으로 채점해요. 투자 권유가 아니에요.</li>
+</ul></details></div></section>`;
 }
 
 /**
@@ -208,7 +248,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
  var avatar=function(room){room.querySelectorAll('.db-turn:not([data-av])').forEach(function(t){t.setAttribute('data-av','');var who=t.querySelector('.db-who b'),c=t.classList,side=c.contains('db-me')?'me':c.contains('db-red')?'red':c.contains('db-bull')?'bull':c.contains('db-bear')&&!c.contains('db-guest')?'bear':'mid';if(side==='me')return;var a=document.createElement('span');a.className='db-av db-av-'+side;a.setAttribute('aria-hidden','true');a.textContent=((who&&who.textContent)||'위').replace(/^AI\s*/,'').charAt(0);t.insertBefore(a,t.firstChild);});};
  document.addEventListener('click',function(e){
   var open=e.target.closest&&e.target.closest('[data-room-open]'),close=e.target.closest&&e.target.closest('[data-room-close]');
-  if(open){var room=document.getElementById(open.getAttribute('aria-controls'));if(!room)return;avatar(room);room.hidden=false;document.documentElement.classList.add('layer-open');var x=room.querySelector('.db-room-x');if(x)x.focus({preventScroll:true});if(window.GNM_debate)window.GNM_debate();
+  if(open){var room=document.getElementById(open.getAttribute('aria-controls'));if(!room)return;avatar(room);room.hidden=false;document.documentElement.classList.add('layer-open');if(window.GNM_terms)GNM_terms(room);var x=room.querySelector('.db-room-x');if(x)x.focus({preventScroll:true});if(window.GNM_debate)window.GNM_debate();
    if(!room.dataset.watch){room.dataset.watch='1';new MutationObserver(function(){avatar(room);}).observe(room,{childList:true,subtree:true});}}
   if(close){var r=close.closest('.db-room');if(r){r.hidden=true;document.documentElement.classList.remove('layer-open');var b=document.querySelector('[data-room-open][aria-controls="'+r.id+'"]');if(b)b.focus({preventScroll:true});}}
  });
@@ -298,7 +338,14 @@ export function insightLine(report: DailyReport, key: InsightKey, base: string):
   return `<div class="insight need-plus"><span class="ins-k">AI 한 줄 · ${INSIGHT_TAB[key]}</span>${kindChip(line.kind)}${esc(line.text)}</div>`;
 }
 
-export const EXTRAS_CSS = `.df-dates{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;font-size:13px;color:var(--muted);margin:0 0 10px}.df-dates a,.df-dates span,.df-dates b{white-space:nowrap}.df-dates b{color:var(--fg)}.df-dk{font-size:12px}.df-ar{margin:0 2px}.df-lead{font-size:17px;font-weight:800;line-height:1.45;margin:0 0 14px}.df-sec{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.df-h{font-size:14px;font-weight:800;margin:0 0 8px}.df-h .muted{font-weight:600;margin-left:4px}.df-odds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.df-o{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}.df-ok{font-size:12.5px;color:var(--muted);font-weight:700}.df-ov{display:flex;align-items:baseline;gap:6px;white-space:nowrap}.df-ov s{color:var(--muted);text-decoration:none;font-size:13px}.df-ov b{font-size:18px}.df-o small{font-size:12.5px;font-weight:700}.df-vrow{display:flex;align-items:center;gap:10px}.df-vk{flex:none;width:28px;font-size:12.5px;color:var(--muted);font-weight:700}.df-bar{flex:1;height:24px;margin:3px 0}.df-leg{display:flex;gap:12px;font-size:12px;margin:6px 0 0 38px}.df-flips,.df-stats{list-style:none;margin:0;padding:0}.df-flips li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}.df-flips li:last-child,.df-stats li:last-child{border-bottom:0}.df-who{min-width:0;font-size:14.5px}.df-chg{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}.df-chg s{color:var(--muted);text-decoration:none}.df-chg b{font-weight:800}.df-stats li{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'k p' 'v v';gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}.df-sk{grid-area:k;font-size:13.5px;color:var(--fg2)}.df-sv{grid-area:v;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px}.df-sv s{color:var(--muted);text-decoration:none;font-size:13.5px;white-space:nowrap}.df-sv s::after{content:' →'}.df-sv b{font-size:16px;white-space:nowrap}.df-pill{grid-area:p;align-self:start;font-style:normal;font-size:12.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,currentColor 12%,transparent);white-space:nowrap}.df-sum{margin-top:14px}@media(min-width:720px){.df-stats li{grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:'k v p';align-items:center}.df-sv{justify-content:flex-end}}
+export const EXTRAS_CSS = `.ez-only{display:none}html[data-explain=easy] .ez-only{display:inline}html[data-explain=easy] .db-role,html[data-explain=easy] .db-plain{display:block}html[data-explain=expert] .ez-card{display:none}html[data-explain=expert] .term{text-decoration:none;pointer-events:none;cursor:inherit}.ez-lock{font-size:14px;margin:0 0 10px}
+.db-role{font-weight:500;font-size:12px;color:var(--muted);margin-top:1px}.db-who .ez-only:not(.db-role){margin-left:3px}.db-plain{margin-top:8px;padding-top:7px;border-top:1px dashed var(--line-strong);font-size:14px;line-height:1.6}.db-plain b{display:block;font-size:12px;color:var(--accent-strong);margin-bottom:1px}
+.db-easy[aria-pressed=true]{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
+.ez-card .card{border:1px solid var(--accent);background:linear-gradient(180deg,var(--soft),var(--surface))}.ez-sum{font-size:16px;line-height:1.75;margin:0 0 10px}.ez-facts{list-style:none;margin:0;padding:0;display:grid;gap:8px}.ez-facts li{display:flex;gap:8px;font-size:14.5px;line-height:1.65}.ez-facts li>span:first-child{flex:none}
+.ez-terms{margin-top:12px}.ez-k{font-size:12.5px;font-weight:800;color:var(--muted);margin-bottom:4px}.ez-terms dl{margin:0;display:grid;gap:6px}.ez-terms dl>div{display:grid;grid-template-columns:minmax(72px,auto) minmax(0,1fr);gap:8px;font-size:14px;line-height:1.55}.ez-terms dt{font-weight:800}.ez-terms dd{margin:0;color:var(--fg2)}
+.ez-how{margin-top:12px}.ez-how summary{cursor:pointer;font-weight:700;font-size:14px;color:var(--accent-strong)}.ez-how ul{margin:8px 0 0;padding-left:18px;display:grid;gap:6px;font-size:14px;line-height:1.65}
+.term{display:inline;padding:0;margin:0;border:0;background:none;font:inherit;color:inherit;text-decoration:underline dotted color-mix(in srgb,var(--accent) 70%,transparent);text-underline-offset:3px;cursor:help}.term:hover,.term[aria-expanded=true]{color:var(--accent-strong)}
+.df-dates{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;font-size:13px;color:var(--muted);margin:0 0 10px}.df-dates a,.df-dates span,.df-dates b{white-space:nowrap}.df-dates b{color:var(--fg)}.df-dk{font-size:12px}.df-ar{margin:0 2px}.df-lead{font-size:17px;font-weight:800;line-height:1.45;margin:0 0 14px}.df-sec{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}.df-h{font-size:14px;font-weight:800;margin:0 0 8px}.df-h .muted{font-weight:600;margin-left:4px}.df-odds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.df-o{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:12px}.df-ok{font-size:12.5px;color:var(--muted);font-weight:700}.df-ov{display:flex;align-items:baseline;gap:6px;white-space:nowrap}.df-ov s{color:var(--muted);text-decoration:none;font-size:13px}.df-ov b{font-size:18px}.df-o small{font-size:12.5px;font-weight:700}.df-vrow{display:flex;align-items:center;gap:10px}.df-vk{flex:none;width:28px;font-size:12.5px;color:var(--muted);font-weight:700}.df-bar{flex:1;height:24px;margin:3px 0}.df-leg{display:flex;gap:12px;font-size:12px;margin:6px 0 0 38px}.df-flips,.df-stats{list-style:none;margin:0;padding:0}.df-flips li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}.df-flips li:last-child,.df-stats li:last-child{border-bottom:0}.df-who{min-width:0;font-size:14.5px}.df-chg{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:14px;white-space:nowrap}.df-chg s{color:var(--muted);text-decoration:none}.df-chg b{font-weight:800}.df-stats li{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:'k p' 'v v';gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line)}.df-sk{grid-area:k;font-size:13.5px;color:var(--fg2)}.df-sv{grid-area:v;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px}.df-sv s{color:var(--muted);text-decoration:none;font-size:13.5px;white-space:nowrap}.df-sv s::after{content:' →'}.df-sv b{font-size:16px;white-space:nowrap}.df-pill{grid-area:p;align-self:start;font-style:normal;font-size:12.5px;font-weight:800;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,currentColor 12%,transparent);white-space:nowrap}.df-sum{margin-top:14px}@media(min-width:720px){.df-stats li{grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:'k v p';align-items:center}.df-sv{justify-content:flex-end}}
 .db-preview{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:var(--surface)}.db-preview:hover{border-color:#b9cbea}.db-pv-top{display:flex;align-items:center;gap:10px}.db-avs{display:flex}.db-avs .db-av{margin-left:-8px;border:2px solid #fff}.db-avs .db-av:first-child{margin-left:0}.db-pv-n{display:flex;flex-direction:column;font-weight:800;font-size:15px}.db-pv-n small{font-weight:500;color:var(--muted);font-size:12.5px}.db-pv-l{display:block;font-size:13.5px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.db-pv-l b{color:var(--fg);margin-right:6px}.db-pv-cta{align-self:flex-end;font-weight:800;font-size:14px;color:var(--accent-strong)}
 .db-av{flex:none;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:14px;font-size:14px;font-weight:800;color:#fff;background:var(--muted)}.db-av-bull{background:var(--up)}.db-av-bear{background:var(--accent)}.db-av-mid{background:var(--muted)}.db-av-red{background:#1f2937}
 .db-room{position:fixed;inset:0;z-index:185;display:flex;flex-direction:column;background:var(--surface-solid)}.db-room[hidden]{display:none}.db-room-h{display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));background:var(--surface);border-bottom:1px solid var(--line)}.db-room-x{border:0;background:none;font-size:30px;line-height:1;width:36px;height:36px;cursor:pointer;color:var(--fg);border-radius:10px}.db-room-t{display:flex;flex-direction:column;flex:1;min-width:0}.db-room-t b{font-size:16px}.db-room-t small{font-size:12px;color:var(--muted)}

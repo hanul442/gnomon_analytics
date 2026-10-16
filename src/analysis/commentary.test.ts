@@ -2,10 +2,11 @@ import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import Anthropic from '@anthropic-ai/sdk';
+import { z } from 'zod';
 import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { buildDailyReport } from '../report/dailyReport.js';
 import { renderReport } from '../report/renderHtml.js';
-import { CommentaryWireSchema, buildEvidence, COMMENTARY_MODEL, normalizeProbabilities, sanitizeClaims, writeCommentary } from './commentary.js';
+import { CommentaryWireSchema, buildEvidence, COMMENTARY_MODEL, normalizeProbabilities, publicCommentary, sanitizeClaims, writeCommentary } from './commentary.js';
 
 const AT = '2026-10-05T09:30:00.000Z';
 const bars: PriceBar[] = Array.from({ length: 30 }, (_, i) => {
@@ -128,7 +129,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
   assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v7');
+  assert.equal(c.promptVersion, 'gnm-committee-v8');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
@@ -235,4 +236,32 @@ test('cached prompt tokens bill at a tenth to read and 1.25× to write (G-149)',
   assert.equal(Math.round(usd('claude-opus-5-5', 0, 0, 1_000_000, 0) * 100) / 100, 0.4);
   assert.equal(usd('claude-opus-5-5', 0, 0, 0, 1_000_000), 5);
   assert.equal(Math.round(usdOf('claude-opus-5-5', 0, 1_000_000, 1_000_000, 0) * 100) / 100, 20.4);
+});
+
+test('v8 plain layer (G-218): easy summary, terms and each turn\'s plain line survive repair; empty ones drop out', async () => {
+ const claim = (t: string) => ({ text: t, evidenceIds: ['P1'], kind: 'FACT' });
+ const reply = { summary: claim('요약'), desks: [], redTeam: { counterargument: claim('반론'), unresolved: [] }, scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [], insights: {}, worstCase: { narrative: claim('최악'), checks: [] },
+  debate: [{ speaker: 'trend_momentum', stance: 'BULLISH', replyTo: -1, claim: claim('정배열이에요'), plain: ' 오르는 흐름이 이어지고 있어요 ' }, { speaker: 'RED_TEAM', stance: 'NEUTRAL', replyTo: -1, claim: claim('정리'), plain: '' }],
+  easy: { summary: '쉽게 말하면 오를 쪽이 조금 많아요.', terms: [{ term: '정배열', meaning: '평균선이 차례로 놓인 상태' }, { term: '', meaning: 'x' }] } };
+ const client = { beta: { messages: { stream: () => ({ finalMessage: async () => ({ stop_reason: 'end_turn', model: COMMENTARY_MODEL, content: [{ type: 'text', text: JSON.stringify(reply) }], usage: { input_tokens: 1, output_tokens: 2 } }) }) } } } as unknown as Anthropic;
+ const c = await writeCommentary(report, { client });
+ assert.equal(c.status, 'OK', c.error);
+ assert.deepEqual(c.easy, { summary: '쉽게 말하면 오를 쪽이 조금 많아요.', terms: [{ term: '정배열', meaning: '평균선이 차례로 놓인 상태' }] });
+ assert.deepEqual(c.debate?.map((t) => t.plain), ['오르는 흐름이 이어지고 있어요', undefined]);
+ // The debate (and its plain lines) stays sealed.
+ const pub = publicCommentary(c);
+ assert.equal(pub.debate, undefined);
+ // A reply without the layer still parses (older prompt shape).
+ const { easy: _e, ...old } = reply;
+ const client2 = { beta: { messages: { stream: () => ({ finalMessage: async () => ({ stop_reason: 'end_turn', model: COMMENTARY_MODEL, content: [{ type: 'text', text: JSON.stringify(old) }], usage: { input_tokens: 1, output_tokens: 2 } }) }) } } } as unknown as Anthropic;
+ const c2 = await writeCommentary(report, { client: client2 });
+ assert.equal(c2.status, 'OK', c2.error);
+ assert.equal(c2.easy, undefined);
+});
+
+test('v8 wire schema keeps the plain line\'s instructions; the public part locks the easy summary (G-218)', () => {
+ const json = JSON.stringify(z.toJSONSchema(CommentaryWireSchema));
+ assert.match(json, /처음 하는 사람도 알아듣게 다시 쓴 한 문장/);
+ const c = { status: 'OK', tier: 'deep', bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [], dropped: 0, evidence: [], easy: { summary: '쉽게', terms: [{ term: 'a', meaning: 'b' }] } } as never;
+ assert.deepEqual(publicCommentary(c).easy, { summary: '심층 리포트를 열면 볼 수 있어요.', terms: [{ term: 'a', meaning: 'b' }] });
 });
