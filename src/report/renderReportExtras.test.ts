@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { decisionTrace, diffBasis, kindChip, reportDiff, reportDiffCard, weekChanges } from './renderReportExtras.js';
+import { decisionTrace, diffBasis, easyCard, kindChip, renderCommitteeDebate, reportDiff, reportDiffCard, weekChanges } from './renderReportExtras.js';
 
 const report = (date: string, close: number, stance: 'BULLISH' | 'BEARISH', target: number, fv: number) => ({
   date, generatedAt: `${date}T09:30:00Z`, price: { close, sessionDate: date },
@@ -60,4 +60,32 @@ test('decision trace lists the cut-off, evidence by kind, model and prompt; kind
   const html = decisionTrace(report('2026-10-09', 110, 'BULLISH', 100, 105), false);
   assert.ok(html.includes('2026-10-09 종가') && html.includes('가격 1, 기술 지표 1') && html.includes('gnm-committee-v3') && html.includes('만든 날 그대로 고정'));
   assert.ok(kindChip('ASSUMPTION').includes('가정') && kindChip(undefined) === '');
+});
+
+test('easy card (G-218): the plain retelling, the vote and odds in everyday words, the words of this report', () => {
+  const c = (committee('2026-10-09', [50, 35, 15], 'BULLISH', '요약') as unknown as { commentary: Record<string, unknown> }).commentary;
+  const html = easyCard(c as never);
+  assert.match(html, /쉽게 말하면/);
+  assert.match(html, /위원 3명 가운데 <b class="up">오를 쪽 2명<\/b>, <b>지켜보자 1명<\/b>, <b class="down">내릴 쪽 0명<\/b>/);
+  assert.match(html, /오르는 흐름 50%, 지금과 비슷한 흐름 35%, 내리는 흐름 15%/);
+  assert.doesNotMatch(html, /ez-sum/, 'older reports have no model retelling, only the counted lines');
+  c.easy = { summary: '쉽게는 <오를 쪽>이에요.', terms: [{ term: '정배열', meaning: '평균선이 차례로 놓인 상태' }] };
+  const v8 = easyCard(c as never);
+  assert.match(v8, /<p class="ez-sum">쉽게는 &lt;오를 쪽&gt;이에요.<\/p>/);
+  assert.match(v8, /data-term-def="정배열"><dt>정배열<\/dt><dd>평균선이 차례로 놓인 상태<\/dd>/);
+  assert.equal(easyCard({ status: 'FAILED' } as never), '');
+});
+
+test('debate turns carry a plain line and the member\'s role, shown when plain explanations are on (G-218)', () => {
+  const c = { status: 'OK', evidence: [{ id: 'P1', label: '가격', url: '#kpis' }], debate: [
+    { speaker: 'trend_momentum', stance: 'BULLISH', claim: { text: '정배열이에요.', evidenceIds: ['P1'] }, plain: '오르는 흐름이 이어져요.' },
+    { speaker: 'RED_TEAM', stance: 'NEUTRAL', claim: { text: '정리해요.', evidenceIds: ['P1'] } }] };
+  const html = renderCommitteeDebate(c as never);
+  assert.match(html, /data-easy-toggle/);
+  assert.match(html, /<span class="db-plain ez-only"><b>쉽게 말하면<\/b>오르는 흐름이 이어져요.<\/span>/);
+  assert.match(html, /강세<span class="ez-only">\(오를 쪽\)<\/span><span class="db-role ez-only">오르는 흐름이 이어지는지 봐요<\/span>/);
+  assert.equal((html.match(/db-plain/g) ?? []).length, 1);
+  // Older debates without plain lines get no toggle.
+  const old = renderCommitteeDebate({ ...c, debate: c.debate.map(({ plain: _p, ...t }) => t) } as never);
+  assert.doesNotMatch(old, /data-easy-toggle/);
 });

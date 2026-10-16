@@ -19,7 +19,8 @@ export const COMMENTARY_MODEL = 'claude-opus-5-5';
  */
 export type CommentaryTier = 'deep' | 'brief';
 /** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v7';
+/** v8 (G-218): plain-language layer for beginners (`easy`, and `plain` on each debate turn). */
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v8';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -56,7 +57,13 @@ export function replyIndex(to: number | undefined, i: number): number | undefine
   return t >= 0 && t < i ? t : undefined;
 }
 
-export interface DebateTurn { speaker: Speaker; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; replyTo?: number; claim: Claim }
+/** `plain` (v8): the same turn in everyday words, for readers who chose plain explanations. */
+export interface DebateTurn { speaker: Speaker; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; replyTo?: number; claim: Claim; plain?: string }
+/**
+ * v8 (G-218): the committee in everyday words. `summary` retells the conclusion without jargon; `terms` explains
+ * the few words in this report a beginner would trip on. Restates the cited claims; adds no facts or numbers.
+ */
+export interface EasyView { summary: string; terms: { term: string; meaning: string }[] }
 /** Where a short AI line sits: at the top of that report tab. */
 export type InsightKey = 'technical' | 'strategy' | 'flow' | 'fundamental' | 'news';
 
@@ -90,6 +97,8 @@ export interface Commentary {
   insights?: Partial<Record<InsightKey, Claim>>;
   /** Analyst battle: each analyst's stance, confidence and 20-session target (scored later). */
   analysts?: AnalystView[];
+  /** v8: the plain-language retelling (public, like the summary). */
+  easy?: EasyView;
   /** Claims removed because none of their evidence IDs existed. */
   dropped: number;
   evidence: EvidenceItem[];
@@ -233,11 +242,17 @@ const DebateSchema = z.array(z.object({
   stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']).describe('이 위원의 입장. 위의 analysts·desks에 쓴 입장과 같아야 합니다'),
   replyTo: z.number().optional().describe('반박하는 앞 차례의 번호. 0부터 셉니다(첫 차례가 0, 바로 앞 차례에 답하면 자기 번호-1). 첫 차례와 RED_TEAM은 비웁니다'),
   claim: ClaimSchema.describe('이 차례의 말 한두 문장. 두 번째 차례부터는 replyTo 차례의 주장을 직접 짚어 반박합니다'),
+  plain: z.string().optional().describe('이 차례의 말을 주식을 처음 하는 사람도 알아듣게 다시 쓴 한 문장(60자 안쪽). 지표 이름·영어 약어·근거 ID 없이, 새 사실이나 숫자를 더하지 않습니다'),
 })).describe('5~7차례. 입장이 다른 위원들이 번갈아 말하고, 마지막은 RED_TEAM');
 
 const WorstCaseSchema = z.object({
   narrative: ClaimSchema.describe('근거로 그릴 수 있는 가장 나쁜 전개 한두 문장'),
   checks: z.array(z.string()).describe('읽는 사람이 스스로 점검할 위험 관리 항목 2~4개 (예: 무효화 가격 확인, 한 종목 비중 점검, 다음 실적 발표일 확인). 매수·매도 지시가 아닙니다'),
+});
+
+const EasySchema = z.object({
+  summary: z.string().describe('주식을 처음 하는 사람에게 말하듯 쉬운 말 3문장(200자 안쪽): 지금 어떤 상태인지, 위원들이 왜 의견이 갈렸는지, 앞으로 무엇을 보면 되는지. 전문 용어·영어 약어·근거 ID 없이 씁니다'),
+  terms: z.array(z.object({ term: z.string().describe('이 리포트에 나온 어려운 말 그대로'), meaning: z.string().describe('그 말의 쉬운 풀이 한 문장(50자 안쪽)') })).describe('이 리포트의 토론·시나리오에 나온 말 가운데 처음 하는 사람이 막힐 만한 것 2~4개'),
 });
 
 export const CommentarySchema = z.object({
@@ -263,6 +278,7 @@ export const CommentarySchema = z.object({
   uncertain: z.array(ClaimSchema).describe('방향이 불확실하거나 해석이 갈리는 점'),
   watch: z.array(ClaimSchema).describe('앞으로 무엇이 나오면 판단이 바뀌는지 (무효화 조건, 지켜볼 일정)'),
   dataGaps: z.array(z.string()).describe('근거가 부족해서 판단할 수 없는 부분'),
+  easy: EasySchema.optional(),
 });
 
 /** Required wire fields avoid exponential optional-field grammar expansion. Local validation stays compatible with older reports. */
@@ -271,7 +287,9 @@ export const CommentaryWireSchema = CommentarySchema.extend({
   insights: WireInsightsSchema.describe('모든 탭의 필드를 반환. 근거가 없는 탭은 text를 빈 문자열, evidenceIds를 빈 배열, kind를 INFERENCE로 반환'),
   debate: z.array(DebateSchema.element.extend({
     replyTo: z.number().describe('반박하는 앞 차례 번호. 답장 대상이 없는 첫 차례와 RED_TEAM은 -1'),
+    plain: DebateSchema.element.shape.plain.unwrap(),
   })),
+  easy: EasySchema.describe('쉬운 말 풀이'),
 });
 
 /**
@@ -295,17 +313,20 @@ export function repairDeep(raw: unknown): unknown {
   const ins = (o.insights && typeof o.insights === 'object' ? o.insights : {}) as Record<string, unknown>;
   const red = (o.redTeam && typeof o.redTeam === 'object' ? o.redTeam : {}) as Record<string, unknown>;
   const worst = (o.worstCase && typeof o.worstCase === 'object' ? o.worstCase : {}) as Record<string, unknown>;
+  const ez = (o.easy && typeof o.easy === 'object' ? o.easy : {}) as Record<string, unknown>;
+  const easy = asStr(ez.summary).trim() ? { summary: asStr(ez.summary).trim(), terms: asArr(ez.terms).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, term = asStr(x.term).trim(), meaning = asStr(x.meaning).trim(); return term && meaning ? [{ term, meaning }] : []; }) } : null;
   return {
     summary: claimOf(o.summary),
     desks: asArr(o.desks).flatMap((d) => { const x = (d ?? {}) as Record<string, unknown>, desk = pick(x.desk, ENUMS.desk), stance = pick(x.stance, ENUMS.stance4); return desk && stance ? [{ desk, stance, view: claimOf(x.view) }] : []; }),
     redTeam: { counterargument: claimOf(red.counterargument), unresolved: asArr(red.unresolved).map(asStr).filter(Boolean) },
     scenarios: asArr(o.scenarios).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, kind = pick(x.kind, ENUMS.scenario); return kind ? [{ kind, narrative: claimOf(x.narrative), catalysts: asArr(x.catalysts).map(asStr).filter(Boolean), invalidation: asArr(x.invalidation).map(asStr).filter(Boolean), probability: asNum(x.probability), trigger: asNum(x.trigger), zoneLow: asNum(x.zoneLow), zoneHigh: asNum(x.zoneHigh) }] : []; }),
     analysts: asArr(o.analysts).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, id = asStr(x.analyst).trim(), stance = pick(x.stance, ENUMS.stance3); return analystIds.has(id) && stance ? [{ analyst: id, stance, confidence: asNum(x.confidence, 50), target: asNum(x.target), rationale: claimOf(x.rationale) }] : []; }),
-    debate: asArr(o.debate).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, sp = asStr(x.speaker).trim().toUpperCase() === 'RED_TEAM' ? 'RED_TEAM' : asStr(x.speaker).trim(), stance = pick(x.stance, ENUMS.stance3); return speakers.has(sp) && stance ? [{ speaker: sp, stance, replyTo: asNum(x.replyTo, -1), claim: claimOf(x.claim) }] : []; }),
+    debate: asArr(o.debate).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, sp = asStr(x.speaker).trim().toUpperCase() === 'RED_TEAM' ? 'RED_TEAM' : asStr(x.speaker).trim(), stance = pick(x.stance, ENUMS.stance3), plain = asStr(x.plain).trim(); return speakers.has(sp) && stance ? [{ speaker: sp, stance, replyTo: asNum(x.replyTo, -1), claim: claimOf(x.claim), ...(plain ? { plain } : {}) }] : []; }),
     worstCase: { narrative: claimOf(worst.narrative), checks: asArr(worst.checks).map(asStr).filter(Boolean) },
     insights: Object.fromEntries((['technical', 'strategy', 'flow', 'fundamental', 'news'] as const).map((k) => [k, claimOf(ins[k])])),
     bullish: asArr(o.bullish).map(claimOf), bearish: asArr(o.bearish).map(claimOf), uncertain: asArr(o.uncertain).map(claimOf), watch: asArr(o.watch).map(claimOf),
     dataGaps: asArr(o.dataGaps).map(asStr).filter(Boolean),
+    ...(easy ? { easy } : {}),
   };
 }
 /** The first top-level JSON object in a reply (a model may wrap it in a code fence or a sentence). */
@@ -335,6 +356,7 @@ const DEEP_SYSTEM = `당신은 GNOMON의 리서치 위원회예요. 사용자 �
 - 토론(debate): 새 인물을 만들지 않고 위의 분석가 6명과 데스크 5곳이 직접 토론합니다. 위에서 강세로 판단한 위원과 약세로 판단한 위원 가운데 근거가 가장 강한 위원들이 번갈아 말하고(5~7차례), 두 번째 차례부터는 replyTo로 반박할 차례를 가리키고 그 주장을 직접 짚습니다. 실제 회의처럼 말을 주고받습니다: 앞 사람을 이름으로 부르며 동의하거나 반박하고("추세 분석가 말씀처럼…", "저는 조금 다르게 봐요"), 필요하면 질문을 던집니다. 같은 문장 틀을 반복하거나 명사로 끝나는 메모체를 쓰지 않습니다. 각 위원의 stance는 위 analysts·desks에 쓴 입장과 같아야 합니다. 마지막 차례는 RED_TEAM이 무엇이 합의됐고 무엇이 풀리지 않았는지 정리합니다. 승패는 정하지 않습니다. 입장이 한쪽으로만 모였으면 그 사실을 RED_TEAM이 말하고 가장 강한 반대 근거를 냅니다.
 - 최악의 경우(worstCase): 근거로 그릴 수 있는 가장 나쁜 전개와, 읽는 사람이 스스로 점검할 위험 관리 항목을 적습니다. 매수·매도·가격 지시가 아닌 점검 항목만 씁니다.
 - 탭별 한 줄(insights): 기술·전략·수급·펀더멘털·뉴스 탭 맨 위에 붙일 한 줄씩 씁니다.
+- 쉬운 말 풀이(easy, debate의 plain): 주식을 처음 하는 사람이 읽는다고 생각하고 같은 내용을 다시 씁니다. "강세"는 "오를 쪽", "약세"는 "내릴 쪽"처럼 일상어로 바꾸고, 지표 이름(RSI·MACD·볼린저 등)은 "많이 올라 쉬어 갈 수 있다는 신호"처럼 뜻으로 말합니다. 위에서 쓴 주장을 쉽게 옮길 뿐 새 사실·숫자·전망을 더하지 않고, 매수·매도를 권하지 않습니다. terms에는 이 리포트에 실제로 나온 말만 고릅니다.
 - 데스크 근거가 없으면 stance를 INSUFFICIENT_DATA로 둡니다.
 - 분석가 대결: 아래 분석가 6명이 각자 자기 관점에서 판단(강세·약세·중립), 확신도(0~100), 20거래일 뒤 예상 가격을 냅니다. 예상 가격은 P1 종가에서 출발해 근거로 설명할 수 있는 수준이어야 하고, 기록되어 20거래일 뒤 실제 가격으로 채점됩니다. 서로 의견이 달라도 됩니다.
 ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
@@ -355,9 +377,17 @@ ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 - debate 각 차례 1~2문장, 120자 안쪽. 앞 차례를 그대로 되풀이하지 않습니다.
 - scenarios의 narrative는 2문장, 120자 안쪽. catalysts·invalidation은 각 1~2개, 짧은 구(30자 안쪽)로 씁니다.
 - worstCase의 narrative 2문장 안쪽, checks 2~3개.
+- easy.summary 3문장 200자 안쪽, easy.terms 2~4개. debate의 plain은 차례마다 1문장 60자 안쪽.
 - bullish·bearish 각 3개 이하, uncertain·watch·dataGaps 각 2개 이하. 같은 내용을 여러 칸에 반복하지 않습니다.
 - evidenceIds에는 그 주장을 직접 뒷받침하는 근거 1~3개만 답니다.
 - 숫자는 근거에 적힌 값을 그대로 옮기고 새로 계산한 숫자에는 "약"을 붙입니다.`;
+
+/** v8: the plain retelling, trimmed and capped; none when the summary is empty. */
+export function easyOf(e: { summary: string; terms: { term: string; meaning: string }[] } | undefined): EasyView | undefined {
+  const summary = e?.summary.trim().slice(0, 400);
+  if (!summary) return undefined;
+  return { summary, terms: (e?.terms ?? []).map((t) => ({ term: t.term.trim().slice(0, 30), meaning: t.meaning.trim().slice(0, 140) })).filter((t) => t.term && t.meaning).slice(0, 4) };
+}
 
 /** Keeps only known IDs; drops claims left with none. */
 export function sanitizeClaims(claims: readonly Claim[], known: ReadonlySet<string>): { kept: Claim[]; dropped: number } {
@@ -469,12 +499,12 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     }))));
     // Turns keep their place so replyTo still points at the right one; an uncited turn drops out and replies to it lose the pointer.
     // A reply can only point back. Models sometimes count from 1, which makes a turn answer itself: shift those down one.
-    const turns = (parsed.debate ?? []).map((t, i) => { const [claim] = clean([t.claim]); return claim ? { speaker: t.speaker, stance: t.stance, replyTo: replyIndex(t.replyTo, i), claim } : null; });
+    const turns = (parsed.debate ?? []).map((t, i) => { const [claim] = clean([t.claim]); const plain = t.plain?.trim().slice(0, 160); return claim ? { speaker: t.speaker, stance: t.stance, replyTo: replyIndex(t.replyTo, i), claim, ...(plain ? { plain } : {}) } : null; });
     const kept = turns.flatMap((t, i) => (t ? [i] : []));
     const debate: DebateTurn[] = turns.flatMap((t) => {
       if (!t) return [];
       const to = t.replyTo != null && Number.isInteger(t.replyTo) ? kept.indexOf(t.replyTo) : -1;
-      return [{ speaker: t.speaker, stance: t.stance, claim: t.claim, ...(to >= 0 ? { replyTo: to } : {}) }];
+      return [{ speaker: t.speaker, stance: t.stance, claim: t.claim, ...(to >= 0 ? { replyTo: to } : {}), ...(t.plain ? { plain: t.plain } : {}) }];
     });
     const [worst] = parsed.worstCase ? clean([parsed.worstCase.narrative]) : [];
     const insights: Partial<Record<InsightKey, Claim>> = {};
@@ -489,6 +519,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       ...(summary ? { summary } : {}),
       bullish: clean(parsed.bullish), bearish: clean(parsed.bearish), uncertain: clean(parsed.uncertain), watch: clean(parsed.watch),
       dataGaps: parsed.dataGaps.map((g) => g.trim()).filter(Boolean),
+      ...(easyOf(parsed.easy) ? { easy: easyOf(parsed.easy)! } : {}),
       desks, scenarios, analysts,
       ...(counter ? { redTeam: { counterargument: counter, unresolved: (parsed.redTeam?.unresolved ?? []).map((u) => u.trim()).filter(Boolean) } } : {}),
       dropped, evidence,

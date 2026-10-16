@@ -37,7 +37,7 @@ import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, THEME_BOOT, PLAN
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
 import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, conclusionMini, parliamentViewNote, SEATS_JS, VIEW_FOCUS_CSS } from './conclusion.js';
 import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
-import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, reportDiffCard } from './renderReportExtras.js';
+import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, easyCard, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, reportDiffCard } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 import { CHART_PRO_CSS, CHART_PRO_JS, HERO_RANGE_JS } from './chartPro.js';
 import { derivSlot, DERIV_CSS, DERIV_JS } from './deriv.js';
@@ -696,7 +696,8 @@ export function committeeTab(report: DailyReport, opts: { base: string; from: st
   // G-178: every report keeps the same order of blocks; a block this report cannot fill says so instead of vanishing.
   // G-203: Plus and up (한서님 10/11); free readers see the card faded with a way in, as other Plus blocks.
   const diff = opts.previous === undefined || report.commentary?.status !== 'OK' ? '' : gate(reportDiffCard(report, opts.previous, { conclusionDate: opts.from, href: opts.previousHref ?? null }), { base, what: '지난 리포트와 달라진 점: 확률·표결·입장 바꾼 위원', feature: 'reportDiff' });
-  return `${conclusionMini(report)}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}${diff}${seats || absentBlock('위원회 표결', '이 리포트에는 위원별 표결이 없어요. 새 리포트를 만들면 분석가 6명과 데스크 5곳의 표결이 함께 나와요.')}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
+  // G-218: the committee in everyday words, right under the conclusion.
+  return `${conclusionMini(report)}${easyCard(report.commentary)}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}${diff}${seats || absentBlock('위원회 표결', '이 리포트에는 위원별 표결이 없어요. 새 리포트를 만들면 분석가 6명과 데스크 5곳의 표결이 함께 나와요.')}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
 }
 /** A block the report does not have, folded, so pages of different vintages still line up. */
 export function absentBlock(title: string, why: string): string {
@@ -747,7 +748,7 @@ export const DEEP_SCRIPT = `<script>
   var show = function (html) { if(!slot.isConnected)return;slot.innerHTML = html;
     // The unlocked conclusion and vote (full scenarios and reasons) take the public ones' places.
     var sw = slot.querySelector('.deep-swap'); if (sw) { [].slice.call(sw.children).forEach(function (n) { var old = n.id && document.getElementById(n.id); if (old && old !== n) old.replaceWith(n); }); sw.remove(); }
-    var join=document.querySelector('.join-wrap'), debate=slot.querySelector('#debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); if (window.GNM_debateFilter) window.GNM_debateFilter(); if (window.GNM_debate) window.GNM_debate(); };
+    var join=document.querySelector('.join-wrap'), debate=slot.querySelector('#debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); if (window.GNM_debateFilter) window.GNM_debateFilter(); if (window.GNM_debate) window.GNM_debate(); if (window.GNM_explain) window.GNM_explain(); if (window.GNM_terms) window.GNM_terms(slot); };
   var say = function (t) { note.textContent = t; };
   // While the paid part is fetched or unlocked: a large Thinking Orb that cycles through its states.
   var loader = null, cycle = null;
