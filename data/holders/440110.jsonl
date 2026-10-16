@@ -1,0 +1,5 @@
+{"symbol":"440110","receiptNo":"20251111000351","date":"2025-11-11","reporter":"알피씨포워드","shares":3872133,"delta":-539953,"ratio":7.83,"ratioDelta":-1.09,"reason":"장내매도","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"440110","receiptNo":"20260211001136","date":"2026-02-11","reporter":"알피씨포워드","shares":2234889,"delta":-1637244,"ratio":4.47,"ratioDelta":-3.36,"reason":"주식 매각(장내,장외,시간외대량매도)에 따른 지분율 감소 (5%미만 하락)","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"440110","receiptNo":"20260826000723","date":"2026-08-26","reporter":"이지효","shares":4461680,"delta":4461680,"ratio":8.9,"ratioDelta":8.9,"reason":"특별관계 해소에 따른 신규 보고","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"440110","receiptNo":"20260826000706","date":"2026-08-26","reporter":"남이현","shares":8969507,"delta":-4673768,"ratio":17.73,"ratioDelta":-9.34,"reason":"보유주식등의 수 및 특별관계자 변동 등","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"440110","receiptNo":"20260914000256","date":"2026-09-14","reporter":"삼성자산운용","shares":2718496,"delta":2718496,"ratio":5.42,"ratioDelta":5.42,"reason":"매매로 인한 신규보고의무 발생","retrievedAt":"2026-10-16T09:44:17.785Z"}

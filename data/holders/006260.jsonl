@@ -1,0 +1,5 @@
+{"symbol":"006260","receiptNo":"20251107000357","date":"2025-11-07","reporter":"구자열","shares":10335256,"delta":0,"ratio":32.6,"ratioDelta":0,"reason":"특별관계자 보유주식수에 관한 계약 변경","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"006260","receiptNo":"20251219000376","date":"2025-12-19","reporter":"구자열","shares":10335256,"delta":0,"ratio":32.6,"ratioDelta":0,"reason":"특별관계자 보유주식수에 관한 계약 변경","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"006260","receiptNo":"20260306000975","date":"2026-03-06","reporter":"구자열","shares":10329156,"delta":-6100,"ratio":32.58,"ratioDelta":-0.02,"reason":"- 특별관계자 보유주식수 변동\n- 보유주식에 관한 계약 변경","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"006260","receiptNo":"20260513000581","date":"2026-05-13","reporter":"삼성자산운용","shares":1562141,"delta":1562141,"ratio":5.01,"ratioDelta":5.01,"reason":"매매로 인한 신규보고의무 발생(삼성액티브자산운용의 위탁운용분 포함)","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"006260","receiptNo":"20260825000465","date":"2026-08-25","reporter":"구자열","shares":10331510,"delta":2354,"ratio":33.11,"ratioDelta":0.53,"reason":"- 특별관계자 추가 및 보유주식수 변동\n- 보유주식에 관한 계약 변경","retrievedAt":"2026-10-16T09:44:17.785Z"}

@@ -1,0 +1,5 @@
+{"symbol":"011070","receiptNo":"20260102000221","date":"2026-01-02","reporter":"국민연금공단","shares":2239731,"delta":245000,"ratio":9.46,"ratioDelta":1.03,"reason":"단순추가취득/처분","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"011070","receiptNo":"20260401003256","date":"2026-04-01","reporter":"국민연금공단","shares":2001139,"delta":-238592,"ratio":8.46,"ratioDelta":-1,"reason":"단순추가취득/처분","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"011070","receiptNo":"20260701000315","date":"2026-07-01","reporter":"국민연금공단","shares":2493971,"delta":492832,"ratio":10.54,"ratioDelta":2.08,"reason":"단순추가취득/처분","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"011070","receiptNo":"20260724000171","date":"2026-07-24","reporter":"LG전자","shares":9655181,"delta":200,"ratio":40.8,"ratioDelta":0.01,"reason":"특별관계자 주식수 변동","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"011070","receiptNo":"20261002000414","date":"2026-10-02","reporter":"국민연금공단","shares":1761651,"delta":-732320,"ratio":7.44,"ratioDelta":-3.1,"reason":"단순추가취득/처분","retrievedAt":"2026-10-16T09:44:17.785Z"}

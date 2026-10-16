@@ -1,0 +1,4 @@
+{"symbol":"000720","receiptNo":"20260401004008","date":"2026-04-01","reporter":"국민연금공단","shares":12493732,"delta":1152554,"ratio":11.22,"ratioDelta":1.04,"reason":"단순추가취득/처분","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"000720","receiptNo":"20260402003855","date":"2026-04-02","reporter":"현대자동차","shares":38884901,"delta":2501,"ratio":34.92,"ratioDelta":0,"reason":"장내매매 및 특별관계자의 변동","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"000720","receiptNo":"20260701000218","date":"2026-07-01","reporter":"국민연금공단","shares":11375422,"delta":-1118310,"ratio":10.22,"ratioDelta":-1,"reason":"단순추가취득/처분","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"000720","receiptNo":"20260806000134","date":"2026-08-06","reporter":"BlackRockFundAdvisors","shares":5580455,"delta":51855,"ratio":5.01,"ratioDelta":0.05,"reason":"- 단순투자목적으로 장내에서 발행회사의 주식 매수","retrievedAt":"2026-10-16T09:44:17.785Z"}
