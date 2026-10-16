@@ -129,7 +129,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
   assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v8');
+  assert.equal(c.promptVersion, 'gnm-committee-v9');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
@@ -264,4 +264,15 @@ test('v8 wire schema keeps the plain line\'s instructions; the public part locks
  assert.match(json, /처음 하는 사람도 알아듣게 다시 쓴 한 문장/);
  const c = { status: 'OK', tier: 'deep', bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [], dropped: 0, evidence: [], easy: { summary: '쉽게', terms: [{ term: 'a', meaning: 'b' }] } } as never;
  assert.deepEqual(publicCommentary(c).easy, { summary: '심층 리포트를 열면 볼 수 있어요.', terms: [{ term: 'a', meaning: 'b' }] });
+});
+
+test('v9 debate asks for longer, reasoned, specific turns (G-221)', async () => {
+ const seen: any[] = [];
+ const client = { beta: { messages: { stream: (p: any) => { seen.push(p); return { finalMessage: async () => ({ stop_reason: 'end_turn', model: COMMENTARY_MODEL, content: [{ type: 'text', text: '{}' }], usage: { input_tokens: 1, output_tokens: 1 } }) }; } } } } as unknown as Anthropic;
+ await writeCommentary(report, { client });
+ const system = seen[0].system[0].text as string;
+ assert.match(system, /7~9차례/);
+ assert.match(system, /각 차례 3~5문장, 300자 안쪽/);
+ assert.match(system, /당연한 말을 쓰지 않습니다/);
+ assert.match(system, /이 차례의 말 3~5문장/, 'the wire schema carries the per-turn length too');
 });

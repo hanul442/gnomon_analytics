@@ -20,7 +20,8 @@ export const COMMENTARY_MODEL = 'claude-opus-5-5';
 export type CommentaryTier = 'deep' | 'brief';
 /** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
 /** v8 (G-218): plain-language layer for beginners (`easy`, and `plain` on each debate turn). */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v8';
+/** v9 (G-221): longer, reasoned debate turns (what was seen, why it matters, where the other side is weak, what would change the mind). */
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v9';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -217,7 +218,7 @@ const ClaimSchema = z.object({
 const DeskSchema = z.object({
   desk: z.enum(['MARKET', 'TECHNICAL', 'FLOW', 'FUNDAMENTAL', 'EVENT']).describe('MARKET 시장·상대강도, TECHNICAL 기술·구조, FLOW 수급, FUNDAMENTAL 실적·밸류에이션, EVENT 공시·뉴스'),
   stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL', 'INSUFFICIENT_DATA']),
-  view: ClaimSchema.describe('이 데스크의 판단 한두 문장'),
+  view: ClaimSchema.describe('이 데스크의 판단 2~3문장: 본 숫자와 그렇게 판단한 이유'),
 });
 
 const ScenarioSchema = z.object({
@@ -244,9 +245,9 @@ const DebateSchema = z.array(z.object({
   speaker: z.enum([...ANALYSTS.map((a) => a.id), 'MARKET', 'TECHNICAL', 'FLOW', 'FUNDAMENTAL', 'EVENT', 'RED_TEAM'] as unknown as [Speaker, ...Speaker[]]).describe('말하는 위원: 분석가 6명, 데스크 5곳, 또는 RED_TEAM'),
   stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']).describe('이 위원의 입장. 위의 analysts·desks에 쓴 입장과 같아야 합니다'),
   replyTo: z.number().optional().describe('반박하는 앞 차례의 번호. 0부터 셉니다(첫 차례가 0, 바로 앞 차례에 답하면 자기 번호-1). 첫 차례와 RED_TEAM은 비웁니다'),
-  claim: ClaimSchema.describe('이 차례의 말 한두 문장. 두 번째 차례부터는 replyTo 차례의 주장을 직접 짚어 반박합니다'),
+  claim: ClaimSchema.describe('이 차례의 말 3~5문장(300자 안쪽): 어떤 근거의 어떤 숫자를 봤는지, 그것을 왜 그렇게 읽는지, 앞 차례 주장의 어디가 약하거나 맞는지, 무엇이 나오면 생각을 바꿀지. 두 번째 차례부터는 replyTo 차례의 주장을 직접 짚습니다'),
   plain: PlainSchema.optional(),
-})).describe('5~7차례. 입장이 다른 위원들이 번갈아 말하고, 마지막은 RED_TEAM');
+})).describe('7~9차례. 입장이 다른 위원들이 번갈아 말하고, 마지막은 RED_TEAM');
 
 const WorstCaseSchema = z.object({
   narrative: ClaimSchema.describe('근거로 그릴 수 있는 가장 나쁜 전개 한두 문장'),
@@ -271,7 +272,7 @@ export const CommentarySchema = z.object({
     stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']),
     confidence: z.number().describe('0~100'),
     target: z.number().describe(`P1 종가 기준 ${ANALYST_HORIZON}거래일 뒤 예상 가격(원)`),
-    rationale: ClaimSchema.describe('이 분석가의 근거 한두 문장'),
+    rationale: ClaimSchema.describe('이 분석가의 근거 2~3문장: 본 숫자, 그렇게 판단한 이유, 판단이 틀렸다고 볼 조건'),
   })).describe('분석가 6명 각각 하나씩'),
   debate: DebateSchema,
   worstCase: WorstCaseSchema,
@@ -356,7 +357,7 @@ const DEEP_SYSTEM = `당신은 GNOMON의 리서치 위원회예요. 사용자 �
 - 데스크 5곳이 각자 근거를 보고 판단합니다: MARKET(시장·상대강도, M1·H1), TECHNICAL(기술·구조·적정가·예측 범위·전략 대결, T1·H1·S1·V1·R1·A1), FLOW(수급, Q1), FUNDAMENTAL(실적·밸류에이션·증권가 평균, D1), EVENT(공시·뉴스, F*·N*).
 - 레드팀은 가장 우세한 의견에 맞서는 가장 강한 반론을 씁니다.
 - 마지막으로 강세(BULL)·기본(BASE)·약세(BEAR) 시나리오를 하나씩 쓰고, 각 시나리오의 촉매와 무효화 조건(가격 수준이나 사건)을 적습니다. 각 시나리오에 지금 근거로 본 확률(%)을 붙이고 세 개의 합은 100으로 맞춥니다. 강세는 넘어서야 시작되는 위쪽 테스트 가격, 약세는 깨지면 시작되는 아래쪽 테스트 가격을 trigger로 적고(근거의 지지·저항에서 고름), 각 시나리오의 20거래일 가격대(zoneLow~zoneHigh)를 적습니다. 가격대는 목표가가 아니라 시나리오 범위입니다. 확률은 근거의 강약을 반영한 추정이고 예측 확신이 아니며, 기록해 두었다가 나중에 실제 결과로 채점됩니다. 근거가 엇갈리면 한쪽으로 몰지 말고 넓게 나눕니다.
-- 토론(debate): 새 인물을 만들지 않고 위의 분석가 6명과 데스크 5곳이 직접 토론합니다. 위에서 강세로 판단한 위원과 약세로 판단한 위원 가운데 근거가 가장 강한 위원들이 번갈아 말하고(5~7차례), 두 번째 차례부터는 replyTo로 반박할 차례를 가리키고 그 주장을 직접 짚습니다. 실제 회의처럼 말을 주고받습니다: 앞 사람을 이름으로 부르며 동의하거나 반박하고("추세 분석가 말씀처럼…", "저는 조금 다르게 봐요"), 필요하면 질문을 던집니다. 같은 문장 틀을 반복하거나 명사로 끝나는 메모체를 쓰지 않습니다. 각 위원의 stance는 위 analysts·desks에 쓴 입장과 같아야 합니다. 마지막 차례는 RED_TEAM이 무엇이 합의됐고 무엇이 풀리지 않았는지 정리합니다. 승패는 정하지 않습니다. 입장이 한쪽으로만 모였으면 그 사실을 RED_TEAM이 말하고 가장 강한 반대 근거를 냅니다.
+- 토론(debate): 새 인물을 만들지 않고 위의 분석가 6명과 데스크 5곳이 직접 토론합니다. 위에서 강세로 판단한 위원과 약세로 판단한 위원 가운데 근거가 가장 강한 위원들이 번갈아 말하고(7~9차례), 두 번째 차례부터는 replyTo로 반박할 차례를 가리키고 그 주장을 직접 짚습니다. 실제 회의처럼 말을 주고받습니다: 앞 사람을 이름으로 부르며 동의하거나 반박하고("추세 분석가 말씀처럼…", "저는 조금 다르게 봐요"), 필요하면 질문을 던집니다. 같은 문장 틀을 반복하거나 명사로 끝나는 메모체를 쓰지 않습니다. 각 위원의 stance는 위 analysts·desks에 쓴 입장과 같아야 합니다. 마지막 차례는 RED_TEAM이 무엇이 합의됐고 무엇이 풀리지 않았는지 정리합니다. 승패는 정하지 않습니다. 입장이 한쪽으로만 모였으면 그 사실을 RED_TEAM이 말하고 가장 강한 반대 근거를 냅니다.
 - 최악의 경우(worstCase): 근거로 그릴 수 있는 가장 나쁜 전개와, 읽는 사람이 스스로 점검할 위험 관리 항목을 적습니다. 매수·매도·가격 지시가 아닌 점검 항목만 씁니다.
 - 탭별 한 줄(insights): 기술·전략·수급·펀더멘털·뉴스 탭 맨 위에 붙일 한 줄씩 씁니다.
 - 쉬운 말 풀이(easy, debate의 plain): 주식을 처음 하는 사람이 읽는다고 생각하고 같은 내용을 다시 씁니다. "강세"는 "오를 쪽", "약세"는 "내릴 쪽"처럼 일상어로 바꾸고, 지표 이름(RSI·MACD·볼린저 등)은 "많이 올라 쉬어 갈 수 있다는 신호"처럼 뜻으로 말합니다. 위에서 쓴 주장을 쉽게 옮길 뿐 새 사실·숫자·전망을 더하지 않고, 매수·매도를 권하지 않습니다. terms에는 이 리포트에 실제로 나온 말만 고릅니다.
@@ -369,6 +370,7 @@ ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 - 모든 주장에 종류(kind)를 붙입니다: 근거에 그대로 있는 사실은 FACT, 근거에서 끌어낸 해석은 INFERENCE, 근거로 확인되지 않은 가정은 ASSUMPTION. 해석을 사실처럼 쓰지 않습니다.
 - 한국어 해요체로, 짧고 분명하게 씁니다. 내부 코드명이나 영어 약어 대신 뜻을 풀어 씁니다.
 - 매수·매도를 권하거나 목표가·익절가·손절가를 제시하지 않습니다. 가격을 말해야 하면 시나리오 가격대와 무효화 가격으로만 씁니다. 방향은 "강세"·"약세"로만 표현합니다. 투자 권유가 아닙니다.
+- 당연한 말을 쓰지 않습니다. "변동성에 유의해야 해요", "시장 상황에 따라 달라질 수 있어요", "추가 확인이 필요해요", "신중한 접근이 필요해요", "지켜볼 필요가 있어요"처럼 어느 종목에나 맞는 문장은 빼고, 그 자리에 이 종목의 숫자·가격·날짜·사건을 넣습니다. 문장마다 이 종목에서만 나올 수 있는 내용이 하나 이상 있어야 합니다. 지켜볼 것을 말할 때는 무엇을(어떤 가격·수급·공시) 언제까지 보는지 구체적으로 씁니다.
 - 기사 수가 많다고 근거가 강한 것이 아닙니다. 같은 이야기의 재보도는 하나의 근거로 봅니다.
 - 모르는 것은 중립이 아닙니다. 근거가 부족하면 dataGaps에 적고, 억지로 결론 내지 않습니다.
 - 기술적 신호는 지표 요약일 뿐 오를 확률이 아닙니다.
@@ -376,13 +378,13 @@ ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 - 사용자 메시지에 "이 종목 추가 규칙"이 있으면 그것도 지킵니다.
 
 분량 (읽는 사람은 휴대폰으로 봅니다. 길이보다 근거의 정확성이 중요합니다):
-- summary 2~3문장, 160자 안쪽. desks의 view와 analysts의 rationale은 각 1~2문장, 100자 안쪽.
-- debate 각 차례 1~2문장, 120자 안쪽. 앞 차례를 그대로 되풀이하지 않습니다.
+- summary 2~3문장, 160자 안쪽. desks의 view와 analysts의 rationale은 각 2~3문장, 180자 안쪽.
+- debate는 위원회의 핵심이라 자세히 씁니다. 각 차례 3~5문장, 300자 안쪽으로, 결론만 말하지 말고 생각의 과정을 보여 줍니다: (1) 어떤 근거의 어떤 숫자를 봤는지, (2) 그 숫자를 왜 강세·약세로 읽는지, (3) 앞 차례 주장의 어디가 맞고 어디가 약한지, (4) 무엇이 나오면 자기 판단을 바꿀지. 앞 차례를 그대로 되풀이하지 않고, 같은 위원이 다시 말할 때는 새 근거나 새 반박을 냅니다. RED_TEAM의 마지막 차례는 합의된 점과 풀리지 않은 점을 각각 짚어 4~5문장으로 정리합니다.
 - scenarios의 narrative는 2문장, 120자 안쪽. catalysts·invalidation은 각 1~2개, 짧은 구(30자 안쪽)로 씁니다.
 - worstCase의 narrative 2문장 안쪽, checks 2~3개.
 - easy.summary 3문장 200자 안쪽, easy.terms 2~4개. debate의 plain은 차례마다 1문장 60자 안쪽.
 - bullish·bearish 각 3개 이하, uncertain·watch·dataGaps 각 2개 이하. 같은 내용을 여러 칸에 반복하지 않습니다.
-- evidenceIds에는 그 주장을 직접 뒷받침하는 근거 1~3개만 답니다.
+- evidenceIds에는 그 주장을 직접 뒷받침하는 근거 1~3개만 답니다(debate 차례는 1~4개).
 - 숫자는 근거에 적힌 값을 그대로 옮기고 새로 계산한 숫자에는 "약"을 붙입니다.`;
 
 /** v8: the plain retelling, trimmed and capped; none when the summary is empty. */

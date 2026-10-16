@@ -18,7 +18,8 @@ export const PRICE_PER_MTOK: Record<string, readonly [number, number]> = {
  * a committee report measured $0.18 median (10/5–10/9, about 11K in / 6.6K out on Opus).
  */
 export type BudgetTier = 'deep' | 'market';
-export const ESTIMATE_USD: Record<BudgetTier, number> = { deep: 0.22, market: 0.03 };
+// G-221: the longer debate (prompt v9) adds about 2.5K output tokens, about $0.05.
+export const ESTIMATE_USD: Record<BudgetTier, number> = { deep: 0.28, market: 0.03 };
 export const DEFAULT_BUDGET_USD = 25;
 
 export interface UsageLine { at: string; month: string; symbol: string; model: string; /** 'brief' on lines written before v3.5.0. */
