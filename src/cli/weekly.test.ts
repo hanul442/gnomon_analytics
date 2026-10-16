@@ -126,7 +126,7 @@ test('a refresh request writes one new deep report in the current prompt, even o
   const refresh = [{ symbol: '000660', requestedAt: '2026-10-03', refresh: true }];
   await runDaily({ ...opts, requests: refresh, now: new Date('2026-10-03T09:30:00Z') });
   assert.deepEqual(calls, ['SK하이닉스 (000660)']);
-  assert.match(await readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'), /gnm-committee-v8/);
+  assert.match(await readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'), /gnm-committee-v9/);
   assert.match(await readFile(path, 'utf8'), /gnm-committee-v2/);
   // Once a current report exists, the request does nothing.
   calls.length = 0;
@@ -174,7 +174,7 @@ test('the monthly AI budget: core stocks spend it first, the rest skip AI with t
   const models: string[] = [];
   const anthropic = { beta: { messages: { parse: async (req: { model: string }) => { models.push(req.model); return { stop_reason: 'end_turn', model: req.model, usage: { input_tokens: 10_000, output_tokens: 4_000 }, parsed_output: { summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], scenarios: [], analysts: [], bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [] } }; } } } } as never;
   const out = await runDaily({ root, now: new Date('2026-10-02T09:30:00Z'), apiKey: 'k', fetch: fake, tickers, anthropic, aiBudgetUsd: 0.3, selectionParams: { ...DEFAULT_SELECTION, size: 3, bigCaps: 1 } });
-  // Core first ($0.12 spent); then the big-cap committee ($0.22 estimate) no longer fits. The rest get no AI at all (G-168).
+  // Core first ($0.12 spent); then the big-cap committee ($0.28 estimate) no longer fits. The rest get no AI at all (G-168).
   assert.deepEqual(models, ['claude-opus-5-5']);
   const skipped = JSON.parse(await readFile(join(root, 'reports', '111110', '2026-10-02.json'), 'utf8')) as { commentary: { status: string; error: string } };
   assert.deepEqual([skipped.commentary.status, skipped.commentary.error], ['SKIPPED', 'AI_MONTHLY_BUDGET:0.3USD']);
