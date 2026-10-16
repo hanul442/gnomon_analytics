@@ -2,7 +2,7 @@
   "schema": "curia.market-report.v4",
   "date": "2026-10-16",
   "from": "2026-10-16",
-  "generatedAt": "2026-10-16T09:44:17.785Z",
+  "generatedAt": "2026-10-16T09:52:37.772Z",
   "period": "daily",
   "groups": [
     {
@@ -10,10 +10,10 @@
       "name": "코스피",
       "temperature": {
         "date": "2026-10-16",
-        "counted": 879,
+        "counted": 878,
         "buckets": {
           "STRONG_BULLISH": 8,
-          "BULLISH": 45,
+          "BULLISH": 44,
           "SLIGHTLY_BULLISH": 36,
           "NEUTRAL": 35,
           "SLIGHTLY_BEARISH": 80,
@@ -21,10 +21,10 @@
           "STRONG_BEARISH": 344,
           "WITHHELD": 0
         },
-        "bull": 89,
+        "bull": 88,
         "neutral": 35,
         "bear": 755,
-        "up20": 0.1695108077360637
+        "up20": 0.16856492027334852
       },
       "source": "네이버 금융 지수 일봉 및 국내 주식 스냅샷 · 구성 종목은 시가총액 상위 30개 표본",
       "universe": 942,
@@ -293,10 +293,10 @@
         {
           "symbol": "011200",
           "name": "HMM",
-          "date": "2026-10-15",
-          "close": 23250,
-          "returnPct": null,
-          "baseline": "2026-10-14",
+          "date": "2026-10-16",
+          "close": 23600,
+          "returnPct": 1.505376344086029,
+          "baseline": "2026-10-15",
           "value": null
         },
         {
@@ -321,21 +321,21 @@
       "name": "코스닥",
       "temperature": {
         "date": "2026-10-15",
-        "counted": 1791,
+        "counted": 1790,
         "buckets": {
           "STRONG_BULLISH": 15,
           "BULLISH": 92,
           "SLIGHTLY_BULLISH": 84,
           "NEUTRAL": 66,
           "SLIGHTLY_BEARISH": 136,
-          "BEARISH": 657,
+          "BEARISH": 656,
           "STRONG_BEARISH": 721,
           "WITHHELD": 20
         },
         "bull": 191,
         "neutral": 66,
-        "bear": 1514,
-        "up20": 0.25014116318464147
+        "bear": 1513,
+        "up20": 0.25028248587570623
       },
       "source": "네이버 금융 지수 일봉 및 국내 주식 스냅샷 · 구성 종목은 시가총액 상위 30개 표본",
       "universe": 1822,
@@ -3307,7 +3307,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-16T09:44:17.785Z",
+      "snapshotDate": "2026-10-16T09:52:37.772Z",
       "breadth": {
         "up": 97,
         "down": 184,
@@ -13923,7 +13923,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-16T09:44:17.785Z",
+      "snapshotDate": "2026-10-16T09:52:37.772Z",
       "breadth": {
         "up": 228,
         "down": 868,
@@ -19895,7 +19895,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-16T09:44:17.785Z",
+      "snapshotDate": "2026-10-16T09:52:37.772Z",
       "breadth": {
         "up": 438,
         "down": 215,
