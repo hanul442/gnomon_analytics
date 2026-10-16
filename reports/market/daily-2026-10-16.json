@@ -2,7 +2,7 @@
   "schema": "curia.market-report.v4",
   "date": "2026-10-16",
   "from": "2026-10-16",
-  "generatedAt": "2026-10-16T09:52:37.772Z",
+  "generatedAt": "2026-10-16T09:59:36.226Z",
   "period": "daily",
   "groups": [
     {
@@ -114,8 +114,8 @@
           "symbol": "105560",
           "name": "KB금융",
           "date": "2026-10-16",
-          "close": 160600,
-          "returnPct": 0.43777360850532077,
+          "close": 160400,
+          "returnPct": 0.3126954346466482,
           "baseline": "2026-10-15",
           "value": null
         },
@@ -159,8 +159,8 @@
           "symbol": "068270",
           "name": "셀트리온",
           "date": "2026-10-16",
-          "close": 193900,
-          "returnPct": 6.773127753303965,
+          "close": 194000,
+          "returnPct": 6.8281938325991165,
           "baseline": "2026-10-15",
           "value": null
         },
@@ -285,8 +285,8 @@
           "symbol": "010120",
           "name": "LS ELECTRIC",
           "date": "2026-10-16",
-          "close": 158500,
-          "returnPct": 4.8974189278623514,
+          "close": 158400,
+          "returnPct": 4.831237590999349,
           "baseline": "2026-10-15",
           "value": null
         },
@@ -294,8 +294,8 @@
           "symbol": "011200",
           "name": "HMM",
           "date": "2026-10-16",
-          "close": 23600,
-          "returnPct": 1.505376344086029,
+          "close": 23650,
+          "returnPct": 1.7204301075268713,
           "baseline": "2026-10-15",
           "value": null
         },
@@ -371,8 +371,8 @@
           "symbol": "247540",
           "name": "에코프로비엠",
           "date": "2026-10-16",
-          "close": 106700,
-          "returnPct": 3.8948393378773094,
+          "close": 106500,
+          "returnPct": 3.700097370983446,
           "baseline": "2026-10-15",
           "value": null
         },
@@ -506,8 +506,8 @@
           "symbol": "440110",
           "name": "파두",
           "date": "2026-10-16",
-          "close": 57500,
-          "returnPct": 1.9503546099290725,
+          "close": 57400,
+          "returnPct": 1.773049645390068,
           "baseline": "2026-10-15",
           "value": null
         },
@@ -3307,7 +3307,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-16T09:52:37.772Z",
+      "snapshotDate": "2026-10-16T09:59:36.226Z",
       "breadth": {
         "up": 97,
         "down": 184,
@@ -13923,7 +13923,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-16T09:52:37.772Z",
+      "snapshotDate": "2026-10-16T09:59:36.226Z",
       "breadth": {
         "up": 228,
         "down": 868,
@@ -18698,19 +18698,19 @@
           "value": 77
         },
         {
-          "symbol": "JKHY.O",
-          "name": "잭 헨리 & 어소시에이츠",
+          "symbol": "BSY.O",
+          "name": "벤틀리 시스템즈",
           "date": "2026-10-15",
-          "close": 156.47,
+          "close": 36.23,
           "returnPct": null,
           "baseline": "2026-10-14",
           "value": 77
         },
         {
-          "symbol": "BSY.O",
-          "name": "벤틀리 시스템즈",
+          "symbol": "JKHY.O",
+          "name": "잭 헨리 & 어소시에이츠",
           "date": "2026-10-15",
-          "close": 36.23,
+          "close": 156.47,
           "returnPct": null,
           "baseline": "2026-10-14",
           "value": 77
@@ -19697,19 +19697,19 @@
           "value": 11
         },
         {
-          "symbol": "CRF",
-          "name": "Cornerstone Total Return Closed Fund",
+          "symbol": "ASM",
+          "name": "아비노 실버 & 골드 마인스",
           "date": "2026-10-15",
-          "close": 5.93,
+          "close": 5.19,
           "returnPct": null,
           "baseline": "2026-10-14",
           "value": 11
         },
         {
-          "symbol": "ASM",
-          "name": "아비노 실버 & 골드 마인스",
+          "symbol": "CRF",
+          "name": "Cornerstone Total Return Closed Fund",
           "date": "2026-10-15",
-          "close": 5.19,
+          "close": 5.93,
           "returnPct": null,
           "baseline": "2026-10-14",
           "value": 11
@@ -19895,7 +19895,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-16T09:52:37.772Z",
+      "snapshotDate": "2026-10-16T09:59:36.226Z",
       "breadth": {
         "up": 438,
         "down": 215,
@@ -19977,6 +19977,6 @@
   ],
   "ai": {
     "status": "FAILED",
-    "error": "위원회 구조 또는 근거 검증 실패"
+    "error": "[\n  {\n    \"origin\": \"array\",\n    \"code\": \"too_big\",\n    \"maximum\": 3,\n    \"inclusive\": true,\n    \"exact\": true,\n    \"path\": [\n      \"scenarios\"\n    ],\n    \"message\": \"Too big: expe"
   }
 }
