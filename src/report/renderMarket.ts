@@ -453,6 +453,7 @@ export function chartOverlays(market: MarketSection | undefined): unknown {
   return {
     levels: s?.levels.map((l) => ({ price: l.price, kind: l.kind })) ?? [],
     fib: s?.fibonacci?.levels ?? [],
+    fibLeg: s?.fibonacci ? { from: s.fibonacci.from.date } : null,
     forecasts: market.forecasts.map((f) => ({ horizon: f.horizon, baseDate: f.baseDate, baseClose: f.baseClose, p10: f.p10, p50: f.p50, p90: f.p90, sigma: f.sigma, drift: f.drift })),
     fair: market.fairValue ? { low: market.fairValue.low, center: market.fairValue.center, high: market.fairValue.high } : null,
   };

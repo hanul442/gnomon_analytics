@@ -51,7 +51,7 @@ import { ALERTS_CSS, PRICE_ALERT_JS, PUSH_JS } from './pushParts.js';
 import { STOCK_INFO_JS } from './stockInfo.js';
 import { THEME_CHIPS_CSS, THEME_CHIPS_JS } from './themeChips.js';
 import { esc as escape } from './html.js';
-import { withCurrency, won, tone, FORMAT_JS, pct as fmtPct } from './format.js';
+import { withCurrency, currency, won, tone, FORMAT_JS, pct as fmtPct } from './format.js';
 const pct = (value: number | null): string => fmtPct(value, 2, '없음');
 
 export const CHART_ASSET = 'assets/lightweight-charts.js';
@@ -365,10 +365,11 @@ function reportNav(tabs:readonly {key:string;label:string}[]):string {
 
 export function shell(base: string, title: string, body: string, options: { lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'watch' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean }): string {
   // The site root lists every covered stock; `base` always points at it.
+  // G-222: a US report renders inside withCurrency('USD'); data-ccy tells the chart (header price, high/low marks, drawings) to use dollars.
   const rootHref = `${base}index.html`;
   const tabs = options.tabs ?? [];
   const menu = menuHtml(base, options.archiveHref);
-  return `<!doctype html><html lang="ko" data-plan="free"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return `<!doctype html><html lang="ko" data-plan="free"${currency() === 'USD' ? ' data-ccy="USD"' : ''}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0A1626"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/gnomon-icon-192.png"><link rel="icon" type="image/png" href="${base}assets/gnomon-icon-96.png"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${THEME_BOOT}${PERSONA_BOOT}${LEVEL_BOOT}${INSTALL_BOOT}
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.${ASSET_VERSION}.css"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <div class="boot-veil" aria-hidden="true"><span><img src="${base}assets/gnomon-mark.png" alt=""></span></div><script>(function(){var v=document.currentScript.previousElementSibling,done=0,lift=function(){if(done)return;done=1;v.classList.add('gone');setTimeout(function(){v.remove();},220);};setTimeout(lift,Math.max(0,850-performance.now()));addEventListener('DOMContentLoaded',function(){(document.fonts&&document.fonts.ready||Promise.resolve()).then(function(){requestAnimationFrame(function(){requestAnimationFrame(lift);});});});})();</script>

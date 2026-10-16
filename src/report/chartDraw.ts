@@ -99,7 +99,9 @@ export const CHART_DRAW_JS = `
   // G-182: 'ink' is stored as a key and resolved when drawn, so a text label stays readable after a theme switch.
   var ink = function () { return (window.GNMTheme && GNMTheme.v('--fg', '#191f28')) || '#191f28'; }, col = function (c) { return c === 'ink' || c === '#191f28' ? ink() : c; };
   var COLORS = ['#2563eb', '#f04452', '#16a34a', '#f59e0b', '#7c3aed', 'ink'];
-  var FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1], FIBX = [0, 0.618, 1, 1.272, 1.618, 2, 2.618], FIBT = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89], GANN = [[8, '1×8'], [4, '1×4'], [3, '1×3'], [2, '1×2'], [1, '1×1'], [0.5, '2×1'], [1 / 3, '3×1'], [0.25, '4×1'], [0.125, '8×1']];
+  // G-222: past 100% too — 확장 127.2 · 161.8 · 261.8% of the move, measured from its start and beyond its end, so an up move
+  // shows its targets above the high (the retracement levels stay between the two points).
+  var FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1], FIBUP = [1.272, 1.618, 2.618], FIBX = [0, 0.618, 1, 1.272, 1.618, 2, 2.618], FIBT = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89], GANN = [[8, '1×8'], [4, '1×4'], [3, '1×3'], [2, '1×2'], [1, '1×1'], [0.5, '2×1'], [1 / 3, '3×1'], [0.25, '4×1'], [0.125, '8×1']];
   var G = null;
   var init = function () {
     var g = window.GNMChart; if (!g || g === G || !g.candle) return;
@@ -166,9 +168,11 @@ export const CHART_DRAW_JS = `
 
     // ---- painting ----
     var hexA = function (c, a) { var n = parseInt(c.slice(1), 16); return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')'; };
+    // G-222: a box in a light colour (the 'ink' pen on the dark theme, white) takes dark text.
+    var light = function (c) { var m = /^#([0-9a-f]{6})$/i.exec(String(c).trim()); if (!m) return false; var n = parseInt(m[1], 16); return (0.299 * (n >> 16 & 255) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 170; };
     var label = function (ctx, r, text, x, y, color, align, boxed) {
       ctx.font = '600 ' + (11.5 * r) + 'px sans-serif'; var w = ctx.measureText(text).width, h = 16 * r, px = align === 'right' ? x - w - 8 * r : align === 'center' ? x - w / 2 - 4 * r : x + 4 * r;
-      if (boxed) { ctx.fillStyle = color; ctx.globalAlpha = 0.92; ctx.fillRect(px - 4 * r, y - h / 2 - 1 * r, w + 8 * r, h + 2 * r); ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; } else ctx.fillStyle = color;
+      if (boxed) { ctx.fillStyle = color; ctx.globalAlpha = 0.92; ctx.fillRect(px - 4 * r, y - h / 2 - 1 * r, w + 8 * r, h + 2 * r); ctx.globalAlpha = 1; ctx.fillStyle = light(color) ? '#191f28' : '#fff'; } else ctx.fillStyle = color;
       ctx.textBaseline = 'middle'; ctx.fillText(text, px, y);
     };
     var edgeLine = function (x1, y1, x2, y2, W, H, both) {
@@ -189,7 +193,7 @@ export const CHART_DRAW_JS = `
       else if (k === 'vline') { line([A[0], 0], [A[0], H / r]); label(ctx, r, dayOf(s.pts[0]), A[0] * r, H - 12 * r, c, 'center', true); }
       else if (k === 'channel') { line(A, B); if (P[2]) { var t2 = (P[2][0] - A[0]) / ((B[0] - A[0]) || 1), yl = A[1] + (B[1] - A[1]) * t2, off = P[2][1] - yl; line([A[0], A[1] + off], [B[0], B[1] + off]); ctx.setLineDash([4 * r, 4 * r]); ctx.globalAlpha = 0.6; line([A[0], A[1] + off / 2], [B[0], B[1] + off / 2]); ctx.globalAlpha = 0.08; ctx.beginPath(); ctx.moveTo(A[0] * r, A[1] * r); ctx.lineTo(B[0] * r, B[1] * r); ctx.lineTo(B[0] * r, (B[1] + off) * r); ctx.lineTo(A[0] * r, (A[1] + off) * r); ctx.closePath(); ctx.fill(); } }
       else if (k === 'rect') { ctx.globalAlpha = 0.12; ctx.fillRect(Math.min(A[0], B[0]) * r, Math.min(A[1], B[1]) * r, Math.abs(B[0] - A[0]) * r, Math.abs(B[1] - A[1]) * r); ctx.globalAlpha = 1; ctx.strokeRect(Math.min(A[0], B[0]) * r, Math.min(A[1], B[1]) * r, Math.abs(B[0] - A[0]) * r, Math.abs(B[1] - A[1]) * r); }
-      else if (k === 'fib' && P[1]) { var x0 = Math.min(A[0], B[0]); FIB.forEach(function (f, i) { var p = s.pts[1].p + (s.pts[0].p - s.pts[1].p) * f, y = candle.priceToCoordinate(p); if (y == null) return; if (i) { var pp = s.pts[1].p + (s.pts[0].p - s.pts[1].p) * FIB[i - 1], yp = candle.priceToCoordinate(pp); if (yp != null) { ctx.globalAlpha = 0.06 + (i % 2) * 0.04; ctx.fillRect(x0 * r, Math.min(y, yp) * r, W - x0 * r, Math.abs(yp - y) * r); } } ctx.globalAlpha = f === 0 || f === 1 ? 1 : 0.75; line([x0, y], [W / r, y]); ctx.globalAlpha = 1; label(ctx, r, (f * 100).toFixed(1) + '%  ' + won(p), x0 * r, (y - 8) * r, c); }); ctx.globalAlpha = 0.5; ctx.setLineDash([4 * r, 4 * r]); line(A, B); }
+      else if (k === 'fib' && P[1]) { var x0 = Math.min(A[0], B[0]); FIB.forEach(function (f, i) { var p = s.pts[1].p + (s.pts[0].p - s.pts[1].p) * f, y = candle.priceToCoordinate(p); if (y == null) return; if (i) { var pp = s.pts[1].p + (s.pts[0].p - s.pts[1].p) * FIB[i - 1], yp = candle.priceToCoordinate(pp); if (yp != null) { ctx.globalAlpha = 0.06 + (i % 2) * 0.04; ctx.fillRect(x0 * r, Math.min(y, yp) * r, W - x0 * r, Math.abs(yp - y) * r); } } ctx.globalAlpha = f === 0 || f === 1 || f === 0.618 ? 1 : 0.6; line([x0, y], [W / r, y]); ctx.globalAlpha = 1; label(ctx, r, +(f * 100).toFixed(1) + '%  ' + won(p), x0 * r, (y - 10) * r, c, 'left', true); }); FIBUP.forEach(function (f) { var p = s.pts[0].p + (s.pts[1].p - s.pts[0].p) * f, y = candle.priceToCoordinate(p); if (y == null) return; ctx.globalAlpha = f === 1.618 ? 1 : 0.6; ctx.setLineDash([5 * r, 4 * r]); line([x0, y], [W / r, y]); ctx.setLineDash(s.st && s.st.dash ? [6 * r, 4 * r] : []); ctx.globalAlpha = 1; label(ctx, r, '확장 ' + +(f * 100).toFixed(1) + '%  ' + won(p), x0 * r, (y - 10) * r, c, 'left', true); }); ctx.globalAlpha = 0.5; ctx.setLineDash([4 * r, 4 * r]); line(A, B); }
       else if (k === 'fibext' && P[2]) { line(A, B); line(B, P[2]); var mv = s.pts[1].p - s.pts[0].p; FIBX.forEach(function (f) { var p = s.pts[2].p + mv * f, y = candle.priceToCoordinate(p); if (y == null) return; ctx.globalAlpha = 0.8; line([P[2][0], y], [W / r, y]); ctx.globalAlpha = 1; label(ctx, r, f.toFixed(3).replace(/0+$/, '').replace(/\\.$/, '') + '  ' + won(p), P[2][0] * r, (y - 8) * r, c); }); }
       else if (k === 'fibtime' && P[1]) { var la = ts.coordinateToLogical(A[0]), lb = ts.coordinateToLogical(B[0]); if (la != null && lb != null) { var u = Math.max(1, Math.round(lb - la)); line([A[0], 0], [A[0], H / r]); FIBT.forEach(function (f) { var xx = ts.logicalToCoordinate(la + u * f); if (xx == null || xx * r > W) return; ctx.globalAlpha = 0.7; line([xx, 0], [xx, H / r]); ctx.globalAlpha = 1; label(ctx, r, String(f), xx * r, 12 * r, c, 'center'); }); } }
       else if (k === 'gann' && P[1]) { var gdx = B[0] - A[0], gdy = B[1] - A[1]; GANN.forEach(function (gg) { var e2 = edgeLine(A[0], A[1], A[0] + gdx, A[1] + gdy * gg[0], W, H, false); ctx.globalAlpha = gg[0] === 1 ? 1 : 0.55; line([e2[0], e2[1]], [e2[2], e2[3]]); ctx.globalAlpha = 1; var lx = A[0] + gdx * 1.15, ly = A[1] + gdy * gg[0] * 1.15; label(ctx, r, gg[1], lx * r, ly * r, c); }); }
@@ -216,6 +220,13 @@ export const CHART_DRAW_JS = `
     var req = null;
     candle.attachPrimitive({
       attached: function (p) { req = p.requestUpdate; }, detached: function () {}, updateAllViews: function () {},
+      // G-222: a Fibonacci drawing with a point on screen keeps its levels up to 확장 161.8% inside the price scale, so the targets
+      // past the move show (an old one scrolled off doesn't squash today's candles).
+      autoscaleInfo: function () {
+        if (suspended || hideAll) return null; var lo = Infinity, hi = -Infinity;
+        shapes.forEach(function (s) { if (s.hidden || !s.pts[1] || (s.k !== 'fib' && s.k !== 'fibext')) return; var pw = paneW(); if (!s.pts.some(function (pt) { var x = X(pt); return x != null && x >= 0 && x <= pw; })) return; var a = s.pts[0].p, b = s.pts[1].p, ps = s.k === 'fib' ? [a, b, a + (b - a) * 1.618] : s.pts[2] ? [a, b, s.pts[2].p, s.pts[2].p + (b - a) * 1.618] : []; ps.forEach(function (v) { lo = Math.min(lo, v); hi = Math.max(hi, v); }); });
+        return isFinite(lo) ? { priceRange: { minValue: lo, maxValue: hi } } : null;
+      },
       paneViews: function () { return [{ zOrder: function () { return 'top'; }, renderer: function () { return { draw: function (target) {
         if (suspended) return;
         target.useBitmapCoordinateSpace(function (sc) { var W = sc.bitmapSize.width, H = sc.bitmapSize.height, r = sc.horizontalPixelRatio;
