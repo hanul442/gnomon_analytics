@@ -177,7 +177,7 @@ const PANES: [string, string, boolean][] = [
 const DESC: Record<string, string> = {
   ma5: '최근 5거래일 평균 가격', ma20: '한 달 평균 가격, 단기 추세', ma60: '석 달 평균 가격, 중기 추세', ma120: '반년 평균 가격, 장기 추세',
   ema12: '최근 가격에 무게를 둔 평균 두 개', bb: '20일 평균 ± 표준편차 2배, 변동 범위', ichimoku: '구름대로 보는 추세와 지지', env: '20일 평균 ±5% 띠', vwap: '최근 20거래일 거래량으로 가중한 평균 가격(거래가 많이 된 값의 중심)', psar: '추세를 따라오는 점. 가격 아래면 오름세, 위면 내림세이고 점이 뒤집히면 추세 전환 신호',
-  levels: '자주 막히거나 받친 가격대', fib: '최근 120거래일 최고·최저를 잇는 흐름의 되돌림 비율', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위. 옅은 띠 80%(10~90%) · 진한 띠 50%(25~75%) · 점선 중앙',
+  levels: '자주 막히거나 받친 가격대', fib: '최근 120거래일 최고·최저를 잇는 흐름의 되돌림 비율과, 그 흐름이 이어질 때의 확장 127.2·161.8%', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위. 옅은 띠 80%(10~90%) · 진한 띠 50%(25~75%) · 점선 중앙',
   volume: '하루 거래된 주식 수', rsi: '과열(70 이상)·과매도(30 이하)', macd: '단기·장기 평균의 차이로 보는 추세 전환', stoch: '최근 범위 안에서 지금 가격의 위치',
   spikes: '20일 평균의 3배 넘게 거래된 날을 캔들 아래에 표시(▲ 오른 날 · ▼ 내린 날)', value: '하루 거래대금(종가 × 거래량, 억 원). 진하게 칠한 날은 20일 평균의 3배 이상', ad: '거래가 많은 날 종가가 하루 범위의 위쪽(매집 쪽)·아래쪽(분산 쪽)에서 끝났는지 누적한 선',
   cci: '평균에서 얼마나 벗어났는지', wr: '최근 고점 대비 위치(과열·과매도)', obv: '오른 날·내린 날 거래량 누적', mfi: '거래량을 함께 본 RSI. 80 이상 과열 · 20 이하 과매도', atr: '하루 평균 움직임 폭',
@@ -240,9 +240,10 @@ window.addEventListener('DOMContentLoaded', function () {
   var marks = JSON.parse(document.getElementById('marks').textContent) || [];
   var ov = JSON.parse(document.getElementById('overlays').textContent) || {};
   // G-182: up/down follow the theme (re-read on a switch below); overlay ink is a mid slate-blue that reads on the light and the dark page alike.
-  var TH = window.GNMTheme, UP = TH ? TH.v('--up', '#f04452') : '#f04452', DOWN = TH ? TH.v('--down', '#3182f6') : '#3182f6', INK = '#6F86A8', GOLD = INK;
+  var TH = window.GNMTheme, UP = TH ? TH.v('--up', '#f04452') : '#f04452', DOWN = TH ? TH.v('--down', '#3182f6') : '#3182f6', INK = '#6F86A8';
   var mobile = window.matchMedia('(max-width: 820px)').matches;
-  var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
+  // G-222: a US report (html[data-ccy=USD]) prices in dollars.
+  var won = document.documentElement.getAttribute('data-ccy') === 'USD' ? function (v) { return '$' + v.toFixed(2); } : function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
   var chart = L.createChart(el, {
     autoSize: true,
     layout: { background: { color: 'transparent' }, textColor: '#7b7f87', fontFamily: 'inherit', panes: { separatorColor: '#d6dfeb' } },
@@ -317,7 +318,6 @@ window.addEventListener('DOMContentLoaded', function () {
     // G-176: six level boxes piled over the price scale. Only the nearest support and the nearest resistance get an axis box;
     // the other levels stay as lines (the 가격 구조 table lists them all).
     levels: function () { var lv = ov.levels || [], now = bars.length ? bars[bars.length - 1].close : 0, near = {}; lv.forEach(function (l) { var d = Math.abs(l.price - now); if (!near[l.kind] || d < near[l.kind].d) near[l.kind] = { d: d, l: l }; }); return lv.map(function (l) { var top = near[l.kind] && near[l.kind].l === l; return candle.createPriceLine({ price: l.price, color: l.kind === 'SUPPORT' ? DOWN : UP, lineWidth: 1, lineStyle: top ? 0 : 2, axisLabelVisible: top, title: top ? (l.kind === 'SUPPORT' ? '지지' : '저항') : '' }); }); },
-    fib: function () { return (ov.fib || []).map(function (f) { return candle.createPriceLine({ price: f.price, color: GOLD, lineWidth: 1, lineStyle: 1, axisLabelVisible: false, title: f.ratio === 0 ? 'Fib 0% (끝)' : f.ratio === 1 ? 'Fib 100% (시작)' : 'Fib ' + (f.ratio * 100).toFixed(1) + '%' }); }); },
     fair: function () { if (!ov.fair) return []; return [['low', '적정 하단'], ['center', '적정가'], ['high', '적정 상단']].map(function (k) { return candle.createPriceLine({ price: ov.fair[k[0]], color: INK, lineWidth: k[0] === 'center' ? 2 : 1, lineStyle: k[0] === 'center' ? 0 : 2, axisLabelVisible: true, title: k[1] }); }); }
   };
   var addDays = function (iso, n) { var d = new Date(iso + 'T00:00:00Z'); while (n > 0) { d.setUTCDate(d.getUTCDate() + 1); var w = d.getUTCDay(); if (w !== 0 && w !== 6) n--; } return d.toISOString().slice(0, 10); };
@@ -355,6 +355,61 @@ window.addEventListener('DOMContentLoaded', function () {
       } }; } }]; }
     });
     return [hi, lo, mid];
+  };
+
+  // G-222: the 피보나치 layer was dotted price lines whose names never showed (no axis label means no title). Now it is
+  // drawn like TradingView's retracement: from the leg's start to the right edge, a coloured line and a label per level,
+  // light bands between 0% and 100%, and 확장 127.2% / 161.8% of the leg past its end (targets in the leg's direction).
+  var FIB_COL = { 0: '#787b86', 0.236: '#f23645', 0.382: '#ff9800', 0.5: '#4caf50', 0.618: '#089981', 0.786: '#00bcd4', 1: '#787b86', 1.272: '#2962ff', 1.618: '#9c27b0' };
+  // Attached to the candle series itself (no time points of its own, so it fits the weekly and minute views too);
+  // setOverlay('fib') attaches and detaches it. Hidden while the analysis layers are suspended (minute candles).
+  var fibPrim = null;
+  var makeFib = function () {
+    // Older reports list 0.236–0.786 only: the levels lie on one line, so 0% and 100% follow from any two of them.
+    var lv = (ov.fib || []).slice(), a = lv[0], z = lv[lv.length - 1];
+    if (!a || !z || a.ratio === z.ratio) return null;
+    var at = function (k) { return a.price + (z.price - a.price) * (k - a.ratio) / (z.ratio - a.ratio); };
+    if (a.ratio !== 0) lv.unshift({ ratio: 0, price: at(0) });
+    if (z.ratio !== 1) lv.push({ ratio: 1, price: at(1) });
+    var p0 = lv[0], p1 = lv[lv.length - 1];
+    var levels = lv.concat([1.272, 1.618].map(function (k) { return { ratio: k, ext: true, price: p1.price + (p0.price - p1.price) * k }; }));
+    var lo = Math.min.apply(null, levels.map(function (f) { return f.price; })), hi = Math.max.apply(null, levels.map(function (f) { return f.price; }));
+    var from = ov.fibLeg && ov.fibLeg.from;
+    var fmt = function (v) { return document.documentElement.getAttribute('data-ccy') === 'USD' ? '$' + v.toFixed(2) : Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('ko-KR') : +v.toFixed(2) + ''; };
+    var ys = [], x0 = 0, W = 0;
+    // Lines and bands under the candles, the level labels above them so a candle never hides one.
+    var view = function (labels) { return { zOrder: function () { return labels ? 'top' : 'bottom'; }, renderer: function () { return { draw: function (target) {
+      if (analysisSuspended) return;
+      target.useMediaCoordinateSpace(function (sc) {
+        var ctx = sc.context; W = sc.mediaSize.width;
+        // The leg starts on screen, before it (whole width), or after it (nothing to draw yet).
+        var fx = from ? chart.timeScale().timeToCoordinate(from) : null;
+        if (fx == null && from && activeBars === bars && bars.length && from > bars[bars.length - 1].date) return;
+        x0 = fx == null ? 0 : fx; if (x0 > W) return; x0 = Math.max(0, x0);
+        ctx.save();
+        levels.forEach(function (f, i) {
+          var y = ys[i], c = FIB_COL[f.ratio] || INK; if (y == null) return;
+          if (labels) {
+            var t = (f.ext ? '확장 ' : '') + +(f.ratio * 100).toFixed(1) + '%' + (f.ext ? '' : f.ratio === 0 ? ' 끝' : f.ratio === 1 ? ' 시작' : '') + '  ' + fmt(f.price);
+            ctx.font = '600 11px sans-serif'; ctx.textBaseline = 'middle'; var tw = ctx.measureText(t).width;
+            ctx.globalAlpha = 0.9; ctx.fillStyle = c; ctx.fillRect(x0 + 2, y - 17, tw + 8, 15); ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.fillText(t, x0 + 6, y - 9.5); return;
+          }
+          if (i && !f.ext && ys[i - 1] != null) { ctx.globalAlpha = 0.07; ctx.fillStyle = c; ctx.fillRect(x0, Math.min(y, ys[i - 1]), W - x0, Math.abs(y - ys[i - 1])); }
+          ctx.globalAlpha = 1; ctx.strokeStyle = c; ctx.lineWidth = f.ratio === 0.618 || f.ratio === 1.618 ? 1.5 : 1; ctx.setLineDash(f.ext ? [5, 4] : []);
+          ctx.beginPath(); ctx.moveTo(x0, Math.round(y) + 0.5); ctx.lineTo(W, Math.round(y) + 0.5); ctx.stroke();
+        });
+        ctx.restore();
+      });
+    } }; } }; };
+    var views = [view(false), view(true)];
+    return {
+      // Attaching alone does not repaint: ask for one so the layer shows (and the scale takes the extensions) at once.
+      attached: function (p) { if (p && p.requestUpdate) p.requestUpdate(); }, detached: function () {},
+      updateAllViews: function () { ys = levels.map(function (f) { return candle.priceToCoordinate(f.price); }); },
+      paneViews: function () { return views; },
+      // The extensions are the point of turning this on: keep them (up to 161.8%) inside the price scale.
+      autoscaleInfo: function () { return analysisSuspended ? null : { priceRange: { minValue: lo, maxValue: hi } }; }
+    };
   };
 
   // ---- AI scenarios: a fan from today's close to each scenario's 20-session range ----
@@ -465,6 +520,7 @@ window.addEventListener('DOMContentLoaded', function () {
   var spikeList = function () { var avg = sma(V, 20), out = []; for (var i = 20; i < bars.length; i++) if (avg[i - 1] && V[i] >= avg[i - 1] * 3) { var up = C[i] >= C[i - 1]; out.push({ time: t(i), position: 'belowBar', shape: up ? 'arrowUp' : 'arrowDown', color: up ? '#f04452' : '#3182f6', text: (V[i] / avg[i - 1]).toFixed(1) + '배' }); } return out; };
   var setOverlay = function (k, on) {
     if (k === 'spikes') { if (!spikeMarks) spikeMarks = L.createSeriesMarkers(candle, []); spikeMarks.setMarkers(on ? spikeList() : []); return; }
+    if (k === 'fib') { if (fibPrim) candle.detachPrimitive(fibPrim); fibPrim = on ? makeFib() : null; if (fibPrim) candle.attachPrimitive(fibPrim); return; }
     if (lineMakers[k]) { (priceLines[k] || []).forEach(function (pl) { candle.removePriceLine(pl); }); priceLines[k] = on ? lineMakers[k]() : []; return; }
     (built[k] || []).forEach(function (s) { chart.removeSeries(s); });
     built[k] = on ? overlayMakers[k]() : [];
