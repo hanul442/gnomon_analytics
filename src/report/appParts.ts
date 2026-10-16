@@ -259,7 +259,7 @@ window.addEventListener('DOMContentLoaded', function () {
   var C = bars.map(function (b) { return b.close; }), H = bars.map(function (b) { return b.high; }), Lo = bars.map(function (b) { return b.low; }), V = bars.map(function (b) { return b.volume; });
   var candle = chart.addSeries(L.CandlestickSeries, { upColor: UP, downColor: DOWN, borderVisible: false, wickUpColor: UP, wickDownColor: DOWN });
   candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
-  // G-218: candles fill the price pane like TradingView (the default keeps a fifth of it empty at the top; 0.16 still clears the high mark and the legend).
+  // G-219: candles fill the price pane like TradingView (the default keeps a fifth of it empty at the top; 0.16 still clears the high mark and the legend).
   candle.priceScale().applyOptions({ scaleMargins: { top: 0.16, bottom: 0.1 } });
   // G-181: text, grid and candle colours come from the theme tokens and follow a dark/light switch.
   if (window.GNMTheme) GNMTheme.chart(chart, function (c) { UP = c.up; DOWN = c.down; candle.applyOptions({ upColor: c.up, downColor: c.down, wickUpColor: c.up, wickDownColor: c.down }); });
@@ -597,7 +597,7 @@ window.addEventListener('DOMContentLoaded', function () {
   // ---- legend, ranges and period change ----
   var legend = document.getElementById('legend'), stat = document.getElementById('period-stat');
   var activeBars=bars;var byDate = {}; bars.forEach(function (b, i) { byDate[b.date] = i; });
-  // G-218: TradingView-style legends. The line above the chart colours each price against the previous close (red up,
+  // G-219: TradingView-style legends. The line above the chart colours each price against the previous close (red up,
   // blue down, like Naver and Toss) and adds the change and a compact volume; each pane carries its indicators' values
   // for the candle under the crosshair (the last candle otherwise) at its top-left corner.
   // Won prices are whole numbers: no decimals on prices or price-pane lines when every close is whole (dollars and sub-won coins keep them).
@@ -666,7 +666,7 @@ window.addEventListener('DOMContentLoaded', function () {
   if (typeof ResizeObserver === 'function') new ResizeObserver(function () { relegend(); }).observe(el);
   show(bars.length - 1);
   chart.subscribeCrosshairMove(function (p) { show(p && p.time && byDate[p.time] != null ? byDate[p.time] : activeBars.length - 1); });
-  // G-218: like TradingView's » button — once the newest candle has scrolled off the right edge, one tap brings it
+  // G-219: like TradingView's » button — once the newest candle has scrolled off the right edge, one tap brings it
   // back without changing the zoom.
   var toLatest = document.createElement('button');
   toLatest.type = 'button'; toLatest.className = 'to-latest'; toLatest.hidden = true; toLatest.setAttribute('aria-label', '최신 봉으로 이동'); toLatest.title = '최신 봉으로 이동';
