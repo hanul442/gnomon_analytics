@@ -1,5 +1,5 @@
 {
- "at": "2026-10-16T11:22:08.047Z",
+ "at": "2026-10-16T14:08:54.076Z",
  "selected": null,
  "universe": [
   {
@@ -25,8 +25,7 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 295,
-   "error": "1 failed "
+   "count": 296
   },
   {
    "source": "naver:world:day:all",
