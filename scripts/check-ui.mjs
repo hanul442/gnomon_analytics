@@ -396,6 +396,20 @@ try{
  await page.waitForFunction(()=>/저장했어요/.test(document.getElementById('pf-state').textContent));
  {const st=await page.evaluate(()=>({p:JSON.parse(localStorage.getItem('gnm-prefs')||'{}'),v:localStorage.getItem('gnm-persona'),h:document.documentElement.getAttribute('data-persona')}));assert.equal(st.p.explain,'아주 쉬운 말로');assert.deepEqual(st.p.sectors,['반도체']);assert.equal(st.v,'long');assert.equal(st.h,'long');}
  await new Promise(r=>setTimeout(r,1200));assert.equal(surveys.at(-1)?.kind,'onboarding',await page.locator('#pf-state').innerText()+JSON.stringify(surveys));assert.deepEqual(surveys.at(-1).answers.sectors,['반도체']);
+ // G-218: 화면 수준 — 전문가 from settings; on a stock page 초보자 hides the heavy cards behind the tab's foot button.
+ await page.locator('#pf-form label',{hasText:'전문가'}).click();
+ assert.equal(await page.evaluate(()=>[document.documentElement.getAttribute('data-level'),JSON.parse(localStorage.getItem('gnm-prefs')||'{}').level].join()),'pro,전문가');
+ for(const width of [375,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/005930/index.html');await page.locator('#tab-home .lv-foot').waitFor();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'level foot fits '+width);
+  assert.equal(await page.locator('#tab-home .pc-trader').isVisible()&&await page.locator('#tab-home .pc-long').isVisible(),true,'전문가 sees both number cards');
+  assert.equal(await page.locator('#tab-home .lv-guide').isVisible(),false);}
+ await page.goto(origin+'/005930/index.html#tab-technical');await page.locator('#tab-technical [data-level-pick=easy]').click();
+ assert.equal(await page.locator('#tab-technical .lv-guide').isVisible(),true,'초보자 gets the plain line');assert.equal(await page.locator('#tab-strategy').isVisible(),false,'backtests wait');
+ assert.match(await page.locator('#tab-technical .lv-more').innerText(),/자세한 분석 \d+개 더 보기/);await page.locator('#tab-technical .lv-more').click();
+ assert.equal(await page.locator('#tab-strategy').isVisible(),true,'더 보기 opens them');assert.equal(await page.locator('#tab-technical .lv-more').isVisible(),false);
+ assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('gnm-prefs')||'{}').level),'초보자');
+ await page.evaluate(()=>{const a=JSON.parse(localStorage.getItem('gnm-prefs')||'{}');delete a.level;localStorage.setItem('gnm-prefs',JSON.stringify(a));});
+ await page.setViewportSize({width:1280,height:850});await page.goto(origin+'/settings.html');await page.locator('#pf-form').waitFor();
  // G-210: the same page holds 화면, 알림 (alerts.html now lands here) and 계정.
  {for(const id of ['profile','committee','screen','alerts','account'])assert.equal(await page.locator('.st-nav a[href="#'+id+'"]').count(),1);assert.equal(await page.locator('#al-body').count(),1);assert.equal(await page.locator('#screen ~ section .theme-bar [data-theme-pick]').count()>=3,true);}
  // G-212: 내 위원회 — add, reorder, then the question box offers them as one-tap answerers.

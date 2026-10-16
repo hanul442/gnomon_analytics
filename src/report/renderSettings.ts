@@ -1,4 +1,4 @@
-// 설정 (G-210): every setting in one page — 내 투자 방식 (G-207: view, holding period, explanation depth,
+// 설정 (G-210): every setting in one page — 내 투자 방식 (G-207, G-218 화면 수준: view, holding period, explanation depth,
 // assets, sectors, watched stocks), 화면 (theme), 알림 (G-97, the alerts page's parts) and 계정 links.
 // Profile picks save at once to gnm-prefs/gnm-persona (which follow the account, G-109) and, signed in,
 // to the onboarding answers on the server, which AI answers read.
@@ -7,7 +7,8 @@ import { esc } from './html.js';
 import { shell } from './renderHtml.js';
 import { PERSONAS } from './persona.js';
 import { SECTORS } from './sectors.js';
-import { ASSETS, EXPLAIN, HORIZON } from './profile.js';
+import { ASSETS, EXPLAIN, HORIZON, LEVEL } from './profile.js';
+import { LEVELS } from './level.js';
 import { CREDIT_COST, EXPERTS } from './plans.js';
 import { alertsParts } from './renderAlerts.js';
 
@@ -37,6 +38,7 @@ export function renderSettings(): string {
 <nav class="st-nav" aria-label="설정 바로가기"><a href="#profile">내 투자 방식</a><a href="#committee">내 위원회</a><a href="#screen">화면</a><a href="#alerts">알림</a><a href="#account">계정</a></nav>
 <h2 class="st-h" id="profile">내 투자 방식</h2><p class="muted small">홈 화면, 종목 화면, AI 답변이 이 값을 따라요.</p><p class="pf-state" id="pf-state" aria-live="polite"></p>
 <section class="card" id="pf-form">
+${group('level', '화면 수준', '종목 화면을 이 수준에 맞춰요. 초보자는 쉬운 풀이와 꼭 볼 카드만, 전문가는 모든 분석을 숫자 위주로 촘촘하게 보여요. 종목 화면 각 탭 맨 아래에서도 바꿀 수 있어요.', 'one', LEVEL).replace('</p>', '<span id="lv-auto"></span></p>')}
 ${group('persona', '보기 방식', '홈과 종목 화면에서 무엇을 먼저 보여 줄지 정해요.', 'one', PERSONAS.map((p) => p.label))}
 ${group('horizon', '투자 기간', '홈의 내 종목 카드가 이 기간에 맞는 조건을 골라 줘요. AI는 이 기간에서 중요한 것부터 답해요.', 'one', HORIZON)}
 ${group('explain', '설명 깊이', 'AI 질문의 답이 이 수준으로 와요.', 'one', EXPLAIN)}
@@ -114,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script><script>
 document.addEventListener('DOMContentLoaded', function () {
   var G = window.GNM || {}, $ = function (id) { return document.getElementById(id); }, form = $('pf-form');
-  var VIEWS = ${JSON.stringify(PERSONAS.map((p) => [p.key, p.label]))};
+  var VIEWS = ${JSON.stringify(PERSONAS.map((p) => [p.key, p.label]))}, LEVELS = ${JSON.stringify(LEVELS.map((l) => [l.key, l.label]))};
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   var put = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
   var read = function () { try { return JSON.parse(get('gnm-prefs') || 'null') || {}; } catch (e) { return {}; } };
@@ -132,6 +134,9 @@ document.addEventListener('DOMContentLoaded', function () {
       var k = i.name, v = k === 'persona' ? label : a[k];
       i.checked = Array.isArray(v) ? v.indexOf(i.value) >= 0 : v === i.value;
     });
+    // G-218: an unpicked level is named, not checked, so picking it still saves it.
+    var lv = (LEVELS.filter(function (x) { return x[0] === document.documentElement.getAttribute('data-level'); })[0] || [])[1];
+    $('lv-auto').textContent = !a.level && lv ? ' 아직 고르지 않아서 지금은 ' + (a.experience ? '설문의 투자 경험에 맞춘 ' : '기본값인 ') + lv + ' 화면이에요.' : '';
     var w = []; try { w = JSON.parse(get('gnm-watch') || '[]'); } catch (e) {}
     $('pf-watch').textContent = w.length ? '☆를 누른 종목 ' + w.length + '개가 있어요.' : '아직 없어요. 종목 화면에서 ☆를 누르면 여기 모여요.';
   };
@@ -167,6 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var a = read();
     a[k] = i.type === 'checkbox' ? [].map.call(form.querySelectorAll('input[name="' + k + '"]:checked'), function (c) { return c.value; }) : i.value;
     put('gnm-prefs', JSON.stringify(a));
+    if (k === 'level') { var lk = (LEVELS.filter(function (x) { return x[1] === i.value; })[0] || [])[0]; if (lk) { document.documentElement.setAttribute('data-level', lk); window.dispatchEvent(new Event('gnm-level')); } }
     send();
   });
   fill();
