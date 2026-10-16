@@ -145,9 +145,11 @@ export const UI_SCRIPT = `<script>
   // debate room's "쉬운 말" button overrides it on this device (gnm-easy, "on:base") until that level changes.
   // Plain lines, member roles and the words' underlines follow it.
   var baseLevel = function () {
-    var h = document.documentElement, l = h.getAttribute('data-level') || '', x = '';
-    try { x = (JSON.parse(localStorage.getItem('gnm-prefs') || 'null') || {}).explain || ''; } catch (e) {}
-    return l === 'beginner' || /아주 쉬운/.test(x) || (!l && h.getAttribute('data-persona') === 'beginner') ? 'easy' : l === 'expert' || /전문 용어/.test(x) ? 'expert' : 'normal';
+    // G-220: html[data-level] is easy | mid | adv | pro (level.ts); a level only counts once picked or derived from the survey.
+    var h = document.documentElement, l = h.getAttribute('data-level') || '', x = '', a = {};
+    try { a = JSON.parse(localStorage.getItem('gnm-prefs') || 'null') || {}; x = a.explain || ''; } catch (e) {}
+    if (!a.level && !a.experience) l = '';
+    return l === 'easy' || /아주 쉬운/.test(x) || (!l && h.getAttribute('data-persona') === 'beginner') ? 'easy' : l === 'pro' || /전문 용어/.test(x) ? 'expert' : 'normal';
   };
   var explain = function () {
     var h = document.documentElement, v = baseLevel(), o = '';
