@@ -147,6 +147,10 @@ try{
  await page.goto(origin+'/s/999998.html#tab-chart');await page.locator('#chart-card').waitFor({state:'attached'});
  assert.equal(await page.locator('[data-sc]').count(),0,'no scenario layer on the chart (G-130)');
  assert.ok(await page.evaluate(()=>document.documentElement.classList.contains('chart-fs')),'chart opens full screen (G-139)');await page.waitForFunction(()=>!!window.GNM_chartPro);
+ // G-219: legend line with the change, indicator values at each pane's corner, and the » button back to the newest candle.
+ assert.match(await page.locator('#legend').textContent(),/종 [\d,.]+[+-]?[\d,.]* \(/);assert.ok((await page.locator('.pane-legends .pl-row').allTextContents()).some(t=>t.startsWith('거래량')),'volume pane legend');
+ {const cb=await page.locator('#chart').boundingBox();assert.equal(await page.locator('.to-latest').isVisible(),false);await page.mouse.move(cb.x+cb.width*.3,cb.y+60);await page.mouse.down();await page.mouse.move(cb.x+cb.width*.9,cb.y+60,{steps:8});await page.mouse.up();
+  await page.locator('.to-latest').waitFor();await page.locator('.to-latest').click();await page.waitForFunction(()=>document.querySelector('.to-latest').hidden);}
  await page.locator('.cfs-foot [data-ct-open]').click();await page.locator('.ct-pop [data-ct="line"]').click();assert.ok(await page.evaluate(()=>GNM_chartPro.view().data().length===GNMChart.candle.data().length));
  await page.locator('.cfs-foot [data-ct-open]').click();await page.locator('.ct-pop [data-ct="ha"]').click();await page.locator('[data-tf="W"]').click();assert.ok(await page.evaluate(()=>GNM_chartPro.view().data().length===GNMChart.candle.data().length&&GNM_chartPro.view().options().visible!==false),'chart type follows the weekly switch');
  await page.locator('[data-tf="D"]').click();assert.ok(await page.evaluate(()=>!!GNM_chartPro.extremes()),'period high/low');await page.waitForFunction(()=>!!window.GNM_draw);
@@ -396,7 +400,7 @@ try{
  await page.waitForFunction(()=>/저장했어요/.test(document.getElementById('pf-state').textContent));
  {const st=await page.evaluate(()=>({p:JSON.parse(localStorage.getItem('gnm-prefs')||'{}'),v:localStorage.getItem('gnm-persona'),h:document.documentElement.getAttribute('data-persona')}));assert.equal(st.p.explain,'아주 쉬운 말로');assert.deepEqual(st.p.sectors,['반도체']);assert.equal(st.v,'long');assert.equal(st.h,'long');}
  await new Promise(r=>setTimeout(r,1200));assert.equal(surveys.at(-1)?.kind,'onboarding',await page.locator('#pf-state').innerText()+JSON.stringify(surveys));assert.deepEqual(surveys.at(-1).answers.sectors,['반도체']);
- // G-219: 화면 수준 — 전문가 from settings; on a stock page 초보자 hides the heavy cards behind the tab's foot button.
+ // G-220: 화면 수준 — 전문가 from settings; on a stock page 초보자 hides the heavy cards behind the tab's foot button.
  await page.locator('#pf-form label',{hasText:'전문가'}).click();
  assert.equal(await page.evaluate(()=>[document.documentElement.getAttribute('data-level'),JSON.parse(localStorage.getItem('gnm-prefs')||'{}').level].join()),'pro,전문가');
  for(const width of [375,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/005930/index.html');await page.locator('#tab-home .lv-foot').waitFor();

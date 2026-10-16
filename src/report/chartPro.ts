@@ -21,7 +21,7 @@ html.chart-fs #tab-chart .chart-card>*{order:8;flex:none}
 html.chart-fs #tab-chart .chart-head{display:contents}html.chart-fs #tab-chart .chart-head>div:first-child{display:none}
 html.chart-fs #tab-chart .chart-head>.seg{order:1}html.chart-fs #tab-chart .chart-head>.fine{order:2;margin:0}
 html.chart-fs #tab-chart .pro-bar{order:2;margin:0}html.chart-fs #tab-chart .active-pills{order:3;margin:0}html.chart-fs #tab-chart .chart-context{order:3;margin:0}html.chart-fs #tab-chart .dw-hint{order:3;margin:0}
-html.chart-fs #tab-chart .legend-line{order:4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;min-height:16px}html.chart-fs #tab-chart .draw-note{order:4;margin:0;min-height:0}
+html.chart-fs #tab-chart .legend-line{order:4;font-size:12px;min-height:16px}html.chart-fs #tab-chart .draw-note{order:4;margin:0;min-height:0}
 html.chart-fs #tab-chart .chart-wrap{order:5;flex:1;min-height:0;display:flex;flex-direction:column}
 html.chart-fs #tab-chart .chart-body{flex:1;min-height:0}html.chart-fs #tab-chart #chart{height:100%!important}
 html.chart-fs #tab-chart .chart-card>.fine,html.chart-fs #tab-chart .strat-info,html.chart-fs #tab-chart .v6-bar[hidden],html.chart-fs #tab-chart .chart-tools[hidden]{display:none}

@@ -149,6 +149,10 @@ background:radial-gradient(circle at 34% 30%,#fff 0%,#eff3f8 22%,#c3cfdf 52%,#80
 .chip-toggle{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:4px 11px;font:inherit;font-size:12px;color:var(--fg2);cursor:pointer;transition:background-color 150ms var(--ease-out),color 150ms var(--ease-out)}
 .chip-toggle:hover{color:var(--fg)}.chip-toggle[aria-pressed=true]{background:var(--accent-soft);color:var(--accent-strong);border-color:var(--accent-line);font-weight:600}
 .legend-line{font-size:12px;color:var(--muted);min-height:18px;font-variant-numeric:tabular-nums;margin:4px 0}
+.legend-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px}.legend-line b{font-weight:600;color:var(--ink)}.legend-line b.up{color:var(--up)}.legend-line b.down{color:var(--down)}.legend-line .lg-d{color:var(--muted)}
+.pane-legends{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}.pane-legends .pl{position:absolute;left:4px;right:72px;display:flex;flex-wrap:wrap;gap:2px 6px;font-size:11px;line-height:16px;font-variant-numeric:tabular-nums}
+.pl-row{display:inline-flex;gap:5px;align-items:baseline;padding:0 4px;border-radius:4px;background:color-mix(in srgb,var(--surface-solid) 72%,transparent)}.pl-n{color:var(--muted)}.pl-row b{font-weight:600}
+.to-latest{position:absolute;z-index:4;width:32px;height:32px;padding:0;border-radius:50%;border:1px solid var(--line);background:var(--surface-solid);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 4px 14px rgba(15,34,68,.18)}.to-latest[hidden]{display:none}.to-latest svg{width:14px;height:14px}
 #chart{position:relative;transition:height 200ms var(--ease-out)}
 .mark-pop{position:absolute;top:38px;z-index:5;max-height:300px;overflow:auto;border:1px solid var(--line-strong);border-radius:12px;background:var(--surface-solid);padding:10px 12px;box-shadow:0 8px 24px rgba(22,27,38,.16)}.mp-body{min-width:0}.mp-title{font-weight:600;font-size:14px;line-height:1.4}.mp-meta{font-size:12px;color:var(--muted);margin-top:2px}.mp-meta a{color:var(--accent-strong);font-weight:600}
 .mp-head{display:flex;justify-content:space-between;font-weight:600;margin-bottom:6px}.mp-head button{border:0;background:none;font-size:18px;cursor:pointer;color:var(--muted)}
@@ -349,7 +353,7 @@ export const TABS: readonly { key: TabKey; label: string }[] = [
 /** G-176: a coin has no company to weigh, so its 기업 체력 tab is called 수급 (what is in it). */
 const tabsFor = (kind?: string) => (kind === 'coin' ? TABS.map((t) => (t.key === 'fundamentals' ? { ...t, label: '수급' } : t)) : TABS);
 
-/** G-219: the 초보자 line at the top of 요약·타이밍·기업 체력·뉴스 (CSS shows it only at that level). */
+/** G-220: the 초보자 line at the top of 요약·타이밍·기업 체력·뉴스 (CSS shows it only at that level). */
 const guided = (html: string, kind?: string, report = true) => html.replace(/(<section class="panel" id="tab-(home|technical|fundamentals|news)" role="tabpanel"[^>]*>(?:<h2 class="panel-title">[^<]*<\/h2>)?)/g, (_m, open: string, key: string) => open + levelGuide(key, kind, report));
 
 const ANALYSIS_KEYS = new Set<string>();

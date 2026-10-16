@@ -145,7 +145,7 @@ export const UI_SCRIPT = `<script>
   // debate room's "쉬운 말" button overrides it on this device (gnm-easy, "on:base") until that level changes.
   // Plain lines, member roles and the words' underlines follow it.
   var baseLevel = function () {
-    // G-219: html[data-level] is easy | mid | adv | pro (level.ts); a level only counts once picked or derived from the survey.
+    // G-220: html[data-level] is easy | mid | adv | pro (level.ts); a level only counts once picked or derived from the survey.
     var h = document.documentElement, l = h.getAttribute('data-level') || '', x = '', a = {};
     try { a = JSON.parse(localStorage.getItem('gnm-prefs') || 'null') || {}; x = a.explain || ''; } catch (e) {}
     if (!a.level && !a.experience) l = '';
