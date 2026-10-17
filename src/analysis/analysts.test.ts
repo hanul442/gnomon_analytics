@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ANALYST_HORIZON, scoreAnalysts, type AnalystCall } from './analysts.js';
+import { ANALYST_HORIZON, committeeConsensus, scoreAnalysts, type AnalystCall } from './analysts.js';
 
 const day = (i: number) => new Date(Date.UTC(2026, 0, 1) + i * 86_400_000).toISOString().slice(0, 10);
 const bars = Array.from({ length: 40 }, (_, i) => ({ date: day(i), close: 100 + i }));
@@ -54,4 +54,23 @@ test('confidence is scored as a probability: Brier score and average confidence 
   assert.equal(trend.avgConfidence, 75);
   const none = board.find((b) => b.analyst === 'fundamental')!;
   assert.deepEqual([none.brier, none.avgConfidence], [null, null]);
+});
+
+test('consensus pools the calls in log-odds and weights by skill only after 30 scored (G-228)', () => {
+  const calls = [
+    { analyst: 'trend_momentum' as const, stance: 'BULLISH' as const, confidence: 70 },
+    { analyst: 'volume_flow' as const, stance: 'BULLISH' as const, confidence: 70 },
+    { analyst: 'mean_reversion' as const, stance: 'BEARISH' as const, confidence: 60 },
+  ];
+  const plain = committeeConsensus(calls)!;
+  // logit(.7)*2 + logit(.4) = 1.6946 - 0.4055 = 1.289; /3 → 0.4297 → 60.6%
+  assert.deepEqual(plain, { upPct: 61, weighted: false, n: 3 });
+  const few = committeeConsensus(calls, [{ analyst: 'mean_reversion', scored: 29, brier: 0 }])!;
+  assert.equal(few.weighted, false);
+  // A perfect bear with 30 scored weighs 1 vs the bulls' 1 each; a bad one (brier .25) weighs 0.1.
+  const bad = committeeConsensus(calls, [{ analyst: 'mean_reversion', scored: 30, brier: 0.25 }])!;
+  assert.equal(bad.weighted, true);
+  assert.ok(bad.upPct > plain.upPct);
+  assert.equal(committeeConsensus([]), null);
+  assert.equal(committeeConsensus([{ analyst: 'fundamental', stance: 'NEUTRAL', confidence: 90 }])!.upPct, 50);
 });
