@@ -136,7 +136,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
   assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v10');
+  assert.equal(c.promptVersion, 'gnm-committee-v11');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
@@ -282,4 +282,18 @@ test('v9 debate asks for longer, reasoned, specific turns (G-221)', async () => 
  assert.match(system, /각 차례 3~5문장, 300자 안쪽/);
  assert.match(system, /당연한 말을 쓰지 않습니다/);
  assert.match(system, /이 차례의 말 3~5문장/, 'the wire schema carries the per-turn length too');
+});
+
+test('G-227: K1 tells the committee its own record and latest miss, once something is scored', async () => {
+  const { scoreAnalysts } = await import('./analysts.js');
+  const { scoreScenarios } = await import('./scenarioScore.js');
+  const day = (i: number) => new Date(Date.UTC(2026, 0, 1) + i * 86_400_000).toISOString().slice(0, 10);
+  const bars = Array.from({ length: 30 }, (_, i) => ({ date: day(i), close: 100 - i }));
+  const calls = [{ symbol: 'X', analyst: 'volume_flow' as const, reportDate: day(0), baseDate: day(0), baseClose: 100, stance: 'BULLISH' as const, confidence: 80, target: 110, promptVersion: 't', madeAt: '' }];
+  const market = { horizons: [], forecasts: [], benchmarks: [], quarters: [], analystBoard: scoreAnalysts(calls, bars), scenarioBoard: scoreScenarios([{ reportDate: day(0), baseDate: day(0), baseClose: 100, probs: { BULL: 60, BASE: 30, BEAR: 10 }, bullTrigger: 110, bearTrigger: 95 }], bars) };
+  const k1 = buildEvidence({ ...report, market } as never).find((e) => e.id === 'K1');
+  assert.ok(k1, 'K1 is added');
+  assert.match(k1!.detail, /volume_flow\(거래량·수급 분석가\): 채점 1건, 방향 적중 0%, 평균 확신 80%, 확신 점수 0\.64\. 최근 빗나간 판단: 2026-01-01 강세 확신 80% → 20거래일 뒤 -20\.00%/);
+  assert.match(k1!.detail, /시나리오 확률: 채점 1건, 확률 점수 1\.26/);
+  assert.equal(buildEvidence({ ...report, market: { horizons: [], forecasts: [], benchmarks: [], quarters: [], analystBoard: scoreAnalysts([], bars) } } as never).some((e) => e.id === 'K1'), false);
 });

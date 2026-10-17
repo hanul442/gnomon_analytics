@@ -8,6 +8,7 @@ import { gate } from './plans.js';
 import { PRESETS } from '../analysis/screenRules.js';
 import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystTrack } from '../analysis/analysts.js';
+import { mergeBoards, UNIFORM_BRIER, type ScenarioBoard } from '../analysis/scenarioScore.js';
 import { paperPanel } from './renderArena.js';
 import { shell, type HomeEntry } from './renderHtml.js';
 import { esc } from './html.js';
@@ -129,11 +130,12 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
   const aiScored = board.reduce((x, [, b]) => x + b.scored, 0), aiHit = aiScored ? (board.reduce((x, [, b]) => x + b.hits, 0) / aiScored) * 100 : null;
   const champ = avg((f) => f === 'champion'), hold = avg((f) => f === 'hold');
   const big = (label: string, v: string, sub: string, href: string) => `<a class="sc-big" href="${href}"><span>${label}</span><b>${v}</b><small>${sub}</small></a>`;
+  const scenarioCard = scenarioSection(live.flatMap((e) => (e.report.market!.scenarioBoard ? [e.report.market!.scenarioBoard] : [])));
   const head = `<section class="block"><div class="sc-bigs">${big('예측 범위 적중', fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`, totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건 · 정직하면 약 80%` : `기록 ${pending.toLocaleString('ko-KR')}건 채점 대기`, '#forecast')}${big('위원 방향 적중', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', '#analysts')}${big('챔피언 vs 보유', `${beat}/${live.length}`, '챔피언이 더 나았던 종목', '#paper')}${big('따라 하기 (챔피언)', pct(champ, 2), `보유 ${pct(hold, 2)}`, '#paper')}</div>
-<nav class="sc-nav" aria-label="성적표 바로 가기"><a href="#forecast">예측</a><a href="#analysts">위원별 판단</a><a href="#paper">따라 했다면</a><a href="#signals">스크리너 신호</a><a href="#misses">빗나간 예측</a></nav></section>`;
+<nav class="sc-nav" aria-label="성적표 바로 가기"><a href="#forecast">예측</a><a href="#analysts">위원별 판단</a><a href="#scenarios">시나리오 확률</a><a href="#paper">따라 했다면</a><a href="#signals">스크리너 신호</a><a href="#misses">빗나간 예측</a></nav></section>`;
   const body = `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>성적표</span><span>리포트 종목 ${live.length}개</span></div><h1>맞았는지, 기록으로 보여 드려요</h1>
 <p class="hero-line">예측과 판단은 만든 날 그대로 기록하고, 기간이 지나면 실제 가격으로 채점해요. 틀린 기록도 지우지 않아요. 모의투자(따라 했다면)도 여기 있어요.</p></div></section>
-${head}${gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">') + analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '기간별 예측 적중 · 위원별 판단과 결과', feature: 'scoreSummary' })}${strategyCard}${signalCard(signals)}${gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' })}
+${head}${gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">') + analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '기간별 예측 적중 · 위원별 판단과 결과', feature: 'scoreSummary' })}${scenarioCard}${strategyCard}${signalCard(signals)}${gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' })}
 <style>.sc-bigs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.sc-big{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;text-decoration:none;color:inherit}.sc-big:hover{border-color:var(--accent)}.sc-big span{font-size:12.5px;font-weight:700;color:var(--muted)}.sc-big b{font-size:26px}.sc-big small{font-size:12px;color:var(--muted)}
 .sc-nav{display:flex;gap:6px;overflow-x:auto;margin-top:12px;padding:6px 0}.sc-nav a{flex:none;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:13.5px;font-weight:700;text-decoration:none;color:var(--fg)}.sc-sec{scroll-margin-top:120px}
 .sc-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}.sc-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}.sc-tile b{display:block;font-size:22px}.sc-tile small{color:var(--muted);font-size:12px}
@@ -257,3 +259,19 @@ document.addEventListener('click', function (e) {
   if (row && row.classList.contains('fr-ledger')) { row.hidden = !open; o.setAttribute('aria-expanded', String(open)); o.textContent = open ? '닫기' : '장부 ›'; window.dispatchEvent(new Event('resize')); }
 });
 </script>`;
+
+/**
+ * G-227: the committee's scenario probabilities against what happened, all stocks together. Public (the
+ * point of a scored committee is that the misses show too). The table is the calibration check: when the
+ * committee says about 70%, that scenario should happen about 7 times in 10.
+ */
+export function scenarioSection(boards: readonly ScenarioBoard[]): string {
+  const m = mergeBoards(boards);
+  const head = '<section class="block sc-sec" id="scenarios"><div class="block-head"><h2>시나리오 확률 채점</h2><span class="muted">강세·기본·약세 확률이 맞았는지</span></div><div class="card">';
+  if (!m.scored) return `${head}<p class="empty">아직 채점한 시나리오가 없어요. 위원회 리포트의 시나리오 확률 ${m.pending.toLocaleString('ko-KR')}건은 20거래일 안에 강세·약세 기준 가격을 넘는지 보고 채점해요.</p></div></section>`;
+  const vs = m.skill! >= 0.05 ? `셋으로 똑같이 나눈 것보다 ${Math.round(m.skill! * 100)}% 나아요` : m.skill! <= -0.05 ? `셋으로 똑같이 나눈 것보다 ${Math.round(-m.skill! * 100)}% 못해요` : '셋으로 똑같이 나눈 것과 비슷해요';
+  const rows = m.bins.map((b) => `<tr><td>${b.lo}~${b.hi}%</td><td class="num">${Math.round(b.saidPct)}%</td><td class="num"><b>${Math.round(b.happenedPct)}%</b></td><td class="num">${b.n}건</td></tr>`).join('');
+  return `${head}<div class="sc-tiles"><div class="sc-tile"><div class="pl-k">확률 점수</div><b>${m.brier!.toFixed(2)}</b><small>0이 가장 좋고, 셋으로 똑같이 나누면 ${UNIFORM_BRIER.toFixed(2)}</small></div><div class="sc-tile"><div class="pl-k">채점</div><b>${m.scored}건</b><small>${vs}</small></div><div class="sc-tile"><div class="pl-k">실제로 일어난 쪽</div><b>강세 ${m.happened.BULL} · 기본 ${m.happened.BASE} · 약세 ${m.happened.BEAR}</b><small>진행 중 ${m.pending}건</small></div></div>
+<table class="compact"><thead><tr><th>말한 확률</th><th class="num">평균</th><th class="num">실제로 일어난 비율</th><th class="num">건수</th></tr></thead><tbody>${rows}</tbody></table>
+<p class="fine">20거래일 안에 종가가 강세 기준 가격을 먼저 넘으면 강세, 약세 기준 가격을 먼저 깨면 약세, 둘 다 아니면 기본이 일어난 것으로 봐요. 확률이 정직하면 '말한 확률'과 '실제로 일어난 비율'이 비슷해요. 리포트는 만든 날 그대로 보관되니 지나간 확률을 고칠 수 없어요.</p></div></section>`;
+}

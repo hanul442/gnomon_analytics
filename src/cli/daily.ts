@@ -65,6 +65,7 @@ import type { Disclosure, NewsItem, PriceBar } from '../types.js';
 import { isRelevant } from '../analysis/news.js';
 import { collectMarketData, financeKey, flowKey, intradayKey, marketPaths, researchKey, snapshotKey } from './marketData.js';
 import { buildMarketSection } from '../report/marketSection.js';
+import { scenarioCallOf } from '../analysis/scenarioScore.js';
 import { forecastKey, type PriceForecast } from '../analysis/valuation.js';
 import { analystCallKey, type AnalystCall } from '../analysis/analysts.js';
 import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
@@ -630,6 +631,8 @@ export async function composeReport(
     loggedForecasts: (await readLog<PriceForecast>(forecastPath)).filter((f) => f.madeAt <= now.toISOString()),
     analystCalls: (await readLog<AnalystCall>(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`))).filter((c) => c.madeAt <= now.toISOString()),
     paperEntries: (await readLog<PaperEntry>(join(root, 'data', 'paper', `${SYMBOL}.jsonl`))).filter((e) => e.recordedAt <= now.toISOString()),
+    // G-227: stored reports are never rewritten, so their scenario probabilities are the log.
+    scenarioCalls: earlier.flatMap((r) => { const c = scenarioCallOf(r); return c ? [c] : []; }),
     status: options.marketStatus ?? [],
   };
   built.market = inCurrency(() => buildMarketSection(marketInput));
