@@ -26,6 +26,7 @@ import { withCurrency } from '../report/format.js';
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
 
 import { ALPHA, ASK_TIERS, CREDIT_COST, EXPERTS, type AskTier, type CreditAction } from '../report/plans.js';
+import { fetchDartDocument, filingContext, isReceiptNo, type FilingText } from './dartDoc.js';
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, FIELDS, matches } from '../analysis/screenRules.js';
@@ -56,6 +57,8 @@ export interface Env {
   DEEP_KEY?: string;
   /** G-179: a contact SEC may reach about EDGAR requests (goes in the User-Agent). */
   EDGAR_CONTACT?: string;
+  /** G-223: reads filing originals for the chat (GitHub secret OPENDART_API_KEY). */
+  OPENDART_API_KEY?: string;
   REPORT_QUEUE?: ReportQueue;
 }
 export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient; waitUntil?: (promise: Promise<unknown>) => void; generate?: (report: DailyReport) => Promise<Commentary> }
@@ -212,6 +215,21 @@ async function fetchStock(env: Env, deps: Deps, symbol: string): Promise<string>
   } catch { return ''; }
 }
 
+/** G-223: a filing's original text, from D1 when read before, else from DART (then kept). */
+async function filingText(env: Env, deps: Deps, receiptNo: string, now: Date): Promise<FilingText> {
+  const kept = await env.DB.prepare('SELECT title, body, truncated FROM filing_texts WHERE receipt_no = ?').bind(receiptNo).first<{ title: string; body: string; truncated: number }>();
+  if (kept) return { receiptNo, title: kept.title, text: kept.body, truncated: !!kept.truncated };
+  let f: FilingText;
+  try { f = await fetchDartDocument(env.OPENDART_API_KEY, receiptNo, deps.fetch); } catch (e) {
+    const why = e instanceof Error ? e.message : '';
+    if (why === 'OPENDART_API_KEY_MISSING') fail(503, 'FILING_UNAVAILABLE', '공시 원문 연결이 아직 설정되지 않았어요.');
+    return fail(502, 'FILING_UNAVAILABLE', 'DART에서 이 공시 원문을 받지 못했어요. 잠시 뒤 다시 해 주세요. 크레딧은 쓰지 않았어요.');
+  }
+  if (!f.text) fail(422, 'FILING_EMPTY', '이 공시는 글로 읽을 내용이 없어요(이미지·첨부 파일뿐이에요).');
+  await env.DB.prepare('INSERT OR REPLACE INTO filing_texts (receipt_no, title, body, truncated, fetched_at) VALUES (?, ?, ?, ?, ?)').bind(receiptNo, f.title, f.text, f.truncated ? 1 : 0, iso(now)).run();
+  return f;
+}
+
 async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, now: Date, onText?: (text: string) => void) {
   const tier = ASK_TIERS.find((t) => t.key === b.tier)?.key as AskTier | undefined;
   if (!tier) fail(400, 'BAD_TIER', '모델을 골라 주세요.');
@@ -239,6 +257,8 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   const today = await db.prepare("SELECT COUNT(*) AS n FROM questions WHERE user_id = ? AND created_at >= ? AND status = 'OK'").bind(u.id, kstDayStart(now)).first<{ n: number }>();
   if ((today?.n ?? 0) >= Number(env.USER_DAILY_ASKS ?? 30)) fail(429, 'DAILY_LIMIT', '오늘 질문 한도를 다 썼어요. 내일 다시 물어봐 주세요.');
   if (!deps.ai) fail(503, 'AI_UNAVAILABLE', 'AI 연결이 아직 설정되지 않았어요.');
+  // G-223: a question about one filing reads its original first; nothing is charged if DART has no file.
+  const filing = isReceiptNo(b.filing) ? await filingText(env, deps, b.filing, now) : undefined;
   const ref = `ask:${crypto.randomUUID()}`, day=kstDayStart(now), reserve=tier==='deep'?.15:tier==='standard'?.07:.03;
   // Reserve before calling AI so simultaneous requests share the same global budget.
   await db.prepare("UPDATE ai_requests SET status='expired',reserved_usd=0 WHERE status='running' AND created_at<?").bind(iso(new Date(now.getTime()-15*60000))).run();
@@ -266,7 +286,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
     let siteData = stock;
     if(symbol?.startsWith('MARKET-')&&reportDate){const r=await deps.fetch(`${env.SITE_URL.replace(/\/$/,'')}/market/${symbol==='MARKET-DAILY'?'daily':'weekly'}-${reportDate}.json`).catch(()=>null);if(r?.ok)siteData=(await r.text()).slice(0,12000);}
     let reader = ''; try { reader = prof ? readerNote(JSON.parse(prof.answers)) : ''; } catch { /* unreadable answers: no profile line */ }
-    const params = askParams({ tier: tier!, question, ...(reader ? { reader } : {}), ...(symbol ? { symbol } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) });
+    const params = askParams({ tier: tier!, question, ...(reader ? { reader } : {}), ...(symbol ? { symbol } : {}), ...(filing ? { filing: filingContext(filing) } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) });
     res = onText && deps.ai!.stream ? await deps.ai!.stream(params, onText) : await deps.ai!.create(params);
   } catch {
     await refund('AI 응답 실패로 돌려드림');

@@ -10,7 +10,13 @@ const TIERS = ASK_TIERS.map((t) => ({ key: t.key, label: t.label, model: t.model
 const MODEL_NAME: Record<string, string> = { 'claude-haiku-4-5': 'Haiku 4.5', 'claude-sonnet-5-5': 'Sonnet 5.5', 'claude-opus-5-5': 'Opus 5.5' };
 const PAID = PLANS.filter((p) => p.price > 0).map((p) => ({ key: p.key, name: p.name, price: won(p.price), line: p.tagline }));
 
+/** G-223: a filing's "AI에게 묻기" button; the chat then reads that filing's DART original. KR (DART) filings only. */
+export const askFilingButton = (receiptNo: string, title: string, symbol = '') => /^\d{14}$/.test(receiptNo)
+  ? `<button type="button" class="ask-filing" data-ask-filing="${receiptNo}" data-title="${title.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)}"${symbol ? ` data-sym="${symbol.replace(/[^0-9A-Z-]/g, '')}"` : ''} aria-label="이 공시 원문을 AI에게 묻기">AI에게 묻기</button>` : '';
+
 export const CHAT_CSS = `
+.ask-filing{display:inline-flex;align-items:center;margin-left:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--accent);border-radius:999px;padding:2px 9px;font:inherit;font-size:12px;font-weight:600;line-height:1.5;cursor:pointer;vertical-align:middle;white-space:nowrap}.ask-filing:hover{border-color:var(--accent)}
+.chat-filing{align-self:stretch;max-width:none;display:flex;align-items:flex-start;gap:8px;background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:8px 10px;font-size:13px;line-height:1.5}.chat-filing div{flex:1;min-width:0}.chat-filing small{display:block;color:var(--muted)}.chat-filing button{border:0;background:none;color:var(--muted);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;text-decoration:underline}
 .chat-fab{position:fixed;right:20px;bottom:20px;z-index:60;display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;background:var(--navy);color:var(--on-accent);font:inherit;font-weight:700;font-size:15px;padding:13px 18px 13px 15px;box-shadow:0 10px 28px rgba(15,34,68,.35);cursor:pointer}
 .chat-fab{transition:transform .25s var(--ease-out),opacity .2s}.chat-fab.fab-away{transform:translateY(140%);opacity:0;pointer-events:none}.chat-fab:hover{background:var(--accent-strong)}.chat-fab svg{width:22px;height:22px}
 .chat{position:fixed;right:20px;bottom:20px;z-index:75;width:min(400px,calc(100vw - 24px));height:min(620px,calc(100vh - 40px));display:flex;flex-direction:column;background:var(--surface-solid);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px rgba(15,27,45,.28);overflow:hidden}
@@ -52,6 +58,8 @@ export const CHAT_SCRIPT = `<script>
   var box = document.getElementById('chat'), log = document.getElementById('chat-log'), form = document.getElementById('chat-form'), q = document.getElementById('chat-q'), send = document.getElementById('chat-send');
   if (!box) return;
   var base = document.body.getAttribute('data-base') || '', tier = TIERS[0].key, busy = false, HKEY = 'gnm-chat';
+  // G-223: the filing the reader asked about ({ no, title, sym }); the server reads its DART original.
+  var filing = null, fno = function () { return filing ? filing.no : ''; };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var md = function (s) {
     var out = [], list = false;
@@ -65,7 +73,7 @@ export const CHAT_SCRIPT = `<script>
     return out.join('');
   };
   // What the reader is looking at: the stock, and the open tab's text as context.
-  var symbol = function () { var el = document.querySelector('[data-symbol]'); return (el && el.getAttribute('data-symbol')) || new URLSearchParams(location.search).get('c') || ''; };
+  var symbol = function () { if (filing && filing.sym) return filing.sym; var el = document.querySelector('[data-symbol]'); return (el && el.getAttribute('data-symbol')) || new URLSearchParams(location.search).get('c') || ''; };
   var stockName = function () { var h = document.querySelector('.hero h1'); return h ? h.textContent.trim() : ''; };
   var pageText = function () {
     var open = (document.querySelector('.panel[hidden]') && document.querySelector('.panel:not([hidden])')) || document.querySelector('main');
@@ -84,8 +92,16 @@ export const CHAT_SCRIPT = `<script>
   var render = function () {
     log.innerHTML = '';
     var h = history(), sym = symbol(), name = stockName();
-    document.getElementById('chat-ctx').textContent = sym ? (name || sym) + ' 기준으로 답해요' : '시장·사이트 전반';
-    if (!h.length) {
+    document.getElementById('chat-ctx').textContent = filing ? '공시 원문 기준으로 답해요' : sym ? (name || sym) + ' 기준으로 답해요' : '시장·사이트 전반';
+    if (filing) {
+      var fc = add('chat-filing', '<div><b>' + esc(filing.title) + '</b><small>이 공시 원문을 읽고, 적힌 내용을 풀어서 설명해요. 사고팔지는 판단하지 않아요.</small></div><button type="button">공시 빼기</button>');
+      fc.querySelector('button').addEventListener('click', function () { filing = null; render(); });
+      h = h.filter(function (m) { return m.filing === filing.no; });
+      if (!h.length) {
+        var fd = add('ai', '<div class="chat-sugg">' + ['핵심만 쉽게 요약해 줘요', '금액·비율·일정 숫자만 뽑아 줘요', '어려운 용어를 풀어 줘요', '정정이면 무엇이 바뀌었어요?'].map(function (x) { return '<button type="button">' + esc(x) + '</button>'; }).join('') + '</div>');
+        fd.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { q.value = b.textContent; q.focus(); }); });
+      }
+    } else if (!h.length) {
       add('ai', '<p>궁금한 걸 물어보세요. 모델을 고르면 쓰는 크레딧이 먼저 보여요.</p>');
       var s = sym ? ['요즘 왜 이렇게 움직였어요?', '지금 가장 큰 위험 요인은?', 'AI 위원회 결론을 쉽게 풀어 줘요', '수급은 어떤 흐름이에요?'] : ['오늘 시장 분위기 요약해 줘요', '스크리너는 어떻게 써요?', '기술적 적정가가 뭐예요?'];
       var d = add('ai', '<div class="chat-sugg">' + s.map(function (x) { return '<button type="button">' + esc(x) + '</button>'; }).join('') + '</div>');
@@ -144,13 +160,13 @@ export const CHAT_SCRIPT = `<script>
       return;
     }
     if (g.track) g.track('ask_sent', { tier: t.key, symbol: symbol() });
-    g.askStream({ tier: t.key, question: text, symbol: symbol() || undefined, page: pageText(), history: h.filter(function (m) { return m.sym === symbol(); }).slice(-3).map(function (m) { return { q: m.q, a: m.a }; }) },function(){}).then(function (r) {
+    g.askStream({ tier: t.key, question: text, symbol: symbol() || undefined, filing: fno() || undefined, page: filing ? undefined : pageText(), history: h.filter(function (m) { return m.sym === symbol() && (m.filing || '') === fno(); }).slice(-3).map(function (m) { return { q: m.q, a: m.a }; }) },function(){}).then(function (r) {
       if (r.error) {
         wait.remove(); busy = false; send.disabled = false;
         if (r.error === 'NO_CREDITS') need(r.message, {}); else if (r.error === 'LOGIN_REQUIRED') need(r.message, { login: true }); else add('sys', esc(r.message || '답을 받지 못했어요.'));
         g.refresh(); return;
       }
-      done({ q: text, a: r.answer, model: r.model, credits: r.credits, balance: r.balance, id: r.id, sym: symbol() });
+      done({ q: text, a: r.answer, model: r.model, credits: r.credits, balance: r.balance, id: r.id, sym: symbol(), filing: fno() || undefined });
       g.refresh();
     }).catch(function () { wait.remove(); busy = false; send.disabled = false; add('sys', '연결이 끊겼어요. 잠시 뒤 다시 해 주세요.'); });
   };
@@ -187,7 +203,15 @@ export const CHAT_SCRIPT = `<script>
     if (!phone()) q.focus();
     if (window.GNM && GNM.track) GNM.track('chat_open', { symbol: symbol() });
   };
-  document.querySelectorAll('[data-open-chat]').forEach(function (b) { b.addEventListener('click', function () { open(b.getAttribute('data-ask') || ''); }); });
+  document.querySelectorAll('[data-open-chat]').forEach(function (b) { b.addEventListener('click', function () { filing = null; open(b.getAttribute('data-ask') || ''); }); });
+  // Filing buttons can appear later (lists drawn by script), so one listener on the page.
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('[data-ask-filing]') : null; if (!b) return;
+    e.preventDefault();
+    filing = { no: b.getAttribute('data-ask-filing'), title: b.getAttribute('data-title') || '공시', sym: b.getAttribute('data-sym') || '' };
+    if (window.GNM && GNM.track) GNM.track('filing_ask_open', { symbol: filing.sym });
+    open('');
+  });
   box.querySelector('.chat-x').addEventListener('click', shut);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) shut(); });
   q.addEventListener('focus', function () { setTimeout(fit, 250); });

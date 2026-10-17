@@ -25,7 +25,7 @@ import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim } from '../analysis/commentary.js';
 import { apiMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
-import { CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
+import { askFilingButton, CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
 import { INFOGRAPHIC_CSS, INFOGRAPHIC_JS } from './infographics.js';
 import { MOTION_CSS, MOTION_JS } from './motion.js';
 import { THEME_CSS } from './theme.js';
@@ -480,7 +480,7 @@ function filingsTable(report: DailyReport): string {
   // G-151: the same plain-language note under several filings in a row is said once.
   let prevWhy = '';
   const rows=recent.map((f) => { const why = f.why === prevWhy ? '' : f.why; prevWhy = f.why; return `<tr><td class="col-date nowrap">${escape(f.filedDate)}</td>
-<td>${meta([escape(f.filedDate), escape(f.category)], 'meta m-date')}<a href="${escape(f.url)}" rel="noopener" target="_blank">${escape(f.title)}</a>${fresh.has(f.receiptNo) ? '<span class="badge b-new">새 공시</span>' : ''}${why ? `<div class="why">${escape(why)}</div>` : ''}</td>
+<td>${meta([escape(f.filedDate), escape(f.category)], 'meta m-date')}<a href="${escape(f.url)}" rel="noopener" target="_blank">${escape(f.title)}</a>${fresh.has(f.receiptNo) ? '<span class="badge b-new">새 공시</span>' : ''}${askFilingButton(f.receiptNo, f.title)}${why ? `<div class="why">${escape(why)}</div>` : ''}</td>
 <td class="col-cat nowrap">${escape(f.category)}</td><td><span class="badge b-${f.importance}">${IMPORTANCE_LABEL[f.importance]}</span></td><td class="col-filer nowrap">${escape(f.filer)}</td></tr>`; });
   return contentMore(rows,'공시',html=>`<div class="table-wrap"><table><thead><tr><th class="col-date">날짜</th><th>공시</th><th class="col-cat">종류</th><th>중요도</th><th class="col-filer">제출인</th></tr></thead><tbody>${html}</tbody></table></div>`);
 }

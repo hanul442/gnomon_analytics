@@ -1,3 +1,4 @@
+import { askFilingButton } from './chat.js';
 import { reportButton } from './generateButton.js';
 import { MT_INNER } from './modernSwitch.js';
 // App-style sections (BLACK ORACLE mobile mockup v1 tone, docs/DESIGN.md G-15):
@@ -145,7 +146,7 @@ export function latestLists(report: DailyReport): string {
 ${news.length ? news.map((c) => `<div class="row-item"><span class="badge b-${c.importance}">${IMP[c.importance]}</span><div class="ri-main"><a href="${esc(c.url)}" rel="noopener" target="_blank">${esc(c.title)}</a><div class="muted small">${esc(c.publisher)} ${esc(kstTime(c.firstAt))}${c.articles.length > 1 ? `  같은 내용 ${c.articles.length}건` : ''}</div></div></div>`).join('') : '<p class="empty">최신 뉴스를 불러오고 있어요.</p>'}
 </div></section>
 <section class="block"><div class="block-head"><h2>최신 공시</h2><a href="#tab-news" class="more-link">전체 보기 ›</a></div><div class="card list" data-slot="homeFilings"${filings.length ? '' : ' data-empty'}>
-${filings.length ? filings.map((f) => `<div class="row-item"><span class="badge b-${f.importance}">${IMP[f.importance]}</span><div class="ri-main">${dartLink(f)}<div class="muted small">${esc(f.filedDate)}  ${esc(f.category)}</div></div></div>`).join('') : '<p class="empty">최신 공시를 불러오고 있어요.</p>'}
+${filings.length ? filings.map((f) => `<div class="row-item"><span class="badge b-${f.importance}">${IMP[f.importance]}</span><div class="ri-main">${dartLink(f)}<div class="muted small">${esc(f.filedDate)}  ${esc(f.category)}${askFilingButton(f.receiptNo, f.title)}</div></div></div>`).join('') : '<p class="empty">최신 공시를 불러오고 있어요.</p>'}
 </div></section></div>`;
 }
 
