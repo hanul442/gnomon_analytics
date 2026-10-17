@@ -45,6 +45,8 @@ export interface EdgeSection {
   value: ValueSurge | null;
   /** Short lines for the summary card and the AI evidence, most telling first. */
   highlights: { key: string; tone: 'up' | 'down' | ''; text: string }[];
+  /** G-230: what usually followed the kinds of filing this stock made in the last 30 days (enough cases only). */
+  baseRates?: import('./eventStudy.js').EventBaseRate[];
 }
 
 const DAY = 86_400_000;
