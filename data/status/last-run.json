@@ -1,5 +1,5 @@
 {
- "at": "2026-10-17T09:35:16.399Z",
+ "at": "2026-10-17T09:43:06.406Z",
  "selected": null,
  "universe": [
   {
@@ -296,7 +296,7 @@
   },
   {
    "symbol": "KRW-XLM",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],

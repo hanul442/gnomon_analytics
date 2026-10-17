@@ -2,7 +2,7 @@
   "schema": "curia.market-report.v4",
   "date": "2026-10-17",
   "from": "2026-10-17",
-  "generatedAt": "2026-10-17T09:35:16.399Z",
+  "generatedAt": "2026-10-17T09:43:06.406Z",
   "period": "daily",
   "groups": [
     {
@@ -3316,7 +3316,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T09:35:16.399Z",
+      "snapshotDate": "2026-10-17T09:43:06.406Z",
       "breadth": {
         "up": 54,
         "down": 237,
@@ -13932,7 +13932,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T09:35:16.399Z",
+      "snapshotDate": "2026-10-17T09:43:06.406Z",
       "breadth": {
         "up": 795,
         "down": 257,
@@ -19904,7 +19904,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T09:35:16.399Z",
+      "snapshotDate": "2026-10-17T09:43:06.406Z",
       "breadth": {
         "up": 244,
         "down": 402,
