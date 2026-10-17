@@ -26,13 +26,14 @@ export type CommentaryTier = 'deep' | 'brief';
  * targets start from the statistical range (R1) and move only as far as the evidence pushes (outside view first);
  * each analyst judges from its own lens before the debate, so a majority does not pull the others along.
  */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v10';
+/** v11 (G-227): K1 carries each member's own record and latest miss on this stock, and the scenario score; members adjust to it. */
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v11';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
 export interface EvidenceItem {
   id: string;
-  kind: 'PRICE' | 'TECHNICAL' | 'FILING' | 'NEWS' | 'HORIZON' | 'VALUE' | 'FORECAST' | 'STRUCTURE' | 'FLOW' | 'FUNDAMENTAL' | 'MARKET' | 'ARENA' | 'EVENT';
+  kind: 'PRICE' | 'TECHNICAL' | 'FILING' | 'NEWS' | 'HORIZON' | 'VALUE' | 'FORECAST' | 'STRUCTURE' | 'FLOW' | 'FUNDAMENTAL' | 'MARKET' | 'ARENA' | 'EVENT' | 'TRACK';
   label: string;
   detail: string;
   url: string;
@@ -201,6 +202,9 @@ function evidenceOf(report: DailyReport): EvidenceItem[] {
         detail: m.benchmarks.map((b) => `${b.name}: ${b.returns.map((x) => `${x.days}일 종목 ${pct(x.stock)} vs ${pct(x.benchmark)}`).join(', ')}`).join('; ') });
     }
   }
+  // G-227: the committee's own record on this stock, so a member that was over-confident or wrong for one reason knows it.
+  const track = trackRecord(report);
+  if (track) items.push({ id: 'K1', kind: 'TRACK', label: '위원회 지난 성적', url: '../scorecard.html#analysts', detail: track });
   // G-99: the facts most readers miss (insider and 5% holder moves, surprises, buybacks, contracts, value surges).
   (report.edge?.highlights ?? []).forEach((h, i) => {
     items.push({ id: `E${i + 1}`, kind: 'EVENT', label: '놓치기 쉬운 정보', url: '#tab-news', detail: h.text });
@@ -212,6 +216,22 @@ function evidenceOf(report: DailyReport): EvidenceItem[] {
     items.push({ id: `N${i + 1}`, kind: 'NEWS', label: c.title, url: c.url, detail: `${c.firstAt} ${c.publisher} 보도, 종류 ${c.category}, 중요도 ${c.importance}, 같은 내용 기사 ${c.articles.length}건` });
   });
   return items;
+}
+
+/** K1's text: per member its scored record and latest miss, then the scenario score. Null before anything is scored. */
+export function trackRecord(report: DailyReport): string | null {
+  const m = report.market;
+  if (!m) return null;
+  const word = { BULLISH: '강세', BEARISH: '약세', NEUTRAL: '중립' } as const;
+  const lines = (m.analystBoard ?? []).filter((a) => a.scored > 0).map((a) => {
+    const miss = (a.calls ?? []).find((c) => c.done && c.hit === false);
+    const missText = miss && miss.close !== null ? ` 최근 빗나간 판단: ${miss.reportDate} ${word[miss.stance]} 확신 ${miss.confidence}% → 20거래일 뒤 ${pct((miss.close / miss.baseClose - 1) * 100)}.` : '';
+    const cal = a.avgConfidence != null && a.brier != null ? `, 평균 확신 ${Math.round(a.avgConfidence)}%, 확신 점수 ${a.brier.toFixed(2)}` : '';
+    return `${a.analyst}(${a.name}): 채점 ${a.scored}건, 방향 적중 ${Math.round(a.hitRate! * 100)}%${cal}.${missText}`;
+  });
+  const s = m.scenarioBoard;
+  if (s && s.scored > 0) lines.push(`시나리오 확률: 채점 ${s.scored}건, 확률 점수 ${s.brier!.toFixed(2)}(셋으로 똑같이 나누면 0.67, 낮을수록 좋음), 실제로 일어난 쪽 강세 ${s.happened.BULL}·기본 ${s.happened.BASE}·약세 ${s.happened.BEAR}.`);
+  return lines.length ? lines.join(' ') : null;
 }
 
 const ClaimSchema = z.object({
@@ -371,6 +391,7 @@ const DEEP_SYSTEM = `당신은 GNOMON의 리서치 위원회예요. 사용자 �
 - 분석가 대결: 아래 분석가 6명이 각자 자기 관점에서 판단(강세·약세·중립), 확신도(0~100), 20거래일 뒤 예상 가격을 냅니다. 예상 가격은 P1 종가에서 출발해 근거로 설명할 수 있는 수준이어야 하고, 기록되어 20거래일 뒤 실제 가격으로 채점됩니다. 서로 의견이 달라도 됩니다.
   - 각 분석가는 다른 위원의 결론을 보기 전처럼 자기 관점의 근거만으로 먼저 판단합니다. 다른 위원 다수가 같은 쪽이라는 이유로 따라가지 않고, 토론에서도 입장을 바꾸지 않습니다.
   - 확신도는 그 판단이 20거래일 뒤 맞을 확률(%)입니다(강세·약세는 방향, 중립은 ±2% 안). 50은 반반이고, 주가 방향은 맞히기 어려우니 근거가 여러 갈래로 겹칠 때만 70을 넘깁니다. 확신도는 적중 여부와 비교해 채점되므로(맞으면 높을수록, 틀리면 낮을수록 좋음) 부풀리지 않습니다.
+- 지난 성적(K1)이 있으면 각 분석가는 자기 기록을 보고 확신도를 맞춥니다. 평균 확신이 적중률보다 높았으면 확신을 낮추고, 최근 빗나간 판단과 같은 이유로 같은 쪽을 말할 때는 이번에는 무엇이 다른지 rationale에 씁니다. 시나리오 확률 점수가 0.67보다 나빴으면 확률을 한쪽으로 덜 몰아요. 지난 성적은 판단을 바꾸는 근거가 아니라 확신의 크기를 맞추는 근거입니다.
 - 기준선 먼저(바깥 관점): R1(통계 예측 범위)이 있으면 시나리오 확률·가격대와 분석가 예상 가격은 R1의 20거래일 하단·중앙·상단과 그 지난 채점을 기준선으로 잡고, 이 종목의 근거가 그 기준선에서 얼마나·왜 벗어나게 하는지로 조정합니다. 기준선에서 크게 벗어날 때는 그 이유가 되는 근거 ID를 답니다.
 ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 

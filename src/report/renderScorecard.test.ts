@@ -41,3 +41,14 @@ test('a member card compares stated confidence with the hit rate once 5 calls ar
   const few = renderScorecard([scorecardEntry('111111', '가 종목', calls.slice(0, 4))]);
   assert.ok(!few.includes('덜 자신했어요'), 'fewer than 5 scored calls: no calibration line');
 });
+
+test('the scenario section scores probabilities against what happened, in public (G-227)', async () => {
+  const { scenarioSection } = await import('./renderScorecard.js');
+  const bins = [{ lo: 60, hi: 80, n: 4, saidPct: 70, happenedPct: 50 }];
+  const html = scenarioSection([{ scored: 4, pending: 2, brier: 0.5, skill: 0.25, happened: { BULL: 2, BASE: 1, BEAR: 1 }, bins, calls: [] }]);
+  assert.match(html, /id="scenarios"/);
+  assert.match(html, /<b>0\.50<\/b>/);
+  assert.match(html, /셋으로 똑같이 나눈 것보다 25% 나아요/);
+  assert.match(html, /60~80%<\/td><td class="num">70%<\/td><td class="num"><b>50%<\/b>/);
+  assert.match(scenarioSection([]), /아직 채점한 시나리오가 없어요/);
+});
