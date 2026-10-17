@@ -2,7 +2,7 @@
   "schema": "curia.market-report.v4",
   "date": "2026-10-17",
   "from": "2026-10-17",
-  "generatedAt": "2026-10-17T09:43:06.406Z",
+  "generatedAt": "2026-10-17T09:54:47.832Z",
   "period": "daily",
   "groups": [
     {
@@ -3316,7 +3316,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T09:43:06.406Z",
+      "snapshotDate": "2026-10-17T09:54:47.832Z",
       "breadth": {
         "up": 54,
         "down": 237,
@@ -13932,7 +13932,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T09:43:06.406Z",
+      "snapshotDate": "2026-10-17T09:54:47.832Z",
       "breadth": {
         "up": 795,
         "down": 257,
@@ -16070,19 +16070,19 @@
           "value": 296
         },
         {
-          "symbol": "MSCI.K",
-          "name": "MSCI",
+          "symbol": "P",
+          "name": "에버퓨어",
           "date": "2026-10-16",
-          "close": 569.08,
+          "close": 124.01,
           "returnPct": null,
           "baseline": "2026-10-15",
           "value": 296
         },
         {
-          "symbol": "P",
-          "name": "에버퓨어",
+          "symbol": "MSCI.K",
+          "name": "MSCI",
           "date": "2026-10-16",
-          "close": 124.01,
+          "close": 569.08,
           "returnPct": null,
           "baseline": "2026-10-15",
           "value": 296
@@ -18167,19 +18167,19 @@
           "value": 96
         },
         {
-          "symbol": "NSC",
-          "name": "노퍽서던",
+          "symbol": "RSG",
+          "name": "리퍼블릭 서비스",
           "date": "2026-10-16",
-          "close": 326.92,
+          "close": 231.54,
           "returnPct": null,
           "baseline": "2026-10-15",
           "value": 96
         },
         {
-          "symbol": "RSG",
-          "name": "리퍼블릭 서비스",
+          "symbol": "NSC",
+          "name": "노퍽서던",
           "date": "2026-10-16",
-          "close": 231.54,
+          "close": 326.92,
           "returnPct": null,
           "baseline": "2026-10-15",
           "value": 96
@@ -19904,7 +19904,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T09:43:06.406Z",
+      "snapshotDate": "2026-10-17T09:54:47.832Z",
       "breadth": {
         "up": 244,
         "down": 402,
@@ -19943,59 +19943,59 @@
     },
     {
       "id": "N5",
-      "title": "[윤유찬 칼럼] 밤마다 해외로 넘어가는 K-주식 가격 결정권… 블록체인 규제의 빗장을 풀어야",
-      "publisher": "토큰포스트",
-      "publishedAt": "2026-10-17T07:33:07.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE45cHQybjBRSU1HWG1xVk1VRU95eFRSS3Y4UFR3Y1d1ajRsbUNyRGpBdF84Ulkwc25ua1JadmlHSnpKWklHOUlYVHppLWVPbmMxWnVkR3I1ZGM?oc=5"
-    },
-    {
-      "id": "N6",
       "title": "비트코인 6~12개월 보유분 거래소 유입 비중 4.4%",
       "publisher": "토큰포스트",
       "publishedAt": "2026-10-17T07:24:26.000Z",
       "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE96UkhJckdBaTlKQ0JETzVqMHFsSWJpVTRDbmF2c0hKdm56X19Vd1h2X3VMbHN6bVRtNVpTT1lMWVBTWVV2T1dybGlUdV9jT0wwUnF2WnB4NjBvTzhKTm5VRA?oc=5"
     },
     {
-      "id": "N7",
+      "id": "N6",
       "title": "비트코인 물가 헤지, 보유 방식 따라 이자·선물 비용 달라",
       "publisher": "토큰포스트",
       "publishedAt": "2026-10-17T07:08:06.000Z",
       "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTFBBM21hdWtDbWZMMk16ZUNBRHFqNW0wd05SUGRnOTNQTnNybnNJdE04WS13S1pOZFpNeDdqLVl3THVIVGxCX05YYmxINWlMdU15a2R6ZEwxaVZSSkttQTVkNw?oc=5"
     },
     {
-      "id": "N8",
+      "id": "N7",
       "title": "증권: 외국인 투자자의 순매도 압력은 여전히 식지 않고 있습니다",
       "publisher": "laodong.vn",
       "publishedAt": "2026-10-17T07:07:05.000Z",
       "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNSXpNUERfLXRBbUtQWGRkUHUzWjhBZmtrQ3c2dzNwdVN5MFFnaTRacjBrNC0yUWhTX09QRGJqT1RrSWFDVUFuV0Z0a3lia3NTdV9XY2lOM2RHaktZRGh1WTBCb3NLU3NwdVJXbG5HMXpZblJVTzc4SXRPcFFiWHJ1Zi1Cc21WMGpwUmtvSnV5cmotNUJkU2ZCMzg1QWxEbXNaNm04b05lYWk?oc=5"
     },
     {
-      "id": "N9",
+      "id": "N8",
       "title": "OpenGradient (OPG) 가격, 차트, 시가총액 | 코인마켓캡",
       "publisher": "CoinMarketCap",
       "publishedAt": "2026-10-17T07:06:53.000Z",
       "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFB3b3VOVWYxTDhOeWxDdHpmY0hjNXlGQjZ5QUtMQ1FEVDhzS0hVY2p3RW5FRUVEQ3B0Zm5Ia1BLd0JWWmFaT1VDeTJPNXBiWVg2cmpGbHBldHZJZlFvMkpza3hIOA?oc=5"
     },
     {
-      "id": "N10",
+      "id": "N9",
       "title": "[저녁 시세브리핑] 암호화폐 시장 약세… 비트코인 81,504달러, 이더리움 2,429달러",
       "publisher": "토큰포스트",
       "publishedAt": "2026-10-17T07:01:02.000Z",
       "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE9MNVFrcDVzbVpTMEdnb2lTbFRIQlJKcU9XMnphTzhEdFpJQjhMZWtPMFozZjNhUS1acVByWWFFMXBEa3VINHNJc25XRlhlcmRXZWVkX2doVk4?oc=5"
     },
     {
-      "id": "N11",
-      "title": "[저녁 뉴스브리핑] 비트코인, 8만 달러 아래로 하락 外",
-      "publisher": "토큰포스트",
-      "publishedAt": "2026-10-17T07:00:23.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE0wWFhFSE5WTXBIOFJueFBtaXpDYVlQd2g5OVZuRWJKYkdPeXJEUkhTNEdxWmxieW5ta18tV05JVmUya2pjVGlYeF84WUdiaS1LRm5nOEoyMmQ?oc=5"
-    },
-    {
-      "id": "N12",
+      "id": "N10",
       "title": "OKX, 토큰화 주식·X-Perps 상장 공지 게시",
       "publisher": "토큰포스트",
       "publishedAt": "2026-10-17T06:58:39.000Z",
       "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE9yXy1WcnZvdnRDNUg1ZWZQd2pUQWZkM204MFhlZUt3UHpFWl9qdTBjS0R1RFM1aTduY0FybWpZUkdsbF9UVG5TRGxJd095VXk5UmgxSE81aG5DTFl5Y2NENg?oc=5"
+    },
+    {
+      "id": "N11",
+      "title": "비트코인 10월 15일 8만달러 밑으로…MSCI, 비영업 기업 기준 채택",
+      "publisher": "토큰포스트",
+      "publishedAt": "2026-10-17T06:58:23.000Z",
+      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE9nX0dwRlQ2eXVNNlNmYkZieEFHUUl5MXc5d2NOMTNySHlNN0U3cVlONU8ybXdSVGV0ZFRTN0dyUHUxQVQwMmMyd1ZVajVqZWxaY01GU3hEbk0?oc=5"
+    },
+    {
+      "id": "N12",
+      "title": "AI 투자 우려에 美 증시 급락…19일 코스피도 부담",
+      "publisher": "아이뉴스24",
+      "publishedAt": "2026-10-17T06:45:55.000Z",
+      "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTE9iRXhvN2tac2hrdTB2OFBvQkVMTkdQY205V2tFUG9SYjZBeF9IMlJiaWxhdDRSQ3JpY2RJZW40RHk1ejFuUXNPbTNtQQ?oc=5"
     }
   ],
   "ai": {
