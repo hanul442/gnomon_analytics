@@ -13,7 +13,17 @@ import { shell, type HomeEntry } from './renderHtml.js';
 import { esc } from './html.js';
 import { won, tone, pct as fmtPct } from './format.js';
 const pct = (v: number | null, d = 1) => fmtPct(v, d);
-type Tally = { name: string; scored: number; hits: number; pending: number; err: number[] };
+/**
+ * G-226: one line comparing a member's stated confidence with how often it was right, and its Brier score
+ * (0 best; 0.25 is what always saying 50% earns). Shown once 5 calls are scored, so one lucky call does not read as skill.
+ */
+function calibration(x: Tally): string {
+  if (!x.calScored || x.calScored < 5) return '';
+  const conf = x.conf! / x.calScored, hit = (x.hits / x.scored) * 100, gap = conf - hit, brier = x.brier! / x.calScored;
+  const read = Math.abs(gap) < 10 ? '확신과 적중이 비슷해요' : gap > 0 ? `적중보다 ${Math.round(gap)}%p 더 자신했어요` : `적중보다 ${Math.round(-gap)}%p 덜 자신했어요`;
+  return `<p class="muted small mb-cal">${read} · 확신 점수 ${brier.toFixed(2)} <span class="fine">(0이 가장 좋고, 늘 반반이라고 말하면 0.25)</span></p>`;
+}
+type Tally = { name: string; scored: number; hits: number; pending: number; err: number[]; brier?: number; conf?: number; calScored?: number };
 
 
 /** Screener presets' track record (G-53): public to everyone, the losing ones included. */
@@ -56,6 +66,8 @@ ${totalScored ? `<table class="compact"><thead><tr><th>기간</th><th>채점</th
     const x = by.get(a.analyst) ?? { name: a.name, scored: 0, hits: 0, pending: 0, err: [] };
     x.scored += a.scored; x.hits += (a.hitRate ?? 0) * a.scored; x.pending += a.pending;
     if (a.medianErrorPct !== null) x.err.push(a.medianErrorPct);
+    // G-226: confidence vs hit rate and the Brier score, weighted by scored calls (boards stored before G-226 lack them).
+    if (a.brier != null && a.avgConfidence != null && a.scored) { x.brier = (x.brier ?? 0) + a.brier * a.scored; x.conf = (x.conf ?? 0) + a.avgConfidence * a.scored; x.calScored = (x.calScored ?? 0) + a.scored; }
     by.set(a.analyst, x);
   }
   const board = [...by.entries()].sort(([, a], [, b]) => (b.scored ? b.hits / b.scored : -1) - (a.scored ? a.hits / a.scored : -1) || b.pending - a.pending);
@@ -85,13 +97,14 @@ ${totalScored ? `<table class="compact"><thead><tr><th>기간</th><th>채점</th
     const mine = (calls.get(id) ?? []).sort((a, b) => (a.c.reportDate < b.c.reportDate ? 1 : a.c.reportDate > b.c.reportDate ? -1 : a.e.name.localeCompare(b.e.name))).slice(0, 20);
     const stat = (k: string, v: string) => `<span><small>${k}</small><b>${v}</b></span>`;
     return `<article class="card mb-card" id="m-${esc(id)}"><div class="mb-head"><div><h3>${esc(x.name)}</h3>${who ? `<p class="muted small">${esc(who.focus)}</p>` : ''}</div>
-<div class="mb-stats">${stat('적중', x.scored ? `${Math.round((x.hits / x.scored) * 100)}%` : '—')}${stat('채점', `${x.scored}건`)}${stat('진행 중', `${x.pending}건`)}${stat('오차', x.err.length ? `${(x.err.reduce((s, v) => s + v, 0) / x.err.length).toFixed(1)}%` : '—')}</div></div>
+<div class="mb-stats">${stat('적중', x.scored ? `${Math.round((x.hits / x.scored) * 100)}%` : '—')}${stat('채점', `${x.scored}건`)}${stat('진행 중', `${x.pending}건`)}${stat('오차', x.err.length ? `${(x.err.reduce((s, v) => s + v, 0) / x.err.length).toFixed(1)}%` : '—')}${stat('확신', x.calScored ? `${Math.round(x.conf! / x.calScored)}%` : '—')}</div></div>
+${calibration(x)}
 ${mine.length ? `<ol class="mb-calls">${mine.map(row).join('')}</ol><p class="empty mb-none" hidden>관심 종목에 대한 판단이 아직 없어요.</p>${mine.length > 4 ? `<button type="button" class="more-all">최근 판단 ${mine.length}개 모두 보기</button>` : ''}` : '<p class="empty">아직 기록된 판단이 없어요.</p>'}</article>`;
   };
   const analystCard = `<section class="block"><div class="block-head"><h2>위원별 판단</h2><span class="muted">전 종목 합산</span></div>
 <div class="mb-bar" hidden><button type="button" class="chip-toggle mb-watch" aria-pressed="false">관심 종목만</button></div>
 ${board.length ? `<div class="mb-grid">${board.map(member).join('')}</div>` : '<div class="card"><p class="empty">아직 위원 판단이 없어요.</p></div>'}
-<p class="fine">위원은 같은 AI가 서로 다른 관점을 맡아 쓴 분석가예요. 리포트를 쓴 날 입장과 20거래일 뒤 가격을 그대로 기록하고 고치지 않아요. 20거래일이 지나면 방향이 맞았는지 채점해요(중립은 ±2% 안이면 맞음). 진행 중인 판단의 '같은 쪽·반대쪽'은 지금까지의 움직임일 뿐 채점이 아니에요. 적중이 높은 위원이 먼저 나와요.</p></section>`;
+<p class="fine">위원은 같은 AI가 서로 다른 관점을 맡아 쓴 분석가예요. 리포트를 쓴 날 입장과 20거래일 뒤 가격을 그대로 기록하고 고치지 않아요. 20거래일이 지나면 방향이 맞았는지 채점해요(중립은 ±2% 안이면 맞음). '확신'은 위원이 스스로 적은 확신도의 평균이에요. 확신이 적중보다 많이 높으면 자신감이 지나친 거고, 둘이 비슷할수록 믿을 만한 확신이에요. 진행 중인 판단의 '같은 쪽·반대쪽'은 지금까지의 움직임일 뿐 채점이 아니에요. 적중이 높은 위원이 먼저 나와요.</p></section>`;
   // G-77: strategy champions and paper ledgers ("따라 하기"), one row per stock, best first. Ten rows show;
   // the rest wait behind '전체 보기'. A row opens that stock's ledger in place.
   const follow = live.map((e) => {
