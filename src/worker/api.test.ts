@@ -4,6 +4,7 @@ import { ALPHA, allows, CREDIT_COST, UNLOCK, type Feature } from '../report/plan
 import { handle, type Deps, type Env } from './api.js';
 import { askParams } from './ask.js';
 import { testDb } from './testDb.js';
+import { SAMPLE_XML, zipOf } from './dartDoc.test.js';
 
 const SITE = 'https://hanul442.github.io/gnomon_analytics';
 
@@ -14,7 +15,7 @@ async function spendFreeOpens(t: { env: Env }, email: string): Promise<void> {
 }
 
 function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
-  const env: Env = { DB: testDb(), SITE_URL: SITE, ADMIN_EMAILS: 'boss@example.com', RESEND_API_KEY: opts.mail === false ? undefined as never : 'test', AI_DAILY_USD: '5', USER_DAILY_ASKS: '3' };
+  const env: Env = { DB: testDb(), SITE_URL: SITE, OPENDART_API_KEY: 'k', ADMIN_EMAILS: 'boss@example.com', RESEND_API_KEY: opts.mail === false ? undefined as never : 'test', AI_DAILY_USD: '5', USER_DAILY_ASKS: '3' };
   if (opts.mail === false) delete env.RESEND_API_KEY;
   const mails: { to: string; text: string }[] = [], seen: string[] = [];
   let clock = Date.parse('2026-10-05T03:00:00Z');
@@ -22,6 +23,7 @@ function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
     now: () => new Date(clock),
     fetch: (async (url: string, init?: RequestInit) => {
       seen.push(String(url));
+      if (String(url).startsWith('https://opendart.fss.or.kr/api/document.xml')) { const no = new URL(String(url)).searchParams.get('rcept_no')!; return no === '20261002000999' ? new Response('<?xml version="1.0"?><result><status>014</status></result>', { headers: { 'content-type': 'application/xml' } }) : new Response(zipOf({ [`${no}.xml`]: SAMPLE_XML })); }
       if (String(url).startsWith('https://api.resend.com')) { const b = JSON.parse(String(init!.body)); mails.push({ to: b.to[0], text: b.text }); return new Response('{}', { status: 200 }); }
       if (String(url).endsWith('/s/000660.json')) return Response.json({ name: 'SK하이닉스', market: 'KOSPI', bars: [['2026-10-02', 1, 2, 1, 2, 10]] });
       if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/ZZZZ.O/')) return Response.json([]);
@@ -120,6 +122,29 @@ test('credit requests are approved by hand and land in the ledger once', async (
   const me = await t.call('GET', '/me', undefined, u.session);
   assert.equal(me.body.credits.balance, ALPHA.monthlyCredits + 200);
   assert.deepEqual([me.body.requests[0].status, me.body.requests[0].granted], ['approved', 200]);
+});
+
+test('G-223: a filing question reads the DART original once, keeps it, and answers facts only', async () => {
+  const calls: Record<string, any>[] = [];
+  const t = setup({ ai: { create: async (p) => { calls.push(p); return { content: [{ type: 'text', text: '1,000,000주를 사기로 했어요.' }], model: String(p.model), stop_reason: 'end_turn', usage: { input_tokens: 3000, output_tokens: 200 } }; } } });
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('f@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  const r = await t.call('POST', '/ask', { tier: 'question', question: '이 공시 요약해 줘요', symbol: '000660', filing: '20261002000123' }, u.session);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  const msg = JSON.stringify(calls[0]!.messages), sys = JSON.stringify(calls[0]!.system);
+  assert.match(msg, /<filing receipt=\\"20261002000123\\">/);
+  assert.match(msg, /1\. 취득예정주식\(주\) \| 보통주식 \| 1,000,000/);
+  assert.match(sys, /사야 하는지, 팔아야 하는지/);
+  await t.call('POST', '/ask', { tier: 'question', question: '금액은요?', filing: '20261002000123' }, u.session);
+  assert.equal(t.seen.filter((x) => x.includes('document.xml')).length, 1);
+  // DART has no file: refused before any charge or model call.
+  const before = (await t.call('GET', '/me', undefined, u.session)).body.credits.balance;
+  const miss = await t.call('POST', '/ask', { tier: 'question', question: '이건요?', filing: '20261002000999' }, u.session);
+  assert.equal(miss.body.error, 'FILING_UNAVAILABLE');
+  assert.equal((await t.call('GET', '/me', undefined, u.session)).body.credits.balance, before);
+  assert.equal(calls.length, 2);
+  // Without a filing nothing about filings goes in.
+  assert.doesNotMatch(JSON.stringify(askParams({ tier: 'question', question: 'x' })), /filing/);
 });
 
 test('a question charges its tier, a failure is refunded, and limits hold', async () => {
