@@ -9,7 +9,7 @@ test('the home shows a US temperature card beside the Korean one when the US row
   const html = renderHome({ ...base, us: { pulse: marketPulse(calcs as never), date: '2026-10-08', up: 120, down: 70, flat: 10 } });
   assert.match(html, /class="block ix-row ix-4"/);
   assert.match(html, /미국 온도/);
-  assert.match(html, /href="us\.html"/);
+  assert.match(html, /href="screener\.html#us"/);
   assert.match(html, /▲120/);
   // Without US rows the strip is the Korean one only.
   const plain = renderHome({ ...base, us: null });

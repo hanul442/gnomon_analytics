@@ -56,13 +56,15 @@ export const JOBS_JS = `
  // The buttons that show the job: every report button on the page, else the floating pill.
  var targets=function(){var list=[].slice.call(document.querySelectorAll('[data-create-report]'));if(list.length)return list;var f=floatEl(job.state==='running'||job.state==='done'||job.state==='failed');return f?[f.querySelector('.gen-btn')]:[];};
  var keep=function(b){if(window.gnmBtnKeep)gnmBtnKeep(b);};
- var fx=function(b,state,pct){if(state!=='running'&&b.__liquid)b.__liquid.stop();if(state==='running'&&window.gnmLiquid&&b.offsetParent){var lq=gnmLiquid(b);if(lq&&pct!=null)lq.level(pct/100);}};
+ // G-225: the liquid needs the button on screen and WebGL. A button first dressed while hidden (another tab) or before
+ // the liquid script ran gets it on a later tick; a browser without WebGL is tried a few times, then keeps the CSS fill.
+ var fx=function(b,state,pct){if(state!=='running'&&b.__liquid)b.__liquid.stop();if(state==='running'&&window.gnmLiquid&&b.offsetParent&&(b.__noLq||0)<5){var lq=gnmLiquid(b);if(!lq)b.__noLq=(b.__noLq||0)+1;else if(pct!=null)lq.level(pct/100);}};
  var reset=function(b){clearTimeout(b._cf);fx(b,'');if(window.gnmBtnRestore)gnmBtnRestore(b);var x=b.parentNode&&b.parentNode.querySelector('.job-cancel');if(x)x.remove();var bar=b.closest('.rs-bar');if(bar&&bar._tx){bar.querySelector('.sa-tx').innerHTML=bar._tx;bar._tx=null;}};
  var dress=function(b,state,main,sub,pct){keep(b);b.dataset.job=state;b.setAttribute('aria-busy',String(state==='running'||state==='sending'));
   var busy=state==='running'||state==='sending';
   (window.gnmBtnSwap||function(x,h){x.innerHTML=h;})(b,(busy?'<i class="job-fill" style="width:'+(pct||4)+'%"></i><span class="job-spin" aria-hidden="true"></span>':state==='done'?'<span class="job-ok" aria-hidden="true">✓</span>':'')+'<span class="job-main">'+esc(main)+'</span>'+(sub?'<small class="job-sub">'+esc(sub)+'</small>':''));
   b.setAttribute('aria-label',main+(sub?' · '+sub:''));fx(b,state,pct);};
- var text=function(b,main,sub,pct){var m=b.querySelector('.job-main'),s=b.querySelector('.job-sub'),f=b.querySelector('.job-fill');if(m&&m.textContent!==main&&b.__liquid)b.__liquid.slosh(0.6);if(m)m.textContent=main;if(s)s.textContent=sub;if(f&&pct!=null)f.style.width=pct+'%';if(b.__liquid&&pct!=null)b.__liquid.level(pct/100);b.setAttribute('aria-label',main+' · '+sub);};
+ var text=function(b,main,sub,pct){var m=b.querySelector('.job-main'),s=b.querySelector('.job-sub'),f=b.querySelector('.job-fill');if(m&&m.textContent!==main&&b.__liquid)b.__liquid.slosh(0.6);if(m)m.textContent=main;if(s)s.textContent=sub;if(f&&pct!=null)f.style.width=pct+'%';if(b.__liquid&&pct!=null)b.__liquid.level(pct/100);else if(!b.__liquid)fx(b,'running',pct);b.setAttribute('aria-label',main+' · '+sub);};
  // The strip around the button tells what the committee is doing, one line at a time.
  var strip=function(b,head,line){var bar=b.closest('.rs-bar');if(!bar)return;var tx=bar.querySelector('.sa-tx');if(!tx)return;if(bar._tx==null)bar._tx=tx.innerHTML;var h=tx.querySelector('b'),sm=tx.querySelector('small');if(!sm){sm=document.createElement('small');tx.appendChild(sm);}if(h&&h.textContent!==head)h.textContent=head;if(sm.textContent!==line){sm.classList.add('swap');setTimeout(function(){sm.textContent=line;sm.classList.remove('swap');},160);}};
  var paintRun=function(){
