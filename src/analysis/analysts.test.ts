@@ -43,3 +43,15 @@ test('each analyst keeps its last calls followed to today, scored or in progress
   const fund = board.find((b) => b.analyst === 'fundamental')!.calls!;
   assert.deepEqual(fund.map((c) => c.baseDate), [16, 15, 14, 13, 12].map(day));
 });
+
+test('confidence is scored as a probability: Brier score and average confidence (G-226)', () => {
+  const at = (base: number, stance: AnalystCall['stance'], target: number, confidence: number) => ({ ...call('trend_momentum', base, stance, target), confidence });
+  // Both due: a right call at 80% (0.04) and a wrong one at 70% (0.49).
+  const board = scoreAnalysts([at(0, 'BULLISH', 125, 80), at(1, 'BEARISH', 90, 70), at(30, 'BULLISH', 140, 99)], bars);
+  const trend = board.find((b) => b.analyst === 'trend_momentum')!;
+  assert.equal(trend.scored, 2);
+  assert.equal(Math.round(trend.brier! * 1000) / 1000, 0.265);
+  assert.equal(trend.avgConfidence, 75);
+  const none = board.find((b) => b.analyst === 'fundamental')!;
+  assert.deepEqual([none.brier, none.avgConfidence], [null, null]);
+});

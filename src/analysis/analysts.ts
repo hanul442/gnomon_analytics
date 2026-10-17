@@ -42,6 +42,13 @@ export interface AnalystScore {
   hitRate: number | null;
   /** Median absolute error of the target, percent. */
   medianErrorPct: number | null;
+  /**
+   * G-226: confidence read as the chance the call is right, scored the standard way (Brier score: mean of
+   * (confidence/100 − hit)², 0 best, 0.25 = always saying 50%). `avgConfidence` (0–100) next to `hitRate`
+   * shows over- or under-confidence. Both over scored calls only.
+   */
+  brier: number | null;
+  avgConfidence: number | null;
   pending: number;
   latest: AnalystCall | null;
   rank: number | null;
@@ -66,6 +73,7 @@ const hitOf = (c: AnalystCall, close: number) => {
   return Math.sign(c.target - c.baseClose) === Math.sign(move);
 };
 
+const mean = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const median = (xs: readonly number[]) => {
   const s = [...xs].sort((a, b) => a - b); const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
@@ -81,7 +89,7 @@ export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { da
   const idx = new Map(sorted.map((b, i) => [b.date, i]));
   const board = ANALYSTS.map((a) => {
     const mine = calls.filter((c) => c.analyst === a.id).sort((x, y) => (x.baseDate < y.baseDate ? -1 : 1));
-    const results: { hit: boolean; err: number }[] = [];
+    const results: { hit: boolean; err: number; conf: number }[] = [];
     let pending = 0;
     const last = sorted.at(-1);
     const track = (c: AnalystCall, i: number | undefined, outcome: { date: string; close: number } | undefined): AnalystTrack => {
@@ -99,12 +107,14 @@ export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { da
       const outcome = i === undefined ? undefined : sorted[i + ANALYST_HORIZON];
       tracked.push(track(c, i, outcome));
       if (!outcome) { pending += 1; continue; }
-      results.push({ hit: hitOf(c, outcome.close), err: Math.abs(outcome.close / c.target - 1) * 100 });
+      results.push({ hit: hitOf(c, outcome.close), err: Math.abs(outcome.close / c.target - 1) * 100, conf: Math.max(0, Math.min(100, c.confidence)) / 100 });
     }
     return {
       analyst: a.id, name: a.name, scored: results.length,
       hitRate: results.length ? results.filter((r) => r.hit).length / results.length : null,
       medianErrorPct: results.length ? median(results.map((r) => r.err)) : null,
+      brier: results.length ? mean(results.map((r) => (r.conf - (r.hit ? 1 : 0)) ** 2)) : null,
+      avgConfidence: results.length ? mean(results.map((r) => r.conf * 100)) : null,
       pending, latest: mine.at(-1) ?? null, rank: null as number | null,
       calls: tracked.slice(-TRACK_KEEP).reverse(),
     };

@@ -21,7 +21,12 @@ export type CommentaryTier = 'deep' | 'brief';
 /** v3 (G-42): every claim says whether it is a fact from the evidence, an inference, or an assumption. */
 /** v8 (G-218): plain-language layer for beginners (`easy`, and `plain` on each debate turn). */
 /** v9 (G-221): longer, reasoned debate turns (what was seen, why it matters, where the other side is weak, what would change the mind). */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v9';
+/**
+ * v10 (G-226): confidence is the chance the call is right (scored with the Brier score); scenario probabilities and
+ * targets start from the statistical range (R1) and move only as far as the evidence pushes (outside view first);
+ * each analyst judges from its own lens before the debate, so a majority does not pull the others along.
+ */
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v10';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -270,7 +275,7 @@ export const CommentarySchema = z.object({
   analysts: z.array(z.object({
     analyst: z.enum(ANALYSTS.map((a) => a.id) as [AnalystId, ...AnalystId[]]),
     stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']),
-    confidence: z.number().describe('0~100'),
+    confidence: z.number().describe('이 판단이 20거래일 뒤 맞을 확률(%) 0~100. 강세·약세는 방향이, 중립은 ±2% 안에 머무는 것이 맞음. 50은 반반'),
     target: z.number().describe(`P1 종가 기준 ${ANALYST_HORIZON}거래일 뒤 예상 가격(원)`),
     rationale: ClaimSchema.describe('이 분석가의 근거 2~3문장: 본 숫자, 그렇게 판단한 이유, 판단이 틀렸다고 볼 조건'),
   })).describe('분석가 6명 각각 하나씩'),
@@ -364,6 +369,9 @@ const DEEP_SYSTEM = `당신은 GNOMON의 리서치 위원회예요. 사용자 �
 - 쉬운 말 풀이(easy, debate의 plain): 주식을 처음 하는 사람이 읽는다고 생각하고 같은 내용을 다시 씁니다. "강세"는 "오를 쪽", "약세"는 "내릴 쪽"처럼 일상어로 바꾸고, 지표 이름(RSI·MACD·볼린저 등)은 "많이 올라 쉬어 갈 수 있다는 신호"처럼 뜻으로 말합니다. 위에서 쓴 주장을 쉽게 옮길 뿐 새 사실·숫자·전망을 더하지 않고, 매수·매도를 권하지 않습니다. terms에는 이 리포트에 실제로 나온 말만 고릅니다.
 - 데스크 근거가 없으면 stance를 INSUFFICIENT_DATA로 둡니다.
 - 분석가 대결: 아래 분석가 6명이 각자 자기 관점에서 판단(강세·약세·중립), 확신도(0~100), 20거래일 뒤 예상 가격을 냅니다. 예상 가격은 P1 종가에서 출발해 근거로 설명할 수 있는 수준이어야 하고, 기록되어 20거래일 뒤 실제 가격으로 채점됩니다. 서로 의견이 달라도 됩니다.
+  - 각 분석가는 다른 위원의 결론을 보기 전처럼 자기 관점의 근거만으로 먼저 판단합니다. 다른 위원 다수가 같은 쪽이라는 이유로 따라가지 않고, 토론에서도 입장을 바꾸지 않습니다.
+  - 확신도는 그 판단이 20거래일 뒤 맞을 확률(%)입니다(강세·약세는 방향, 중립은 ±2% 안). 50은 반반이고, 주가 방향은 맞히기 어려우니 근거가 여러 갈래로 겹칠 때만 70을 넘깁니다. 확신도는 적중 여부와 비교해 채점되므로(맞으면 높을수록, 틀리면 낮을수록 좋음) 부풀리지 않습니다.
+- 기준선 먼저(바깥 관점): R1(통계 예측 범위)이 있으면 시나리오 확률·가격대와 분석가 예상 가격은 R1의 20거래일 하단·중앙·상단과 그 지난 채점을 기준선으로 잡고, 이 종목의 근거가 그 기준선에서 얼마나·왜 벗어나게 하는지로 조정합니다. 기준선에서 크게 벗어날 때는 그 이유가 되는 근거 ID를 답니다.
 ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
 
 규칙:

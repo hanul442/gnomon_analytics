@@ -31,3 +31,13 @@ test('the scorecard shows each member\'s calls from stance to result, with the d
   assert.ok(html.includes('class="mb-bar" hidden'), 'the watchlist filter shows only when the reader has a watchlist');
   assert.ok(!html.includes('AI 분석가 순위'), 'the old ranking table is now the members\' cards');
 });
+
+test('a member card compares stated confidence with the hit rate once 5 calls are scored (G-226)', () => {
+  // Six due bullish calls at 60% on a rising stock: all right, so the member was under-confident by 40%p.
+  const calls = Array.from({ length: 6 }, (_, i) => call('111111', i, 'BULLISH', 200));
+  const html = renderScorecard([scorecardEntry('111111', '가 종목', calls)]);
+  assert.match(html, /<small>확신<\/small><b>60%<\/b>/);
+  assert.match(html, /적중보다 40%p 덜 자신했어요 · 확신 점수 0\.16/);
+  const few = renderScorecard([scorecardEntry('111111', '가 종목', calls.slice(0, 4))]);
+  assert.ok(!few.includes('덜 자신했어요'), 'fewer than 5 scored calls: no calibration line');
+});
