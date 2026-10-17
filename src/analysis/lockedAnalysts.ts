@@ -18,8 +18,8 @@ export const LENS: Record<AnalystId, readonly string[]> = {
   mean_reversion: ['T1', 'V1', 'S1', 'H1'],
   wave_structure: ['S1', 'H1', 'V1'],
   volume_flow: ['Q1', 'M1'],
-  fundamental: ['D1', 'M1', 'E'],
-  event_catalyst: ['E', 'F', 'N'],
+  fundamental: ['D1', 'M1', 'E', 'X1'],
+  event_catalyst: ['E', 'F', 'N', 'B1'],
 };
 const SHARED = ['P1', 'R1', 'K1'];
 /** A lens entry without a digit ('E', 'F', 'N') takes every item of that letter. */

@@ -74,6 +74,8 @@ export interface DailyReport {
   currency?: 'USD';
   /** What most readers miss (G-99): earnings surprises, dividends, buybacks, insider and 5% holder moves. */
   edge?: import('../analysis/edge.js').EdgeSection;
+  /** G-230: US rates, the won and US volatility on the report date (FRED). */
+  macro?: import('../analysis/macro.js').MacroSnapshot;
   /** Full annual statements from DART (G-140): 손익계산서 · 재무상태표 · 현금흐름표, three years. */
   statements?: import('../sources/dartStatements.js').FullStatements;
   /** AI commentary for "왜?" (docs/DESIGN.md §4.4); written once with the report. */
