@@ -2,7 +2,7 @@
   "schema": "curia.market-report.v4",
   "date": "2026-10-17",
   "from": "2026-10-17",
-  "generatedAt": "2026-10-17T10:09:04.257Z",
+  "generatedAt": "2026-10-17T10:14:12.213Z",
   "period": "daily",
   "groups": [
     {
@@ -3316,7 +3316,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T10:09:04.257Z",
+      "snapshotDate": "2026-10-17T10:14:12.213Z",
       "breadth": {
         "up": 54,
         "down": 237,
@@ -13932,7 +13932,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T10:09:04.257Z",
+      "snapshotDate": "2026-10-17T10:14:12.213Z",
       "breadth": {
         "up": 795,
         "down": 257,
@@ -18167,19 +18167,19 @@
           "value": 96
         },
         {
-          "symbol": "NSC",
-          "name": "노퍽서던",
+          "symbol": "RSG",
+          "name": "리퍼블릭 서비스",
           "date": "2026-10-16",
-          "close": 326.92,
+          "close": 231.54,
           "returnPct": null,
           "baseline": "2026-10-15",
           "value": 96
         },
         {
-          "symbol": "RSG",
-          "name": "리퍼블릭 서비스",
+          "symbol": "NSC",
+          "name": "노퍽서던",
           "date": "2026-10-16",
-          "close": 231.54,
+          "close": 326.92,
           "returnPct": null,
           "baseline": "2026-10-15",
           "value": 96
@@ -19904,7 +19904,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T10:09:04.257Z",
+      "snapshotDate": "2026-10-17T10:14:12.213Z",
       "breadth": {
         "up": 244,
         "down": 402,
@@ -19922,80 +19922,80 @@
     },
     {
       "id": "N2",
+      "title": "바카라 카운팅 방법 배당표에 나오는 기호 설명",
+      "publisher": "Calgary Roughnecks",
+      "publishedAt": "2026-10-17T08:11:05.000Z",
+      "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxQSXBRUVpTSWhlQTI4TVB4SXJWM2ZEMmswVnFOLXNINmhqMGdzdG9YUWdRbVhZX0hUanlSbTBNZ2QxdE5lN1diQ1pQMFFyVU1Hb2ExTF9NT0RfT2ppMWtBRWVickI1SWg5OV81UWtGSnlFSzczRl90NVd0Ynd6Q2JILXln?oc=5"
+    },
+    {
+      "id": "N3",
+      "title": "비트코인(BTC), 8만 달러 붕괴 후 반등…고래 매집 속 8만3885달러 돌파 가능할까",
+      "publisher": "CBC뉴스",
+      "publishedAt": "2026-10-17T07:58:43.000Z",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5XTURBVkhqczVDemhGM3R4SzZRdDdvNjVCWW4wREVPTUgxR3p0WWJtT0s5YjBjcDAwaWNvMGZzQW9xMUdaaU1aQlUzd3ZxU1NBaEwtYnVPU2ItcEVVSzNBUWUzd2Zncmct?oc=5"
+    },
+    {
+      "id": "N4",
+      "title": "AEON (AEON) 가격, 차트, 시가총액 | 코인마켓캡",
+      "publisher": "CoinMarketCap",
+      "publishedAt": "2026-10-17T07:54:38.000Z",
+      "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE1jMVJaeHg5RlVDcWhjb2gxUXVobFJzNnJtUkVybHFfTlplY3hjSnBBZlRoVHJqalNaM1JicjVYem1VRWNiMHVxTktXWUo5VjRRVzAzRlZaVElwT2xhTWc?oc=5"
+    },
+    {
+      "id": "N5",
       "title": "비트코인(BTC)·이더리움(ETH) 동반 약세 신호…8만 달러·2300달러 지지력 주목",
       "publisher": "CBC뉴스",
       "publishedAt": "2026-10-17T07:50:00.000Z",
       "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE9TTXNFUlRLVW5MenNfQmNjT2Y4OEg5R0FXZVM0YXMxQWIxUU1jcGwyclUxd1I0ZjZvTVN1UV9BWWlodEVJQ2szZVdBcW1kNW45U01jSGkyZkNCRVVIZW5KelJ4XzJnRlpY?oc=5"
     },
     {
-      "id": "N3",
+      "id": "N6",
       "title": "비트코인 6~12개월 보유분 거래소 유입 비중 4.4%",
       "publisher": "토큰포스트",
       "publishedAt": "2026-10-17T07:24:26.000Z",
       "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE96UkhJckdBaTlKQ0JETzVqMHFsSWJpVTRDbmF2c0hKdm56X19Vd1h2X3VMbHN6bVRtNVpTT1lMWVBTWVV2T1dybGlUdV9jT0wwUnF2WnB4NjBvTzhKTm5VRA?oc=5"
     },
     {
-      "id": "N4",
+      "id": "N7",
       "title": "비트코인 물가 헤지, 보유 방식 따라 이자·선물 비용 달라",
       "publisher": "토큰포스트",
       "publishedAt": "2026-10-17T07:08:06.000Z",
       "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTFBBM21hdWtDbWZMMk16ZUNBRHFqNW0wd05SUGRnOTNQTnNybnNJdE04WS13S1pOZFpNeDdqLVl3THVIVGxCX05YYmxINWlMdU15a2R6ZEwxaVZSSkttQTVkNw?oc=5"
     },
     {
-      "id": "N5",
+      "id": "N8",
       "title": "증권: 외국인 투자자의 순매도 압력은 여전히 식지 않고 있습니다",
       "publisher": "laodong.vn",
       "publishedAt": "2026-10-17T07:07:05.000Z",
       "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNSXpNUERfLXRBbUtQWGRkUHUzWjhBZmtrQ3c2dzNwdVN5MFFnaTRacjBrNC0yUWhTX09QRGJqT1RrSWFDVUFuV0Z0a3lia3NTdV9XY2lOM2RHaktZRGh1WTBCb3NLU3NwdVJXbG5HMXpZblJVTzc4SXRPcFFiWHJ1Zi1Cc21WMGpwUmtvSnV5cmotNUJkU2ZCMzg1QWxEbXNaNm04b05lYWk?oc=5"
     },
     {
-      "id": "N6",
+      "id": "N9",
+      "title": "OpenGradient (OPG) 가격, 차트, 시가총액 | 코인마켓캡",
+      "publisher": "CoinMarketCap",
+      "publishedAt": "2026-10-17T07:06:53.000Z",
+      "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFB3b3VOVWYxTDhOeWxDdHpmY0hjNXlGQjZ5QUtMQ1FEVDhzS0hVY2p3RW5FRUVEQ3B0Zm5Ia1BLd0JWWmFaT1VDeTJPNXBiWVg2cmpGbHBldHZJZlFvMkpza3hIOA?oc=5"
+    },
+    {
+      "id": "N10",
       "title": "[저녁 시세브리핑] 암호화폐 시장 약세… 비트코인 81,504달러, 이더리움 2,429달러",
       "publisher": "토큰포스트",
       "publishedAt": "2026-10-17T07:01:02.000Z",
       "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE9MNVFrcDVzbVpTMEdnb2lTbFRIQlJKcU9XMnphTzhEdFpJQjhMZWtPMFozZjNhUS1acVByWWFFMXBEa3VINHNJc25XRlhlcmRXZWVkX2doVk4?oc=5"
     },
     {
-      "id": "N7",
-      "title": "[저녁 뉴스브리핑] 비트코인, 8만 달러 아래로 하락 外",
-      "publisher": "토큰포스트",
-      "publishedAt": "2026-10-17T07:00:23.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE0wWFhFSE5WTXBIOFJueFBtaXpDYVlQd2g5OVZuRWJKYkdPeXJEUkhTNEdxWmxieW5ta18tV05JVmUya2pjVGlYeF84WUdiaS1LRm5nOEoyMmQ?oc=5"
-    },
-    {
-      "id": "N8",
+      "id": "N11",
       "title": "OKX, 토큰화 주식·X-Perps 상장 공지 게시",
       "publisher": "토큰포스트",
       "publishedAt": "2026-10-17T06:58:39.000Z",
       "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE9yXy1WcnZvdnRDNUg1ZWZQd2pUQWZkM204MFhlZUt3UHpFWl9qdTBjS0R1RFM1aTduY0FybWpZUkdsbF9UVG5TRGxJd095VXk5UmgxSE81aG5DTFl5Y2NENg?oc=5"
     },
     {
-      "id": "N9",
-      "title": "비트코인 10월 15일 8만달러 밑으로…MSCI, 비영업 기업 기준 채택",
-      "publisher": "토큰포스트",
-      "publishedAt": "2026-10-17T06:58:23.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE9nX0dwRlQ2eXVNNlNmYkZieEFHUUl5MXc5d2NOMTNySHlNN0U3cVlONU8ybXdSVGV0ZFRTN0dyUHUxQVQwMmMyd1ZVajVqZWxaY01GU3hEbk0?oc=5"
-    },
-    {
-      "id": "N10",
+      "id": "N12",
       "title": "AI 투자 우려에 美 증시 급락…19일 코스피도 부담",
       "publisher": "아이뉴스24",
       "publishedAt": "2026-10-17T06:45:55.000Z",
       "url": "https://news.google.com/rss/articles/CBMiS0FVX3lxTE9iRXhvN2tac2hrdTB2OFBvQkVMTkdQY205V2tFUG9SYjZBeF9IMlJiaWxhdDRSQ3JpY2RJZW40RHk1ejFuUXNPbTNtQQ?oc=5"
-    },
-    {
-      "id": "N11",
-      "title": "비트디어, 한 주간 비트코인 294.2개 전량 매도",
-      "publisher": "토큰포스트",
-      "publishedAt": "2026-10-17T06:44:33.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTE5GWVRTNFFiM0FvdkoxeDg2RmVjZVNxRTVhZlVIclRHUXBBb0NGbzg1U2tpZlVKY2thRHp4cXBCdmdVdTlhWTZkQ2IxbjhJTW5QVjYyLU9IeU52WXdkZlBxaw?oc=5"
-    },
-    {
-      "id": "N12",
-      "title": "비트코인 ETF, 둘째 주 2억2840만달러 순유출",
-      "publisher": "토큰포스트",
-      "publishedAt": "2026-10-17T06:43:12.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiYEFVX3lxTFBPM2JXRkI2cU1SeHJqMjF5SEdGNGp1aG94YnVqbWpUZWpEclNkUHFfMWRiYjNlM1RyRE9nd0JONk1ZMUdxSXBvZk42MDdnaGllNzI0cFVDazFxZHNYY2tqRw?oc=5"
     }
   ],
   "ai": {
