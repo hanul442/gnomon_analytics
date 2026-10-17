@@ -106,6 +106,26 @@ export async function fetchDartDocument(apiKey: string | undefined, receiptNo: s
   return parseDartDocument(receiptNo, new Uint8Array(await res.arrayBuffer()));
 }
 
+/** G-224: the committee reads the start of each new important DART filing (newest first, a few per report). */
+export async function attachFilingExcerpts(
+  filings: { receiptNo: string; importance: string; excerpt?: string }[],
+  apiKey: string,
+  fetcher: typeof fetch,
+  limits: { count?: number; chars?: number } = {},
+): Promise<number> {
+  if (!apiKey.trim()) return 0;
+  const chars = limits.chars ?? 4_000;
+  let read = 0;
+  for (const f of filings.filter((x) => x.importance === 'HIGH' && isReceiptNo(x.receiptNo)).slice(0, limits.count ?? 3)) {
+    // Best effort: a filing DART cannot serve is discussed from its title as before.
+    const doc = await fetchDartDocument(apiKey, f.receiptNo, fetcher).catch(() => null);
+    if (!doc?.text) continue;
+    f.excerpt = doc.text.length > chars ? `${doc.text.slice(0, chars)} …(앞부분 ${chars.toLocaleString('ko-KR')}자만)` : doc.text;
+    read += 1;
+  }
+  return read;
+}
+
 /** The text the chat reads, wrapped as data (never instructions). */
 export const filingContext = (f: FilingText) =>
   `<filing receipt="${f.receiptNo}"${f.truncated ? ` truncated="true" kept_chars="${FILING_MAX_CHARS}"` : ''}>\n${f.title ? `문서: ${f.title}\n` : ''}${f.text}\n</filing>`;

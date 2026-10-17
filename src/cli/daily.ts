@@ -35,6 +35,7 @@ import { copyFile, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/p
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { buildDailyReport, type DailyReport } from '../report/dailyReport.js';
+import { attachFilingExcerpts } from '../sources/dartDocument.js';
 import { COMMENTARY_PROMPT_VERSION, publicCommentary, skippedCommentary, writeCommentary } from '../analysis/commentary.js';
 import { deepPath, isUsSymbol, seal, unseal } from '../report/seal.js';
 import { AiBudget } from './aiBudget.js';
@@ -538,6 +539,8 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
         built.commentary = skippedCommentary(built, `AI_MONTHLY_BUDGET:${options.budget.limit}USD`, now);
       } else if (tier) {
         options.budget?.reserve(tier);
+        // G-224: the committee reads the original of new important filings, not only their titles.
+        if (!us && !coin) await attachFilingExcerpts(built.filings, options.apiKey, options.fetch ?? fetch);
         built.commentary = await writeCommentary(built, {
           now: clock,
           ...(options.anthropic ? { client: options.anthropic } : {}),

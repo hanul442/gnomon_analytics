@@ -26,7 +26,7 @@ import { withCurrency } from '../report/format.js';
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
 
 import { ALPHA, ASK_TIERS, CREDIT_COST, EXPERTS, type AskTier, type CreditAction } from '../report/plans.js';
-import { fetchDartDocument, filingContext, isReceiptNo, type FilingText } from './dartDoc.js';
+import { fetchDartDocument, filingContext, isReceiptNo, type FilingText } from '../sources/dartDocument.js';
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, FIELDS, matches } from '../analysis/screenRules.js';

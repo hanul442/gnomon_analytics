@@ -4,7 +4,7 @@ import { ALPHA, allows, CREDIT_COST, UNLOCK, type Feature } from '../report/plan
 import { handle, type Deps, type Env } from './api.js';
 import { askParams } from './ask.js';
 import { testDb } from './testDb.js';
-import { SAMPLE_XML, zipOf } from './dartDoc.test.js';
+import { SAMPLE_XML, zipOf } from '../sources/dartDocument.test.js';
 
 const SITE = 'https://hanul442.github.io/gnomon_analytics';
 
