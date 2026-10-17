@@ -5,7 +5,7 @@
 // voted that way; chips highlight one faction. Pure rendering from the report.
 
 import type { DailyReport } from './dailyReport.js';
-import { ANALYSTS } from '../analysis/analysts.js';
+import { ANALYSTS, committeeConsensus } from '../analysis/analysts.js';
 import { esc } from './html.js';
 import { won } from './format.js';
 
@@ -34,7 +34,7 @@ export function seatsFor(report: DailyReport): Seat[] {
     const who = ANALYSTS.find((x) => x.id === a.analyst);
     const score = report.market?.analystBoard?.find((b) => b.analyst === a.analyst);
     const record = score && score.scored ? `지난 성적: 채점 ${score.scored}건, 방향 적중 ${Math.round(score.hitRate! * 100)}%${score.rank ? `, ${score.rank}위` : ''}` : '지난 성적: 아직 채점 전이에요(20거래일 뒤 채점).';
-    seats.push({ id: `ai:${a.analyst}`, faction: 'ai', name: who?.name ?? a.analyst, stance: fromVote(a.stance), lines: [`확신도 ${a.confidence}% · 20거래일 뒤 예상 ${won(a.target)}`, a.rationale.text, record] });
+    seats.push({ id: `ai:${a.analyst}`, faction: 'ai', name: who?.name ?? a.analyst, stance: fromVote(a.stance), lines: [`확신도 ${a.confidence}% · 20거래일 뒤 예상 ${won(a.target)}`, a.rationale.text, record, ...(c?.lockedAnalysts?.includes(a.analyst) ? ['위원회가 모이기 전에 다른 위원 의견을 모른 채 혼자 판단했고, 위원회는 이 판단을 바꾸지 않았어요.'] : [])] });
   }
   for (const d of c?.desks ?? []) {
     seats.push({ id: `desk:${d.desk}`, faction: 'desk', name: `${DESK_WORD[d.desk]} 데스크`, stance: d.stance === 'INSUFFICIENT_DATA' ? 'abstain' : fromVote(d.stance), lines: [d.view.text] });
@@ -169,3 +169,15 @@ export const PARLIAMENT_SCRIPT = `<script>
   window.GNM_parliament();
 })();
 </script>`;
+
+/**
+ * G-228: one line under the committee vote: the analysts' calls pooled into a chance the price is higher in
+ * 20 sessions (log-odds average, skill-weighted once records are long enough). The same for every reader.
+ */
+export function consensusNote(report: DailyReport): string {
+  const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
+  const k = committeeConsensus(c?.analysts ?? [], report.market?.analystBoard ?? []);
+  if (!k) return '';
+  const locked = c?.lockedAnalysts?.length ?? 0;
+  return `<p class="pl-consensus"><b>위원 ${k.n}명 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b> <span class="muted small">${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>`;
+}

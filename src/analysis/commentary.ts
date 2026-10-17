@@ -11,6 +11,7 @@ import { z } from 'zod';
 import type { DailyReport } from '../report/dailyReport.js';
 import { won, withCurrency, financeUnit } from '../report/format.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystId } from './analysts.js';
+import { lockAnalysts, lockedBrief, type LockUsage } from './lockedAnalysts.js';
 
 export const COMMENTARY_MODEL = 'claude-opus-5-5';
 /**
@@ -27,7 +28,8 @@ export type CommentaryTier = 'deep' | 'brief';
  * each analyst judges from its own lens before the debate, so a majority does not pull the others along.
  */
 /** v11 (G-227): K1 carries each member's own record and latest miss on this stock, and the scenario score; members adjust to it. */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v11';
+/** v12 (G-228): analysts judge alone first on a smaller model (src/analysis/lockedAnalysts.ts); the committee debates their locked calls. */
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v12';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -106,6 +108,10 @@ export interface Commentary {
   analysts?: AnalystView[];
   /** v8: the plain-language retelling (public, like the summary). */
   easy?: EasyView;
+  /** G-228: analysts whose call was made alone before the committee and kept as made. */
+  lockedAnalysts?: AnalystId[];
+  /** G-228: tokens of those calls, billed on their own model. */
+  lockUsage?: LockUsage;
   /** Claims removed because none of their evidence IDs existed. */
   dropped: number;
   evidence: EvidenceItem[];
@@ -390,6 +396,7 @@ const DEEP_SYSTEM = `당신은 GNOMON의 리서치 위원회예요. 사용자 �
 - 데스크 근거가 없으면 stance를 INSUFFICIENT_DATA로 둡니다.
 - 분석가 대결: 아래 분석가 6명이 각자 자기 관점에서 판단(강세·약세·중립), 확신도(0~100), 20거래일 뒤 예상 가격을 냅니다. 예상 가격은 P1 종가에서 출발해 근거로 설명할 수 있는 수준이어야 하고, 기록되어 20거래일 뒤 실제 가격으로 채점됩니다. 서로 의견이 달라도 됩니다.
   - 각 분석가는 다른 위원의 결론을 보기 전처럼 자기 관점의 근거만으로 먼저 판단합니다. 다른 위원 다수가 같은 쪽이라는 이유로 따라가지 않고, 토론에서도 입장을 바꾸지 않습니다.
+  - 사용자 메시지에 "잠긴_분석가_판단"이 있으면, 그 분석가들은 위원회 전에 혼자 판단을 마쳤어요. analysts에는 그 입장·확신도·예상 가격을 그대로 옮기고(바꾸지 않음), 토론에서도 그 입장으로 말합니다. 위원회는 그 판단에 동의하거나 반박할 수 있지만 고치지는 않아요. 잠긴 판단끼리 갈렸으면 그 이견을 토론의 중심에 둡니다.
   - 확신도는 그 판단이 20거래일 뒤 맞을 확률(%)입니다(강세·약세는 방향, 중립은 ±2% 안). 50은 반반이고, 주가 방향은 맞히기 어려우니 근거가 여러 갈래로 겹칠 때만 70을 넘깁니다. 확신도는 적중 여부와 비교해 채점되므로(맞으면 높을수록, 틀리면 낮을수록 좋음) 부풀리지 않습니다.
 - 지난 성적(K1)이 있으면 각 분석가는 자기 기록을 보고 확신도를 맞춥니다. 평균 확신이 적중률보다 높았으면 확신을 낮추고, 최근 빗나간 판단과 같은 이유로 같은 쪽을 말할 때는 이번에는 무엇이 다른지 rationale에 씁니다. 시나리오 확률 점수가 0.67보다 나빴으면 확률을 한쪽으로 덜 몰아요. 지난 성적은 판단을 바꾸는 근거가 아니라 확신의 크기를 맞추는 근거입니다.
 - 기준선 먼저(바깥 관점): R1(통계 예측 범위)이 있으면 시나리오 확률·가격대와 분석가 예상 가격은 R1의 20거래일 하단·중앙·상단과 그 지난 채점을 기준선으로 잡고, 이 종목의 근거가 그 기준선에서 얼마나·왜 벗어나게 하는지로 조정합니다. 기준선에서 크게 벗어날 때는 그 이유가 되는 근거 ID를 답니다.
@@ -470,16 +477,20 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
   if (!options.client && !options.apiKey?.trim()) return empty('SKIPPED', now, evidence, 'ANTHROPIC_API_KEY_MISSING');
   if (!evidence.length) return empty('SKIPPED', now, evidence, 'NO_EVIDENCE');
   const client = options.client ?? new Anthropic({ apiKey: options.apiKey! });
+  const extra = `${kindRule(report.kind)}${report.currency === 'USD' ? US_RULE : ''}`.trim();
+  // G-228: the analysts judge alone first; their calls are locked before the committee sees them.
+  const locked = report.price ? await lockAnalysts({ name: `${report.name} (${report.symbol})`, close: report.price.close, extraRule: extra, evidence }, client) : { calls: [], usage: null };
+  const lockFields = { ...(locked.calls.length ? { lockedAnalysts: locked.calls.map((c) => c.analyst) } : {}), ...(locked.usage ? { lockUsage: locked.usage } : {}) };
   const input = {
     종목: `${report.name} (${report.symbol})`,
     ...(report.kind ? { 자산_종류: report.kind === 'etf' ? 'ETF' : '코인 (업비트 원화 마켓)' } : {}),
     리포트_날짜: report.date,
     헤드라인: report.headline,
     근거_목록: evidence.map(({ id, label, detail }) => ({ id, 제목: label, 내용: detail })),
+    ...(locked.calls.length ? { 잠긴_분석가_판단: lockedBrief(locked.calls) } : {}),
   };
   try {
     // Compact JSON (no indentation) saves about a fifth of the input tokens; the model reads it the same.
-    const extra = `${kindRule(report.kind)}${report.currency === 'USD' ? US_RULE : ''}`.trim();
     const user = { role: 'user' as const, content: `다음 근거 목록으로 "왜?" 해설을 작성해 주세요.${extra ? `\n\n이 종목 추가 규칙:\n${extra}` : ''}\n\n${JSON.stringify(input)}` };
     const cached = (text: string) => [{ type: 'text' as const, text, cache_control: { type: 'ephemeral' as const } }];
     // The full committee on the large model, with the server-side fallback for safety declines.
@@ -495,7 +506,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       output_config: { effort: 'medium' },
       system: cached(DEEP_SYSTEM_FULL()), messages: [user],
     });
-    const failed=(reason:string):Commentary=>({...empty('FAILED',now,evidence,reason),model,servedBy:response.model,tier,...(response.usage?{usage:usageOf(response.usage)}:{})});
+    const failed=(reason:string):Commentary=>({...empty('FAILED',now,evidence,reason),model,servedBy:response.model,tier,...lockFields,...(response.usage?{usage:usageOf(response.usage)}:{})});
     if (response.stop_reason === 'refusal') return failed(`REFUSAL:${response.stop_details?.category ?? 'unknown'}`);
     if (response.stop_reason === 'max_tokens') return failed('MAX_TOKENS');
     let parsed = response.parsed_output as z.infer<typeof CommentarySchema> | null;
@@ -523,9 +534,13 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const [summary] = clean([parsed.summary]);
     const desks = (parsed.desks ?? []).flatMap((d) => clean([d.view]).map((view) => ({ desk: d.desk, stance: d.stance, view })));
     const [counter] = parsed.redTeam ? clean([parsed.redTeam.counterargument]) : [];
-    const analysts = (parsed.analysts ?? []).flatMap((a) => (Number.isFinite(a.target) && a.target > 0 ? clean([a.rationale]).map((rationale) => ({
+    const committeeAnalysts = (parsed.analysts ?? []).flatMap((a) => (Number.isFinite(a.target) && a.target > 0 ? clean([a.rationale]).map((rationale) => ({
       analyst: a.analyst, stance: a.stance, confidence: Math.max(0, Math.min(100, Math.round(a.confidence))), target: a.target, rationale,
     })) : []));
+    // G-228: a locked call stands as made, whatever the committee wrote for that analyst.
+    const lockedBy = new Map(locked.calls.map((c) => [c.analyst, c]));
+    const analysts = [...locked.calls, ...committeeAnalysts.filter((a) => !lockedBy.has(a.analyst))]
+      .sort((a, b) => ANALYSTS.findIndex((x) => x.id === a.analyst) - ANALYSTS.findIndex((x) => x.id === b.analyst));
     const scenarios = normalizeProbabilities((parsed.scenarios ?? []).flatMap((sc) => clean([sc.narrative]).map((narrative) => ({
       kind: sc.kind, narrative, catalysts: sc.catalysts.map((c) => c.trim()).filter(Boolean), invalidation: sc.invalidation.map((c) => c.trim()).filter(Boolean),
       ...(Number.isFinite(sc.probability) ? { probability: sc.probability } : {}),
@@ -534,7 +549,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     }))));
     // Turns keep their place so replyTo still points at the right one; an uncited turn drops out and replies to it lose the pointer.
     // A reply can only point back. Models sometimes count from 1, which makes a turn answer itself: shift those down one.
-    const turns = (parsed.debate ?? []).map((t, i) => { const [claim] = clean([t.claim]); const plain = t.plain?.trim().slice(0, 160); return claim ? { speaker: t.speaker, stance: t.stance, replyTo: replyIndex(t.replyTo, i), claim, ...(plain ? { plain } : {}) } : null; });
+    const turns = (parsed.debate ?? []).map((t, i) => { const [claim] = clean([t.claim]); const plain = t.plain?.trim().slice(0, 160); const stance = lockedBy.get(t.speaker as AnalystId)?.stance ?? t.stance; return claim ? { speaker: t.speaker, stance, replyTo: replyIndex(t.replyTo, i), claim, ...(plain ? { plain } : {}) } : null; });
     const kept = turns.flatMap((t, i) => (t ? [i] : []));
     const debate: DebateTurn[] = turns.flatMap((t) => {
       if (!t) return [];
@@ -549,7 +564,7 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
       ...(debate.length ? { debate } : {}),
       ...(worst ? { worstCase: { narrative: worst, checks: (parsed.worstCase?.checks ?? []).map((c) => c.trim()).filter(Boolean).slice(0, 5) } } : {}),
       ...(Object.keys(insights).length ? { insights } : {}),
-      status: 'OK', model, promptVersion: COMMENTARY_PROMPT_VERSION, generatedAt: now.toISOString(),
+      status: 'OK', model, promptVersion: COMMENTARY_PROMPT_VERSION, generatedAt: now.toISOString(), ...lockFields,
       servedBy: response.model, tier,
       ...(response.usage ? { usage: usageOf(response.usage) } : {}),
       ...(summary ? { summary } : {}),
@@ -562,6 +577,6 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     };
   } catch (error) {
     const message = error instanceof Anthropic.APIError ? `API_${error.status ?? 'ERROR'}:${error.message}` : error instanceof Error ? error.message : 'UNKNOWN';
-    return empty('FAILED', now, evidence, message.slice(0, 200));
+    return { ...empty('FAILED', now, evidence, message.slice(0, 200)), ...lockFields };
   }
 }

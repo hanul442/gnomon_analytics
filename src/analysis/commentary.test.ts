@@ -136,7 +136,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
   assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v11');
+  assert.equal(c.promptVersion, 'gnm-committee-v12');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
@@ -203,8 +203,8 @@ test('real SDK SSE assembly produces a usable committee report without automatic
  const claim={text:'스트리밍 근거',evidenceIds:['P1'],kind:'FACT'};
  const text=JSON.stringify({summary:claim,bullish:[claim],bearish:[],uncertain:[],watch:[],dataGaps:[],desks:[],redTeam:{counterargument:claim,unresolved:[]},scenarios:[],analysts:[],debate:[],worstCase:{narrative:claim,checks:[]},insights:Object.fromEntries(['technical','strategy','flow','fundamental','news'].map(k=>[k,{text:'',evidenceIds:[],kind:'INFERENCE'}]))});
  const events=[{type:'message_start',message:{id:'msg_fixture',type:'message',role:'assistant',model:COMMENTARY_MODEL,content:[],stop_reason:null,stop_sequence:null,usage:{input_tokens:120,output_tokens:0}}},{type:'content_block_start',index:0,content_block:{type:'text',text:''}},{type:'content_block_delta',index:0,delta:{type:'text_delta',text:text.slice(0,20)}},{type:'content_block_delta',index:0,delta:{type:'text_delta',text:text.slice(20)}},{type:'content_block_stop',index:0},{type:'message_delta',delta:{stop_reason:'end_turn',stop_sequence:null},usage:{output_tokens:240}},{type:'message_stop'}];
- let calls=0;const client=new Anthropic({apiKey:'fixture-not-a-real-key',maxRetries:0,fetch:async()=>{calls++;return new Response(events.map(e=>'event: '+e.type+'\ndata: '+JSON.stringify(e)+'\n\n').join(''),{headers:{'content-type':'text/event-stream'}});}});
- const c=await writeCommentary(report,{client});assert.equal(c.status,'OK',c.error);assert.equal(c.summary?.text,'스트리밍 근거');assert.equal(calls,1);assert.equal(c.usage?.outputTokens,240);
+ let calls=0;const client=new Anthropic({apiKey:'fixture-not-a-real-key',maxRetries:0,fetch:async(_u:unknown,init?:{body?:unknown})=>{if(/"stream":true/.test(String(init?.body)))calls++;return new Response(events.map(e=>'event: '+e.type+'\ndata: '+JSON.stringify(e)+'\n\n').join(''),{headers:{'content-type':'text/event-stream'}});}});
+ const c=await writeCommentary(report,{client});assert.equal(c.status,'OK',c.error);assert.equal(c.summary?.text,'스트리밍 근거');assert.equal(calls,1,'one streamed committee call (the G-228 analyst calls are not streamed)');assert.equal(c.usage?.outputTokens,240);
 });
 
 
@@ -296,4 +296,30 @@ test('G-227: K1 tells the committee its own record and latest miss, once somethi
   assert.match(k1!.detail, /volume_flow\(거래량·수급 분석가\): 채점 1건, 방향 적중 0%, 평균 확신 80%, 확신 점수 0\.64\. 최근 빗나간 판단: 2026-01-01 강세 확신 80% → 20거래일 뒤 -20\.00%/);
   assert.match(k1!.detail, /시나리오 확률: 채점 1건, 확률 점수 1\.26/);
   assert.equal(buildEvidence({ ...report, market: { horizons: [], forecasts: [], benchmarks: [], quarters: [], analystBoard: scoreAnalysts([], bars) } } as never).some((e) => e.id === 'K1'), false);
+});
+
+test('G-228: a locked analyst call stands as made and sets its stance in the debate', async () => {
+  const seen: unknown[] = [];
+  const base = fakeClient({
+    stop_reason: 'end_turn', model: COMMENTARY_MODEL,
+    parsed_output: {
+      summary: { text: '요약', evidenceIds: ['N1'] }, bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [],
+      analysts: [
+        { analyst: 'event_catalyst', stance: 'BEARISH', confidence: 90, target: 250000, rationale: { text: '위원회가 바꾼 판단', evidenceIds: ['N1'] } },
+        { analyst: 'trend_momentum', stance: 'BULLISH', confidence: 55, target: 340000, rationale: { text: '추세 유지', evidenceIds: ['T1'] } },
+      ],
+      debate: [{ speaker: 'event_catalyst', stance: 'BEARISH', claim: { text: '토론', evidenceIds: ['N1'] } }],
+    },
+  }, seen) as unknown as { beta: unknown };
+  const client = { ...base, messages: { create: async (p: { messages: { content: string }[] }) => ({
+    stop_reason: 'end_turn', usage: { input_tokens: 10, output_tokens: 5 },
+    content: [{ type: 'text', text: /이벤트/.test(p.messages[0]!.content) ? '{"stance":"BULLISH","confidence":62,"target":335000,"rationale":{"text":"자사주 매입 공시","evidenceIds":["F1"],"kind":"FACT"}}' : 'no' }],
+  }) } } as unknown as Anthropic;
+  const c = await writeCommentary(report, { client, now: () => new Date(AT) });
+  assert.equal(c.status, 'OK');
+  assert.deepEqual(c.lockedAnalysts, ['event_catalyst']);
+  assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.stance, a.confidence, a.rationale.text]), [['trend_momentum', 'BULLISH', 55, '추세 유지'], ['event_catalyst', 'BULLISH', 62, '자사주 매입 공시']]);
+  assert.equal(c.debate?.[0]?.stance, 'BULLISH');
+  assert.equal(c.lockUsage?.model, 'claude-haiku-5-5');
+  assert.match(JSON.stringify((seen[0] as { messages: unknown }).messages), /잠긴_분석가_판단/);
 });
