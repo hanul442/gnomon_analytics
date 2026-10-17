@@ -1,4 +1,4 @@
-// G-227: one look, and small motions that make the screens feel alive.
+// G-228: one look, and small motions that make the screens feel alive.
 // Loaded after every other layer (THEME_CSS, MOTION_TOKENS_CSS, SEG_THUMB_CSS), so it settles the places where pages
 // drifted apart: search fields, the selected tab in a tab row, the ad strip, sticky tab bars. Page <style> blocks come
 // after the shared stylesheet, so rules that must beat them start with `:root body` (one class more than a page rule like `.top-search .search-box`).

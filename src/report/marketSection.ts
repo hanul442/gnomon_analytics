@@ -7,6 +7,7 @@ import { paperBooks, type PaperBook, type PaperEntry } from '../analysis/paper.j
 import { horizonGauges, type HorizonGauge } from '../analysis/horizons.js';
 import { runArena, type ArenaResult } from '../analysis/strategies.js';
 import { scoreAnalysts, type AnalystCall, type AnalystScore } from '../analysis/analysts.js';
+import { scoreScenarios, type ScenarioBoard, type ScenarioCall } from '../analysis/scenarioScore.js';
 import { footprint, structureSnapshot, type Footprint, type StructureSnapshot } from '../analysis/structure.js';
 import { forecastRanges, scoreForecasts, technicalFairValue, type ForecastScore, type PriceForecast, type TechnicalFairValue } from '../analysis/valuation.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, PriceBar, ResearchNote, StockSnapshot } from '../types.js';
@@ -47,6 +48,8 @@ export interface MarketSection {
   arena: ArenaResult | null;
   /** AI analyst battle leaderboard from logged calls (docs/DESIGN.md §5.6). */
   analystBoard: AnalystScore[];
+  /** G-227: the committee's scenario probabilities scored 20 sessions later (absent in older reports). */
+  scenarioBoard?: ScenarioBoard;
   /** Paper-trading ledger replayed from logged entries (G-21); absent in reports made before it existed. */
   paper?: PaperBook[];
   /** Ranges made with this report (also appended to data/forecasts). */
@@ -118,6 +121,8 @@ export function buildMarketSection(input: {
   analystCalls?: readonly AnalystCall[];
   /** Paper-trading entries logged by earlier settled runs. */
   paperEntries?: readonly PaperEntry[];
+  /** G-227: scenario calls read back from earlier stored reports. */
+  scenarioCalls?: readonly ScenarioCall[];
   status: readonly NewsSourceStatus[];
   /** Calculation pages share the report layout without running strategy backtests. */
 }): MarketSection {
@@ -135,6 +140,7 @@ export function buildMarketSection(input: {
     footprint: footprint(daily, input.flows.filter((f) => f.symbol === input.symbol)),
     arena: runArena(daily),
     analystBoard: scoreAnalysts((input.analystCalls ?? []).filter((c) => c.symbol === input.symbol), daily),
+    scenarioBoard: scoreScenarios((input.scenarioCalls ?? []).filter((c) => c.reportDate <= input.date), daily),
     paper: paperBooks((input.paperEntries ?? []).filter((e) => e.symbol === input.symbol && e.date <= input.date), daily),
     forecasts,
     forecastScores: scoreForecasts(input.loggedForecasts.filter((f) => f.symbol === input.symbol), daily),
