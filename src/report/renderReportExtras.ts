@@ -259,8 +259,9 @@ export const DEBATE_PLAY_SCRIPT = `<script>
  document.addEventListener('click',function(e){var o=e.target.closest&&e.target.closest('[data-room-open]'),c=e.target.closest&&e.target.closest('[data-room-close]');if(o)wanted=o.getAttribute('aria-controls');if(c)wanted=null;},true);
  var keepT=null;new MutationObserver(function(){if(!wanted||keepT)return;keepT=setTimeout(function(){keepT=null;var r=wanted&&document.getElementById(wanted);if(r&&r.hidden){avatar(r);r.hidden=false;document.documentElement.classList.add('layer-open');}},60);}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
  // G-92: about 2 s of "생각하는 중", the turn, then about 2 s before the next speaker.
- // Thinking Orbs for 1 s before each turn, then a 2 s pause to read it.
- var THINK=1000,GAP=2000;
+ // Thinking Orbs before each turn, then a pause long enough to read it: about 14 characters a second (G-225),
+ // 3 s at least and 10 s at most. 건너뛰기 shows them all at once.
+ var THINK=1400,READ=function(t){var n=((t.querySelector('.db-bubble')||t).textContent||'').replace(/\s+/g,'').length;return Math.max(3000,Math.min(10000,n*70));};
  var play=function(box){
   if(!box||box.dataset.played)return;box.dataset.played='1';
   var turns=Array.prototype.slice.call(box.querySelectorAll('.db-turn:not(.db-guest):not(.db-typing)'));
@@ -276,7 +277,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
    hint=document.createElement('div');hint.className=turn.className.replace(/\bdb-(reveal|in)\b/g,'')+' db-typing db-think';hint.setAttribute('aria-hidden','true');hint.innerHTML='<div class="db-who"><b></b></div><div class="db-bubble"><div class="chat-progress">${ORBS.replace('data-orb=', 'data-size="44" data-orb=')}<span>생각 중…</span></div></div>';
    hint.querySelector('b').textContent=who?who.textContent:'위원';
    turn.before(hint);
-   clock=setTimeout(function(){if(stopped)return;hint.remove();turn.hidden=false;turn.classList.add('db-reveal');if(turn.getBoundingClientRect().bottom>innerHeight)turn.scrollIntoView({block:'nearest',behavior:'smooth'});index++;clock=setTimeout(next,GAP);},THINK);
+   clock=setTimeout(function(){if(stopped)return;hint.remove();turn.hidden=false;turn.classList.add('db-reveal');if(turn.getBoundingClientRect().bottom>innerHeight)turn.scrollIntoView({block:'nearest',behavior:'smooth'});index++;clock=setTimeout(next,READ(turn));},THINK);
   };next();
  };
  var watch=function(){document.querySelectorAll('.card.debate:not([data-played])').forEach(function(box){
