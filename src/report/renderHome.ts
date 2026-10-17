@@ -49,8 +49,8 @@ const star = (symbol: string, name: string) => `<button type="button" class="sta
 function indexStrip(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null, pulse: MarketPulse | null, dailyHref = 'market-reports.html', us: UsTemp | null = null): string {
   const cards = indices.map((i) => `<div class="card ix"><div class="ix-top"><div><div class="pl-k">${esc(i.name)}</div><div class="ix-v">${i.close.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</div><div class="${tone(i.changePct)} ix-c">${signed(i.changePct)}</div></div>${sparkline(i.closes, `${i.name} 최근 60거래일`, 110, 40, i.changePct == null ? null : i.changePct >= 0)}</div><div class="muted small">${esc(i.date)} 종가</div></div>`).join('');
   const temp = tempCard(pulse, universe, dailyHref);
-  // G-179: the US market beside the Korean one, from the US universe's own signals (us.html lists them).
-  const usCard = us && (us.pulse || us.up || us.down) ? marketTemperature(us.pulse, { up: us.up, down: us.down, flat: us.flat }, '미국', 'us.html') : '';
+  // G-179: the US market beside the Korean one, from the US universe's own signals (찾기 · 미국 lists them).
+  const usCard = us && (us.pulse || us.up || us.down) ? marketTemperature(us.pulse, { up: us.up, down: us.down, flat: us.flat }, '미국', 'screener.html#us') : '';
   return cards || temp || usCard ? `<section class="block ix-row${usCard ? ' ix-4' : ''}">${cards}${temp}${usCard}</section>` : '';
 }
 
