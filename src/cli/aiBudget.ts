@@ -10,7 +10,7 @@ import type { Commentary } from '../analysis/commentary.js';
 
 /** USD per million tokens, input / output. */
 export const PRICE_PER_MTOK: Record<string, readonly [number, number]> = {
-  'claude-opus-5-5': [4, 20], 'claude-sonnet-5-5': [2, 10], 'claude-haiku-4-5': [1, 5],
+  'claude-opus-5-5': [4, 20], 'claude-sonnet-5-5': [2, 10], 'claude-haiku-4-5': [1, 5], 'claude-haiku-5-5': [0.1, 0.5],
 };
 /**
  * What a run spends AI on (G-168): a stock committee report, or the day's market committee.
@@ -19,7 +19,8 @@ export const PRICE_PER_MTOK: Record<string, readonly [number, number]> = {
  */
 export type BudgetTier = 'deep' | 'market';
 // G-221: the longer debate (prompt v9) adds about 2.5K output tokens, about $0.05.
-export const ESTIMATE_USD: Record<BudgetTier, number> = { deep: 0.28, market: 0.03 };
+// G-228: six independent analyst calls on Haiku 5.5 add well under a cent; 0.29 keeps a margin.
+export const ESTIMATE_USD: Record<BudgetTier, number> = { deep: 0.29, market: 0.03 };
 export const DEFAULT_BUDGET_USD = 25;
 
 export interface UsageLine { at: string; month: string; symbol: string; model: string; /** 'brief' on lines written before v3.5.0. */
@@ -58,5 +59,12 @@ export class AiBudget {
     this.spent += line.usd;
     await mkdir(dirname(AiBudget.path(this.root)), { recursive: true });
     await appendFile(AiBudget.path(this.root), `${JSON.stringify(line)}\n`);
+    // G-228: the independent analyst calls, on their own model, as a second line.
+    const l = c.lockUsage;
+    if (l) {
+      const lock: UsageLine = { at: at.toISOString(), month: this.month, symbol, model: l.model, tier, inputTokens: l.inputTokens, outputTokens: l.outputTokens, ...(l.cacheReadTokens ? { cacheReadTokens: l.cacheReadTokens } : {}), ...(l.cacheWriteTokens ? { cacheWriteTokens: l.cacheWriteTokens } : {}), usd: Math.round(usd(l.model, l.inputTokens, l.outputTokens, l.cacheReadTokens, l.cacheWriteTokens) * 1e5) / 1e5 };
+      this.spent += lock.usd;
+      await appendFile(AiBudget.path(this.root), `${JSON.stringify(lock)}\n`);
+    }
   }
 }

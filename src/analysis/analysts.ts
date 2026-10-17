@@ -124,3 +124,31 @@ export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { da
   ranked.forEach((b, i) => { b.rank = i + 1; });
   return [...ranked, ...board.filter((b) => b.scored === 0)];
 }
+
+/** G-228: below this many scored calls an analyst's record is too thin to weigh it by skill. */
+export const SKILL_MIN_SCORED = 30;
+
+/**
+ * G-228: the committee's one number. Each analyst's call becomes a chance the price is higher in 20
+ * sessions (BULLISH: its confidence, BEARISH: 100 minus it, NEUTRAL: 50), and the chances are averaged in
+ * log-odds, which beats a plain mean or median for pooling forecasts (ForecastBench, Karger et al. 2024;
+ * Satopää et al. 2014). An analyst with 30+ scored calls on the stock is weighted by its Brier skill
+ * (1 − brier/0.25, at least 0.1); the rest weigh 1. Null without calls.
+ */
+export function committeeConsensus(
+  calls: readonly { analyst: AnalystId; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; confidence: number }[],
+  board: readonly Pick<AnalystScore, 'analyst' | 'scored' | 'brier'>[] = [],
+): { upPct: number; weighted: boolean; n: number } | null {
+  if (!calls.length) return null;
+  const logit = (p: number) => Math.log(p / (1 - p));
+  let sum = 0, weights = 0, weighted = false;
+  for (const c of calls) {
+    const conf = Math.max(2, Math.min(98, c.confidence)) / 100;
+    const up = c.stance === 'BULLISH' ? conf : c.stance === 'BEARISH' ? 1 - conf : 0.5;
+    const rec = board.find((b) => b.analyst === c.analyst);
+    const w = rec && rec.scored >= SKILL_MIN_SCORED && rec.brier != null ? Math.max(0.1, 1 - rec.brier / 0.25) : 1;
+    if (w !== 1) weighted = true;
+    sum += w * logit(up); weights += w;
+  }
+  return { upPct: Math.round(100 / (1 + Math.exp(-sum / weights))), weighted, n: calls.length };
+}
