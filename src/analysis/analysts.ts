@@ -28,6 +28,8 @@ export interface AnalystCall {
   confidence: number;
   /** Price expected 20 sessions after baseDate. */
   target: number;
+  /** G-229: the close that would prove the call wrong (below the base for BULLISH, above for BEARISH). */
+  invalidation?: number;
   promptVersion: string;
   madeAt: string;
 }
@@ -54,6 +56,8 @@ export interface AnalystScore {
   rank: number | null;
   /** G-213: this analyst's last calls on the stock, newest first, each with how it is doing or how it ended. */
   calls?: AnalystTrack[];
+  /** G-229: over scored calls that set an invalidation price: how many, how many saw it crossed, and how many of those missed. */
+  kill?: { set: number; broke: number; brokeMissed: number };
 }
 
 /**
@@ -65,7 +69,20 @@ export interface AnalystTrack {
   reportDate: string; baseDate: string; baseClose: number;
   stance: AnalystCall['stance']; confidence: number; target: number;
   sessions: number; close: number | null; closeDate: string | null; done: boolean; hit: boolean | null;
+  /** G-229: the invalidation price, and the first session within the 20 whose close crossed it. */
+  invalidation?: number; brokeOn?: string | null;
 }
+
+/** G-229: a sane invalidation price for a stance, or undefined: below the close for BULLISH, above for BEARISH, within a third of it. */
+export function invalidationOf(stance: AnalystCall['stance'], close: number, price: unknown): number | undefined {
+  const p = typeof price === 'number' ? price : NaN;
+  if (!Number.isFinite(p) || p <= 0 || !(close > 0)) return undefined;
+  if (stance === 'BULLISH') return p < close && p >= close * (2 / 3) ? p : undefined;
+  if (stance === 'BEARISH') return p > close && p <= close * (4 / 3) ? p : undefined;
+  return undefined;
+}
+const crossed = (c: Pick<AnalystCall, 'stance' | 'invalidation'>, close: number) =>
+  c.invalidation != null && (c.stance === 'BULLISH' ? close <= c.invalidation : c.stance === 'BEARISH' ? close >= c.invalidation : false);
 export const TRACK_KEEP = 5;
 const hitOf = (c: AnalystCall, close: number) => {
   const move = close / c.baseClose - 1;
@@ -89,25 +106,28 @@ export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { da
   const idx = new Map(sorted.map((b, i) => [b.date, i]));
   const board = ANALYSTS.map((a) => {
     const mine = calls.filter((c) => c.analyst === a.id).sort((x, y) => (x.baseDate < y.baseDate ? -1 : 1));
-    const results: { hit: boolean; err: number; conf: number }[] = [];
+    const results: { hit: boolean; err: number; conf: number; set: boolean; broke: boolean }[] = [];
     let pending = 0;
     const last = sorted.at(-1);
     const track = (c: AnalystCall, i: number | undefined, outcome: { date: string; close: number } | undefined): AnalystTrack => {
       const at = outcome ?? (i === undefined ? undefined : last);
       const sessions = outcome ? ANALYST_HORIZON : i === undefined ? 0 : sorted.length - 1 - i;
+      const broke = c.invalidation != null && i !== undefined ? sorted.slice(i + 1, i + 1 + ANALYST_HORIZON).find((b) => crossed(c, b.close))?.date ?? null : null;
       return {
         reportDate: c.reportDate, baseDate: c.baseDate, baseClose: c.baseClose, stance: c.stance, confidence: c.confidence, target: c.target,
         sessions, close: at?.close ?? null, closeDate: at?.date ?? null, done: !!outcome,
         hit: !at || (!outcome && (sessions === 0 || (c.stance !== 'NEUTRAL' && at.close === c.baseClose))) ? null : hitOf(c, at.close),
+        ...(c.invalidation != null ? { invalidation: c.invalidation, brokeOn: broke } : {}),
       };
     };
     const tracked: AnalystTrack[] = [];
     for (const c of mine) {
       const i = idx.get(c.baseDate);
       const outcome = i === undefined ? undefined : sorted[i + ANALYST_HORIZON];
-      tracked.push(track(c, i, outcome));
+      const t = track(c, i, outcome);
+      tracked.push(t);
       if (!outcome) { pending += 1; continue; }
-      results.push({ hit: hitOf(c, outcome.close), err: Math.abs(outcome.close / c.target - 1) * 100, conf: Math.max(0, Math.min(100, c.confidence)) / 100 });
+      results.push({ hit: hitOf(c, outcome.close), err: Math.abs(outcome.close / c.target - 1) * 100, conf: Math.max(0, Math.min(100, c.confidence)) / 100, set: c.invalidation != null, broke: !!t.brokeOn });
     }
     return {
       analyst: a.id, name: a.name, scored: results.length,
@@ -117,6 +137,7 @@ export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { da
       avgConfidence: results.length ? mean(results.map((r) => r.conf * 100)) : null,
       pending, latest: mine.at(-1) ?? null, rank: null as number | null,
       calls: tracked.slice(-TRACK_KEEP).reverse(),
+      ...(results.some((r) => r.set) ? { kill: { set: results.filter((r) => r.set).length, broke: results.filter((r) => r.broke).length, brokeMissed: results.filter((r) => r.broke && !r.hit).length } } : {}),
     };
   });
   // Rank only analysts with scored calls: hit rate first, then smaller error.

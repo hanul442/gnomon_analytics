@@ -27,12 +27,12 @@ function client(answer: (persona: string) => string | Error, seen: Record<string
 test('calls are locked in parallel; bad, uncited or failed ones are left to the committee', async () => {
   const seen: Record<string, unknown>[] = [];
   const out = await lockAnalysts({ name: '가 (000001)', close: 100, extraRule: '', evidence }, client((p) => {
-    if (p.startsWith('거래량')) return '{"stance":"BULLISH","confidence":64.6,"target":108,"rationale":{"text":"외국인 순매수가 이어져요.","evidenceIds":["q1","Z9"],"kind":"FACT"}}';
+    if (p.startsWith('거래량')) return '{"stance":"BULLISH","confidence":64.6,"target":108,"invalidation":94,"rationale":{"text":"외국인 순매수가 이어져요.","evidenceIds":["q1","Z9"],"kind":"FACT"}}';
     if (p.startsWith('실적')) return '{"stance":"BEARISH","confidence":60,"target":90,"rationale":{"text":"근거 없음","evidenceIds":["Z9"]}}';
     if (p.startsWith('이벤트')) return new Error('overloaded');
     return 'not json';
   }, seen));
-  assert.deepEqual(out.calls, [{ analyst: 'volume_flow', stance: 'BULLISH', confidence: 65, target: 108, rationale: { text: '외국인 순매수가 이어져요.', evidenceIds: ['Q1'], kind: 'FACT' } }]);
+  assert.deepEqual(out.calls, [{ analyst: 'volume_flow', stance: 'BULLISH', confidence: 65, target: 108, invalidation: 94, rationale: { text: '외국인 순매수가 이어져요.', evidenceIds: ['Q1'], kind: 'FACT' } }]);
   assert.equal(seen.length, 6, 'every analyst had at least one item of its own lens');
   assert.ok(seen.every((p) => p.model === LOCK_MODEL));
   assert.match(String((seen.find((p) => /거래량/.test(String((p.messages as { content: string }[])[0]!.content)))!.messages as { content: string }[])[0]!.content), /"id":"Q1"/);
