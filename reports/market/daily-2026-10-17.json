@@ -2,7 +2,7 @@
   "schema": "curia.market-report.v4",
   "date": "2026-10-17",
   "from": "2026-10-17",
-  "generatedAt": "2026-10-17T09:54:47.832Z",
+  "generatedAt": "2026-10-17T10:02:52.558Z",
   "period": "daily",
   "groups": [
     {
@@ -3316,7 +3316,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T09:54:47.832Z",
+      "snapshotDate": "2026-10-17T10:02:52.558Z",
       "breadth": {
         "up": 54,
         "down": 237,
@@ -13932,7 +13932,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T09:54:47.832Z",
+      "snapshotDate": "2026-10-17T10:02:52.558Z",
       "breadth": {
         "up": 795,
         "down": 257,
@@ -18167,19 +18167,19 @@
           "value": 96
         },
         {
-          "symbol": "RSG",
-          "name": "리퍼블릭 서비스",
+          "symbol": "NSC",
+          "name": "노퍽서던",
           "date": "2026-10-16",
-          "close": 231.54,
+          "close": 326.92,
           "returnPct": null,
           "baseline": "2026-10-15",
           "value": 96
         },
         {
-          "symbol": "NSC",
-          "name": "노퍽서던",
+          "symbol": "RSG",
+          "name": "리퍼블릭 서비스",
           "date": "2026-10-16",
-          "close": 326.92,
+          "close": 231.54,
           "returnPct": null,
           "baseline": "2026-10-15",
           "value": 96
@@ -19904,7 +19904,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-17T09:54:47.832Z",
+      "snapshotDate": "2026-10-17T10:02:52.558Z",
       "breadth": {
         "up": 244,
         "down": 402,
@@ -19922,10 +19922,10 @@
     },
     {
       "id": "N2",
-      "title": "“주식 팔아 빚 갚으려 했는데”…급락 후 반등에도 대출이자 ‘이중고’",
-      "publisher": "매일경제 마켓",
-      "publishedAt": "2026-10-17T08:19:28.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiUkFVX3lxTE9BUi14eEZLaUdUYWVDSlhDYnVDWXpYcU1iRHM5eThlM0pjT2c0WmZHcTFQUTJuQXFJdDl1X203RFZpMDJRZ0tjZjNNSk9MRU51QXc?oc=5"
+      "title": "비트코인(BTC), 8만 달러 붕괴 후 반등…고래 매집 속 8만3885달러 돌파 가능할까",
+      "publisher": "CBC뉴스",
+      "publishedAt": "2026-10-17T07:58:43.000Z",
+      "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5XTURBVkhqczVDemhGM3R4SzZRdDdvNjVCWW4wREVPTUgxR3p0WWJtT0s5YjBjcDAwaWNvMGZzQW9xMUdaaU1aQlUzd3ZxU1NBaEwtYnVPU2ItcEVVSzNBUWUzd2Zncmct?oc=5"
     },
     {
       "id": "N3",

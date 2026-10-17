@@ -10,7 +10,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import type { DailyReport } from '../report/dailyReport.js';
 import { won, withCurrency, financeUnit } from '../report/format.js';
-import { ANALYSTS, ANALYST_HORIZON, type AnalystId } from './analysts.js';
+import { ANALYSTS, ANALYST_HORIZON, invalidationOf, type AnalystId } from './analysts.js';
 import { lockAnalysts, lockedBrief, type LockUsage } from './lockedAnalysts.js';
 
 export const COMMENTARY_MODEL = 'claude-opus-5-5';
@@ -28,8 +28,9 @@ export type CommentaryTier = 'deep' | 'brief';
  * each analyst judges from its own lens before the debate, so a majority does not pull the others along.
  */
 /** v11 (G-227): K1 carries each member's own record and latest miss on this stock, and the scenario score; members adjust to it. */
+/** v13 (G-229): each analyst names the close that would prove it wrong (invalidation), checked daily and shown. */
 /** v12 (G-228): analysts judge alone first on a smaller model (src/analysis/lockedAnalysts.ts); the committee debates their locked calls. */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v12';
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v13';
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -52,7 +53,7 @@ export interface Claim {
 export type Desk = 'MARKET' | 'TECHNICAL' | 'FLOW' | 'FUNDAMENTAL' | 'EVENT';
 export type DeskStance = 'BULLISH' | 'BEARISH' | 'NEUTRAL' | 'INSUFFICIENT_DATA';
 export interface DeskView { desk: Desk; stance: DeskStance; view: Claim }
-export interface AnalystView { analyst: AnalystId; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; confidence: number; target: number; rationale: Claim }
+export interface AnalystView { analyst: AnalystId; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; confidence: number; target: number; /** G-229: the close that proves the call wrong. */ invalidation?: number; rationale: Claim }
 /** `probability`: the committee's estimate for this scenario now, % (the three sum to 100; G-60). Logged and scored later. */
 /** v6 (G-65): `trigger` is the price whose crossing would start this scenario (BULL above, BEAR below); `zone` the price range it would likely reach in about 20 sessions. */
 export interface Scenario { kind: 'BULL' | 'BASE' | 'BEAR'; narrative: Claim; catalysts: string[]; invalidation: string[]; probability?: number; trigger?: number; zone?: [number, number] }
@@ -233,8 +234,11 @@ export function trackRecord(report: DailyReport): string | null {
     const miss = (a.calls ?? []).find((c) => c.done && c.hit === false);
     const missText = miss && miss.close !== null ? ` 최근 빗나간 판단: ${miss.reportDate} ${word[miss.stance]} 확신 ${miss.confidence}% → 20거래일 뒤 ${pct((miss.close / miss.baseClose - 1) * 100)}.` : '';
     const cal = a.avgConfidence != null && a.brier != null ? `, 평균 확신 ${Math.round(a.avgConfidence)}%, 확신 점수 ${a.brier.toFixed(2)}` : '';
-    return `${a.analyst}(${a.name}): 채점 ${a.scored}건, 방향 적중 ${Math.round(a.hitRate! * 100)}%${cal}.${missText}`;
+    const kill = a.kill?.broke ? ` 철회 가격에 닿은 ${a.kill.broke}건 중 ${a.kill.brokeMissed}건 빗나감.` : '';
+    return `${a.analyst}(${a.name}): 채점 ${a.scored}건, 방향 적중 ${Math.round(a.hitRate! * 100)}%${cal}.${missText}${kill}`;
   });
+  // G-229: open calls whose own invalidation close was already crossed.
+  for (const a of m.analystBoard ?? []) for (const c of a.calls ?? []) if (!c.done && c.brokeOn && c.invalidation) lines.push(`${a.analyst}: ${c.reportDate} ${word[c.stance]} 판단의 철회 가격 ${c.invalidation}에 ${c.brokeOn} 종가가 닿았어요(진행 중).`);
   const s = m.scenarioBoard;
   if (s && s.scored > 0) lines.push(`시나리오 확률: 채점 ${s.scored}건, 확률 점수 ${s.brier!.toFixed(2)}(셋으로 똑같이 나누면 0.67, 낮을수록 좋음), 실제로 일어난 쪽 강세 ${s.happened.BULL}·기본 ${s.happened.BASE}·약세 ${s.happened.BEAR}.`);
   return lines.length ? lines.join(' ') : null;
@@ -303,6 +307,7 @@ export const CommentarySchema = z.object({
     stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']),
     confidence: z.number().describe('이 판단이 20거래일 뒤 맞을 확률(%) 0~100. 강세·약세는 방향이, 중립은 ±2% 안에 머무는 것이 맞음. 50은 반반'),
     target: z.number().describe(`P1 종가 기준 ${ANALYST_HORIZON}거래일 뒤 예상 가격(원)`),
+    invalidation: z.number().describe('이 판단이 틀렸다고 인정할 종가(원). 강세면 P1 종가보다 아래, 약세면 위. 근거에 있는 지지·저항·이동평균 가격으로. 중립이면 0'),
     rationale: ClaimSchema.describe('이 분석가의 근거 2~3문장: 본 숫자, 그렇게 판단한 이유, 판단이 틀렸다고 볼 조건'),
   })).describe('분석가 6명 각각 하나씩'),
   debate: DebateSchema,
@@ -355,7 +360,7 @@ export function repairDeep(raw: unknown): unknown {
     desks: asArr(o.desks).flatMap((d) => { const x = (d ?? {}) as Record<string, unknown>, desk = pick(x.desk, ENUMS.desk), stance = pick(x.stance, ENUMS.stance4); return desk && stance ? [{ desk, stance, view: claimOf(x.view) }] : []; }),
     redTeam: { counterargument: claimOf(red.counterargument), unresolved: asArr(red.unresolved).map(asStr).filter(Boolean) },
     scenarios: asArr(o.scenarios).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, kind = pick(x.kind, ENUMS.scenario); return kind ? [{ kind, narrative: claimOf(x.narrative), catalysts: asArr(x.catalysts).map(asStr).filter(Boolean), invalidation: asArr(x.invalidation).map(asStr).filter(Boolean), probability: asNum(x.probability), trigger: asNum(x.trigger), zoneLow: asNum(x.zoneLow), zoneHigh: asNum(x.zoneHigh) }] : []; }),
-    analysts: asArr(o.analysts).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, id = asStr(x.analyst).trim(), stance = pick(x.stance, ENUMS.stance3); return analystIds.has(id) && stance ? [{ analyst: id, stance, confidence: asNum(x.confidence, 50), target: asNum(x.target), rationale: claimOf(x.rationale) }] : []; }),
+    analysts: asArr(o.analysts).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, id = asStr(x.analyst).trim(), stance = pick(x.stance, ENUMS.stance3); return analystIds.has(id) && stance ? [{ analyst: id, stance, confidence: asNum(x.confidence, 50), target: asNum(x.target), invalidation: asNum(x.invalidation, 0), rationale: claimOf(x.rationale) }] : []; }),
     debate: asArr(o.debate).flatMap((v) => { const x = (v ?? {}) as Record<string, unknown>, sp = asStr(x.speaker).trim().toUpperCase() === 'RED_TEAM' ? 'RED_TEAM' : asStr(x.speaker).trim(), stance = pick(x.stance, ENUMS.stance3), plain = asStr(x.plain).trim(); return speakers.has(sp) && stance ? [{ speaker: sp, stance, replyTo: asNum(x.replyTo, -1), claim: claimOf(x.claim), ...(plain ? { plain } : {}) }] : []; }),
     worstCase: { narrative: claimOf(worst.narrative), checks: asArr(worst.checks).map(asStr).filter(Boolean) },
     insights: Object.fromEntries((['technical', 'strategy', 'flow', 'fundamental', 'news'] as const).map((k) => [k, claimOf(ins[k])])),
@@ -398,6 +403,7 @@ const DEEP_SYSTEM = `당신은 GNOMON의 리서치 위원회예요. 사용자 �
   - 각 분석가는 다른 위원의 결론을 보기 전처럼 자기 관점의 근거만으로 먼저 판단합니다. 다른 위원 다수가 같은 쪽이라는 이유로 따라가지 않고, 토론에서도 입장을 바꾸지 않습니다.
   - 사용자 메시지에 "잠긴_분석가_판단"이 있으면, 그 분석가들은 위원회 전에 혼자 판단을 마쳤어요. analysts에는 그 입장·확신도·예상 가격을 그대로 옮기고(바꾸지 않음), 토론에서도 그 입장으로 말합니다. 위원회는 그 판단에 동의하거나 반박할 수 있지만 고치지는 않아요. 잠긴 판단끼리 갈렸으면 그 이견을 토론의 중심에 둡니다.
   - 확신도는 그 판단이 20거래일 뒤 맞을 확률(%)입니다(강세·약세는 방향, 중립은 ±2% 안). 50은 반반이고, 주가 방향은 맞히기 어려우니 근거가 여러 갈래로 겹칠 때만 70을 넘깁니다. 확신도는 적중 여부와 비교해 채점되므로(맞으면 높을수록, 틀리면 낮을수록 좋음) 부풀리지 않습니다.
+  - invalidation은 그 판단이 틀렸다고 인정할 종가 하나예요. 강세면 P1 종가보다 아래, 약세면 위에서, 근거에 있는 지지·저항·이동평균·통계 범위 가격으로 정합니다(중립은 0). 종가가 그 가격에 닿으면 매일 공개로 표시되니, 실제로 생각을 바꿀 가격을 적어요. 잠긴 판단의 틀렸다고_볼_종가도 그대로 옮깁니다.
 - 지난 성적(K1)이 있으면 각 분석가는 자기 기록을 보고 확신도를 맞춥니다. 평균 확신이 적중률보다 높았으면 확신을 낮추고, 최근 빗나간 판단과 같은 이유로 같은 쪽을 말할 때는 이번에는 무엇이 다른지 rationale에 씁니다. 시나리오 확률 점수가 0.67보다 나빴으면 확률을 한쪽으로 덜 몰아요. 지난 성적은 판단을 바꾸는 근거가 아니라 확신의 크기를 맞추는 근거입니다.
 - 기준선 먼저(바깥 관점): R1(통계 예측 범위)이 있으면 시나리오 확률·가격대와 분석가 예상 가격은 R1의 20거래일 하단·중앙·상단과 그 지난 채점을 기준선으로 잡고, 이 종목의 근거가 그 기준선에서 얼마나·왜 벗어나게 하는지로 조정합니다. 기준선에서 크게 벗어날 때는 그 이유가 되는 근거 ID를 답니다.
 ${ANALYSTS.map((a) => `  - ${a.id} (${a.name}): ${a.focus}`).join('\n')}
@@ -535,7 +541,8 @@ export async function writeCommentary(report: DailyReport, options: { client?: A
     const desks = (parsed.desks ?? []).flatMap((d) => clean([d.view]).map((view) => ({ desk: d.desk, stance: d.stance, view })));
     const [counter] = parsed.redTeam ? clean([parsed.redTeam.counterargument]) : [];
     const committeeAnalysts = (parsed.analysts ?? []).flatMap((a) => (Number.isFinite(a.target) && a.target > 0 ? clean([a.rationale]).map((rationale) => ({
-      analyst: a.analyst, stance: a.stance, confidence: Math.max(0, Math.min(100, Math.round(a.confidence))), target: a.target, rationale,
+      analyst: a.analyst, stance: a.stance, confidence: Math.max(0, Math.min(100, Math.round(a.confidence))), target: a.target,
+      ...(report.price && invalidationOf(a.stance, report.price.close, a.invalidation) ? { invalidation: a.invalidation } : {}), rationale,
     })) : []));
     // G-228: a locked call stands as made, whatever the committee wrote for that analyst.
     const lockedBy = new Map(locked.calls.map((c) => [c.analyst, c]));

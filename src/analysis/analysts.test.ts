@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ANALYST_HORIZON, committeeConsensus, scoreAnalysts, type AnalystCall } from './analysts.js';
+import { ANALYST_HORIZON, committeeConsensus, invalidationOf, scoreAnalysts, type AnalystCall } from './analysts.js';
 
 const day = (i: number) => new Date(Date.UTC(2026, 0, 1) + i * 86_400_000).toISOString().slice(0, 10);
 const bars = Array.from({ length: 40 }, (_, i) => ({ date: day(i), close: 100 + i }));
@@ -73,4 +73,25 @@ test('consensus pools the calls in log-odds and weights by skill only after 30 s
   assert.ok(bad.upPct > plain.upPct);
   assert.equal(committeeConsensus([]), null);
   assert.equal(committeeConsensus([{ analyst: 'fundamental', stance: 'NEUTRAL', confidence: 90 }])!.upPct, 50);
+});
+
+test('an invalidation price is checked every session and counted once scored (G-229)', () => {
+  // Bars rise 100 → 139. A bear call at base 0 with invalidation 105 is crossed on day 5 and misses.
+  const bear = { ...call('mean_reversion', 0, 'BEARISH', 90), invalidation: 105 };
+  const bull = { ...call('mean_reversion', 1, 'BULLISH', 130), invalidation: 95 }; // never crossed, hits
+  const open = { ...call('mean_reversion', 30, 'BEARISH', 120), invalidation: 133 }; // crossed on day 33, in progress
+  const board = scoreAnalysts([bear, bull, open], bars).find((b) => b.analyst === 'mean_reversion')!;
+  assert.deepEqual(board.kill, { set: 2, broke: 1, brokeMissed: 1 });
+  assert.deepEqual(board.calls!.map((c) => [c.baseDate, c.brokeOn]), [[day(30), day(33)], [day(1), null], [day(0), day(5)]]);
+  assert.equal(scoreAnalysts([call('fundamental', 0, 'BULLISH', 125)], bars).find((b) => b.analyst === 'fundamental')!.kill, undefined);
+});
+
+test('invalidation must sit on the losing side of the close, within a third (G-229)', () => {
+  assert.equal(invalidationOf('BULLISH', 100, 92), 92);
+  assert.equal(invalidationOf('BULLISH', 100, 105), undefined);
+  assert.equal(invalidationOf('BULLISH', 100, 50), undefined);
+  assert.equal(invalidationOf('BEARISH', 100, 110), 110);
+  assert.equal(invalidationOf('BEARISH', 100, 95), undefined);
+  assert.equal(invalidationOf('NEUTRAL', 100, 95), undefined);
+  assert.equal(invalidationOf('BULLISH', 100, 0), undefined);
 });

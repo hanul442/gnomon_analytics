@@ -136,7 +136,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
   assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v12');
+  assert.equal(c.promptVersion, 'gnm-committee-v13');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
@@ -306,7 +306,7 @@ test('G-228: a locked analyst call stands as made and sets its stance in the deb
       summary: { text: '요약', evidenceIds: ['N1'] }, bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [],
       analysts: [
         { analyst: 'event_catalyst', stance: 'BEARISH', confidence: 90, target: 250000, rationale: { text: '위원회가 바꾼 판단', evidenceIds: ['N1'] } },
-        { analyst: 'trend_momentum', stance: 'BULLISH', confidence: 55, target: 340000, rationale: { text: '추세 유지', evidenceIds: ['T1'] } },
+        { analyst: 'trend_momentum', stance: 'BULLISH', confidence: 55, target: 340000, invalidation: 1, rationale: { text: '추세 유지', evidenceIds: ['T1'] } },
       ],
       debate: [{ speaker: 'event_catalyst', stance: 'BEARISH', claim: { text: '토론', evidenceIds: ['N1'] } }],
     },
@@ -320,6 +320,7 @@ test('G-228: a locked analyst call stands as made and sets its stance in the deb
   assert.deepEqual(c.lockedAnalysts, ['event_catalyst']);
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.stance, a.confidence, a.rationale.text]), [['trend_momentum', 'BULLISH', 55, '추세 유지'], ['event_catalyst', 'BULLISH', 62, '자사주 매입 공시']]);
   assert.equal(c.debate?.[0]?.stance, 'BULLISH');
+  assert.equal(c.analysts?.[0]?.invalidation, undefined, 'G-229: an invalidation far below the close is dropped');
   assert.equal(c.lockUsage?.model, 'claude-haiku-5-5');
   assert.match(JSON.stringify((seen[0] as { messages: unknown }).messages), /잠긴_분석가_판단/);
 });

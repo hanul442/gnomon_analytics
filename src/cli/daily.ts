@@ -554,7 +554,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
       if (c?.status === 'OK' && c.analysts?.length && built.price) {
         const calls: AnalystCall[] = c.analysts.map((v) => ({
           symbol: SYMBOL, analyst: v.analyst, reportDate: today.date, baseDate: built.price!.sessionDate ?? today.date, baseClose: built.price!.close,
-          stance: v.stance, confidence: v.confidence, target: v.target, promptVersion: c.promptVersion, madeAt: now.toISOString(),
+          stance: v.stance, confidence: v.confidence, target: v.target, ...(v.invalidation ? { invalidation: v.invalidation } : {}), promptVersion: c.promptVersion, madeAt: now.toISOString(),
         }));
         await appendUnseen(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`), calls, analystCallKey);
       }

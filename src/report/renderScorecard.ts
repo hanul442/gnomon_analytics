@@ -24,7 +24,7 @@ function calibration(x: Tally): string {
   const read = Math.abs(gap) < 10 ? '확신과 적중이 비슷해요' : gap > 0 ? `적중보다 ${Math.round(gap)}%p 더 자신했어요` : `적중보다 ${Math.round(-gap)}%p 덜 자신했어요`;
   return `<p class="muted small mb-cal">${read} · 확신 점수 ${brier.toFixed(2)} <span class="fine">(0이 가장 좋고, 늘 반반이라고 말하면 0.25)</span></p>`;
 }
-type Tally = { name: string; scored: number; hits: number; pending: number; err: number[]; brier?: number; conf?: number; calScored?: number };
+type Tally = { name: string; scored: number; hits: number; pending: number; err: number[]; brier?: number; conf?: number; calScored?: number; kill?: { set: number; broke: number; brokeMissed: number } };
 
 
 /** Screener presets' track record (G-53): public to everyone, the losing ones included. */
@@ -68,6 +68,7 @@ ${totalScored ? `<table class="compact"><thead><tr><th>기간</th><th>채점</th
     x.scored += a.scored; x.hits += (a.hitRate ?? 0) * a.scored; x.pending += a.pending;
     if (a.medianErrorPct !== null) x.err.push(a.medianErrorPct);
     // G-226: confidence vs hit rate and the Brier score, weighted by scored calls (boards stored before G-226 lack them).
+    if (a.kill) { const k = x.kill ?? { set: 0, broke: 0, brokeMissed: 0 }; x.kill = { set: k.set + a.kill.set, broke: k.broke + a.kill.broke, brokeMissed: k.brokeMissed + a.kill.brokeMissed }; }
     if (a.brier != null && a.avgConfidence != null && a.scored) { x.brier = (x.brier ?? 0) + a.brier * a.scored; x.conf = (x.conf ?? 0) + a.avgConfidence * a.scored; x.calScored = (x.calScored ?? 0) + a.scored; }
     by.set(a.analyst, x);
   }
@@ -91,6 +92,7 @@ ${totalScored ? `<table class="compact"><thead><tr><th>기간</th><th>채점</th
     const dated = `${e.href.replace(/index\.html$/, '')}reports/${c.reportDate}.html`;
     return `<li class="mb-row${i >= 4 ? ' more-row' : ''}" data-sym="${esc(e.symbol)}"${i >= 4 ? ' hidden' : ''}><div class="mb-top"><a href="${esc(e.href)}">${esc(e.name)}</a><span class="muted small">${md(c.reportDate)} 리포트</span><b class="${cls} mb-st">${word} ${c.confidence}%</b></div>
 <div class="mb-line"><span class="mb-k">전망</span>${won(c.baseClose)} → <b>${won(c.target)}</b> (${chg(c.target, c.baseClose)})</div>
+${c.invalidation ? `<div class="mb-line"><span class="mb-k">철회</span>종가 ${won(c.invalidation)}에 닿으면 틀렸다고 봐요 · ${c.brokeOn ? `<b class="mb-v no">${md(c.brokeOn)}에 닿았어요</b>` : c.done ? '<span class="muted">끝까지 닿지 않았어요</span>' : '<span class="muted">아직 닿지 않았어요</span>'}</div>` : ''}
 <div class="mb-line"><span class="mb-k">결과</span>${verdict(c)}</div><a class="mb-why" href="${esc(dated)}#parliament-ai">근거 보기 ›</a></li>`;
   };
   const member = ([id, x]: [string, Tally]) => {
@@ -99,13 +101,13 @@ ${totalScored ? `<table class="compact"><thead><tr><th>기간</th><th>채점</th
     const stat = (k: string, v: string) => `<span><small>${k}</small><b>${v}</b></span>`;
     return `<article class="card mb-card" id="m-${esc(id)}"><div class="mb-head"><div><h3>${esc(x.name)}</h3>${who ? `<p class="muted small">${esc(who.focus)}</p>` : ''}</div>
 <div class="mb-stats">${stat('적중', x.scored ? `${Math.round((x.hits / x.scored) * 100)}%` : '—')}${stat('채점', `${x.scored}건`)}${stat('진행 중', `${x.pending}건`)}${stat('오차', x.err.length ? `${(x.err.reduce((s, v) => s + v, 0) / x.err.length).toFixed(1)}%` : '—')}${stat('확신', x.calScored ? `${Math.round(x.conf! / x.calScored)}%` : '—')}</div></div>
-${calibration(x)}
+${calibration(x)}${x.kill && x.kill.broke ? `<p class="muted small">철회 가격에 닿은 판단 ${x.kill.broke}건 중 ${x.kill.brokeMissed}건이 결국 빗나갔어요 <span class="fine">(철회 가격을 정한 채점 ${x.kill.set}건)</span></p>` : ''}
 ${mine.length ? `<ol class="mb-calls">${mine.map(row).join('')}</ol><p class="empty mb-none" hidden>관심 종목에 대한 판단이 아직 없어요.</p>${mine.length > 4 ? `<button type="button" class="more-all">최근 판단 ${mine.length}개 모두 보기</button>` : ''}` : '<p class="empty">아직 기록된 판단이 없어요.</p>'}</article>`;
   };
   const analystCard = `<section class="block"><div class="block-head"><h2>위원별 판단</h2><span class="muted">전 종목 합산</span></div>
 <div class="mb-bar" hidden><button type="button" class="chip-toggle mb-watch" aria-pressed="false">관심 종목만</button></div>
 ${board.length ? `<div class="mb-grid">${board.map(member).join('')}</div>` : '<div class="card"><p class="empty">아직 위원 판단이 없어요.</p></div>'}
-<p class="fine">위원은 같은 AI가 서로 다른 관점을 맡아 쓴 분석가예요. 리포트를 쓴 날 입장과 20거래일 뒤 가격을 그대로 기록하고 고치지 않아요. 20거래일이 지나면 방향이 맞았는지 채점해요(중립은 ±2% 안이면 맞음). '확신'은 위원이 스스로 적은 확신도의 평균이에요. 확신이 적중보다 많이 높으면 자신감이 지나친 거고, 둘이 비슷할수록 믿을 만한 확신이에요. 진행 중인 판단의 '같은 쪽·반대쪽'은 지금까지의 움직임일 뿐 채점이 아니에요. 적중이 높은 위원이 먼저 나와요.</p></section>`;
+<p class="fine">위원은 AI가 서로 다른 관점을 맡은 분석가예요. 위원회가 모이기 전에 각자 자기 관점의 근거만 보고 따로 판단해요. '철회'는 위원이 판단하면서 정한 “종가가 여기에 닿으면 틀렸다고 보는” 가격이에요. 리포트를 쓴 날 입장과 20거래일 뒤 가격을 그대로 기록하고 고치지 않아요. 20거래일이 지나면 방향이 맞았는지 채점해요(중립은 ±2% 안이면 맞음). '확신'은 위원이 스스로 적은 확신도의 평균이에요. 확신이 적중보다 많이 높으면 자신감이 지나친 거고, 둘이 비슷할수록 믿을 만한 확신이에요. 진행 중인 판단의 '같은 쪽·반대쪽'은 지금까지의 움직임일 뿐 채점이 아니에요. 적중이 높은 위원이 먼저 나와요.</p></section>`;
   // G-77: strategy champions and paper ledgers ("따라 하기"), one row per stock, best first. Ten rows show;
   // the rest wait behind '전체 보기'. A row opens that stock's ledger in place.
   const follow = live.map((e) => {
