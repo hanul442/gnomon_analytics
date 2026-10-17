@@ -37,6 +37,8 @@ export interface ReportedFiling {
   category: string;
   importance: Importance;
   why: string;
+  /** G-224: the start of the DART original (new HIGH filings only), for the committee to read. */
+  excerpt?: string;
 }
 
 export interface DailyReport {

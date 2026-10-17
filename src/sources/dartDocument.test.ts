@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { deflateRawSync } from 'node:zlib';
-import { dartXmlToText, fetchDartDocument, FILING_MAX_CHARS, parseDartDocument } from './dartDoc.js';
+import { attachFilingExcerpts, dartXmlToText, fetchDartDocument, FILING_MAX_CHARS, parseDartDocument } from './dartDocument.js';
 
 /** A minimal ZIP (deflated entries) like the one document.xml returns. */
 export function zipOf(files: Record<string, string | Uint8Array>): Uint8Array<ArrayBuffer> {
@@ -57,4 +57,20 @@ test('document.xml errors come back as DART status codes; the key is required an
   const seen: string[] = [];
   await assert.rejects(fetchDartDocument('SECRET', '20261002000123', (async (u: URL) => { seen.push(String(u)); return new Response('x', { status: 500 }); }) as unknown as typeof fetch), (e: Error) => e.message === 'DART_HTTP_500');
   assert.match(seen[0]!, /document\.xml\?crtfc_key=SECRET&rcept_no=20261002000123/);
+});
+
+test('G-224: the committee reads up to three new HIGH DART filings, cut short; failures keep the title only', async () => {
+  const seen: string[] = [];
+  const fake = (async (u: URL) => { const no = u.searchParams.get('rcept_no')!; seen.push(no); return no.endsWith('9') ? new Response('x', { status: 500 }) : new Response(zipOf({ [`${no}.xml`]: SAMPLE_XML })); }) as unknown as typeof fetch;
+  const fs = [
+    { receiptNo: '20261002000001', importance: 'HIGH' }, { receiptNo: '20261002000002', importance: 'LOW' },
+    { receiptNo: '20261002000009', importance: 'HIGH' }, { receiptNo: '0001682852-26-000040', importance: 'HIGH' },
+    { receiptNo: '20261002000003', importance: 'HIGH' }, { receiptNo: '20261002000004', importance: 'HIGH' },
+  ] as { receiptNo: string; importance: string; excerpt?: string }[];
+  assert.equal(await attachFilingExcerpts(fs, 'k', fake, { chars: 30 }), 2);
+  assert.deepEqual(seen, ['20261002000001', '20261002000009', '20261002000003']);
+  assert.match(fs[0]!.excerpt!, /^주요사항보고서\(자기주식취득결정\)[\s\S]* …\(앞부분 30자만\)$/);
+  assert.equal(fs[1]!.excerpt, undefined);
+  assert.equal(fs[2]!.excerpt, undefined);
+  assert.equal(await attachFilingExcerpts(fs, '', fake), 0);
 });

@@ -24,6 +24,13 @@ test('evidence is numbered from the report itself', () => {
   assert.equal(buildEvidence(report)[2]?.url, filing.url);
 });
 
+test('G-224: a filing read from its original carries the excerpt into its evidence', () => {
+  const fl = (report.recentFilings ?? report.filings).map((f) => ({ ...f, excerpt: '취득예정주식 1,000,000주' }));
+  const withText = { ...report, filings: fl, recentFilings: fl };
+  assert.match(buildEvidence(withText)[2]!.detail, /원문 앞부분:\n취득예정주식 1,000,000주/);
+  assert.doesNotMatch(buildEvidence(report)[2]!.detail, /원문 앞부분/);
+});
+
 test('claims without a known evidence ID are dropped', () => {
   const { kept, dropped } = sanitizeClaims([
     { text: '근거 있음', evidenceIds: ['f1', 'X9'] },
