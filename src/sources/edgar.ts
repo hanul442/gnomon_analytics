@@ -15,8 +15,14 @@ import type { InsiderReport } from '../analysis/edge.js';
 export const EDGAR_SOURCE = 'sec:edgar';
 export const EDGAR_FACTS_SOURCE = 'sec:edgar:xbrl';
 export const EDGAR_FORM4_SOURCE = 'sec:edgar:form4';
-/** SEC wants the app and a way to reach its operator; EDGAR_CONTACT (an email) is appended when set. */
-export const edgarUserAgent = (contact?: string): string => `GNOMON research bot (https://github.com/hanul442/gnomon_analytics${contact ? `; ${contact}` : ''})`;
+/**
+ * SEC wants "<app or company> <contact email>" (EDGAR_CONTACT, appended when set). G-236: no URL in it: SEC's
+ * gateway answers 403 to any User-Agent carrying "https://…", which had kept every EDGAR request out since G-179.
+ */
+export const edgarUserAgent = (contact?: string): string => {
+  const c = (contact ?? '').replace(/https?:\/\/\S*/gi, '').replace(/[^\x20-\x7e]/g, '').trim();
+  return `GNOMON research bot${c ? ` ${c}` : ''}`;
+};
 
 export const padCik = (cik: number | string): string => String(cik).replace(/\D/g, '').padStart(10, '0');
 export const tickersUrl = 'https://www.sec.gov/files/company_tickers.json';

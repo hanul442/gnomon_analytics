@@ -67,6 +67,6 @@ export function buildUsReport(input: { symbol: string; name: string; nameEng?: s
   const close = report.price?.close ?? bars.at(-1)!.close;
   if (!input.kind) report.edge = withCurrency('USD', () => buildEdge({ date, close, bars, finance: r.finance, financeLog: r.finance, events: [], insider: r.insider, holders: [], us: true, filings: r.disclosures }));
   const got = { filings: r.disclosures.length, finance: r.finance.length, insider: r.insider.length, news: r.news.length, snapshot: !!r.snapshot };
-  report.notes.push(`미국 주식은 네이버 해외 주식 일봉(달러, 미국 현지 날짜) 기준이에요. ${got.filings || got.finance || got.insider ? `SEC EDGAR에서 공시 ${got.filings}건, 재무 ${got.finance}개 기간, 내부자 거래 ${got.insider}건을 읽었어요.` : `SEC EDGAR 자료를 읽지 못해 공시·재무 판단은 보류해요${r.status.some((s) => /EDGAR_HTTP_403/.test(s.error ?? '')) ? '(SEC가 요청을 거절했어요. 운영자가 EDGAR_CONTACT에 연락처를 넣어야 해요)' : ''}.`} ${got.news ? `영문 뉴스 ${got.news}건을 모았어요.` : ''}투자자별 수급과 증권가 목표가는 없어요.`.replace(/\s+/g, ' ').trim());
+  report.notes.push(`미국 주식은 네이버 해외 주식 일봉(달러, 미국 현지 날짜) 기준이에요. ${got.filings || got.finance || got.insider ? `SEC EDGAR에서 공시 ${got.filings}건, 재무 ${got.finance}개 기간, 내부자 거래 ${got.insider}건을 읽었어요.` : `SEC EDGAR 자료를 읽지 못해 공시·재무 판단은 보류해요${r.status.some((s) => /EDGAR_HTTP_403/.test(s.error ?? '')) ? '(SEC가 요청을 거절했어요)' : ''}.`} ${got.news ? `영문 뉴스 ${got.news}건을 모았어요.` : ''}투자자별 수급과 증권가 목표가는 없어요.`.replace(/\s+/g, ' ').trim());
   return report;
 }
