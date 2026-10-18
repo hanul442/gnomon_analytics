@@ -8,9 +8,6 @@ on:
       samples: { description: 'Blind cutoffs for the PMs', default: '300' }
       budget: { description: 'AI budget, USD', default: '3' }
       probe: { description: 'Leakage probes (name the stock and year)', default: '30' }
-  push:
-    branches: [claude/project-thread-dz3hed]
-    paths: ['.github/workflows/eval.yml']
 permissions:
   contents: write
 concurrency:
