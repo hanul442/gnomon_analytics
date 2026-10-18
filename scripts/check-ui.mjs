@@ -300,8 +300,8 @@ try{
  await page.locator('.bottom-nav a[href$="watch.html"]').click();await page.waitForURL(/watch\.html/);await page.locator('#wp-list .wp-row').first().waitFor();
  assert.equal(await page.locator('#wp-list .wp-row').count(),1);assert.equal(await page.locator('#wp-n').innerText(),'1');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.screenshot({path:'test-artifacts/watch-390.png'});
- // G-213: 위원별 판단 narrows to the watchlist on one tap, at phone and desktop widths.
- for(const width of [375,1280]){await page.setViewportSize({width,height:900});await page.goto(origin+'/scorecard-fixture.html');await page.locator('.mb-bar:not([hidden])').waitFor();
+ // G-213, G-244: 위원별 탭의 판단 narrows to the watchlist on one tap, at phone and desktop widths.
+ for(const width of [375,1280]){await page.setViewportSize({width,height:900});await page.goto(origin+'/scorecard-fixture.html');assert.equal(await page.locator('#scg-analysts').isVisible(),false,'G-244: one group at a time');await page.locator('[data-sc-tab=analysts]').click();await page.locator('.mb-bar:not([hidden])').waitFor();
   assert.equal(await page.locator('.mb-card').count(),6);assert.equal(await page.locator('#m-trend_momentum .mb-row:visible').count(),4,'four calls show before 모두 보기');assert.ok(await page.locator('.mb-row[data-sym="000660"]').first().isVisible());
   await page.locator('.mb-watch').click();assert.equal(await page.locator('.mb-row[data-sym="000660"]:visible').count(),0);assert.equal(await page.locator('.mb-row[data-sym="999999"]:visible').count(),18,'every watched call shows, the 4-row cut aside');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#analysts').screenshot({path:'test-artifacts/scorecard-members-'+width+'.png'});}
