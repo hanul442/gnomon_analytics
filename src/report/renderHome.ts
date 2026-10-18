@@ -6,6 +6,7 @@ import type { MarketReport } from './marketReport.js';
 // the scorecard summary and this week's filings. Pure rendering.
 
 import { ORBS } from './ui.js';
+import { NEWS_ISSUES_CARD, NEWS_ISSUES_SCRIPT } from './newsIssues.js';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { MarketPulse, StockCalc } from '../analysis/quickCalc.js';
@@ -322,11 +323,11 @@ export function renderHome(data: HomeData): string {
 </div></section>
 ${marketHero(data.indices, data.universe, data.pulse, latestDaily(data), data.us ?? null)}
 
-<div class="home-grid"><div class="home-main">${WATCH}${MY_SCREENS}${todayPicks(daily, sorted)}${scoreLine(sorted)}${moreList()}</div>
+<div class="home-grid"><div class="home-main">${NEWS_ISSUES_CARD}${WATCH}${MY_SCREENS}${todayPicks(daily, sorted)}${scoreLine(sorted)}${moreList()}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + HOME_FOLD_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + MORE_SCRIPT });
+  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', scripts: NEWS_ISSUES_SCRIPT + SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + HOME_FOLD_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + MORE_SCRIPT });
 }
 
 /**
