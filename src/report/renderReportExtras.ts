@@ -4,7 +4,7 @@ import {ORBS} from './ui.js';
 // and claim-kind chips. Pure rendering from stored reports.
 
 import type { DailyReport } from './dailyReport.js';
-import { ANALYSTS } from '../analysis/analysts.js';
+import { ANALYSTS, analystName } from '../analysis/analysts.js';
 import { LOCKED_TEXT, replyIndex, type ClaimKind, type Commentary, type InsightKey } from '../analysis/commentary.js';
 import { esc } from './html.js';
 import { won, tone } from './format.js';
@@ -61,7 +61,7 @@ export function reportDiff(cur: DailyReport, prev: DailyReport): ReportDiff {
   const toneOf = (s: string) => (s === 'BULLISH' ? 'up' : s === 'BEARISH' ? 'down' : '');
   for (const a of c?.analysts ?? []) {
     const before = p?.analysts?.find((x) => x.analyst === a.analyst);
-    if (before && before.stance !== a.stance) flips.push({ who: SPEAKER[a.analyst] ?? a.analyst, before: STANCE[before.stance], after: STANCE[a.stance], tone: toneOf(a.stance) });
+    if (before && before.stance !== a.stance) flips.push({ who: analystName(a.analyst, c?.sectorExpert), before: STANCE[before.stance], after: STANCE[a.stance], tone: toneOf(a.stance) });
   }
   for (const d of c?.desks ?? []) {
     const before = p?.desks?.find((x) => x.desk === d.desk);
@@ -160,6 +160,7 @@ export const ROLE_PLAIN: Record<string, string> = {
   trend_momentum: '오르는 흐름이 이어지는지 봐요', mean_reversion: '너무 오르거나 내려서 되돌아올 때인지 봐요',
   wave_structure: '고점·저점이 그리는 모양과 꺾이는 자리를 봐요', volume_flow: '거래량과 외국인·기관이 사고파는 흐름을 봐요',
   fundamental: '회사가 버는 돈과 주가가 비싼지 싼지 봐요', event_catalyst: '공시·뉴스와 앞으로 있을 일정을 봐요',
+  sector_expert: '이 회사가 속한 업종에서 주가를 움직이는 것을 봐요',
   MARKET: '시장 전체와 비교해 이 종목이 강한지 봐요', TECHNICAL: '차트 지표와 가격 모양을 종합해요', FLOW: '누가 사고 누가 파는지 봐요',
   FUNDAMENTAL: '실적과 가치 평가를 봐요', EVENT: '공시와 뉴스를 봐요', RED_TEAM: '우세한 의견에 일부러 반대해 빈틈을 찾아요',
 };
@@ -168,16 +169,18 @@ export const ROLE_PLAIN: Record<string, string> = {
 export function debateSection(report: DailyReport, tail = ''): string {
   return renderCommitteeDebate(report.commentary,tail);
 }
-export function renderCommitteeDebate(c:Pick<Commentary,'status'|'debate'|'evidence'>|undefined,tail=''):string {
+export function renderCommitteeDebate(c:Pick<Commentary,'status'|'debate'|'evidence'|'sectorExpert'>|undefined,tail=''):string {
   if (c?.status !== 'OK' || !c.debate?.length) return '';
+  // G-242: the industry seat speaks under the specialty this report gave it.
+  const who = (sp: string) => (sp === 'sector_expert' && c.sectorExpert ? c.sectorExpert.name : SPEAKER[sp] ?? sp);
   const turns = c.debate;
   const byId = new Map(c.evidence.map((e) => [e.id, e]));
   const evChips = (ids: readonly string[]) => `<span class="ev-row">${ids.map((id) => { const e = byId.get(id); return e ? `<button type="button" class="ev-chip" data-label="${esc(e.label)}" data-url="${esc(e.url.startsWith('http') ? e.url : '')}">${esc(id)}</button>` : ''; }).join('')}</span>`;
   // G-136: a short preview on the page; the whole debate is a full-screen chat room (KakaoTalk-like) opened from it.
   const speakers = [...new Set(turns.map((t) => t.speaker))], sideOf = (t: (typeof turns)[number]) => (t.speaker === 'RED_TEAM' ? 'red' : SIDE[t.stance][1]);
-  const initial = (sp: string) => (SPEAKER[sp] ?? sp).replace(/^(AI\s*)/, '').slice(0, 1);
+  const initial = (sp: string) => (who(sp)).replace(/^(AI\s*)/, '').slice(0, 1);
   const avs = speakers.slice(0, 5).map((sp) => { const t = turns.find((x) => x.speaker === sp)!; return `<span class="db-av db-av-${sideOf(t)}">${esc(initial(sp))}</span>`; }).join('');
-  const lines = turns.slice(-3).map((t) => `<span class="db-pv-l"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${esc(t.claim.text.length > 64 ? `${t.claim.text.slice(0, 64)}…` : t.claim.text)}</span>`).join('');
+  const lines = turns.slice(-3).map((t) => `<span class="db-pv-l"><b>${esc(who(t.speaker))}</b>${esc(t.claim.text.length > 64 ? `${t.claim.text.slice(0, 64)}…` : t.claim.text)}</span>`).join('');
   return `<section class="block" id="debate"><div class="block-head"><h2>위원회 토론</h2><span class="muted small">위원 ${speakers.length}명 · 발언 ${turns.length}개</span></div>
 <button type="button" class="card db-preview" data-room-open aria-haspopup="dialog" aria-controls="db-room"><span class="db-pv-top"><span class="db-avs">${avs}</span><span class="db-pv-n">위원회 토론방<small>위원 ${speakers.length}명이 ${turns.length}번 주고받았어요</small></span></span>${lines}<span class="db-pv-cta">토론방 입장 ›</span></button>
 <div class="db-room" id="db-room" role="dialog" aria-modal="true" aria-label="위원회 토론방" hidden><header class="db-room-h"><button type="button" class="db-room-x" data-room-close aria-label="토론방 나가기">‹</button><div class="db-room-t"><b>위원회 토론방</b><small>위원 ${speakers.length}명 · 발언 ${turns.length}개</small></div><span class="db-head-r">${turns.some((t) => t.plain) ? '<button type="button" class="db-easy chip-toggle" data-easy-toggle aria-pressed="false">쉬운 말</button>' : ''}<button type="button" class="db-skip chip-toggle" hidden>전체 바로 보기</button><a class="db-ask-link" href="#join" aria-label="질문 입력창으로 이동">질문</a></span></header>
@@ -186,8 +189,8 @@ ${turns.map((t, i) => {
     const red = t.speaker === 'RED_TEAM', side = red ? 'red' : SIDE[t.stance][1];
     // Reports written before the fix may count from 1 (a turn answering itself); the red team sums up, it does not reply.
     const at = red ? undefined : replyIndex(t.replyTo, i), to = at != null ? turns[at] : undefined;
-    const quote = to && to.speaker !== t.speaker ? `<div class="db-quote"><b>${esc(SPEAKER[to.speaker] ?? to.speaker)}</b>${esc(to.claim.text.length > 46 ? `${to.claim.text.slice(0, 46)}…` : to.claim.text)}</div>` : '';
-    return `<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"${at != null ? ` data-reply="${at}"` : ''}><div class="db-who"><b>${esc(SPEAKER[t.speaker] ?? t.speaker)}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}<span class="ez-only">(${SIDE_PLAIN[t.stance]})</span>`}${ROLE_PLAIN[t.speaker] ? `<span class="db-role ez-only">${esc(ROLE_PLAIN[t.speaker]!)}</span>` : ''}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}${t.plain ? `<span class="db-plain ez-only"><b>쉽게 말하면</b>${esc(t.plain)}</span>` : ''}</div></div>`;
+    const quote = to && to.speaker !== t.speaker ? `<div class="db-quote"><b>${esc(who(to.speaker))}</b>${esc(to.claim.text.length > 46 ? `${to.claim.text.slice(0, 46)}…` : to.claim.text)}</div>` : '';
+    return `<div class="db-turn db-${side}" data-speaker="${esc(t.speaker)}"${at != null ? ` data-reply="${at}"` : ''}><div class="db-who"><b>${esc(who(t.speaker))}</b>${red ? ' · 정리' : ` · ${SIDE[t.stance][0]}<span class="ez-only">(${SIDE_PLAIN[t.stance]})</span>`}${ROLE_PLAIN[t.speaker] ? `<span class="db-role ez-only">${esc(ROLE_PLAIN[t.speaker]!)}</span>` : ''}</div><div class="db-bubble">${quote}${kindChip(t.claim.kind)}${esc(t.claim.text)} ${evChips(t.claim.evidenceIds)}${t.plain ? `<span class="db-plain ez-only"><b>쉽게 말하면</b>${esc(t.plain)}</span>` : ''}</div></div>`;
   }).join('')}
 <p class="fine db-room-note">말하는 위원은 위원회 표결의 분석가·데스크 그대로예요. 밑줄 친 말을 누르면 뜻이 나와요. 말 끝의 근거 번호를 누르면 그 근거가 펼쳐져요. 레드팀은 승패를 정하지 않아요.</p>${tail}</div></div></div></section>`;
 }

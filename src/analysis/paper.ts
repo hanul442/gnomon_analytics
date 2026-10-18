@@ -37,6 +37,8 @@ export function paperEntries(input: {
   close: number;
   arena: ArenaResult | null;
   analysts?: readonly AnalystView[] | undefined;
+  /** G-242: the industry seat's name on this report (반도체 전문위원). */
+  expert?: string | undefined;
   recordedAt: string;
 }): PaperEntry[] {
   const base = { symbol: input.symbol, date: input.sessionDate, close: input.close, method: PAPER_METHOD, recordedAt: input.recordedAt } as const;
@@ -46,7 +48,7 @@ export function paperEntries(input: {
   for (const v of input.analysts ?? []) {
     const a = ANALYSTS.find((x) => x.id === v.analyst);
     if (!a) continue;
-    out.push({ ...base, follower: `analyst:${a.id}`, label: a.name, position: v.stance === 'BULLISH' ? 1 : 0, basis: v.stance === 'BULLISH' ? '강세' : v.stance === 'BEARISH' ? '약세' : '중립' });
+    out.push({ ...base, follower: `analyst:${a.id}`, label: a.id === 'sector_expert' && input.expert ? input.expert : a.name, position: v.stance === 'BULLISH' ? 1 : 0, basis: v.stance === 'BULLISH' ? '강세' : v.stance === 'BEARISH' ? '약세' : '중립' });
   }
   return out;
 }

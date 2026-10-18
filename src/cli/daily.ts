@@ -86,6 +86,8 @@ import { recordingFetch, replayingFetch } from '../sources/fetchCache.js';
 import { kstParts, runDay } from './kst.js';
 import { fetchFredSeries, MACRO_SERIES, macroKey, type MacroPoint } from '../sources/fred.js';
 import { macroSnapshot } from '../analysis/macro.js';
+import { fetchCompanyProfile } from '../sources/companyProfile.js';
+import type { CompanyBrief } from '../analysis/sectorExpert.js';
 import { BASE_RATE_MIN, eventBaseRates, type EventBaseRate } from '../analysis/eventStudy.js';
 export { kstParts, runDay } from './kst.js';
 
@@ -514,6 +516,18 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
       if (fresh) { await mkdir(join(root, 'data', 'statements'), { recursive: true }); await writeFile(stPath, `${JSON.stringify(fresh)}\n`); }
     }
   }
+  // G-242: what the company does (WICS sector, summary, sales mix), for the committee's industry specialist. Refreshed monthly; best effort.
+  if (!coin && !us && !ticker.kind) {
+    const cPath = join(root, 'data', 'company', `${SYMBOL}.json`);
+    const old = await readFile(cPath, 'utf8').then((t) => JSON.parse(t) as CompanyBrief, () => null);
+    if (!old || now.getTime() - Date.parse(old.at) > 30 * 86_400_000) {
+      const card = await fetchCompanyProfile(SYMBOL, options.fetch ?? fetch, now).catch(() => null);
+      if (card && !card.partial && (card.sector || card.summary.length)) {
+        const brief: CompanyBrief = { sector: card.sector, industry: card.industry?.name ?? null, summary: card.summary, mix: card.mix, at: now.toISOString() };
+        await mkdir(join(root, 'data', 'company'), { recursive: true }); await writeFile(cPath, `${JSON.stringify(brief)}\n`);
+      }
+    }
+  }
   // News is best effort: a failed source is recorded and shown, never fatal.
   const newsPath = join(root, 'data', 'news', `${SYMBOL}.jsonl`);
   const { items: news, status: newsStatus } = usResearch ? { items: usResearch.news, status: usResearch.status.filter((st) => st.source === US_NEWS_SOURCE) } : await collectNews(ticker, options, fetchOptions);
@@ -575,7 +589,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
       if (built.price && built.market) {
         await appendUnseen(join(root, 'data', 'paper', `${SYMBOL}.jsonl`), paperEntries({
           symbol: SYMBOL, sessionDate: built.price.sessionDate ?? today.date, close: built.price.close, arena: built.market.arena,
-          analysts: c?.status === 'OK' ? c.analysts : undefined, recordedAt: now.toISOString(),
+          analysts: c?.status === 'OK' ? c.analysts : undefined, expert: c?.status === 'OK' ? c.sectorExpert?.name : undefined, recordedAt: now.toISOString(),
         }), paperKey);
       }
       await mkdir(reportDir, { recursive: true });
@@ -668,6 +682,8 @@ export async function composeReport(
       const rates = kinds.size ? (await baseRates(root, today.date, now)).filter((r) => kinds.has(r.key) && r.n >= BASE_RATE_MIN) : [];
       if (rates.length) built.edge.baseRates = rates;
     }
+    const company = await readFile(join(root, 'data', 'company', `${SYMBOL}.json`), 'utf8').then((t) => JSON.parse(t) as CompanyBrief, () => null);
+    if (company && company.at <= now.toISOString()) built.company = company;
     const statements = await readFile(join(root, 'data', 'statements', `${SYMBOL}.json`), 'utf8').then((t) => JSON.parse(t) as FullStatements, () => null);
     if (statements && statements.retrievedAt <= now.toISOString()) built.statements = statements;
   }

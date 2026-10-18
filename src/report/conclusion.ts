@@ -130,7 +130,7 @@ export const VIEW_FOCUS: Record<string, readonly string[]> = {
   beginner: ['MARKET', 'TECHNICAL', 'FUNDAMENTAL', 'EVENT'],
   trader: ['TECHNICAL', 'FLOW', 'trend_momentum', 'mean_reversion', 'volume_flow'],
   swing: ['TECHNICAL', 'MARKET', 'wave_structure', 'trend_momentum', 'volume_flow'],
-  long: ['FUNDAMENTAL', 'EVENT', 'fundamental', 'event_catalyst', 'MARKET'],
+  long: ['FUNDAMENTAL', 'EVENT', 'fundamental', 'event_catalyst', 'sector_expert', 'MARKET'],
 };
 const VIEW_LABEL: Record<string, string> = { beginner: '초보', trader: '단타', swing: '스윙', long: '장기' };
 export const VIEW_FOCUS_CSS = `.vt-help{font-size:13px;color:var(--fg2);background:var(--soft);border-radius:10px;padding:8px 11px;margin:0 0 10px}.vt-more{display:none;margin:10px auto 0;border:1px dashed var(--line-strong);background:var(--surface);border-radius:999px;padding:7px 14px;font:inherit;font-size:13px;font-weight:700;color:var(--accent-strong);cursor:pointer}
