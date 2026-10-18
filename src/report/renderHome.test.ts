@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderHome } from './renderHome.js';
+import { renderHome, renderReportsPage } from './renderHome.js';
+import { watchInfo } from './conclusion.js';
 import type { HomeEntry } from './renderHtml.js';
 import type { DailyReport } from './dailyReport.js';
 
@@ -21,4 +22,20 @@ test('home: no view bar or market tabs; temperature card; today picks carry a sc
 test('the shared scripts parse (a bad escape in a template once broke every page)', async () => {
   const { APP_JS, UI_JS } = await import('./renderHtml.js');
   for (const js of [APP_JS, UI_JS]) assert.doesNotThrow(() => new Function(js));
+});
+
+test('G-231: a live page rebuilt today is not a report made today; lists, pills and watchinfo use the dated report', () => {
+  const live = (symbol: string, reportDate: string | null): HomeEntry => ({
+    symbol, name: symbol, href: `${symbol}/index.html`, group: 'core', reportDate,
+    report: { symbol, name: symbol, date: '2026-10-17', headline: '한 줄', commentary: { status: 'OK', tier: 'deep' }, price: { close: 100, changePct: 1, volume: 1, volumeRatio20: 1, sessionDate: '2026-10-16' } } as unknown as DailyReport,
+  });
+  const entries = [live('OLD', '2026-10-05'), live('NEW', '2026-10-16'), live('NONE', null)];
+  const html = renderReportsPage({ entries, selection: null, universe: null, pulse: null, indices: [] });
+  assert.match(html, /10\/16 나온 리포트 1개/);
+  assert.ok(!html.includes('10/17 나온 리포트') && !html.includes('위원회 10/17'), 'the run date is never shown as the report date');
+  assert.ok(html.includes('위원회 10/05') && html.includes('위원회 10/16'));
+  const today = html.slice(html.indexOf('id="today-list"'), html.indexOf('</section>', html.indexOf('id="today-list"')));
+  assert.ok(today.includes('NEW/index.html') && !today.includes('OLD/index.html') && !today.includes('NONE/index.html'));
+  const info = watchInfo(entries);
+  assert.deepEqual([info.OLD!.d, info.NEW!.d, info.NONE!.d], ['2026-10-05', '2026-10-16', '']);
 });

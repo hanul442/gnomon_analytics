@@ -71,7 +71,7 @@ const SCRIPT = `<script>
 
 export function renderWatchPage(): string {
   const body = `${STYLE}<section class="hero" id="top"><div class="hero-main wp-head"><div><div class="eyebrow"><span>관심</span></div><h1>내 관심 종목</h1></div><div class="wp-sum"><span>관심 <b id="wp-n">0</b></span><span class="up">▲ <b id="wp-up">0</b></span><span class="down">▼ <b id="wp-down">0</b></span></div></div></section>
-<section class="block"><div class="wp-tools"><label class="sc-inline">정렬 <select id="wp-sort" aria-label="정렬"><option value="added">추가한 순</option><option value="recent">최근 추가 먼저</option><option value="chg">오늘 많이 오른 순</option><option value="chga">오늘 많이 내린 순</option><option value="report">최신 리포트 순</option><option value="name">이름</option></select></label><a class="chip-toggle" href="alerts.html">🔔 가격 알림</a><a class="chip-toggle" href="reports.html#today">오늘 나온 리포트</a></div>
+<section class="block"><div class="wp-tools"><label class="sc-inline">정렬 <select id="wp-sort" aria-label="정렬"><option value="added">추가한 순</option><option value="recent">최근 추가 먼저</option><option value="chg">오늘 많이 오른 순</option><option value="chga">오늘 많이 내린 순</option><option value="report">최신 리포트 순</option><option value="name">이름</option></select></label><a class="chip-toggle" href="alerts.html">🔔 가격 알림</a><a class="chip-toggle" href="reports.html#today">최근 나온 리포트</a></div>
 <div class="wp-list" id="wp-list"></div>
 <p class="fine">☆로 넣고 빼요. 로그인하면 계정에 저장돼서 다른 기기에서도 보여요. 가격은 장중 4초마다 새로 받아요.</p></section>`;
   return shell('', '관심 종목 | GNOMON', body, { active: 'watch', scripts: SCRIPT });
