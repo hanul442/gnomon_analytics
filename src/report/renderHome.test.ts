@@ -51,3 +51,18 @@ test('G-244: home leads with one market sentence and folds the rest into 더 보
   assert.ok(html.indexOf('id="mkt-hero"') < html.indexOf('id="watch"') && html.indexOf('id="watch"') < html.indexOf('id="today"') && html.indexOf('id="today"') < html.indexOf('id="banner"'), 'market, mine, picks, then the banner');
   assert.match(html, /c\.hidden = i >= 3/, 'three picks');
 });
+
+test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab', async () => {
+  const { tabBar, modeBar } = await import('./ui.js');
+  const { renderSettings } = await import('./renderSettings.js');
+  const bar = tabBar('', 'bottom');
+  assert.deepEqual([...bar.matchAll(/aria-label="([^"]+)" data-tab-link/g)].map((m) => m[1]), ['홈', '찾기', '내 종목', '위원회', '나']);
+  assert.ok(!bar.includes('data-all-menu'));
+  const themes = modeBar('', 'themes.html');
+  assert.ok(themes.includes('<a href="themes.html" aria-current="page">테마</a>') && themes.includes('href="signals.html"') && themes.includes('href="screener.html#etf"'));
+  assert.ok(modeBar('', 'scorecard.html').includes('href="reports.html"'));
+  assert.equal(modeBar('', 'index.html'), '');
+  const me = renderSettings();
+  assert.ok(me.includes('class="me-acct"') && me.includes('id="sm-admin"') && me.includes('id="help"') && me.includes('href="guide.html"'));
+  assert.ok(!me.includes('id="side-menu"'));
+});

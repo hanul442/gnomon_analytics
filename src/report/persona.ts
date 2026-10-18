@@ -49,8 +49,8 @@ export const PERSONA_BAR = `<div class="persona-bar" role="group" aria-label="ë³
 
 /** The switch's behaviour; pages listen for the gnm-persona event to re-arrange. */
 export const PERSONA_JS = `
-  // G-181: the theme switch (dark by default, light, or the device's); charts and pictures listen for gnm-theme.
-  var markTheme = function () { var t = 'dark'; try { t = localStorage.getItem('gnm-theme') || 'dark'; } catch (x) {} document.querySelectorAll('.theme-bar [data-theme-pick]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-theme-pick') === t ? 'true' : 'false'); }); };
+  // G-181: the theme switch (G-245: follows the device by default, or dark or light); charts and pictures listen for gnm-theme.
+  var markTheme = function () { var t = 'auto'; try { t = localStorage.getItem('gnm-theme') || 'auto'; } catch (x) {} document.querySelectorAll('.theme-bar [data-theme-pick]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-theme-pick') === t ? 'true' : 'false'); }); };
   markTheme();
   document.addEventListener('click', function (e) {
     var tb = e.target.closest && e.target.closest('.theme-bar [data-theme-pick]');

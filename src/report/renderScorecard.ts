@@ -159,7 +159,7 @@ ${group('paper', strategyCard + signalCard(signals))}
 .mb-row[hidden],.mb-only .mb-row.nw{display:none}.mb-only .mb-row.more-row:not(.nw){display:flex}.mb-only .more-all{display:none}
 @media (max-width:820px){.mb-grid{grid-template-columns:1fr}.sc-bigs{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-tiles{gap:6px}.sc-tile{padding:10px}.sc-tile b{font-size:17px}.sc-tile .pl-k{font-size:11.5px}.hide-m{display:none}}</style>
 <footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 모의투자는 가상 계좌예요. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '성적표 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS });
+  return shell('', '성적표 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS, mode: 'scorecard.html' });
 }
 
 /** G-77: 모의투자 is part of the scorecard ('따라 했다면'); the old address forwards there. */

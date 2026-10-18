@@ -102,7 +102,7 @@ export function renderThemesPage(): string {
  window.addEventListener('hashchange',function(){if(data)route();});
 })();
 </script>`;
-  return shell('', '테마별 종목 | GNOMON', body, {});
+  return shell('', '테마별 종목 | GNOMON', body, { mode: 'themes.html' });
 }
 
 export function renderSignalsPage(): string {
@@ -137,6 +137,6 @@ export function renderSignalsPage(): string {
   paint();}).catch(function(){document.getElementById('sg-list').innerHTML='<p class="muted">공시 레이더 자료를 아직 모으지 못했어요.</p>';});
 })();
 </script>`;
-  return shell('', '공시 레이더 | GNOMON', body, {});
+  return shell('', '공시 레이더 | GNOMON', body, { mode: 'signals.html' });
 }
 

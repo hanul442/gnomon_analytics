@@ -5,6 +5,7 @@
 
 import { esc } from './html.js';
 import { shell } from './renderHtml.js';
+import { meHead, meHelp } from './ui.js';
 import { PERSONAS } from './persona.js';
 import { SECTORS } from './sectors.js';
 import { ASSETS, EXPLAIN, HORIZON, LEVEL } from './profile.js';
@@ -18,7 +19,7 @@ const group = (key: string, title: string, note: string, type: 'one' | 'many', o
 export function renderSettings(): string {
   const al = alertsParts();
   const body = `${al.css}<style>
-.pf{max-width:720px;margin:16px auto 32px}.pf .card{padding:18px;margin-bottom:12px}.pf h1{font-size:23px;margin:2px 0 6px}
+.pf{max-width:720px;margin:16px auto 32px}.me-title{font-size:26px;margin:4px 2px 12px}.pf .card{padding:18px;margin-bottom:12px}.pf h1{font-size:23px;margin:2px 0 6px}
 .pf-row{border:0;margin:0;padding:16px 0 0;min-width:0}.pf-row+.pf-row{border-top:1px solid var(--line);margin-top:16px}.pf-row legend{font-weight:800;font-size:15.5px;padding:0;float:left;width:100%}
 .pf-note{clear:both;color:var(--muted);font-size:13px;margin:2px 0 10px}.pf-opts{display:flex;flex-wrap:wrap;gap:8px}
 .pf-opts label{position:relative;display:inline-flex;align-items:center;min-height:44px;border:1px solid var(--line-strong);border-radius:999px;padding:0 14px;font-size:14px;cursor:pointer;background:var(--surface)}
@@ -34,8 +35,8 @@ export function renderSettings(): string {
 .cm-new{display:grid;gap:8px;margin-top:10px}.cm-new label{display:grid;gap:4px;font-size:13px;font-weight:700}.cm-new input,.cm-new textarea,.cm-new select{font:inherit;font-weight:400;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--fg)}.cm-new button{min-height:44px;border:0;border-radius:12px;background:var(--btn-bg);color:var(--btn-fg);font:inherit;font-weight:800;cursor:pointer}.cm-err{color:var(--up-strong);font-size:13px;min-height:0;margin:0}.cm-err:empty{display:none}
 .pf-state{font-size:13px;color:var(--muted);margin:10px 0 0}.pf-state:empty{display:none}.pf-links{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;margin-top:6px}
 </style><div class="pf">
-<section class="card"><div class="pl-k">설정</div><h1>설정</h1><p class="muted">투자 방식, 화면, 알림, 계정을 여기서 한 번에 바꿔요. 고르면 바로 저장되고, 로그인하면 다른 기기에서도 같아요.</p></section>
-<nav class="st-nav" aria-label="설정 바로가기"><a href="#profile">내 투자 방식</a><a href="#committee">내 위원회</a><a href="#screen">화면</a><a href="#alerts">알림</a><a href="#account">계정</a></nav>
+<h1 class="me-title">나</h1>${meHead('')}
+<nav class="st-nav" aria-label="설정 바로가기"><a href="#profile">내 투자 방식</a><a href="#committee">내 위원회</a><a href="#screen">화면</a><a href="#alerts">알림</a><a href="#account">계정</a><a href="#help">도움말</a></nav>
 <h2 class="st-h" id="profile">내 투자 방식</h2><p class="muted small">홈 화면, 종목 화면, AI 답변이 이 값을 따라요.</p><p class="pf-state" id="pf-state" aria-live="polite"></p>
 <section class="card" id="pf-form">
 ${group('level', '화면 수준', '종목 화면을 이 수준에 맞춰요. 초보자는 쉬운 풀이와 꼭 볼 카드만, 전문가는 모든 분석을 숫자 위주로 촘촘하게 보여요. 종목 화면 각 탭 맨 아래에서도 바꿀 수 있어요.', 'one', LEVEL).replace('</p>', '<span id="lv-auto"></span></p>')}
@@ -56,6 +57,8 @@ ${group('sectors', '관심 업종', '홈의 내 종목 카드에 관련 테마�
 <div class="al">${al.html}</div>
 <h2 class="st-h" id="account">계정</h2>
 <section class="card st-rows"><a href="account.html"><span><b>내 계정</b><small>크레딧, 크레딧 요청, 내 데이터 내려받기</small></span><i aria-hidden="true">›</i></a><a href="pricing.html"><span><b>요금제</b><small>지금 요금제와 쓸 수 있는 기능</small></span><i aria-hidden="true">›</i></a><a href="onboarding.html"><span><b>설문 처음부터 다시 하기</b><small>모든 문항을 다시 골라요</small></span><i aria-hidden="true">›</i></a></section>
+<h2 class="st-h" id="help">도움말</h2>
+${meHelp('')}
 </div>${al.script}<script>
 // G-212: 내 위원회 — up to five answerers in order, kept in gnm-committee ([{k, n}]; follows the account, G-109).
 document.addEventListener('DOMContentLoaded', function () {
@@ -180,5 +183,5 @@ document.addEventListener('DOMContentLoaded', function () {
   ready.then(fill);
 });
 </script>`;
-  return shell('', '설정 | GNOMON', body, { noFeedback: true });
+  return shell('', '나 | GNOMON', body, { noFeedback: true });
 }
