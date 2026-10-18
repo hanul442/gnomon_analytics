@@ -3,6 +3,8 @@ import { renderWatchPage } from '../report/renderWatch.js';
 import { writeMarketReports, publishMarketReports } from './marketReports.js';
 import { publicPanels } from '../report/publicPanels.js';
 import { diffBasis } from '../report/renderReportExtras.js';
+import { renderNewsIssuesPage } from '../report/newsIssues.js';
+import { rankNewsIssues, type TaggedArticle } from '../analysis/newsIssues.js';
 // One daily run: for every stock in tickers.json collect, append, write
 // today's report once; then render the site.
 //
@@ -882,6 +884,16 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const eventLog = (await readFile(join(root, 'data', 'event-filings.jsonl'), 'utf8').catch(() => '')).split('\n').filter(Boolean).map((l) => JSON.parse(l) as EventFiling);
   await writeFile(join(siteDir, 'signals.json'), JSON.stringify(signalData(eventLog, lite, kstParts(new Date()).date)));
   await writeFile(join(siteDir, 'themes.html'), renderThemesPage());
+  // G-243: the most covered news issues of the last 24 hours, across every collected stock's news.
+  const newsArticles: TaggedArticle[] = [];
+  for (const file of (await readdir(join(root, 'data', 'news')).catch(() => [] as string[])).filter((f) => f.endsWith('.jsonl'))) {
+    const symbol = file.slice(0, -'.jsonl'.length);
+    for (const item of await readLog<NewsItem>(join(root, 'data', 'news', file))) newsArticles.push({ item, symbols: [symbol] });
+  }
+  const issueNames = new Map<string, string>([...lite.map((r) => [r.symbol, r.name] as const), ...home.map((e) => [e.symbol, e.name] as const)]);
+  const issueChanges = new Map<string, number | null>([...home.map((e) => [e.symbol, e.report?.price?.changePct ?? null] as const), ...lite.filter((r) => r.changePct != null).map((r) => [r.symbol, r.changePct] as const)]);
+  await writeFile(join(siteDir, 'news-issues.json'), JSON.stringify(rankNewsIssues(newsArticles, { now: new Date(), names: issueNames, changes: issueChanges })));
+  await writeFile(join(siteDir, 'issues.html'), renderNewsIssuesPage());
   await writeFile(join(siteDir, 'signals.html'), renderSignalsPage());
   // The chart library is served from the site itself, not a CDN.
   // "exports" hides the standalone build; package.json is exported, so locate it from there.

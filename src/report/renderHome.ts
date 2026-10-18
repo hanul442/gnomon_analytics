@@ -6,6 +6,7 @@ import type { MarketReport } from './marketReport.js';
 // the scorecard summary and this week's filings. Pure rendering.
 
 import { ORBS } from './ui.js';
+import { NEWS_ISSUES_CARD, NEWS_ISSUES_SCRIPT } from './newsIssues.js';
 import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { MarketPulse, StockCalc } from '../analysis/quickCalc.js';
@@ -381,12 +382,12 @@ export function renderHome(data: HomeData): string {
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 ${indexStrip(data.indices, data.universe, data.pulse, latestDaily(data), data.us ?? null)}
 
-<div class="home-grid"><div class="home-main">${WATCH}${todayPicks(daily, sorted)}${THEMES_TOP}${SIGNALS}
+<div class="home-grid"><div class="home-main">${WATCH}${todayPicks(daily, sorted)}${NEWS_ISSUES_CARD}${THEMES_TOP}${SIGNALS}
 ${MY_SCREENS}${movers(data.universe, covered)}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 <div class="show-more"><button type="button" class="btn-ghost" id="show-all">더 보기</button></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', scripts: THEMES_TOP_SCRIPT + SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + SIGNALS_SCRIPT });
+  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', scripts: NEWS_ISSUES_SCRIPT + THEMES_TOP_SCRIPT + SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + PERSONA_HOME_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + SIGNALS_SCRIPT });
 }
 
 /** The survey's part of 내 종목 (G-46, G-201): the note on top, the holding-period preset and the sector chips. */
