@@ -1,4 +1,3 @@
-import { askFilingButton } from './chat.js';
 import { reportButton } from './generateButton.js';
 import { MT_INNER } from './modernSwitch.js';
 // App-style sections (BLACK ORACLE mobile mockup v1 tone, docs/DESIGN.md G-15):
@@ -9,7 +8,7 @@ import { MT_INNER } from './modernSwitch.js';
 import { CHART_V6_JS, chartToolbar } from './chartTools.js';
 import { starButton } from './ui.js';
 import { scenarioCheck, scenarioLayer } from './scenarioChart.js';
-import type { DailyReport, ReportedFiling } from './dailyReport.js';
+import type { DailyReport } from './dailyReport.js';
 import { esc } from './html.js';
 import { currency, won, tone, pct as fmtPct } from './format.js';
 const pct = (v: number | null, digits = 2) => fmtPct(v, digits, '없음');
@@ -134,20 +133,16 @@ ${points.length ? `<div class="key-points"><div class="kp-title">핵심 포인�
 
 
 
-/** Filing link to the DART viewer (it adapts to phones by itself). */
-const dartLink = (f: ReportedFiling) => `<a href="${esc(f.url)}" data-dart="${esc(f.receiptNo)}" rel="noopener" target="_blank">${esc(f.title)}</a>`;
 
 export function latestLists(report: DailyReport): string {
-  const news = (report.news?.clusters ?? []).slice(0, 5);
-  const filings = (report.recentFilings ?? report.filings).slice(0, 5);
+  const news = (report.news?.clusters ?? []).slice(0, 3);
   const IMP = { HIGH: '중요', MEDIUM: '보통', LOW: '참고' } as const;
-  return `<div class="grid-eq">
+  // G-244: news only, three of them; filings are on 뉴스·공시.
+  return `<div>
 <section class="block"><div class="block-head"><h2>최신 뉴스</h2><a href="#tab-news" class="more-link">전체 보기 ›</a></div><div class="card list" data-slot="homeNews"${news.length ? '' : ' data-empty'}>
 ${news.length ? news.map((c) => `<div class="row-item"><span class="badge b-${c.importance}">${IMP[c.importance]}</span><div class="ri-main"><a href="${esc(c.url)}" rel="noopener" target="_blank">${esc(c.title)}</a><div class="muted small">${esc(c.publisher)} ${esc(kstTime(c.firstAt))}${c.articles.length > 1 ? `  같은 내용 ${c.articles.length}건` : ''}</div></div></div>`).join('') : '<p class="empty">최신 뉴스를 불러오고 있어요.</p>'}
 </div></section>
-<section class="block"><div class="block-head"><h2>최신 공시</h2><a href="#tab-news" class="more-link">전체 보기 ›</a></div><div class="card list" data-slot="homeFilings"${filings.length ? '' : ' data-empty'}>
-${filings.length ? filings.map((f) => `<div class="row-item"><span class="badge b-${f.importance}">${IMP[f.importance]}</span><div class="ri-main">${dartLink(f)}<div class="muted small">${esc(f.filedDate)}  ${esc(f.category)}${askFilingButton(f.receiptNo, f.title)}</div></div></div>`).join('') : '<p class="empty">최신 공시를 불러오고 있어요.</p>'}
-</div></section></div>`;
+</div>`;
 }
 
 /** DART serves its own mobile layout to phones from the same address, so links stay as they are. */

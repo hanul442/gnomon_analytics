@@ -376,8 +376,8 @@ try{
   await page.keyboard.press('Escape');assert.equal(await page.locator('.tr-tip').count(),0);assert.equal(await page.locator('#t-home').getAttribute('aria-selected'),'true');
   await page.goto(origin+'/screener.html?tour=1');await page.locator('.tr-tip').waitFor();await page.locator('.tr-tip [data-t=n]').click();await page.locator('.tr-tip [data-t=n]').click();assert.ok((await page.locator('.tr-tip').innerText()).includes('AI 조건'));await page.keyboard.press('Escape');
  }
- // G-118: same-theme comparison on the summary tab: cards in a sideways strip, return and PER against the theme.
- await page.goto(origin+'/stock.html?c=999999');await page.locator('#peers .pe-card').first().waitFor();
+ // G-118, G-244: same-theme comparison on 기업 체력: cards in a sideways strip, return and PER against the theme.
+ await page.goto(origin+'/stock.html?c=999999#tab-fundamentals');await page.locator('#tab-fundamentals #peers .pe-card').first().waitFor();
  assert.equal(await page.locator('#peers .pe-card').count(),4);await page.locator('#peers .pe-per .pe-pr').filter({hasText:/\b11배/}).waitFor();
  assert.match(await page.locator('#peers .pe-sum').innerText(),/4개 중 1위/);await page.locator('[data-pe-sort]').selectOption('return');assert.equal(await page.locator('#peers .pe-card').first().getAttribute('data-sym'),'999999');await page.locator('[data-pe-direction]').click();assert.equal(await page.locator('#peers .pe-card').first().getAttribute('data-sym'),'000002');
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#peers').screenshot({path:'test-artifacts/peers.png'});

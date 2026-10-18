@@ -326,7 +326,7 @@ ${marketHero(data.indices, data.universe, data.pulse, latestDaily(data), data.us
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', ads: 'bottom', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + HOME_FOLD_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + MORE_SCRIPT });
+  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', scripts: SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + HOME_FOLD_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + MORE_SCRIPT });
 }
 
 /**
