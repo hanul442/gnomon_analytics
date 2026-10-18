@@ -424,7 +424,7 @@ route('POST', '/auth/start', async ({ req, env, deps, now }) => {
     invite = str(b.invite, 40).toUpperCase();
     if (!invite) fail(403, 'INVITE_REQUIRED', '처음이라면 초대 코드가 필요해요.');
     if (!(await inviteOk(db, invite!, now))) fail(403, 'INVITE_INVALID', '초대 코드가 맞지 않거나 다 쓰였어요.');
-    if (b.terms !== true) fail(400, 'TERMS_REQUIRED', '이용 약관과 투자 유의 사항에 동의해 주세요.');
+    if (b.terms !== true) fail(400, 'TERMS_REQUIRED', '가입 동의 네 가지(이용약관, 개인정보, 투자 유의, 만 19세 이상)에 모두 체크해 주세요.');
   }
   await sendMail(env, deps, email, loginLink(env, await createLoginToken(db, email, invite, now)));
   return { ok: true };
@@ -474,7 +474,7 @@ route('POST', '/auth/signup', async ({ req, env, now }) => {
   const problem = passwordProblem(b.password);
   if (problem) fail(400, 'BAD_PASSWORD', problem);
   if (await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) fail(409, 'ALREADY_JOINED', '이미 가입한 이메일이에요. 로그인해 주세요. 비밀번호를 정하지 않았다면 관리자에게 로그인 링크를 받아 계정 페이지에서 정할 수 있어요.');
-  if (b.terms !== true) fail(400, 'TERMS_REQUIRED', '이용 약관과 투자 유의 사항에 동의해 주세요.');
+  if (b.terms !== true) fail(400, 'TERMS_REQUIRED', '가입 동의 네 가지(이용약관, 개인정보, 투자 유의, 만 19세 이상)에 모두 체크해 주세요.');
   const code = str(b.invite, 40).toUpperCase();
   if (!code && !isAdmin) fail(403, 'INVITE_REQUIRED', '처음 가입할 때는 초대 코드가 필요해요.');
   if (code) {

@@ -233,7 +233,7 @@ export const MENU: readonly { title: string; items: readonly [string, string, st
   { title: '내 것', items: [['<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>', '관심 종목', 'watch.html'], ['<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>', '알림함', 'inbox.html'], ['<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>', '설정', 'settings.html'], ['<path d="M3.5 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>', '내 리포트', 'myreports.html'], ['<path d="M5 5h14v10h-8l-4 4v-4H5z"/>', '내 토론 기록', 'mydebates.html'], ['<path d="M5 19V5a2 2 0 0 1 2-2h12v15H7a2 2 0 0 0-2 2 2 2 0 0 0 2 2h12"/>', '사용법', 'guide.html']] },
 ];
 /** G-211: the small links under the tiles. */
-export const MENU_FOOT: readonly [string, string][] = [['FAQ·1:1 문의', 'faq.html'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly'], ['이용약관·면책', 'terms.html'], ['HANUL 소개', 'hanul.html']];
+export const MENU_FOOT: readonly [string, string][] = [['FAQ·1:1 문의', 'faq.html'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly'], ['이용약관', 'terms.html'], ['개인정보처리방침', 'privacy.html'], ['HANUL 소개', 'hanul.html']];
 /** The app's tabs (G-95): the bottom bar on phones, the same links in the top bar on wide screens. 전체 opens the sheet. */
 export const TABS: readonly [string, string, string][] = [
   ['홈', 'index.html#top', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'],

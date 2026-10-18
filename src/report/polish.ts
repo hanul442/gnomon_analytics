@@ -38,7 +38,7 @@ export const POLISH_CSS = `
 :root body .find-row .flt-btn,:root body .find-row .find-link{display:inline-flex;align-items:center;gap:6px;min-height:36px;margin:0;padding:0 14px 0 11px;border-radius:999px;background:var(--soft);color:var(--fg);font-size:13.5px;font-weight:700;text-decoration:none}
 :root body .find-row svg{width:17px;height:17px;flex:none;fill:none;stroke:var(--accent-strong);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 :root body .find-row a:hover{background:var(--line)}
-/* G-234: chips. A choice or link chip is a soft filled pill with no outline (as on 찾기); the chosen one is the primary
+/* G-235: chips. A choice or link chip is a soft filled pill with no outline (as on 찾기); the chosen one is the primary
    pill. Settings drew outlined chips and a dashed '+ 전문가' button; they follow the same rule now. */
 :root body .pf-opts label,:root body .st-nav a,:root body .cm-add button{border-color:transparent;background:var(--soft);color:var(--fg);transition:background-color var(--dur-base) var(--ease-out),color var(--dur-fast) var(--ease-out),transform var(--dur-base) var(--ease-spring)}
 :root body .pf-opts label:hover,:root body .st-nav a:hover,:root body .cm-add button:not(:disabled):hover{background:var(--line)}
@@ -46,7 +46,7 @@ export const POLISH_CSS = `
 :root body .pf-opts label.pl-pick{animation:pl-pick 360ms var(--ease-spring)}
 :root body .pf-opts label:active,:root body .st-nav a:active,:root body .cm-add button:not(:disabled):active{transform:scale(.96)}
 @keyframes pl-pick{0%{transform:scale(.94)}60%{transform:scale(1.04)}100%{transform:none}}
-/* G-234: the app-install buttons' phone icon (was an emoji). */
+/* G-235: the app-install buttons' phone icon (was an emoji). */
 .ins-ic{width:17px;height:17px;vertical-align:-3px;margin-right:5px;color:var(--accent-strong)}
 /* ---- motion ---- */
 @keyframes pl-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}

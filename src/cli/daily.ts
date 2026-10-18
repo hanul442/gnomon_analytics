@@ -52,7 +52,8 @@ import { renderSignalsPage, renderThemesPage, signalData, themeData, themesHome 
 import { fetchThemes, type Theme } from '../sources/naverTheme.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
-import { renderPaper, renderScorecard, renderTerms } from '../report/renderScorecard.js';
+import { renderPaper, renderScorecard } from '../report/renderScorecard.js';
+import { renderPrivacy, renderTerms } from '../report/legal.js';
 import { renderScreener, screenerRows } from '../report/renderScreener.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
 import { fetchDartFilings, OPENDART_SOURCE } from '../sources/opendart.js';
@@ -832,6 +833,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const signals = await trackSignals(root, rows, dataDate, dataDate ?? kstParts(new Date()).date);
   await writeFile(join(siteDir, 'scorecard.html'), renderScorecard(home.filter((e) => e.group !== 'past'), signals.board));
   await writeFile(join(siteDir, 'terms.html'), renderTerms());
+  await writeFile(join(siteDir, 'privacy.html'), renderPrivacy());
   await writeFile(join(siteDir, 'paper.html'), renderPaper());
   // Screener over every stock's free computation (G-43).
   await writeFile(join(siteDir, 'screener.html'), renderScreener());

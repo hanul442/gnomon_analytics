@@ -10,7 +10,7 @@ import { SURVEYS } from './alphaPages.js';
 const PAGE_CSS = `<style>
 .form-card{max-width:520px;margin:24px auto}.fld-err{display:block;color:var(--up-strong);font-size:13px;margin-top:4px}[aria-invalid=true]{border-color:var(--up)!important}.form-card h1{font-size:26px;margin:0 0 6px}.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}.fld label{font-weight:700;font-size:14px}
 .fld input,.fld select,.fld textarea{border:1px solid var(--line-strong);border-radius:12px;padding:11px 12px;font:inherit;font-size:15px}.fld small{color:var(--muted)}
-.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:14px}.form-card .btn-primary{width:100%;justify-content:center;margin-top:16px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:14px}.agree{border:0;padding:0;margin:14px 0 0;min-width:0}.agree legend{font-size:13px;font-weight:700;padding:0}.agree .fine{margin:4px 0 0}.agree .chk{margin-top:8px}.form-card .btn-primary{width:100%;justify-content:center;margin-top:16px}
 .msg-ok{background:var(--good-soft);color:var(--good-strong);border-radius:12px;padding:12px 14px;margin-top:14px}.msg-err{background:var(--up-soft);color:var(--up-strong);border-radius:12px;padding:12px 14px;margin-top:14px}
 .q{margin-top:22px}.q h3{font-size:16px;margin:0 0 4px}.q .muted{font-size:13px}.opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .opts label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:999px;padding:8px 13px;font-size:14px;cursor:pointer;background:var(--surface)}
@@ -40,7 +40,7 @@ export function renderLogin(): string {
 <div class="fld"><label for="pw">비밀번호</label><input id="pw" type="password" autocomplete="current-password" required minlength="8" maxlength="72"><small class="muted" data-only="signup" hidden>8자 이상, 영문과 숫자를 함께 넣어 주세요.</small></div>
 <div class="fld" data-only="signup" hidden><label for="pw2">비밀번호 확인</label><input id="pw2" type="password" autocomplete="new-password" maxlength="72"></div>
 <div class="fld" data-only="signup" hidden><label for="invite">초대 코드</label><input id="invite" autocomplete="off" placeholder="GNM-XXXXXX" style="text-transform:uppercase"></div>
-<label class="chk" data-only="signup" hidden><input type="checkbox" id="terms"> <span><a href="terms.html" target="_blank">이용 약관과 면책</a>을 읽었고, 그노몬의 정보가 투자 권유가 아니며 투자 판단과 결과의 책임이 나에게 있다는 데 동의해요.</span></label>
+<fieldset class="agree" data-only="signup" hidden><legend>가입 동의 (모두 필수)</legend><p class="fine">그노몬의 해설과 답변은 생성형 AI가 써요.</p><label class="chk"><input type="checkbox" class="agree-one" data-k="terms"> <span>[필수] <a href="terms.html" target="_blank">이용약관</a>에 동의해요.</span></label><label class="chk"><input type="checkbox" class="agree-one" data-k="privacy"> <span>[필수] <a href="privacy.html" target="_blank">개인정보 수집·이용과 국외 이전</a>을 확인했어요.</span></label><label class="chk"><input type="checkbox" class="agree-one" data-k="risk"> <span>[필수] 그노몬의 정보는 투자 권유가 아니며, 투자 판단과 결과의 책임이 나에게 있다는 것을 확인했어요.</span></label><label class="chk"><input type="checkbox" class="agree-one" data-k="age"> <span>[필수] 만 19세 이상이에요.</span></label></fieldset>
 <button class="btn-primary" type="submit" id="go">로그인</button><div id="out" aria-live="polite"></div></form>
 <p class="alt muted">비밀번호를 아직 안 정했거나 잊었다면 운영자에게 로그인 링크를 받아 들어온 뒤, <b>내 계정</b>에서 비밀번호를 정할 수 있어요.</p></section>`;
   const script = `<script>
@@ -91,7 +91,7 @@ export function renderLogin(): string {
     if (mode === 'signup' && pw !== document.getElementById('pw2').value) { show('msg-err', '비밀번호 확인이 맞지 않아요.'); return; }
     var btn = document.getElementById('go'); btn.disabled = true;
     var req = mode === 'signup'
-      ? GNM.call('POST', '/auth/signup', { email: email, password: pw, invite: document.getElementById('invite').value.trim(), terms: document.getElementById('terms').checked })
+      ? GNM.call('POST', '/auth/signup', { email: email, password: pw, invite: document.getElementById('invite').value.trim(), terms: Array.prototype.every.call(document.querySelectorAll('.agree-one'), function (c) { return c.checked; }) })
       : GNM.call('POST', '/auth/login', { email: email, password: pw });
     req.then(function (r) { btn.disabled = false; if (r.error) { show('msg-err', r.message); return; } done(r); });
   });
