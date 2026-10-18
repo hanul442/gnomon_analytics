@@ -1,13 +1,16 @@
 name: Hidden-future evaluation
-# G-244: walks the strategy-arena rules forward over data/prices and asks the price-and-volume PMs about blind
-# (anonymised) cutoffs, then commits data/eval/blind-<date>.json/.md to the branch it ran on. Internal research,
-# not advertising. Uses ANTHROPIC_API_KEY on the cheap analyst model and stops before the budget (USD).
+# G-244/G-245: scores the strategy rules, price/flow/filing signals and blind AI PMs on history with the next
+# 20 sessions hidden, then commits data/eval/ to the branch it ran on. Internal research, not advertising.
+# v1: data/prices only. v2: ten years of every stock DART knows (delisted included), flows and filings,
+# fetched into .cache/eval (kept in the Actions cache). AI uses ANTHROPIC_API_KEY on the cheap analyst model
+# and stops before the budget (USD).
 on:
   workflow_dispatch:
     inputs:
-      samples: { description: 'Blind cutoffs for the PMs', default: '300' }
-      budget: { description: 'AI budget, USD', default: '3' }
-      probe: { description: 'Leakage probes (name the stock and year)', default: '30' }
+      version: { description: 'v1 or v2', default: 'v2' }
+      budget: { description: 'AI budget, USD', default: '5' }
+      dates: { description: 'v2: evaluation dates for the AI', default: '100' }
+      perDate: { description: 'v2: stocks per date for the AI', default: '10' }
 permissions:
   contents: write
 concurrency:
@@ -16,7 +19,7 @@ concurrency:
 jobs:
   eval:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -24,10 +27,28 @@ jobs:
           node-version: 22
       - run: npm ci --ignore-scripts
       - run: npm run build
-      - name: Evaluate
+      - name: v1 (data/prices)
+        if: (inputs.version || 'v2') == 'v1'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node dist/cli/blindEval.js --ai --samples "${{ inputs.samples || '300' }}" --budget "${{ inputs.budget || '3' }}" --probe "${{ inputs.probe || '30' }}" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: node dist/cli/blindEval.js --ai --samples 300 --budget "${{ inputs.budget || '3' }}" --probe 30 | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Restore the v2 data cache
+        if: (inputs.version || 'v2') == 'v2'
+        uses: actions/cache@v4
+        with:
+          path: .cache/eval
+          key: eval-v2-${{ github.run_id }}
+          restore-keys: eval-v2-
+      - name: v2 data
+        if: (inputs.version || 'v2') == 'v2'
+        env:
+          OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
+        run: node dist/cli/evalFetch.js
+      - name: v2 evaluation
+        if: (inputs.version || 'v2') == 'v2'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node dist/cli/evalRun.js --ai --budget "${{ inputs.budget || '5' }}" --dates "${{ inputs.dates || '100' }}" --perDate "${{ inputs.perDate || '10' }}" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Commit the results
         run: |
           git config user.name "github-actions[bot]"
