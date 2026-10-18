@@ -145,7 +145,7 @@ test('G-223: a filing question reads the DART original once, keeps it, and answe
   assert.equal(calls.length, 2);
   // Without a filing nothing about filings goes in.
   assert.doesNotMatch(JSON.stringify(askParams({ tier: 'question', question: 'x' })), /filing/);
-  // G-235: a filing answer sticks to the document, so the asker's profile line stays out.
+  // G-236: a filing answer sticks to the document, so the asker's profile line stays out.
   const withReader = JSON.stringify(askParams({ tier: 'question', question: 'x', reader: '독자: 1년 이상 보유', filing: '<filing receipt="1">본문</filing>' }));
   assert.doesNotMatch(withReader, /1년 이상 보유/);
   assert.match(JSON.stringify(askParams({ tier: 'question', question: 'x', reader: '독자: 1년 이상 보유' })), /1년 이상 보유/);

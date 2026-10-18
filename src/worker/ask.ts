@@ -47,7 +47,7 @@ export interface AskInput {
   history?: { q: string; a: string }[];
   /** G-80: answer as a guest on the stock's committee debate (an invited expert, or the committee itself). */
   persona?: { name: string; focus: string };
-  /** G-207: the asker's profile line (readerNote), after the cached system prompt. G-235: dropped for filing asks (facts only). */
+  /** G-207: the asker's profile line (readerNote), after the cached system prompt. G-236: dropped for filing asks (facts only). */
   reader?: string;
   /** G-223: a filing's original text (filingContext), read and explained as written. */
   filing?: string;
