@@ -29,6 +29,12 @@ jobs:
           npx wrangler d1 execute gnm --remote --json --command "SELECT role, plan, disabled, COUNT(*) AS n FROM users GROUP BY role, plan, disabled" | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));for(const row of r[0].results)console.log(JSON.stringify(row))"
           echo "--- push subscriptions and price alerts (counts only)"
           npx wrangler d1 execute gnm --remote --json --command "SELECT (SELECT COUNT(*) FROM push_subs) AS subs, (SELECT COUNT(*) FROM price_alerts) AS alerts, (SELECT COUNT(*) FROM notifications WHERE created_at >= datetime('now','-1 day')) AS notes_24h" | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify(r[0].results))"
+      - name: DART filing original (document.xml) shape
+        env:
+          OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
+        run: |
+          npm ci --ignore-scripts && npm run build
+          node scripts/dart-doc-probe.mjs 20261002000600 20261002000123
       - name: Naver realtime quote shape (public data, no secrets)
         run: |
           for s in 005930 069500; do

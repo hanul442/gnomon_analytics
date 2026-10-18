@@ -100,7 +100,8 @@ export async function fetchDartDocument(apiKey: string | undefined, receiptNo: s
   const url = new URL('https://opendart.fss.or.kr/api/document.xml');
   url.searchParams.set('crtfc_key', apiKey);
   url.searchParams.set('rcept_no', receiptNo);
-  const res = await fetcher(url, { signal: AbortSignal.timeout(20_000) });
+  // Workers send no User-Agent by default; some Korean public sites refuse such requests.
+  const res = await fetcher(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; GNOMON/1.0)', Accept: '*/*' }, signal: AbortSignal.timeout(20_000) });
   // Never echo the URL: it carries the API key.
   if (!res.ok) throw new Error(`DART_HTTP_${res.status}`);
   return parseDartDocument(receiptNo, new Uint8Array(await res.arrayBuffer()));

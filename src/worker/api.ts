@@ -223,7 +223,9 @@ async function filingText(env: Env, deps: Deps, receiptNo: string, now: Date): P
   try { f = await fetchDartDocument(env.OPENDART_API_KEY, receiptNo, deps.fetch); } catch (e) {
     const why = e instanceof Error ? e.message : '';
     if (why === 'OPENDART_API_KEY_MISSING') fail(503, 'FILING_UNAVAILABLE', '공시 원문 연결이 아직 설정되지 않았어요.');
-    return fail(502, 'FILING_UNAVAILABLE', 'DART에서 이 공시 원문을 받지 못했어요. 잠시 뒤 다시 해 주세요. 크레딧은 쓰지 않았어요.');
+    // The reason (a DART status, HTTP code or parse step; never the key) goes to the log and the reply, so a failure can be traced.
+    console.error('filing', receiptNo, why);
+    return fail(502, 'FILING_UNAVAILABLE', `DART에서 이 공시 원문을 받지 못했어요. 잠시 뒤 다시 해 주세요. 크레딧은 쓰지 않았어요. (${why.replace(/[^\w:.-]/g, '').slice(0, 40) || 'UNKNOWN'})`);
   }
   if (!f.text) fail(422, 'FILING_EMPTY', '이 공시는 글로 읽을 내용이 없어요(이미지·첨부 파일뿐이에요).');
   await env.DB.prepare('INSERT OR REPLACE INTO filing_texts (receipt_no, title, body, truncated, fetched_at) VALUES (?, ?, ?, ?, ?)').bind(receiptNo, f.title, f.text, f.truncated ? 1 : 0, iso(now)).run();
