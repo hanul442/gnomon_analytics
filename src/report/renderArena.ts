@@ -9,6 +9,9 @@ import { miniGauge } from './renderMarket.js';
 import { esc } from './html.js';
 import { won, tone } from './format.js';
 
+/** G-240 (docs/BETA_PLAN.md 1.2): back-tests and the paper account are never shown as returns someone made. */
+export const SIM_NOTE = '과거 데이터로 시험하거나 가상 계좌로 기록한 결과예요. 실제로 번 수익이 아니고, 앞으로의 결과를 보장하지 않아요.';
+
 
 const pct = (v: number | null, d = 1) => (v === null ? '없음' : `${v > 0 ? '+' : ''}${(v * 100).toFixed(d)}%`);
 const sh = (v: number | null) => (v === null ? '없음' : v.toFixed(2));
@@ -66,6 +69,7 @@ ${equitySpark(r.equity, `${r.name} 누적 수익 곡선`)}
 <td class="num">${r.trades}회</td><td class="num">${r.winRate === null ? '없음' : `${Math.round(r.winRate * 100)}%`}</td><td class="num">${Math.round(r.exposure * 100)}%</td>
 <td class="num ${tone(r.oosReturn)}">${pct(r.oosReturn)}</td><td class="num">${r.monteCarlo ? `${pct(r.monteCarlo.p05, 0)} / ${pct(r.monteCarlo.p50, 0)} / ${pct(r.monteCarlo.p95, 0)}` : '없음'}</td></tr>`).join('');
   return `<section class="block" id="arena"><div class="block-head"><h2>전략 대결</h2><span class="muted small">${esc(a.from)} ~ ${esc(a.sessionDate)}, 일봉 ${a.bars}개</span></div>
+<p class="muted small sim-note">${SIM_NOTE}</p>
 ${championCard(a)}
 <div class="card race" style="margin-top:14px"><div class="head"><h2>챔피언 레이스</h2><span class="sub small">검증 구간(${esc(a.oosFrom)}~) 샤프 순 · 지금 강세/약세</span></div>${rows}</div>
 <details class="card more" style="margin-top:14px"><summary>실험 기록 (전략별 성적표)</summary><div class="table-wrap"><table class="compact"><thead><tr><th>전략</th><th class="num">전체 수익</th><th class="num">연환산</th><th class="num">샤프</th><th class="num">최대 낙폭</th><th class="num">거래</th><th class="num">승률</th><th class="num">보유 비중</th><th class="num">검증 수익</th><th class="num">몬테카를로 5/50/95%</th></tr></thead><tbody>${ledger}</tbody></table></div></details>
@@ -103,6 +107,6 @@ ${equitySpark(b.equity, `${b.label} 가상 계좌 추이`)}
   const trades = list.flatMap((b) => b.trades.map((t) => ({ ...t, who: b.label }))).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 20);
   const log = trades.length ? `<div class="table-wrap"><table class="compact nowrap-cells"><thead><tr><th>날짜</th><th>누가</th><th>주문</th><th class="num">가격(종가)</th><th>근거</th></tr></thead><tbody>${trades.map((t) => `<tr><td class="nowrap">${esc(t.date)}</td><td>${esc(t.who)}</td><td class="${t.action === 'BUY' ? 'up' : 'down'}">${t.action === 'BUY' ? '매수' : '매도'}</td><td class="num">${won(t.price)}</td><td>${esc(t.basis)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">아직 주문이 없어요.</p>';
   return `<section class="block"><div class="block-head"><h2>모의투자 장부</h2><span class="muted">${esc(since)}부터 · 가상 ${won(PAPER_START_KRW)}씩</span></div>
-<div class="card"><div class="paper-list">${rows}</div>${note}</div></section>
+<div class="card"><div class="paper-list">${rows}</div>${note}<p class="muted small sim-note">${SIM_NOTE}</p></div></section>
 <section class="block"><div class="block-head"><h2>주문 기록</h2><span class="muted">최근 20건</span></div><div class="card">${log}</div></section>`;
 }

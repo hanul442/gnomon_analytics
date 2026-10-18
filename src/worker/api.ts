@@ -25,7 +25,7 @@ import { withCurrency } from '../report/format.js';
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
 
-import { ALPHA, ASK_TIERS, CREDIT_COST, EXPERTS, type AskTier, type CreditAction } from '../report/plans.js';
+import { ALPHA, ASK_TIERS, CREDIT_COST, EXPERTS, STORED_PLANS, TESTERS, isTester, type AskTier, type CreditAction } from '../report/plans.js';
 import { fetchDartDocument, filingContext, isReceiptNo, type FilingText } from '../sources/dartDocument.js';
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
 import type { D1 } from './db.js';
@@ -147,9 +147,9 @@ async function charge(db: D1, userId: string, cost: number, kind: string, note: 
 const credit = (db: D1, userId: string, delta: number, kind: string, note: string, ref: string | null, now: Date) =>
   db.prepare('INSERT OR IGNORE INTO ledger (user_id, delta, kind, note, ref, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(userId, delta, kind, note, ref, iso(now));
 
-/** The alpha allowance, once per KST month, granted when the user is first seen that month. */
+/** The test allowance (alpha, beta: G-240), once per KST month, granted when the user is first seen that month. */
 const monthlyGrant = (db: D1, u: User, now: Date) =>
-  u.plan === 'alpha' ? credit(db, u.id, ALPHA.monthlyCredits, 'grant', `알파 ${kst(now).slice(0, 7)} 기본 크레딧`, `grant:${kst(now).slice(0, 7)}`, now).run() : Promise.resolve();
+  isTester(u.plan) ? credit(db, u.id, TESTERS[u.plan].monthlyCredits, 'grant', `${TESTERS[u.plan].name} ${kst(now).slice(0, 7)} 기본 크레딧`, `grant:${kst(now).slice(0, 7)}`, now).run() : Promise.resolve();
 
 async function sendMail(env: Env, deps: Deps, to: string, link: string): Promise<void> {
   if (!env.RESEND_API_KEY) fail(503, 'MAIL_UNAVAILABLE', '메일 발송이 아직 설정되지 않았어요. 운영자에게 로그인 링크를 받아 주세요.');
@@ -182,7 +182,7 @@ async function authed(req: Request, env: Env, now: Date): Promise<User> {
   if (adminList(env).includes(u!.email)) u!.role = 'admin';
   // An admin can look at the site as a given plan (X-View-As) to test gates and paid flows; nothing else changes.
   const viewAs = req.headers.get('X-View-As');
-  if (u!.role === 'admin' && viewAs && ['free', 'plus', 'pro', 'max', 'alpha'].includes(viewAs)) { u!.plan = viewAs; u!.role = 'user'; u!.viewAs = viewAs; }
+  if (u!.role === 'admin' && viewAs && STORED_PLANS.includes(viewAs)) { u!.plan = viewAs; u!.role = 'user'; u!.viewAs = viewAs; }
   await env.DB.prepare('UPDATE users SET last_seen_at = ? WHERE id = ?').bind(iso(now), u!.id).run();
   return u!;
 }
@@ -199,8 +199,8 @@ async function me(env: Env, u: User, now: Date) {
   ]);
   const days = (now.getTime() - Date.parse(u.created_at)) / 86_400_000;
   return {
-    user: { hasPassword: !!(await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>())?.password_hash, email: u.email, plan: u.plan, planName: u.plan === 'alpha' ? ALPHA.name : u.plan, rankAs: u.plan === 'alpha' ? ALPHA.rankAs : u.plan, admin: u.role === 'admin', ...(u.viewAs ? { viewAs: u.viewAs } : {}), createdAt: u.created_at },
-    credits: { balance, monthly: u.plan === 'alpha' ? ALPHA.monthlyCredits : 0, maxRequest: ALPHA.maxRequest },
+    user: { hasPassword: !!(await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>())?.password_hash, email: u.email, plan: u.plan, planName: isTester(u.plan) ? TESTERS[u.plan].name : u.plan, rankAs: isTester(u.plan) ? ALPHA.rankAs : u.plan, tester: isTester(u.plan), admin: u.role === 'admin', ...(u.viewAs ? { viewAs: u.viewAs } : {}), createdAt: u.created_at },
+    credits: { balance, monthly: isTester(u.plan) ? TESTERS[u.plan].monthlyCredits : 0, maxRequest: ALPHA.maxRequest },
     survey: { onboarding: onboarding ? JSON.parse(onboarding.answers) : null, pulseDue: days >= 3 && (!lastPulse || now.getTime() - Date.parse(lastPulse.created_at) >= 7 * 86_400_000) },
     requests: requests.results,
     asks: { today: asksToday?.n ?? 0, limit: Number(env.USER_DAILY_ASKS ?? 30) },
@@ -446,19 +446,22 @@ route('POST', '/auth/verify', async ({ req, env, now }) => {
       const took = await db.prepare('UPDATE invites SET uses = uses + 1 WHERE code = ? AND uses < max_uses AND (expires_at IS NULL OR expires_at > ?)').bind(code, iso(now)).run();
       if ((took.meta?.changes ?? 0) !== 1) fail(403, 'INVITE_INVALID', '초대 코드가 그사이 다 쓰였어요.');
     } else if (!isAdmin) fail(403, 'INVITE_REQUIRED', '초대 코드가 필요해요.');
-    const id = crypto.randomUUID();
+    const id = crypto.randomUUID(), inv = code ? await invitePlan(db, code) : null, plan = inv?.plan ?? 'alpha';
     await db.prepare('INSERT INTO users (id, email, plan, role, invite_code, created_at, terms_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(id, row!.email, 'alpha', isAdmin ? 'admin' : 'user', code, iso(now), iso(now)).run();
-    if (code) {
-      const inv = await db.prepare('SELECT credits, note FROM invites WHERE code = ?').bind(code).first<{ credits: number; note: string }>();
-      if (inv?.credits) await credit(db, id, inv.credits, 'grant', `초대 코드 ${code} 가입 크레딧`, `invite:${code}`, now).run();
-    }
-    u = { id, email: row!.email, plan: 'alpha', role: isAdmin ? 'admin' : 'user', created_at: iso(now), disabled: 0 };
+      .bind(id, row!.email, plan, isAdmin ? 'admin' : 'user', code, iso(now), iso(now)).run();
+    if (inv?.credits) await credit(db, id, inv.credits, 'grant', `초대 코드 ${code} 가입 크레딧`, `invite:${code}`, now).run();
+    u = { id, email: row!.email, plan, role: isAdmin ? 'admin' : 'user', created_at: iso(now), disabled: 0 };
   }
   if (u.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
   if (isAdmin) u.role = 'admin';
   return startSession(env, u, now);
 });
+
+/** What an invite code makes (G-240): its test plan (unknown values count as alpha) and its sign-up credits. */
+async function invitePlan(db: D1, code: string): Promise<{ plan: string; credits: number } | null> {
+  const r = await db.prepare('SELECT plan, credits FROM invites WHERE code = ?').bind(code).first<{ plan: string; credits: number }>();
+  return r ? { plan: isTester(r.plan) ? r.plan : 'alpha', credits: r.credits } : null;
+}
 
 async function startSession(env: Env, u: User, now: Date) {
   const session = randomToken();
@@ -481,14 +484,11 @@ route('POST', '/auth/signup', async ({ req, env, now }) => {
     const took = await db.prepare('UPDATE invites SET uses = uses + 1 WHERE code = ? AND uses < max_uses AND (expires_at IS NULL OR expires_at > ?)').bind(code, iso(now)).run();
     if ((took.meta?.changes ?? 0) !== 1) fail(403, 'INVITE_INVALID', '초대 코드가 맞지 않거나 다 쓰였어요.');
   }
-  const id = crypto.randomUUID(), role = isAdmin ? 'admin' : 'user';
+  const id = crypto.randomUUID(), role = isAdmin ? 'admin' : 'user', inv = code ? await invitePlan(db, code) : null, plan = inv?.plan ?? 'alpha';
   await db.prepare('INSERT INTO users (id, email, plan, role, invite_code, created_at, terms_at, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .bind(id, email, 'alpha', role, code || null, iso(now), iso(now), await hashPassword(b.password as string)).run();
-  if (code) {
-    const inv = await db.prepare('SELECT credits FROM invites WHERE code = ?').bind(code).first<{ credits: number }>();
-    if (inv?.credits) await credit(db, id, inv.credits, 'grant', `초대 코드 ${code} 가입 크레딧`, `invite:${code}`, now).run();
-  }
-  return startSession(env, { id, email, plan: 'alpha', role, created_at: iso(now), disabled: 0 }, now);
+    .bind(id, email, plan, role, code || null, iso(now), iso(now), await hashPassword(b.password as string)).run();
+  if (inv?.credits) await credit(db, id, inv.credits, 'grant', `초대 코드 ${code} 가입 크레딧`, `invite:${code}`, now).run();
+  return startSession(env, { id, email, plan, role, created_at: iso(now), disabled: 0 }, now);
 });
 
 route('POST', '/auth/login', async ({ req, env, now }) => {
@@ -1077,9 +1077,9 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
 // ---- sealed deep reports (G-61) ----
 // The site holds <symbol>/deep/<date>.txt, sealed with DEEP_KEY. Opening one costs credits once per user
 // and report; admins and whoever requested the stock's report open it free.
-/** Plans that read every finished deep report without unlocking it. Alpha testers unlock with credits like everyone else. */
-// G-215: alpha ranks as Pro but reads sealed reports through its monthly unlocks (G-126), not deepFull.
-const fullAccess = (plan: string): boolean => plan !== 'alpha' && allows(plan, 'deepFull');
+/** Plans that read every finished deep report without unlocking it. Test accounts unlock with credits like everyone else. */
+// G-215: alpha (and beta, G-240) ranks as Pro but reads sealed reports through its monthly unlocks (G-126), not deepFull.
+const fullAccess = (plan: string): boolean => !isTester(plan) && allows(plan, 'deepFull');
 /** Free opens left this KST month (G-126): unlock rows that charged nothing because of the allowance. */
 async function freeOpensLeft(db: D1, u: User, now: Date): Promise<number> {
   const quota = UNLOCK.monthlyFree[u.plan] ?? 0; if (!quota) return 0;
@@ -1291,7 +1291,10 @@ route('POST', '/admin/invites', async ({ req, env, now }) => {
   const b = await body(req), code = (str(b.code, 40) || inviteCode()).toUpperCase(), maxUses = b.maxUses === undefined ? 1 : int(b.maxUses), credits = b.credits === undefined ? 0 : int(b.credits);
   if (!/^[A-Z0-9-]{4,40}$/.test(code) || !(maxUses >= 1 && maxUses <= 500) || !(credits >= 0 && credits <= 1000)) fail(400, 'BAD_INVITE', '초대 코드 설정을 확인해 주세요.');
   const expires = typeof b.expiresAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.expiresAt) ? new Date(Date.parse(`${b.expiresAt}T23:59:59+09:00`)).toISOString() : null;
-  const r = await env.DB.prepare('INSERT OR IGNORE INTO invites (code, note, max_uses, credits, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(code, str(b.note, 200), maxUses, credits, expires, iso(now)).run();
+  // G-240: which test account the code makes. The ops screen sends beta unless the admin picks alpha.
+  const plan = b.plan === undefined ? 'alpha' : String(b.plan);
+  if (!isTester(plan)) fail(400, 'BAD_INVITE', '초대 코드의 계정 종류(알파·베타)를 확인해 주세요.');
+  const r = await env.DB.prepare('INSERT OR IGNORE INTO invites (code, note, max_uses, credits, expires_at, created_at, plan) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(code, str(b.note, 200), maxUses, credits, expires, iso(now), plan).run();
   if ((r.meta?.changes ?? 0) !== 1) fail(409, 'EXISTS', '이미 있는 코드예요.');
   return { ok: true, code };
 });
@@ -1316,7 +1319,7 @@ route('POST', '/admin/users/([0-9a-f-]+)', async ({ req, env, now, params }) => 
   await admin(req, env, now);
   const b = await body(req), db = env.DB;
   if (b.plan !== undefined) {
-    if (!['alpha', 'free', 'plus', 'pro', 'max'].includes(String(b.plan))) fail(400, 'BAD_PLAN', '요금제를 확인해 주세요.');
+    if (!STORED_PLANS.includes(String(b.plan))) fail(400, 'BAD_PLAN', '요금제를 확인해 주세요.');
     await db.prepare('UPDATE users SET plan = ? WHERE id = ?').bind(b.plan, params[0]).run();
   }
   if (b.disabled !== undefined) {

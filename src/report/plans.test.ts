@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { allows, CREDIT_ACTIONS, FEATURES, gate, needText, NOTIFY_LIMITS, PLANS, TRIAL, validPromos, WATCH_LIMIT, type Feature } from './plans.js';
+import { allows, CREDIT_ACTIONS, FEATURES, gate, isTester, needText, notifyLimit, NOTIFY_LIMITS, PLANS, TESTERS, TRIAL, validPromos, WATCH_LIMIT, type Feature } from './plans.js';
 
 test('promotions: only well-formed ones are published; the repo file is valid', async () => {
   assert.deepEqual(validPromos([{ id: 'a', credits: 20, from: '2026-10-05', to: '2026-10-31', title: 't' }]).length, 1);
@@ -35,4 +35,16 @@ test('one permission table (G-215): what each of the five plans may use', () => 
   assert.match(gate('x', { base: '', what: '예측', feature: 'forecast' }), /data-need="pro".*프로부터 볼 수 있어요/s);
   assert.match(gate('x', { base: '', what: '토론', feature: 'debate' }), /data-need="plus".*플러스부터 볼 수 있어요/s);
   assert.equal(needText('screenTools'), '플러스부터');
+});
+
+test('test accounts (G-240): alpha and beta both count as Pro, beta gets 100 credits a month', () => {
+  assert.equal(TESTERS.beta.monthlyCredits, 100);
+  assert.ok(isTester('alpha') && isTester('beta') && !isTester('pro') && !isTester('toString'));
+  for (const f of Object.keys(FEATURES) as Feature[]) assert.equal(allows('beta', f), allows('alpha', f), f);
+  assert.deepEqual(notifyLimit('beta'), NOTIFY_LIMITS.pro);
+});
+
+test('plan copy (G-240, docs/BETA_PLAN.md 1.2): no returns, profit promises or buy/sell words sell a plan', () => {
+  const copy = PLANS.flatMap((p) => [p.tagline, ...p.adds, ...(p.soon ?? [])]).join('\n');
+  assert.doesNotMatch(copy, /수익|성과|보장|매수|매도|돈을 벌/);
 });

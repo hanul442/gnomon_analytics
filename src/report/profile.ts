@@ -1,7 +1,7 @@
 // 내 프로필 (G-207): the answers that shape the whole app in one place. The survey asks them once; the
 // profile page changes them one at a time. Both write the same answers (gnm-prefs, synced with the
-// account, and the onboarding survey on the server), and AI answers read the explanation depth and
-// holding period from there.
+// account, and the onboarding survey on the server). AI answers read only how to explain from there (explanation
+// depth, screen level): G-240 keeps holding period and experience out, so an answer is never advice fitted to one person.
 
 export const EXPERIENCE = ['처음이거나 1년 미만', '1~3년', '3~10년', '10년 이상', '업으로 해요'] as const;
 export const HORIZON = ['며칠 안(단기 매매)', '몇 주', '몇 달', '1년 이상'] as const;
@@ -14,16 +14,17 @@ const pick = <T extends string>(list: readonly T[], v: unknown): T | null => (ty
 
 /**
  * The reader line for the AI, from the latest onboarding answers. Only the fixed options pass, so
- * nothing a person typed reaches the prompt.
+ * nothing a person typed reaches the prompt. G-240 (docs/BETA_PLAN.md 1.3): it says how to explain, never who the
+ * asker is as an investor (holding period, experience), so the answer stays the same information for everyone.
  */
 export function readerNote(answers: unknown): string {
   const a = answers && typeof answers === 'object' ? answers as Record<string, unknown> : {};
-  const level = pick(LEVEL, a.level), horizon = pick(HORIZON, a.horizon), exp = pick(EXPERIENCE, a.experience);
+  const level = pick(LEVEL, a.level);
   // G-220: with no explanation depth picked, the screen level stands in for it (초보자 → 쉬운 말, 전문가 → 용어 그대로).
   const picked = pick(EXPLAIN, a.explain), explain = picked ?? (level === '초보자' ? '아주 쉬운 말로' : level === '전문가' ? '전문 용어 그대로' : null);
-  if (!explain && !horizon && !exp && !level) return '';
-  const bits = [explain && `설명 수준: ${explain}${picked ? '' : '(화면 수준에 맞춤)'}`, horizon && `보유 기간: ${horizon}`, exp && `투자 경험: ${exp}`, level && `화면 수준: ${level}`].filter(Boolean).join(' · ');
+  if (!explain && !level) return '';
+  const bits = [explain && `설명 수준: ${explain}${picked ? '' : '(화면 수준에 맞춤)'}`, level && `화면 수준: ${level}`].filter(Boolean).join(' · ');
   const how = explain === '아주 쉬운 말로' ? '전문 용어는 쓰지 않거나 바로 풀어 쓰고, 짧은 문장으로 답해요.'
     : explain === '전문 용어 그대로' ? '용어를 풀어 쓰지 말고 지표 이름과 숫자를 그대로 써요.' : '';
-  return `\n\n질문한 사람의 프로필이에요(본인이 고른 값): ${bits}. ${how}${horizon ? ' 이 보유 기간에서 무엇이 중요한지 먼저 말해요.' : ''} 숫자와 사실은 프로필과 상관없이 같아요.`.replace(/ {2,}/g, ' ');
+  return `\n\n질문한 사람이 고른 설명 방식이에요: ${bits}. ${how} 설명 방식만 바뀌고, 숫자와 사실과 판단은 누구에게나 같아요.`.replace(/ {2,}/g, ' ');
 }

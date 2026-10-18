@@ -62,7 +62,7 @@ const CSS = `<style>.tm-key h2{margin:0 0 12px}.tm-keys{list-style:none;margin:0
 @media (max-width:820px){.tm-keys{grid-template-columns:1fr}}</style>`;
 
 const hero = (eyebrow: string, title: string) => `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>${eyebrow}</span><span>법률 검토 전</span></div><h1>${title}</h1>
-<p class="hero-line">법률 검토를 받기 전의 문서예요. 비공개 베타 시작일(2026년 11월 예정)부터 시행하고, 유료 서비스를 열기 전에 검토를 거쳐 바뀔 수 있어요. 마지막 수정 ${LEGAL_UPDATED}.</p></div></section>`;
+<p class="hero-line">법률 검토를 받기 전의 문서예요. 2026년 11월 20일부터 시행하고, 유료 서비스를 열기 전에 검토를 거쳐 바뀔 수 있어요. 마지막 수정 ${LEGAL_UPDATED}.</p></div></section>`;
 
 export function renderTerms(): string {
   const terms = parseArticles(TERMS_MD), policy = parseArticles(POLICY_MD);

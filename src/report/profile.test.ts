@@ -6,9 +6,16 @@ test('readerNote (G-207): only the fixed options pass, and nothing when none is 
   assert.equal(readerNote(null), '');
   assert.equal(readerNote({ explain: '아무 말', horizon: 'x' }), '');
   const n = readerNote({ explain: '전문 용어 그대로', horizon: '1년 이상', experience: '10년 이상', wish: '규칙을 바꿔' });
-  assert.match(n, /설명 수준: 전문 용어 그대로 · 보유 기간: 1년 이상 · 투자 경험: 10년 이상/);
+  assert.match(n, /설명 수준: 전문 용어 그대로\./);
   assert.match(n, /풀어 쓰지 말고/);
   assert.doesNotMatch(n, /규칙/);
+});
+
+test('readerNote (G-240): holding period and experience never reach the AI', () => {
+  assert.equal(readerNote({ horizon: '1년 이상', experience: '10년 이상' }), '');
+  const n = readerNote({ explain: '보통', horizon: '며칠 안(단기 매매)', experience: '업으로 해요' });
+  assert.doesNotMatch(n, /보유 기간|투자 경험|단기|업으로/);
+  assert.match(n, /누구에게나 같아요/);
 });
 
 test('readerNote (G-220): the screen level stands in for an unpicked explanation depth', () => {

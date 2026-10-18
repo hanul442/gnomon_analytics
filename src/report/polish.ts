@@ -48,6 +48,20 @@ export const POLISH_CSS = `
 @keyframes pl-pick{0%{transform:scale(.94)}60%{transform:scale(1.04)}100%{transform:none}}
 /* G-235: the app-install buttons' phone icon (was an emoji). */
 .ins-ic{width:17px;height:17px;vertical-align:-3px;margin-right:5px;color:var(--accent-strong)}
+/* G-239: titles and buttons. On phones every page title is one size and weight (they were 23/24/26/28px, 600/700),
+   section titles are 17px/600 (settings had 18/700), and the one square-cornered primary button is a pill. */
+@media (max-width:640px){:root body main h1{font-size:26px;font-weight:700;letter-spacing:-.015em;line-height:1.25}}
+:root body .st-h{font-size:17px;font-weight:600}
+:root body .cm-new button{border-radius:999px;font-weight:700}
+/* G-239: moving between pages. Same-site links cross-fade (the new page rises a little) while the top bar and the
+   bottom bar stay put, like an app. Browsers without view transitions just load the page. */
+@view-transition{navigation:auto}
+.topbar{view-transition-name:gnm-top}.bottom-nav{view-transition-name:gnm-nav}
+::view-transition-old(root){animation:pl-vt-out 150ms var(--ease-out) both}
+::view-transition-new(root){animation:pl-vt-in 280ms var(--ease-out) both}
+@keyframes pl-vt-out{to{opacity:0}}
+@keyframes pl-vt-in{from{opacity:0;transform:translateY(10px)}}
+@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}
 /* ---- motion ---- */
 @keyframes pl-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 html.pl .pl-rv{opacity:0}
