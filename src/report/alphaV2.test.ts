@@ -150,3 +150,20 @@ test('a report generated on request paints the same 뉴스·공시 body as a dai
  assert.match(body,/data-slot="news"/);assert.match(body,/id="filings"/);assert.match(body,/href="https:\/\/dart\.fss\.or\.kr/);
  assert.equal(reportFragments(report).news,body);
 });
+
+test('picture banners: only our own files, words kept as alt text, phone picture for narrow screens',async()=>{
+ const {validBanners,bannerHtml}=await import('./alphaPages.js');
+ const list=validBanners([
+  {title:'정보의 바다는, 끝.',text:'새 화면',image:{wide:'assets/banners/a-wide.jpg',narrow:'assets/banners/a-narrow.jpg'}},
+  {title:'밖의 그림',image:{wide:'https://evil.example/x.jpg'}},
+  {title:'지난 배너',image:{wide:'assets/banners/b.jpg'},until:'2026-01-01'},
+ ],'2026-10-18');
+ assert.equal(list.length,2);
+ assert.deepEqual(list[0]!.image,{wide:'assets/banners/a-wide.jpg',narrow:'assets/banners/a-narrow.jpg'});
+ assert.equal(list[1]!.image,undefined);
+ const html=bannerHtml(list);
+ assert.match(html,/class="bn-slide[^"]* bn-img"/);
+ assert.match(html,/<source media="\(max-width:820px\)" srcset="assets\/banners\/a-narrow.jpg">/);
+ assert.match(html,/<img class="bn-pic" src="assets\/banners\/a-wide.jpg" alt="정보의 바다는, 끝. 새 화면"/);
+ assert.doesNotMatch(html,/evil\.example/);
+});

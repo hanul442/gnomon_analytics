@@ -12,7 +12,9 @@ export { BANNER_CSS } from './ui.js';
 
 /** A notice or ad in the home banner (banners.json, edited by hand like promos.json). */
 export type BannerKind = 'notice' | 'event' | 'guide' | 'survey' | 'ad';
-export interface Banner { title: string; text?: string; href?: string; cta?: string; tone?: 'navy' | 'teal' | 'amber' | 'rose'; until?: string; kind?: BannerKind; event?: string; credits?: number; benefits?: readonly string[]; brand?: 'hanul' }
+/** A picture banner (teasers): the words are drawn into the picture, so `title` and `text` become its alt text. Wide for desktop (4:1), narrow for phones. */
+export interface BannerImage { wide: string; narrow?: string }
+export interface Banner { title: string; text?: string; href?: string; cta?: string; tone?: 'navy' | 'teal' | 'amber' | 'rose'; until?: string; kind?: BannerKind; event?: string; credits?: number; benefits?: readonly string[]; brand?: 'hanul'; image?: BannerImage }
 const KIND_TAG: Record<BannerKind, [string, string]> = { notice: ['공지', '📣'], event: ['이벤트', '🎁'], guide: ['사용법', '🧭'], survey: ['설문', '📝'], ad: ['광고', '🏷️'] };
 
 /** Always on during the alpha: the guide and the two surveys. */
@@ -35,7 +37,10 @@ export function validBanners(list: unknown, today: string): Banner[] {
     if (!b || typeof b.title !== 'string' || !b.title.trim()) return [];
     if (typeof b.until === 'string' && b.until < today) return [];
     if (b.href !== undefined && (typeof b.href !== 'string' || /^\s*javascript:/i.test(b.href))) return [];
-    return [{ title: b.title.slice(0, 60), ...(typeof b.text === 'string' ? { text: b.text.slice(0, 120) } : {}), ...(b.href ? { href: b.href } : {}), ...(typeof b.cta === 'string' ? { cta: b.cta.slice(0, 16) } : {}), tone: TONES.includes(b.tone ?? '') ? b.tone! : 'navy' }];
+    // Pictures must be our own files under assets/banners/.
+    const pic = (v: unknown) => typeof v === 'string' && /^assets\/banners\/[\w.-]+\.(jpg|png|webp)$/.test(v);
+    const image = b.image && pic(b.image.wide) ? { wide: b.image.wide, ...(pic(b.image.narrow) ? { narrow: b.image.narrow } : {}) } : undefined;
+    return [{ title: b.title.slice(0, 60), ...(typeof b.text === 'string' ? { text: b.text.slice(0, 120) } : {}), ...(b.href ? { href: b.href } : {}), ...(typeof b.cta === 'string' ? { cta: b.cta.slice(0, 16) } : {}), tone: TONES.includes(b.tone ?? '') ? b.tone! : 'navy', ...(image ? { image } : {}) }];
   });
 }
 
@@ -44,8 +49,9 @@ export function bannerHtml(list: readonly Banner[]): string {
   if (!list.length) return '';
   const slide = (b: Banner, i: number) => {
     const [tag, art] = KIND_TAG[b.kind ?? 'notice'];
-    const inner = `<span class="bn-tag">${tag}${b.benefits || b.kind === 'ad' ? ' · MOCK AD' : ''}</span>${b.brand ? '<img class="bn-logo" src="assets/hanul-logo.jpg" alt="HANUL by Hanseo Kim" width="1536" height="512">' : ''}<b>${esc(b.title)}</b>${b.text ? `<span class="bn-text">${esc(b.text)}</span>` : ''}${b.cta && !b.benefits ? (b.event ? `<button type="button" class="bn-cta" data-claim="${esc(b.event)}" data-ev-credits="${b.credits ?? 0}">${esc(b.cta)} ›</button>` : `<span class="bn-cta">${esc(b.cta)} ›</span>`) : ''}${b.brand ? '' : `<span class="bn-art" aria-hidden="true">${art}</span>`}${b.benefits ? `<details class="bn-benefits"><summary class="bn-cta">${esc(b.cta ?? '혜택 보기')}</summary><ul>${b.benefits.map((benefit) => `<li>${esc(benefit)}</li>`).join('')}</ul><p>실제 모집 공고가 아닌 예시 광고입니다. 혜택은 선발·복무 조건에 따라 달라지며, 지원 접수나 외부 페이지 연결은 제공하지 않습니다.</p></details>` : ''}`;
-    const attrs = `class="bn-slide bn-${b.tone ?? 'navy'} bn-k-${b.kind ?? 'notice'}${b.brand ? ' bn-hanul' : ''}" data-i="${i}"${i ? ' hidden' : ''} aria-roledescription="배너"`;
+    const alt = esc([b.title, b.text].filter(Boolean).join(' '));
+    const inner = b.image ? `<picture>${b.image.narrow ? `<source media="(max-width:820px)" srcset="${esc(b.image.narrow)}">` : ''}<img class="bn-pic" src="${esc(b.image.wide)}" alt="${alt}" decoding="async"${i ? ' loading="lazy"' : ''}></picture>` : `<span class="bn-tag">${tag}${b.benefits || b.kind === 'ad' ? ' · MOCK AD' : ''}</span>${b.brand ? '<img class="bn-logo" src="assets/hanul-logo.jpg" alt="HANUL by Hanseo Kim" width="1536" height="512">' : ''}<b>${esc(b.title)}</b>${b.text ? `<span class="bn-text">${esc(b.text)}</span>` : ''}${b.cta && !b.benefits ? (b.event ? `<button type="button" class="bn-cta" data-claim="${esc(b.event)}" data-ev-credits="${b.credits ?? 0}">${esc(b.cta)} ›</button>` : `<span class="bn-cta">${esc(b.cta)} ›</span>`) : ''}${b.brand ? '' : `<span class="bn-art" aria-hidden="true">${art}</span>`}${b.benefits ? `<details class="bn-benefits"><summary class="bn-cta">${esc(b.cta ?? '혜택 보기')}</summary><ul>${b.benefits.map((benefit) => `<li>${esc(benefit)}</li>`).join('')}</ul><p>실제 모집 공고가 아닌 예시 광고입니다. 혜택은 선발·복무 조건에 따라 달라지며, 지원 접수나 외부 페이지 연결은 제공하지 않습니다.</p></details>` : ''}`;
+    const attrs = `class="bn-slide bn-${b.tone ?? 'navy'} bn-k-${b.kind ?? 'notice'}${b.brand ? ' bn-hanul' : ''}${b.image ? ' bn-img' : ''}" data-i="${i}"${i ? ' hidden' : ''} aria-roledescription="배너"`;
     // A link is named by its own text; a group (no link) needs a name, so it keeps its place in the set.
     return b.href && !b.event ? `<a ${attrs} href="${esc(b.href)}">${inner}</a>` : `<div ${attrs} role="group" aria-label="${i + 1} / ${list.length}">${inner}</div>`;
   };

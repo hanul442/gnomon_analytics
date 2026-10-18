@@ -820,6 +820,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   for (const n of [96, 192, 512]) await copyFile(new URL(`../../assets/gnomon-icon-${n}.png`, import.meta.url), join(siteDir, 'assets', `gnomon-icon-${n}.png`));
   await copyFile(new URL('../../assets/gnomon-mark.png', import.meta.url), join(siteDir, 'assets', 'gnomon-mark.png'));
   await copyFile(new URL('../../assets/hanul-logo.jpg', import.meta.url), join(siteDir, 'assets', 'hanul-logo.jpg'));
+  // Picture banners named in banners.json (teasers).
+  await cp(new URL('../../assets/banners/', import.meta.url), join(siteDir, 'assets', 'banners'), { recursive: true }).catch(() => undefined);
   await writeFile(join(siteDir, 'guide.html'), renderGuide());
   await writeFile(join(siteDir, 'updates.html'), renderUpdates());
   // G-137: what the API's update note reads after each deploy.
