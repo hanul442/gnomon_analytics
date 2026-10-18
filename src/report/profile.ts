@@ -1,7 +1,7 @@
 // 내 프로필 (G-207): the answers that shape the whole app in one place. The survey asks them once; the
 // profile page changes them one at a time. Both write the same answers (gnm-prefs, synced with the
 // account, and the onboarding survey on the server). AI answers read only how to explain from there (explanation
-// depth, screen level): G-236 keeps holding period and experience out, so an answer is never advice fitted to one person.
+// depth, screen level): G-240 keeps holding period and experience out, so an answer is never advice fitted to one person.
 
 export const EXPERIENCE = ['처음이거나 1년 미만', '1~3년', '3~10년', '10년 이상', '업으로 해요'] as const;
 export const HORIZON = ['며칠 안(단기 매매)', '몇 주', '몇 달', '1년 이상'] as const;
@@ -14,7 +14,7 @@ const pick = <T extends string>(list: readonly T[], v: unknown): T | null => (ty
 
 /**
  * The reader line for the AI, from the latest onboarding answers. Only the fixed options pass, so
- * nothing a person typed reaches the prompt. G-236 (docs/BETA_PLAN.md 1.3): it says how to explain, never who the
+ * nothing a person typed reaches the prompt. G-240 (docs/BETA_PLAN.md 1.3): it says how to explain, never who the
  * asker is as an investor (holding period, experience), so the answer stays the same information for everyone.
  */
 export function readerNote(answers: unknown): string {

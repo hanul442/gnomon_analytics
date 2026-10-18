@@ -37,14 +37,14 @@ test('one permission table (G-215): what each of the five plans may use', () => 
   assert.equal(needText('screenTools'), '플러스부터');
 });
 
-test('test accounts (G-236): alpha and beta both count as Pro, beta gets 100 credits a month', () => {
+test('test accounts (G-240): alpha and beta both count as Pro, beta gets 100 credits a month', () => {
   assert.equal(TESTERS.beta.monthlyCredits, 100);
   assert.ok(isTester('alpha') && isTester('beta') && !isTester('pro') && !isTester('toString'));
   for (const f of Object.keys(FEATURES) as Feature[]) assert.equal(allows('beta', f), allows('alpha', f), f);
   assert.deepEqual(notifyLimit('beta'), NOTIFY_LIMITS.pro);
 });
 
-test('plan copy (G-236, docs/BETA_PLAN.md 1.2): no returns, profit promises or buy/sell words sell a plan', () => {
+test('plan copy (G-240, docs/BETA_PLAN.md 1.2): no returns, profit promises or buy/sell words sell a plan', () => {
   const copy = PLANS.flatMap((p) => [p.tagline, ...p.adds, ...(p.soon ?? [])]).join('\n');
   assert.doesNotMatch(copy, /수익|성과|보장|매수|매도|돈을 벌/);
 });

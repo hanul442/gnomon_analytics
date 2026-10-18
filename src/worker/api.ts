@@ -147,7 +147,7 @@ async function charge(db: D1, userId: string, cost: number, kind: string, note: 
 const credit = (db: D1, userId: string, delta: number, kind: string, note: string, ref: string | null, now: Date) =>
   db.prepare('INSERT OR IGNORE INTO ledger (user_id, delta, kind, note, ref, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(userId, delta, kind, note, ref, iso(now));
 
-/** The test allowance (alpha, beta: G-236), once per KST month, granted when the user is first seen that month. */
+/** The test allowance (alpha, beta: G-240), once per KST month, granted when the user is first seen that month. */
 const monthlyGrant = (db: D1, u: User, now: Date) =>
   isTester(u.plan) ? credit(db, u.id, TESTERS[u.plan].monthlyCredits, 'grant', `${TESTERS[u.plan].name} ${kst(now).slice(0, 7)} 기본 크레딧`, `grant:${kst(now).slice(0, 7)}`, now).run() : Promise.resolve();
 
@@ -457,7 +457,7 @@ route('POST', '/auth/verify', async ({ req, env, now }) => {
   return startSession(env, u, now);
 });
 
-/** What an invite code makes (G-236): its test plan (unknown values count as alpha) and its sign-up credits. */
+/** What an invite code makes (G-240): its test plan (unknown values count as alpha) and its sign-up credits. */
 async function invitePlan(db: D1, code: string): Promise<{ plan: string; credits: number } | null> {
   const r = await db.prepare('SELECT plan, credits FROM invites WHERE code = ?').bind(code).first<{ plan: string; credits: number }>();
   return r ? { plan: isTester(r.plan) ? r.plan : 'alpha', credits: r.credits } : null;
@@ -1078,7 +1078,7 @@ export async function runAlerts(env: Env, deps: Deps): Promise<{ date: string | 
 // The site holds <symbol>/deep/<date>.txt, sealed with DEEP_KEY. Opening one costs credits once per user
 // and report; admins and whoever requested the stock's report open it free.
 /** Plans that read every finished deep report without unlocking it. Test accounts unlock with credits like everyone else. */
-// G-215: alpha (and beta, G-236) ranks as Pro but reads sealed reports through its monthly unlocks (G-126), not deepFull.
+// G-215: alpha (and beta, G-240) ranks as Pro but reads sealed reports through its monthly unlocks (G-126), not deepFull.
 const fullAccess = (plan: string): boolean => !isTester(plan) && allows(plan, 'deepFull');
 /** Free opens left this KST month (G-126): unlock rows that charged nothing because of the allowance. */
 async function freeOpensLeft(db: D1, u: User, now: Date): Promise<number> {
@@ -1291,7 +1291,7 @@ route('POST', '/admin/invites', async ({ req, env, now }) => {
   const b = await body(req), code = (str(b.code, 40) || inviteCode()).toUpperCase(), maxUses = b.maxUses === undefined ? 1 : int(b.maxUses), credits = b.credits === undefined ? 0 : int(b.credits);
   if (!/^[A-Z0-9-]{4,40}$/.test(code) || !(maxUses >= 1 && maxUses <= 500) || !(credits >= 0 && credits <= 1000)) fail(400, 'BAD_INVITE', '초대 코드 설정을 확인해 주세요.');
   const expires = typeof b.expiresAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.expiresAt) ? new Date(Date.parse(`${b.expiresAt}T23:59:59+09:00`)).toISOString() : null;
-  // G-236: which test account the code makes. The ops screen sends beta unless the admin picks alpha.
+  // G-240: which test account the code makes. The ops screen sends beta unless the admin picks alpha.
   const plan = b.plan === undefined ? 'alpha' : String(b.plan);
   if (!isTester(plan)) fail(400, 'BAD_INVITE', '초대 코드의 계정 종류(알파·베타)를 확인해 주세요.');
   const r = await env.DB.prepare('INSERT OR IGNORE INTO invites (code, note, max_uses, credits, expires_at, created_at, plan) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(code, str(b.note, 200), maxUses, credits, expires, iso(now), plan).run();

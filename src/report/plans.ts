@@ -55,7 +55,7 @@ export const PLANS: readonly Plan[] = [
  */
 export const ALPHA = { key: 'alpha', name: '알파', rankAs: 'pro' as PlanKey, monthlyCredits: 400, maxRequest: 500 } as const;
 /**
- * Test accounts (G-236, docs/BETA_PLAN.md decision ③): the closed alpha and the beta that follows it. Both count as
+ * Test accounts (G-240, docs/BETA_PLAN.md decision ③): the closed alpha and the beta that follows it. Both count as
  * ALPHA.rankAs and are not sold; only the name and the monthly allowance differ. Each invite code says which one it
  * makes (invites.plan).
  */

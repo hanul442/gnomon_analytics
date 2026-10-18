@@ -9,7 +9,7 @@ import { miniGauge } from './renderMarket.js';
 import { esc } from './html.js';
 import { won, tone } from './format.js';
 
-/** G-236 (docs/BETA_PLAN.md 1.2): back-tests and the paper account are never shown as returns someone made. */
+/** G-240 (docs/BETA_PLAN.md 1.2): back-tests and the paper account are never shown as returns someone made. */
 export const SIM_NOTE = '과거 데이터로 시험하거나 가상 계좌로 기록한 결과예요. 실제로 번 수익이 아니고, 앞으로의 결과를 보장하지 않아요.';
 
 

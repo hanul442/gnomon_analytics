@@ -11,7 +11,7 @@ test('readerNote (G-207): only the fixed options pass, and nothing when none is 
   assert.doesNotMatch(n, /규칙/);
 });
 
-test('readerNote (G-236): holding period and experience never reach the AI', () => {
+test('readerNote (G-240): holding period and experience never reach the AI', () => {
   assert.equal(readerNote({ horizon: '1년 이상', experience: '10년 이상' }), '');
   const n = readerNote({ explain: '보통', horizon: '며칠 안(단기 매매)', experience: '업으로 해요' });
   assert.doesNotMatch(n, /보유 기간|투자 경험|단기|업으로/);
