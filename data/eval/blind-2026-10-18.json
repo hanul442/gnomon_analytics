@@ -1,0 +1,1013 @@
+{
+ "method": "gnm-blind-v1",
+ "madeAt": "2026-10-18T10:56:18.397Z",
+ "horizon": 20,
+ "stocks": 102,
+ "rules": {
+  "scoredFrom": "2024-01-02",
+  "scoredTo": "2026-09-17",
+  "calls": 102656,
+  "board": [
+   {
+    "predictor": "bollinger",
+    "n": 12832,
+    "hitRate": 0.39354738154613467,
+    "brier": 0.21910396459569212,
+    "avgConfidence": 41.36417951866197,
+    "medianErrPct": 8.33036190828732,
+    "upBrier": 0.2509104933720923,
+    "stances": {
+     "BULLISH": 0.22023067331670823,
+     "BEARISH": 0.5184694513715711,
+     "NEUTRAL": 0.2612998753117207
+    },
+    "bullHitRate": 0.5438782731776363,
+    "bullAvgMovePct": 3.6658177188892984,
+    "allAvgMovePct": 4.18450349010434
+   },
+   {
+    "predictor": "breakout",
+    "n": 12832,
+    "hitRate": 0.45074812967581046,
+    "brier": 0.22893539598695564,
+    "avgConfidence": 44.95934316264001,
+    "medianErrPct": 8.410937400618273,
+    "upBrier": 0.25152472131030496,
+    "stances": {
+     "BULLISH": 0.3878584788029925,
+     "BEARISH": 0.4393703241895262,
+     "NEUTRAL": 0.1727711970074813
+    },
+    "bullHitRate": 0.5581675708257987,
+    "bullAvgMovePct": 5.807072269441837,
+    "allAvgMovePct": 4.1845034901043325
+   },
+   {
+    "predictor": "meanrev",
+    "n": 12832,
+    "hitRate": 0.3453086034912718,
+    "brier": 0.20491601498373221,
+    "avgConfidence": 37.173018665487994,
+    "medianErrPct": 8.372663583197292,
+    "upBrier": 0.25161916406738716,
+    "stances": {
+     "BULLISH": 0.10692019950124688,
+     "BEARISH": 0.5158977556109726,
+     "NEUTRAL": 0.37718204488778057
+    },
+    "bullHitRate": 0.5291545189504373,
+    "bullAvgMovePct": 3.3774378257496824,
+    "allAvgMovePct": 4.184503490104334
+   },
+   {
+    "predictor": "hold",
+    "n": 12832,
+    "hitRate": 0.5318734413965087,
+    "brier": 0.25165257695868065,
+    "avgConfidence": 51.03309153110557,
+    "medianErrPct": 8.592644649698489,
+    "upBrier": 0.25165257695868065,
+    "stances": {
+     "BULLISH": 1,
+     "BEARISH": 0,
+     "NEUTRAL": 0
+    },
+    "bullHitRate": 0.5318734413965087,
+    "bullAvgMovePct": 4.18450349010433,
+    "allAvgMovePct": 4.18450349010433
+   },
+   {
+    "predictor": "volume",
+    "n": 12832,
+    "hitRate": 0.4114713216957606,
+    "brier": 0.21634555961173157,
+    "avgConfidence": 41.340447462865804,
+    "medianErrPct": 8.387172885918032,
+    "upBrier": 0.25172052331792716,
+    "stances": {
+     "BULLISH": 0.2595854114713217,
+     "BEARISH": 0.4816864089775561,
+     "NEUTRAL": 0.2587281795511222
+    },
+    "bullHitRate": 0.5625938156709697,
+    "bullAvgMovePct": 6.738421783245609,
+    "allAvgMovePct": 4.184503490104343
+   },
+   {
+    "predictor": "trend",
+    "n": 12832,
+    "hitRate": 0.4775561097256858,
+    "brier": 0.23839463477718967,
+    "avgConfidence": 47.529670144234814,
+    "medianErrPct": 8.489339819920922,
+    "upBrier": 0.25181893433962843,
+    "stances": {
+     "BULLISH": 0.47950436408977554,
+     "BEARISH": 0.41622506234413964,
+     "NEUTRAL": 0.10427057356608478
+    },
+    "bullHitRate": 0.5468876970583455,
+    "bullAvgMovePct": 5.237358386627027,
+    "allAvgMovePct": 4.184503490104332
+   },
+   {
+    "predictor": "macd",
+    "n": 12832,
+    "hitRate": 0.5063902743142145,
+    "brier": 0.2519068424675609,
+    "avgConfidence": 49.063398338326785,
+    "medianErrPct": 8.44709770859406,
+    "upBrier": 0.2520462847351866,
+    "stances": {
+     "BULLISH": 0.5125467581047382,
+     "BEARISH": 0.48745324189526185,
+     "NEUTRAL": 0
+    },
+    "bullHitRate": 0.5397597688915919,
+    "bullAvgMovePct": 4.895447950879267,
+    "allAvgMovePct": 4.184503490104332
+   },
+   {
+    "predictor": "momentum",
+    "n": 12832,
+    "hitRate": 0.5118453865336658,
+    "brier": 0.2521236543829306,
+    "avgConfidence": 50.944460924614994,
+    "medianErrPct": 8.502704182413057,
+    "upBrier": 0.25221497912857466,
+    "stances": {
+     "BULLISH": 0.5862687032418953,
+     "BEARISH": 0.41131546134663344,
+     "NEUTRAL": 0.0024158354114713217
+    },
+    "bullHitRate": 0.5395453941246843,
+    "bullAvgMovePct": 4.887263800504138,
+    "allAvgMovePct": 4.184503490104347
+   }
+  ],
+  "byYear": {
+   "2024": [
+    {
+     "predictor": "hold",
+     "n": 4573,
+     "hitRate": 0.46927618631095563,
+     "brier": 0.2521894442506978,
+     "upBrier": 0.2521894442506978,
+     "bullAvgMovePct": 1.5028164097456083,
+     "allAvgMovePct": 1.5028164097456083
+    },
+    {
+     "predictor": "trend",
+     "n": 4573,
+     "hitRate": 0.4990159632626285,
+     "brier": 0.24169460627362155,
+     "upBrier": 0.252365659864134,
+     "bullAvgMovePct": 2.288174469946601,
+     "allAvgMovePct": 1.502816409745609
+    },
+    {
+     "predictor": "momentum",
+     "n": 4573,
+     "hitRate": 0.5278810408921933,
+     "brier": 0.2528810634856902,
+     "upBrier": 0.2529353790102115,
+     "bullAvgMovePct": 2.463426624858848,
+     "allAvgMovePct": 1.502816409745607
+    },
+    {
+     "predictor": "bollinger",
+     "n": 4573,
+     "hitRate": 0.414607478679204,
+     "brier": 0.2222130656258521,
+     "upBrier": 0.25298401651564245,
+     "bullAvgMovePct": 1.8524198833392345,
+     "allAvgMovePct": 1.5028164097456091
+    },
+    {
+     "predictor": "macd",
+     "n": 4573,
+     "hitRate": 0.4865514979225891,
+     "brier": 0.252900261229711,
+     "upBrier": 0.25316290559128934,
+     "bullAvgMovePct": 1.4011247435407128,
+     "allAvgMovePct": 1.5028164097456058
+    },
+    {
+     "predictor": "breakout",
+     "n": 4573,
+     "hitRate": 0.46293461622567245,
+     "brier": 0.23147721760440426,
+     "upBrier": 0.25326667004047076,
+     "bullAvgMovePct": 2.6426727555331273,
+     "allAvgMovePct": 1.5028164097456085
+    },
+    {
+     "predictor": "volume",
+     "n": 4573,
+     "hitRate": 0.4347255630876886,
+     "brier": 0.2211063757617162,
+     "upBrier": 0.25327511667518754,
+     "bullAvgMovePct": 3.099165077079899,
+     "allAvgMovePct": 1.5028164097456114
+    },
+    {
+     "predictor": "meanrev",
+     "n": 4573,
+     "hitRate": 0.3586267220642904,
+     "brier": 0.20833188206818198,
+     "upBrier": 0.2548421534016811,
+     "bullAvgMovePct": 1.6089463299408224,
+     "allAvgMovePct": 1.5028164097456094
+    }
+   ],
+   "2025": [
+    {
+     "predictor": "bollinger",
+     "n": 4792,
+     "hitRate": 0.3808430717863105,
+     "brier": 0.22174411769768207,
+     "upBrier": 0.24996172642510894,
+     "bullAvgMovePct": 5.0661173475051,
+     "allAvgMovePct": 5.937478092255845
+    },
+    {
+     "predictor": "meanrev",
+     "n": 4792,
+     "hitRate": 0.3476627712854758,
+     "brier": 0.21301839598721917,
+     "upBrier": 0.2499760707052927,
+     "bullAvgMovePct": 5.856929966064007,
+     "allAvgMovePct": 5.9374780922558426
+    },
+    {
+     "predictor": "breakout",
+     "n": 4792,
+     "hitRate": 0.4486644407345576,
+     "brier": 0.23004976977054908,
+     "upBrier": 0.250278200860257,
+     "bullAvgMovePct": 6.770632174369742,
+     "allAvgMovePct": 5.937478092255856
+    },
+    {
+     "predictor": "volume",
+     "n": 4792,
+     "hitRate": 0.40525876460767946,
+     "brier": 0.2208264060506754,
+     "upBrier": 0.2509681590736089,
+     "bullAvgMovePct": 7.022363251094756,
+     "allAvgMovePct": 5.937478092255848
+    },
+    {
+     "predictor": "macd",
+     "n": 4792,
+     "hitRate": 0.5141903171953256,
+     "brier": 0.2516689184676632,
+     "upBrier": 0.25168618888237954,
+     "bullAvgMovePct": 6.80410479033691,
+     "allAvgMovePct": 5.937478092255841
+    },
+    {
+     "predictor": "hold",
+     "n": 4792,
+     "hitRate": 0.5886894824707847,
+     "brier": 0.25176769739314137,
+     "upBrier": 0.25176769739314137,
+     "bullAvgMovePct": 5.937478092255853,
+     "allAvgMovePct": 5.937478092255853
+    },
+    {
+     "predictor": "momentum",
+     "n": 4792,
+     "hitRate": 0.5085559265442404,
+     "brier": 0.2520800545452141,
+     "upBrier": 0.2520318560595355,
+     "bullAvgMovePct": 5.9268585745580955,
+     "allAvgMovePct": 5.937478092255849
+    },
+    {
+     "predictor": "trend",
+     "n": 4792,
+     "hitRate": 0.4774624373956594,
+     "brier": 0.2400561816035077,
+     "upBrier": 0.25208817549231377,
+     "bullAvgMovePct": 6.109699227071595,
+     "allAvgMovePct": 5.937478092255852
+    }
+   ],
+   "2026": [
+    {
+     "predictor": "bollinger",
+     "n": 3467,
+     "hitRate": 0.3833285261032593,
+     "brier": 0.2113538830624584,
+     "upBrier": 0.24948686195427708,
+     "bullAvgMovePct": 5.127299739150645,
+     "allAvgMovePct": 5.298752329149749
+    },
+    {
+     "predictor": "meanrev",
+     "n": 3467,
+     "hitRate": 0.3244880299971157,
+     "brier": 0.18921155292838923,
+     "upBrier": 0.24963905825990357,
+     "bullAvgMovePct": 4.955279869774387,
+     "allAvgMovePct": 5.298752329149754
+    },
+    {
+     "predictor": "volume",
+     "n": 3467,
+     "hitRate": 0.3893856359965388,
+     "brier": 0.20387269304430874,
+     "upBrier": 0.2507099014650474,
+     "bullAvgMovePct": 10.278099346212988,
+     "allAvgMovePct": 5.298752329149741
+    },
+    {
+     "predictor": "trend",
+     "n": 3467,
+     "hitRate": 0.44937986732044993,
+     "brier": 0.23174539853695245,
+     "upBrier": 0.25072566078115305,
+     "bullAvgMovePct": 6.9313214647876675,
+     "allAvgMovePct": 5.298752329149761
+    },
+    {
+     "predictor": "hold",
+     "n": 3467,
+     "hitRate": 0.5359100086530141,
+     "brier": 0.2507853282571188,
+     "upBrier": 0.2507853282571188,
+     "bullAvgMovePct": 5.29875232914976,
+     "allAvgMovePct": 5.29875232914976
+    },
+    {
+     "predictor": "breakout",
+     "n": 3467,
+     "hitRate": 0.43755408133833285,
+     "brier": 0.22404245412725532,
+     "upBrier": 0.25094998651179484,
+     "bullAvgMovePct": 7.4720193443716445,
+     "allAvgMovePct": 5.298752329149749
+    },
+    {
+     "predictor": "macd",
+     "n": 3467,
+     "hitRate": 0.521776752235362,
+     "brier": 0.25092536793863146,
+     "upBrier": 0.2510711685401182,
+     "bullAvgMovePct": 6.593095508210015,
+     "allAvgMovePct": 5.298752329149752
+    },
+    {
+     "predictor": "momentum",
+     "n": 3467,
+     "hitRate": 0.49524084222670894,
+     "brier": 0.25118488847448633,
+     "upBrier": 0.2515178741640857,
+     "bullAvgMovePct": 5.925018925600592,
+     "allAvgMovePct": 5.298752329149749
+    }
+   ]
+  }
+ },
+ "ai": {
+  "model": "claude-haiku-5-5",
+  "samples": 300,
+  "calls": 1230,
+  "failed": 0,
+  "stoppedAtBudget": false,
+  "budgetUsd": 3,
+  "costUsd": 0.5744,
+  "tokens": {
+   "input": 1194118,
+   "output": 885329
+  },
+  "board": [
+   {
+    "predictor": "meanrev",
+    "n": 300,
+    "hitRate": 0.36,
+    "brier": 0.19528128515766635,
+    "avgConfidence": 39.398214737947434,
+    "medianErrPct": 8.157143621308531,
+    "upBrier": 0.24823103357275955,
+    "stances": {
+     "BULLISH": 0.14,
+     "BEARISH": 0.48333333333333334,
+     "NEUTRAL": 0.37666666666666665
+    },
+    "bullHitRate": 0.5952380952380952,
+    "bullAvgMovePct": 8.618869506962424,
+    "allAvgMovePct": 4.055060793135366
+   },
+   {
+    "predictor": "bollinger",
+    "n": 300,
+    "hitRate": 0.39,
+    "brier": 0.2124411654061982,
+    "avgConfidence": 41.951103418321445,
+    "medianErrPct": 8.289810906698868,
+    "upBrier": 0.25369401936941843,
+    "stances": {
+     "BULLISH": 0.23,
+     "BEARISH": 0.4866666666666667,
+     "NEUTRAL": 0.2833333333333333
+    },
+    "bullHitRate": 0.5652173913043478,
+    "bullAvgMovePct": 5.235001729714902,
+    "allAvgMovePct": 4.055060793135365
+   },
+   {
+    "predictor": "mean_reversion",
+    "n": 300,
+    "hitRate": 0.37666666666666665,
+    "brier": 0.2416233333333336,
+    "avgConfidence": 51.4,
+    "medianErrPct": 8.519947986184572,
+    "upBrier": 0.2540006666666667,
+    "stances": {
+     "BULLISH": 0.3566666666666667,
+     "BEARISH": 0.37333333333333335,
+     "NEUTRAL": 0.27
+    },
+    "bullHitRate": 0.514018691588785,
+    "bullAvgMovePct": 5.357510265803624,
+    "allAvgMovePct": 4.055060793135366
+   },
+   {
+    "predictor": "trend_momentum",
+    "n": 300,
+    "hitRate": 0.46,
+    "brier": 0.2522573333333332,
+    "avgConfidence": 55.29333333333334,
+    "medianErrPct": 8.858309315330132,
+    "upBrier": 0.25540766666666664,
+    "stances": {
+     "BULLISH": 0.39666666666666667,
+     "BEARISH": 0.4666666666666667,
+     "NEUTRAL": 0.13666666666666666
+    },
+    "bullHitRate": 0.5294117647058824,
+    "bullAvgMovePct": 4.238826959051189,
+    "allAvgMovePct": 4.055060793135366
+   },
+   {
+    "predictor": "wave_structure",
+    "n": 300,
+    "hitRate": 0.43666666666666665,
+    "brier": 0.2534466666666667,
+    "avgConfidence": 54.5,
+    "medianErrPct": 9.065060237984913,
+    "upBrier": 0.2557866666666667,
+    "stances": {
+     "BULLISH": 0.37666666666666665,
+     "BEARISH": 0.53,
+     "NEUTRAL": 0.09333333333333334
+    },
+    "bullHitRate": 0.4690265486725664,
+    "bullAvgMovePct": 2.9340737494737374,
+    "allAvgMovePct": 4.055060793135366
+   },
+   {
+    "predictor": "trend",
+    "n": 300,
+    "hitRate": 0.43333333333333335,
+    "brier": 0.2367580468225272,
+    "avgConfidence": 47.302550227826465,
+    "medianErrPct": 8.490904205595218,
+    "upBrier": 0.2560221811562867,
+    "stances": {
+     "BULLISH": 0.4166666666666667,
+     "BEARISH": 0.45666666666666667,
+     "NEUTRAL": 0.12666666666666668
+    },
+    "bullHitRate": 0.496,
+    "bullAvgMovePct": 3.7449862753440977,
+    "allAvgMovePct": 4.055060793135368
+   },
+   {
+    "predictor": "volume_flow",
+    "n": 300,
+    "hitRate": 0.3466666666666667,
+    "brier": 0.24646033333333364,
+    "avgConfidence": 52.03,
+    "medianErrPct": 9.12253558887063,
+    "upBrier": 0.2560520000000002,
+    "stances": {
+     "BULLISH": 0.18666666666666668,
+     "BEARISH": 0.52,
+     "NEUTRAL": 0.29333333333333333
+    },
+    "bullHitRate": 0.48214285714285715,
+    "bullAvgMovePct": 3.9694685755283863,
+    "allAvgMovePct": 4.055060793135366
+   },
+   {
+    "predictor": "macd",
+    "n": 300,
+    "hitRate": 0.5033333333333333,
+    "brier": 0.258717961091704,
+    "avgConfidence": 48.89656940739846,
+    "medianErrPct": 8.61216327910238,
+    "upBrier": 0.25873916135263025,
+    "stances": {
+     "BULLISH": 0.5,
+     "BEARISH": 0.5,
+     "NEUTRAL": 0
+    },
+    "bullHitRate": 0.5066666666666667,
+    "bullAvgMovePct": 3.9786171565980224,
+    "allAvgMovePct": 4.055060793135367
+   },
+   {
+    "predictor": "momentum",
+    "n": 300,
+    "hitRate": 0.48333333333333334,
+    "brier": 0.25930562845947924,
+    "avgConfidence": 50.98744167601656,
+    "medianErrPct": 8.358663513472864,
+    "upBrier": 0.25930562845947924,
+    "stances": {
+     "BULLISH": 0.5266666666666666,
+     "BEARISH": 0.4666666666666667,
+     "NEUTRAL": 0.006666666666666667
+    },
+    "bullHitRate": 0.4873417721518987,
+    "bullAvgMovePct": 3.8016614204600363,
+    "allAvgMovePct": 4.055060793135367
+   },
+   {
+    "predictor": "breakout",
+    "n": 300,
+    "hitRate": 0.43333333333333335,
+    "brier": 0.24428524348960684,
+    "avgConfidence": 45.22019645813385,
+    "medianErrPct": 8.606363873165694,
+    "upBrier": 0.26069012139097325,
+    "stances": {
+     "BULLISH": 0.3466666666666667,
+     "BEARISH": 0.4766666666666667,
+     "NEUTRAL": 0.17666666666666667
+    },
+    "bullHitRate": 0.4807692307692308,
+    "bullAvgMovePct": 1.932838987408836,
+    "allAvgMovePct": 4.055060793135367
+   },
+   {
+    "predictor": "volume",
+    "n": 300,
+    "hitRate": 0.42,
+    "brier": 0.22934181808949017,
+    "avgConfidence": 42.76719874930153,
+    "medianErrPct": 8.242358119764713,
+    "upBrier": 0.2613918971923611,
+    "stances": {
+     "BULLISH": 0.22333333333333333,
+     "BEARISH": 0.5233333333333333,
+     "NEUTRAL": 0.25333333333333335
+    },
+    "bullHitRate": 0.5074626865671642,
+    "bullAvgMovePct": 3.6803175425858505,
+    "allAvgMovePct": 4.055060793135367
+   },
+   {
+    "predictor": "hold",
+    "n": 300,
+    "hitRate": 0.5,
+    "brier": 0.26358789235939756,
+    "avgConfidence": 48.730425234289406,
+    "medianErrPct": 8.372602796797418,
+    "upBrier": 0.26358789235939756,
+    "stances": {
+     "BULLISH": 1,
+     "BEARISH": 0,
+     "NEUTRAL": 0
+    },
+    "bullHitRate": 0.5,
+    "bullAvgMovePct": 4.055060793135369,
+    "allAvgMovePct": 4.055060793135369
+   }
+  ],
+  "committee": {
+   "n": 300,
+   "upBrier": 0.25337160329330133
+  },
+  "byYear": {
+   "2023": [
+    {
+     "predictor": "mean_reversion",
+     "n": 75,
+     "hitRate": 0.49333333333333335,
+     "brier": 0.22629733333333338,
+     "upBrier": 0.24093066666666677
+    },
+    {
+     "predictor": "volume_flow",
+     "n": 75,
+     "hitRate": 0.41333333333333333,
+     "brier": 0.2531760000000001,
+     "upBrier": 0.2555760000000001
+    },
+    {
+     "predictor": "wave_structure",
+     "n": 75,
+     "hitRate": 0.3333333333333333,
+     "brier": 0.27721733333333326,
+     "upBrier": 0.2744399999999999
+    },
+    {
+     "predictor": "trend_momentum",
+     "n": 75,
+     "hitRate": 0.30666666666666664,
+     "brier": 0.27743199999999996,
+     "upBrier": 0.2807373333333332
+    }
+   ],
+   "2024": [
+    {
+     "predictor": "wave_structure",
+     "n": 75,
+     "hitRate": 0.4666666666666667,
+     "brier": 0.2512506666666668,
+     "upBrier": 0.25343200000000005
+    },
+    {
+     "predictor": "trend_momentum",
+     "n": 75,
+     "hitRate": 0.49333333333333335,
+     "brier": 0.25505599999999995,
+     "upBrier": 0.2561946666666666
+    },
+    {
+     "predictor": "mean_reversion",
+     "n": 75,
+     "hitRate": 0.37333333333333335,
+     "brier": 0.25117600000000007,
+     "upBrier": 0.25928266666666666
+    },
+    {
+     "predictor": "volume_flow",
+     "n": 75,
+     "hitRate": 0.28,
+     "brier": 0.24831066666666662,
+     "upBrier": 0.2610813333333333
+    }
+   ],
+   "2025": [
+    {
+     "predictor": "trend_momentum",
+     "n": 75,
+     "hitRate": 0.41333333333333333,
+     "brier": 0.24525733333333335,
+     "upBrier": 0.2519666666666667
+    },
+    {
+     "predictor": "mean_reversion",
+     "n": 75,
+     "hitRate": 0.36,
+     "brier": 0.24173866666666674,
+     "upBrier": 0.25379466666666667
+    },
+    {
+     "predictor": "wave_structure",
+     "n": 75,
+     "hitRate": 0.41333333333333333,
+     "brier": 0.24824266666666664,
+     "upBrier": 0.2555706666666666
+    },
+    {
+     "predictor": "volume_flow",
+     "n": 75,
+     "hitRate": 0.22666666666666666,
+     "brier": 0.24807733333333337,
+     "upBrier": 0.2630573333333334
+    }
+   ],
+   "2026": [
+    {
+     "predictor": "trend_momentum",
+     "n": 75,
+     "hitRate": 0.6266666666666667,
+     "brier": 0.2312839999999999,
+     "upBrier": 0.23273199999999994
+    },
+    {
+     "predictor": "wave_structure",
+     "n": 75,
+     "hitRate": 0.5333333333333333,
+     "brier": 0.23707599999999998,
+     "upBrier": 0.23970400000000003
+    },
+    {
+     "predictor": "volume_flow",
+     "n": 75,
+     "hitRate": 0.4666666666666667,
+     "brier": 0.2362773333333334,
+     "upBrier": 0.24449333333333337
+    },
+    {
+     "predictor": "mean_reversion",
+     "n": 75,
+     "hitRate": 0.28,
+     "brier": 0.24728133333333333,
+     "upBrier": 0.26199466666666665
+    }
+   ]
+  },
+  "committeeByYear": {
+   "2023": {
+    "n": 75,
+    "upBrier": 0.26103119653795565
+   },
+   "2024": {
+    "n": 75,
+    "upBrier": 0.25573660009815796
+   },
+   "2025": {
+    "n": 75,
+    "upBrier": 0.25408095281611726
+   },
+   "2026": {
+    "n": 75,
+    "upBrier": 0.2426376637209739
+   }
+  },
+  "probe": {
+   "n": 30,
+   "nameRight": 0,
+   "yearRight": 11,
+   "items": [
+    {
+     "symbol": "080220",
+     "name": "제주반도체",
+     "year": "2023",
+     "guessName": "카카오",
+     "guessYear": "2022",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "232140",
+     "name": "와이씨",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "036930",
+     "name": "주성엔지니어링",
+     "year": "2023",
+     "guessName": "에코프로비엠",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "010060",
+     "name": "OCI홀딩스",
+     "year": "2023",
+     "guessName": "카카오게임즈",
+     "guessYear": "2022",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "010950",
+     "name": "S-Oil",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2020",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "133690",
+     "name": "133690",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2019",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "012750",
+     "name": "에스원",
+     "year": "2023",
+     "guessName": "알 수 없음(정보 부족)",
+     "guessYear": "2021",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "00104K",
+     "name": "CJ4우(전환)",
+     "year": "2023",
+     "guessName": "식별 불가 (가격 정규화 데이터만으로 특정 종목 추정 어려움)",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "042660",
+     "name": "한화오션",
+     "year": "2023",
+     "guessName": "에코프로비엠",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "028260",
+     "name": "삼성물산",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2019",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "207940",
+     "name": "삼성바이오로직스",
+     "year": "2023",
+     "guessName": "알 수 없음(데이터만으로 종목 특정 불가)",
+     "guessYear": "2019",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "047040",
+     "name": "대우건설",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2019",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "089030",
+     "name": "테크윙",
+     "year": "2023",
+     "guessName": "알 수 없음(정규화된 가격이라 특정 불가)",
+     "guessYear": "2020",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "207940",
+     "name": "삼성바이오로직스",
+     "year": "2023",
+     "guessName": "SK하이닉스",
+     "guessYear": "2022",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "001820",
+     "name": "삼화콘덴서",
+     "year": "2023",
+     "guessName": "알 수 없음(가격 데이터만으로 특정 불가)",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "006260",
+     "name": "LS",
+     "year": "2023",
+     "guessName": "에코프로",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "033560",
+     "name": "블루콤",
+     "year": "2023",
+     "guessName": "알 수 없음(정규화된 가격이라 종목 특정 불가, 후보: 중소형 코스닥 종목)",
+     "guessYear": "2022",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "042700",
+     "name": "한미반도체",
+     "year": "2023",
+     "guessName": "에코프로비엠",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "047040",
+     "name": "대우건설",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "003490",
+     "name": "대한항공",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "032830",
+     "name": "삼성생명",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2021",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "003490",
+     "name": "대한항공",
+     "year": "2023",
+     "guessName": "알 수 없음(데이터만으로 특정 불가)",
+     "guessYear": "2022",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "058470",
+     "name": "리노공업",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2019",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "000270",
+     "name": "기아",
+     "year": "2023",
+     "guessName": "알 수 없음(정보 부족)",
+     "guessYear": "2022",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "034730",
+     "name": "SK",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2022",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "011200",
+     "name": "HMM",
+     "year": "2023",
+     "guessName": "카카오",
+     "guessYear": "2022",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "069500",
+     "name": "069500",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2020",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "001520",
+     "name": "동양",
+     "year": "2023",
+     "guessName": "삼성전자",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    },
+    {
+     "symbol": "069500",
+     "name": "069500",
+     "year": "2023",
+     "guessName": "KT&G",
+     "guessYear": "2019",
+     "nameRight": false,
+     "yearRight": false
+    },
+    {
+     "symbol": "000020",
+     "name": "동화약품",
+     "year": "2023",
+     "guessName": "알 수 없음(차트만으로 특정 불가)",
+     "guessYear": "2023",
+     "nameRight": false,
+     "yearRight": true
+    }
+   ]
+  }
+ }
+}
