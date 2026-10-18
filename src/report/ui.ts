@@ -251,9 +251,21 @@ const TAB_OF: Record<string, string> = Object.fromEntries([
   ...ME_PAGES.map((p) => [p, 'settings.html'] as const),
 ]);
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-/** One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones). */
-export function tabBar(base: string, where: 'top' | 'bottom'): string {
-  return `<nav class="${where === 'top' ? 'top-tabs' : 'bottom-nav'}" aria-label="${where === 'top' ? '주 메뉴' : '빠른 이동'}">${TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('')}</nav>`;
+const SPARK_ICON = '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>';
+/**
+ * One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones).
+ * G-248 (한서님 10/18, Payrix 느낌): the phone bar is one floating pill — the ✦ AI button and the five tabs. With `ask`
+ * (a stock or report page) it turns into an ask bar ("삼성전자에 대해 물어보기") shortly after the page opens; the grid
+ * button on its left turns it back into the tabs.
+ */
+export function tabBar(base: string, where: 'top' | 'bottom', ask?: string): string {
+  const links = TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('');
+  if (where === 'top') return `<nav class="top-tabs" aria-label="주 메뉴">${links}</nav>`;
+  const chat = 'data-open-chat aria-haspopup="dialog" aria-controls="chat"';
+  const askBar = ask
+    ? `<button type="button" class="nav-back" aria-label="메뉴 보기">${svgI('<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>')}</button><button type="button" class="nav-ask" ${chat}><span>${escM(ask)}에 대해 물어보기</span><i aria-hidden="true">${svgI('<path d="M12 19V5M6 11l6-6 6 6"/>')}</i></button>`
+    : '';
+  return `<nav class="bottom-nav" aria-label="빠른 이동"${ask ? ' data-ask-mode' : ''}><button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button><div class="nav-tabs">${links}</div>${askBar}</nav>`;
 }
 const ASK_ICON = '<path d="M5 5h14v10h-8l-4 4v-4H5z"/>';
 /**
@@ -633,14 +645,16 @@ export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);bac
 /* G-245: the 나 tab's head (account, install, ops) and the mode rows (sibling pages as one screen, G-189 pill). */
 .me-head{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}.me-acct{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:60px;padding:12px 16px;border-radius:14px;background:var(--soft);color:var(--fg);text-decoration:none}.me-acct b{display:block;font-size:16px}.me-acct small{color:var(--muted);font-size:13px;font-weight:600}.me-acct i{font-style:normal;color:var(--muted);font-size:18px}
 .me-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:1px solid var(--line-strong);background:transparent;border-radius:14px;padding:12px 16px;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:var(--fg)}.me-install[hidden]{display:none}.me-install small{color:var(--muted);font-size:12.5px;font-weight:400}#sm-admin:empty{display:none}#sm-admin .sm-title{font-size:12px;font-weight:800;color:var(--muted);margin:6px 2px}#sm-admin a{display:flex;align-items:center;min-height:44px}
-.pg-title{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:18px 24px 2px}.pg-title h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
-.pg-ask{display:none;width:44px;height:44px;margin-right:-10px;border:0;background:none;color:var(--fg);cursor:pointer;align-items:center;justify-content:center}.pg-ask svg{width:24px;height:24px}
-.mode-tabs{position:sticky;top:0;z-index:20;display:flex;gap:22px;max-width:1180px;margin:0 auto 6px;padding:0 24px;overflow-x:auto;scrollbar-width:none;background:var(--page);border-bottom:1px solid var(--line)}.mode-tabs::-webkit-scrollbar{display:none}
-.mode-tabs>a,.mode-tabs>button{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:46px;padding:0;border:0;background:none!important;font:inherit;font-size:15.5px;font-weight:700;color:var(--muted);text-decoration:none;cursor:pointer;white-space:nowrap}
+.pg-title{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 24px 4px}.pg-title h1{margin:0;font-size:32px;font-weight:300;letter-spacing:-.035em;line-height:1.15}
+.pg-ask{display:none;width:46px;height:46px;border:1px solid var(--glass-line);border-radius:50%;background:var(--surface);color:var(--fg);cursor:pointer;align-items:center;justify-content:center;box-shadow:var(--shadow);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}.pg-ask svg{width:22px;height:22px}
+/* G-248: the mode row is a segmented track with the chewy white pill (G-189) instead of underlined text. */
+.mode-tabs{position:sticky;top:8px;z-index:20;display:flex;gap:2px;width:max-content;max-width:calc(100% - 48px);margin:10px 24px 14px;padding:4px;overflow-x:auto;scrollbar-width:none;border-radius:999px;background:var(--track);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}.mode-tabs::-webkit-scrollbar{display:none}
+@media (min-width:1228px){.mode-tabs{margin-left:calc(50% - 566px)}}
+.mode-tabs>a,.mode-tabs>button{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:38px;padding:0 15px;border:0;border-radius:999px;background:none!important;font:inherit;font-size:14.5px;font-weight:600;color:var(--muted);text-decoration:none;cursor:pointer;white-space:nowrap;transition:color .2s}
 .mode-tabs>[aria-current=page],.mode-tabs>[aria-selected=true]{color:var(--fg)}.mode-tabs .muted{display:none}
-.mode-tabs>.seg-thumb{top:auto!important;bottom:0;height:2px!important;border-radius:2px;background:var(--fg)!important;box-shadow:none!important}
-@media (min-width:821px){.mode-tabs{top:64px}}
-@media (max-width:820px){body:has(.pg-title) .topbar{display:none}.pg-title{padding:14px 20px 0}.pg-ask{display:inline-flex}.mode-tabs{padding:0 20px;gap:20px}.chat-fab{display:none!important}}`;
+.mode-tabs>.seg-thumb{background:var(--pill)!important;box-shadow:0 1px 2px rgba(10,22,38,.08),0 6px 16px -8px rgba(10,22,38,.25)!important}
+@media (min-width:821px){.mode-tabs{top:72px}}
+@media (max-width:820px){body:has(.pg-title) .topbar{display:none}.pg-title{padding:18px 20px 0}.pg-ask{display:inline-flex}.mode-tabs{margin:12px 16px 14px;max-width:calc(100% - 32px)}body:has(.bottom-nav) .chat-fab{display:none!important}}`;
 
 export const MENU_JS = `
   // G-245: the five tabs light up by page (sibling pages light their group's tab), and a mode row moves its pill

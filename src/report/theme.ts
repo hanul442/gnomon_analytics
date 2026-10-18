@@ -24,28 +24,29 @@ input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px soli
 ::selection{background:var(--accent-soft);color:var(--fg)}
 input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--accent)}
 
-/* G-246: the light theme, re-cut after the Black Oracle reference (한서님 10/18): a white page with no gradient, near-black
-   for the one accent (pills, buttons, the active tab), grey surfaces without shadows, and a white header and tab bar.
-   Prices keep red up / blue down. The dark theme is unchanged. */
-html[data-theme=light]{--page:#FFFFFF;--surface:#F6F7F9;--surface-solid:#FFFFFF;--soft:#F2F4F6;--line:rgba(17,24,39,.07);--line-strong:rgba(17,24,39,.15);
-  --fg:#111418;--fg2:#4B5563;--muted:#8B95A1;--bar:#FFFFFF;--accent:#191F28;--accent-strong:#191F28;--accent-soft:#F2F4F6;--accent-line:#D1D6DB;--navy:#191F28;
-  --btn-bg:#191F28;--btn-fg:#FFFFFF;--on-accent:#FFFFFF;--page-grad:none;--shadow:none;--glass-blur:0px;--focus:#0582CA}
-html[data-theme=light] body{background:#FFFFFF}
-html[data-theme=light] .card{border-color:transparent;box-shadow:none}
+/* G-248: the light theme in the Payrix feel, GNOMON colours (한서님 10/18 '이런 깔끔함을 원해', '우리색으로'): a soft grey ground lit by
+   GNOMON-blue glows, frosted white cards with large radii and soft shadows, a near-black ink for pills and buttons, the blue kept
+   for links and prices. The header floats as frosted glass. Prices keep red up / blue down. The dark theme keeps its tokens. */
+html[data-theme=light]{--page:#EEF0F3;--surface:rgba(255,255,255,.74);--surface-solid:#FFFFFF;--soft:rgba(10,22,38,.045);--line:rgba(10,22,38,.07);--line-strong:rgba(10,22,38,.14);
+  --fg:#15171A;--fg2:#4A4F57;--muted:#8E939B;--bar:#0A1626;--accent:#0582CA;--accent-strong:#006494;--accent-soft:#E3F3FD;--accent-line:#B6E0FA;--navy:#0A1626;
+  --btn-bg:#0A1626;--btn-fg:#FFFFFF;--on-accent:#FFFFFF;--glass-blur:22px;--focus:#0582CA;--track:rgba(10,22,38,.06);--pill:#FFFFFF;--glass-line:rgba(255,255,255,.75);
+  --shadow:0 1px 2px rgba(10,22,38,.04),0 14px 34px -18px rgba(10,22,38,.22);
+  --page-grad:radial-gradient(560px 440px at 92% -80px,rgba(0,166,251,.26),transparent 70%),radial-gradient(480px 400px at -120px 120px,rgba(130,205,255,.3),transparent 70%),radial-gradient(700px 520px at 50% 115%,rgba(5,130,202,.14),transparent 70%)}
+html[data-theme=light] .card{border-radius:24px;border-color:rgba(255,255,255,.8);box-shadow:var(--shadow)}
 html[data-theme=light] .price-bar{color:var(--fg)}html[data-theme=light] .price-bar .up{color:var(--up)}html[data-theme=light] .price-bar .down{color:var(--down)}html[data-theme=light] .price-bar .pb-code{color:var(--muted)}html[data-theme=light] .price-bar .fresh{background:var(--soft);color:var(--fg2)}html[data-theme=light] .top-links a[aria-current=page]{background:var(--soft);color:var(--fg)}
-html[data-theme=light] .topbar{background:rgba(255,255,255,.94);color:var(--fg);border-bottom:1px solid var(--line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+html[data-theme=light] .topbar{background:transparent;color:var(--fg);border-bottom:0}
 html[data-theme=light] .topbar::before{display:none}
 html[data-theme=light] .brand{color:var(--fg)}html[data-theme=light] .brand small{color:var(--muted)}html[data-theme=light] .gnomon-mark img,html[data-theme=light] .boot-veil img{filter:invert(1)}
 html[data-theme=light] .topbar .top-links a,html[data-theme=light] .topbar .top-links button{color:var(--fg);border-color:var(--line-strong);background:transparent}
-html[data-theme=light] .topbar>.chips:not(.analysis-tabs){border-color:transparent;background:var(--soft);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+html[data-theme=light] .topbar>.chips:not(.analysis-tabs){border-color:rgba(255,255,255,.8);background:rgba(255,255,255,.6);box-shadow:var(--shadow)}
 html[data-theme=light] .topbar>.chips:not(.analysis-tabs) a{color:var(--muted)}html[data-theme=light] .topbar>.chips:not(.analysis-tabs) a:hover{color:var(--fg)}
 html[data-theme=light] .topbar>.chips:not(.analysis-tabs) a[aria-selected=true]{color:#FFFFFF}
-html[data-theme=light] .topbar>.chips:not(.has-ind) a[aria-selected=true],html[data-theme=light] .chips-ind{background:#191F28;box-shadow:none}
-html[data-theme=light] .topbar-in{border-color:var(--line);background:#FFFFFF;box-shadow:0 10px 30px -18px rgba(17,24,39,.25);backdrop-filter:none;-webkit-backdrop-filter:none}
-html[data-theme=light] .top-tabs a,html[data-theme=light] .top-tabs button{color:#6B7684}
-html[data-theme=light] .top-tabs a:hover,html[data-theme=light] .top-tabs [data-dock-near=true]{color:var(--fg);background:var(--soft);box-shadow:none;border-color:transparent}
-html[data-theme=light] .top-tabs [aria-current=page]{color:#FFFFFF;background:#191F28;box-shadow:none}
-html[data-theme=light] .top-links .acct{color:#FFFFFF;background:#191F28;box-shadow:none}html[data-theme=light] .top-links .acct i{color:#C9CED6}
-html[data-theme=light] .has-thumb>.seg-thumb{box-shadow:none}
-html[data-theme=light] .chip-toggle[aria-pressed=true]{background:#191F28;color:#FFFFFF;border-color:#191F28}
+html[data-theme=light] .topbar>.chips:not(.has-ind) a[aria-selected=true],html[data-theme=light] .chips-ind{background:#0A1626;box-shadow:none}
+html[data-theme=light] .topbar-in{border-color:rgba(255,255,255,.8);background:rgba(255,255,255,.66);box-shadow:var(--shadow);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%)}
+html[data-theme=light] .top-tabs a,html[data-theme=light] .top-tabs button{color:#6B7076}
+html[data-theme=light] .top-tabs a:hover,html[data-theme=light] .top-tabs [data-dock-near=true]{color:var(--fg);background:rgba(10,22,38,.05);box-shadow:none;border-color:transparent}
+html[data-theme=light] .top-tabs [aria-current=page]{color:#FFFFFF;background:#0A1626;box-shadow:0 10px 22px -12px rgba(10,22,38,.6)}
+html[data-theme=light] .top-links .acct{color:#FFFFFF;background:#0A1626;box-shadow:none}html[data-theme=light] .top-links .acct i{color:#B9C0CA}
+html[data-theme=light] .chip-toggle[aria-pressed=true]{background:#0A1626;color:#FFFFFF;border-color:#0A1626}
+@media (max-width:820px){html[data-theme=light] .topbar{background:rgba(238,240,243,.72);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%)}}
 `;

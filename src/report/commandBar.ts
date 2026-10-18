@@ -37,17 +37,38 @@ export const COMMAND_BAR_CSS = `
 .top-links .bell-btn:hover,.top-links .install-btn:hover{color:#F4F7FA;background:rgba(255,255,255,.06)}
 }
 @media (max-width:820px){
-/* G-247: a plain full-width tab bar (한서님 10/18): every tab shows its icon and name, the current one in the text colour. */
-.bottom-nav,html[data-theme] body .bottom-nav{left:0;right:0;bottom:0;transform:none;display:grid;grid-template-columns:repeat(5,1fr);width:auto;max-width:none;gap:0;padding:4px 0 env(safe-area-inset-bottom);
-  border:0;border-top:1px solid var(--line);border-radius:0;background:var(--page);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-.bottom-nav a,.bottom-nav button,html[data-theme] .bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:54px;min-width:0;padding:0;border-radius:0;
-  color:var(--muted);background:none;font-size:11px;font-weight:600;transition:color .16s}
-.bottom-nav a span,.bottom-nav button span{display:inline}
-.bottom-nav [aria-current=page],html[data-theme] .bottom-nav [aria-current=page]{color:var(--fg);font-weight:800;background:none;box-shadow:none}
-.bottom-nav a:active{transform:scale(.94);transition-duration:.08s}
-.bottom-nav svg{width:24px;height:24px}
-body:has(.bottom-nav){padding-bottom:calc(62px + env(safe-area-inset-bottom))}
+/* G-248: one floating bar (한서님 10/18 '통일된 하단바가 인터랙티브하게'): the ✦ AI button and the five tabs, the current tab a dark
+   pill with its name. On stock and report pages it turns into an ask bar after the page opens; the grid button brings the tabs back. */
+.bottom-nav,html[data-theme] body .bottom-nav{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));transform:none;z-index:40;display:flex;align-items:center;gap:6px;
+  width:auto;max-width:520px;margin:0 auto;height:62px;padding:6px;border:1px solid var(--glass-line);border-radius:31px;background:var(--nav-bg);
+  box-shadow:0 18px 40px -16px rgba(10,22,38,.38),0 2px 6px rgba(10,22,38,.06);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%)}
+html{--nav-bg:rgba(255,255,255,.76)}html[data-theme=dark]{--nav-bg:rgba(19,34,58,.78)}
+.bottom-nav .nav-spark,.bottom-nav .nav-back{flex:0 0 50px;width:50px;height:50px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;color:#fff;background:var(--brand-grad);
+  box-shadow:0 8px 18px -8px rgba(0,166,251,.8);cursor:pointer;transition:transform .2s cubic-bezier(.34,1.5,.64,1)}
+.bottom-nav .nav-back{display:none;color:var(--fg);background:var(--soft);box-shadow:none}
+.bottom-nav .nav-spark svg,.bottom-nav .nav-back svg{width:22px;height:22px}.bottom-nav .nav-spark:active,.bottom-nav .nav-back:active{transform:scale(.9)}
+.nav-tabs{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between}
+.nav-tabs a,html[data-theme] .bottom-nav .nav-tabs a{display:flex;flex-direction:row;align-items:center;gap:5px;height:50px;min-width:0;padding:0 11px;border-radius:25px;color:var(--muted);background:none;
+  font-size:13px;font-weight:700;white-space:nowrap;text-decoration:none;transition:background .3s cubic-bezier(.34,1.3,.64,1),color .2s,padding .3s cubic-bezier(.34,1.3,.64,1)}
+.nav-tabs a span{display:none}
+.nav-tabs [aria-current=page],html[data-theme] .bottom-nav .nav-tabs [aria-current=page]{padding:0 14px 0 12px;color:var(--page);background:var(--fg);font-weight:700;box-shadow:0 6px 14px -8px rgba(10,22,38,.6)}
+.nav-tabs [aria-current=page] span{display:inline;animation:nav-in .32s var(--ease-out)}
+.nav-tabs a:active{transform:scale(.92);transition-duration:.08s}
+.nav-tabs svg{width:23px;height:23px;flex:none}
+.bottom-nav .nav-ask{display:none;flex:1;flex-direction:row;min-width:0;height:50px;align-items:center;justify-content:space-between;gap:8px;padding:0 0 0 14px;border:0;background:none;color:var(--muted);font:inherit;font-size:15px;font-weight:500;text-align:left;cursor:pointer}
+.nav-ask span{display:block;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-ask i{flex:0 0 42px;height:42px;display:grid;place-items:center;border-radius:50%;color:var(--page);background:var(--fg)}.nav-ask i svg{width:20px;height:20px}
+.bottom-nav.asking .nav-tabs,.bottom-nav.asking .nav-spark{display:none}
+.bottom-nav.asking .nav-back{display:grid;animation:nav-pop .4s cubic-bezier(.34,1.5,.64,1)}
+.bottom-nav.asking .nav-ask{display:flex;animation:nav-in .38s var(--ease-out)}
+.bottom-nav:not(.asking) .nav-tabs{animation:nav-in .38s var(--ease-out)}
+.bottom-nav.morph{animation:nav-squish .5s var(--ease-out)}
+@keyframes nav-in{from{opacity:0;transform:translateX(10px)}}
+@keyframes nav-pop{from{opacity:0;transform:scale(.6) rotate(-45deg)}}
+@keyframes nav-squish{0%{transform:scaleX(1)}35%{transform:scaleX(.96) scaleY(1.04)}70%{transform:scaleX(1.01)}100%{transform:none}}
+body:has(.bottom-nav){padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 }
+@media (prefers-reduced-motion:reduce){.bottom-nav,.bottom-nav *{animation:none!important}}
 @media (prefers-reduced-motion:reduce){.top-tabs a,.top-tabs button{transform:none!important}.bottom-nav a,.bottom-nav button{transition:none}}`;
 
 /**
@@ -57,6 +78,15 @@ body:has(.bottom-nav){padding-bottom:calc(62px + env(safe-area-inset-bottom))}
  * width +17, height +16, drop 3.5.
  */
 export const COMMAND_BAR_JS = `
+(function () {
+  // G-248: on stock and report pages the bottom bar turns into the ask bar shortly after the page opens.
+  var nav = document.querySelector('.bottom-nav[data-ask-mode]'); if (!nav) return;
+  var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var set = function (on) { nav.classList.toggle('asking', on); nav.classList.remove('morph'); void nav.offsetWidth; if (!still) nav.classList.add('morph'); };
+  nav.addEventListener('animationend', function (e) { if (e.target === nav) nav.classList.remove('morph'); });
+  var back = nav.querySelector('.nav-back'); if (back) back.addEventListener('click', function () { set(false); clearTimeout(t); });
+  var t = setTimeout(function () { set(true); }, still ? 0 : 900);
+})();
 (function () {
   var root = document.querySelector('.top-tabs'); if (!root || !window.matchMedia) return;
   var O = { proximity: 122, spring: 0.19, damping: 0.7, widthGrowth: 17, heightGrowth: 16, drop: 3.5 };
