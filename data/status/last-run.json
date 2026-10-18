@@ -1,5 +1,5 @@
 {
- "at": "2026-10-18T11:36:33.238Z",
+ "at": "2026-10-18T13:28:19.604Z",
  "selected": null,
  "universe": [
   {
@@ -11,11 +11,6 @@
    "source": "naver:m-stock:etf",
    "ok": true,
    "count": 1176
-  },
-  {
-   "source": "opendart:corpCode",
-   "ok": true,
-   "count": 3999
   },
   {
    "source": "naver:fchart:day:all",
