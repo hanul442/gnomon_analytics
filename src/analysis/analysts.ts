@@ -84,7 +84,7 @@ export function invalidationOf(stance: AnalystCall['stance'], close: number, pri
 const crossed = (c: Pick<AnalystCall, 'stance' | 'invalidation'>, close: number) =>
   c.invalidation != null && (c.stance === 'BULLISH' ? close <= c.invalidation : c.stance === 'BEARISH' ? close >= c.invalidation : false);
 export const TRACK_KEEP = 5;
-const hitOf = (c: AnalystCall, close: number) => {
+export const hitOf = (c: Pick<AnalystCall, 'stance' | 'target' | 'baseClose'>, close: number) => {
   const move = close / c.baseClose - 1;
   if (c.stance === 'NEUTRAL') return Math.abs(move) <= 0.02;
   return Math.sign(c.target - c.baseClose) === Math.sign(move);
