@@ -13,7 +13,7 @@ export { BANNER_CSS } from './ui.js';
 /** A notice or ad in the home banner (banners.json, edited by hand like promos.json). */
 export type BannerKind = 'notice' | 'event' | 'guide' | 'survey' | 'ad';
 /** A picture banner (teasers): the words are drawn into the picture, so `title` and `text` become its alt text. Wide for desktop (4:1), narrow for phones. */
-export interface BannerImage { wide: string; narrow?: string }
+export interface BannerImage { wide: string; narrow?: string; /** A short film that opens in a pop-up when the banner is tapped. */ video?: string; poster?: string }
 export interface Banner { title: string; text?: string; href?: string; cta?: string; tone?: 'navy' | 'teal' | 'amber' | 'rose'; until?: string; kind?: BannerKind; event?: string; credits?: number; benefits?: readonly string[]; brand?: 'hanul'; image?: BannerImage }
 const KIND_TAG: Record<BannerKind, [string, string]> = { notice: ['공지', '📣'], event: ['이벤트', '🎁'], guide: ['사용법', '🧭'], survey: ['설문', '📝'], ad: ['광고', '🏷️'] };
 
@@ -39,7 +39,8 @@ export function validBanners(list: unknown, today: string): Banner[] {
     if (b.href !== undefined && (typeof b.href !== 'string' || /^\s*javascript:/i.test(b.href))) return [];
     // Pictures must be our own files under assets/banners/.
     const pic = (v: unknown) => typeof v === 'string' && /^assets\/banners\/[\w.-]+\.(jpg|png|webp)$/.test(v);
-    const image = b.image && pic(b.image.wide) ? { wide: b.image.wide, ...(pic(b.image.narrow) ? { narrow: b.image.narrow } : {}) } : undefined;
+    const film = (v: unknown) => typeof v === 'string' && /^assets\/banners\/[\w.-]+\.mp4$/.test(v);
+    const image = b.image && pic(b.image.wide) ? { wide: b.image.wide, ...(pic(b.image.narrow) ? { narrow: b.image.narrow } : {}), ...(film(b.image.video) ? { video: b.image.video } : {}), ...(film(b.image.video) && pic(b.image.poster) ? { poster: b.image.poster } : {}) } : undefined;
     return [{ title: b.title.slice(0, 60), ...(typeof b.text === 'string' ? { text: b.text.slice(0, 120) } : {}), ...(b.href ? { href: b.href } : {}), ...(typeof b.cta === 'string' ? { cta: b.cta.slice(0, 16) } : {}), tone: TONES.includes(b.tone ?? '') ? b.tone! : 'navy', ...(image ? { image } : {}) }];
   });
 }
@@ -50,9 +51,11 @@ export function bannerHtml(list: readonly Banner[]): string {
   const slide = (b: Banner, i: number) => {
     const [tag, art] = KIND_TAG[b.kind ?? 'notice'];
     const alt = esc([b.title, b.text].filter(Boolean).join(' '));
-    const inner = b.image ? `<picture>${b.image.narrow ? `<source media="(max-width:820px)" srcset="${esc(b.image.narrow)}">` : ''}<img class="bn-pic" src="${esc(b.image.wide)}" alt="${alt}" decoding="async"${i ? ' loading="lazy"' : ''}></picture>` : `<span class="bn-tag">${tag}${b.benefits || b.kind === 'ad' ? ' · MOCK AD' : ''}</span>${b.brand ? '<img class="bn-logo" src="assets/hanul-logo.jpg" alt="HANUL by Hanseo Kim" width="1536" height="512">' : ''}<b>${esc(b.title)}</b>${b.text ? `<span class="bn-text">${esc(b.text)}</span>` : ''}${b.cta && !b.benefits ? (b.event ? `<button type="button" class="bn-cta" data-claim="${esc(b.event)}" data-ev-credits="${b.credits ?? 0}">${esc(b.cta)} ›</button>` : `<span class="bn-cta">${esc(b.cta)} ›</span>`) : ''}${b.brand ? '' : `<span class="bn-art" aria-hidden="true">${art}</span>`}${b.benefits ? `<details class="bn-benefits"><summary class="bn-cta">${esc(b.cta ?? '혜택 보기')}</summary><ul>${b.benefits.map((benefit) => `<li>${esc(benefit)}</li>`).join('')}</ul><p>실제 모집 공고가 아닌 예시 광고입니다. 혜택은 선발·복무 조건에 따라 달라지며, 지원 접수나 외부 페이지 연결은 제공하지 않습니다.</p></details>` : ''}`;
+    const inner = b.image ? `<picture>${b.image.narrow ? `<source media="(max-width:820px)" srcset="${esc(b.image.narrow)}">` : ''}<img class="bn-pic" src="${esc(b.image.wide)}" alt="${alt}" decoding="async"${i ? ' loading="lazy"' : ''}></picture>${b.image.video ? '<span class="bn-play" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>티저 보기</span>' : ''}` : `<span class="bn-tag">${tag}${b.benefits || b.kind === 'ad' ? ' · MOCK AD' : ''}</span>${b.brand ? '<img class="bn-logo" src="assets/hanul-logo.jpg" alt="HANUL by Hanseo Kim" width="1536" height="512">' : ''}<b>${esc(b.title)}</b>${b.text ? `<span class="bn-text">${esc(b.text)}</span>` : ''}${b.cta && !b.benefits ? (b.event ? `<button type="button" class="bn-cta" data-claim="${esc(b.event)}" data-ev-credits="${b.credits ?? 0}">${esc(b.cta)} ›</button>` : `<span class="bn-cta">${esc(b.cta)} ›</span>`) : ''}${b.brand ? '' : `<span class="bn-art" aria-hidden="true">${art}</span>`}${b.benefits ? `<details class="bn-benefits"><summary class="bn-cta">${esc(b.cta ?? '혜택 보기')}</summary><ul>${b.benefits.map((benefit) => `<li>${esc(benefit)}</li>`).join('')}</ul><p>실제 모집 공고가 아닌 예시 광고입니다. 혜택은 선발·복무 조건에 따라 달라지며, 지원 접수나 외부 페이지 연결은 제공하지 않습니다.</p></details>` : ''}`;
     const attrs = `class="bn-slide bn-${b.tone ?? 'navy'} bn-k-${b.kind ?? 'notice'}${b.brand ? ' bn-hanul' : ''}${b.image ? ' bn-img' : ''}" data-i="${i}"${i ? ' hidden' : ''} aria-roledescription="배너"`;
     // A link is named by its own text; a group (no link) needs a name, so it keeps its place in the set.
+    // A film banner is a link to the film itself (works without script); the script opens it in a pop-up instead.
+    if (b.image?.video) return `<a ${attrs} href="${esc(b.image.video)}" data-video="${esc(b.image.video)}"${b.image.poster ? ` data-poster="${esc(b.image.poster)}"` : ''} aria-label="${alt} · 티저 영상 보기">${inner}</a>`;
     return b.href && !b.event ? `<a ${attrs} href="${esc(b.href)}">${inner}</a>` : `<div ${attrs} role="group" aria-label="${i + 1} / ${list.length}">${inner}</div>`;
   };
   return `<section class="banner" id="banner" aria-label="공지와 이벤트">${list.map(slide).join('')}${list.length > 1 ? `<div class="bn-dots">${list.map((_, i) => `<button type="button" data-go="${i}" aria-label="${i + 1}번째 배너" aria-pressed="${i === 0}"></button>`).join('')}</div>` : ''}</section>`;
@@ -64,6 +67,22 @@ export const BANNER_JS = `<script>
   var box = document.getElementById('banner'); if (!box) return;
   var slides = box.querySelectorAll('.bn-slide'), dots = box.querySelectorAll('[data-go]'), at = 0, timer = 0;
   // Credit events: the API grants them once per account; without the API, this browser's mock account.
+  // Teaser films open in a pop-up player; closing it stops the film and puts focus back on the banner.
+  box.addEventListener('click', function (e) {
+    var v = e.target.closest && e.target.closest('[data-video]'); if (!v || typeof HTMLDialogElement !== 'function') return;
+    e.preventDefault(); clearInterval(timer);
+    var d = document.getElementById('bn-film');
+    if (!d) {
+      d = document.createElement('dialog'); d.id = 'bn-film'; d.className = 'bn-film'; d.setAttribute('aria-label', '티저 영상');
+      d.innerHTML = '<button type="button" class="bn-film-x" aria-label="닫기">×</button><video controls playsinline preload="auto"></video>';
+      document.body.appendChild(d);
+      d.querySelector('.bn-film-x').addEventListener('click', function () { d.close(); });
+      d.addEventListener('click', function (ev) { if (ev.target === d) d.close(); });
+      d.addEventListener('close', function () { var f = d.querySelector('video'); f.pause(); if (d._from) d._from.focus(); start(); });
+    }
+    var film = d.querySelector('video'); film.src = v.getAttribute('data-video'); if (v.getAttribute('data-poster')) film.poster = v.getAttribute('data-poster');
+    d._from = v; d.showModal(); var p = film.play(); if (p && p.catch) p.catch(function () {});
+  });
   box.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('[data-claim]'); if (!b) return;
     e.preventDefault(); var id = b.getAttribute('data-claim'), G = window.GNM || {};
