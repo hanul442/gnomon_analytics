@@ -754,10 +754,13 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const live = lives.get(ticker.symbol);
     const links = { index: 'archive.html', base: '../', homeHref: 'index.html', archiveHref: 'archive.html' };
     let page: DailyReport | null = null;
+    // G-231: the day the shown report was made; a live page carries the run's date and must not stand in for it.
+    let made: string | null = latest?.date ?? null;
     if (live) {
       const ai = [...reports].filter((r) => r.commentary?.status === 'OK').sort((a, b) => (a.date < b.date ? -1 : 1));
       const withAi = ai.at(-1) ?? [...reports].filter((r) => r.commentary).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
       page = { ...live, ...(withAi?.commentary ? { commentary: withAi.commentary } : {}) };
+      if (withAi?.commentary) made = withAi.date;
       await writeReportPage(siteDir, join(dir, 'index.html'), page, { ...links, live: true, commentaryFrom: withAi?.date ?? null, previous: ai.length > 1 ? ai.at(-2)! : null, previousHref: ai.length > 1 ? `reports/${ai.at(-2)!.date}.html` : null }, withAi?.date ?? null);
     } else if (latest) {
       page = latest;
@@ -781,7 +784,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const pick = picks.get(ticker.symbol);
     const day = daily.get(ticker.symbol);
     const group = day && !pick ? 'daily' : past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : requested.has(ticker.symbol) ? 'request' : 'core';
-    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, ...(pick.tier === 'deep' ? { tier: 'deep' as const } : {}) } : day ? { reasons: [day.reason], ...(day.tier === 'deep' ? { tier: 'deep' as const } : {}), pickDate: day.date, kind: day.kind } : {}) });
+    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, reportDate: made, group, ...(pick ? { reasons: pick.reasons, ...(pick.tier === 'deep' ? { tier: 'deep' as const } : {}) } : day ? { reasons: [day.reason], ...(day.tier === 'deep' ? { tier: 'deep' as const } : {}), pickDate: day.date, kind: day.kind } : {}) });
   }
   await writeAssets(siteDir);
   await writeFile(join(siteDir, 'stock.html'), renderStockPage('stock'));

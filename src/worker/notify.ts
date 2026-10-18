@@ -131,7 +131,7 @@ export async function runDailyNotify(ctx: Ctx): Promise<{ date: string | null; s
     const watch = new Set<string>(u.symbols && notifyLimit(u.plan).watchReport ? JSON.parse(u.symbols) as string[] : []), mine = today.filter((s) => watch.has(s));
     const ok = mine.length
       ? await notifyUser(ctx, u.id, 'watchReport', { title: `관심 종목 새 리포트 · ${list(mine)}`, body: `${date} 장 마감 기준 리포트가 나왔어요.`, link: `reports.html?hl=${mine.map(encodeURIComponent).join(',')}#today` })
-      : await notifyUser(ctx, u.id, 'daily', { title: `오늘 리포트 ${today.length}개가 나왔어요`, body: `${list(today)} · ${date} 장 마감 기준`, link: 'reports.html#today' });
+      : await notifyUser(ctx, u.id, 'daily', { title: `${date === kstDate(ctx.now) ? '오늘' : `${date.slice(5).replace('-', '/')}`} 리포트 ${today.length}개가 나왔어요`, body: `${list(today)} · ${date} 장 마감 기준`, link: 'reports.html#today' });
     if (ok) sent += 1;
   }
   // Requested reports (G-97): the request was handled and the stock's report is now in today's batch.
@@ -218,7 +218,7 @@ export async function runWeeklySummary(ctx: Ctx, env: MailEnv): Promise<{ week: 
       const blocks: string[] = [], lines: string[] = [];
       const watch = jsonList(u.symbols), known = watch.filter((s) => info[s]);
       if (watch.length && notifyLimit(u.plan).watchReport) {
-        const items = known.slice(0, 12).map((s) => { const x = info[s]!; return `<b>${esc(nm(s))}</b> ${esc(price(s, x.c))}${x.d >= weekStart ? ` · 공시 ${x.f}건 · 뉴스 ${x.n}건 · <span style="color:#4f46e5">${esc(md(x.d))} 새 리포트</span>` : ` <span style="color:#6b7684">· 리포트 ${esc(md(x.d))}</span>`}`; });
+        const items = known.slice(0, 12).map((s) => { const x = info[s]!; return `<b>${esc(nm(s))}</b> ${esc(price(s, x.c))}${x.d >= weekStart ? ` · 공시 ${x.f}건 · 뉴스 ${x.n}건 · <span style="color:#4f46e5">${esc(md(x.d))} 새 리포트</span>` : x.d ? ` <span style="color:#6b7684">· 리포트 ${esc(md(x.d))}</span>` : ''}`; });
         const rest = watch.length - Math.min(known.length, 12);
         blocks.push(`<h2 style="font-size:15px;margin:18px 0 4px">관심 종목 ${watch.length}개</h2>${items.length ? mailList(items) : ''}${rest > 0 ? `<p style="margin:6px 0 0;color:#6b7684">${known.length > 12 ? `외 ${known.length - 12}개 · ` : ''}리포트가 없는 종목 ${watch.length - known.length}개</p>` : ''}`);
         if (known.length) lines.push(`관심 종목: ${known.slice(0, 12).map((s) => `${nm(s)} ${price(s, info[s]!.c)}`).join(', ')}`);

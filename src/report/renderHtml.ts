@@ -1107,7 +1107,16 @@ export interface HomeEntry {
   /** Daily picks (G-56): the day picked and what it is. */
   pickDate?: string;
   kind?: 'stock' | 'etf' | 'coin';
+  /**
+   * G-231: the date of the newest dated report (reports/<symbol>/<date>.json), the day the report was made. `report`
+   * on a live page is rebuilt every run and carries the run's date, so it must not be read as when the report came
+   * out. null: no dated report yet. Left out (older callers, tests): `report.date`.
+   */
+  reportDate?: string | null;
 }
+
+/** G-231: when this entry's report was made, '' when it has none. */
+export const madeOn = (e: { report: DailyReport | null; reportDate?: string | null }): string => (e.reportDate === undefined ? e.report?.date ?? '' : e.reportDate ?? '');
 
 
 // Shared styles and scripts live in two cached files instead of every page (site/assets/, written by renderSite).
