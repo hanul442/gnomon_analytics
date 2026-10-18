@@ -102,3 +102,18 @@ test('gatherUsResearch: every source is best effort and leaves a status row', as
   // The page template still renders a US stock page.
   assert.match(renderStockPage(), /stock-hero/);
 });
+
+test('US 기업 체력: no investor-flow axis (it does not apply), and a report saved without SEC financials refills them from the API', async () => {
+  const { renderReport } = await import('./renderHtml.js');
+  const r = buildUsReport({ symbol: 'MRNA.O', name: '모더나', nameEng: 'Moderna, Inc.', exchange: 'NASDAQ', bars, research: research(), now: AT });
+  const panel = withCurrency('USD', () => fundamentalsPanel(r.market!, r.price?.close ?? null));
+  assert.doesNotMatch(panel, /<b>수급<\/b>/);
+  assert.match(panel, /수급 축은 빼고/);
+  assert.match(panel, /<b>성장<\/b>/);
+  const page = renderReport(r, { index: 'archive.html', base: '../' });
+  assert.doesNotMatch(page, /data-usinfo=/, 'a report with financials is left as it is');
+  const empty = buildUsReport({ symbol: 'MRNA.O', name: '모더나', nameEng: 'Moderna, Inc.', exchange: 'NASDAQ', bars, research: { ...research(), finance: [], status: [{ source: 'sec:edgar:xbrl', ok: false, count: 0, error: 'EDGAR_HTTP_403' }] }, now: AT });
+  const stale = renderReport(empty, { index: 'archive.html', base: '../' });
+  assert.match(stale, /data-usinfo="MRNA\.O"/);
+  assert.match(stale, /\/usinfo\//);
+});
