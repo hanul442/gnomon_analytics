@@ -167,3 +167,18 @@ test('picture banners: only our own files, words kept as alt text, phone picture
  assert.match(html,/<img class="bn-pic" src="assets\/banners\/a-wide.jpg" alt="정보의 바다는, 끝. 새 화면"/);
  assert.doesNotMatch(html,/evil\.example/);
 });
+
+test('film banners: a teaser film under assets/banners/ opens in a pop-up, other films are dropped',async()=>{
+ const {validBanners,bannerHtml,BANNER_JS}=await import('./alphaPages.js');
+ const list=validBanners([
+  {title:'새 화면',image:{wide:'assets/banners/a.jpg',video:'assets/banners/t.mp4',poster:'assets/banners/t.jpg'}},
+  {title:'밖의 영상',image:{wide:'assets/banners/b.jpg',video:'https://evil.example/t.mp4',poster:'assets/banners/t.jpg'}},
+ ],'2026-10-18');
+ assert.deepEqual(list[0]!.image,{wide:'assets/banners/a.jpg',video:'assets/banners/t.mp4',poster:'assets/banners/t.jpg'});
+ assert.deepEqual(list[1]!.image,{wide:'assets/banners/b.jpg'});
+ const html=bannerHtml(list);
+ assert.match(html,/<a class="bn-slide[^"]*" data-i="0" aria-roledescription="배너" href="assets\/banners\/t.mp4" data-video="assets\/banners\/t.mp4" data-poster="assets\/banners\/t.jpg"/);
+ assert.equal((html.match(/bn-play/g)??[]).length,1);
+ assert.doesNotMatch(html,/evil\.example/);
+ assert.match(BANNER_JS,/showModal\(\)/);
+});
