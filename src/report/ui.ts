@@ -224,7 +224,7 @@ export const UI_SCRIPT = `<script>
 
 // The ☰ menu (docs/DESIGN.md §5.20, G-58): every page, all sections in one drawer.
 const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-/** Menu groups: [icon path (24px line icon, G-233), label, href]. Hrefs are relative to the site root. */
+/** Menu groups: [icon path (24px line icon, G-235), label, href]. Hrefs are relative to the site root. */
 export const MENU: readonly { title: string; items: readonly [string, string, string][] }[] = [
   // G-211: two groups of tiles (한서님 10/11 '합칠 수 있는 건 합치자'): what to look at, and their own things.
   // 미국 주식·ETF·코인·조건 만들기 are tabs of 종목 찾기, 오늘 나온 리포트 is the top of AI 리포트, 1:1 문의 is in
