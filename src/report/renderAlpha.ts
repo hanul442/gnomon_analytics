@@ -391,7 +391,7 @@ function adminParts(): { body: string; script: string } {
       }));
     },
     invites: function () {
-      return '<form class="inline" id="inv-new"><label>코드 <input name="code" placeholder="비우면 자동" style="width:130px"></label><label>인원 <input name="maxUses" type="number" min="1" max="500" value="1" style="width:70px"></label><label>계정 <select name="plan"><option value="beta">베타</option><option value="alpha">알파</option></select></label><label>가입 크레딧 <input name="credits" type="number" min="0" max="1000" value="0" style="width:80px"></label><label>만료 <input name="expiresAt" type="date"></label><label>메모 <input name="note" placeholder="예: 투자 동호회"></label><button>만들기</button></form>' +
+      return '<form class="inline" id="inv-new"><label>코드 <input name="code" placeholder="비우면 자동" style="width:130px"></label><label>인원 <input name="maxUses" type="number" min="1" max="500" value="1" style="width:70px"></label><label>가입 크레딧 <input name="credits" type="number" min="0" max="1000" value="0" style="width:80px"></label><label>만료 <input name="expiresAt" type="date"></label><label>메모 <input name="note" placeholder="예: 투자 동호회"></label><button>만들기</button></form>' +
         '<form class="inline" id="link-new" style="margin-top:10px"><label>로그인 링크 직접 발급 <input name="email" type="email" placeholder="이메일" required></label><label>초대 코드(신규만) <input name="invite" style="width:130px"></label><button>발급</button><span id="link-out" class="muted small"></span></form>' +
         '<div style="margin-top:12px">' + table(['코드', '계정', '메모', '사용', '가입 크레딧', '만료', '공유 링크', ''], D.invites.map(function (i) {
           var url = String(window.GNM_SITE || '').replace(/\\/$/, '') + '/login.html?invite=' + encodeURIComponent(i.code);
@@ -445,7 +445,7 @@ function adminParts(): { body: string; script: string } {
   });
   root.addEventListener('submit', function (e) {
     e.preventDefault(); var f = e.target;
-    if (f.id === 'inv-new') post('/admin/invites', { code: f.code.value.trim() || undefined, plan: f.plan.value, maxUses: Number(f.maxUses.value), credits: Number(f.credits.value), note: f.note.value, expiresAt: f.expiresAt.value || undefined }).then(function (r) { if (r.code) GNM.toast(r.code + ' 코드를 만들었어요.'); });
+    if (f.id === 'inv-new') post('/admin/invites', { code: f.code.value.trim() || undefined, maxUses: Number(f.maxUses.value), credits: Number(f.credits.value), note: f.note.value, expiresAt: f.expiresAt.value || undefined }).then(function (r) { if (r.code) GNM.toast(r.code + ' 코드를 만들었어요.'); });
     if (f.id === 'link-new') GNM.call('POST', '/admin/login-link', { email: f.email.value, invite: f.invite.value.trim() || undefined }).then(function (r) {
       var out = document.getElementById('link-out'); if (r.error) { out.textContent = r.message; return; }
       navigator.clipboard.writeText(r.link).then(function () { out.textContent = '복사했어요 (' + r.expiresInMinutes + '분, 한 번만). 본인에게만 전해 주세요.'; }, function () { out.textContent = r.link; });
