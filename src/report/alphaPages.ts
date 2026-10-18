@@ -7,6 +7,7 @@ import type { CreditEvent } from './events.js';
 import { shell } from './renderHtml.js';
 import { CREDIT_COST, TESTERS } from './plans.js';
 import { esc } from './html.js';
+import { BETA_YES, WRAPUP, WRAPUP_LINK } from './wrapup.js';
 export { BANNER_CSS } from './ui.js';
 
 
@@ -26,6 +27,10 @@ export const ALPHA_BANNERS: readonly Banner[] = [
   { kind: 'ad', title: '여기에 광고가 들어갈 수 있어요', text: '증권·핀테크 파트너 광고 자리예요. 지금은 시험용 가상 광고이고, 실제 상품이 아니에요.', cta: '광고 문의 (준비 중)', tone: 'rose' },
 ];
 
+/** G-241: the wrap-up survey leads the banner from 10/24 (KST date of the build) to the alpha's last day. */
+export const wrapupBanners = (today: string): Banner[] => today >= '2026-10-24' && today <= '2026-10-31'
+  ? [{ kind: 'survey', title: '알파 마무리 설문 · 베타 신청', text: `알파가 ${WRAPUP.end}에 끝나요. 3분 설문 끝에서 클로즈드 베타도 신청할 수 있어요.`, href: WRAPUP_LINK, cta: '설문하기', tone: 'rose' }]
+  : [];
 /** Credit events become banners with a 받기 button (G-73). */
 export const eventBanners = (events: readonly CreditEvent[]): Banner[] => events.map((e) => ({ kind: 'event', title: `${e.title} · ${e.credits}크레딧`, text: e.text, cta: '받기', tone: 'amber', event: e.id, credits: e.credits }));
 export function validBanners(list: unknown, today: string): Banner[] {
@@ -91,7 +96,8 @@ export const BANNER_JS = `<script>
 const PAGE = `<style>.gd{max-width:760px;margin:0 auto}.gd h2{margin:26px 0 8px;font-size:19px}.gd p,.gd li{line-height:1.7}.gd ol,.gd ul{padding-left:20px}.gd .gd-note{background:var(--soft);border-radius:12px;padding:10px 14px;font-size:14px}
 .sv{max-width:720px;margin:0 auto}.sv .q{padding:14px 0;border-top:1px solid var(--line)}.sv h3{font-size:16px;margin:0 0 8px}.sv .opts{display:flex;flex-wrap:wrap;gap:6px}.sv .opts label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:999px;padding:7px 12px;font-size:14px;cursor:pointer;background:var(--surface)}
 .sv .opts input{accent-color:var(--navy)}.sv .opts label:has(input:checked){border-color:var(--navy);background:var(--soft);font-weight:700}.sv .nps{display:grid;grid-template-columns:repeat(11,1fr);gap:4px}.sv .nps label{justify-content:center;padding:8px 0;border-radius:10px}.sv .nps input{display:none}
-.sv textarea{width:100%;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;min-height:80px}.sv .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}</style>`;
+.sv textarea{width:100%;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;font-size:16px;min-height:80px}.sv .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px}
+.sv .sv-sec{font-size:18px;margin:10px 0 12px;padding-top:12px;border-top:2px solid var(--navy);color:var(--accent-strong)}.sv .sv-consent{display:flex;gap:10px;align-items:flex-start;font-size:15px;line-height:1.55;font-weight:700;cursor:pointer;min-height:40px}.sv .sv-consent input{width:20px;height:20px;flex:none;margin-top:2px;accent-color:var(--navy)}</style>`;
 
 /** G-74/G-190: the guide, by what a reader wants to do, matching today's screens (the old alpha screenshots were dropped because they showed screens that no longer exist), with a live tour per page. */
 const GUIDE_STEPS: readonly { id: string; title: string; body: string }[] = [
@@ -125,8 +131,8 @@ export function renderGuide(): string {
   return shell('', '사용법 · 그노몬', body, {});
 }
 
-type Q = { key: string; title: string; type: 'one' | 'many' | 'text' | 'nps'; options?: readonly string[]; note?: string };
-export const SURVEYS: Record<'midterm' | 'weekly', { title: string; lead: string; questions: readonly Q[] }> = {
+type Q = { key: string; title: string; type: 'one' | 'many' | 'text' | 'nps' | 'consent'; options?: readonly string[]; note?: string; section?: string };
+export const SURVEYS: Record<'midterm' | 'weekly' | 'wrapup', { title: string; lead: string; questions: readonly Q[] }> = {
   midterm: {
     title: '알파 중간 설문', lead: '지금까지 써 보신 소감을 들려주세요. 약 5분 걸려요. 답은 서비스 개선에만 써요.',
     questions: [
@@ -150,6 +156,20 @@ export const SURVEYS: Record<'midterm' | 'weekly', { title: string; lead: string
       { key: 'worst', title: '불편했던 것 하나', type: 'text' },
     ],
   },
+  // G-241: the last alpha survey, with the closed-beta application at the end (wrapup.ts).
+  wrapup: {
+    title: '알파 마무리 설문', lead: `알파 테스트가 ${WRAPUP.end}에 끝나요. 3분이면 돼요. 끝에서 클로즈드 베타도 신청할 수 있어요.`,
+    questions: [
+      { key: 'nps', title: '알파를 써 보니, 투자하는 친구에게 그노몬을 추천할 만한가요?', type: 'nps' },
+      { key: 'used', title: '알파 기간에 써 본 것', type: 'many', note: '여러 개 골라도 돼요', options: ['홈 화면', '종목 검색', '종목 리포트', 'AI 위원회', '매일 AI 리포트', '차트', '스크리너', 'ETF·코인', 'AI 질문', '관심 종목·알림', '성적표·모의투자', '공시 레이더'] },
+      { key: 'keep', title: '정식 버전에도 꼭 남겨야 할 것 하나와 이유', type: 'text' },
+      { key: 'cut', title: '빼거나 줄여도 될 것', type: 'text' },
+      { key: 'hard', title: '끝까지 헷갈렸던 화면이나 용어', type: 'text' },
+      { key: 'beta', section: '클로즈드 베타 신청', title: '다음 테스트(클로즈드 베타)에 참여할래요?', type: 'one', note: '일정이 정해지면 신청하신 분께 이메일로 먼저 알려 드려요. 신청만으로 계정이 바뀌지는 않아요.', options: [BETA_YES, '이번엔 괜찮아요'] },
+      { key: 'contact', title: '가입 이메일 말고 연락받을 곳 (선택)', type: 'text', note: '비워 두면 가입 이메일로 연락드려요.' },
+      { key: 'consent', title: '베타 안내 연락을 위해 이메일과 적어 주신 연락처를 베타 모집이 끝날 때까지 보관하는 데 동의해요', type: 'consent', note: '베타를 신청할 때만 필요해요. 계정을 지우면 함께 지워져요.' },
+    ],
+  },
 };
 
 export function renderSurvey(): string {
@@ -163,25 +183,29 @@ export function renderSurvey(): string {
   document.getElementById('sv-title').textContent = s.title; document.getElementById('sv-lead').textContent = s.lead; document.title = s.title + ' · 그노몬';
   var form = document.getElementById('sv');
   form.innerHTML = s.questions.map(function (q, i) {
-    var head = '<h3>' + (i + 1) + '. ' + esc(q.title) + '</h3>' + (q.note ? '<div class="muted small">' + esc(q.note) + '</div>' : '');
+    var head = (q.section ? '<h2 class="sv-sec">' + esc(q.section) + '</h2>' : '') + '<h3>' + (i + 1) + '. ' + esc(q.title) + '</h3>' + (q.note ? '<div class="muted small">' + esc(q.note) + '</div>' : '');
+    if (q.type === 'consent') return '<div class="q">' + (q.section ? '<h2 class="sv-sec">' + esc(q.section) + '</h2>' : '') + '<label class="sv-consent"><input type="checkbox" name="' + q.key + '"> <span>' + esc(q.title) + '</span></label>' + (q.note ? '<div class="muted small">' + esc(q.note) + '</div>' : '') + '</div>';
     if (q.type === 'text') return '<div class="q">' + head + '<textarea name="' + q.key + '" maxlength="800"></textarea></div>';
     if (q.type === 'nps') { var n = ''; for (var v = 0; v <= 10; v++) n += '<label><input type="radio" name="' + q.key + '" value="' + v + '">' + v + '</label>'; return '<div class="q">' + head + '<div class="opts nps">' + n + '</div><div class="ends"><span>전혀 아님</span><span>꼭 추천</span></div></div>'; }
     return '<div class="q">' + head + '<div class="opts">' + q.options.map(function (o) { return '<label><input type="' + (q.type === 'one' ? 'radio' : 'checkbox') + '" name="' + q.key + '" value="' + esc(o) + '">' + esc(o) + '</label>'; }).join('') + '</div></div>';
   }).join('') + '<button class="btn-primary" type="submit">보내기</button>';
   var out = document.getElementById('out');
-  (window.GNM && GNM.ready ? GNM.ready : Promise.resolve(null)).then(function (me) { if (!me) { document.getElementById('sv-login').hidden = false; form.querySelector('button').disabled = true; } });
+  (window.GNM && GNM.ready ? GNM.ready : Promise.resolve(null)).then(function (me) { if (!me) { var box = document.getElementById('sv-login'); box.querySelector('a').href = 'login.html?return=' + encodeURIComponent('survey.html?k=' + k); box.hidden = false; form.querySelector('button').disabled = true; } });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var a = { page: 'survey' };
     s.questions.forEach(function (q) {
       if (q.type === 'text') a[q.key] = form[q.key].value.trim();
+      else if (q.type === 'consent') a[q.key] = form[q.key].checked;
       else if (q.type === 'many') a[q.key] = [].map.call(form.querySelectorAll('[name="' + q.key + '"]:checked'), function (c) { return c.value; });
       else { var c = form.querySelector('[name="' + q.key + '"]:checked'); a[q.key] = c ? (q.type === 'nps' ? Number(c.value) : c.value) : null; }
     });
     if (a.nps === null) { out.innerHTML = '<div class="msg-err">첫 번째 질문(0~10)을 골라 주세요.</div>'; return; }
+    if (k === 'wrapup' && a.beta === ${JSON.stringify(BETA_YES)} && !a.consent) { out.innerHTML = '<div class="msg-err">베타를 신청하려면 마지막 연락처 보관 동의에 체크해 주세요.</div>'; return; }
     GNM.call('POST', '/survey', { kind: k, answers: a }).then(function (r) {
       if (r.error) { out.innerHTML = '<div class="msg-err"></div>'; out.firstChild.textContent = r.message; return; }
-      form.hidden = true; out.innerHTML = '<div class="msg-ok">고마워요! 보내 주신 내용은 다음 개선에 반영하고, 바뀐 점은 공지로 알려 드릴게요. <a href="index.html">홈으로</a></div>';
+      if (k === 'wrapup') { try { localStorage.setItem('gnm-pop-wrap', '9e15'); } catch (e) {} }
+      form.hidden = true; out.innerHTML = k === 'wrapup' ? '<div class="msg-ok">고마워요! 알파에 함께해 주셔서 정말 고마워요.' + (a.beta === ${JSON.stringify(BETA_YES)} ? ' 베타 신청도 받았어요. 일정이 정해지면 이메일로 먼저 알려 드릴게요.' : '') + ' <a href="index.html">홈으로</a></div>' : '<div class="msg-ok">고마워요! 보내 주신 내용은 다음 개선에 반영하고, 바뀐 점은 공지로 알려 드릴게요. <a href="index.html">홈으로</a></div>';
     });
   });
 })();

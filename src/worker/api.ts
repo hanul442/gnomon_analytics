@@ -21,6 +21,7 @@ import { renderDeep } from '../report/renderHtml.js';
 import { renderOps } from '../report/renderAlpha.js';
 import { mailButton, mailLayout, mailList, sendMail as deliverMail } from './mail.js';
 import { withCurrency } from '../report/format.js';
+import { BETA_YES, inWrapup } from '../report/wrapup.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
@@ -190,18 +191,19 @@ async function authed(req: Request, env: Env, now: Date): Promise<User> {
 async function me(env: Env, u: User, now: Date) {
   await monthlyGrant(env.DB, u, now);
   const db = env.DB;
-  const [balance, onboarding, lastPulse, requests, asksToday] = await Promise.all([
+  const [balance, onboarding, lastPulse, requests, asksToday, wrapup] = await Promise.all([
     balanceOf(db, u.id),
     db.prepare("SELECT answers FROM surveys WHERE user_id = ? AND kind = 'onboarding' ORDER BY id DESC LIMIT 1").bind(u.id).first<{ answers: string }>(),
     db.prepare("SELECT created_at FROM surveys WHERE user_id = ? AND kind = 'pulse' ORDER BY id DESC LIMIT 1").bind(u.id).first<{ created_at: string }>(),
     db.prepare('SELECT id, amount, reason, status, granted, admin_note, created_at, decided_at FROM credit_requests WHERE user_id = ? ORDER BY id DESC LIMIT 5').bind(u.id).all(),
     db.prepare("SELECT COUNT(*) AS n FROM questions WHERE user_id = ? AND created_at >= ? AND status = 'OK'").bind(u.id, kstDayStart(now)).first<{ n: number }>(),
+    db.prepare("SELECT 1 AS done FROM surveys WHERE user_id = ? AND kind = 'wrapup' LIMIT 1").bind(u.id).first<{ done: number }>(),
   ]);
   const days = (now.getTime() - Date.parse(u.created_at)) / 86_400_000;
   return {
     user: { hasPassword: !!(await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>())?.password_hash, email: u.email, plan: u.plan, planName: isTester(u.plan) ? TESTERS[u.plan].name : u.plan, rankAs: isTester(u.plan) ? ALPHA.rankAs : u.plan, tester: isTester(u.plan), admin: u.role === 'admin', ...(u.viewAs ? { viewAs: u.viewAs } : {}), createdAt: u.created_at },
     credits: { balance, monthly: isTester(u.plan) ? TESTERS[u.plan].monthlyCredits : 0, maxRequest: ALPHA.maxRequest },
-    survey: { onboarding: onboarding ? JSON.parse(onboarding.answers) : null, pulseDue: days >= 3 && (!lastPulse || now.getTime() - Date.parse(lastPulse.created_at) >= 7 * 86_400_000) },
+    survey: { onboarding: onboarding ? JSON.parse(onboarding.answers) : null, pulseDue: days >= 3 && (!lastPulse || now.getTime() - Date.parse(lastPulse.created_at) >= 7 * 86_400_000), wrapupDue: inWrapup(now) && !wrapup },
     requests: requests.results,
     asks: { today: asksToday?.n ?? 0, limit: Number(env.USER_DAILY_ASKS ?? 30) },
     costs: CREDIT_COST,
@@ -894,9 +896,11 @@ route('POST', '/ask/(\\d+)/rate', async ({ req, env, now, params }) => {
 
 route('POST', '/survey', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
-  if (!['onboarding', 'pulse', 'midterm', 'weekly'].includes(String(b.kind))) fail(400, 'BAD_SURVEY', '설문 종류가 맞지 않아요.');
+  if (!['onboarding', 'pulse', 'midterm', 'weekly', 'wrapup'].includes(String(b.kind))) fail(400, 'BAD_SURVEY', '설문 종류가 맞지 않아요.');
   const answers = JSON.stringify(b.answers ?? {});
   if (answers.length > 12000 || typeof b.answers !== 'object') fail(400, 'BAD_SURVEY', '응답이 너무 길어요.');
+  // G-241: a beta application is kept only with the consent to keep the contact; it never touches the plan.
+  if (b.kind === 'wrapup' && (b.answers as Record<string, unknown>)?.beta === BETA_YES && (b.answers as Record<string, unknown>).consent !== true) fail(400, 'BETA_CONSENT', '베타를 신청하려면 연락처 보관에 동의해 주세요.');
   await env.DB.prepare('INSERT INTO surveys (user_id, kind, answers, created_at) VALUES (?, ?, ?, ?)').bind(u.id, b.kind, answers, iso(now)).run();
   return { ok: true };
 });

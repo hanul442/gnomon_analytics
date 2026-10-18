@@ -9,14 +9,15 @@ import { isUsSymbol } from '../report/seal.js';
 import { notifyLimit } from '../report/plans.js';
 import { noteBullets } from '../report/releases.js';
 import { esc, mailButton, mailLayout, mailList, sendMail, type MailEnv } from './mail.js';
+import { WRAPUP_LINK, WRAPUP_NOTICE, inWrapup } from '../report/wrapup.js';
 
-export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'test';
+export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'notice' | 'test';
 /** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
 /** updatePatch (G-177): off by default, only x.Y.0 releases are announced; on, every patch too. */
 /** weekly (G-180): the Sunday-evening summary mail (watched stocks, screens, the week's reports). */
 export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; updatePatch: boolean; weekly: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
 export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, updatePatch: false, weekly: true, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
-const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', test: null };
+const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', notice: null, test: null };
 
 export async function prefsOf(db: D1, userId: string): Promise<Prefs> {
   const r = await db.prepare('SELECT prefs FROM notify_prefs WHERE user_id = ?').bind(userId).first<{ prefs: string }>();
@@ -240,4 +241,29 @@ export async function runWeeklySummary(ctx: Ctx, env: MailEnv): Promise<{ week: 
     } catch { /* one user's bad row must not stop the rest */ }
   }
   return { week, sent };
+}
+
+/**
+ * G-241: the alpha wrap-up notice, once per active user, from 2026-10-24 10:00 KST until the alpha ends (wrapup.ts).
+ * A service notice to the testers, so it skips the per-kind settings: 🔔 always, the phone when push is on, and
+ * one mail. Whoever already answered the survey is skipped; a tester who joins during the week still hears once.
+ * The key is written before sending so a slow run never sends twice; a failed mail stays in mail_log.
+ */
+export async function runWrapupNotify(ctx: Ctx, env: MailEnv): Promise<{ sent: number; mailed: number }> {
+  if (!inWrapup(ctx.now)) return { sent: 0, mailed: 0 };
+  const site = ctx.site.replace(/\/$/, ''), link = `${site}/${WRAPUP_LINK}`;
+  const users = (await ctx.db.prepare(`SELECT id, email FROM users u WHERE disabled = 0
+    AND NOT EXISTS (SELECT 1 FROM notify_log l WHERE l.key = 'wrapup:' || u.id)
+    AND NOT EXISTS (SELECT 1 FROM surveys s WHERE s.user_id = u.id AND s.kind = 'wrapup')`).all<{ id: string; email: string }>()).results;
+  const n = WRAPUP_NOTICE;
+  const html = mailLayout(site, n.title, `${n.mail.map((x) => `<p style="margin:0 0 10px;line-height:1.7">${esc(x)}</p>`).join('')}<p style="margin:18px 0 0">${mailButton(link, n.cta)}</p>`, { preheader: n.body, settings: false });
+  let sent = 0, mailed = 0;
+  for (const u of users) {
+    try {
+      if (!(await once(ctx.db, `wrapup:${u.id}`, ctx.now))) continue;
+      if (await notifyUser(ctx, u.id, 'notice', { title: n.title, body: n.body, link: WRAPUP_LINK })) sent += 1;
+      if (u.email && await sendMail(env, ctx.db, ctx.fetch, ctx.now, { kind: 'notice', userId: u.id, to: u.email, subject: `[그노몬] ${n.title}`, html, text: `${n.title}\n\n${n.mail.join('\n\n')}\n\n${link}` })) mailed += 1;
+    } catch { /* one user's bad row must not stop the rest */ }
+  }
+  return { sent, mailed };
 }

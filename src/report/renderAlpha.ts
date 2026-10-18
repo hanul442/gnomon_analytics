@@ -6,6 +6,7 @@ import { ALPHA } from './plans.js';
 import { SECTORS } from './sectors.js';
 import { ASSETS, EXPERIENCE, EXPLAIN, HORIZON } from './profile.js';
 import { SURVEYS } from './alphaPages.js';
+import { BETA_YES } from './wrapup.js';
 
 const PAGE_CSS = `<style>
 .form-card{max-width:520px;margin:24px auto}.fld-err{display:block;color:var(--up-strong);font-size:13px;margin-top:4px}[aria-invalid=true]{border-color:var(--up)!important}.form-card h1{font-size:26px;margin:0 0 6px}.fld{display:flex;flex-direction:column;gap:6px;margin-top:14px}.fld label{font-weight:700;font-size:14px}
@@ -275,7 +276,7 @@ const PULSE_QUESTIONS = [
 function surveyDefs(): string {
   type Def = { key: string; title: string; type: string; options?: readonly string[]; section?: string };
   const pack = (name: string, qs: readonly Def[]) => ({ name, questions: qs.map((q) => ({ key: q.key, title: q.title, type: q.type, options: q.options ?? [], ...(q.section ? { section: q.section } : {}) })) });
-  const defs = { onboarding: pack('가입 설문', ONBOARDING_QUESTIONS), midterm: pack('중간 설문', SURVEYS.midterm.questions), weekly: pack('주간 설문', SURVEYS.weekly.questions), pulse: pack('팝업 설문', PULSE_QUESTIONS) };
+  const defs = { onboarding: pack('가입 설문', ONBOARDING_QUESTIONS), midterm: pack('중간 설문', SURVEYS.midterm.questions), weekly: pack('주간 설문', SURVEYS.weekly.questions), pulse: pack('팝업 설문', PULSE_QUESTIONS), wrapup: pack('마무리 설문', SURVEYS.wrapup.questions) };
   return JSON.stringify(defs).replace(/</g, '\\u003c');
 }
 
@@ -301,16 +302,17 @@ function adminParts(): { body: string; script: string } {
   var avg = function (xs) { return xs.length ? (xs.reduce(function (s, x) { return s + x; }, 0) / xs.length).toFixed(1) : '—'; };
   var npsOf = function (xs) { return xs.length ? Math.round((xs.filter(function (x) { return x >= 9; }).length - xs.filter(function (x) { return x <= 6; }).length) / xs.length * 100) : '—'; };
   // G-208: survey answers in full. DEFS holds each kind's questions; answers the form no longer asks still show, by key.
-  var DEFS = ${surveyDefs()}, KINDS = ['onboarding', 'midterm', 'weekly', 'pulse'], sv = { kind: '', q: '', view: 'each', exact: false };
+  var DEFS = ${surveyDefs()}, KINDS = ['onboarding', 'midterm', 'weekly', 'pulse', 'wrapup'], sv = { kind: '', q: '', view: 'each', exact: false };
   var kindName = function (k) { return (DEFS[k] || { name: k }).name; };
   var parse = function (s) { try { var v = JSON.parse(s || 'null'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } };
   var empty = function (v) { return v == null || v === '' || (Array.isArray(v) && !v.length); };
   var items = function (q, v) { return [].concat(v).map(function (x) { return q.type === 'tickers' && Array.isArray(x) ? x[1] + ' ' + x[0] : typeof x === 'object' ? JSON.stringify(x) : String(x); }); };
-  var answerText = function (q, v) { return empty(v) ? '' : items(q, v).join(', '); };
+  var answerText = function (q, v) { return typeof v === 'boolean' ? (v ? '동의' : '') : empty(v) ? '' : items(q, v).join(', '); };
   var answerHtml = function (q, v) {
     if (empty(v)) return '<span class="muted">건너뜀</span>';
     if (Array.isArray(v)) return '<span class="sv-chips">' + items(q, v).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</span>';
     if (q.type === 'nps') return '<b>' + esc(v) + '</b><span class="muted"> / 10</span>';
+    if (typeof v === 'boolean') return v ? '<b>동의</b>' : '<span class="muted">동의 안 함</span>';
     return '<span class="sv-text">' + esc(items(q, v)[0]) + '</span>';
   };
   var questionsOf = function (s) {
@@ -366,8 +368,10 @@ function adminParts(): { body: string; script: string } {
       var nps = D.surveys.filter(function (s) { return s.kind !== 'onboarding'; }).map(function (p) { return parse(p.answers).nps; }).filter(function (x) { return typeof x === 'number'; });
       var up = D.feedback.filter(function (f) { return f.rating === 1; }).length, down = D.feedback.filter(function (f) { return f.rating === -1; }).length;
       var fresh = D.surveys.filter(function (s) { return Date.parse(s.created_at) > week; }).length;
+      // G-241: closed-beta applicants, by each person's latest wrap-up answer (D.surveys is newest first). Interest only: no account changes.
+      var wseen = {}, beta = D.surveys.filter(function (s) { if (s.kind !== 'wrapup' || wseen[s.user_id || s.email]) return false; wseen[s.user_id || s.email] = 1; return parse(s.answers).beta === ${JSON.stringify(BETA_YES)}; }).length;
       // Each tile opens the tab that holds its detail.
-      return '<div class="kpis">' + [[D.users.length, '가입자', 'users'], [active, '7일 활성', 'users'], [D.creditRequests.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 크레딧 요청', 'credit'], [D.actions.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 리포트 요청', 'action'], [usd(D.spend.today) + ' / ' + usd(D.spend.dailyCap), '오늘 AI 비용 / 한도', 'asks'], [usd(D.spend.month), '30일 AI 비용', 'asks'], [D.surveys.length, '설문 응답 (7일 새로 ' + fresh + ')', 'surveys'], [npsOf(nps), 'NPS (' + nps.length + '명, 평균 ' + avg(nps) + ')', 'surveys'], ['👍 ' + up + ' · 👎 ' + down, '화면 피드백', 'voice']].map(function (k) { return '<button type="button" class="kpi" data-go="' + k[2] + '"><b>' + k[0] + '</b><span>' + k[1] + '</span></button>'; }).join('') + '</div>' +
+      return '<div class="kpis">' + [[D.users.length, '가입자', 'users'], [active, '7일 활성', 'users'], [D.creditRequests.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 크레딧 요청', 'credit'], [D.actions.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 리포트 요청', 'action'], [usd(D.spend.today) + ' / ' + usd(D.spend.dailyCap), '오늘 AI 비용 / 한도', 'asks'], [usd(D.spend.month), '30일 AI 비용', 'asks'], [D.surveys.length, '설문 응답 (7일 새로 ' + fresh + ')', 'surveys'], [npsOf(nps), 'NPS (' + nps.length + '명, 평균 ' + avg(nps) + ')', 'surveys'], [beta, '클로즈드 베타 신청', 'surveys'], ['👍 ' + up + ' · 👎 ' + down, '화면 피드백', 'voice']].map(function (k) { return '<button type="button" class="kpi" data-go="' + k[2] + '"><b>' + k[0] + '</b><span>' + k[1] + '</span></button>'; }).join('') + '</div>' +
         '<div class="sv-head"><h3>최근 설문 응답</h3><button type="button" data-go="surveys">전체 보기</button></div>' + (D.surveys.length ? D.surveys.slice(0, 5).map(function (s) { return svItem(s, false); }).join('') : '<p class="muted small">아직 받은 설문 응답이 없어요.</p>');
     },
     credit: function () {
