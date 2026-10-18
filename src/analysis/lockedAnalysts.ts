@@ -38,7 +38,7 @@ const LockSchema = z.object({
 });
 
 // The same for every analyst and stock, so it caches; the persona and the evidence go in the user message.
-const LOCK_SYSTEM = `당신은 GNOMON 리서치 위원회의 분석가 한 명이에요. 위원회가 모이기 전에, 다른 위원의 의견을 모르는 상태로 자기 관점에서만 종목을 판단합니다.
+export const LOCK_SYSTEM = `당신은 GNOMON 리서치 위원회의 분석가 한 명이에요. 위원회가 모이기 전에, 다른 위원의 의견을 모르는 상태로 자기 관점에서만 종목을 판단합니다.
 
 할 일: 사용자 메시지의 근거 목록만 보고 ${ANALYST_HORIZON}거래일 뒤를 판단해 JSON 하나로 답합니다.
 - stance: BULLISH(강세), BEARISH(약세), NEUTRAL(중립, ±2% 안에 머묾) 가운데 하나.

@@ -1,0 +1,40 @@
+name: Hidden-future evaluation
+# G-244: walks the strategy-arena rules forward over data/prices and asks the price-and-volume PMs about blind
+# (anonymised) cutoffs, then commits data/eval/blind-<date>.json/.md to the branch it ran on. Internal research,
+# not advertising. Uses ANTHROPIC_API_KEY on the cheap analyst model and stops before the budget (USD).
+on:
+  workflow_dispatch:
+    inputs:
+      samples: { description: 'Blind cutoffs for the PMs', default: '300' }
+      budget: { description: 'AI budget, USD', default: '3' }
+      probe: { description: 'Leakage probes (name the stock and year)', default: '30' }
+  push:
+    branches: [claude/project-thread-dz3hed]
+    paths: ['.github/workflows/eval.yml']
+permissions:
+  contents: write
+concurrency:
+  group: blind-eval
+  cancel-in-progress: false
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Evaluate
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node dist/cli/blindEval.js --ai --samples "${{ inputs.samples || '300' }}" --budget "${{ inputs.budget || '3' }}" --probe "${{ inputs.probe || '30' }}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Commit the results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data/eval
+          git commit -m "data: hidden-future evaluation $(date -u +%F)" || exit 0
+          for i in 1 2 3; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break; sleep 5; done
