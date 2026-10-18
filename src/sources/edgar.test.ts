@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { archiveUrl, cikFromTickers, cikMap, companyFactsUrl, edgarTitle, fetchEdgar, padCik, parseCompanyFacts, parseForm4, parseSubmissions, submissionsUrl, tickersUrl } from './edgar.js';
+import { edgarUserAgent, archiveUrl, cikFromTickers, cikMap, companyFactsUrl, edgarTitle, fetchEdgar, padCik, parseCompanyFacts, parseForm4, parseSubmissions, submissionsUrl, tickersUrl } from './edgar.js';
 import { readFilingTitle } from '../report/classify.js';
 
 const AT = new Date('2026-10-08T22:00:00Z');
@@ -127,7 +127,10 @@ test('fetchEdgar: the CIK map is skipped when the CIK is known, every part is be
   assert.deepEqual([r.cik, r.name, r.disclosures.length, r.finance.length, r.insider.length], [1682852, 'Moderna, Inc.', 5, 0, 1]);
   assert.equal(r.insider[0]!.url, 'https://www.sec.gov/Archives/edgar/data/1682852/000168285226000041/');
   assert.deepEqual(r.status.map((s) => [s.source, s.ok]), [['sec:edgar', true], ['sec:edgar:xbrl', false], ['sec:edgar:form4', true]]);
-  assert.deepEqual([...agents], ['GNOMON research bot (https://github.com/hanul442/gnomon_analytics; ops@example.com)']);
+  assert.deepEqual([...agents], ['GNOMON research bot ops@example.com']);
+  // G-236: SEC refuses (403) any User-Agent carrying a URL, so none may get in, even through EDGAR_CONTACT.
+  assert.equal(edgarUserAgent(), 'GNOMON research bot');
+  assert.equal(edgarUserAgent(' https://x.dev ops@example.com\n'), 'GNOMON research bot ops@example.com');
   // Without a CIK the map is read first; an unknown ticker stops there.
   const none = await fetchEdgar({ symbol: 'ZZZZ', ticker: 'ZZZZ', fetch: fake, now: () => AT });
   assert.deepEqual([none.cik, none.status[0]!.error], [null, 'EDGAR_NO_CIK']);
