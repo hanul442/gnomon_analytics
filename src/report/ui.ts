@@ -233,7 +233,7 @@ export const MENU: readonly { title: string; items: readonly [string, string, st
   { title: '내 것', items: [['⭐', '관심 종목', 'watch.html'], ['🔔', '알림함', 'inbox.html'], ['⚙️', '설정', 'settings.html'], ['📄', '내 리포트', 'myreports.html'], ['💬', '내 토론 기록', 'mydebates.html'], ['📘', '사용법', 'guide.html']] },
 ];
 /** G-211: the small links under the tiles. */
-export const MENU_FOOT: readonly [string, string][] = [['FAQ·1:1 문의', 'faq.html'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly'], ['이용약관·면책', 'terms.html'], ['HANUL 소개', 'hanul.html']];
+export const MENU_FOOT: readonly [string, string][] = [['FAQ·1:1 문의', 'faq.html'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly'], ['이용약관', 'terms.html'], ['개인정보처리방침', 'privacy.html'], ['HANUL 소개', 'hanul.html']];
 /** The app's tabs (G-95): the bottom bar on phones, the same links in the top bar on wide screens. 전체 opens the sheet. */
 export const TABS: readonly [string, string, string][] = [
   ['홈', 'index.html#top', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'],
