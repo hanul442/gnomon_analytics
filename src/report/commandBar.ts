@@ -37,18 +37,16 @@ export const COMMAND_BAR_CSS = `
 .top-links .bell-btn:hover,.top-links .install-btn:hover{color:#F4F7FA;background:rgba(255,255,255,.06)}
 }
 @media (max-width:820px){
-.bottom-nav{left:50%;right:auto;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:2px;width:max-content;max-width:calc(100% - 24px);padding:6px;
-  border:1px solid rgba(255,255,255,.07);border-radius:999px;background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92));
-  box-shadow:0 18px 40px -16px rgba(0,0,0,.65),inset 0 1px rgba(255,255,255,.05);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
-html[data-theme=dark] .bottom-nav{background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92))}
-.bottom-nav a,.bottom-nav button{flex-direction:row;flex:none;gap:6px;height:46px;min-width:48px;padding:0 13px;border-radius:999px;color:#9AA8B8;font-size:13.5px;font-weight:700;
-  transition:color .16s,background .2s,transform .32s var(--ease-spring)}
-.bottom-nav a span,.bottom-nav button span{display:none}
-.bottom-nav [aria-current=page] span,.bottom-nav [aria-expanded=true] span{display:inline}
-.bottom-nav [aria-current=page],.bottom-nav [aria-expanded=true]{color:#0A1626;font-weight:800;background:linear-gradient(180deg,#ffffff,#dfe6f0);box-shadow:0 10px 22px -12px rgba(0,166,251,.75),inset 0 -1px rgba(0,0,0,.14)}
-.bottom-nav a:active,.bottom-nav button:active{transform:scale(.9);transition-duration:.08s}
-.bottom-nav svg{width:22px;height:22px}
-body:has(.bottom-nav){padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+/* G-247: a plain full-width tab bar (한서님 10/18): every tab shows its icon and name, the current one in the text colour. */
+.bottom-nav,html[data-theme] body .bottom-nav{left:0;right:0;bottom:0;transform:none;display:grid;grid-template-columns:repeat(5,1fr);width:auto;max-width:none;gap:0;padding:4px 0 env(safe-area-inset-bottom);
+  border:0;border-top:1px solid var(--line);border-radius:0;background:var(--page);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+.bottom-nav a,.bottom-nav button,html[data-theme] .bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:54px;min-width:0;padding:0;border-radius:0;
+  color:var(--muted);background:none;font-size:11px;font-weight:600;transition:color .16s}
+.bottom-nav a span,.bottom-nav button span{display:inline}
+.bottom-nav [aria-current=page],html[data-theme] .bottom-nav [aria-current=page]{color:var(--fg);font-weight:800;background:none;box-shadow:none}
+.bottom-nav a:active{transform:scale(.94);transition-duration:.08s}
+.bottom-nav svg{width:24px;height:24px}
+body:has(.bottom-nav){padding-bottom:calc(62px + env(safe-area-inset-bottom))}
 }
 @media (prefers-reduced-motion:reduce){.top-tabs a,.top-tabs button{transform:none!important}.bottom-nav a,.bottom-nav button{transition:none}}`;
 

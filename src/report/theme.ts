@@ -41,9 +41,6 @@ html[data-theme=light] .topbar>.chips:not(.analysis-tabs){border-color:transpare
 html[data-theme=light] .topbar>.chips:not(.analysis-tabs) a{color:var(--muted)}html[data-theme=light] .topbar>.chips:not(.analysis-tabs) a:hover{color:var(--fg)}
 html[data-theme=light] .topbar>.chips:not(.analysis-tabs) a[aria-selected=true]{color:#FFFFFF}
 html[data-theme=light] .topbar>.chips:not(.has-ind) a[aria-selected=true],html[data-theme=light] .chips-ind{background:#191F28;box-shadow:none}
-html[data-theme=light] .bottom-nav{border:1px solid var(--line);background:rgba(255,255,255,.94);box-shadow:0 10px 30px -14px rgba(17,24,39,.28);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-html[data-theme=light] .bottom-nav a,html[data-theme=light] .bottom-nav button{color:#8B95A1}
-html[data-theme=light] .bottom-nav [aria-current=page]{color:#FFFFFF;background:#191F28;box-shadow:none}
 html[data-theme=light] .topbar-in{border-color:var(--line);background:#FFFFFF;box-shadow:0 10px 30px -18px rgba(17,24,39,.25);backdrop-filter:none;-webkit-backdrop-filter:none}
 html[data-theme=light] .top-tabs a,html[data-theme=light] .top-tabs button{color:#6B7684}
 html[data-theme=light] .top-tabs a:hover,html[data-theme=light] .top-tabs [data-dock-near=true]{color:var(--fg);background:var(--soft);box-shadow:none;border-color:transparent}

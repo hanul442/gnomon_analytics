@@ -329,8 +329,8 @@ try{
  await page.waitForTimeout(100);await page.goBack();await page.locator('#chat').waitFor({state:'hidden'});assert.equal(page.url(),here);
  // G-245: five tabs and no 전체 sheet; 찾기 lights up on its sibling pages, and a mode tap moves the pill, then opens the page.
  assert.equal(await page.locator('.bottom-nav a').count(),5);assert.equal(await page.locator('[data-all-menu]').count(),0);
- await page.locator('.find-tabs a[href$="themes.html"]').click();await page.waitForURL(/themes\.html/);
- assert.equal(await page.locator('.bottom-nav [aria-current=page]').getAttribute('aria-label'),'찾기');assert.equal(await page.locator('.mode-bar [aria-current=page]').textContent(),'테마');
+ await page.locator('.mode-tabs a[href$="themes.html"]').click();await page.waitForURL(/themes\.html/);
+ assert.equal(await page.locator('.bottom-nav [aria-current=page]').getAttribute('aria-label'),'찾기');assert.equal(await page.locator('.mode-tabs [aria-current=page]').textContent(),'테마');
  await page.locator('.bottom-nav a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),7);await page.screenshot({path:'test-artifacts/me-390.png'});
  await page.goto(here);await page.waitForLoadState('load');
  // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.

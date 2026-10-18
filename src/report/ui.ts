@@ -250,18 +250,28 @@ const TAB_OF: Record<string, string> = Object.fromEntries([
   ...MODE_GROUPS.flatMap((g) => g.modes.map(([, h]) => [h.split('#')[0], g.modes[0]![1]] as const)),
   ...ME_PAGES.map((p) => [p, 'settings.html'] as const),
 ]);
-/** The mode row for `page` (a file name such as 'themes.html'), or '' when the page is in no group. */
-export function modeBar(base: string, page: string): string {
-  const g = MODE_GROUPS.find((x) => x.modes.some(([, h]) => h === page));
-  if (!g) return '';
-  return `<nav class="find-tabs mode-bar" aria-label="${escM(g.label)}">${g.modes.map(([l, h]) => `<a href="${base}${h}"${h === page ? ' aria-current="page"' : ''}>${escM(l)}</a>`).join('')}</nav>`;
-}
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 /** One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones). */
 export function tabBar(base: string, where: 'top' | 'bottom'): string {
   return `<nav class="${where === 'top' ? 'top-tabs' : 'bottom-nav'}" aria-label="${where === 'top' ? '주 메뉴' : '빠른 이동'}">${TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('')}</nav>`;
 }
-
+const ASK_ICON = '<path d="M5 5h14v10h-8l-4 4v-4H5z"/>';
+/**
+ * G-247: one header block per screen (한서님 10/18 '바가 너무 많다'): the screen's name, then one row of text tabs whose
+ * underline is the chewy pill (G-189). On phones it replaces the top bar; it sits at the start of <main>.
+ * `tabs` overrides the row (찾기 keeps its in-page market buttons); with neither a group nor `tabs` only the title shows.
+ */
+export function pageHead(base: string, opts: { page?: string; title?: string; tabs?: string }): string {
+  const g = opts.page ? MODE_GROUPS.find((x) => x.modes.some(([, h]) => h === opts.page)) : undefined;
+  const title = opts.title ?? g?.label ?? '';
+  const tabs = opts.tabs ?? (g ? `<nav class="mode-tabs" aria-label="${escM(g.label)}">${g.modes.map(([l, h]) => `<a href="${base}${h}"${h === opts.page ? ' aria-current="page"' : ''}>${escM(l)}</a>`).join('')}</nav>` : '');
+  return `<div class="pg-title"><h1>${escM(title)}</h1><button type="button" class="pg-ask" data-open-chat aria-haspopup="dialog" aria-controls="chat" aria-label="AI에게 묻기">${svgI(ASK_ICON)}</button></div>${tabs}`;
+}
+/** Kept for callers that only want the row: the same text tabs as pageHead. */
+export function modeBar(base: string, page: string): string {
+  const g = MODE_GROUPS.find((x) => x.modes.some(([, h]) => h === page));
+  return g ? pageHead(base, { page }).replace(/^<div class="pg-title">.*?<\/div>/, '') : '';
+}
 
 /** The top bar's tabs (wide screens). G-245: there is no 전체 sheet any more; `drawer` stays empty for old callers. */
 export function menuHtml(base: string): { button: string; drawer: string } {
@@ -623,7 +633,14 @@ export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);bac
 /* G-245: the 나 tab's head (account, install, ops) and the mode rows (sibling pages as one screen, G-189 pill). */
 .me-head{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}.me-acct{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:60px;padding:12px 16px;border-radius:14px;background:var(--soft);color:var(--fg);text-decoration:none}.me-acct b{display:block;font-size:16px}.me-acct small{color:var(--muted);font-size:13px;font-weight:600}.me-acct i{font-style:normal;color:var(--muted);font-size:18px}
 .me-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:1px solid var(--line-strong);background:transparent;border-radius:14px;padding:12px 16px;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:var(--fg)}.me-install[hidden]{display:none}.me-install small{color:var(--muted);font-size:12.5px;font-weight:400}#sm-admin:empty{display:none}#sm-admin .sm-title{font-size:12px;font-weight:800;color:var(--muted);margin:6px 2px}#sm-admin a{display:flex;align-items:center;min-height:44px}
-.mode-bar{display:flex;gap:6px;overflow-x:auto;max-width:1180px;margin:14px auto 4px;padding:0 24px;scrollbar-width:none}.mode-bar>a{flex:none;display:inline-flex;align-items:center;min-height:40px;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:0 16px;font-size:14.5px;font-weight:700;text-decoration:none;color:var(--fg)}.mode-bar::-webkit-scrollbar{display:none}.find-tabs a[aria-current=page]{background:var(--navy);color:var(--on-accent);border-color:var(--navy)}@media (max-width:820px){.mode-bar{padding:0 14px;margin-top:10px}}`;
+.pg-title{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:18px 24px 2px}.pg-title h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.pg-ask{display:none;width:44px;height:44px;margin-right:-10px;border:0;background:none;color:var(--fg);cursor:pointer;align-items:center;justify-content:center}.pg-ask svg{width:24px;height:24px}
+.mode-tabs{position:sticky;top:0;z-index:20;display:flex;gap:22px;max-width:1180px;margin:0 auto 6px;padding:0 24px;overflow-x:auto;scrollbar-width:none;background:var(--page);border-bottom:1px solid var(--line)}.mode-tabs::-webkit-scrollbar{display:none}
+.mode-tabs>a,.mode-tabs>button{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:46px;padding:0;border:0;background:none!important;font:inherit;font-size:15.5px;font-weight:700;color:var(--muted);text-decoration:none;cursor:pointer;white-space:nowrap}
+.mode-tabs>[aria-current=page],.mode-tabs>[aria-selected=true]{color:var(--fg)}.mode-tabs .muted{display:none}
+.mode-tabs>.seg-thumb{top:auto!important;bottom:0;height:2px!important;border-radius:2px;background:var(--fg)!important;box-shadow:none!important}
+@media (min-width:821px){.mode-tabs{top:64px}}
+@media (max-width:820px){body:has(.pg-title) .topbar{display:none}.pg-title{padding:14px 20px 0}.pg-ask{display:inline-flex}.mode-tabs{padding:0 20px;gap:20px}.chat-fab{display:none!important}}`;
 
 export const MENU_JS = `
   // G-245: the five tabs light up by page (sibling pages light their group's tab), and a mode row moves its pill
@@ -633,9 +650,9 @@ export const MENU_JS = `
     var mark = function () { var h = location.hash.slice(1); document.querySelectorAll('[data-tab-link]').forEach(function (a) { var k = a.getAttribute('data-tab-link'), on = here === 'index.html' ? k === 'top' : (k === here || TAB_OF[here] === k); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); };
     mark(); window.addEventListener('hashchange', mark);
     var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelectorAll('.mode-bar').forEach(function (bar) { var a = bar.querySelector('[aria-current=page]'); if (a) bar.scrollLeft += a.getBoundingClientRect().left - bar.getBoundingClientRect().left - (bar.clientWidth - a.offsetWidth) / 2; });
+    document.querySelectorAll('.mode-tabs').forEach(function (bar) { var a = bar.querySelector('[aria-current=page]'); if (a) bar.scrollLeft += a.getBoundingClientRect().left - bar.getBoundingClientRect().left - (bar.clientWidth - a.offsetWidth) / 2; });
     document.addEventListener('click', function (e) {
-      var a = e.target.closest && e.target.closest('.find-tabs a[href]'); if (!a || a.getAttribute('aria-current') === 'page') return;
+      var a = e.target.closest && e.target.closest('.find-tabs a[href], .mode-tabs a[href]'); if (!a || a.getAttribute('aria-current') === 'page') return;
       if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank') return;
       var url = a.href; if (url.split('#')[0] === location.href.split('#')[0]) return;
       e.preventDefault();
