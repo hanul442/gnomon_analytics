@@ -77,7 +77,7 @@ ${i ? `<div class="inherits">${PLANS[i - 1]!.name}의 모든 것에 더해</div>
   const base = CREDIT_PACKS[0]!.price / CREDIT_PACKS[0]!.credits;
   const body = `${STYLE}<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>요금제</span></div><h1>필요한 만큼 깊이 보세요</h1>
 <p class="hero-line">결제는 깊이를 바꿀 뿐, 진실을 바꾸지 않아요. 같은 종목의 신호·숫자·기록은 누구에게나 같고, 유료는 그 이유를 더 자세히 보여 줘요.</p></div></section>
-<section class="block"><p class="mock-note" data-mock><b>MOCK 화면이에요.</b> 실제로 결제되지 않고, 요금제와 크레딧은 이 브라우저에만 저장돼요. 가격과 구성은 출시 전에 바뀔 수 있어요.</p><p class="mock-note" data-alpha hidden><b>알파 기간에는 결제를 받지 않아요.</b> 알파 테스터는 알파 요금제로 쓰고, 크레딧이 더 필요하면 <a href="account.html#req">내 계정에서 요청</a>하면 운영자가 확인해서 넣어 드려요. 아래 가격과 구성은 출시 전 초안이에요.</p></section>
+<section class="block"><p class="mock-note" data-mock><b>MOCK 화면이에요.</b> 실제로 결제되지 않고, 요금제와 크레딧은 이 브라우저에만 저장돼요. 가격과 구성은 출시 전에 바뀔 수 있어요.</p><p class="mock-note" data-alpha hidden><b>알파·베타 기간에는 결제를 받지 않아요.</b> 테스트 계정(알파·베타)은 매달 기본 크레딧으로 쓰고, 크레딧이 더 필요하면 <a href="account.html#req">내 계정에서 요청</a>하면 운영자가 확인해서 넣어 드려요. 아래 가격과 구성은 출시 전 초안이에요.</p></section>
 <section class="block"><div class="card acct-card"><div><div class="muted small">지금 요금제</div><b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧 <span class="muted small" data-trial></span></div><div><a href="#log" class="link-btn">크레딧 사용 내역</a></div></div></section>
 <section class="block"><div class="seg pr-tabs" role="tablist" aria-label="요금제 고르기">${PLANS.map((p) => `<button type="button" role="tab" data-pr="${p.key}" aria-selected="${p.key === 'pro'}">${p.name}</button>`).join('')}</div><div class="pr-grid" data-show="pro">${PLANS.map(plan).join('')}</div></section>
 <section class="block"><details class="card fold" data-open-wide><summary><b>요금제별로 볼 수 있는 것</b><span class="muted small">기능 ${COMPARE.length}개 비교</span></summary><div class="table-wrap"><table class="cmp"><thead><tr><th>기능</th>${PLANS.map((p) => `<th>${p.name}</th>`).join('')}</tr></thead><tbody>
@@ -164,7 +164,7 @@ export function renderCheckout(): string {
   // G-216: alpha API: plan and credits are on the server, so there is nothing for a MOCK payment to change.
   if (G.call) {
     $('co-mock').hidden = true;
-    $('co-form').innerHTML = '<div class="card"><div class="pl-k">알파 기간</div><p><b>지금은 결제를 받지 않아요.</b> 알파 테스터는 알파 요금제로 쓰고, 크레딧이 더 필요하면 내 계정에서 요청하면 운영자가 확인해서 넣어 드려요.</p>' + (item ? '<p class="muted small">고른 상품: ' + item.title + ' · ' + won(item.price) + ' (출시 전 초안 가격)</p>' : '') + '<p>' + (G.me ? '<a class="btn-primary" href="account.html#req">크레딧 요청하기</a>' : '<a class="btn-primary" href="login.html">알파 로그인</a>') + ' <a href="pricing.html" style="margin-left:10px">요금제 보기</a></p></div>';
+    $('co-form').innerHTML = '<div class="card"><div class="pl-k">알파·베타 기간</div><p><b>지금은 결제를 받지 않아요.</b> 테스트 계정(알파·베타)은 매달 기본 크레딧으로 쓰고, 크레딧이 더 필요하면 내 계정에서 요청하면 운영자가 확인해서 넣어 드려요.</p>' + (item ? '<p class="muted small">고른 상품: ' + item.title + ' · ' + won(item.price) + ' (출시 전 초안 가격)</p>' : '') + '<p>' + (G.me ? '<a class="btn-primary" href="account.html#req">크레딧 요청하기</a>' : '<a class="btn-primary" href="login.html">로그인</a>') + ' <a href="pricing.html" style="margin-left:10px">요금제 보기</a></p></div>';
     return;
   }
   if (!item) return;

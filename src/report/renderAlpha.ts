@@ -196,8 +196,8 @@ export function renderOnboarding(): string {
 
 export function renderAccount(): string {
   const body = `${PAGE_CSS}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>내 계정</span></div><h1 id="acc-email">계정</h1><p class="hero-line" id="acc-line">불러오는 중이에요…</p></div></section>${NO_API}
-<section class="block"><div class="kpis"><div class="kpi"><b data-credits>0</b><span>남은 크레딧</span></div><div class="kpi"><b>${ALPHA.monthlyCredits}</b><span>매달 기본 크레딧 (알파)</span></div><div class="kpi"><b id="acc-asks">0</b><span>오늘 AI 질문</span></div></div></section>
-<section class="block"><div class="block-head"><h2>크레딧 더 받기</h2><span class="muted">알파 테스터는 요청하면 운영자가 확인해서 넣어 드려요</span></div><div class="card">
+<section class="block"><div class="kpis"><div class="kpi"><b data-credits>0</b><span>남은 크레딧</span></div><div class="kpi"><b id="acc-monthly">${ALPHA.monthlyCredits}</b><span id="acc-monthly-l">매달 기본 크레딧</span></div><div class="kpi"><b id="acc-asks">0</b><span>오늘 AI 질문</span></div></div></section>
+<section class="block"><div class="block-head"><h2>크레딧 더 받기</h2><span class="muted">테스트 계정은 요청하면 운영자가 확인해서 넣어 드려요</span></div><div class="card">
 <form id="req" class="inline" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"><div class="fld" style="margin:0"><label for="req-amt">크레딧</label><select id="req-amt"><option>100</option><option selected>200</option><option>300</option><option>500</option></select></div>
 <div class="fld" style="margin:0;flex:1;min-width:220px"><label for="req-why">어디에 쓰실지</label><input id="req-why" maxlength="300" placeholder="예: 반도체 종목 심층 리포트 비교" required></div><button class="credit-btn" type="submit">요청하기</button></form>
 <div id="req-list" style="margin-top:12px"></div></div></section>
@@ -217,11 +217,12 @@ export function renderAccount(): string {
     GNM.refresh().then(function (me) {
       if (!me) { location.replace('login.html?return=account.html'); return; }
       document.getElementById('acc-email').textContent = me.user.email;
-      document.getElementById('acc-line').textContent = me.user.planName + ' 요금제 · ' + new Date(me.user.createdAt).toLocaleDateString('ko-KR') + ' 가입' + (me.user.viewAs ? ' · 운영자 미리보기 중' : ' · 알파 동안 프로 기능을 써요(심층 리포트는 크레딧으로 열어요)');
+      document.getElementById('acc-line').textContent = me.user.planName + ' 요금제 · ' + new Date(me.user.createdAt).toLocaleDateString('ko-KR') + ' 가입' + (me.user.viewAs ? ' · 운영자 미리보기 중' : me.user.tester ? ' · ' + me.user.planName + ' 동안 프로 기능을 써요(심층 리포트는 크레딧으로 열어요)' : '');
+      document.getElementById('acc-monthly').textContent = String(me.credits.monthly || 0);
       // Admins: look at the site as another plan to test gates and paid unlocks (sent as X-View-As).
       if (me.user.admin || me.user.viewAs) {
         var cur = ''; try { cur = localStorage.getItem('gnm-view-as') || ''; } catch (e) {}
-        var box = document.createElement('section'); box.className = 'block'; box.innerHTML = '<div class="card"><h2>요금제로 보기 (운영자)</h2><p class="muted small">이 기기에서만 다른 요금제처럼 보고 써요. 잠금·크레딧 열기·질문 한도를 그대로 시험할 수 있어요. 운영 화면은 끄고 들어가세요.</p><div class="seg" role="group" aria-label="요금제로 보기">' + [['', '운영자'], ['free', '무료'], ['plus', '플러스'], ['alpha', '알파'], ['pro', '프로'], ['max', '맥스']].map(function (o) { return '<button type="button" data-view-as="' + o[0] + '" aria-pressed="' + (o[0] === cur) + '">' + o[1] + '</button>'; }).join('') + '</div></div>';
+        var box = document.createElement('section'); box.className = 'block'; box.innerHTML = '<div class="card"><h2>요금제로 보기 (운영자)</h2><p class="muted small">이 기기에서만 다른 요금제처럼 보고 써요. 잠금·크레딧 열기·질문 한도를 그대로 시험할 수 있어요. 운영 화면은 끄고 들어가세요.</p><div class="seg" role="group" aria-label="요금제로 보기">' + [['', '운영자'], ['free', '무료'], ['plus', '플러스'], ['alpha', '알파'], ['beta', '베타'], ['pro', '프로'], ['max', '맥스']].map(function (o) { return '<button type="button" data-view-as="' + o[0] + '" aria-pressed="' + (o[0] === cur) + '">' + o[1] + '</button>'; }).join('') + '</div></div>';
         document.querySelector('main, #main, body').appendChild(box);
         box.querySelectorAll('[data-view-as]').forEach(function (b) { b.onclick = function () { try { var v = b.getAttribute('data-view-as'); if (v) localStorage.setItem('gnm-view-as', v); else localStorage.removeItem('gnm-view-as'); } catch (e) {} location.reload(); }; });
       }
@@ -390,11 +391,11 @@ function adminParts(): { body: string; script: string } {
       }));
     },
     invites: function () {
-      return '<form class="inline" id="inv-new"><label>코드 <input name="code" placeholder="비우면 자동" style="width:130px"></label><label>인원 <input name="maxUses" type="number" min="1" max="500" value="1" style="width:70px"></label><label>가입 크레딧 <input name="credits" type="number" min="0" max="1000" value="0" style="width:80px"></label><label>만료 <input name="expiresAt" type="date"></label><label>메모 <input name="note" placeholder="예: 투자 동호회"></label><button>만들기</button></form>' +
+      return '<form class="inline" id="inv-new"><label>코드 <input name="code" placeholder="비우면 자동" style="width:130px"></label><label>인원 <input name="maxUses" type="number" min="1" max="500" value="1" style="width:70px"></label><label>계정 <select name="plan"><option value="beta">베타</option><option value="alpha">알파</option></select></label><label>가입 크레딧 <input name="credits" type="number" min="0" max="1000" value="0" style="width:80px"></label><label>만료 <input name="expiresAt" type="date"></label><label>메모 <input name="note" placeholder="예: 투자 동호회"></label><button>만들기</button></form>' +
         '<form class="inline" id="link-new" style="margin-top:10px"><label>로그인 링크 직접 발급 <input name="email" type="email" placeholder="이메일" required></label><label>초대 코드(신규만) <input name="invite" style="width:130px"></label><button>발급</button><span id="link-out" class="muted small"></span></form>' +
-        '<div style="margin-top:12px">' + table(['코드', '메모', '사용', '가입 크레딧', '만료', '공유 링크', ''], D.invites.map(function (i) {
+        '<div style="margin-top:12px">' + table(['코드', '계정', '메모', '사용', '가입 크레딧', '만료', '공유 링크', ''], D.invites.map(function (i) {
           var url = String(window.GNM_SITE || '').replace(/\\/$/, '') + '/login.html?invite=' + encodeURIComponent(i.code);
-          return '<tr><td><b>' + esc(i.code) + '</b></td><td>' + esc(i.note) + '</td><td class="num">' + i.uses + ' / ' + i.max_uses + '</td><td class="num">' + i.credits + '</td><td>' + (i.expires_at ? when(i.expires_at) : '—') + '</td><td><button type="button" data-copy="' + esc(url) + '">링크 복사</button></td><td>' + (i.uses < i.max_uses ? '<button type="button" data-close="' + esc(i.code) + '">마감</button>' : '<span class="muted">마감</span>') + '</td></tr>';
+          return '<tr><td><b>' + esc(i.code) + '</b></td><td>' + (i.plan === 'beta' ? '베타' : '알파') + '</td><td>' + esc(i.note) + '</td><td class="num">' + i.uses + ' / ' + i.max_uses + '</td><td class="num">' + i.credits + '</td><td>' + (i.expires_at ? when(i.expires_at) : '—') + '</td><td><button type="button" data-copy="' + esc(url) + '">링크 복사</button></td><td>' + (i.uses < i.max_uses ? '<button type="button" data-close="' + esc(i.code) + '">마감</button>' : '<span class="muted">마감</span>') + '</td></tr>';
         })) + '</div>';
     },
     surveys: function () {
@@ -444,7 +445,7 @@ function adminParts(): { body: string; script: string } {
   });
   root.addEventListener('submit', function (e) {
     e.preventDefault(); var f = e.target;
-    if (f.id === 'inv-new') post('/admin/invites', { code: f.code.value.trim() || undefined, maxUses: Number(f.maxUses.value), credits: Number(f.credits.value), note: f.note.value, expiresAt: f.expiresAt.value || undefined }).then(function (r) { if (r.code) GNM.toast(r.code + ' 코드를 만들었어요.'); });
+    if (f.id === 'inv-new') post('/admin/invites', { code: f.code.value.trim() || undefined, plan: f.plan.value, maxUses: Number(f.maxUses.value), credits: Number(f.credits.value), note: f.note.value, expiresAt: f.expiresAt.value || undefined }).then(function (r) { if (r.code) GNM.toast(r.code + ' 코드를 만들었어요.'); });
     if (f.id === 'link-new') GNM.call('POST', '/admin/login-link', { email: f.email.value, invite: f.invite.value.trim() || undefined }).then(function (r) {
       var out = document.getElementById('link-out'); if (r.error) { out.textContent = r.message; return; }
       navigator.clipboard.writeText(r.link).then(function () { out.textContent = '복사했어요 (' + r.expiresInMinutes + '분, 한 번만). 본인에게만 전해 주세요.'; }, function () { out.textContent = r.link; });
