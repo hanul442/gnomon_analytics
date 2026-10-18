@@ -2,7 +2,7 @@
   "schema": "curia.market-report.v4",
   "date": "2026-10-18",
   "from": "2026-10-18",
-  "generatedAt": "2026-10-18T11:00:48.759Z",
+  "generatedAt": "2026-10-18T11:36:33.238Z",
   "period": "daily",
   "groups": [
     {
@@ -3316,7 +3316,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-18T11:00:48.759Z",
+      "snapshotDate": "2026-10-18T11:36:33.238Z",
       "breadth": {
         "up": 30,
         "down": 263,
@@ -13932,7 +13932,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-18T11:00:48.759Z",
+      "snapshotDate": "2026-10-18T11:36:33.238Z",
       "breadth": {
         "up": 795,
         "down": 257,
@@ -19904,7 +19904,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-10-18T11:00:48.759Z",
+      "snapshotDate": "2026-10-18T11:36:33.238Z",
       "breadth": {
         "up": 283,
         "down": 365,
@@ -19915,87 +19915,87 @@
   "news": [
     {
       "id": "N1",
-      "title": "[주간 증시전망] 국제유가 상승·미국 통화정책···국내 증시 부담",
-      "publisher": "전북일보 인터넷신문",
-      "publishedAt": "2026-10-18T10:18:40.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiVEFVX3lxTE50ZGpmQ0ZRNHFISGtkOEw2amdwdk1aVXRhWDJtcUhmV3RaVlFHRndyYnpwUUdxQXdXajZTOGFlVjN5QWFrREljcnJESUpqRWJGTWYtLdIBWEFVX3lxTE1uTW9Dc282YUJxR2NVdVVMZ1liaEwtbGxCVW5lMEZ6eEJQUTZvb3pYcElGdG1fVW1hRC1EbGhsX0F3VTVWVmVlYnNmMlYzaWJoWllyaWZZOW0?oc=5"
-    },
-    {
-      "id": "N2",
       "title": "코스피 겨우 반등했는데 美반도체 3.8% 또 급락…월요일 '삼전닉스' 다시 시험대",
       "publisher": "녹색경제신문",
       "publishedAt": "2026-10-18T10:02:34.000Z",
       "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE81cnBLdXdOc0hka1pzbm1xXzFmbjRydW9XTlJDdGdfLVNwaVBTYjJER29kV1JscFZJVWEtdkpKTVZLMGsxZjdZSGY4bWhHUF9FWUpoZzZ2LTNYLUhpUHhHTjlsSQ?oc=5"
     },
     {
-      "id": "N3",
+      "id": "N2",
       "title": "[주간증시전망] 반등 모색할 듯···22일 메타 실적·금통위 '분수령'",
       "publisher": "서울파이낸스",
       "publishedAt": "2026-10-18T10:00:00.000Z",
       "url": "https://news.google.com/rss/articles/CBMiakFVX3lxTE84X3cyUGdtd2lmZDY3UVBlLXNEX2JsaHpnRWJaeUVkelQ5OUYwS3pZdWxtdVJ3ZVRUT0dUbVVxYURfSnc0MWM1LXVfa3VKZ29MVmxPRFgzTWFPVDVEc0o1VV9kVmRzUWExYlE?oc=5"
     },
     {
-      "id": "N4",
+      "id": "N3",
       "title": "외국인은 왜 한국 상장 미국 ETF를 샀나…가격 차이 노린 거래",
       "publisher": "한국사회복지저널",
       "publishedAt": "2026-10-18T09:57:47.000Z",
       "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE91YUcxanlFM1pSLWhjeDFlZ2laS0d0MTBidjF4SXZIV3RTcEJET3IzUUdFaENoQlQ0RmRIYUd2NENuaGtKbi1VVWRMcWVpcGVDNjhxRnFmWWliamRaTmV5MXp3MDBSOWRsaF9n?oc=5"
     },
     {
-      "id": "N5",
+      "id": "N4",
       "title": "코스피 반등 이어가나.. 삼성전자·SK하이닉스 불씨에 쏠린 눈 > 뉴스",
       "publisher": "지데일리",
       "publishedAt": "2026-10-18T09:57:00.000Z",
       "url": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBRZkctQjZaQlI2dzBRNGNUUkZZYzZnMWgwOEVjcjFUZFE1NTNaYl9NVEctdndCYmRIcV9oSno3Rmg1TGxjUk4wZC1mYkNIOVFmelFwYUtSRk0xR1htQUZvS3pvLXB5eEVCX0xUUw?oc=5"
     },
     {
-      "id": "N6",
+      "id": "N5",
       "title": "HLB 그룹주, 전반적 상승",
       "publisher": "CBC뉴스",
       "publishedAt": "2026-10-18T09:45:32.000Z",
       "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTFBSN0pybFA0elJFOVFpOGx2NE1HTXRUWTNyRjFkYy13TWlPYjFqY1BsQl9HLV9UaGZXTk9xVk1UdU5ucFRhb0x2c2VHRmVDOTR3Tlc0UUR5OXMzd2F5VEwyd0lGcDk3OWhu?oc=5"
     },
     {
-      "id": "N7",
+      "id": "N6",
       "title": "비트코인(BTC)·이더리움(ETH) 동반 약세 신호…8만 달러·2300달러 지지력 주목",
       "publisher": "CBC뉴스",
       "publishedAt": "2026-10-18T09:45:31.000Z",
       "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE9TTXNFUlRLVW5MenNfQmNjT2Y4OEg5R0FXZVM0YXMxQWIxUU1jcGwyclUxd1I0ZjZvTVN1UV9BWWlodEVJQ2szZVdBcW1kNW45U01jSGkyZkNCRVVIZW5KelJ4XzJnRlpY?oc=5"
     },
     {
-      "id": "N8",
+      "id": "N7",
       "title": "‘빚투’ 부메랑…코스피 폭락에 1주일 새 3천억 강제청산",
       "publisher": "한겨레",
       "publishedAt": "2026-10-18T09:43:00.000Z",
       "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE4wUGpNSER0TGxPR2NiNWNmbndSNURyMW5fT25JUjV2QkhLRGczd2VpNDR4WVRGUnN6SUJlR0NNbDViZFZSQTdRYTBmVkFXN3pCSjdhUFBsUjV3Ylhucm1faG9ZbFg?oc=5"
     },
     {
-      "id": "N9",
+      "id": "N8",
       "title": "美 AI·반도체주 일제히 급락… 이번주 'W' 반등 분기점",
       "publisher": "파이낸셜뉴스",
       "publishedAt": "2026-10-18T09:41:18.000Z",
       "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFA3YWFWU1BGVDk4bmROZ1Voa2lOb1ZXbXVWWkxyLUhmNWZOa01MSk93bk0xbzJoc0xMZm1RTlhOb3VRSmNoZHJWRnFlZHpEaXNHS09RcEQ1YnVqUQ?oc=5"
     },
     {
-      "id": "N10",
-      "title": "“코스피 하단 5100선”…‘초단기 빚투’ 나흘 새 2563억원 강제청산",
-      "publisher": "한겨레",
-      "publishedAt": "2026-10-18T09:36:00.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5vejg3MGlYdG1hVU43aWtlRVJEVXJyTk96LVFQN2ZQY2NRd2dkd3ZlX0RHT1VnQ2l6SEFCX1NHa1I2NmZHM2FOUFJrU0pLS2hLYkpVSWNETFU5V1BxYmV3RGwzWlNVaW8?oc=5"
-    },
-    {
-      "id": "N11",
+      "id": "N9",
       "title": "킬라, \"비트코인 여기서 75% 상승…저점 기다리면 기회 놓쳐”",
       "publisher": "블록미디어",
       "publishedAt": "2026-10-18T09:33:30.000Z",
       "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE9zcVE5SWxzTjM2RzZtY05kNXBBSFdPenl2bXJFTlJ1bEl3UDRZR2t2Y2dhWUdTWUg5Q3hpcV8zbWliOHFmN09lZEFUb1V6NkVRQVRwVXpydmo?oc=5"
     },
     {
-      "id": "N12",
+      "id": "N10",
       "title": "\"비트코인, 큰 것이 온다\" …포프, \"82K 돌파하면 9만달러 간다\"",
       "publisher": "블록미디어",
       "publishedAt": "2026-10-18T09:17:46.000Z",
       "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE16OTctQWlGTFZQenpTV0lTcUt6Qi1XVHFib2ZtUkt0SkxtVjhGNjE3VHAzbU5jRng1R0lQWVFpa25XMno1dUswV2lhWDFJRjBPMWEtYmhnMHY?oc=5"
+    },
+    {
+      "id": "N11",
+      "title": "미래에셋 글로벌X, 美 'NYSX' 5대 1 액면분할…소액 투자자 공략",
+      "publisher": "한국신용신문",
+      "publishedAt": "2026-10-18T09:13:00.000Z",
+      "url": "https://news.google.com/rss/articles/CBMia0FVX3lxTE45OVZYcW9uQjZXNDlTUkxWM3I5MmJnMVpUak5OX3JqVGVuVVR6b2ptRlQ0QTZBaGNydTZDbUpPR0wyU2pOMG55OHNtS0wzd3VNUlhXeDVTMDlrR1VpenFmLVNDcVFaTDhBN2Nj?oc=5"
+    },
+    {
+      "id": "N12",
+      "title": "\"국장은 난이도 너무 높아…안전한 미국 지수 ETF 집중해야\"",
+      "publisher": "뉴시스",
+      "publishedAt": "2026-10-18T09:10:00.000Z",
+      "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE5oQ056QVNQWW1NdGhIUGc1cTRoNDJHcnpzX0JYdlBmNGl2clh4NjJBWWRPRy1wSEZLWTZlYTR2WFNRR1poc0VBaFdWbHg1cUI2YThCaGxqRGx3U0xxWm9UeGRiYmhFOW5kY3RwUl8wcFN3bVVsTXpoVNIBeEFVX3lxTE5oQ056QVNQWW1NdGhIUGc1cTRoNDJHcnpzX0JYdlBmNGl2clh4NjJBWWRPRy1wSEZLWTZlYTR2WFNRR1poc0VBaFdWbHg1cUI2YThCaGxqRGx3U0xxWm9UeGRiYmhFOW5kY3RwUl8wcFN3bVVsTXpoVA?oc=5"
     }
   ],
   "ai": {
