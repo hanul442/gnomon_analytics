@@ -259,9 +259,9 @@ export const DEBATE_PLAY_SCRIPT = `<script>
  document.addEventListener('click',function(e){var o=e.target.closest&&e.target.closest('[data-room-open]'),c=e.target.closest&&e.target.closest('[data-room-close]');if(o)wanted=o.getAttribute('aria-controls');if(c)wanted=null;},true);
  var keepT=null;new MutationObserver(function(){if(!wanted||keepT)return;keepT=setTimeout(function(){keepT=null;var r=wanted&&document.getElementById(wanted);if(r&&r.hidden){avatar(r);r.hidden=false;document.documentElement.classList.add('layer-open');}},60);}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
  // G-92: about 2 s of "생각하는 중", the turn, then about 2 s before the next speaker.
- // Thinking Orbs before each turn, then a pause long enough to read it: about 14 characters a second (G-225),
- // 3 s at least and 10 s at most. 건너뛰기 shows them all at once.
- var THINK=1400,READ=function(t){var n=((t.querySelector('.db-bubble')||t).textContent||'').replace(/\s+/g,'').length;return Math.max(3000,Math.min(10000,n*70));};
+ // Thinking Orbs before each turn, then a pause scaled to the turn's length (G-225): about 25 characters a second,
+ // 2 s at least and 6 s at most (10/18: 14자/초·3~10초 felt too slow). 건너뛰기 shows them all at once.
+ var THINK=1200,READ=function(t){var n=((t.querySelector('.db-bubble')||t).textContent||'').replace(/\s+/g,'').length;return Math.max(2000,Math.min(6000,n*40));};
  var play=function(box){
   if(!box||box.dataset.played)return;box.dataset.played='1';
   var turns=Array.prototype.slice.call(box.querySelectorAll('.db-turn:not(.db-guest):not(.db-typing)'));
