@@ -14,7 +14,7 @@ import {SCENARIO_CSS,SCENARIO_JS} from './scenarioChart.js';
 import { PEERS_CSS, PEERS_JS, peersSlot } from './peers.js';
 import { COIN_CHART_JS } from './coinChart.js';
 import { coinFlow } from './coinFlow.js';
-import { versionBanner, VERSION_CSS, VERSION_JS } from './releases.js';
+import { VERSION_CSS, VERSION_JS } from './releases.js';
 import { JOBS_JS } from './onDemandBrowser.js';
 import { LOADING_CSS, LOADING_JS } from './loading.js';
 // Pages: the live dashboard (rebuilt every run), dated reports, and the archive.
@@ -38,7 +38,7 @@ import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, THEME_BOOT, PLAN
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
 import { LEVEL_BOOT, LEVEL_CSS, LEVEL_JS, levelGuide } from './level.js';
 import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, conclusionMini, parliamentViewNote, SEATS_JS, VIEW_FOCUS_CSS } from './conclusion.js';
-import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
+import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, modeBar, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, easyCard, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, reportDiffCard } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 import { CHART_PRO_CSS, CHART_PRO_JS, HERO_RANGE_JS } from './chartPro.js';
@@ -364,12 +364,12 @@ function reportNav(tabs:readonly {key:string;label:string}[]):string {
  return `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.filter(t=>!ANALYSIS_KEYS.has(t.key)&&t.key!=='chart').map((t,i)=>link(t,i)+(t.key==='chart'&&nested.length?'<button type="button" id="analysis-menu" aria-expanded="false" aria-controls="analysis-tabs">분석<i class="chev" aria-hidden="true"></i></button>':'')).join('')}</div>${nested.length?`<div id="analysis-tabs" class="chips analysis-tabs" role="tablist" aria-label="분석 세부 메뉴" hidden>${nested.map(t=>link(t,1)).join('')}</div>`:''}`;
 }
 
-export function shell(base: string, title: string, body: string, options: { lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'watch' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean }): string {
+export function shell(base: string, title: string, body: string, options: { lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'watch' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean; mode?: string }): string {
   // The site root lists every covered stock; `base` always points at it.
   // G-222: a US report renders inside withCurrency('USD'); data-ccy tells the chart (header price, high/low marks, drawings) to use dollars.
   const rootHref = `${base}index.html`;
   const tabs = options.tabs ?? [];
-  const menu = menuHtml(base, options.archiveHref);
+  const menu = menuHtml(base);
   return `<!doctype html><html lang="ko" data-plan="free"${currency() === 'USD' ? ' data-ccy="USD"' : ''}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0A1626"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/gnomon-icon-192.png"><link rel="icon" type="image/png" href="${base}assets/gnomon-icon-96.png"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${THEME_BOOT}${PERSONA_BOOT}${LEVEL_BOOT}${INSTALL_BOOT}
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.${ASSET_VERSION}.css"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
@@ -378,7 +378,7 @@ export function shell(base: string, title: string, body: string, options: { lead
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}"><span class="gnomon-mark"><img src="${base}assets/gnomon-mark.png" alt=""></span><div><b>GNOMON</b><small>AI COMMITTEE</small></div></a>
 ${menu.button}<nav class="top-links" aria-label="사이트"><button type="button" class="install-btn" data-install hidden aria-label="그노몬 앱 설치"><svg viewBox="0 0 24 24" aria-hidden="true" class="ins-ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M12 8v6M9.5 11.5L12 14l2.5-2.5"/></svg>앱 설치</button><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? reportNav(tabs) : ''}</header>${menu.drawer}
-<main id="main" tabindex="-1">${options.lead ?? ''}${options.active === 'home' ? versionBanner(base) : ''}${options.ads === false ? '' : adStrip(base)}${body}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관</a><a href="${base}privacy.html"><b>개인정보처리방침</b></a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
+<main id="main" tabindex="-1">${options.mode ? modeBar(base, options.mode) : ''}${options.lead ?? ''}${body}${options.ads === false ? '' : adStrip(base)}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관</a><a href="${base}privacy.html"><b>개인정보처리방침</b></a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
@@ -566,15 +566,25 @@ ${warn}${rows ? contentMore(rowsArr,'뉴스') : '<p class="empty">최근 7일 �
 <p class="fine">제목과 언론사, 링크만 모아요(본문은 저장하지 않아요). 비슷한 제목의 기사는 하나의 이야기로 묶고, 기사 수가 많다고 더 중요하게 보지 않아요. 수집: ${escape(statusLine)}</p></div>`;
 }
 
+/** G-244: small tabs inside a tab (buttons, not role=tab, so the page's own tab keys stay the five big ones). */
+export function subTabs(groups: readonly [string, string, string][]): string {
+  return `<div class="subtabs" data-subtabs role="group" aria-label="나눠 보기">${groups.map(([id, label], i) => `<button type="button" data-sub="${id}" aria-pressed="${i === 0}">${label}</button>`).join('')}</div>${groups.map(([id, , html], i) => `<div class="sub-g" id="${id}"${i ? ' hidden' : ''}>${html}</div>`).join('')}`;
+}
+export const SUBTABS_CSS = `.subtabs{display:flex;gap:4px;margin:4px 0 14px;padding:4px;border-radius:12px;background:var(--soft)}.subtabs button{flex:1;min-height:40px;border:0;border-radius:9px;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--fg2);cursor:pointer}.subtabs button[aria-pressed=true]{background:var(--surface-solid,var(--surface));color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}.sub-g[hidden]{display:none}.ft-none{display:none}#peers[hidden]+.ft-none{display:block}`;
+
 export const TAB_SCRIPT = `<script>
 (function () {
   var panels = Array.prototype.slice.call(document.querySelectorAll('[role=tabpanel]'));
   if (!panels.length) return;
   document.documentElement.classList.add('js-tabs');
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role=tab]'));
+  // G-244: small tabs inside a tab (.sub-g groups after a [data-subtabs] bar); a link to a part opens its group.
+  function sub(g) { var host = g.parentNode; Array.prototype.forEach.call(host.children, function (c) { if (c.classList.contains('sub-g')) c.hidden = c !== g; }); Array.prototype.forEach.call(host.querySelectorAll('[data-sub]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-sub') === g.id)); }); window.dispatchEvent(new Event('resize')); }
+  function openPart(el) { var g = el && el.closest && el.closest('.sub-g'); if (g && g.hidden) sub(g); }
+  document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-sub]'); if (!b) return; var g = document.getElementById(b.getAttribute('data-sub')); if (g) sub(g); });
   function show(id, focus) {
     var panel = document.getElementById(id);
-    if (panel && panel.getAttribute('role') !== 'tabpanel' && /^tab-/.test(id)) { var host = panel.closest('[role=tabpanel]'), part = panel; if (host && show(host.id, focus)) { setTimeout(function () { part.scrollIntoView({ block: 'start' }); }, 0); return true; } }
+    if (panel && panel.getAttribute('role') !== 'tabpanel' && /^tab-/.test(id)) { var host = panel.closest('[role=tabpanel]'), part = panel; if (host && show(host.id, focus)) { openPart(part); setTimeout(function () { part.scrollIntoView({ block: 'start' }); }, 0); return true; } }
     if (!panel || panel.getAttribute('role') !== 'tabpanel') return false;
     var nested = ['tab-technical','tab-strategy','tab-flows','tab-fundamentals'].indexOf(id)>=0;
     var menu=document.getElementById('analysis-menu'),sub=document.getElementById('analysis-tabs');
@@ -594,7 +604,7 @@ export const TAB_SCRIPT = `<script>
     var a = e.target.closest && e.target.closest('a[href^="#tab-"]'); if (!a) return;
     var el = document.getElementById(a.getAttribute('href').slice(1)); if (!el || el.getAttribute('role') === 'tabpanel') return;
     var panel = el.closest('[role=tabpanel]'); if (!panel) return;
-    e.preventDefault(); show(panel.id); el.scrollIntoView({ block: 'start' }); history.replaceState(null, '', a.getAttribute('href'));
+    e.preventDefault(); show(panel.id); openPart(el); el.scrollIntoView({ block: 'start' }); history.replaceState(null, '', a.getAttribute('href'));
   });
   function route() {
     var id = (location.hash || '#tab-home').slice(1);
@@ -602,7 +612,7 @@ export const TAB_SCRIPT = `<script>
     if (show(id)) { window.scrollTo(0, 0); setTimeout(function () { window.scrollTo(0, 0); }, 0); return; }
     // An anchor inside a panel (e.g. #filings): open its panel, then scroll to it.
     var el = document.getElementById(id), panel = el && el.closest('[role=tabpanel]');
-    if (panel && show(panel.id)) el.scrollIntoView(); else show('tab-home');
+    if (panel && show(panel.id)) { openPart(el); el.scrollIntoView(); } else show('tab-home');
   }
   tabs.forEach(function (t, i) {
     t.addEventListener('keydown', function (e) {
@@ -649,11 +659,13 @@ function renderReportIn(report: DailyReport, links: { index: string; base?: stri
   const panel = (key: TabKey, html: string) => `<section class="panel" id="tab-${key}" role="tabpanel" aria-labelledby="t-${key}" tabindex="-1"><h2 class="panel-title">${tabsFor(report.kind).find((t) => t.key === key)!.label}</h2>${html}</section>`;
   const asOf = report.generatedAt.replace('T', ' ').slice(0, 16) + ' UTC';
   // G-71: the conclusion (scenarios that open on tap) heads the summary tab, above everything else.
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${reportStatusBar(report, ctx.commentaryFrom ?? null)}${report.kind === 'coin' ? derivSlot(report.symbol) : quickInfoCard(m, report.price?.close ?? null, report.recentBars ?? [])}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${reportStatusBar(report, ctx.commentaryFrom ?? null)}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
-${report.kind ? '' : peersSlot(report.symbol)}
 <div class="home-lists">${latestLists(report)}</div>`;
+  // G-244 (화면 개편 2단계): 요약 answers "이 종목 지금 어때?" only. 종목 정보 (price ranges, the six numbers, 5-day
+  // flows) and the same-theme comparison open 기업 체력; filings live in 뉴스·공시.
+  const quickInfo = report.kind === 'coin' ? '' : quickInfoCard(m, report.price?.close ?? null, report.recentBars ?? []);
   // G-130: the chart alone (the AI summary and the four number cards under it are gone).
   const chartTab = chart.html;
   // Free: the 16-indicator summary (public elsewhere too). Plus: our horizon gauges, fair value, forecasts and structure.
@@ -676,10 +688,15 @@ ${report.kind ? '' : peersSlot(report.symbol)}
   const newsTab = `${insightLine(report, 'news', base)}${newsTabBody(report)}`;
   const p = report.price;
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
+  // G-244 (화면 개편 4단계): 기업 체력 shows one part at a time: 기업 (종목 정보, 한눈에, 지표, 재무), 수급, 같은 테마.
+  const flowsSec = `<section class="sub-sec${report.kind === 'coin' ? ' sub-first' : ''}" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`;
+  const fundPanel = report.kind === 'coin' ? flowsSec
+    : report.currency === 'USD' ? `${quickInfo}${fundTab}${insiderSection(report)}`
+    : subTabs([['ftg-co', '기업', `${quickInfo}${fundTab}`], ['ftg-flow', '수급', flowsSec], ...(report.kind ? [] : [['ftg-peer', '같은 테마', `${peersSlot(report.symbol)}<p class="empty ft-none">같은 테마로 묶인 종목이 아직 없어요.</p>`] as [string, string, string]])]);
   const body = guided(`${bar}${panel('home', home)}
 ${panel('chart', chartTab)}
 ${panel('technical', `${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${strategyTab}</section>`)}
-${panel('fundamentals', `${report.kind === 'coin' ? '' : fundTab}${report.currency === 'USD' ? insiderSection(report) : `<section class="sub-sec${report.kind === 'coin' ? ' sub-first' : ''}" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`}`)}
+${panel('fundamentals', fundPanel)}
 ${panel('ai', aiTab).replace('role="tabpanel"',`role="tabpanel" data-ai-date="${escape(report.commentary?.status==='OK'?(ctx.commentaryFrom??report.date):'')}"`)}
 ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.currency === 'USD' ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜)과 지표(PER·EPS·PBR·시가총액·52주), SEC EDGAR(공시·XBRL 재무·Form 4 내부자 거래), 구글 뉴스(영문). 투자자별 수급과 증권가 목표가는 없어요. 환율 변동은 반영하지 않아요.' : report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
@@ -957,7 +974,7 @@ export function renderStockPage(kindArg: 'stock' | 'coin' | 'us' | boolean = 'st
 ${coin ? derivSlot('') : ''}${coin ? '<div class="request-card"><div class="lk-head"><b>코인 무료 계산</b></div><p>업비트 원화 마켓 일봉으로 주식과 같은 지표 16개, 기간별 등락, 기술적 적정가를 계산해요. 코인 AI 리포트는 매일 거래대금 상위 코인 가운데 하나씩 써요.</p><p class="fine">코인은 24시간 거래돼서 일봉은 매일 09:00(KST)에 끊어요. 변동성이 커서 예측 범위가 넓어요.</p></div>' : `<div class="request-card"><div class="lk-head">${LOCK}<b>AI 리포트는 아직 없어요</b></div><p>${us ? '요청하면 국내 종목과 같은 AI 위원회가 달러 가격과 미국 현지 날짜로 분석해요. 국내 수급·공시 근거는 없어서 그 판단은 보류해요.' : '요청하면 바로 분석을 시작해요. 최신으로 확보된 데이터 기준으로 작성합니다.'} 크레딧 요청은 플러스부터예요.</p>
 <span class="req-btns">${genButton('심층 리포트 만들기', 'data-create-report id="sp-request-credit"', `${CREDIT_COST.report}크레딧`)}</span>
 <p class="fine">남은 크레딧 <b data-credits>0</b>개 · <a href="pricing.html#credits">충전</a> · <a id="sp-request" href="${REPO_URL}/issues/new" target="_blank" rel="noopener">운영 문의</a></p></div>`}</section>
-${coin || us ? '' : companySlot('')}${coin || us ? '' : peersSlot('')}${coin || us ? '' : shortSlot('')}<section class="block"><div class="card sp-one"><div class="sp-one-head"><span class="pl-k">한 줄 요약</span><b id="sp-signal" class="sp-signal">계산 중</b></div><p class="headline skel" id="sp-line">이 종목의 계산 결과를 불러오는 중이에요.</p><div class="pl-tally" id="sp-tally" aria-hidden="true"></div><p class="muted small" id="sp-counts"></p></div></section>
+<section class="block"><div class="card sp-one"><div class="sp-one-head"><span class="pl-k">한 줄 요약</span><b id="sp-signal" class="sp-signal">계산 중</b></div><p class="headline skel" id="sp-line">이 종목의 계산 결과를 불러오는 중이에요.</p><div class="pl-tally" id="sp-tally" aria-hidden="true"></div><p class="muted small" id="sp-counts"></p></div></section>
 <section class="block"><div class="card chart-card"><div class="chart-head"><div><div class="muted small">최근 1년 일봉</div><div class="period-stat" id="period-stat" aria-live="polite"></div></div>
 <div class="seg" role="group" aria-label="기간">${[['1개월', 21], ['3개월', 63], ['6개월', 126], ['1년', 250]].map(([l, n]) => `<button type="button" data-range="${n}" aria-pressed="${n === 126}">${l}</button>`).join('')}</div></div>
 <div id="chart" style="height:420px"><div class="orbs-load" id="sp-loading">${ORBS}<span>차트를 불러오는 중이에요</span></div><p class="empty" id="sp-empty" hidden>차트 데이터를 불러오지 못했어요. 상장 종목 코드가 맞는지 확인해 주세요.</p></div>
@@ -973,7 +990,7 @@ ${coin || us ? '' : `<section class="block"><div class="block-head"><h2>AI 리�
   // G-192: a US stock's 기업 체력 and 뉴스·공시 are filled from the API (/usinfo) instead of locked until a report.
   const usSlot=(key:string)=>`<div data-slot="us-${key}"><section class="block"><div class="card us-wait" style="display:flex;align-items:center;gap:10px;color:var(--fg2);font-size:14px"><span class="orbs" aria-hidden="true"><i></i><i></i><i></i></span> ${key==='news'?'SEC 공시와 영문 뉴스를 불러오고 있어요.':'재무·밸류에이션·내부자 거래를 불러오고 있어요.'}</div></section></div>`;
   const usHome=us?'<div data-slot="us-edge"></div><div data-slot="us-latest"></div>':'';
-  body=guided(`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}${usHome}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${missing('전략 대결 · 모의투자')}</section></section>${[{key:'fundamentals',label:coin?'수급':'기업 체력'},{key:'ai',label:'AI 위원회'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${t.key==='fundamentals'&&coin?'':us&&(t.key==='fundamentals'||t.key==='news')?usSlot(t.key):missing(t.label)}${t.key==='fundamentals'?`${us?'':`<section class="sub-sec${coin?' sub-first':''}" id="tab-flows"><h2 class="sub-h">수급</h2>${missing('')}</section>`}`:''}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`, kind, false);
+  body=guided(`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}${usHome}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${missing('전략 대결 · 모의투자')}</section></section>${[{key:'fundamentals',label:coin?'수급':'기업 체력'},{key:'ai',label:'AI 위원회'},{key:'news',label:'뉴스·공시'}].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${t.key==='fundamentals'&&!coin&&!us?companySlot('')+peersSlot('')+shortSlot(''):''}${t.key==='fundamentals'&&coin?'':us&&(t.key==='fundamentals'||t.key==='news')?usSlot(t.key):missing(t.label)}${t.key==='fundamentals'?`${us?'':`<section class="sub-sec${coin?' sub-first':''}" id="tab-flows"><h2 class="sub-h">수급</h2>${missing('')}</section>`}`:''}${t.key==='ai'?`<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`:''}</section>`).join('')}${body.slice(ending)}`, kind, false);
   return shell('', coin ? '코인 차트 | GNOMON' : us ? '미국 주식 차트 | GNOMON' : '종목 차트 | GNOMON', body, { tabs: tabsFor(kind), bottomNav: true, scripts: `<script src="${CHART_ASSET}"></script>${stockScript(kind)}${TAB_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}${PARLIAMENT_SCRIPT}` });
 }
 
@@ -1132,7 +1149,7 @@ export const APP_CSS = `/* G-155: readers who ask for less motion get none: anim
 .boot-veil{position:fixed;inset:0;z-index:9999;background:var(--surface-solid);display:flex;align-items:center;justify-content:center;pointer-events:none;animation:veil-out .2s ease 1.2s forwards}.boot-veil span{width:52px;height:52px;border-radius:16px;background:var(--brand-grad);display:flex;align-items:center;justify-content:center;animation:veil-pulse 1s ease-in-out infinite}.boot-veil img{width:34px;height:34px}.boot-veil.gone{opacity:0;transition:opacity .2s ease}@keyframes veil-out{to{opacity:0;visibility:hidden}}@keyframes veil-pulse{50%{transform:scale(.92);opacity:.85}}
 html.chart-fs #tab-chart::after,.db-room:not([hidden])::after{content:"";position:absolute;inset:0;z-index:200;background:var(--surface-solid);pointer-events:none;animation:veil-out .18s ease .32s forwards}.db-room:not([hidden])::after{animation-delay:.12s}
 @media (prefers-reduced-motion:reduce){.boot-veil span{animation:none}}
-.sub-sec .insight.only-free{display:none}${CHART_PRO_CSS}${CHART_DRAW_CSS}${DERIV_CSS}${SHORT_CSS}${COMPANY_CSS}${INFOGRAPHIC_CSS}${MOTION_CSS}${STOCK_INFO_CSS}${PEERS_CSS}${THEME_CHIPS_CSS}${EDGE_CSS}${ALERTS_CSS}${AD_CSS}${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${LEVEL_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}
+.sub-sec .insight.only-free{display:none}${CHART_PRO_CSS}${CHART_DRAW_CSS}${DERIV_CSS}${SHORT_CSS}${COMPANY_CSS}${INFOGRAPHIC_CSS}${MOTION_CSS}${STOCK_INFO_CSS}${PEERS_CSS}${SUBTABS_CSS}${THEME_CHIPS_CSS}${EDGE_CSS}${ALERTS_CSS}${AD_CSS}${CONTENT_MORE_CSS}${SCENARIO_CSS}${INDICATOR_LINK_CSS}${VERSION_CSS}${LOADING_CSS}${ORBS_CSS}${VIEW_FOCUS_CSS}${POP_CSS}${TOUR_CSS}${LIVE_CSS}${MENU_CSS}${BANNER_CSS}${PERSONA_CSS}${LEVEL_CSS}${CONCLUSION_CSS}${STYLE}${PLAN_CSS}${UI_CSS}${EXTRAS_CSS}${CHART_V6_CSS}${ALPHA_CSS}${CHAT_CSS}
 .chips button{font:inherit;font-weight:700;color:rgba(255,255,255,.72);border:0;border-radius:24px;background:transparent;padding:8px 16px;white-space:nowrap;cursor:pointer}.chips button.active,.chips button[aria-expanded=true]{background:var(--surface);color:var(--accent-strong)}.chev{display:inline-block;width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-2px) rotate(45deg);margin-left:7px;transition:transform .15s}[aria-expanded=true]>.chev{transform:translateY(1px) rotate(-135deg)}.analysis-tabs{border-top:1px solid #ffffff16;background:#0b203e;gap:2px!important}.analysis-tabs a{font-size:13px;font-weight:700;padding:9px 12px!important;border-radius:0!important;background:transparent!important;color:#9fb0c8!important;border-bottom:2px solid transparent}.analysis-tabs a[aria-selected=true]{color:#fff!important;border-bottom-color:#fff}.analysis-tabs[hidden]{display:none}.analysis-tabs a{display:block!important}.momentum-axis span{white-space:nowrap;font-variant-numeric:tabular-nums}.mom.hz{min-width:0;text-align:center}.mom .v{font-size:15px}.momentum-gauge svg{max-width:220px}.moms{grid-template-columns:repeat(3,minmax(0,1fr))}.race-entry{border-bottom:1px solid var(--line)}.race-more>summary{list-style:none;cursor:pointer;text-align:center;font-size:14px;font-weight:700;color:var(--accent-strong);padding:12px 0 4px}.race-more>summary::-webkit-details-marker{display:none}.race-more[open]>summary{display:none}.race-entry>summary{list-style:none;cursor:pointer;border-bottom:0}.race-entry>summary::-webkit-details-marker{display:none}.race-entry>summary .race-name b{display:flex;align-items:center;gap:8px;min-width:0}.race-name b:after{content:'';flex:none;width:6px;height:6px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-2px) rotate(45deg);transition:transform .15s}.race-entry[open]>summary .race-name b:after{transform:translateY(2px) rotate(-135deg)}.race-detail{padding:8px 0 16px}.ai-summary{background:linear-gradient(135deg,#edf3ff,#f8f9fe);border:1px solid #d5e1f5;border-left:4px solid #5276bd}.ai-summary .as-kicker{font-size:11px;letter-spacing:.08em;color:#526d9a;font-weight:800}.ai-summary h2{margin:6px 0 14px}.ai-summary p{line-height:1.85;margin:0}.ai-summary strong{font-variant-numeric:tabular-nums}.market-thermals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.market-thermals .tmp,.mk-panel .tmp{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit}.market-thermals .tmp-v,.mk-panel .tmp-v{font-size:20px}.market-thermals .tmp-n,.mk-panel .tmp-n{display:flex;justify-content:space-between;font-size:12px;font-weight:800}.market-thermals .pulse-bar,.market-thermals .br-bar,.mk-panel .pulse-bar,.mk-panel .br-bar{display:flex;height:14px;gap:3px;border-radius:8px;overflow:hidden}.market-thermals .s-bull,.mk-panel .s-bull{background:var(--up)}.market-thermals .s-neutral,.mk-panel .s-neutral{background:var(--line-strong)}.market-thermals .s-bear,.mk-panel .s-bear{background:var(--down)}/* G-196: an inset panel with its own padding; stripping it left the theme's glass layer drawn round text with no room. */.mk-panel .tmp{border:1px solid var(--line);padding:14px 16px;box-shadow:none;background:var(--soft);border-radius:14px;margin-bottom:12px}.market-scenarios{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.market-scenario{border-top:3px solid #7d8da5;background:var(--soft)}.market-scenario.bull{border-color:var(--up);background:var(--up-soft)}.market-scenario.bear{border-color:var(--down);background:var(--down-soft)}.market-scenario h3{margin-top:0}.market-scenario h4{font-size:12px;color:var(--muted);margin-bottom:4px}.market-claims{list-style:none;padding:0}.market-claims li{margin:12px 0;line-height:1.8}.market-claims .tag{font-size:10px}.market-lead h1{font-size:24px}.market-lead .ml-back{font-size:13px;font-weight:700;color:var(--muted);text-decoration:none}.market-lead p{margin:6px 0}.market-evidence>summary{font-weight:800;cursor:pointer}.coin-tf{flex-wrap:wrap;overflow:visible}.minute-options{flex-basis:100%;display:flex;gap:8px;padding:10px;margin-top:8px;background:var(--soft);border:1px solid var(--line);border-radius:12px}.minute-options[hidden]{display:none}.minute-options button{border:1px solid var(--line);border-radius:18px;padding:8px 14px;background:var(--surface);color:var(--fg)}.coin-tf{position:relative}
 @media(max-width:820px){.moms{grid-template-columns:repeat(2,minmax(0,1fr))}.momentum-axis{font-size:10px;gap:0}.market-scenarios{grid-template-columns:minmax(0,1fr)}.market-thermals{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 0 8px;scrollbar-width:none}.market-thermals::-webkit-scrollbar{display:none}.market-thermals>*{flex:0 0 84%;scroll-snap-align:start}.topbar.scrolled .gnomon-mark{width:28px;height:28px}.topbar.scrolled .price-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 7px;font-size:12px;overflow:visible;line-height:1.5}.price-bar>b{overflow:hidden;text-overflow:ellipsis;grid-column:1;grid-row:1/3}.price-bar .pb-price{grid-column:2;grid-row:1;white-space:nowrap}.price-bar [data-live-f=arrowpct]{grid-column:2;grid-row:2;text-align:right;white-space:nowrap}.price-bar .pb-code,.price-bar .freshness-badge{display:none}.topbar-in{gap:8px}.top-links,.topbar-in>.menu-button{flex:none}.chips button{padding:6px 12px;font-size:13px}.analysis-tabs{padding-top:0}.chips{gap:4px}}
 ${FS_CSS}${THEME_CSS}

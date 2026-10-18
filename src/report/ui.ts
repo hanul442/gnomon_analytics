@@ -222,39 +222,60 @@ export const UI_SCRIPT = `<script>
 })();
 </script>`;
 
-// The ☰ menu (docs/DESIGN.md §5.20, G-58): every page, all sections in one drawer.
 const escM = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-/** Menu groups: [icon path (24px line icon, G-235), label, href]. Hrefs are relative to the site root. */
-export const MENU: readonly { title: string; items: readonly [string, string, string][] }[] = [
-  // G-211: two groups of tiles (한서님 10/11 '합칠 수 있는 건 합치자'): what to look at, and their own things.
-  // 미국 주식·ETF·코인·조건 만들기 are tabs of 종목 찾기, 오늘 나온 리포트 is the top of AI 리포트, 1:1 문의 is in
-  // FAQ, 요금제·크레딧 is the 내 계정 row on top, and the view/theme switches live in 설정.
-  { title: '둘러보기', items: [['<path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/>', '시장 데일리', 'market-reports.html'], ['<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><circle cx="16.5" cy="16.5" r="3.5"/>', '테마별 종목', 'themes.html'], ['<path d="M5 5h11v14H6a1 1 0 0 1-1-1z"/><path d="M16 9h3v9a1 1 0 0 1-2 0"/><path d="M8 9h5M8 12.5h5M8 16h3"/>', '뉴스 이슈', 'issues.html'], ['<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 12l5.5-5.5"/>', '공시 레이더', 'signals.html'], ['<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>', '종목 찾기', 'screener.html'], ['<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>', 'AI 리포트', 'reports.html'], ['<rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9.5 4h5v3h-5zM9 13.5l2 2 4-4"/>', '성적표', 'scorecard.html']] },
-  { title: '내 것', items: [['<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>', '관심 종목', 'watch.html'], ['<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>', '알림함', 'inbox.html'], ['<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>', '설정', 'settings.html'], ['<path d="M3.5 7a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>', '내 리포트', 'myreports.html'], ['<path d="M5 5h14v10h-8l-4 4v-4H5z"/>', '내 토론 기록', 'mydebates.html'], ['<path d="M5 19V5a2 2 0 0 1 2-2h12v15H7a2 2 0 0 0-2 2 2 2 0 0 0 2 2h12"/>', '사용법', 'guide.html']] },
-];
-/** G-211: the small links under the tiles. */
+/** G-211, G-245: the help links, now rows at the bottom of the 나 tab. */
 export const MENU_FOOT: readonly [string, string][] = [['FAQ·1:1 문의', 'faq.html'], ['업데이트 기록', 'updates.html'], ['이번 주 설문', 'survey.html?k=weekly'], ['이용약관', 'terms.html'], ['개인정보처리방침', 'privacy.html'], ['HANUL 소개', 'hanul.html']];
-/** The app's tabs (G-95): the bottom bar on phones, the same links in the top bar on wide screens. 전체 opens the sheet. */
+/** The app's tabs (G-95, G-245): the bottom bar on phones, the same links in the top bar on wide screens. Five tabs, one per
+ * group of the feature map (홈 · 찾기 · 내 종목 · 위원회 · 나); the old 전체 sheet is gone and its pages live inside these tabs. */
 export const TABS: readonly [string, string, string][] = [
   ['홈', 'index.html#top', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'],
   ['찾기', 'screener.html', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'],
-  ['관심', 'watch.html', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>'],
-  ['리포트', 'reports.html', '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>'],
+  ['내 종목', 'watch.html', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>'],
+  ['위원회', 'reports.html', '<rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9.5 4h5v3h-5zM9 13.5l2 2 4-4"/>'],
+  ['나', 'settings.html', '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>'],
 ];
-const ALL_ICON = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>';
+/**
+ * G-245: inside a tab, sibling pages are modes of one screen, switched with the chewy pill (G-189) instead of
+ * more menus. Each group: [label, href]; the first page of a group is the tab's own page.
+ */
+export const MODE_GROUPS: readonly { key: string; label: string; modes: readonly [string, string][] }[] = [
+  { key: 'find', label: '찾기', modes: [['주식', 'screener.html'], ['미국 주식', 'screener.html#us'], ['ETF', 'screener.html#etf'], ['코인', 'screener.html#coin'], ['테마', 'themes.html'], ['공시', 'signals.html']] },
+  { key: 'mine', label: '내 종목', modes: [['관심', 'watch.html'], ['알림', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html']] },
+  { key: 'committee', label: '위원회', modes: [['AI 리포트', 'reports.html'], ['성적표', 'scorecard.html'], ['시장 데일리', 'market-reports.html']] },
+];
+/** Pages that belong to the 나 tab (account, money, help). */
+const ME_PAGES = ['account.html', 'pricing.html', 'login.html', 'onboarding.html', 'checkout.html', 'guide.html', 'faq.html', 'updates.html', 'survey.html', 'terms.html', 'privacy.html', 'hanul.html'];
+/** page file → the tab link (data-tab-link) it lights up. */
+const TAB_OF: Record<string, string> = Object.fromEntries([
+  ...MODE_GROUPS.flatMap((g) => g.modes.map(([, h]) => [h.split('#')[0], g.modes[0]![1]] as const)),
+  ...ME_PAGES.map((p) => [p, 'settings.html'] as const),
+]);
+/** The mode row for `page` (a file name such as 'themes.html'), or '' when the page is in no group. */
+export function modeBar(base: string, page: string): string {
+  const g = MODE_GROUPS.find((x) => x.modes.some(([, h]) => h === page));
+  if (!g) return '';
+  return `<nav class="find-tabs mode-bar" aria-label="${escM(g.label)}">${g.modes.map(([l, h]) => `<a href="${base}${h}"${h === page ? ' aria-current="page"' : ''}>${escM(l)}</a>`).join('')}</nav>`;
+}
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 /** One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones). */
 export function tabBar(base: string, where: 'top' | 'bottom'): string {
-  return `<nav class="${where === 'top' ? 'top-tabs' : 'bottom-nav'}" aria-label="${where === 'top' ? '주 메뉴' : '빠른 이동'}">${TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('')}<button type="button" class="nav-all" data-all-menu aria-label="전체 메뉴" aria-haspopup="dialog" aria-expanded="false" aria-controls="side-menu">${svgI(ALL_ICON)}<span>전체</span></button></nav>`;
+  return `<nav class="${where === 'top' ? 'top-tabs' : 'bottom-nav'}" aria-label="${where === 'top' ? '주 메뉴' : '빠른 이동'}">${TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('')}</nav>`;
 }
 
 
-/** The ☰ button for the top bar and the drawer it opens (assets/ui.js toggles it). */
-export function menuHtml(base: string, archiveHref?: string): { button: string; drawer: string } {
-  return {
-    button: tabBar(base, 'top'),
-    drawer: `<div class="menu-scrim" hidden></div><nav class="side-menu" id="side-menu" aria-label="전체 메뉴" hidden><div class="sm-head"><b>전체</b><button type="button" class="sm-close" aria-label="닫기">×</button></div><div class="sm-group sm-acct"><a href="${base}pricing.html" data-acct-tab="1"><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></a><button type="button" class="sm-install" data-install hidden><b><svg viewBox="0 0 24 24" aria-hidden="true" class="ins-ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M12 8v6M9.5 11.5L12 14l2.5-2.5"/></svg>그노몬 앱 설치</b><small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button></div>${archiveHref ? `<div class="sm-group"><div class="sm-title">이 종목</div><a href="${archiveHref}">지난 리포트</a></div>` : ''}<div id="sm-admin"></div>${MENU.map((g) => `<div class="sm-group"><div class="sm-title">${escM(g.title)}</div><div class="sm-grid">${g.items.map(([icon, label, href]) => `<a class="sm-tile" href="${base}${href}"><span class="sm-ic" aria-hidden="true">${svgI(icon)}</span><span>${escM(label)}</span></a>`).join('')}</div></div>`).join('')}<p class="sm-links">${MENU_FOOT.map(([label, href]) => `<a href="${base}${href}">${escM(label)}</a>`).join('')}</p><p class="sm-foot">계산 결과이고, 투자 권유가 아니에요.</p></nav>`,
-  };
+/** The top bar's tabs (wide screens). G-245: there is no 전체 sheet any more; `drawer` stays empty for old callers. */
+export function menuHtml(base: string): { button: string; drawer: string } {
+  return { button: tabBar(base, 'top'), drawer: '' };
+}
+
+/** G-245: the top of the 나 tab — the account row, the app install, the ops link for admins (filled by alpha.ts). */
+export function meHead(base: string): string {
+  return `<div class="me-head"><a class="me-acct" href="${base}pricing.html" data-acct-tab="1"><span><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></span><i aria-hidden="true">›</i></a><button type="button" class="me-install" data-install hidden>그노몬 앱 설치<small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button><div id="sm-admin"></div></div>`;
+}
+/** G-245: the 나 tab's help rows (사용법 and what used to be the small links under the 전체 sheet). */
+export function meHelp(base: string): string {
+  const rows: readonly [string, string][] = [['사용법', 'guide.html'], ...MENU_FOOT];
+  return `<section class="card st-rows">${rows.map(([l, h]) => `<a href="${base}${h}"><span><b>${escM(l)}</b></span><i aria-hidden="true">›</i></a>`).join('')}</section>`;
 }
 
 /**
@@ -277,7 +298,6 @@ dialog.v2-dialog.rj>header{margin:0!important}
 .flt-pop{padding:0!important;place-items:stretch!important}.flt-sheet{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
 .sheet{align-items:stretch!important}.sheet-body{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important;padding-top:0!important}.sheet-head{top:0!important;margin:0 -18px 8px!important;padding:14px 18px 12px!important;border-bottom:1px solid var(--line)}
 .chat{inset:0!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;max-width:100%!important;height:100dvh!important;border-radius:0!important}
-.side-menu{top:0!important;max-height:none!important;height:100dvh;border-radius:0!important;animation:sm-in .18s ease-out}
 dialog.v2-dialog>header>.dialog-x,dialog.v2-dialog .rj-head .dialog-x,.flt-top .flt-x,.chat-head .chat-x,.sm-head .sm-close{order:-1;font-size:0!important;width:36px;height:36px;margin:-6px 4px -6px -8px;display:inline-flex;align-items:center;justify-content:center;border:0;background:none;color:var(--fg)}
 dialog.v2-dialog>header>.dialog-x::before,dialog.v2-dialog .rj-head .dialog-x::before,.flt-top .flt-x::before,.chat-head .chat-x::before,.sm-head .sm-close::before{content:"‹";font-size:34px;line-height:1;font-weight:300;margin-top:-4px}
 dialog.v2-dialog>header,.flt-top,.sm-head{justify-content:flex-start!important;gap:4px!important}.chat-head{gap:6px}.chat-head .chat-x{color:#fff!important}
@@ -303,7 +323,6 @@ export const FS_JS = `
       ['.sc-sheet.open', function (e) { var x = e.querySelector('.sc-sheet-x'); if (x) x.click(); }],
       ['.sheet:not([hidden])', function (e) { var x = e.querySelector('[data-close]'); if (x) x.click(); }],
       ['section.chat:not([hidden])', function (e) { var x = e.querySelector('.chat-x'); if (x) x.click(); }],
-      ['.side-menu:not([hidden])', function (e) { var x = e.querySelector('.sm-close'); if (x) x.click(); }],
       ['.ins-pop', function (e) { e.remove(); }],
       ['.db-room:not([hidden])', function (e) { var x = e.querySelector('[data-room-close]'); if (x) x.click(); }],
       ['.pop-wrap', function (e) { var x = e.querySelector('[data-p=later]'); if (x) x.click(); else e.remove(); }]
@@ -483,14 +502,12 @@ export const TOUR_JS = `
   (function () {
     var run = function () {
     var STEPS = {
+      // G-244: three stops, not seven: the market line, the reader's own stocks and the menu.
       home: [
-        ['#top', '검색', '종목·ETF·코인을 이름, 코드, 초성(ㅅㅅㅈㅈ)으로 찾아요. 아래 필터로 시장과 조건을 골라 자세히 찾을 수 있어요.'],
-        ['#banner', '배너', '공지, 크레딧 이벤트, 설문, 사용법이 돌아가며 나와요. 이벤트의 받기를 누르면 크레딧이 바로 들어와요.'],
-        ['.ix-row', '시장 한눈에', '코스피·코스닥과 시장 온도예요. 시장 온도는 전 종목의 기술 신호를 모은 거예요.'],
-        ['#watch', '내 종목', '어디서든 ☆를 누른 종목과 설문에서 고른 종목이 여기 모여요. 가격은 장중에 실시간으로 바뀌고, 아래 관심 업종을 누르면 오늘 가장 강한 관련 테마가 열려요.'],
-        ['#today', '오늘 볼 것', '내 보기 방식(초보·단타·스윙·장기)에 맞춰 오늘 볼 종목 네 개를 골라 이유와 함께 보여 줘요.'],
-        ['.bottom-nav', '아래 탭', '홈 · 찾기 · 관심 · 리포트, 그리고 전체에서 시장·내 것·도움말·계정 메뉴로 가요.'],
-        ['.top-tabs', '위쪽 탭', '홈 · 찾기 · 관심 · 리포트, 그리고 전체에서 시장·내 것·도움말·계정 메뉴로 가요.'],
+        ['#mkt-hero', '오늘 시장', '전 종목의 기술 신호를 모아 오늘 시장을 한 줄로 말해요. 누르면 시장 리포트가 열리고, 미국을 누르면 미국 시장이 펼쳐져요.'],
+        ['#watch', '내 종목', '어디서든 ☆를 누른 종목과 설문에서 고른 종목이 여기 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
+        ['.bottom-nav', '아래 탭', '다섯 탭이 전부예요. 찾기에서 주식·ETF·코인·테마·공시를 바꿔 가며 보고, 위원회에서 AI 리포트와 성적표를 봐요.'],
+        ['.top-tabs', '위쪽 탭', '찾기에서 종목·ETF·코인을 검색하고 조건으로 골라요. 테마, 공시 레이더, 시장 리포트는 홈 맨 아래 더 보기에 있어요.'],
       ],
       report: [
         ['.chips', '다섯 탭', '요약 · 타이밍(기술 신호와 전략) · 기업 체력(종목정보·재무제표·수급) · AI 위원회 · 뉴스·공시가 같은 위치에 있어요. 차트는 요약의 작은 차트를 누르면 전체 화면으로 열려요. 리포트가 없으면 AI 분석은 잠금으로 보여요.'],
@@ -603,34 +620,29 @@ export const ORBS = '<span class="orbs" aria-hidden="true"><canvas data-orb="wor
 export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:var(--good-strong);border-color:#bfe3cb;background:var(--good-soft)}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(240,68,82,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(49,130,246,.22)}100%{background:transparent}}`;
 
 export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:13px;font-weight:700;border-radius:999px;padding:6px 11px;cursor:pointer;white-space:nowrap}.install-btn:hover{background:rgba(255,255,255,.18)}.sm-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin-top:8px;border:1px solid var(--line-strong);background:var(--soft);border-radius:12px;padding:10px 12px;font:inherit;text-align:left;cursor:pointer;color:var(--fg)}.sm-install small{color:var(--muted);font-size:12px}.ins-pop{position:fixed;inset:0;z-index:90;background:rgba(10,20,40,.45);display:flex;align-items:flex-end;justify-content:center}.ins-pop .ins-card{background:var(--surface-solid);border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));max-width:480px;width:100%}.ins-pop ol{margin:10px 0 14px;padding-left:20px;line-height:1.7}.ins-pop .btn-primary{width:100%;justify-content:center}\n.top-tabs{display:flex;align-items:center;gap:2px;margin-right:6px}.top-tabs a,.top-tabs button{display:flex;align-items:center;gap:6px;border:0;background:none;color:#dbe4f3;font:inherit;font-size:14px;font-weight:700;padding:8px 11px;border-radius:10px;text-decoration:none;cursor:pointer}.top-tabs svg{width:18px;height:18px}.top-tabs a:hover,.top-tabs button:hover,.top-tabs [aria-current=page]{background:rgba(255,255,255,.12);color:#fff}@media(max-width:820px){.top-tabs{display:none}}
-.sm-acct a{display:flex!important;justify-content:space-between;align-items:center;background:var(--soft);border-radius:12px!important;padding:14px 14px!important}.sm-acct small{font-size:12.5px;color:var(--muted);font-weight:600}.sm-acct{border-top:0!important;padding-top:4px!important}
-.menu-scrim{position:fixed;inset:0;background:rgba(10,20,35,.42);z-index:90}.side-menu{position:fixed;top:0;right:0;bottom:0;width:min(300px,86vw);background:var(--surface-solid);z-index:91;overflow-y:auto;padding:14px 16px 24px;box-shadow:-12px 0 32px rgba(10,20,35,.18);animation:sm-in .18s ease-out}
-@keyframes sm-in{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}.sm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.sm-head b{font-size:17px}.sm-close{border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--muted);width:38px;height:38px}
-.sm-group{border-top:1px solid var(--line);padding:10px 0 6px}.sm-title{font-size:12px;font-weight:800;color:var(--muted);margin:2px 2px 8px}
-/* G-197: the view settings read as two labelled rows and one link row, not a label squeezed beside chips and a bare text link. */
-.sm-title.sm-sub{margin-top:14px}
-.side-menu .sm-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 8px;margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--soft);text-decoration:none;color:var(--fg)}
-.side-menu .sm-row span{font-weight:700;font-size:14.5px}.side-menu .sm-row small{display:block;grid-row:2;color:var(--muted);font-size:12px;margin-top:2px}.side-menu .sm-row i{grid-row:1/3;grid-column:2;font-style:normal;color:var(--muted);font-size:18px}.side-menu .sm-row:active{transform:scale(.98)}.sm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.side-menu .sm-tile{display:flex!important;flex-direction:column!important;align-items:center;justify-content:center;gap:5px;min-height:74px;padding:10px 6px;border-radius:14px;background:var(--soft);text-decoration:none;color:var(--fg);font-size:13px;font-weight:700;text-align:center;line-height:1.3}.side-menu .sm-tile:hover{background:var(--accent-soft)}.sm-ic{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:var(--accent-soft);color:var(--accent-strong);transition:transform var(--dur-base) var(--ease-spring)}.sm-ic svg{width:21px;height:21px}.sm-tile:active .sm-ic{transform:scale(.88)}@media(min-width:821px){.sm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}.side-menu a{display:block;padding:10px 6px;border-radius:10px;text-decoration:none;color:var(--fg);font-weight:600;font-size:15px}.side-menu a:hover,.side-menu a[aria-current=page]{background:var(--soft);color:var(--accent-strong)}.sm-foot{font-size:12px;color:var(--muted);margin-top:12px}.sm-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 10px}.side-menu .sm-quick a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border:1px solid var(--line);border-radius:12px;font-size:13px}.sm-quick svg{width:22px;height:22px}
-html.menu-open{overflow:hidden}.side-menu .sm-links{display:flex;flex-wrap:wrap;gap:4px 16px;margin:16px 2px 0;font-size:13px}.side-menu .sm-links a{display:inline-flex;align-items:center;min-height:36px;color:var(--fg2)}.sm-hint{font-size:12px;color:var(--muted);margin:4px 2px}
-@media(max-width:820px){.side-menu{top:auto;bottom:0;right:0;top:auto;left:0;width:auto;max-height:82vh;border-radius:20px 20px 0 0;padding-bottom:calc(24px + env(safe-area-inset-bottom));animation:sm-up .2s ease-out}}@keyframes sm-up{from{transform:translateY(30px);opacity:.4}to{transform:none;opacity:1}}`;
+/* G-245: the 나 tab's head (account, install, ops) and the mode rows (sibling pages as one screen, G-189 pill). */
+.me-head{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}.me-acct{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:60px;padding:12px 16px;border-radius:14px;background:var(--soft);color:var(--fg);text-decoration:none}.me-acct b{display:block;font-size:16px}.me-acct small{color:var(--muted);font-size:13px;font-weight:600}.me-acct i{font-style:normal;color:var(--muted);font-size:18px}
+.me-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:1px solid var(--line-strong);background:transparent;border-radius:14px;padding:12px 16px;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:var(--fg)}.me-install[hidden]{display:none}.me-install small{color:var(--muted);font-size:12.5px;font-weight:400}#sm-admin:empty{display:none}#sm-admin .sm-title{font-size:12px;font-weight:800;color:var(--muted);margin:6px 2px}#sm-admin a{display:flex;align-items:center;min-height:44px}
+.mode-bar{display:flex;gap:6px;overflow-x:auto;max-width:1180px;margin:14px auto 4px;padding:0 24px;scrollbar-width:none}.mode-bar>a{flex:none;display:inline-flex;align-items:center;min-height:40px;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:0 16px;font-size:14.5px;font-weight:700;text-decoration:none;color:var(--fg)}.mode-bar::-webkit-scrollbar{display:none}.find-tabs a[aria-current=page]{background:var(--navy);color:var(--on-accent);border-color:var(--navy)}@media (max-width:820px){.mode-bar{padding:0 14px;margin-top:10px}}`;
 
 export const MENU_JS = `
-  // 전체 (G-95): the tab bar's last tab opens every other place as a sheet (a side panel on wide screens).
+  // G-245: the five tabs light up by page (sibling pages light their group's tab), and a mode row moves its pill
+  // to the tapped mode before the next page opens, so switching modes feels like one screen.
   (function () {
-    var btns = [].slice.call(document.querySelectorAll('[data-all-menu]')), nav = document.getElementById('side-menu'), scrim = document.querySelector('.menu-scrim');
-    if (!btns.length || !nav) return;
-    var here = location.pathname.split('/').pop() || 'index.html', last = null;
-    nav.querySelectorAll('a').forEach(function (a) { if (a.getAttribute('href').split('/').pop().split('#')[0] === here && here !== 'index.html') a.setAttribute('aria-current', 'page'); });
-    // The current tab: by page, and on home by the section in the hash.
-    var mark = function () { var h = location.hash.slice(1); document.querySelectorAll('[data-tab-link]').forEach(function (a) { var k = a.getAttribute('data-tab-link'), on = here === 'index.html' ? (k === (h === 'watch' || h === 'search' ? h : 'top')) : k === here; if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); };
+    var here = location.pathname.split('/').pop() || 'index.html', TAB_OF = ${JSON.stringify(TAB_OF)};
+    var mark = function () { var h = location.hash.slice(1); document.querySelectorAll('[data-tab-link]').forEach(function (a) { var k = a.getAttribute('data-tab-link'), on = here === 'index.html' ? k === 'top' : (k === here || TAB_OF[here] === k); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); };
     mark(); window.addEventListener('hashchange', mark);
-    document.querySelectorAll('[data-tab-link=search]').forEach(function (a) { a.addEventListener('click', function () { var q = document.getElementById('q'); if (q) setTimeout(function () { q.focus(); }, 60); }); });
-    var set = function (open, by) { nav.hidden = !open; scrim.hidden = !open; btns.forEach(function (b) { b.setAttribute('aria-expanded', String(open)); }); document.documentElement.classList.toggle('menu-open', open); if (open) { last = by || null; nav.querySelector('a').focus(); } else if (last) last.focus(); };
-    btns.forEach(function (b) { b.addEventListener('click', function () { set(nav.hidden, b); }); });
-    scrim.addEventListener('click', function () { set(false); });
-    nav.querySelector('.sm-close').addEventListener('click', function () { set(false); });
-    nav.addEventListener('click', function (e) { if (e.target.closest('a')) set(false); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !nav.hidden) set(false); });
+    var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.querySelectorAll('.mode-bar').forEach(function (bar) { var a = bar.querySelector('[aria-current=page]'); if (a) bar.scrollLeft += a.getBoundingClientRect().left - bar.getBoundingClientRect().left - (bar.clientWidth - a.offsetWidth) / 2; });
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('.find-tabs a[href]'); if (!a || a.getAttribute('aria-current') === 'page') return;
+      if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank') return;
+      var url = a.href; if (url.split('#')[0] === location.href.split('#')[0]) return;
+      e.preventDefault();
+      [].forEach.call(a.parentNode.children, function (b) { if (b === a) return; b.removeAttribute('aria-current'); if (b.hasAttribute('aria-selected')) b.setAttribute('aria-selected', 'false'); });
+      a.setAttribute('aria-current', 'page');
+      setTimeout(function () { location.href = url; }, still ? 0 : 260);
+    });
   })();`;
 
 

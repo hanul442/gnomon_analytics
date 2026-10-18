@@ -40,7 +40,7 @@ export const NEWS_ISSUES_CARD = `<section class="block" id="news-issues" hidden>
 export const NEWS_ISSUES_SCRIPT = `${CSS}${RENDER_JS}<script>
 (function(){var box=document.getElementById('news-issues');if(!box)return;
  fetch('news-issues.json').then(function(r){if(!r.ok)throw r;return r.json();}).then(function(j){if(!j.issues||!j.issues.length)return;
-  document.getElementById('ni-home').innerHTML=window.gnmNewsIssues(j,5,false);document.getElementById('ni-home-when').textContent=window.gnmNewsIssuesWindow(j)+' · 매체 수 순';box.hidden=false;
+  document.getElementById('ni-home').innerHTML=window.gnmNewsIssues(j,3,false);document.getElementById('ni-home-when').textContent=window.gnmNewsIssuesWindow(j)+' · 매체 수 순';box.hidden=false;
  }).catch(function(){});})();
 </script>`;
 

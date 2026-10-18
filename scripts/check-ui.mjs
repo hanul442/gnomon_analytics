@@ -303,8 +303,8 @@ try{
  await page.locator('.bottom-nav a[href$="watch.html"]').click();await page.waitForURL(/watch\.html/);await page.locator('#wp-list .wp-row').first().waitFor();
  assert.equal(await page.locator('#wp-list .wp-row').count(),1);assert.equal(await page.locator('#wp-n').innerText(),'1');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.screenshot({path:'test-artifacts/watch-390.png'});
- // G-213: 위원별 판단 narrows to the watchlist on one tap, at phone and desktop widths.
- for(const width of [375,1280]){await page.setViewportSize({width,height:900});await page.goto(origin+'/scorecard-fixture.html');await page.locator('.mb-bar:not([hidden])').waitFor();
+ // G-213, G-244: 위원별 탭의 판단 narrows to the watchlist on one tap, at phone and desktop widths.
+ for(const width of [375,1280]){await page.setViewportSize({width,height:900});await page.goto(origin+'/scorecard-fixture.html');assert.equal(await page.locator('#scg-analysts').isVisible(),false,'G-244: one group at a time');await page.locator('[data-sc-tab=analysts]').click();await page.locator('.mb-bar:not([hidden])').waitFor();
   assert.equal(await page.locator('.mb-card').count(),6);assert.equal(await page.locator('#m-trend_momentum .mb-row:visible').count(),4,'four calls show before 모두 보기');assert.ok(await page.locator('.mb-row[data-sym="000660"]').first().isVisible());
   await page.locator('.mb-watch').click();assert.equal(await page.locator('.mb-row[data-sym="000660"]:visible').count(),0);assert.equal(await page.locator('.mb-row[data-sym="999999"]:visible').count(),18,'every watched call shows, the 4-row cut aside');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#analysts').screenshot({path:'test-artifacts/scorecard-members-'+width+'.png'});}
@@ -327,9 +327,12 @@ try{
  const here=page.url();await page.locator('[data-open-chat]').first().click();await page.locator('#chat:not([hidden])').waitFor();
  const box=await page.locator('#chat').boundingBox();assert.ok(box.width>=389&&box.height>=840,'chat fills the phone screen: '+JSON.stringify(box));
  await page.waitForTimeout(100);await page.goBack();await page.locator('#chat').waitFor({state:'hidden'});assert.equal(page.url(),here);
- await page.locator('[data-all-menu]').last().click();await page.locator('.side-menu:not([hidden])').waitFor();assert.ok((await page.locator('.side-menu').boundingBox()).height>=840);
- await page.waitForTimeout(100);await page.goBack();await page.locator('.side-menu').waitFor({state:'hidden'});assert.equal(page.url(),here);
- await page.locator('[data-all-menu]').last().click();await page.locator('.side-menu:not([hidden])').waitFor();assert.equal(await page.locator('.side-menu .sm-tile').count(),13);assert.equal(await page.locator('.side-menu .sm-links a').count(),6);await page.screenshot({path:'test-artifacts/menu-390.png'});await page.locator('.side-menu .sm-close').click();await page.locator('.side-menu').waitFor({state:'hidden'});await page.waitForTimeout(150);assert.equal(page.url(),here);
+ // G-245: five tabs and no 전체 sheet; 찾기 lights up on its sibling pages, and a mode tap moves the pill, then opens the page.
+ assert.equal(await page.locator('.bottom-nav a').count(),5);assert.equal(await page.locator('[data-all-menu]').count(),0);
+ await page.locator('.find-tabs a[href$="themes.html"]').click();await page.waitForURL(/themes\.html/);
+ assert.equal(await page.locator('.bottom-nav [aria-current=page]').getAttribute('aria-label'),'찾기');assert.equal(await page.locator('.mode-bar [aria-current=page]').textContent(),'테마');
+ await page.locator('.bottom-nav a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),7);await page.screenshot({path:'test-artifacts/me-390.png'});
+ await page.goto(here);await page.waitForLoadState('load');
  // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.
  for (const width of [375,1280]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');await page.waitForLoadState('load');
@@ -379,8 +382,8 @@ try{
   await page.keyboard.press('Escape');assert.equal(await page.locator('.tr-tip').count(),0);assert.equal(await page.locator('#t-home').getAttribute('aria-selected'),'true');
   await page.goto(origin+'/screener.html?tour=1');await page.locator('.tr-tip').waitFor();await page.locator('.tr-tip [data-t=n]').click();await page.locator('.tr-tip [data-t=n]').click();assert.ok((await page.locator('.tr-tip').innerText()).includes('AI 조건'));await page.keyboard.press('Escape');
  }
- // G-118: same-theme comparison on the summary tab: cards in a sideways strip, return and PER against the theme.
- await page.goto(origin+'/stock.html?c=999999');await page.locator('#peers .pe-card').first().waitFor();
+ // G-118, G-244: same-theme comparison on 기업 체력: cards in a sideways strip, return and PER against the theme.
+ await page.goto(origin+'/stock.html?c=999999#tab-fundamentals');await page.locator('#tab-fundamentals [data-sub=ftg-peer]').click();assert.equal(await page.locator('#ftg-co').isVisible(),false,'G-244: one part of 기업 체력 at a time');await page.locator('#tab-fundamentals #peers .pe-card').first().waitFor();
  assert.equal(await page.locator('#peers .pe-card').count(),4);await page.locator('#peers .pe-per .pe-pr').filter({hasText:/\b11배/}).waitFor();
  assert.match(await page.locator('#peers .pe-sum').innerText(),/4개 중 1위/);await page.locator('[data-pe-sort]').selectOption('return');assert.equal(await page.locator('#peers .pe-card').first().getAttribute('data-sym'),'999999');await page.locator('[data-pe-direction]').click();assert.equal(await page.locator('#peers .pe-card').first().getAttribute('data-sym'),'000002');
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#peers').screenshot({path:'test-artifacts/peers.png'});
