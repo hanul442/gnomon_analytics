@@ -1,5 +1,5 @@
 {
- "at": "2026-10-18T15:48:45.006Z",
+ "at": "2026-10-18T17:33:11.778Z",
  "selected": null,
  "universe": [
   {
@@ -23,9 +23,10 @@
    "count": 1176
   },
   {
-   "source": "upbit:candles:days:all",
-   "ok": true,
-   "count": 296
+   "source": "upbit:market:all",
+   "ok": false,
+   "count": 0,
+   "error": "The operation was aborted due to timeout"
   },
   {
    "source": "naver:world:day:all",
@@ -36,6 +37,24 @@
    "source": "opendart:risk-filings",
    "ok": true,
    "count": 0
+  },
+  {
+   "source": "request:KRW-BTC",
+   "ok": false,
+   "count": 0,
+   "error": "NOT_ON_UPBIT_KRW"
+  },
+  {
+   "source": "request:KRW-ETH",
+   "ok": false,
+   "count": 0,
+   "error": "NOT_ON_UPBIT_KRW"
+  },
+  {
+   "source": "request:KRW-WLD",
+   "ok": false,
+   "count": 0,
+   "error": "NOT_ON_UPBIT_KRW"
   }
  ],
  "stocks": [
@@ -275,30 +294,15 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-BTC",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-ETH",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-WLD",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "069500",
    "report": "SKIPPED",
    "failedSources": []
-  },
-  {
-   "symbol": "KRW-GTC",
-   "report": "EXISTS",
-   "failedSources": []
   }
  ],
- "failed": []
+ "failed": [
+  {
+   "symbol": "KRW-GTC",
+   "error": "The operation was aborted due to timeout"
+  }
+ ]
 }
