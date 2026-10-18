@@ -192,7 +192,7 @@ export interface SignalScore {
   ic: { mean: number; lo: number; hi: number };
   /** Share of dates with a positive IC. */
   icPositive: number;
-  /** Top fifth minus bottom fifth, average 20-session excess return, percent. */
+  /** Top fifth minus bottom fifth (yes minus no for a yes/no signal), average 20-session excess return, percent. */
   spread: { mean: number; lo: number; hi: number };
   /** Beat-the-market chance from the signal's fifth (calibrated on earlier dates only): Brier, and the same for the base rate. */
   brier: number; brierBase: number; skill: number;
@@ -216,7 +216,10 @@ export function scoreSignal(key: string, dates: readonly { date: string; rows: r
     ics.push(ic); sizes.push(rows.length);
     const q = quintiles(v);
     const avg = (k: number) => { const xs = ex.filter((_, t) => q[t] === k); return xs.length ? xs.reduce((a, c) => a + c, 0) / xs.length : null; };
-    const hi = avg(4), lo = avg(0);
+    // A yes/no signal (a filing or not) has no fifths: compare the yes group with the no group.
+    const distinct = [...new Set(v)];
+    const side = (val: number) => { const xs = ex.filter((_, t) => v[t] === val); return xs.length ? xs.reduce((a, c) => a + c, 0) / xs.length : null; };
+    const hi = distinct.length <= 2 ? side(Math.max(...distinct)) : avg(4), lo = distinct.length <= 2 ? side(Math.min(...distinct)) : avg(0);
     if (hi !== null && lo !== null) spreads.push((hi - lo) * 100);
     const enough = past.allN >= 6 * minStocks;
     rows.forEach((r, t) => {

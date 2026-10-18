@@ -57,3 +57,10 @@ test('blind v2 evidence carries no names, dates or sizes; replies are checked', 
   assert.equal(parseBlind2('{"beat":55,"p10":120,"p90":110}'), null);
   assert.equal(parseBlind2('no json'), null);
 });
+
+test('a yes/no signal is scored yes minus no', () => {
+  const key = 'buyback';
+  const dates = Array.from({ length: 8 }, (_, d) => ({ date: `2021-${String(d + 1).padStart(2, '0')}-01`, rows: Array.from({ length: 40 }, (_, k): Row => ({ symbol: `S${k}`, i: 0, ret: 0, ended: false, excess: k < 5 ? 0.04 : -0.005, values: { [key]: k < 5 ? 1 : 0 }, p10: null, p90: null, sigma: null })) }));
+  const s = scoreSignal(key, dates)!;
+  assert.ok(Math.abs(s.spread.mean - 4.5) < 1e-9);
+});

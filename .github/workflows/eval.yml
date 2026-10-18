@@ -11,9 +11,6 @@ on:
       budget: { description: 'AI budget, USD', default: '5' }
       dates: { description: 'v2: evaluation dates for the AI', default: '100' }
       perDate: { description: 'v2: stocks per date for the AI', default: '10' }
-  push:
-    branches: [claude/project-thread-dz3hed]
-    paths: ['.github/workflows/eval.yml']
 permissions:
   contents: write
 concurrency:
