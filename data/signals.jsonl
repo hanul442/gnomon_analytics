@@ -868,3 +868,4 @@
 {"date":"2026-10-16","preset":"hot","symbol":"396300","market":"Q","close":8830,"method":"gnm-signal-v1"}
 {"date":"2026-10-16","preset":"top","symbol":"161000","market":"P","close":11720,"method":"gnm-signal-v1"}
 {"date":"2026-10-16","preset":"volsurge","symbol":"377220","market":"Q","close":2840,"method":"gnm-signal-v1"}
+{"date":"2026-10-16","preset":"risky","symbol":"011150","market":"P","close":1789,"method":"gnm-signal-v1"}

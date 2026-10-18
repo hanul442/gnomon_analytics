@@ -83,6 +83,9 @@ import { fetchNaverNews, fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl, NAVE
 import { retryingFetch } from '../sources/retryFetch.js';
 import { recordingFetch, replayingFetch } from '../sources/fetchCache.js';
 import { kstParts, runDay } from './kst.js';
+import { fetchFredSeries, MACRO_SERIES, macroKey, type MacroPoint } from '../sources/fred.js';
+import { macroSnapshot } from '../analysis/macro.js';
+import { BASE_RATE_MIN, eventBaseRates, type EventBaseRate } from '../analysis/eventStudy.js';
 export { kstParts, runDay } from './kst.js';
 
 /** A merge's run replays the last full run's answers only while they are this fresh (a missed day falls back to the network). */
@@ -286,6 +289,15 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     }
   };
   await fetchBenches(jobs.map((j) => j.ticker));
+  // G-230: the macro backdrop (FRED, no key), once per run. A failure only leaves the macro line out.
+  for (const s of MACRO_SERIES) {
+    try {
+      const added = await appendNew(join(root, 'data', 'macro', `${s.id}.jsonl`), await fetchFredSeries(s.id, { now: () => now, ...fetchOpt }), macroKey);
+      benchStatus.push({ source: `fred:csv:${s.id}`, ok: true, count: added.length });
+    } catch (error) {
+      benchStatus.push({ source: `fred:csv:${s.id}`, ok: false, count: 0, error: error instanceof Error ? error.message.slice(0, 160) : 'UNKNOWN' });
+    }
+  }
   const budget = options.budget ?? await AiBudget.load(root, now, options.aiBudgetUsd);
   const results: TickerResult[] = [];
   const failed: { symbol: string; error: string }[] = [];
@@ -636,6 +648,8 @@ export async function composeReport(
     status: options.marketStatus ?? [],
   };
   built.market = inCurrency(() => buildMarketSection(marketInput));
+  const macro = macroSnapshot((await Promise.all(MACRO_SERIES.map((s) => readLog<MacroPoint>(join(root, 'data', 'macro', `${s.id}.jsonl`))))).flat().filter((p) => p.retrievedAt <= now.toISOString()), today.date);
+  if (macro) built.macro = macro;
   // G-99: earnings, dividends, buybacks, insider and 5% holder moves, contracts and value surges.
   if (!ticker.kind) {
     const known = (await readLog<EventFiling>(join(root, 'data', 'event-filings.jsonl'))).filter((e) => e.symbol === SYMBOL);
@@ -647,10 +661,36 @@ export async function composeReport(
     built.edge = inCurrency(() => buildEdge({
       date: today.date, close: built.price?.close ?? null, bars: daily, finance: asOf(financeLog, financeKey, now), financeLog: financeLog.filter((f) => f.retrievedAt <= now.toISOString()), events, us, insider, holders, ...(us ? { filings: disclosures } : {}),
     }));
+    if (!us) {
+      const since = new Date(Date.parse(`${today.date}T00:00:00Z`) - 30 * 86_400_000).toISOString().slice(0, 10);
+      const kinds = new Set(events.filter((e) => e.date >= since && e.date <= today.date).map((e) => e.key));
+      const rates = kinds.size ? (await baseRates(root, today.date, now)).filter((r) => kinds.has(r.key) && r.n >= BASE_RATE_MIN) : [];
+      if (rates.length) built.edge.baseRates = rates;
+    }
     const statements = await readFile(join(root, 'data', 'statements', `${SYMBOL}.json`), 'utf8').then((t) => JSON.parse(t) as FullStatements, () => null);
     if (statements && statements.retrievedAt <= now.toISOString()) built.statements = statements;
   }
   return built;
+}
+
+/** G-230: filing base rates across every stock with logged prices, once per run day. */
+const baseRateCache = new Map<string, Promise<EventBaseRate[]>>();
+function baseRates(root: string, date: string, now: Date): Promise<EventBaseRate[]> {
+  const key = `${root}:${date}`;
+  let p = baseRateCache.get(key);
+  if (!p) {
+    p = (async () => {
+      const events = await readLog<EventFiling>(join(root, 'data', 'event-filings.jsonl'));
+      const dir = join(root, 'data', 'prices');
+      const symbols = [...new Set(events.map((e) => e.symbol))];
+      const files = new Set(await readdir(dir).catch(() => [] as string[]));
+      const prices = new Map<string, PriceBar[]>();
+      for (const s of symbols) if (files.has(`${s}.jsonl`)) prices.set(s, asOf(await readLog<PriceBar>(join(dir, `${s}.jsonl`)), priceKey, now));
+      return eventBaseRates(events, prices, asOf(await readLog<PriceBar>(join(dir, 'KOSPI.jsonl')), priceKey, now), date);
+    })().catch(() => []);
+    baseRateCache.set(key, p);
+  }
+  return p;
 }
 
 async function loadReports(reportDir: string): Promise<DailyReport[]> {
@@ -714,10 +754,13 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const live = lives.get(ticker.symbol);
     const links = { index: 'archive.html', base: '../', homeHref: 'index.html', archiveHref: 'archive.html' };
     let page: DailyReport | null = null;
+    // G-231: the day the shown report was made; a live page carries the run's date and must not stand in for it.
+    let made: string | null = latest?.date ?? null;
     if (live) {
       const ai = [...reports].filter((r) => r.commentary?.status === 'OK').sort((a, b) => (a.date < b.date ? -1 : 1));
       const withAi = ai.at(-1) ?? [...reports].filter((r) => r.commentary).sort((a, b) => (a.date < b.date ? -1 : 1)).at(-1);
       page = { ...live, ...(withAi?.commentary ? { commentary: withAi.commentary } : {}) };
+      if (withAi?.commentary) made = withAi.date;
       await writeReportPage(siteDir, join(dir, 'index.html'), page, { ...links, live: true, commentaryFrom: withAi?.date ?? null, previous: ai.length > 1 ? ai.at(-2)! : null, previousHref: ai.length > 1 ? `reports/${ai.at(-2)!.date}.html` : null }, withAi?.date ?? null);
     } else if (latest) {
       page = latest;
@@ -741,7 +784,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     const pick = picks.get(ticker.symbol);
     const day = daily.get(ticker.symbol);
     const group = day && !pick ? 'daily' : past.includes(ticker) ? 'past' : pick && !pick.core ? 'weekly' : requested.has(ticker.symbol) ? 'request' : 'core';
-    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, group, ...(pick ? { reasons: pick.reasons, ...(pick.tier === 'deep' ? { tier: 'deep' as const } : {}) } : day ? { reasons: [day.reason], ...(day.tier === 'deep' ? { tier: 'deep' as const } : {}), pickDate: day.date, kind: day.kind } : {}) });
+    home.push({ symbol: ticker.symbol, name: ticker.name, href: `${ticker.symbol}/index.html`, report: page, reportDate: made, group, ...(pick ? { reasons: pick.reasons, ...(pick.tier === 'deep' ? { tier: 'deep' as const } : {}) } : day ? { reasons: [day.reason], ...(day.tier === 'deep' ? { tier: 'deep' as const } : {}), pickDate: day.date, kind: day.kind } : {}) });
   }
   await writeAssets(siteDir);
   await writeFile(join(siteDir, 'stock.html'), renderStockPage('stock'));

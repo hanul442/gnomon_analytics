@@ -11,7 +11,7 @@ import type { UniverseRow } from '../sources/naverList.js';
 import type { MarketPulse, StockCalc } from '../analysis/quickCalc.js';
 import { marketTemperature } from './marketTemperature.js';
 import { sparkline } from './appParts.js';
-import { SEARCH_SCRIPT, shell, type HomeEntry } from './renderHtml.js';
+import { madeOn, SEARCH_SCRIPT, shell, type HomeEntry } from './renderHtml.js';
 import { gate } from './plans.js';
 import { ALPHA_BANNERS, BANNER_JS, bannerHtml, eventBanners, type Banner } from './alphaPages.js';
 import { openEvents } from './events.js';
@@ -79,7 +79,7 @@ function aiKind(e: HomeEntry): 'core' | 'weekly' | 'request' | 'data' {
 }
 /** The tier pill: kind plus the report date (MM/DD) for committee reports. */
 function aiPill(e: HomeEntry): string {
-  const k = aiKind(e), d = e.report?.date;
+  const k = aiKind(e), d = madeOn(e);
   if (k === 'data') return '';
   return `<span class="tier t-${k}">${GROUP[k]}${k === 'core' && d ? ` ${esc(d.slice(5).replace('-', '/'))}` : ''}</span>`;
 }
@@ -194,11 +194,12 @@ function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): 
  * (reports.html?hl=<symbols>#today): the reader's watched stocks come first, marked, and the rest of the day follows.
  */
 function todayRows(entries: readonly HomeEntry[]): string {
-  const withDate = entries.filter((e) => e.report?.date && e.group !== 'past');
-  const day = withDate.map((e) => e.report!.date).sort().at(-1);
+  // G-231: by the day each report was made, not the live page's date (every run rebuilds it with the run's date).
+  const withDate = entries.filter((e) => e.report && madeOn(e) && e.group !== 'past');
+  const day = withDate.map(madeOn).sort().at(-1);
   if (!day) return '';
   const seen = new Set<string>();
-  const list = withDate.filter((e) => e.report!.date === day && !seen.has(e.symbol) && seen.add(e.symbol));
+  const list = withDate.filter((e) => madeOn(e) === day && !seen.has(e.symbol) && seen.add(e.symbol));
   const deep = (e: HomeEntry) => aiKind(e) === 'core';
   list.sort((a, b) => Number(deep(b)) - Number(deep(a)) || a.name.localeCompare(b.name, 'ko'));
   const row = (e: HomeEntry) => {
@@ -238,7 +239,7 @@ export function renderReportsPage(data: HomeData): string {
   const latest = [...new Set(daily.map((e) => e.pickDate ?? ''))].sort().at(-1);
   const tile = (href: string, title: string, sub: string) => `<a href="${href}"><b>${title}</b><small>${sub}</small></a>`;
   const head = `<section class="card rp-head"><div class="pl-k">AI 리포트 모음</div><h1>최근 AI 리포트</h1><p class="muted">시장 데일리, 매일 고른 종목, 추적 종목의 AI 리포트를 한곳에 모았어요. 다른 종목은 검색에서 찾을 수 있어요.</p>
-<nav class="rp-links" aria-label="리포트 바로가기">${tile('market-reports.html', '시장 데일리', '코스피·코스닥·코인·ETF')}${tile('#today', '오늘 나온 리포트', '내 관심 종목 먼저')}${daily.length ? tile('#daily', '매일 AI 리포트', `${latest ? esc(latest.slice(5).replace('-', '/')) + ' 최신 · ' : ''}${daily.length}건`) : ''}${tile('#reports', '추적 종목', `${sorted.length}개`)}</nav></section>`;
+<nav class="rp-links" aria-label="리포트 바로가기">${tile('market-reports.html', '시장 데일리', '코스피·코스닥·코인·ETF')}${tile('#today', '최근 나온 리포트', '내 관심 종목 먼저')}${daily.length ? tile('#daily', '매일 AI 리포트', `${latest ? esc(latest.slice(5).replace('-', '/')) + ' 최신 · ' : ''}${daily.length}건`) : ''}${tile('#reports', '추적 종목', `${sorted.length}개`)}</nav></section>`;
   return shell('', 'AI 리포트 모음 | GNOMON', `${HOME_STYLE}<style>.rr-mine{background:var(--accent-soft)}.t-mine{background:var(--down-soft);color:var(--accent-strong)}</style>${head}${todayRows(data.entries)}${dailyRows(daily)}${reportRows(sorted, data.selection)}`, { scripts: HOME_SCRIPT + TODAY_LIST_SCRIPT });
 }
 

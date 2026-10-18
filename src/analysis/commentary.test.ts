@@ -136,7 +136,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
   assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v13');
+  assert.equal(c.promptVersion, 'gnm-committee-v14');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
@@ -323,4 +323,13 @@ test('G-228: a locked analyst call stands as made and sets its stance in the deb
   assert.equal(c.analysts?.[0]?.invalidation, undefined, 'G-229: an invalidation far below the close is dropped');
   assert.equal(c.lockUsage?.model, 'claude-haiku-5-5');
   assert.match(JSON.stringify((seen[0] as { messages: unknown }).messages), /잠긴_분석가_판단/);
+});
+
+test('G-230: the macro line (X1) and filing base rates (B1) reach the committee', () => {
+  const r = { ...report, macro: { items: [{ id: 'DGS10', label: '미국 10년 국채 금리', unit: '%', date: '2026-09-29', value: 4.5, chg20: 0.1, rangePct: 80 }] },
+    edge: { ...(report.edge ?? { insider: null, holders: [], events: [], surprises: [], nextEarnings: null, dividend: null, value: null, highlights: [] }), baseRates: [{ key: 'buyback' as const, label: '자사주 매입·소각', n: 25, upPct: 60, medianExcessPct: 1.5, from: '2026-08-07', to: '2026-09-01' }] } };
+  const ev = buildEvidence(r);
+  assert.match(ev.find((e) => e.id === 'X1')!.detail, /미국 10년 국채 금리 4\.50%/);
+  assert.match(ev.find((e) => e.id === 'B1')!.detail, /25건 중 시장보다 오른 비율 60%/);
+  assert.equal(buildEvidence(report).some((e) => e.id === 'X1' || e.id === 'B1'), false);
 });

@@ -137,7 +137,7 @@ export function decisionTrace(report: DailyReport, live: boolean): string {
   const c = report.commentary;
   const kinds = new Map<string, number>();
   for (const e of c?.evidence ?? []) kinds.set(e.kind, (kinds.get(e.kind) ?? 0) + 1);
-  const KIND = { PRICE: '가격', TECHNICAL: '기술 지표', FILING: '공시', NEWS: '뉴스', HORIZON: '기간별 신호', VALUE: '적정가', FORECAST: '예측', STRUCTURE: '가격 구조', FLOW: '수급', FUNDAMENTAL: '실적', MARKET: '시장', ARENA: '전략', EVENT: '놓치기 쉬운 정보', TRACK: '지난 성적' } as Record<string, string>;
+  const KIND = { PRICE: '가격', TECHNICAL: '기술 지표', FILING: '공시', NEWS: '뉴스', HORIZON: '기간별 신호', VALUE: '적정가', FORECAST: '예측', STRUCTURE: '가격 구조', FLOW: '수급', FUNDAMENTAL: '실적', MARKET: '시장', ARENA: '전략', EVENT: '놓치기 쉬운 정보', TRACK: '지난 성적', MACRO: '거시 환경', BASE_RATE: '과거 반응' } as Record<string, string>;
   const m = report.market;
   const rows: [string, string][] = [
     ['데이터 기준', `${report.price?.sessionDate ?? report.date} 종가 · ${new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ')} KST에 계산`],
