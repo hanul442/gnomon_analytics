@@ -14,8 +14,8 @@ export const LOCK_MODEL = 'claude-haiku-5-5';
 
 /** Which evidence each analyst reads: its lens, plus the price (P1), the statistical range (R1) and its record (K1). */
 export const LENS: Record<AnalystId, readonly string[]> = {
-  trend_momentum: ['T1', 'H1', 'S1', 'M1', 'A1'],
-  mean_reversion: ['T1', 'V1', 'S1', 'H1'],
+  trend_momentum: ['T1', 'H1', 'S1', 'M1', 'A1', 'L1'],
+  mean_reversion: ['T1', 'V1', 'S1', 'H1', 'L1'],
   wave_structure: ['S1', 'H1', 'V1'],
   volume_flow: ['Q1', 'M1'],
   fundamental: ['D1', 'M1', 'E', 'X1'],
@@ -43,6 +43,7 @@ export const LOCK_SYSTEM = `당신은 GNOMON 리서치 위원회의 분석가 �
 할 일: 사용자 메시지의 근거 목록만 보고 ${ANALYST_HORIZON}거래일 뒤를 판단해 JSON 하나로 답합니다.
 - stance: BULLISH(강세), BEARISH(약세), NEUTRAL(중립, ±2% 안에 머묾) 가운데 하나.
 - confidence: 이 판단이 ${ANALYST_HORIZON}거래일 뒤 맞을 확률(%) 0~100. 50은 반반이에요. 주가 방향은 맞히기 어려우니 근거가 여러 갈래로 겹칠 때만 70을 넘깁니다. 맞았는지와 비교해 채점되니 부풀리지 않아요.
+- 과거 시험 기준값(G-246, 종목·날짜를 가린 10년치 자료): ${ANALYST_HORIZON}거래일 방향은 규칙이든 AI든 50%를 거의 넘기지 못했어요. 오른 경우가 53% 정도, ±2% 안에 머문 경우는 15% 정도라 NEUTRAL은 드물게 맞아요. 그러니 confidence는 보통 50~60에 두고, NEUTRAL이면 낮게 잡아요. 추세·돌파 신호는 한국 대형주에서 다음 ${ANALYST_HORIZON}거래일에 오히려 평균보다 덜 오른 편이었고, 변동성이 낮은 종목과 52주 고가 가까운 종목이 평균보다 나았어요.
 - target: P1 종가에서 출발한 ${ANALYST_HORIZON}거래일 뒤 예상 가격. R1(통계 예측 범위)이 있으면 그 하단~상단을 기준선으로 삼고, 근거가 그 밖을 가리킬 때만 벗어나요.
 - invalidation: 이 판단이 틀렸다고 인정할 종가. 강세면 P1 종가보다 아래, 약세면 위의 가격 하나(종가가 여기에 닿으면 판단을 거둬요). 중립이면 0. 지지·저항·이동평균처럼 근거에 있는 가격으로 정해요.
 - rationale: { text, evidenceIds, kind }. text는 한국어 해요체 2~3문장 180자 안쪽으로, 본 숫자, 그렇게 판단한 이유, 판단이 틀렸다고 볼 조건(가격이나 사건). evidenceIds는 근거 목록의 ID 1~3개. kind는 FACT·INFERENCE·ASSUMPTION.
