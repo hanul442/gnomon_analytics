@@ -344,14 +344,21 @@ function marketHero(indices: readonly IndexQuote[], universe: readonly UniverseR
   const verdict = !total ? '' : lean > total * 0.1 ? (pulse ? '강세 종목이 많은 날이에요' : '오른 종목이 많은 날이에요') : lean < -total * 0.1 ? (pulse ? '약세 종목이 많은 날이에요' : '내린 종목이 많은 날이에요') : (pulse ? '강세·약세가 엇갈린 날이에요' : '등락이 엇갈린 날이에요');
   const day = pulse?.date ?? indices[0]?.date ?? '';
   const [bullWord, bearWord] = pulse ? ['강세', '약세'] : ['상승', '하락'];
-  const main = verdict ? `<a class="mh-main" href="${esc(href)}"><div class="mh-k">${day ? `${esc(day.slice(5).replace('-', '/'))} 장 마감 · ` : ''}${base}</div><h1 class="mh-v">${verdict}</h1>
+  // G-249 (Payrix 화면 구성, 한서님 10/19): one card. The first index as one big thin number, the market sentence under it,
+  // the slim bar, the other indices on one line, then four round shortcuts.
+  const lead = indices[0];
+  const big = lead ? `<div class="mh-top"><span>오늘 시장</span>${day ? `<small>${esc(day.slice(5).replace('-', '/'))} 마감</small>` : ''}</div><a class="mh-big" href="${esc(href)}"><b>${lead.close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>${esc(lead.name)} <span class="${tone(lead.changePct)}">${signed(lead.changePct)}</span></small></a>` : '';
+  const main = verdict ? `<a class="mh-main" href="${esc(href)}">${lead ? '' : `<div class="mh-k">${day ? `${esc(day.slice(5).replace('-', '/'))} 장 마감 · ` : ''}${base}</div>`}<h1 class="mh-v">${verdict}</h1>
 <div class="mh-bar" role="img" aria-label="${bullWord} ${pct(bull)}%, 중립 ${pct(mid)}%, ${bearWord} ${pct(bear)}%"><span class="s-bull" style="flex:${bull}"></span><span class="s-neutral" style="flex:${mid}"></span><span class="s-bear" style="flex:${bear}"></span></div>
-<div class="mh-n"><span class="up">${bullWord} ${pct(bull)}%</span><span class="down">${bearWord} ${pct(bear)}%</span></div></a>` : '';
-  const ix = indices.map((i) => `<span class="mh-ix">${esc(i.name)} <b>${Math.round(i.close).toLocaleString('ko-KR')}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span></span>`).join('');
+<div class="mh-n"><span class="up">${bullWord} ${pct(bull)}%</span><span class="mh-base">${base}</span><span class="down">${bearWord} ${pct(bear)}%</span></div></a>` : '';
+  const ix = indices.slice(lead ? 1 : 0).map((i) => `<span class="mh-ix">${esc(i.name)} <b>${Math.round(i.close).toLocaleString('ko-KR')}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span></span>`).join('');
   // G-179's US temperature card, folded: tapped open on the same line as the indices.
   const usCard = us && (us.pulse || us.up || us.down) ? marketTemperature(us.pulse, { up: us.up, down: us.down, flat: us.flat }, '미국', 'screener.html#us') : '';
   const strip = ix || usCard ? `<div class="mh-strip"><a class="mh-ixs" href="${esc(href)}">${ix}</a>${usCard ? '<button type="button" class="mh-us-btn" aria-expanded="false" aria-controls="mh-us">미국 ›</button>' : ''}</div>${usCard ? `<div class="mh-us" id="mh-us" hidden>${usCard}</div>` : ''}` : '';
-  return main || strip ? `<section class="block mh" id="mkt-hero">${main}${strip}</section>` : '';
+  const ic = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const go = ([l, h, d]: readonly [string, string, string]) => `<a href="${h}"><i>${ic(d)}</i><span>${l}</span></a>`;
+  const quick = `<nav class="mh-go" aria-label="바로 가기">${([['찾기', 'screener.html', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'], ['관심', 'watch.html', '<path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>'], ['리포트', 'reports.html', '<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4"/>'], ['성적표', 'scorecard.html', '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4v2h6V4M9 13l2 2 4-4"/>']] as const).map(go).join('')}</nav>`;
+  return main || strip ? `<section class="block mh" id="mkt-hero"><div class="mh-card">${big}${main}${strip}${quick}</div></section>` : '';
 }
 
 /** G-244: the scorecard's headline as one line in the page (the full card stays in the wide screen's side rail). */
@@ -495,10 +502,16 @@ const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-
 @media (max-width:1100px){.home-grid{grid-template-columns:minmax(0,1fr)}.home-rail{position:static}}
 @media (max-width:820px){.ix-row,.ix-row.ix-4{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.ix-row>.tmp{grid-column:1/3}.ix .spark{display:none}.ix-v{font-size:18px}.home-hero h1{font-size:24px}.home-hero .hero-line{display:block;font-size:13px}.rr-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rr-chips>*{flex:none}}
 /* G-244 화면 개편 1단계: home */
-.mh{margin-top:14px}.mh-main{display:block;text-decoration:none;color:var(--fg)}.mh-k{font-size:13px;color:var(--muted)}.mh-v{margin:6px 0 14px;font-size:26px;line-height:1.35;font-weight:800;letter-spacing:-.01em}
-.mh-bar{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}.mh-bar span{min-width:3px}.mh-bar .s-bull{background:var(--up)}.mh-bar .s-neutral{background:var(--line-strong)}.mh-bar .s-bear{background:var(--down)}
-.mh-n{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;font-weight:700}
-.mh-strip{display:flex;align-items:center;gap:8px;margin-top:16px;padding:4px 4px 4px 14px;border-radius:12px;background:var(--soft)}.mh-ixs{display:flex;flex-wrap:wrap;gap:4px 16px;flex:1;min-width:0;padding:8px 0;text-decoration:none;color:var(--fg2);font-size:14px;font-variant-numeric:tabular-nums}.mh-ix b{color:var(--fg);font-weight:600}.mh-ix span{font-size:13px}
+.mh{margin-top:14px}.mh-card{padding:20px 20px 16px;border-radius:26px;background:var(--surface);border:1px solid var(--glass-line);box-shadow:var(--shadow);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}
+.mh-top{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:600;color:var(--fg)}.mh-top small{font-size:12.5px;font-weight:500;color:var(--muted)}
+.mh-big{display:block;margin:6px 0 2px;text-decoration:none;color:var(--fg)}.mh-big b{display:block;font-size:46px;line-height:1.1;font-weight:300;letter-spacing:-.035em;font-variant-numeric:tabular-nums}.mh-big small{font-size:13px;color:var(--muted);font-weight:500}.mh-big small span{font-weight:700}
+.mh-main{display:block;text-decoration:none;color:var(--fg)}.mh-k{font-size:13px;color:var(--muted)}.mh-v{margin:12px 0 12px;font-size:15.5px;line-height:1.5;font-weight:500;letter-spacing:-.01em;color:var(--fg2)}
+.mh-bar{display:flex;gap:2px;height:5px;border-radius:3px;overflow:hidden}.mh-bar span{min-width:3px}.mh-bar .s-bull{background:var(--up)}.mh-bar .s-neutral{background:var(--line-strong)}.mh-bar .s-bear{background:var(--down)}
+.mh-n{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:12px;font-weight:700}.mh-n .mh-base{font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mh-strip{display:flex;align-items:center;gap:8px;margin-top:12px;padding:2px 2px 2px 14px;border-radius:14px;background:var(--soft)}.mh-ixs{display:flex;flex-wrap:wrap;gap:4px 14px;flex:1;min-width:0;padding:8px 0;text-decoration:none;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}.mh-ix b{color:var(--fg);font-weight:600}.mh-ix span{font-size:12.5px}
+.mh-go{display:grid;grid-template-columns:repeat(4,1fr);margin-top:16px}.mh-go a{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:var(--fg2);font-size:12.5px;font-weight:600}
+.mh-go i{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:var(--pill);border:1px solid var(--line);box-shadow:0 6px 16px -10px rgba(10,22,38,.35);color:var(--fg);transition:transform .2s cubic-bezier(.34,1.5,.64,1)}.mh-go a:active i{transform:scale(.9)}.mh-go svg{width:21px;height:21px}
+#news-issues .card{border-radius:26px}#ni-home .ni-stocks,#ni-home-when{display:none}#ni-home .ni-row{grid-template-columns:30px minmax(0,1fr) auto;align-items:center;padding:12px 0}#ni-home .ni-n{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--soft);font-size:13px}#ni-home .ni-t{-webkit-line-clamp:1;font-weight:600}
 .mh-us-btn{flex:none;min-height:40px;padding:0 12px;border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer}.mh-us{margin-top:10px}.mh-us[hidden]{display:none}
 .home-main>.block{margin-top:28px}.home-main>.block[hidden]{display:none}
 .tp-grid{gap:0;grid-template-columns:minmax(0,1fr)}.tp{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:14px 40px 14px 0}.tp:first-child{border-top:0}.tp:hover{border-color:var(--line)}.tp .star{top:10px;right:-4px}.tp-line{margin:4px 0 0;font-size:13.5px;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}

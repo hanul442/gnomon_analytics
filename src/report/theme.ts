@@ -49,4 +49,13 @@ html[data-theme=light] .top-tabs [aria-current=page]{color:#FFFFFF;background:#0
 html[data-theme=light] .top-links .acct{color:#FFFFFF;background:#0A1626;box-shadow:none}html[data-theme=light] .top-links .acct i{color:#B9C0CA}
 html[data-theme=light] .chip-toggle[aria-pressed=true]{background:#0A1626;color:#FFFFFF;border-color:#0A1626}
 @media (max-width:820px){html[data-theme=light] .topbar{background:rgba(238,240,243,.72);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%)}}
+/* G-249 (Payrix 화면 구성, 한서님 10/19): big numbers are thin, a card never holds another bordered card, and the
+   scorecard's headline sits in one card. Both themes. ":root body" beats the page rules that load later. */
+:root body .hero h1{font-size:23px;font-weight:600;letter-spacing:-.02em;margin:4px 0 2px}
+:root body .hero-price{gap:2px 10px}:root body .hero-price b{font-size:44px;font-weight:300;letter-spacing:-.035em;line-height:1.1}:root body .hero-price>span{font-size:14px}:root body .hero-price b *{font-weight:inherit}
+:root body .hero-chart{border:0;background:var(--soft);border-radius:18px}
+:root body .key-points{border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;padding:14px 2px 0;margin-top:14px}
+:root body .big{font-weight:300;letter-spacing:-.02em}
+:root body .sc-hero{padding:20px;border-radius:26px;background:var(--surface);border:1px solid var(--glass-line);box-shadow:var(--shadow)}
+:root body .sc-hv b{font-weight:300;letter-spacing:-.04em;color:var(--fg)}
 `;

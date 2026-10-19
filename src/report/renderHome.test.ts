@@ -45,7 +45,7 @@ test('G-244: home leads with one market sentence and folds the rest into 더 보
   const calcs = [['BEARISH', 20], ['BEARISH', 25], ['STRONG_BEARISH', 10], ['BULLISH', 80], ['NEUTRAL', 50]].map(([level, score]) => ({ date: '2026-10-16', signal: { level, score: Number(score) / 100 }, moves: [{ days: 20, pct: 0 }] }));
   const html = renderHome({ entries: [entry('AAA', 9), entry('BBB', 1), entry('CCC', -2), entry('DDD', 3)], selection: null, universe: null, pulse: marketPulse(calcs as never), indices: [{ symbol: 'KOSPI', name: '코스피', date: '2026-10-16', close: 5668.05, changePct: 2.05, closes: [] }] });
   assert.match(html, /<h1 class="mh-v">약세 종목이 많은 날이에요<\/h1>/);
-  assert.match(html, /코스피 <b>5,668<\/b>/);
+  assert.match(html, /<b>5,668\.05<\/b><small>코스피 /, 'G-249: the first index as the big number');
   for (const gone of ['id="movers"', 'id="themes-top"', 'id="signals"', 'id="show-all"', 'class="find-row"', 'class="block ix-row']) assert.ok(!html.includes(gone), gone);
   for (const link of ['themes.html', 'screener.html', 'signals.html', 'market-reports.html', 'updates.html']) assert.match(html, new RegExp(`class="ml-row" href="${link.replace('.', '\\.')}"`));
   assert.ok(html.indexOf('id="mkt-hero"') < html.indexOf('id="watch"') && html.indexOf('id="watch"') < html.indexOf('id="today"') && html.indexOf('id="today"') < html.indexOf('id="banner"'), 'market, mine, picks, then the banner');
