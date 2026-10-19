@@ -97,7 +97,7 @@ export function renderThemesPage(): string {
   d.hidden=false;w.hidden=true;window.scrollTo(0,0);
  };
  var route=function(){var no=location.hash.slice(1);if(no)detail(no);else{document.getElementById('tm-detail').hidden=true;document.getElementById('tm-list-wrap').hidden=false;}};
- // G-258: 업종 heatmap and sunburst (Bklit heatmap-chart / sunburst-chart), drawn from the same themes.json.
+ // G-259: 업종 heatmap and sunburst (Bklit heatmap-chart / sunburst-chart), drawn from the same themes.json.
  var sectorMap=(${kmSectorMap.toString()}),heatmap=(${kmHeatmap.toString()}),sunburst=(${kmSunburst.toString()});
  var tmap=function(){try{var rows=sectorMap(data.themes,${JSON.stringify(Object.fromEntries(SECTORS.map((s) => [s, SECTOR_THEME_WORDS[s]])))},${JSON.stringify(SECTOR_THEME_SKIP)});if(!rows.length)return;var box=document.getElementById('tm-map');box.querySelector('div[data-tmp=heat]').innerHTML=heatmap(rows);box.querySelector('div[data-tmp=sun]').innerHTML=sunburst(rows);box.hidden=false;
   box.querySelectorAll('[data-tmv]').forEach(function(b){b.onclick=function(){var v=b.getAttribute('data-tmv');box.querySelectorAll('[data-tmv]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});box.querySelectorAll('[data-tmp]').forEach(function(p){p.hidden=p.getAttribute('data-tmp')!==v;});};});}catch(e){}};

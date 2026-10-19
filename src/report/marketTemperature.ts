@@ -8,7 +8,7 @@ const BUCKETS: readonly [PulseBucket, string, string][] = [
   ['SLIGHTLY_BEARISH', LEVEL_LABEL.SLIGHTLY_BEARISH, '#8fb3ec'], ['BEARISH', LEVEL_LABEL.BEARISH, '#3b7be0'], ['STRONG_BEARISH', LEVEL_LABEL.STRONG_BEARISH, '#1d4fa3'],
 ];
 
-/** G-258: today's up / flat / down stocks as a donut (Bklit pie-chart), the up share in the middle. */
+/** G-259: today's up / flat / down stocks as a donut (Bklit pie-chart), the up share in the middle. */
 function breadthDonut(up: number, down: number, flat: number, name: string): string {
   const total = up + down + flat, share = (n: number) => (total ? Math.round((n / total) * 100) : 0);
   const lead = down > up ? { v: `${share(down)}%`, l: '내린 종목', tone: 'down' } : { v: `${share(up)}%`, l: '오른 종목', tone: up > down ? 'up' : '' };

@@ -1,4 +1,4 @@
-// G-258: Bklit UI chart kit, stock charts, redrawn as plain SVG in GNOMON's style (Bklit UI is MIT; only the look is
+// G-259: Bklit UI chart kit, stock charts, redrawn as plain SVG in GNOMON's style (Bklit UI is MIT; only the look is
 // borrowed, no React). Server-side pictures are functions that return markup; the ones drawn from data the page
 // fetches (peer scatter, screener funnel, live coin line) live in KIT_STOCK_JS as window.GNM_kit.*.
 //   profit-loss line  pnlLine()        전략 레이스 · 모의투자 장부 rows (renderArena.ts)

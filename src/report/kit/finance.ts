@@ -1,4 +1,4 @@
-// G-258: Bklit UI chart kit, finance charts. Each chart is redrawn as plain SVG in GNOMON's style (Bklit is MIT; only
+// G-259: Bklit UI chart kit, finance charts. Each chart is redrawn as plain SVG in GNOMON's style (Bklit is MIT; only
 // its look is borrowed, never its React code):
 //   composed-chart — a quarter's 매출·영업이익 bars with the 영업이익률 line on its own right axis (기업 체력 › 재무제표 › 손익).
 //   sankey-chart   — the latest year's 손익계산서 as a flow: 매출 → 매출원가 / 매출총이익 → 판관비 / 영업이익 → 당기순이익.

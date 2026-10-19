@@ -185,5 +185,5 @@ document.addEventListener('DOMContentLoaded', function () {
   ready.then(fill);
 });
 </script>`;
-  return shell('', '나 | GNOMON', body, { noFeedback: true, head: { title: '나' } });
+  return shell('', '나 | GNOMON', body, { noFeedback: true, head: { title: '나' }, dock: 'settings.html' });
 }

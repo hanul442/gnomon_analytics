@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { macroCards } from '../../cli/marketReports.js';
 import { macroStat } from '../marketReport.js';
 
-test('G-258: macro cards carry the last 30 points and a 20-session move', async () => {
+test('G-259: macro cards carry the last 30 points and a 20-session move', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gnm-macro-'));
   await mkdir(join(root, 'data', 'macro'), { recursive: true });
   const rows = Array.from({ length: 40 }, (_, i) => JSON.stringify({ series: 'DGS10', date: `2026-09-${String(i % 30 + 1).padStart(2, '0')}`.replace(/-09-(\d+)$/, (_m, d) => (i < 30 ? `-09-${d}` : `-10-${String(i - 29).padStart(2, '0')}`)), value: 4 + i / 100, source: 't', retrievedAt: 't' }));
@@ -21,7 +21,7 @@ test('G-258: macro cards carry the last 30 points and a 20-session move', async 
   assert.doesNotMatch(html, /km-sa-f/);
 });
 
-test('G-258: no macro files, no macro cards', async () => {
+test('G-259: no macro files, no macro cards', async () => {
   const root = await mkdtemp(join(tmpdir(), 'gnm-macro-'));
   assert.deepEqual(await macroCards(root, '2026-10-31'), {});
 });
