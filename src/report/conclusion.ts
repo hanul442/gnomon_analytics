@@ -128,7 +128,7 @@ export const CONCLUSION_CSS = `.cl-rail{margin:6px 0 16px}.cl-rail-t{position:re
 .cl-what{font-size:15px}.cl-what small{display:block;font-size:12px;color:var(--muted);margin-top:2px}.cl-p{font-size:18px;margin-left:4px}.cl-up .cl-p{color:var(--up)}.cl-down .cl-p{color:var(--down)}
 .vt-sum{display:flex;gap:14px;flex-wrap:wrap;font-size:15px}.vt-bar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:8px 0 12px}.vt-bar .s-bull{background:var(--up)}.vt-bar .s-neutral{background:var(--line-strong)}.vt-bar .s-bear{background:var(--down)}.vt-list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}.vt-m{border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}.vt-who{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.vt-who b{font-size:14px}.vt-s{font-size:12px;font-weight:700;white-space:nowrap}.vt-m p{margin:4px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg2);overflow-wrap:anywhere}
 @media (max-width:820px){.cl-line{font-size:17px}}
-/* G-251 (한서님 10/19 '강세 약세 기본 시나리오 모두 다'): the three scenarios as rows of one card, Payrix style: a round mark,
+/* G-253 (한서님 10/19 '강세 약세 기본 시나리오 모두 다'): the three scenarios as rows of one card, Payrix style: a round mark,
    the name and odds, the price on the right, its condition and range under it. No coloured blocks. */
 .cl-ladder{gap:0;padding:0}.cl-item+.cl-item{border-top:1px solid var(--line)}
 :root body .cl-row{display:grid;grid-template-columns:40px minmax(0,1fr) auto 14px;grid-template-areas:"ic what px more" ". sub sub more" ". rng rng more";gap:2px 12px;align-items:center;padding:14px 2px;border-radius:0;background:transparent}

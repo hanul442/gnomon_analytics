@@ -292,7 +292,7 @@ try{
  await page.locator('#sg-move').selectOption('down');assert.equal(await page.locator('#sg-list .sg-item').count(),1);await page.locator('#sg-move').selectOption('');
  await page.locator('#sg-q').fill('다 종목');assert.equal(await page.locator('#sg-list .sg-item').count(),1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.evaluate(()=>localStorage.removeItem('gnm-signals'));
- // G-135: the 🔔 opens 알림함 as a page. G-250: phones have no top bar (알림 is under 내 종목), so the bell is checked wide.
+ // G-135: the 🔔 opens 알림함 as a page. G-252: phones have no top bar (알림 is under 내 종목), so the bell is checked wide.
  await page.setViewportSize({width:1280,height:900});await page.goto(origin+'/index.html');await page.locator('#bell').waitFor();await page.locator('#bell').click();await page.locator('.bell-pop .bell-list a, .bell-pop .bell-list p').first().waitFor();assert.ok((await page.locator('.bell-pop').boundingBox()).width<=380,'a small window under the bell');await page.locator('.bell-pop .bell-all').click();await page.waitForURL(/inbox\.html/);await page.locator('#ib-list .ib-item, #ib-list .ib-empty').first().waitFor();assert.equal(await page.locator('#ib-list a[href^="login.html"]').count(),0,'a signed-in reader is not asked to log in on 알림함 (G-161)');
  {await page.route(/\/notifications$/,r=>r.request().method()==='GET'?r.fulfill({contentType:'application/json',body:JSON.stringify({items:[{id:9,kind:'update',title:'업데이트',body:'b',link:'updates.html',created_at:'2026-10-09T00:00:00Z'},{id:8,kind:'request',title:'리포트',body:'b',link:'005930/index.html',created_at:'2026-10-09T00:00:00Z'}]})}):r.fallback());
   await page.goto(origin+'/s/999999.html');await page.locator('#bell').waitFor();await page.locator('#bell').click();await page.locator('.bell-pop .bell-list a').first().waitFor();
@@ -335,7 +335,7 @@ try{
  await page.locator('.bottom-nav a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),7);await page.screenshot({path:'test-artifacts/me-390.png'});
  await page.goto(here);await page.waitForLoadState('load');
  // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.
- // G-250: phones have no top bar, so there the button is the one in the 나 tab.
+ // G-252: phones have no top bar, so there the button is the one in the 나 tab.
  for (const [width,url,sel] of [[375,'/settings.html','.me-install[data-install]'],[1280,'/index.html','.topbar [data-install]']]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+url);await page.waitForLoadState('load');
   assert.equal(await page.locator(sel).isVisible(),false);

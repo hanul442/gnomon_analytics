@@ -59,7 +59,7 @@ html[data-theme=light] .chip-toggle[aria-pressed=true]{background:#0A1626;color:
 html[data-theme=dark] .card{border-radius:24px}
 :root body .sc-hero{padding:20px;border-radius:26px;background:var(--surface);border:1px solid var(--glass-line);box-shadow:var(--shadow)}
 :root body .sc-hv b{font-weight:300;letter-spacing:-.04em;color:var(--fg)}
-/* G-250 (한서님 10/19 '맨 위에 그노몬 있는거 없애자'): on phones the GNOMON brand row is gone. Login and the app install live in
+/* G-252 (한서님 10/19 '맨 위에 그노몬 있는거 없애자'): on phones the GNOMON brand row is gone. Login and the app install live in
    the 나 tab; the top bar only appears for a report's tabs, and for its name and price once the price scrolls away. */
 @media (max-width:820px){:root body .topbar .brand,:root body .topbar .top-links{display:none}:root body .topbar:not(.scrolled) .topbar-in{display:none}
 :root body .topbar:not(:has(>.chips)):not(.scrolled){display:none}:root body .topbar.scrolled .topbar-in{padding-left:16px}}
