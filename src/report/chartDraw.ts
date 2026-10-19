@@ -1,3 +1,5 @@
+import { REVIEWED } from '../analysis/drawReview.js';
+import { CREDIT_COST } from './plans.js';
 // G-145: drawing tools v7 — what people expect from a chart app before they stop opening another one.
 // Phones get a Toss-style tool row under the chart (draw with a finger: drag, or tap point by point, with a
 // floating price/date tip above the finger); wide screens get a TradingView-style tool bar on the left of the
@@ -57,13 +59,14 @@ const ICON = {
   trash: I(`<path ${L} d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>`),
   copy: I(`<rect x="8" y="8" width="12" height="12" rx="2" ${L}/><path ${L} d="M16 8V4H4v12h4"/>`),
   cursor: I(`<path fill="currentColor" d="M5 3l14 8-6 2-2 6z"/>`),
+  spark: I(`<path fill="currentColor" d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z"/>`),
 };
 
 /** The toolbar: group buttons (with the tools of the open group in .dw-tools), then the toggles. */
 export function drawToolbar(): string {
   const group = (g: (typeof DRAW_GROUPS)[number]) => `<button type="button" class="dw-b dw-g" data-dw-group="${g.key}" aria-expanded="false" title="${g.label}">${g.tools[0]!.icon}<span>${g.label}</span><i class="dw-chev" aria-hidden="true"></i></button>`;
   const t = (k: string, label: string, icon: string, extra = '') => `<button type="button" class="dw-b" data-dw="${k}" title="${label}"${extra}>${icon}<span>${label}</span></button>`;
-  return `<div class="dw" id="dw" role="toolbar" aria-label="그리기 도구"><button type="button" class="dw-b" data-dw="select" aria-pressed="true" title="선택 (Esc)">${ICON.cursor}<span>선택</span></button>${DRAW_GROUPS.map(group).join('')}<i class="dw-sep" aria-hidden="true"></i>${t('magnet', '자석', ICON.magnet, ' aria-pressed="false"')}${t('undo', '되돌리기', ICON.undo)}${t('redo', '다시 하기', ICON.redo)}${t('hideall', '모두 숨기기', ICON.eye, ' aria-pressed="false"')}${t('lockall', '모두 잠금', ICON.lock, ' aria-pressed="false"')}${t('clear', '모두 지우기', ICON.trash)}</div><div class="dw-tools" id="dw-tools" role="group" aria-label="도구 고르기" hidden></div>`;
+  return `<div class="dw" id="dw" role="toolbar" aria-label="그리기 도구"><button type="button" class="dw-b" data-dw="select" aria-pressed="true" title="선택 (Esc)">${ICON.cursor}<span>선택</span></button>${DRAW_GROUPS.map(group).join('')}<i class="dw-sep" aria-hidden="true"></i>${t('magnet', '자석', ICON.magnet, ' aria-pressed="false"')}${t('undo', '되돌리기', ICON.undo)}${t('redo', '다시 하기', ICON.redo)}${t('hideall', '모두 숨기기', ICON.eye, ' aria-pressed="false"')}${t('lockall', '모두 잠금', ICON.lock, ' aria-pressed="false"')}${t('clear', '모두 지우기', ICON.trash)}<i class="dw-sep" aria-hidden="true"></i>${t('review', 'AI 평가', ICON.spark)}</div><div class="dw-tools" id="dw-tools" role="group" aria-label="도구 고르기" hidden></div>`;
 }
 
 export const CHART_DRAW_CSS = `
@@ -80,6 +83,15 @@ export const CHART_DRAW_CSS = `
 .dw-edit{position:absolute;z-index:7;left:50%;top:8px;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:var(--surface-solid);border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(15,34,68,.16);padding:4px;max-width:calc(100% - 16px);overflow-x:auto;scrollbar-width:none}.dw-edit[hidden]{display:none}
 .dw-edit button{flex:none;min-width:40px;min-height:40px;border:0;background:transparent;border-radius:10px;cursor:pointer;display:grid;place-items:center;font:inherit;font-size:12px;font-weight:800;color:var(--fg2)}.dw-edit button:hover{background:var(--soft)}.dw-edit button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent-strong)}.dw-edit svg{width:20px;height:20px}
 .dw-edit .sw{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}.dw-edit button[aria-pressed=true] .sw{box-shadow:0 0 0 2px var(--accent-strong)}
+.dw-b[data-dw=review]{color:var(--accent-strong)}
+.dw-rv{margin:10px 0 4px;border:1px solid var(--line);border-radius:16px;background:var(--surface-solid);padding:14px 16px;font-size:14px;line-height:1.6}.dw-rv[hidden]{display:none}
+.dw-rv-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px}.dw-rv-h b{font-size:15px}.dw-rv-x{border:0;background:var(--soft);color:var(--fg2);border-radius:10px;min-width:40px;min-height:40px;font:inherit;font-size:18px;cursor:pointer}
+.dw-rv p{margin:6px 0;color:var(--fg2)}.dw-rv .note{font-size:12.5px;color:var(--muted)}
+.dw-rv-go{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.dw-rv-go button{border:0;border-radius:12px;background:var(--navy);color:var(--on-accent);font:inherit;font-weight:700;padding:11px 16px;min-height:44px;cursor:pointer}.dw-rv-go button.ghost{background:var(--soft);color:var(--fg2)}.dw-rv-go button:disabled{opacity:.5;cursor:wait}
+.dw-rv-item{border-top:1px solid var(--line);padding:10px 0 6px}.dw-rv-item:first-of-type{border-top:0}.dw-rv-item>button{border:0;background:none;padding:0;font:inherit;font-weight:800;color:var(--fg);cursor:pointer;text-align:left;min-height:32px}
+.dw-rv-item ul{list-style:none;margin:4px 0 0;padding:0}.dw-rv-item li{display:flex;gap:8px;padding:3px 0;font-size:13.5px;color:var(--fg2)}.dw-rv-item li i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:800;margin-top:2px}
+.dw-rv-item li i.ok{background:var(--good-soft,#e7f6ee);color:var(--good-strong,#137a45)}.dw-rv-item li i.no{background:var(--accent-soft);color:var(--accent-strong)}.dw-rv-item li i.mid{background:var(--soft);color:var(--muted)}
+.dw-rv-ai{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--soft)}.dw-rv-ai h4{margin:10px 0 4px;font-size:14px}.dw-rv-ai h4:first-child{margin-top:0}.dw-rv-ai p{margin:4px 0;color:var(--fg)}
 .dw-input{position:absolute;z-index:8;min-width:140px;font:inherit;font-size:14px;padding:8px 10px;border:2px solid var(--accent-strong);border-radius:10px;background:var(--surface-solid);box-shadow:0 6px 20px rgba(15,34,68,.18)}
 .chart-body{position:relative}
 @media (min-width:821px){html.chart-fs #tab-chart .chart-wrap{display:grid;grid-template-columns:52px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"dw ev" "dw body" "dw pop";column-gap:6px}
@@ -292,6 +304,7 @@ export const CHART_DRAW_JS = `
       if (k === 'undo') { doUndo(); return; } if (k === 'redo') { doRedo(); return; }
       if (k === 'hideall') { hideAll = !hideAll; b.setAttribute('aria-pressed', String(hideAll)); select(-1); paint(); return; }
       if (k === 'lockall') { var before = snap(), lock = !shapes.every(function (s) { return s.locked; }); shapes.forEach(function (s) { s.locked = lock; }); b.setAttribute('aria-pressed', String(lock)); commit(before); toast(lock ? '모든 그림을 잠갔어요.' : '잠금을 풀었어요.'); return; }
+      if (k === 'review') { openReview(); return; }
       if (k === 'clear') { if (!shapes.length) return; var b4 = snap(); shapes = []; select(-1); commit(b4); toast('모두 지웠어요. 되돌리기로 살릴 수 있어요.'); return; }
     });
     tools.addEventListener('click', function (e) { var b = e.target.closest('[data-dw-tool]'); if (!b) return; setTool(b.getAttribute('data-dw-tool')); showGroup(openGroup); });
@@ -410,6 +423,63 @@ export const CHART_DRAW_JS = `
       var ck = (e.code || '').replace(/^Key/, '').toLowerCase();
       if (e.altKey && !e.ctrlKey && !e.metaKey && KEYS[ck]) { e.preventDefault(); setTool(KEYS[ck]); }
     }, true);
+
+    // ---- G-250: AI review of the reader's own drawings (education: technique only) ----
+    var rv = document.createElement('section'); rv.className = 'dw-rv'; rv.hidden = true; rv.setAttribute('aria-live', 'polite'); rv.setAttribute('aria-label', '그림 AI 평가');
+    wrap.parentElement.insertBefore(rv, wrap.nextSibling);
+    var REVIEWED = ${JSON.stringify(Object.keys(REVIEWED))};
+    var escH = function (x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var md = function (text) {
+      return String(text || '').split('\\n').map(function (line) {
+        var h = escH(line.trim()).replace(/\\*\\*([^*]+)\\*\\*/g, '<b>$1</b>').replace(/(^|\\s)_([^_]+)_(?=\\s|$)/g, '$1<i>$2</i>');
+        if (!h) return ''; if (/^#{1,4} /.test(h)) return '<h4>' + h.replace(/^#+ /, '') + '</h4>'; return '<p>' + h.replace(/^[-*] /, '· ') + '</p>';
+      }).join('');
+    };
+    var dayStr = function (t) { if (t == null) return null; if (typeof t === 'object' && t.year) return t.year + '-' + ('0' + t.month).slice(-2) + '-' + ('0' + t.day).slice(-2); if (typeof t === 'number') return new Date(t * 1000).toISOString().slice(0, 10); return String(t).slice(0, 10); };
+    var r6 = function (v) { return +Number(v).toPrecision(7); };
+    var sent = [];
+    var reviewBody = function () {
+      sent = []; shapes.forEach(function (s, i) { if (!s.hidden) sent.push(i); });
+      return { symbol: sym, bars: data().slice(-260).filter(function (b) { return b.open != null; }).map(function (b) { return [dayStr(b.time), r6(b.open), r6(b.high), r6(b.low), r6(b.close)]; }),
+        shapes: sent.map(function (i) { var s = shapes[i]; return { k: s.k, pts: s.pts.slice(0, 3).map(function (pt) { return pt.t == null ? { d: pt.d || 0, p: r6(pt.p) } : { t: dayStr(pt.t), p: r6(pt.p) }; }) }; }) };
+    };
+    var vsLink = function () { return '<a href="' + escH((document.body.getAttribute('data-base') || '') + 'vs.html#vs-chart') + '">나 vs 위원회에서 지난 평가 보기</a>'; };
+    var head = function (title) { return '<div class="dw-rv-h"><b>' + title + '</b><button type="button" class="dw-rv-x" data-rv="close" aria-label="평가 닫기">×</button></div>'; };
+    var NOTE = '<p class="note">그린 기법만 평가해요. 가격 전망이나 매수·매도 권유가 아니에요. 포지션·매수/매도 표시·펜·메모는 평가하지 않아요.</p>';
+    var openReview = function () {
+      if (suspended) { toast('그림 평가는 일봉에서 쓸 수 있어요.'); return; }
+      var n = shapes.filter(function (s) { return !s.hidden && REVIEWED.indexOf(s.k) >= 0; }).length;
+      setTool(null);
+      if (!n) { rv.innerHTML = head('그림 AI 평가') + '<p>먼저 추세선·수평선·평행 채널·피보나치·박스 중 하나를 그려 보세요. 그린 선이 실제 고점·저점에 붙었는지, 가격이 몇 번 닿았는지 점검하고 AI 코치가 고칠 점을 알려 줘요.</p>' + NOTE; rv.hidden = false; return; }
+      rv.innerHTML = head('그림 ' + n + '개를 평가할까요?') + '<p>선이 실제 고점·저점에 붙었는지, 가격이 몇 번 닿고 몇 번 뚫었는지 일봉으로 계산하고, AI 코치가 그림마다 잘한 점과 고칠 점을 알려 줘요.</p>' + NOTE +
+        '<div class="dw-rv-go"><button type="button" data-rv="go">평가 받기 · ' + ${CREDIT_COST.question} + '크레딧</button><button type="button" class="ghost" data-rv="close">취소</button></div>';
+      rv.hidden = false; rv.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    };
+    var mark = function (ok) { return ok === true ? '<i class="ok" aria-label="맞음">✓</i>' : ok === false ? '<i class="no" aria-label="고칠 점">!</i>' : '<i class="mid" aria-label="애매">~</i>'; };
+    var showResult = function (j) {
+      var items = (j.review && j.review.items) || [], skipped = (j.review && j.review.skipped) || [];
+      rv.innerHTML = head('그림 AI 평가') + items.map(function (it) {
+        return '<div class="dw-rv-item"><button type="button" data-rv-sel="' + (sent[it.n - 1] != null ? sent[it.n - 1] : -1) + '">그림 ' + it.n + ' · ' + escH(it.name) + '</button><ul>' +
+          it.checks.map(function (c) { return '<li>' + mark(c.ok) + '<span><b>' + escH(c.label) + '</b> ' + escH(c.detail) + '</span></li>'; }).join('') +
+          it.facts.map(function (f) { return '<li><i class="mid">·</i><span>' + escH(f) + '</span></li>'; }).join('') + '</ul></div>';
+      }).join('') + (skipped.length ? '<p class="note">평가하지 않은 그림: ' + skipped.map(function (x) { return x.n + '번 ' + escH(x.name) + '(' + escH(x.why) + ')'; }).join(', ') + '</p>' : '') +
+        (j.answer ? '<div class="dw-rv-ai">' + md(j.answer) + '</div>' : '') +
+        '<p class="note">' + (j.credits ? j.credits + '크레딧 사용' + (j.balance != null ? ' (남은 ' + j.balance + ')' : '') + ' · ' : '') + vsLink() + '</p>';
+      rv.hidden = false;
+    };
+    rv.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      var sl = b.getAttribute('data-rv-sel'); if (sl != null) { var i = Number(sl); if (i >= 0 && shapes[i]) { select(i); host.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } return; }
+      var a = b.getAttribute('data-rv');
+      if (a === 'close') { rv.hidden = true; return; }
+      if (a !== 'go') return;
+      if (!window.GNM || !GNM.call) { toast('그림 평가는 로그인한 테스터 계정에서 쓸 수 있어요.'); return; }
+      b.disabled = true; b.textContent = '평가하는 중…';
+      GNM.call('POST', '/draw/review', reviewBody()).then(function (j) {
+        if (j.error) { b.disabled = false; b.textContent = '다시 시도'; if (j.review) showResult(j); toast(j.message || '평가하지 못했어요.'); return; }
+        showResult(j); if (GNM.refresh) GNM.refresh();
+      });
+    });
 
     // ---- hooks for the day/week/month switch and minute candles ----
     window.GNM_draw = {

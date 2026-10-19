@@ -899,3 +899,29 @@ test('plan checks (G-215): every server gate answers by the permission table for
     }
   }
 });
+
+test('G-250: a chart drawing review measures the drawings, coaches with the quick model and is kept as a draw question', async () => {
+  const calls: Record<string, any>[] = [];
+  const t = setup({ ai: { create: async (p) => { calls.push(p); return { content: [{ type: 'text', text: '### 그림 1 · 추세선\n잘한 점: 저점에 붙였어요.' }], model: String(p.model), stop_reason: 'end_turn', usage: { input_tokens: 900, output_tokens: 300 } }; } } });
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('draw@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  const day = (i: number) => new Date(Date.UTC(2026, 0, 1) + i * 86_400_000).toISOString().slice(0, 10);
+  const bars = Array.from({ length: 80 }, (_, i) => { const m = 10000 + 5 * i + 300 * Math.sin((2 * Math.PI * (i - 10)) / 20); return [day(i), m, m + 30, m - 30, m]; });
+  const lowAt = (i: number) => (bars[i]![3] as number);
+  const none = await t.call('POST', '/draw/review', { symbol: '000660', bars, shapes: [{ k: 'long', pts: [{ t: day(70), p: 10400 }, { t: day(75), p: 10600 }] }] }, u.session);
+  assert.equal(none.body.error, 'NOTHING_TO_REVIEW');
+  assert.equal(calls.length, 0);
+  const r = await t.call('POST', '/draw/review', { symbol: '000660', bars, shapes: [{ k: 'trend', pts: [{ t: day(25), p: lowAt(25) }, { t: day(65), p: lowAt(65) }] }, { k: 'up', pts: [{ t: day(70), p: 1 }] }] }, u.session);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.review.items[0].name, '추세선');
+  assert.equal(r.body.review.skipped[0].k, 'up');
+  assert.deepEqual([r.body.credits, r.body.balance], [CREDIT_COST.question, ALPHA.monthlyCredits - CREDIT_COST.question]);
+  // Only the measured checks go to the coach: no site data, no profile, and the education-only system prompt.
+  assert.equal(calls[0]!.model, 'claude-haiku-4-5');
+  assert.match(JSON.stringify(calls[0]!.system), /차트 그리기 코치/);
+  assert.match(JSON.stringify(calls[0]!.messages), /<checks>.*\[그림 1\] 추세선/);
+  assert.doesNotMatch(JSON.stringify(calls[0]!.messages), /site_data|KOSPI/);
+  const mine = (await t.call('GET', '/questions/mine?source=draw', undefined, u.session)).body.items;
+  assert.deepEqual(mine.map((x: any) => [x.source, x.question]), [['draw', '차트 그림 1개 평가: 추세선']]);
+  assert.deepEqual((await t.call('GET', '/questions/mine?source=chat', undefined, u.session)).body.items, []);
+});

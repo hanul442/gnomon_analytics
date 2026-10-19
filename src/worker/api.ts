@@ -27,6 +27,7 @@ import { withCurrency } from '../report/format.js';
 
 import { ALPHA, ASK_TIERS, CREDIT_COST, EXPERTS, STORED_PLANS, TESTERS, isTester, type AskTier, type CreditAction } from '../report/plans.js';
 import { fetchDartDocument, filingContext, isReceiptNo, type FilingText } from '../sources/dartDocument.js';
+import { cleanBars, cleanShapes, reviewDrawings, reviewText } from '../analysis/drawReview.js';
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, FIELDS, matches } from '../analysis/screenRules.js';
@@ -232,7 +233,7 @@ async function filingText(env: Env, deps: Deps, receiptNo: string, now: Date): P
   return f;
 }
 
-async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, now: Date, onText?: (text: string) => void) {
+async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, now: Date, onText?: (text: string) => void, drawing?: string) {
   const tier = ASK_TIERS.find((t) => t.key === b.tier)?.key as AskTier | undefined;
   if (!tier) fail(400, 'BAD_TIER', '모델을 골라 주세요.');
   const question = str(b.question, 1000);
@@ -252,7 +253,7 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   }
   if (typeof b.expert === 'string' && !expert) fail(400, 'BAD_EXPERT', '전문가를 다시 골라 주세요.');
   const invited = !!expert && expert.key !== 'committee';
-  const source = b.source === 'debate' || expert ? 'debate' : 'chat', speaker = expert?.name ?? null;
+  const source = drawing ? 'draw' : b.source === 'debate' || expert ? 'debate' : 'chat', speaker = expert?.name ?? null;
   const db = env.DB, cost = invited ? CREDIT_COST.invite : CREDIT_COST[tier!];
   if (!allows(u.plan, 'ask')) fail(403, 'PLAN_REQUIRED', `AI 질문은 ${needText('ask')} 쓸 수 있어요.`);
   if (invited && !allows(u.plan, 'invite')) fail(403, 'PLAN_REQUIRED', `전문가 초청은 ${needText('invite')} 쓸 수 있어요.`);
@@ -283,12 +284,13 @@ async function ask(env: Env, deps: Deps, u: User, b: Record<string, unknown>, no
   let res: Awaited<ReturnType<AskClient['create']>>;
   try {
     // G-207: answers follow the asker's profile (explanation depth, holding period); read alongside the site data.
-    const [stock, prof] = await Promise.all([symbol && !symbol.startsWith('MARKET-') ? fetchStock(env, deps, symbol) : '',
+    // G-250: a drawing review reads only its measured checks (no site data, no profile: technique, not advice).
+    const [stock, prof] = drawing ? ['', null] : await Promise.all([symbol && !symbol.startsWith('MARKET-') ? fetchStock(env, deps, symbol) : '',
       db.prepare("SELECT answers FROM surveys WHERE user_id = ? AND kind = 'onboarding' ORDER BY id DESC LIMIT 1").bind(u.id).first<{ answers: string }>().catch(() => null)]);
     let siteData = stock;
     if(symbol?.startsWith('MARKET-')&&reportDate){const r=await deps.fetch(`${env.SITE_URL.replace(/\/$/,'')}/market/${symbol==='MARKET-DAILY'?'daily':'weekly'}-${reportDate}.json`).catch(()=>null);if(r?.ok)siteData=(await r.text()).slice(0,12000);}
     let reader = ''; try { reader = prof ? readerNote(JSON.parse(prof.answers)) : ''; } catch { /* unreadable answers: no profile line */ }
-    const params = askParams({ tier: tier!, question, ...(reader ? { reader } : {}), ...(symbol ? { symbol } : {}), ...(filing ? { filing: filingContext(filing) } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) });
+    const params = drawing ? askParams({ tier: tier!, question, drawing, ...(symbol ? { symbol } : {}) }) : askParams({ tier: tier!, question, ...(reader ? { reader } : {}), ...(symbol ? { symbol } : {}), ...(filing ? { filing: filingContext(filing) } : {}), siteData, page, history, ...(expert ? { persona: { name: expert.name, focus: expert.focus } } : {}) });
     res = onText && deps.ai!.stream ? await deps.ai!.stream(params, onText) : await deps.ai!.create(params);
   } catch {
     await refund('AI 응답 실패로 돌려드림');
@@ -879,8 +881,24 @@ route('GET', '/questions/mine', async ({ req, env, now }) => {
   if (date && DEEP_DATE.test(date)) { where.push('(report_date = ? OR report_date IS NULL)'); args.push(date); }
   if (source === 'debate') where.push("(source = 'debate' OR speaker IS NOT NULL)");
   else if (source === 'chat') where.push("(source IS NULL OR source = 'chat')");
+  else if (source === 'draw') where.push("source = 'draw'");
   const items = (await env.DB.prepare(`SELECT id, symbol, source, speaker, question, answer, credits, created_at, report_date FROM questions WHERE ${where.join(' AND ')} ORDER BY id DESC LIMIT 200`).bind(...args).all()).results;
   return { items };
+});
+
+// G-250: the reader's chart drawings, measured against the daily bars they were drawn on, then explained by the
+// quick model as technique (ask.ts DRAW_SYSTEM). Costs a quick question; nothing is charged when nothing can be reviewed.
+route('POST', '/draw/review', async ({ req, env, deps, now }) => {
+  const u = await authed(req, env, now), b = await body(req);
+  const symbol = typeof b.symbol === 'string' ? b.symbol.slice(0, 20) : '';
+  const bars = cleanBars(b.bars), shapes = cleanShapes(b.shapes);
+  if (bars.length < 30) fail(422, 'FEW_BARS', '일봉이 30개 이상 보이는 차트에서 평가할 수 있어요.');
+  if (!shapes.length) fail(422, 'NO_DRAWINGS', '먼저 차트에 추세선이나 수평선을 그려 주세요.');
+  const review = reviewDrawings(bars, shapes);
+  if (!review.items.length) fail(422, 'NOTHING_TO_REVIEW', `평가할 수 있는 그림이 없어요. 추세선·수평선·채널·피보나치·박스를 그려 주세요.${review.skipped[0] ? ` (${review.skipped[0].name}: ${review.skipped[0].why})` : ''}`, { review });
+  const question = `차트 그림 ${review.items.length}개 평가: ${review.items.map((i) => i.name).join(', ')}`;
+  const r = await ask(env, deps, u, { tier: 'question', question, symbol }, now, undefined, reviewText(review)) as { id?: number; answer: string; credits: number; balance: number };
+  return { review, id: r.id, answer: r.answer, credits: r.credits, balance: r.balance };
 });
 
 route('POST', '/ask', async ({ req, env, deps, now }) => ask(env, deps, await authed(req, env, now), await body(req), now));
