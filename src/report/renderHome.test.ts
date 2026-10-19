@@ -48,7 +48,9 @@ test('G-244: home leads with one market sentence and folds the rest into 더 보
   assert.match(html, /<b>5,668\.05<\/b><small>코스피 /, 'G-249: the first index as the big number');
   for (const gone of ['id="movers"', 'id="themes-top"', 'id="signals"', 'id="show-all"', 'class="find-row"', 'class="block ix-row']) assert.ok(!html.includes(gone), gone);
   for (const link of ['themes.html', 'screener.html', 'signals.html', 'market-reports.html', 'updates.html']) assert.match(html, new RegExp(`class="ml-row" href="${link.replace('.', '\\.')}"`));
-  assert.ok(html.indexOf('id="mkt-hero"') < html.indexOf('id="watch"') && html.indexOf('id="watch"') < html.indexOf('id="today"') && html.indexOf('id="today"') < html.indexOf('id="banner"'), 'market, mine, picks, then the banner');
+  // G-257: 내 종목 오늘 opens home (above the market card); with nothing starred the script moves it under 이슈.
+  assert.ok(html.indexOf('id="watch-slot"') < html.indexOf('id="watch"') && html.indexOf('id="watch"') < html.indexOf('id="mkt-hero"') && html.indexOf('id="mkt-hero"') < html.indexOf('id="today"') && html.indexOf('id="today"') < html.indexOf('id="banner"'), 'mine, market, picks, then the banner');
+  assert.ok(html.includes('<h2>내 종목 오늘</h2>') && html.includes('wl-rail'));
   assert.match(html, /c\.hidden = i >= 3/, 'three picks');
 });
 
