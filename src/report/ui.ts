@@ -254,20 +254,45 @@ const TAB_OF: Record<string, string> = Object.fromEntries([
 ]);
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const SPARK_ICON = '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>';
+const GRID_ICON = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>';
+const DOCK_ICONS: Record<string, string> = {
+  'reports.html': '<path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z"/><path d="M14 3.5V8h4M10 12h5M10 15.5h5"/>',
+  'scorecard.html': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
+  'vs.html': '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/>',
+  'market-reports.html': '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  'inbox.html': '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  'myreports.html': '<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/><path d="M12 8v4l3 2"/>',
+  'settings.html': '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',
+};
+const FILTER_ICON = '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>';
+/** G-258: which screen's own bar a page gets: 찾기 a search field, 위원회 and 나 their icons. */
+function dockOf(page: string): 'find' | 'committee' | 'me' | undefined {
+  const g = MODE_GROUPS.find((x) => x.modes.some(([, h]) => h.split('#')[0] === page));
+  if (g?.key === 'find' || page === 'screener.html') return 'find';
+  if (g?.key === 'committee') return 'committee';
+  if (g?.key === 'record' || page === 'settings.html' || ME_PAGES.includes(page)) return 'me';
+  return undefined;
+}
+/** The 종목 bar's question chips (G-258): one tap opens the chat with the question typed in. */
+const ASK_CHIPS = ['시나리오 쉽게 풀어 줘', '지금 가격은 어디쯤이야?', '최근 공시 무슨 뜻이야?', '오늘 뉴스 요약해 줘'];
 /**
  * One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones).
- * G-248 (한서님 10/18, Payrix 느낌): the phone bar is one floating pill — the ✦ AI button and the five tabs. With `ask`
- * (a stock or report page) it turns into an ask bar ("삼성전자에 대해 물어보기") shortly after the page opens; the grid
- * button on its left turns it back into the tabs.
+ * G-258: the phone bar is one glass pill. Icons only, the current one named in a small bubble. With `ask` (stock and
+ * report pages) or a `page` that has its own bar, the right side turns into that screen's bar after the page opens.
  */
-export function tabBar(base: string, where: 'top' | 'bottom', ask?: string): string {
+export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page?: string): string {
   const links = TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('');
   if (where === 'top') return `<nav class="top-tabs" aria-label="주 메뉴">${links}</nav>`;
   const chat = 'data-open-chat aria-haspopup="dialog" aria-controls="chat"';
-  const askBar = ask
-    ? `<button type="button" class="nav-back" aria-label="메뉴 보기">${svgI('<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>')}</button><button type="button" class="nav-ask" ${chat}><span>${escM(ask)}에 대해 물어보기</span><i aria-hidden="true">${svgI('<path d="M12 19V5M6 11l6-6 6 6"/>')}</i></button>`
-    : '';
-  return `<nav class="bottom-nav" aria-label="빠른 이동"${ask ? ' data-ask-mode' : ''}><button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button><div class="nav-tabs">${links}</div>${askBar}</nav>`;
+  const dock = ask ? 'ask' : page ? dockOf(page) : undefined;
+  const seg = (rows: readonly (readonly [string, string, boolean, string?])[]) => `<div class="nav-seg">${rows.map(([l, h, on, extra]) => `<a href="${base}${h}" aria-label="${escM(l)}"${on ? ' aria-current="page"' : ''}>${svgI(DOCK_ICONS[h] ?? '')}<span>${escM(l)}</span>${extra ?? ''}</a>`).join('')}</div>`;
+  let ctx = '';
+  if (dock === 'ask') ctx = `<div class="nav-chips">${ASK_CHIPS.map((q) => `<button type="button" ${chat} data-q="${escM(q)}">${escM(q)}</button>`).join('')}</div><button type="button" class="nav-ask" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(ASK_ICON)}<span>물어보기</span><i aria-hidden="true">${svgI('<path d="M12 19V5M6 11l6-6 6 6"/>')}</i></button>`;
+  else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목·ETF·코인</span></button><button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
+  else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
+  else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 기록', 'myreports.html', page === 'myreports.html' || page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);
+  const back = dock ? `<button type="button" class="nav-back" aria-label="탭 4개 보기">${svgI(GRID_ICON)}</button>` : '';
+  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button><div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}</nav>`;
 }
 const ASK_ICON = '<path d="M5 5h14v10h-8l-4 4v-4H5z"/>';
 /**

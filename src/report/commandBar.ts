@@ -37,34 +37,60 @@ export const COMMAND_BAR_CSS = `
 .top-links .bell-btn:hover,.top-links .install-btn:hover{color:#F4F7FA;background:rgba(255,255,255,.06)}
 }
 @media (max-width:820px){
-/* G-248: one floating bar (한서님 10/18 '통일된 하단바가 인터랙티브하게'): the ✦ AI button and the five tabs, the current tab a dark
-   pill with its name. On stock and report pages it turns into an ask bar after the page opens; the grid button brings the tabs back. */
-.bottom-nav,html[data-theme] body .bottom-nav{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));transform:none;z-index:40;display:flex;align-items:center;gap:6px;
-  width:auto;max-width:520px;margin:0 auto;height:62px;padding:6px;border:1px solid var(--glass-line);border-radius:31px;background:var(--nav-bg);
-  box-shadow:0 18px 40px -16px rgba(10,22,38,.38),0 2px 6px rgba(10,22,38,.06);backdrop-filter:blur(24px) saturate(170%);-webkit-backdrop-filter:blur(24px) saturate(170%)}
-html{--nav-bg:rgba(255,255,255,.76)}html[data-theme=dark]{--nav-bg:rgba(19,34,58,.78)}
-.bottom-nav .nav-spark,.bottom-nav .nav-back{flex:0 0 50px;width:50px;height:50px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;color:#fff;background:var(--brand-grad);
-  box-shadow:0 8px 18px -8px rgba(0,166,251,.8);cursor:pointer;transition:transform .2s cubic-bezier(.34,1.5,.64,1)}
-.bottom-nav .nav-back{display:none;color:var(--fg);background:var(--soft);box-shadow:none}
-.bottom-nav .nav-spark svg,.bottom-nav .nav-back svg{width:22px;height:22px}.bottom-nav .nav-spark:active,.bottom-nav .nav-back:active{transform:scale(.9)}
-.nav-tabs{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between}
-.nav-tabs a,html[data-theme] .bottom-nav .nav-tabs a{display:flex;flex-direction:row;align-items:center;gap:5px;height:50px;min-width:0;padding:0 11px;border-radius:25px;color:var(--muted);background:none;
-  font-size:13px;font-weight:700;white-space:nowrap;text-decoration:none;transition:background .3s cubic-bezier(.34,1.3,.64,1),color .2s,padding .3s cubic-bezier(.34,1.3,.64,1)}
-.nav-tabs a span{display:none}
-.nav-tabs [aria-current=page],html[data-theme] .bottom-nav .nav-tabs [aria-current=page]{padding:0 14px 0 12px;color:var(--page);background:var(--fg);font-weight:700;box-shadow:0 6px 14px -8px rgba(10,22,38,.6)}
-.nav-tabs [aria-current=page] span{display:inline;animation:nav-in .32s var(--ease-out)}
-.nav-tabs a:active{transform:scale(.92);transition-duration:.08s}
-.nav-tabs svg{width:23px;height:23px;flex:none}
-.bottom-nav .nav-ask{display:none;flex:1;flex-direction:row;min-width:0;height:50px;align-items:center;justify-content:space-between;gap:8px;padding:0 0 0 14px;border:0;background:none;color:var(--muted);font:inherit;font-size:15px;font-weight:500;text-align:left;cursor:pointer}
-.nav-ask span{display:block;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.nav-ask i{flex:0 0 42px;height:42px;display:grid;place-items:center;border-radius:50%;color:var(--page);background:var(--fg)}.nav-ask i svg{width:20px;height:20px}
-.bottom-nav.asking .nav-tabs,.bottom-nav.asking .nav-spark{display:none}
-.bottom-nav.asking .nav-back{display:grid;animation:nav-pop .4s cubic-bezier(.34,1.5,.64,1)}
-.bottom-nav.asking .nav-ask{display:flex;animation:nav-in .38s var(--ease-out)}
-.bottom-nav:not(.asking) .nav-tabs{animation:nav-in .38s var(--ease-out)}
+/* G-258 (한서님 10/19 '글래스모피즘으로', '화면마다 인터랙티브하게', '아이콘으로, 글자는 작게'): one glass pill. Icons only; the
+   current one sits in a snug white pill with its name in a small bubble above. Each screen swaps the right side (.nav-ctx):
+   찾기 a search field, 종목 the ask bar, 위원회 and 나 their own icons. The grid button opens the four tabs; tapping the
+   current tab goes back. Reading down shrinks the bar. */
+.bottom-nav,html[data-theme] body .bottom-nav{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;gap:4px;
+  width:auto;max-width:520px;margin:0 auto;height:64px;padding:0 7px;border:1px solid var(--glass-edge);border-radius:32px;background:var(--glass-bg);
+  box-shadow:0 18px 40px -16px rgba(10,22,38,.38),inset 0 1px 0 var(--glass-hi),inset 0 -1px 0 rgba(255,255,255,.18);backdrop-filter:blur(24px) saturate(190%);-webkit-backdrop-filter:blur(24px) saturate(190%);
+  transform-origin:50% 100%;transition:transform .38s cubic-bezier(.34,1.3,.64,1),opacity .3s}
+.bottom-nav::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 20% -30%,var(--glass-hi),transparent 55%);opacity:.6;pointer-events:none}
+html{--glass-bg:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,255,255,.68));--glass-edge:rgba(255,255,255,.75);--glass-hi:rgba(255,255,255,.9);--glass-pill:rgba(255,255,255,.95);--glass-soft:rgba(255,255,255,.7)}
+html[data-theme=dark]{--glass-bg:linear-gradient(180deg,rgba(40,48,60,.82),rgba(18,22,30,.74));--glass-edge:rgba(255,255,255,.12);--glass-hi:rgba(255,255,255,.14);--glass-pill:rgba(255,255,255,.16);--glass-soft:rgba(255,255,255,.08)}
+.bottom-nav.mini{transform:scale(.86) translateY(4px)}
+.bottom-nav button{font:inherit}
+.bottom-nav .nav-spark,.bottom-nav .nav-back,.bottom-nav .nav-round{position:relative;flex:0 0 50px;width:50px;height:50px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.5,.64,1)}
+/* 한서님 10/19: no blue/orange glow; the ✦ is a plain dark glass button. */
+.bottom-nav .nav-spark{color:var(--page);background:var(--fg);box-shadow:0 8px 18px -8px rgba(10,22,38,.55),inset 0 1px 0 rgba(255,255,255,.18)}
+.bottom-nav .nav-back,.bottom-nav .nav-round{display:none;color:var(--fg);background:var(--glass-soft);border:1px solid var(--glass-edge)}
+.bottom-nav .nav-round{display:grid}
+.bottom-nav svg{width:23px;height:23px;flex:none}.bottom-nav .nav-spark svg,.bottom-nav .nav-back svg,.bottom-nav .nav-round svg{width:22px;height:22px}
+.bottom-nav .nav-spark:active,.bottom-nav .nav-back:active,.bottom-nav .nav-round:active{transform:scale(.9)}
+.nav-tabs,.nav-seg{position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:2px}
+.nav-ctx{display:none;flex:1;min-width:0;align-items:center;gap:4px}
+.nav-tabs a,.nav-seg a,html[data-theme] .bottom-nav .nav-tabs a{position:relative;flex:1;min-width:0;height:50px;display:grid;place-items:center;padding:0;border-radius:25px;color:var(--muted);background:none;text-decoration:none;
+  transition:color .2s,transform .2s}
+.nav-tabs a svg,.nav-seg a svg{position:relative;z-index:1}
+.nav-tabs a[aria-current=page]::before,.nav-seg a[aria-current=page]::before{content:"";position:absolute;left:50%;top:50%;width:58px;height:46px;margin:-23px 0 0 -29px;border-radius:23px;background:var(--glass-pill);
+  box-shadow:0 6px 16px -8px rgba(10,22,38,.45),inset 0 -1px 0 rgba(0,0,0,.06);animation:nav-pill .38s cubic-bezier(.34,1.4,.64,1)}
+.nav-tabs a[aria-current=page],.nav-seg a[aria-current=page],html[data-theme] .bottom-nav .nav-tabs a[aria-current=page]{color:var(--fg);background:none;box-shadow:none}
+.nav-tabs a span,.nav-seg a span{position:absolute;z-index:2;bottom:47px;left:50%;transform:translateX(-50%);display:none;padding:3px 8px;border-radius:9px;font-size:11.5px;font-weight:700;line-height:1.3;white-space:nowrap;color:#fff;background:rgba(10,22,38,.84);box-shadow:0 4px 10px -4px rgba(0,0,0,.4);pointer-events:none}
+.nav-tabs a span::after,.nav-seg a span::after{content:"";position:absolute;left:50%;top:100%;margin-left:-4px;border:4px solid transparent;border-top-color:rgba(10,22,38,.84)}
+.nav-tabs a[aria-current=page] span,.nav-seg a[aria-current=page] span{display:block;animation:nav-tip .32s var(--ease-out)}
+.bottom-nav.mini .nav-tabs a span,.bottom-nav.mini .nav-seg a span{display:none}
+.nav-tabs a:active,.nav-seg a:active{transform:scale(.9);transition-duration:.08s}
+.nav-seg a i{position:absolute;z-index:2;top:5px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#E5484D;color:#fff;font:800 10.5px/16px sans-serif;font-style:normal;text-align:center}
+.bottom-nav .nav-field{flex-direction:row;justify-content:flex-start;flex:1;min-width:0;height:50px;display:flex;align-items:center;gap:9px;padding:0 16px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--muted);font-size:13px;text-align:left;cursor:text}
+.nav-field svg{width:20px;height:20px}
+.bottom-nav .nav-ask{flex-direction:row;justify-content:flex-start;flex:1;min-width:0;height:50px;display:flex;align-items:center;gap:9px;padding:0 5px 0 16px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--muted);font-size:13px;text-align:left;cursor:pointer}
+.nav-ask svg{width:20px;height:20px}.nav-ask span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-ask i{flex:0 0 40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--page);background:var(--fg)}.nav-ask i svg{width:19px;height:19px}
+.nav-chips{position:absolute;left:0;right:0;bottom:74px;display:none;gap:7px;overflow-x:auto;scrollbar-width:none}
+.nav-chips::-webkit-scrollbar{display:none}
+.bottom-nav .nav-chips button{flex:none;flex-direction:row;min-height:0;height:32px;padding:0 12px;border:1px solid var(--glass-edge);border-radius:16px;background:var(--glass-bg);color:var(--fg);font-size:12.5px;font-weight:600;cursor:pointer;
+  backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);box-shadow:0 8px 20px -12px rgba(10,22,38,.4)}
+.bottom-nav.ctx .nav-tabs,.bottom-nav.ctx .nav-spark{display:none}
+.bottom-nav.ctx .nav-back{display:grid;animation:nav-pop .4s cubic-bezier(.34,1.5,.64,1)}
+.bottom-nav.ctx .nav-ctx{display:flex;animation:nav-in .38s var(--ease-out)}
+.bottom-nav.ctx:not(.mini) .nav-chips{display:flex;animation:nav-up .45s var(--ease-out) .15s backwards}
+.bottom-nav:not(.ctx) .nav-tabs{animation:nav-in .38s var(--ease-out)}
 .bottom-nav.morph{animation:nav-squish .5s var(--ease-out)}
 @keyframes nav-in{from{opacity:0;transform:translateX(10px)}}
+@keyframes nav-up{from{opacity:0;transform:translateY(8px)}}
 @keyframes nav-pop{from{opacity:0;transform:scale(.6) rotate(-45deg)}}
+@keyframes nav-pill{from{opacity:0;transform:scale(.7)}}
+@keyframes nav-tip{from{opacity:0;transform:translate(-50%,4px)}}
 @keyframes nav-squish{0%{transform:scaleX(1)}35%{transform:scaleX(.96) scaleY(1.04)}70%{transform:scaleX(1.01)}100%{transform:none}}
 body:has(.bottom-nav){padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 }
@@ -79,13 +105,23 @@ body:has(.bottom-nav){padding-bottom:calc(92px + env(safe-area-inset-bottom))}
  */
 export const COMMAND_BAR_JS = `
 (function () {
-  // G-248: on stock and report pages the bottom bar turns into the ask bar shortly after the page opens.
-  var nav = document.querySelector('.bottom-nav[data-ask-mode]'); if (!nav) return;
+  // G-258: each screen's own bar (.nav-ctx) slides in shortly after the page opens; the grid button shows the four
+  // tabs and tapping the current tab goes back. Reading down shrinks the bar, scrolling up grows it.
+  var nav = document.querySelector('.bottom-nav'); if (!nav) return;
   var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var set = function (on) { nav.classList.toggle('asking', on); nav.classList.remove('morph'); void nav.offsetWidth; if (!still) nav.classList.add('morph'); };
+  var set = function (on) { nav.classList.toggle('ctx', on); nav.classList.remove('morph'); void nav.offsetWidth; if (!still) nav.classList.add('morph'); };
   nav.addEventListener('animationend', function (e) { if (e.target === nav) nav.classList.remove('morph'); });
-  var back = nav.querySelector('.nav-back'); if (back) back.addEventListener('click', function () { set(false); clearTimeout(t); });
-  var t = setTimeout(function () { set(true); }, still ? 0 : 900);
+  var lastY = window.scrollY || 0, ticking = false;
+  window.addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { var y = window.scrollY || 0; if (Math.abs(y - lastY) > 6) { nav.classList.toggle('mini', y > lastY && y > 80); lastY = y; } ticking = false; }); }, { passive: true });
+  if (!nav.hasAttribute('data-dock')) return;
+  var t = setTimeout(function () { set(true); }, still ? 0 : 600);
+  var back = nav.querySelector('.nav-back'); if (back) back.addEventListener('click', function () { clearTimeout(t); set(false); });
+  nav.querySelectorAll('.nav-tabs a').forEach(function (a) { a.addEventListener('click', function (e) { if (a.getAttribute('aria-current') === 'page' && !nav.classList.contains('ctx')) { e.preventDefault(); set(true); } }); });
+  var field = nav.querySelector('[data-dock-search]');
+  if (field) field.addEventListener('click', function () { var q = document.getElementById('q'); if (!q) { location.href = (document.body.getAttribute('data-base') || '') + 'screener.html#search'; return; } q.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' }); q.focus({ preventScroll: true }); });
+  var flt = nav.querySelector('[data-dock-filter]'), open = document.getElementById('sc-filter-open');
+  if (flt) { if (open) flt.addEventListener('click', function () { open.click(); }); else flt.remove(); }
+  nav.querySelectorAll('[data-q]').forEach(function (b) { b.addEventListener('click', function () { var q = b.getAttribute('data-q'); setTimeout(function () { var box = document.getElementById('chat-q'); if (box) { box.value = q; box.dispatchEvent(new Event('input', { bubbles: true })); box.focus(); } }, 60); }); });
 })();
 (function () {
   var root = document.querySelector('.top-tabs'); if (!root || !window.matchMedia) return;
