@@ -40,7 +40,7 @@ export const PEERS_JS = `
     var api=window.GNM&&GNM.api;if(!api){host.querySelector('.pe-per').textContent='PER은 API 연결 후 보여요.';return;}
     fetch(api+'/valuation?s='+ms.map(function(m){return m[0];}).join(',')).then(function(r){return r.json();}).then(function(v){if(ticket!==epoch)return;
      var items=(v&&v.items)||{};strip.querySelectorAll('.pe-card').forEach(function(c){var x=items[c.getAttribute('data-sym')];c.querySelector('[data-per]').textContent=x&&x.per!=null?(x.per>0?x.per.toFixed(1)+'배':'적자'):'—';});
-     // G-256 (Bklit scatter): PER against ROE (PBR ÷ PER) for the peers with earnings, this stock in red.
+     // G-258 (Bklit scatter): PER against ROE (PBR ÷ PER) for the peers with earnings, this stock in red.
      var sc=host.querySelector('.pe-scatter');if(sc&&window.GNM_kit){var nm={};ms.forEach(function(m){nm[m[0]]=m[1];});GNM_kit.scatter(sc,Object.keys(items).filter(function(k){var x=items[k];return nm[k]&&x&&x.per>0&&x.pbr>0;}).map(function(k){var x=items[k];return {x:Math.round(x.per*10)/10,y:Math.round(x.pbr/x.per*1000)/10,name:nm[k],me:k===sym};}),{title:'PER과 ROE',sub:'점 하나가 종목 하나 · 빨간 점이 이 종목',xl:'PER(배)',yl:'ROE(%)',xf:function(x){return x+'배';},yf:function(y){return y+'%';},label:'같은 테마 종목의 PER과 ROE',note:'ROE는 PBR÷PER로 계산했어요. 적자 종목은 빼요. 점선은 테마 중간값이에요. 점을 누르면 종목 이름과 값이 나와요.'});}
      var mp=items[sym]&&items[sym].per,peers=Object.keys(items).filter(function(k){return k!==sym&&items[k].per!=null&&items[k].per>0;}).map(function(k){return items[k].per;}),md=median(peers);
      host.querySelector('.pe-per').innerHTML=mp!=null&&mp>0&&md?(function(){

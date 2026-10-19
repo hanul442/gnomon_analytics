@@ -17,7 +17,7 @@ import type { CoinRow } from './coins.js';
 import { fetchRss, googleNewsSearchUrl, GOOGLE_NEWS_SOURCE } from '../sources/news.js';
 import type { MarketNews } from '../report/marketReport.js';
 const json=async(path:string)=>JSON.parse(await readFile(path,'utf8').catch(()=> 'null'));
-/** G-256: the last 30 closes up to the report date, for the index card's area line. */
+/** G-258: the last 30 closes up to the report date, for the index card's area line. */
 const sparkOf=(bars:readonly {date:string;close:number}[],date:string):[string,number][]=>[...new Map(bars.filter(b=>b.date<=date&&Number.isFinite(b.close)&&b.close>0).map(b=>[b.date,b.close] as [string,number])).entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-30);
 export async function collectMarketGroups(root:string,date:string,period:Period,universe:readonly UniverseRow[]):Promise<MarketGroup[]> {
  const from=period==='weekly'?weekStart(date):date;

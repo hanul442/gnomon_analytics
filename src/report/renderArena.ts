@@ -19,7 +19,7 @@ const sh = (v: number | null) => (v === null ? '없음' : v.toFixed(2));
 /** Colour only when the gauge label itself says 강세 or 약세. */
 const sigTone = (v: number | null) => (v === null ? '' : v >= 0.3 ? 'up' : v <= -0.3 ? 'down' : '');
 
-/** G-256 (Bklit profit-loss line): the curve is red above the start (1) and blue below it. */
+/** G-258 (Bklit profit-loss line): the curve is red above the start (1) and blue below it. */
 const equitySpark = (values: readonly number[], label: string): string => pnlLine(values, label);
 
 /** Approximate month of each equity point (points are evenly spaced sessions from `from` to `to`). */
@@ -30,7 +30,7 @@ function pointMonths(n: number, from: string, to: string): string[] {
 
 const LINE_COLORS = ['var(--accent)', '#9b6cf0', '#e8930c'];
 
-/** G-256 (Bklit line chart): the top three strategies against buy-and-hold, as % from the start, with a crosshair. */
+/** G-258 (Bklit line chart): the top three strategies against buy-and-hold, as % from the start, with a crosshair. */
 function strategyLines(a: ArenaResult): string {
   const top = a.results.filter((r) => r.key !== 'hold' && r.equity.length >= 2).sort((x, y) => x.rank - y.rank).slice(0, 3);
   const hold = a.results.find((r) => r.key === 'hold');

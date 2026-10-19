@@ -266,7 +266,7 @@ const SCREENER_SCRIPT = `<script>
     var mine = onlyWatch ? watchSet() : null;
     var out = rows.filter(function (r) { return (currentMarket !== 'stock' || !mkt || r[2] === mkt) && (!mine || mine[r[0]]) && matches(r, sc, IDX); }), total = out.length;
     paintFilters(sc, out); lastSc = sc; lastOut = out;
-    // G-256 (Bklit funnel): how many are left after each condition in turn (the risk filter first, as matches() does).
+    // G-258 (Bklit funnel): how many are left after each condition in turn (the risk filter first, as matches() does).
     var fh = $('sc-funnel');
     if (fh) {
       var cur = rows.filter(function (r) { return (currentMarket !== 'stock' || !mkt || r[2] === mkt) && (!mine || mine[r[0]]); });

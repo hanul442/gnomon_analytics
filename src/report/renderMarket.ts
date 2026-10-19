@@ -37,7 +37,7 @@ export const FLOW_COLORS = { foreign: '#00968a', institution: '#7a4fb3', individ
 const GAUGE_COLORS = ['#1d4fa3', '#3b7be0', '#8fb3ec', '#c4cbc9', '#f0a0a3', '#e5484d', '#a8262b'];
 const BOUNDS = [-1, -0.6, -0.3, -0.1, 0.1, 0.3, 0.6, 1];
 
-/** Compact semicircle gauge in Bklit's notched look (G-256); the needle settles from neutral like the main one. */
+/** Compact semicircle gauge in Bklit's notched look (G-258); the needle settles from neutral like the main one. */
 export function miniGauge(score: number | null, label: string): string {
   const cx = 60, cy = 56, r = 46;
   const angle = (s: number) => 180 - ((s + 1) / 2) * 180;
@@ -431,7 +431,7 @@ export function fundamentalsPanel(market: MarketSection, close: number | null, n
     return `<td class="num"><span class="${tone(r.benchmark)}">${pct(r.benchmark)}</span><br><small class="${tone(diff)}">차이 ${diff === null ? '없음' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%p`}</small></td>`;
   }).join('')}</tr>`).join('');
   const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
-  // G-256: each benchmark as a Bklit stat card (its last close, today's move, the last 60 closes as an area).
+  // G-258: each benchmark as a Bklit stat card (its last close, today's move, the last 60 closes as an area).
   const stats = market.benchmarks.filter((b) => b.last !== null).map((b) => kmStatArea({ title: b.name, value: b.last, change: b.changePct, series: b.series?.length ? b.series.slice(-60) : b.spark.map((v, i) => [i === b.spark.length - 1 ? '마지막' : `${b.spark.length - 1 - i}거래일 전`, v] as const), digits: /^KOS/.test(b.symbol) || (b.last ?? 0) < 1000 ? 2 : 0 })).join('');
   const vs = bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div>${stats ? `<div class="km-stats">${stats}</div>` : ''}<div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
 <p class="fine">차이는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 값이에요.</p></div>` : '';

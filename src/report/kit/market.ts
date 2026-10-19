@@ -1,4 +1,4 @@
-// G-256: Bklit UI chart kit, market charts, redrawn as plain SVG in GNOMON's look (Bklit is MIT; only its look is copied).
+// G-258: Bklit UI chart kit, market charts, redrawn as plain SVG in GNOMON's look (Bklit is MIT; only its look is copied).
 //   kmDonut      pie-chart       a ring of slices with the total in the middle (오늘 오른·보합·내린 종목)
 //   kmGauge      gauge-chart     a notched arc lit from neutral toward the reading (시장 온도: 강세 − 약세)
 //   kmNotchArc   gauge-chart     the same notches for the stock page's semicircle gauges (renderMarket miniGauge)

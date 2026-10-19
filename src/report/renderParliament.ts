@@ -180,7 +180,7 @@ export function consensusNote(report: DailyReport): string {
   const k = committeeConsensus(c?.analysts ?? [], report.market?.analystBoard ?? []);
   if (!k) return '';
   const locked = c?.lockedAnalysts?.length ?? 0;
-  // G-256 (Bklit ring chart): the council's split as concentric rings, the pooled chance in the middle.
+  // G-258 (Bklit ring chart): the council's split as concentric rings, the pooled chance in the middle.
   const as = c?.analysts ?? [], count = (s: string) => as.filter((a) => a.stance === s).length, n = as.length || 1;
   const ring = ringChart([
     { label: '강세 위원', value: count('BULLISH') / n, color: '#f04452', text: `${count('BULLISH')}명` },
