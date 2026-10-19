@@ -42,6 +42,7 @@ import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LI
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, easyCard, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, reportDiffCard } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 import { CHART_PRO_CSS, CHART_PRO_JS, HERO_RANGE_JS } from './chartPro.js';
+import { SMOOTH_JS } from './chartLook.js';
 import { derivSlot, DERIV_CSS, DERIV_JS } from './deriv.js';
 import { shortSlot, SHORT_CSS, SHORT_JS } from './shortCard.js';
 import { companySlot, COMPANY_CSS, COMPANY_JS } from './companyCard.js';
@@ -1046,13 +1047,14 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
       $('sp-price').innerHTML = '<b>' + won(last.close) + '</b>' + (prev ? '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '">' + (ch > 0 ? '▲' : ch < 0 ? '▼' : '') + ' ' + (US ? won(Math.abs(ch)) : Math.abs(ch) >= 100 ? Math.round(Math.abs(ch)).toLocaleString('ko-KR') : Number(Math.abs(ch).toPrecision(3)).toLocaleString('ko-KR', { maximumFractionDigits: 8 })) + ' (' + (pc > 0 ? '+' : '') + pc.toFixed(2) + '%)</span>' : ''); pageReady(); if (window.gnmRollIn) gnmRollIn($('sp-price'));
       $('sp-date').textContent = last.time + (COIN ? ' 일봉 (09:00 KST 기준)' : US ? ' 종가 (미국 현지 날짜)' : ' 종가');
       // G-103: the 3-month mini chart under the price; tapping it opens the chart tab.
+      ${SMOOTH_JS}
       var hp = bars.slice(-63);
       if (hp.length >= 5 && !document.querySelector('.hero-chart')) {
         var lo = Math.min.apply(null, hp.map(function (b) { return b.close; })), hi = Math.max.apply(null, hp.map(function (b) { return b.close; })), sp = hi - lo || 1;
         var pts = hp.map(function (b, i) { return (i / (hp.length - 1) * 320).toFixed(1) + ',' + (68 - (b.close - lo) / sp * 62).toFixed(1); }).join(' ');
         var g = (hp[hp.length - 1].close / hp[0].close - 1) * 100, col = g >= 0 ? '#f04452' : '#3182f6';
         var hc = document.createElement('a'); hc.className = 'hero-chart'; hc.href = '#tab-chart'; hc.setAttribute('aria-label', '최근 3개월 차트, 눌러서 전체 화면 차트 열기');
-        hc.innerHTML = '<svg viewBox="0 0 320 72" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,72 ' + pts + ' 320,72" fill="' + col + '" fill-opacity=".12"/><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><span class="hc-meta"><span>3개월 <b class="' + (g > 0 ? 'up' : g < 0 ? 'down' : '') + '">' + (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '') + g.toFixed(1) + '%</b> · 최고 ' + won(hi) + ' · 최저 ' + won(lo) + '</span><span class="hc-go">차트 자세히 보기 ›</span></span>';
+        hc.innerHTML = '<svg viewBox="0 0 320 72" preserveAspectRatio="none" aria-hidden="true"><path class="hc-a" d="' + smoothD(pts) + 'L320,72L0,72Z" fill="' + col + '" fill-opacity=".12"/><path class="hc-l" d="' + smoothD(pts) + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="hc-meta"><span>3개월 <b class="' + (g > 0 ? 'up' : g < 0 ? 'down' : '') + '">' + (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '') + g.toFixed(1) + '%</b> · 최고 ' + won(hi) + ' · 최저 ' + won(lo) + '</span><span class="hc-go">차트 자세히 보기 ›</span></span>';
         hc.setAttribute('data-c', JSON.stringify(bars.slice(-250).map(function (b) { return b.close; })));
         $('sp-date').after(hc); if (window.GNM_heroRange) GNM_heroRange(hc);
       }

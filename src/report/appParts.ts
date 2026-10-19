@@ -10,6 +10,7 @@ import { starButton } from './ui.js';
 import { scenarioCheck, scenarioLayer } from './scenarioChart.js';
 import type { DailyReport } from './dailyReport.js';
 import { esc } from './html.js';
+import { fadeGrad, gradId, smoothD } from './chartLook.js';
 import { currency, won, tone, pct as fmtPct } from './format.js';
 const pct = (v: number | null, digits = 2) => fmtPct(v, digits, '없음');
 
@@ -22,8 +23,9 @@ export function sparkline(values: readonly number[], label: string, width = 120,
   if (values.length < 2) return '';
   const lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1;
   const pts = values.map((v, i) => `${((i / (values.length - 1)) * width).toFixed(1)},${(height - 3 - ((v - lo) / span) * (height - 6)).toFixed(1)}`).join(' ');
-  const rising = up ?? values.at(-1)! >= values[0]!;
-  return `<svg viewBox="0 0 ${width} ${height}" class="spark" role="img" aria-label="${esc(label)}"><polyline fill="none" stroke="${rising ? '#f04452' : '#3182f6'}" stroke-width="1.6" points="${pts}"/></svg>`;
+  const rising = up ?? values.at(-1)! >= values[0]!, color = rising ? '#f04452' : '#3182f6', id = gradId('sg'), d = smoothD(pts), end = pts.split(' ').at(-1)!.split(',');
+  // G-254: a smooth line over a soft fill, with a dot on today's value.
+  return `<svg viewBox="0 0 ${width} ${height}" class="spark" overflow="visible" role="img" aria-label="${esc(label)}"><defs>${fadeGrad(id, color, 0.18)}</defs><path d="${d}L${width},${height}L0,${height}Z" fill="url(#${id})"/><path class="spark-l" d="${d}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${end[0]}" cy="${end[1]}" r="2.4" fill="${color}"/></svg>`;
 }
 
 const FOOTPRINT_WORD = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' } as const;
@@ -106,7 +108,7 @@ export function heroChart(report: DailyReport): string {
   const chg = (pts.at(-1)!.close / pts[0]!.close - 1) * 100, color = chg >= 0 ? '#f04452' : '#3182f6';
   // G-141: closes for the period chips under the mini chart (1주·1달·3달·6달·1년), drawn in the browser.
   const src = (report.recentBars?.length ? report.recentBars : report.recentCloses ?? []).slice(-250), series = src.map((b) => b.close);
-  return `<a class="hero-chart" href="#tab-chart" data-c="${esc(JSON.stringify(series))}" data-d="${esc(JSON.stringify(src.map((b) => b.date)))}" title="눌러서 전체 화면 차트 열기"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="hc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".22"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><polygon points="0,${h} ${line} ${w},${h}" fill="url(#hc-g)"/><polyline points="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg><span class="hc-meta"><span>3개월 <b class="${chg > 0 ? 'up' : chg < 0 ? 'down' : ''}">${chg > 0 ? '▲ +' : chg < 0 ? '▼ ' : ''}${chg.toFixed(1)}%</b> · 최고 ${esc(won(hi))} · 최저 ${esc(won(lo))}</span><span class="hc-go">차트 자세히 보기 ›</span></span></a>`;
+  return `<a class="hero-chart" href="#tab-chart" data-c="${esc(JSON.stringify(series))}" data-d="${esc(JSON.stringify(src.map((b) => b.date)))}" title="눌러서 전체 화면 차트 열기"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><defs>${fadeGrad('hc-g', color)}</defs><path class="hc-a" d="${smoothD(line)}L${w},${h}L0,${h}Z" fill="url(#hc-g)"/><path class="hc-l" d="${smoothD(line)}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="hc-meta"><span>3개월 <b class="${chg > 0 ? 'up' : chg < 0 ? 'down' : ''}">${chg > 0 ? '▲ +' : chg < 0 ? '▼ ' : ''}${chg.toFixed(1)}%</b> · 최고 ${esc(won(hi))} · 최저 ${esc(won(lo))}</span><span class="hc-go">차트 자세히 보기 ›</span></span></a>`;
 }
 
 export function hero(report: DailyReport, options: { live: boolean; asOf: string }): string {
