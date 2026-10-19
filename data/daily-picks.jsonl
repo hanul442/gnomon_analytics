@@ -34,3 +34,7 @@
 {"date":"2026-10-16","symbol":"GOOGL.O","name":"알파벳 Class A","kind":"stock","market":"NASDAQ","tier":"deep","reason":"미국 거래대금 상위 후보에서 선정","us":{"ticker":"GOOGL","english":"Alphabet Inc. Class A"}}
 {"date":"2026-10-17","symbol":"KRW-XLM","name":"스텔라루멘","kind":"coin","market":"UPBIT","tier":"deep","reason":"24시간 거래대금 상위 코인 후보에서 선정"}
 {"date":"2026-10-18","symbol":"KRW-GTC","name":"깃코인","kind":"coin","market":"UPBIT","tier":"deep","reason":"24시간 거래대금 상위 코인 후보에서 선정"}
+{"date":"2026-10-19","symbol":"006110","name":"삼아알미늄","kind":"stock","market":"KOSPI","tier":"deep","reason":"스크리너 '강세 신호 상위' 신호 후보"}
+{"date":"2026-10-19","symbol":"003010","name":"혜인","kind":"stock","market":"KOSPI","tier":"deep","reason":"스크리너 '많이 내린 뒤 반등 신호' 신호 후보"}
+{"date":"2026-10-19","symbol":"395270","name":"HANARO Fn K-반도체","kind":"etf","market":"KOSPI","tier":"deep","reason":"거래대금 상위 ETF 후보에서 선정"}
+{"date":"2026-10-19","symbol":"MSTR.O","name":"스트래티지","kind":"stock","market":"NASDAQ","tier":"deep","reason":"미국 거래대금 상위 후보에서 선정","us":{"ticker":"MSTR","english":"Strategy Inc"}}

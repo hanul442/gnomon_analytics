@@ -3830,11 +3830,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "028080",
-  "name": "휴맥스홀딩스",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "028100",
   "name": "동아지질",
   "market": "KOSPI"
@@ -7281,7 +7276,7 @@
  },
  {
   "symbol": "091340",
-  "name": "S&K폴리텍",
+  "name": "S&K글로벌",
   "market": "KOSDAQ"
  },
  {

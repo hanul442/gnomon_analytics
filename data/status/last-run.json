@@ -1,11 +1,11 @@
 {
- "at": "2026-10-18T17:33:11.778Z",
+ "at": "2026-10-19T16:41:51.332Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2764
+   "count": 2763
   },
   {
    "source": "naver:m-stock:etf",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2668
+   "count": 2667
   },
   {
    "source": "naver:fchart:day:etf",
@@ -23,38 +23,21 @@
    "count": 1176
   },
   {
-   "source": "upbit:market:all",
-   "ok": false,
-   "count": 0,
-   "error": "The operation was aborted due to timeout"
+   "source": "upbit:candles:days:all",
+   "ok": true,
+   "count": 295,
+   "error": "1 failed "
   },
   {
    "source": "naver:world:day:all",
    "ok": true,
-   "count": 660
+   "count": 658,
+   "error": "2 failed "
   },
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 0
-  },
-  {
-   "source": "request:KRW-BTC",
-   "ok": false,
-   "count": 0,
-   "error": "NOT_ON_UPBIT_KRW"
-  },
-  {
-   "source": "request:KRW-ETH",
-   "ok": false,
-   "count": 0,
-   "error": "NOT_ON_UPBIT_KRW"
-  },
-  {
-   "source": "request:KRW-WLD",
-   "ok": false,
-   "count": 0,
-   "error": "NOT_ON_UPBIT_KRW"
+   "count": 297
   }
  ],
  "stocks": [
@@ -294,15 +277,45 @@
    "failedSources": []
   },
   {
+   "symbol": "KRW-BTC",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-ETH",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-WLD",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
    "symbol": "069500",
    "report": "SKIPPED",
    "failedSources": []
+  },
+  {
+   "symbol": "395270",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "003010",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "006110",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "MSTR.O",
+   "report": "WRITTEN",
+   "failedSources": []
   }
  ],
- "failed": [
-  {
-   "symbol": "KRW-GTC",
-   "error": "The operation was aborted due to timeout"
-  }
- ]
+ "failed": []
 }
