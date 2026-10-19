@@ -241,7 +241,7 @@ export const TABS: readonly [string, string, string][] = [
 export const MODE_GROUPS: readonly { key: string; label: string; modes: readonly [string, string][] }[] = [
   { key: 'find', label: '찾기', modes: [['주식', 'screener.html'], ['미국 주식', 'screener.html#us'], ['ETF', 'screener.html#etf'], ['코인', 'screener.html#coin'], ['테마', 'themes.html'], ['공시', 'signals.html']] },
   { key: 'mine', label: '내 종목', modes: [['관심', 'watch.html'], ['알림', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html']] },
-  { key: 'committee', label: '위원회', modes: [['AI 리포트', 'reports.html'], ['성적표', 'scorecard.html'], ['시장 데일리', 'market-reports.html']] },
+  { key: 'committee', label: '위원회', modes: [['AI 리포트', 'reports.html'], ['성적표', 'scorecard.html'], ['나 vs 위원회', 'vs.html'], ['시장 데일리', 'market-reports.html']] },
 ];
 /** Pages that belong to the 나 tab (account, money, help). */
 const ME_PAGES = ['account.html', 'pricing.html', 'login.html', 'onboarding.html', 'checkout.html', 'guide.html', 'faq.html', 'updates.html', 'survey.html', 'terms.html', 'privacy.html', 'hanul.html'];
