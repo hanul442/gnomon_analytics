@@ -75,6 +75,8 @@ html[data-theme=dark]{--glass-bg:linear-gradient(180deg,rgba(40,48,60,.82),rgba(
 .nav-field svg{width:20px;height:20px}
 .nav-round .nav-n{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--fg);color:var(--page);font:800 10.5px/16px sans-serif;font-style:normal;text-align:center}
 body:has(.bottom-nav[data-dock=find]) .find-head{display:none}
+/* G-263: 위원회 switches its pages from the bar, so the row of text tabs at the top goes on phones. */
+body:has(.bottom-nav[data-dock=committee]) .mode-tabs{display:none}
 body.dock-searching .find-head{display:block!important;position:fixed;z-index:45;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));margin:0;animation:nav-up .3s var(--ease-out)}
 body.dock-searching .find-head .search-results{max-height:calc(100dvh - 180px);overflow:auto}
 body.dock-searching .find-head .search-box,body.dock-searching .find-head .search-results{background:var(--surface-solid,#fff)}
