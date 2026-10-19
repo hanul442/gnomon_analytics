@@ -1,5 +1,5 @@
 {
- "at": "2026-10-19T16:41:51.332Z",
+ "at": "2026-10-19T18:42:28.172Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2667
+   "count": 2665
   },
   {
    "source": "naver:fchart:day:etf",
@@ -297,23 +297,23 @@
    "failedSources": []
   },
   {
+   "symbol": "MSTR.O",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
    "symbol": "395270",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "003010",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "006110",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "MSTR.O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],

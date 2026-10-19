@@ -998,3 +998,4 @@
 {"symbol":"MSTR.O","date":"2026-10-15","open":137.74,"high":151.33,"low":134.892,"close":151.29,"volume":22287000,"source":"naver:world:day","retrievedAt":"2026-10-19T16:41:51.332Z"}
 {"symbol":"MSTR.O","date":"2026-10-16","open":145.95,"high":146.83,"low":134.11,"close":136.83,"volume":31969955,"source":"naver:world:day","retrievedAt":"2026-10-19T16:41:51.332Z"}
 {"symbol":"MSTR.O","date":"2026-10-19","open":139.01,"high":141.1,"low":137.65,"close":137.85,"volume":7009549,"source":"naver:world:day","retrievedAt":"2026-10-19T16:41:51.332Z"}
+{"symbol":"MSTR.O","date":"2026-10-19","open":139.01,"high":141.1,"low":136.1101,"close":136.895,"volume":8730278,"source":"naver:world:day","retrievedAt":"2026-10-19T18:42:28.172Z"}
