@@ -7,7 +7,7 @@ name: Hidden-future evaluation
 on:
   workflow_dispatch:
     inputs:
-      version: { description: 'v1 or v2', default: 'v2' }
+      version: { description: 'v1, v2 or more (extended checks, no AI)', default: 'v2' }
       budget: { description: 'AI budget, USD', default: '5' }
       dates: { description: 'v2: evaluation dates for the AI', default: '100' }
       perDate: { description: 'v2: stocks per date for the AI', default: '10' }
@@ -33,14 +33,14 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node dist/cli/blindEval.js --ai --samples 300 --budget "${{ inputs.budget || '3' }}" --probe 30 | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Restore the v2 data cache
-        if: (inputs.version || 'v2') == 'v2'
+        if: (inputs.version || 'v2') != 'v1'
         uses: actions/cache@v4
         with:
           path: .cache/eval
           key: eval-v2-${{ github.run_id }}
           restore-keys: eval-v2-
       - name: v2 data
-        if: (inputs.version || 'v2') == 'v2'
+        if: (inputs.version || 'v2') != 'v1'
         env:
           OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
         run: node dist/cli/evalFetch.js
@@ -49,6 +49,9 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node dist/cli/evalRun.js --ai --budget "${{ inputs.budget || '5' }}" --dates "${{ inputs.dates || '100' }}" --perDate "${{ inputs.perDate || '10' }}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Extended checks (G-247)
+        if: inputs.version == 'more'
+        run: node --max-old-space-size=6000 dist/cli/evalMore.js | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Commit the results
         run: |
           git config user.name "github-actions[bot]"
