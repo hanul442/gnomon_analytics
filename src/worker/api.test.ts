@@ -947,4 +947,28 @@ test('contest (G-251): cards required, the committee number shows after my card,
   assert.equal((await t.call('POST', `/contest/orders/${buy.body.id}/cancel`, undefined, a.session)).body.error, 'FILLED');
   assert.equal((await t.call('GET', '/me/export', undefined, a.session)).body.contestOrders.length, 2);
   assert.equal((await t.call('GET', '/contest?season=2025-01')).status, 404);
+  // G-251: tiers after three cards, the leaderboard lists public nicknames only, cards open once the season is over.
+  for (let i = 0; i < 2; i++) assert.equal((await t.call('POST', '/contest/orders', { side: 'BUY', symbol: '005930', amount: 1_000_000, upPct: 30, reason: '비밀' }, a.session)).status, 200);
+  assert.equal((await t.call('POST', '/contest/profile', { nickname: '리딩방고수', public: true }, a.session)).body.error, 'BAD_NICKNAME');
+  assert.equal((await t.call('POST', '/contest/profile', { nickname: '해시계', public: true }, a.session)).body.profile.public, true);
+  const b2 = await t.login('boss2@example.com', (await t.call('POST', '/admin/invites', { plan: 'beta', maxUses: 1 }, boss.session)).body.code);
+  assert.equal((await t.call('POST', '/contest/profile', { nickname: '해시계', public: true }, b2.session)).body.error, 'NICK_TAKEN');
+  contest.file.sessions = ['2026-10-01', '2026-10-02', '2026-10-05', '2026-10-06'];
+  contest.file.closes = { '000660': [100, 100, 110, 120], '005930': [50, 50, 50, 45] };
+  t.tick(10 * 60_000);
+  r = await t.call('GET', '/contest', undefined, a.session);
+  assert.equal(r.body.me.cards, 3);
+  assert.equal(r.body.me.skill, Math.round(100 * (1 - ((0.35 ** 2 + 0.3 ** 2 * 2) / 3) / 0.25)));
+  assert.equal(r.body.me.tier.name, '다이아');
+  assert.deepEqual(r.body.leaderboard.map((x: { nickname: string; me: boolean }) => [x.nickname, x.me]), [['해시계', true]]);
+  assert.deepEqual(r.body.shown, []);
+  assert.equal((await t.call('GET', '/contest', undefined, b2.session)).body.leaderboard[0].me, false);
+  (contest.file as { closed: boolean }).closed = true;
+  t.tick(10 * 60_000);
+  r = await t.call('GET', '/contest');
+  assert.equal(r.body.shown[0].nickname, '해시계');
+  assert.equal(r.body.shown[0].cards.length, 3);
+  assert.equal(JSON.stringify(r.body).includes('비밀'), false, 'written reasons stay private');
+  assert.equal(JSON.stringify(r.body.leaderboard).includes('holdings'), false);
+  (contest.file as { closed: boolean }).closed = false;
 });

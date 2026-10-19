@@ -329,3 +329,26 @@ export function seasonFile(input: { season: string; builtAt: string; today: stri
   }
   return { method: CONTEST_METHOD, season: input.season, builtAt: input.builtAt, sessions, closed: input.today.slice(0, 7) > input.season, names, closes, committee };
 }
+
+/** G-251: season tiers by judgment score (absolute, so everyone can climb; 0 = always saying 50%). Under RANK_MIN_CARDS cards: placing. */
+export const TIERS = [
+  { key: 'diamond', name: '다이아', min: 30 },
+  { key: 'platinum', name: '플래티넘', min: 20 },
+  { key: 'gold', name: '골드', min: 10 },
+  { key: 'silver', name: '실버', min: 0 },
+  { key: 'bronze', name: '브론즈', min: -Infinity },
+] as const;
+export type TierKey = typeof TIERS[number]['key'] | 'placing';
+export function tierOf(side: Pick<Side, 'skill' | 'cards'>): { key: TierKey; name: string } {
+  if (side.skill == null || side.cards.length < RANK_MIN_CARDS) return { key: 'placing', name: '배치 중' };
+  const t = TIERS.find((x) => side.skill! >= x.min)!;
+  return { key: t.key, name: t.name };
+}
+
+/** G-251: a name shown on the leaderboard. 2–12 letters, digits or _; nothing that reads as a contact or an invitation to a chat room. */
+export function cleanNickname(v: unknown): string | null {
+  const s = typeof v === 'string' ? v.trim() : '';
+  if (!/^[가-힣A-Za-z0-9_]{2,12}$/.test(s)) return null;
+  if (/(리딩|카톡|오픈채팅|톡방|텔레|telegram|kakao|admin|운영자|관리자|그노몬|gnomon|위원회|\d{3,})/i.test(s)) return null;
+  return s;
+}

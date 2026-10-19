@@ -8,7 +8,7 @@ import { SIM_NOTE } from './renderArena.js';
 
 const CSS = `<style>
 .vs-page{max-width:880px;margin:14px auto 32px}.vs-hero{padding:18px}.vs-hero h1{font-size:23px;margin:2px 0 6px}.vs-hero p{margin:0;color:var(--fg2);line-height:1.6}
-.vs-sec{margin-top:14px}.vs-sec>h2{font-size:18px;margin:18px 4px 8px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.vs-sec>h2 small{font-size:12.5px;font-weight:500;color:var(--muted)}
+.vs-sec{margin-top:14px}.vs-sec h2{font-size:18px;margin:18px 4px 8px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.vs-sec h2 small{font-size:12.5px;font-weight:500;color:var(--muted)}
 .vs-season{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:0 4px 8px}.vs-season select{font:inherit;border:1px solid var(--line-strong);border-radius:8px;padding:5px 8px;background:var(--surface);color:var(--fg)}
 .vs-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.vs-col{padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}.vs-col.me{border-color:var(--accent)}
 .vs-col h3{margin:0;font-size:13px;color:var(--muted);font-weight:700}.vs-skill{font-size:34px;font-weight:300;line-height:1.15;margin:6px 0 2px;font-variant-numeric:tabular-nums}.vs-skill small{font-size:13px;font-weight:600;color:var(--muted);margin-left:3px}
@@ -23,6 +23,8 @@ const CSS = `<style>
 .vs-tag{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;border:1px solid var(--line);color:var(--muted);margin-left:6px;vertical-align:1px}.vs-tag.ok{color:var(--accent-strong);border-color:var(--accent-line)}
 .vs-reveal{font-size:12.5px;color:var(--accent-strong)}
 .vs-rules{padding:6px 16px 12px}.vs-rules summary{cursor:pointer;font-weight:800;padding:8px 0;min-height:36px}.vs-rules ul{margin:4px 0;padding-left:20px;line-height:1.7;font-size:13.5px}
+.vs-tier{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:800;border-radius:999px;padding:1px 8px;background:var(--accent-soft);color:var(--accent-strong);vertical-align:2px}.vs-lb-n{display:inline-block;min-width:26px;font-weight:800;color:var(--muted)}.vs-row.mine{background:var(--accent-soft);margin:0 -16px;padding-left:16px;padding-right:16px}
+.vs-nick{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;font-size:13px}.vs-nick input[type=text]{font:inherit;border:1px solid var(--line-strong);border-radius:8px;padding:7px 9px;background:var(--surface);color:var(--fg);width:150px}
 .vs-empty{padding:14px 2px;color:var(--muted);font-size:13.5px;line-height:1.6}
 @media (max-width:560px){.vs-three{grid-template-columns:1fr}.vs-skill{font-size:28px}.vs-col{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}.vs-col .vs-acct{grid-column:1/-1}}
 </style>`;
@@ -34,7 +36,8 @@ const RULES = `<details class="card vs-rules"><summary>규칙과 채점 방법</
 <li>주문은 낸 뒤 처음 오는 장 마감 가격(종가)으로 체결돼요. 15시 30분 전에 내면 그날 종가, 뒤에 내면 다음 거래일 종가예요. 위원회도 판단한 다음 거래일 종가로 사요. 누구도 이미 아는 가격으로 사지 못해요.</li>
 <li>사고팔 때마다 전략 대결과 같은 비용(왕복 0.25%)을 빼요.</li>
 <li>살 때 판단 카드에 "시즌 마지막 종가가 내가 산 가격보다 높을 확률"을 적어요. 시즌이 끝나면 위원회 판단과 같은 공식(Brier 점수)으로 채점해요. 50%만 말하면 0점, 완벽하면 100점, 반대로 자신했으면 0점 밑이에요. 판 종목의 카드도 시즌 끝 가격으로 채점돼요.</li>
-<li>순위는 수익이 아니라 판단 점수로 매겨요. 카드가 3장 이상이면 순위에 들어가고, 이름은 보이지 않아요.</li>
+<li>순위는 수익이 아니라 판단 점수로 매겨요. 카드가 3장 이상이면 순위와 티어(다이아 30점↑, 플래티넘 20점↑, 골드 10점↑, 실버 0점↑, 브론즈)가 생겨요. 순위표에는 닉네임을 공개한 사람만 보여요.</li>
+<li>시즌 중에는 다른 사람의 종목이 보이지 않아요. 시즌이 끝나면 순위표 상위 10명의 판단 카드(종목, 날짜, 말한 확률, 결과)를 공개하고, 이유 글은 공개하지 않아요. 사용자끼리 대화하는 기능은 없어요.</li>
 <li>위원회는 오를 확률 55% 이상인 종목 가운데 높은 순 5개를 20%씩 가져요. 기준선은 시즌 첫날 대회 종목을 똑같이 나눠 사서 그대로 둔 계좌예요.</li>
 <li>위원회가 그 종목을 몇 %로 봤는지는 내가 그 종목 카드를 낸 뒤에 보여 드려요. 위원회 분석가들도 서로 모르고 먼저 판단해요.</li>
 <li>AI는 내 매매나 판단에 의견을 달지 않아요. 복기 카드의 숫자는 모두 계산한 사실이에요.</li></ul></details>`;
@@ -45,6 +48,7 @@ const CONTEST = `<section class="vs-sec" id="vs-contest" aria-labelledby="vs-con
 <div class="vs-season" id="vs-c-season"></div>
 <div class="vs-three" id="vs-c-three"><p class="muted">불러오는 중…</p></div>
 <p class="vs-rank" id="vs-c-rank"></p>
+<div id="vs-c-board-top"></div>
 <div id="vs-c-mine"></div>
 <h2>대회 종목 <small>위원회가 지금 판단 중인 국내 주식</small></h2>
 <div class="card vs-card" id="vs-c-board"><p class="vs-empty">불러오는 중…</p></div>
@@ -64,17 +68,23 @@ const SCRIPT = `<script>
  var G=window.GNM||{}, season=null, data=null, open=null;
  var REASON={NO_PRICE:'그날 가격이 없어 체결하지 못했어요',NO_CASH:'현금이 모자라 체결하지 못했어요',CAP:'한 종목 30% 한도를 넘어 체결하지 못했어요',MAX_HOLDINGS:'5종목 한도를 넘어 체결하지 못했어요',NOT_HELD:'가진 주식이 없어 팔지 못했어요'};
  var skill=function(s){return s.skill==null?'<div class="vs-skill">–</div>':'<div class="vs-skill">'+s.skill+'<small>점</small></div>';};
- var col=function(cls,title,s,acct,sub){return '<div class="vs-col '+cls+'"><div><h3>'+title+'</h3>'+skill(s)+'<div class="vs-sub">'+(sub||'판단 카드 '+s.cards+'장 · 채점 '+s.scored+'장')+'</div></div>'+(acct?'<div class="vs-acct">'+acct+'</div>':'')+'</div>';};
+ var col=function(cls,title,s,acct,sub,tier){return '<div class="vs-col '+cls+'"><div><h3>'+title+(tier?'<span class="vs-tier">'+esc(tier.name)+'</span>':'')+'</h3>'+skill(s)+'<div class="vs-sub">'+(sub||'판단 카드 '+s.cards+'장 · 채점 '+s.scored+'장')+'</div></div>'+(acct?'<div class="vs-acct">'+acct+'</div>':'')+'</div>';};
  function paint(){
   var d=data;
   $('vs-c-season').innerHTML='<label for="vs-c-sel">시즌</label><select id="vs-c-sel">'+d.seasons.slice().reverse().map(function(s){return '<option value="'+s+'"'+(s===d.season?' selected':'')+'>'+s.replace('-','년 ')+'월'+(s===d.current?' (진행 중)':'')+'</option>';}).join('')+'</select><span>'+(d.closed?'끝난 시즌 · 최종 채점':d.asOf?d.asOf+' 종가 기준 · 남은 거래일 약 '+d.left+'일 · 지금 점수는 오늘 가격으로 낸 잠정 점수':'첫 거래일 종가가 들어오면 시작해요')+'</span>';
   $('vs-c-sel').onchange=function(){season=this.value;load();};
   var me=d.me, mdd=function(s){return '가장 크게 떨어진 폭 '+pct(s.maxDrawdown);};
   var meAcct=me&&me.started&&me.vs?'가상 계좌: 위원회보다 '+pp(me.ret-(me.vs.committee||0))+', 기준선보다 '+pp(me.ret-(me.vs.benchmark||0))+' ('+esc(me.vs.since)+'부터 같은 구간)<br>'+mdd(me):'';
-  $('vs-c-three').innerHTML=(me?col('me','나',me,meAcct||'아직 체결된 주문이 없어요.'):'<div class="vs-col me"><div><h3>나</h3><div class="vs-skill">–</div><div class="vs-sub"><a href="login.html">로그인</a>하면 참가할 수 있어요.</div></div></div>')+
-   col('','AI 위원회',d.committee,d.committee.started?'가상 계좌: 기준선보다 '+pp(d.committee.ret-d.benchmark.ret)+'<br>'+mdd(d.committee):'')+
+  $('vs-c-three').innerHTML=(me?col('me','나',me,meAcct||'아직 체결된 주문이 없어요.',null,me.tier):'<div class="vs-col me"><div><h3>나</h3><div class="vs-skill">–</div><div class="vs-sub"><a href="login.html">로그인</a>하면 참가할 수 있어요.</div></div></div>')+
+   col('','AI 위원회',d.committee,d.committee.started?'가상 계좌: 기준선보다 '+pp(d.committee.ret-d.benchmark.ret)+'<br>'+mdd(d.committee):'',null,d.committeeTier)+
    col('','기준선',d.benchmark,d.benchmark.started?'대회 종목을 똑같이 나눠 보유<br>'+mdd(d.benchmark):'','판단 없이 비교만 하는 계좌');
   $('vs-c-rank').textContent=d.players?'판단 점수 순위: 카드 3장 이상 낸 참가자 '+d.players+'명'+(me&&me.rank?' 중 '+me.rank+'위':'')+(d.committeeRank?' · 위원회는 '+d.committeeRank+'위 자리':''):(d.entrants?'참가자 '+d.entrants+'명 · 카드 3장을 내면 순위에 들어가요':'');
+  // G-251: the season leaderboard (public nicknames only) and, once the season is over, the top players' cards.
+  var tierLine='티어: '+d.tiers.map(function(t){return t.name+(t.min==null?' 0점 밑':' '+t.min+'점↑');}).join(' · ')+' · 카드 3장 전에는 배치 중';
+  var lb=d.leaderboard.map(function(x){return '<div class="vs-row'+(x.me?' mine':'')+'"><div><span class="vs-lb-n">'+x.rank+'</span><b>'+esc(x.nickname)+'</b><span class="vs-tier">'+esc(x.tier.name)+'</span></div><div class="vs-r">'+x.skill+'점<br><span class="vs-sub">카드 '+x.cards+'장</span></div></div>';}).join('');
+  var nick=me?'<form class="vs-nick" id="vs-nick"><label for="vs-nick-in">닉네임</label><input type="text" id="vs-nick-in" name="nickname" maxlength="12" value="'+esc(me.profile?me.profile.nickname:'')+'" placeholder="2~12자"><label><input type="checkbox" name="public"'+(me.profile&&me.profile.public?' checked':'')+'> 순위표에 보이기</label><button type="submit" class="vs-btn">저장</button></form>':'';
+  var shown=d.shown.length?'<h2>상위권 판단 카드 <small>시즌이 끝나 공개해요 · 이유 글은 공개하지 않아요</small></h2>'+d.shown.map(function(x){return '<details class="card vs-rules"><summary>'+x.rank+'위 '+esc(x.nickname)+' · '+esc(x.tier.name)+' · '+x.skill+'점</summary>'+x.cards.map(function(c){return '<div class="vs-row"><div><b>'+esc(c.name)+'</b> <span class="vs-sub">'+esc(c.date)+'</span></div><div class="vs-r">'+c.upPct+'%'+(c.hit==null?'':c.hit?' · 올랐어요':' · 내렸어요')+'</div></div>';}).join('')+'</details>';}).join(''):'';
+  $('vs-c-board-top').innerHTML='<h2>시즌 순위표 <small>판단 점수 · 닉네임을 공개한 사람만</small></h2><div class="card vs-card">'+(lb||'<p class="vs-empty">아직 순위표에 오른 사람이 없어요. 카드 3장을 내고 닉네임을 공개하면 올라가요.</p>')+nick+'<p class="vs-sub" style="padding:0 0 10px">'+tierLine+'. 시즌 중에는 다른 사람의 종목이 보이지 않아요.</p></div>'+shown;
   // My account: holdings, cash, orders.
   var mine='';
   if(me){
@@ -118,7 +128,7 @@ const SCRIPT = `<script>
   if(t.dataset.cancel){t.disabled=true;G.call('POST','/contest/orders/'+t.dataset.cancel+'/cancel').then(function(r){toast(r.error?r.message:'주문을 취소했어요.');load();});}
  });
  document.addEventListener('input',function(e){if(e.target.name==='upPct'){var o=e.target.parentNode.querySelector('output');if(o)o.textContent=e.target.value+'%';}});
- document.addEventListener('submit',function(e){var f=e.target.closest('[data-form]');if(!f)return;e.preventDefault();
+ document.addEventListener('submit',function(e){var n=e.target.closest('#vs-nick');if(n){e.preventDefault();G.call('POST','/contest/profile',{nickname:n.nickname.value.trim(),public:n.public.checked}).then(function(r){toast(r.error?r.message:'저장했어요.');if(!r.error)load();});return;}var f=e.target.closest('[data-form]');if(!f)return;e.preventDefault();
   var btn=f.querySelector('[type=submit]');btn.disabled=true;
   G.call('POST','/contest/orders',{side:'BUY',symbol:f.dataset.form,amount:Number(f.amount.value),upPct:Number(f.upPct.value),invalidation:f.invalidation.value?Number(f.invalidation.value):null,reason:f.reason.value}).then(function(r){
    btn.disabled=false;if(r.error){toast(r.message);return;}toast(r.fillDate+' 종가로 사요. 위원회가 본 확률을 열었어요.');open=null;load();});

@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { AnalystCall } from './analysts.js';
 import {
   benchmarkSide, committeeSide, committeeTarget, CONTEST_START_KRW, expectedFillDate, fillIndex, liveCalls, playerSide, ranking, review, seasonFile, weekdaysLeft,
-  type CommitteeEntry, type LiveCall, type Order, type SeasonFile,
+  tierOf, cleanNickname, type CommitteeEntry, type LiveCall, type Order, type SeasonFile,
 } from './contest.js';
 
 const live = (symbol: string, upPct: number): LiveCall => ({ symbol, name: symbol + '사', upPct, baseDate: '2026-10-01', close: 100 });
@@ -118,4 +118,12 @@ test('season file: sessions of the month, the last decision before it, closes pe
   assert.deepEqual(f.closes.A, [10, 11]);
   assert.equal(f.names.A, '에이');
   assert.equal(f.closed, false);
+});
+
+test('tiers by judgment score after three cards; nicknames that read as contacts are refused (G-251)', () => {
+  const cards = (n: number) => Array.from({ length: n }, () => ({}) as never);
+  assert.equal(tierOf({ skill: 50, cards: cards(2) }).name, '배치 중');
+  assert.deepEqual([35, 20, 10, 0, -5].map((k) => tierOf({ skill: k, cards: cards(3) }).name), ['다이아', '플래티넘', '골드', '실버', '브론즈']);
+  assert.equal(cleanNickname(' 해시계_1 '), '해시계_1');
+  for (const bad of ['a', '카톡주세요', 'open chat', '010-1234', 'tel1234567', 'GNOMON운영']) assert.equal(cleanNickname(bad), null, bad);
 });

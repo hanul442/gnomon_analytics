@@ -14,3 +14,12 @@ CREATE TABLE contest_orders (
   cancelled_at TEXT
 );
 CREATE INDEX contest_orders_season ON contest_orders (season, user_id);
+
+-- G-251: a reader who wants to appear on the season leaderboard picks a nickname; nothing else about them is shown.
+CREATE TABLE contest_profiles (
+  user_id TEXT PRIMARY KEY,
+  nickname TEXT NOT NULL,
+  public INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX contest_profiles_nick ON contest_profiles (nickname COLLATE NOCASE);

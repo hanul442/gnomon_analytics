@@ -1,4 +1,4 @@
-import { benchmarkSide, changeFrom, CLOSE_HHMM, COMMITTEE_MIN_UP, committeeSide, CONTEST_METHOD, CONTEST_START_KRW, expectedFillDate, fillIndex, MAX_HOLDINGS, MAX_ORDER_KRW, MAX_WEIGHT, MIN_ORDER_KRW, playerSide, RANK_MIN_CARDS, ranking as contestRanking, review as contestReview, seasonOf as contestSeasonOf, weekdaysLeft, type Order as ContestOrder, type SeasonFile, type Side as ContestSide, type ContestIndex } from '../analysis/contest.js';
+import { benchmarkSide, changeFrom, CLOSE_HHMM, COMMITTEE_MIN_UP, committeeSide, CONTEST_METHOD, CONTEST_START_KRW, expectedFillDate, fillIndex, MAX_HOLDINGS, MAX_ORDER_KRW, MAX_WEIGHT, MIN_ORDER_KRW, playerSide, RANK_MIN_CARDS, ranking as contestRanking, tierOf, TIERS, cleanNickname, review as contestReview, seasonOf as contestSeasonOf, weekdaysLeft, type Order as ContestOrder, type SeasonFile, type Side as ContestSide, type ContestIndex } from '../analysis/contest.js';
 import { invalidationOf } from '../analysis/analysts.js';
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
 import { fetchWorldBars, parseWorldQuote, US_CODE, usTicker, worldQuoteUrl } from '../sources/naverWorld.js';
@@ -539,15 +539,15 @@ route('GET', '/me/export', async ({ req, env, now }) => {
   const u = await authed(req, env, now), db = env.DB;
   const all = (t: string) => db.prepare(`SELECT * FROM ${t} WHERE user_id = ?`).bind(u.id).all().then((r) => r.results);
   const mailLog = await db.prepare('SELECT kind, subject, status, error, created_at FROM mail_log WHERE user_id = ? ORDER BY id').bind(u.id).all().then((r) => r.results);
-  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings, contestOrders] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'custom_experts', 'price_alerts', 'notify_prefs', 'user_settings', 'contest_orders'].map(all));
-  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings, contestOrders, mailLog };
+  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings, contestOrders, contestProfile] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'custom_experts', 'price_alerts', 'notify_prefs', 'user_settings', 'contest_orders', 'contest_profiles'].map(all));
+  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings, contestOrders, contestProfile, mailLog };
 });
 
 route('POST', '/me/delete', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   if (b.confirm !== '삭제') fail(400, 'CONFIRM', "확인 문구 '삭제'를 적어 주세요.");
   const db = env.DB;
-  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'custom_experts', 'push_subs', 'notify_prefs', 'price_alerts', 'user_settings', 'contest_orders', 'mail_log', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
+  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'custom_experts', 'push_subs', 'notify_prefs', 'price_alerts', 'user_settings', 'contest_orders', 'contest_profiles', 'mail_log', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
     db.prepare('DELETE FROM login_tokens WHERE email = ?').bind(u.email), db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)]);
   return { ok: true };
 });
@@ -1079,6 +1079,15 @@ route('GET', '/contest', async ({ req, env, deps, now }) => {
   const committee = committeeSide(file), bench = benchmarkSide(file);
   const players = [...byUser].map(([id, os]) => ({ id, side: playerSide(file, os).side }));
   const rank = contestRanking(players, committee);
+  // G-251: only readers who chose a public nickname are listed; nobody's holdings or account during a season.
+  const profiles = new Map((await env.DB.prepare('SELECT user_id, nickname, public FROM contest_profiles').all<{ user_id: string; nickname: string; public: number }>()).results.map((p) => [p.user_id, { nickname: p.nickname, public: !!p.public }]));
+  const sideOf = new Map(players.map((p) => [p.id, p.side]));
+  const listed = rank.ranked.filter((r) => profiles.get(r.id)?.public);
+  const closedSeason = file.closed || want < index!.current;
+  const leaderboard = listed.slice(0, 20).map((r) => ({ rank: r.rank, nickname: profiles.get(r.id)!.nickname, tier: tierOf(sideOf.get(r.id)!), skill: r.skill, cards: sideOf.get(r.id)!.cards.length, me: r.id === u?.id }));
+  // After the season: the top listed players' cards (stock, date, chance, outcome), without their written reasons.
+  const shown = closedSeason ? listed.slice(0, 10).map((r) => ({ rank: r.rank, nickname: profiles.get(r.id)!.nickname, tier: tierOf(sideOf.get(r.id)!), skill: r.skill,
+    cards: sideOf.get(r.id)!.cards.map((c) => ({ symbol: c.symbol, name: c.name, date: c.date, upPct: c.upPct, hit: c.hit })) })) : [];
   const current = want === index!.current;
   const mine = u ? byUser.get(u.id) ?? [] : [];
   const revealed = new Set(mine.filter((o) => o.side === 'BUY' && !o.cancelled).map((o) => o.symbol));
@@ -1094,16 +1103,19 @@ route('GET', '/contest', async ({ req, env, deps, now }) => {
       orders: mine.map((o) => ({ id: o.id, side: o.side, symbol: o.symbol, name: file.names[o.symbol] ?? index!.live.find((l) => l.symbol === o.symbol)?.name ?? o.symbol, amount: o.amount, upPct: o.upPct, createdAt: o.createdAt, ...status.get(o.id) })).reverse(),
       review: contestReview(side),
       rank: rank.ranked.find((x) => x.id === u.id)?.rank ?? null,
+      tier: tierOf(side),
+      profile: profiles.get(u.id) ?? null,
     };
   }
   return {
-    season: want, current: index!.current, seasons: index!.seasons, closed: file.closed || want < index!.current, asOf: file.sessions.at(-1) ?? null,
+    season: want, current: index!.current, seasons: index!.seasons, closed: closedSeason, asOf: file.sessions.at(-1) ?? null,
     sessions: file.sessions.length, left: current && file.sessions.length ? weekdaysLeft(file.sessions.at(-1)!) : current ? null : 0,
     rules: { start: CONTEST_START_KRW, maxWeight: MAX_WEIGHT, maxHoldings: MAX_HOLDINGS, minOrder: MIN_ORDER_KRW, rankMinCards: RANK_MIN_CARDS, committeeMinUp: COMMITTEE_MIN_UP, closeAt: CLOSE_HHMM },
     committee: sideView(committee), benchmark: sideView(bench),
     // The board to buy from (this season only). The committee's number shows once the reader has filed a card on it.
     board: current ? index!.live.map((l) => ({ symbol: l.symbol, name: l.name, close: l.close, held: held.has(l.symbol), ...(revealed.has(l.symbol) ? { upPct: l.upPct } : {}) })) : [],
-    players: rank.n, entrants: byUser.size, committeeRank: rank.committeeRank, me,
+    players: rank.n, entrants: byUser.size, committeeRank: rank.committeeRank, committeeTier: tierOf(committee), leaderboard, shown,
+    tiers: TIERS.map((t) => ({ name: t.name, min: Number.isFinite(t.min) ? t.min : null })), me,
   };
 });
 
@@ -1139,6 +1151,17 @@ route('POST', '/contest/orders', async ({ req, env, deps, now }) => {
   const row = await db.prepare('INSERT INTO contest_orders (user_id, season, side, symbol, amount, up_pct, invalidation, reason, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id')
     .bind(u.id, season, side, symbol, amount, upPct, invalidation, side === 'BUY' ? str(b.reason, 80) : '', iso(now)).first<{ id: number }>();
   return { id: row?.id, season, fillDate };
+});
+
+route('POST', '/contest/profile', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req), db = env.DB;
+  const show = b.public === true;
+  if (!show && !b.nickname) { await db.prepare('DELETE FROM contest_profiles WHERE user_id = ?').bind(u.id).run(); return { ok: true, profile: null }; }
+  const nickname = cleanNickname(b.nickname) ?? fail(400, 'BAD_NICKNAME', '닉네임은 한글·영문·숫자·_ 2~12자로 적어 주세요. 연락처나 대화방을 떠올리게 하는 말은 쓸 수 없어요.');
+  const taken = await db.prepare('SELECT user_id FROM contest_profiles WHERE nickname = ? COLLATE NOCASE AND user_id != ?').bind(nickname, u.id).first();
+  if (taken) fail(409, 'NICK_TAKEN', '다른 사람이 쓰는 닉네임이에요.');
+  await db.prepare('INSERT INTO contest_profiles (user_id, nickname, public, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET nickname = excluded.nickname, public = excluded.public, updated_at = excluded.updated_at').bind(u.id, nickname, show ? 1 : 0, iso(now)).run();
+  return { ok: true, profile: { nickname, public: show } };
 });
 
 route('POST', '/contest/orders/(\\d+)/cancel', async ({ req, env, deps, now, params }) => {
