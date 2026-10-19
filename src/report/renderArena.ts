@@ -2,7 +2,7 @@
 // with equity sparklines, each strategy's current signal gauge, and the
 // experiment ledger. Styled after the mockup's Lab screen (champion race,
 // Monte Carlo, experiment ledger).
-import { smoothD } from './chartLook.js';
+import { multiLine, pnlLine } from './kit/stock.js';
 
 import { ARENA_COST, type ArenaResult, type StrategyResult } from '../analysis/strategies.js';
 import { PAPER_START_KRW, type PaperBook } from '../analysis/paper.js';
@@ -19,12 +19,26 @@ const sh = (v: number | null) => (v === null ? '없음' : v.toFixed(2));
 /** Colour only when the gauge label itself says 강세 or 약세. */
 const sigTone = (v: number | null) => (v === null ? '' : v >= 0.3 ? 'up' : v <= -0.3 ? 'down' : '');
 
-function equitySpark(values: readonly number[], label: string): string {
-  if (values.length < 2) return '';
-  const w = 140, h = 40, lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1;
-  const pts = values.map((v, i) => `${((i / (values.length - 1)) * w).toFixed(1)},${(h - 3 - ((v - lo) / span) * (h - 6)).toFixed(1)}`).join(' ');
-  const up = values.at(-1)! >= 1;
-  return `<svg viewBox="0 0 ${w} ${h}" class="spark" role="img" aria-label="${esc(label)}"><line x1="0" x2="${w}" y1="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" y2="${(h - 3 - ((1 - lo) / span) * (h - 6)).toFixed(1)}" stroke="#cdd7e4" stroke-dasharray="2 3"/><path fill="none" stroke="${up ? '#f04452' : '#3182f6'}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="${smoothD(pts)}"/></svg>`;
+/** G-256 (Bklit profit-loss line): the curve is red above the start (1) and blue below it. */
+const equitySpark = (values: readonly number[], label: string): string => pnlLine(values, label);
+
+/** Approximate month of each equity point (points are evenly spaced sessions from `from` to `to`). */
+function pointMonths(n: number, from: string, to: string): string[] {
+  const a = Date.parse(`${from}T00:00:00Z`), b = Date.parse(`${to}T00:00:00Z`);
+  return Array.from({ length: n }, (_, i) => new Date(a + ((b - a) * i) / Math.max(1, n - 1)).toISOString().slice(2, 7).replace('-', '.'));
+}
+
+const LINE_COLORS = ['var(--accent)', '#9b6cf0', '#e8930c'];
+
+/** G-256 (Bklit line chart): the top three strategies against buy-and-hold, as % from the start, with a crosshair. */
+function strategyLines(a: ArenaResult): string {
+  const top = a.results.filter((r) => r.key !== 'hold' && r.equity.length >= 2).sort((x, y) => x.rank - y.rank).slice(0, 3);
+  const hold = a.results.find((r) => r.key === 'hold');
+  if (!top.length || !hold || hold.equity.length < 2) return '';
+  const n = Math.min(hold.equity.length, ...top.map((r) => r.equity.length));
+  const series = [...top.map((r, i) => ({ name: r.name, color: LINE_COLORS[i]!, values: r.equity.slice(-n).map((v) => (v - 1) * 100) })), { name: '매수 후 보유', color: 'var(--muted)', dash: true, values: hold.equity.slice(-n).map((v) => (v - 1) * 100) }];
+  const chart = multiLine(series, { label: `상위 전략 ${top.length}개와 매수 후 보유의 누적 수익 곡선`, x: pointMonths(n, a.from, a.sessionDate), zero: 0 });
+  return chart ? `<div class="card kit-lc-card" style="margin-top:14px"><div class="head"><h2>전략별 수익 곡선</h2><span class="sub small">시작 0% 기준 · 매수 후 보유와 비교</span></div>${chart}<p class="fine">선을 누르거나 끌면 그 시점의 전략별 값이 나와요. 날짜는 대략이에요. ${esc(SIM_NOTE)}</p></div>` : '';
 }
 
 const CROWN = '<svg viewBox="0 0 24 24" aria-hidden="true" class="crown"><path d="M3 18h18l-1.5-9-4.5 4-3-7-3 7-4.5-4z" fill="currentColor"/></svg>';
@@ -63,7 +77,7 @@ ${equitySpark(r.equity, `${r.name} 누적 수익 곡선`)}
 <div class="race-num rn-total"><b class="${tone(r.totalReturn)}">${pct(r.totalReturn)}</b><span class="muted small">전체</span></div>
 <div class="race-num"><b class="${tone(r.oosReturn)}">${pct(r.oosReturn)}</b><span class="muted small">검증</span></div>
 <div class="race-num rn-sharpe"><b>${sh(r.oosSharpe)}</b><span class="muted small">샤프</span></div>
-<div class="race-sig">${stancePill(r)}${signalBadge(r)}${r.key === 'hold' ? '' : `<a href="#tab-chart" class="see-chart" data-show-strategy="${esc(r.key)}">매매 시점 보기 ›</a>`}</div>${r.key === 'hold' ? '' : `<div class="race-why">${r.position && r.target !== null ? `<b>목표 ${won(r.target)}</b> · ` : ''}${esc(r.trigger)}</div>`}</summary><div class="race-detail"><p class="muted small">신호가 난 날의 종가 기준 · 최근 순 · ${r.trades}회</p>${r.tradeLog.length?`<div class="table-wrap"><table class="compact"><thead><tr><th>매수일</th><th class="num">매수가</th><th>매도일</th><th class="num">매도가</th><th class="num">수익</th></tr></thead><tbody>${[...r.tradeLog].reverse().map((t) => `<tr><td>${esc(t.entry)}</td><td class="num">${won(t.entryPrice)}</td><td>${t.exit ? esc(t.exit) : '<b>보유 중</b>'}</td><td class="num">${t.exitPrice === null ? '' : won(t.exitPrice)}</td><td class="num ${tone(t.ret)}">${pct(t.ret)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">매매 기록이 없어요.</p>'}</div></details>`);
+<div class="race-sig">${stancePill(r)}${signalBadge(r)}${r.key === 'hold' ? '' : `<a href="#tab-chart" class="see-chart" data-show-strategy="${esc(r.key)}">매매 시점 보기 ›</a>`}</div>${r.key === 'hold' ? '' : `<div class="race-why">${r.position && r.target !== null ? `<b>목표 ${won(r.target)}</b> · ` : ''}${esc(r.trigger)}</div>`}</summary><div class="race-detail">${pnlLine(r.equity, `${r.name} 누적 수익 곡선`, { w: 320, h: 64 }).replace('class="spark kit-pnl"', 'class="spark kit-pnl race-pnl"')}<p class="muted small">신호가 난 날의 종가 기준 · 최근 순 · ${r.trades}회</p>${r.tradeLog.length?`<div class="table-wrap"><table class="compact"><thead><tr><th>매수일</th><th class="num">매수가</th><th>매도일</th><th class="num">매도가</th><th class="num">수익</th></tr></thead><tbody>${[...r.tradeLog].reverse().map((t) => `<tr><td>${esc(t.entry)}</td><td class="num">${won(t.entryPrice)}</td><td>${t.exit ? esc(t.exit) : '<b>보유 중</b>'}</td><td class="num">${t.exitPrice === null ? '' : won(t.exitPrice)}</td><td class="num ${tone(t.ret)}">${pct(t.ret)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">매매 기록이 없어요.</p>'}</div></details>`);
   // G-172: the top three stay in view; the rest fold (eight rows made the tab very long on a phone).
   const rows = `${entries.slice(0, 3).join('')}${entries.length > 3 ? `<details class="race-more"><summary>전략 ${entries.length - 3}개 더 보기</summary>${entries.slice(3).join('')}</details>` : ''}`;
   const ledger = a.results.map((r) => `<tr><td class="nowrap">${r.rank}. ${esc(r.name)}</td><td class="num ${tone(r.totalReturn)}">${pct(r.totalReturn)}</td><td class="num">${r.cagr === null ? '없음' : pct(r.cagr)}</td><td class="num">${sh(r.sharpe)}</td><td class="num down">${pct(r.maxDrawdown)}</td>
@@ -72,6 +86,7 @@ ${equitySpark(r.equity, `${r.name} 누적 수익 곡선`)}
   return `<section class="block" id="arena"><div class="block-head"><h2>전략 대결</h2><span class="muted small">${esc(a.from)} ~ ${esc(a.sessionDate)}, 일봉 ${a.bars}개</span></div>
 <p class="muted small sim-note">${SIM_NOTE}</p>
 ${championCard(a)}
+${strategyLines(a)}
 <div class="card race" style="margin-top:14px"><div class="head"><h2>챔피언 레이스</h2><span class="sub small">검증 구간(${esc(a.oosFrom)}~) 샤프 순 · 지금 강세/약세</span></div>${rows}</div>
 <details class="card more" style="margin-top:14px"><summary>실험 기록 (전략별 성적표)</summary><div class="table-wrap"><table class="compact"><thead><tr><th>전략</th><th class="num">전체 수익</th><th class="num">연환산</th><th class="num">샤프</th><th class="num">최대 낙폭</th><th class="num">거래</th><th class="num">승률</th><th class="num">보유 비중</th><th class="num">검증 수익</th><th class="num">몬테카를로 5/50/95%</th></tr></thead><tbody>${ledger}</tbody></table></div></details>
 <p class="fine">BOT의 전략 규칙을 이 종목의 과거 일봉에 그대로 적용해 본 결과예요. 신호가 난 날의 다음 날부터 수익을 계산하고(미리 보기 없음), 왕복 거래 비용 ${(a.cost * 100).toFixed(2)}%를 빼요. 순위는 뒤쪽 30% 검증 구간의 샤프 비율로 매기고, 거래가 2번 미만이면 챔피언이 될 수 없어요. 몬테카를로는 실제 거래 수익을 무작위로 다시 뽑아 2,000번 돌린 결과예요. 과거 성적이 앞날을 보장하지 않고, 투자 권유가 아니에요.</p></section>`;

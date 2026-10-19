@@ -11,6 +11,7 @@ import { scenarioCheck, scenarioLayer } from './scenarioChart.js';
 import type { DailyReport } from './dailyReport.js';
 import { esc } from './html.js';
 import { fadeGrad, gradId, smoothD } from './chartLook.js';
+import { dailyCalendar } from './kit/stock.js';
 import { currency, won, tone, pct as fmtPct } from './format.js';
 const pct = (v: number | null, digits = 2) => fmtPct(v, digits, '없음');
 
@@ -140,10 +141,12 @@ export function latestLists(report: DailyReport): string {
   const news = (report.news?.clusters ?? []).slice(0, 3);
   const IMP = { HIGH: '중요', MEDIUM: '보통', LOW: '참고' } as const;
   // G-244: news only, three of them; filings are on 뉴스·공시.
+  // G-256 (Bklit heatmap, calendar): the last year's daily moves follow the news.
   return `<div>
 <section class="block"><div class="block-head"><h2>최신 뉴스</h2><a href="#tab-news" class="more-link">전체 보기 ›</a></div><div class="card list" data-slot="homeNews"${news.length ? '' : ' data-empty'}>
 ${news.length ? news.map((c) => `<div class="row-item"><span class="badge b-${c.importance}">${IMP[c.importance]}</span><div class="ri-main"><a href="${esc(c.url)}" rel="noopener" target="_blank">${esc(c.title)}</a><div class="muted small">${esc(c.publisher)} ${esc(kstTime(c.firstAt))}${c.articles.length > 1 ? `  같은 내용 ${c.articles.length}건` : ''}</div></div></div>`).join('') : '<p class="empty">최신 뉴스를 불러오고 있어요.</p>'}
 </div></section>
+${dailyCalendar(report.recentBars ?? [])}
 </div>`;
 }
 

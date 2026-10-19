@@ -8,6 +8,7 @@ import type { DailyReport } from './dailyReport.js';
 import { ANALYSTS, committeeConsensus } from '../analysis/analysts.js';
 import { esc } from './html.js';
 import { won } from './format.js';
+import { ringChart } from './kit/stock.js';
 
 
 export type Faction = 'ai' | 'desk' | 'strategy' | 'indicator';
@@ -179,5 +180,12 @@ export function consensusNote(report: DailyReport): string {
   const k = committeeConsensus(c?.analysts ?? [], report.market?.analystBoard ?? []);
   if (!k) return '';
   const locked = c?.lockedAnalysts?.length ?? 0;
-  return `<p class="pl-consensus"><b>위원 ${k.n}명 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b> <span class="muted small">${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>`;
+  // G-256 (Bklit ring chart): the council's split as concentric rings, the pooled chance in the middle.
+  const as = c?.analysts ?? [], count = (s: string) => as.filter((a) => a.stance === s).length, n = as.length || 1;
+  const ring = ringChart([
+    { label: '강세 위원', value: count('BULLISH') / n, color: '#f04452', text: `${count('BULLISH')}명` },
+    { label: '중립 위원', value: count('NEUTRAL') / n, color: 'var(--muted)', text: `${count('NEUTRAL')}명` },
+    { label: '약세 위원', value: count('BEARISH') / n, color: '#3182f6', text: `${count('BEARISH')}명` },
+  ], { label: `위원 ${as.length}명 중 강세 ${count('BULLISH')}명, 중립 ${count('NEUTRAL')}명, 약세 ${count('BEARISH')}명. 높을 확률 약 ${k.upPct}%`, big: `${k.upPct}%`, small: '높을 확률', cls: 'pl-ring' });
+  return `${ring}<p class="pl-consensus"><b>위원 ${k.n}명 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b> <span class="muted small">${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>`;
 }
