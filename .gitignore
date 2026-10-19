@@ -5,3 +5,4 @@ site/
 
 test-artifacts/
 .fetch-cache/
+.cache/
