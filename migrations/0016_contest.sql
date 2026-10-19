@@ -1,4 +1,4 @@
--- G-250: the mock-trading contest against the AI committee (나 vs 위원회). Orders and their judgment cards only;
+-- G-251: the mock-trading contest against the AI committee (나 vs 위원회). Orders and their judgment cards only;
 -- fills, accounts and scores are replayed from the published season file, so nothing here is ever recomputed.
 CREATE TABLE contest_orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

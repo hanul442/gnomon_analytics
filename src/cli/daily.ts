@@ -896,7 +896,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const issueChanges = new Map<string, number | null>([...home.map((e) => [e.symbol, e.report?.price?.changePct ?? null] as const), ...lite.filter((r) => r.changePct != null).map((r) => [r.symbol, r.changePct] as const)]);
   await writeFile(join(siteDir, 'news-issues.json'), JSON.stringify(rankNewsIssues(newsArticles, { now: new Date(), names: issueNames, changes: issueChanges })));
   await writeFile(join(siteDir, 'issues.html'), renderNewsIssuesPage());
-  // G-250: the contest against the committee (나 vs 위원회): the committee's decision log and the season files.
+  // G-251: the contest against the committee (나 vs 위원회): the committee's decision log and the season files.
   await updateContest(root, siteDir, extras.now ?? new Date(), issueNames);
   await writeFile(join(siteDir, 'vs.html'), renderVsPage());
   await writeFile(join(siteDir, 'signals.html'), renderSignalsPage());

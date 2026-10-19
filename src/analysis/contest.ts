@@ -1,4 +1,4 @@
-// Mock-trading contest against the AI committee (G-250, docs/DESIGN.md "나 vs 위원회"). One season is a KST
+// Mock-trading contest against the AI committee (G-251, docs/DESIGN.md "나 vs 위원회"). One season is a KST
 // month. Everyone starts with the same virtual 10M KRW, long or cash only, at most 5 stocks and 30% in one,
 // in the stocks the committee is judging. Every buy carries a judgment card ("chance the season ends above my
 // price") scored the way the committee's calls are (Brier), and the ranking is by that score, not by return.

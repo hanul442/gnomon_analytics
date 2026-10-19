@@ -1042,7 +1042,7 @@ route('POST', '/alerts/price/(\\d+)/delete', async ({ req, env, now, params }) =
   return { ok: true };
 });
 
-// G-250: the mock-trading contest against the AI committee (나 vs 위원회). Orders live here; the season file the
+// G-251: the mock-trading contest against the AI committee (나 vs 위원회). Orders live here; the season file the
 // daily build publishes (contest/<season>.json) has the sessions, closes and the committee's log, and every
 // account, fill and score is replayed from the two (analysis/contest.ts). No real money, no AI view on a trade.
 const contestCache = new Map<string, { at: number; value: Promise<unknown> }>();

@@ -1,4 +1,4 @@
-// Contest data for the daily build (G-250): logs the committee's decision after each settled close (as made,
+// Contest data for the daily build (G-251): logs the committee's decision after each settled close (as made,
 // never revised) and publishes the season files the API and vs.html read.
 
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';

@@ -1,4 +1,4 @@
-// 나 vs 위원회 (G-250): one page for the things a reader does against the AI committee. The mock-trading contest
+// 나 vs 위원회 (G-251): one page for the things a reader does against the AI committee. The mock-trading contest
 // is its first section (#vs-contest); other sections (the chart drawing review) join through `sections`.
 // The contest reads GET /contest and is replayed on the API from the published season file (analysis/contest.ts).
 // Educational: virtual money, ranking by judgment score, no AI comment on anyone's trades.

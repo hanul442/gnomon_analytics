@@ -8,7 +8,7 @@ import { SAMPLE_XML, zipOf } from '../sources/dartDocument.test.js';
 
 const SITE = 'https://hanul442.github.io/gnomon_analytics';
 
-/** G-250: what the daily build published for the contest; tests change it and move the clock past the 5-minute cache. */
+/** G-251: what the daily build published for the contest; tests change it and move the clock past the 5-minute cache. */
 const board = [{ symbol: '000660', name: 'SK하이닉스', upPct: 70, baseDate: '2026-10-01', close: 100 }, { symbol: '005930', name: '삼성전자', upPct: 40, baseDate: '2026-10-01', close: 50 }];
 const contest = {
   index: { method: 'gnm-contest-v1', current: '2026-10', seasons: ['2026-10'], asOf: '2026-10-02', live: board, target: ['000660'] },
@@ -911,7 +911,7 @@ test('plan checks (G-215): every server gate answers by the permission table for
   }
 });
 
-test('contest (G-250): cards required, the committee number shows after my card, fills at the next close, cancel only while pending', async () => {
+test('contest (G-251): cards required, the committee number shows after my card, fills at the next close, cancel only while pending', async () => {
   const t = setup();
   const out = await t.call('GET', '/contest');
   assert.equal(out.status, 200, JSON.stringify(out.body));
