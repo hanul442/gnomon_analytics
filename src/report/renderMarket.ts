@@ -10,6 +10,7 @@ import type { FlowSection, MarketSection } from './marketSection.js';
 import type { FullStatements } from '../sources/dartStatements.js';
 import { healthInfographic, quarterBars, statementChart, statementsCard } from './infographics.js';
 import { esc } from './html.js';
+import { kmNotchArc, kmStatArea } from './kit/market.js';
 import { won, tone, pct as fmtPct, bigMoney, currency, financeScale } from './format.js';
 const pct = (v: number | null, digits = 1) => fmtPct(v, digits, '없음');
 
@@ -36,21 +37,16 @@ export const FLOW_COLORS = { foreign: '#00968a', institution: '#7a4fb3', individ
 const GAUGE_COLORS = ['#1d4fa3', '#3b7be0', '#8fb3ec', '#c4cbc9', '#f0a0a3', '#e5484d', '#a8262b'];
 const BOUNDS = [-1, -0.6, -0.3, -0.1, 0.1, 0.3, 0.6, 1];
 
-/** Compact semicircle gauge; the needle settles from neutral like the main one. */
+/** Compact semicircle gauge in Bklit's notched look (G-256); the needle settles from neutral like the main one. */
 export function miniGauge(score: number | null, label: string): string {
   const cx = 60, cy = 56, r = 46;
   const angle = (s: number) => 180 - ((s + 1) / 2) * 180;
-  const pt = (deg: number, rad = r) => [cx + rad * Math.cos((deg * Math.PI) / 180), cy - rad * Math.sin((deg * Math.PI) / 180)] as const;
-  const arcs = GAUGE_COLORS.map((color, i) => {
-    const [x1, y1] = pt(angle(BOUNDS[i]!) - (i ? 1.5 : 0)), [x2, y2] = pt(angle(BOUNDS[i + 1]!) + (i < 6 ? 1.5 : 0));
-    const on = score !== null && score >= BOUNDS[i]! && (score < BOUNDS[i + 1]! || i === 6);
-    return `<path class="g-seg${on ? ' on' : ''}" style="color:${color}" d="M${x1.toFixed(1)} ${y1.toFixed(1)} A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}" stroke="${color}" stroke-width="8" fill="none"/>`;
-  }).join('');
+  const arcs = kmNotchArc(cx, cy, r - 6, r + 5, GAUGE_COLORS, BOUNDS, score);
   const needle = score === null
-    ? `<circle cx="${cx}" cy="${cy}" r="5" fill="#c4cbc9"/>`
+    ? `<circle cx="${cx}" cy="${cy}" r="5" style="fill:var(--line-strong)"/>`
     : (() => {
         const turn = (90 - angle(score)).toFixed(1);
-        return `<g class="needle" style="--r:${turn}deg;transform-origin:${cx}px ${cy}px" transform="rotate(${turn} ${cx} ${cy})"><path d="M${cx - 3} ${cy} L${cx} ${cy - (r - 14)} L${cx + 3} ${cy} Z" fill="#18201f"/><circle class="g-tip" cx="${cx}" cy="${cy - (r - 14)}" r="3"/></g><circle class="g-hub" cx="${cx}" cy="${cy}" r="5" fill="#18201f"/>`;
+        return `<g class="needle" style="--r:${turn}deg;transform-origin:${cx}px ${cy}px" transform="rotate(${turn} ${cx} ${cy})"><path d="M${cx - 3} ${cy} L${cx} ${cy - (r - 14)} L${cx + 3} ${cy} Z" style="fill:var(--fg)"/><circle class="g-tip" cx="${cx}" cy="${cy - (r - 14)}" r="3"/></g><circle class="g-hub" cx="${cx}" cy="${cy}" r="5" style="fill:var(--fg)"/>`;
       })();
   return `<svg viewBox="0 0 120 62" class="mini-gauge" role="img" aria-label="${esc(label)}">${arcs}${needle}</svg>`;
 }
@@ -435,7 +431,9 @@ export function fundamentalsPanel(market: MarketSection, close: number | null, n
     return `<td class="num"><span class="${tone(r.benchmark)}">${pct(r.benchmark)}</span><br><small class="${tone(diff)}">차이 ${diff === null ? '없음' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%p`}</small></td>`;
   }).join('')}</tr>`).join('');
   const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
-  const vs = bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
+  // G-256: each benchmark as a Bklit stat card (its last close, today's move, the last 60 closes as an area).
+  const stats = market.benchmarks.filter((b) => b.last !== null).map((b) => kmStatArea({ title: b.name, value: b.last, change: b.changePct, series: b.series?.length ? b.series.slice(-60) : b.spark.map((v, i) => [i === b.spark.length - 1 ? '마지막' : `${b.spark.length - 1 - i}거래일 전`, v] as const), digits: /^KOS/.test(b.symbol) || (b.last ?? 0) < 1000 ? 2 : 0 })).join('');
+  const vs = bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div>${stats ? `<div class="km-stats">${stats}</div>` : ''}<div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
 <p class="fine">차이는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 값이에요.</p></div>` : '';
   return `${healthInfographic(market, close)}${stockInfoCards(market, close, name, bars, st)}${vs}`;
 }
