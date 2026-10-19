@@ -296,7 +296,7 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
 }
 const ASK_ICON = '<path d="M5 5h14v10h-8l-4 4v-4H5z"/>';
 /**
- * G-247: one header block per screen (한서님 10/18 '바가 너무 많다'): the screen's name, then one row of text tabs whose
+ * G-262 (was G-247 before beta took that number): one header block per screen (한서님 10/18 '바가 너무 많다'): the screen's name, then one row of text tabs whose
  * underline is the chewy pill (G-189). On phones it replaces the top bar; it sits at the start of <main>.
  * `tabs` overrides the row (찾기 keeps its in-page market buttons); with neither a group nor `tabs` only the title shows.
  */
