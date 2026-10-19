@@ -62,4 +62,9 @@ html[data-theme=dark] .card{border-radius:24px}
    the 나 tab; the top bar only appears for a report's tabs, and for its name and price once the price scrolls away. */
 @media (max-width:820px){:root body .topbar .brand,:root body .topbar .top-links{display:none}:root body .topbar:not(.scrolled) .topbar-in{display:none}
 :root body .topbar:not(:has(>.chips)):not(.scrolled){display:none}:root body .topbar.scrolled .topbar-in{padding-left:16px}}
+/* G-259 (한서님 10/19 '무채색 ㄱ'): the dark theme loses its navy. Near-black ground, grey surfaces, no blue glow. */
+:root[data-theme=dark]{--page:#0F1012;--surface-solid:#1B1D21;--bar:#0B0C0E;--tip-bg:rgba(30,32,36,.95);--ink:#E6E8EB;--btn-fg:#111214;--on-accent:#111214;--seat-ring:#111214;
+  --page-grad:radial-gradient(900px 600px at 85% -20%,rgba(255,255,255,.07),transparent 60%),radial-gradient(800px 600px at -10% 30%,rgba(255,255,255,.035),transparent 60%)}
+:root[data-theme=dark] .topbar,:root[data-theme=dark] body .topbar{background:rgba(15,16,18,.86)}
+:root[data-theme=dark] .topbar>.chips:not(.analysis-tabs){background:linear-gradient(180deg,rgba(38,40,44,.92),rgba(20,21,24,.92))}
 `;
