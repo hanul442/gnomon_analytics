@@ -573,9 +573,9 @@ export const TOUR_JS = `
         ['#tab-news', '뉴스·공시', '제목으로 원문을 확인하고 더 보기로 나머지를 펼쳐요. 기업 이벤트와 테마 확장은 준비 중이에요.', 'news'],
       ],
       find: [
-        ['#search', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
+        ['#search|.bottom-nav .nav-field', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
         ['.mode-tabs', '모드 선택', '주식·ETF·코인·테마·공시를 바꿔 가며 보세요. 시장별로 지원되는 조건이 달라요.'],
-        ['#sc-filter-open', '필터 · AI 조건', '필터를 누르면 AI 조건(원하는 특징을 문장으로)과 직접 조건을 정하는 화면이 열려요. 결과 보기로 돌아와요.'],
+        ['#sc-filter-open|.bottom-nav [data-dock-filter]', '필터 · AI 조건', '필터를 누르면 AI 조건(원하는 특징을 문장으로)과 직접 조건을 정하는 화면이 열려요. 결과 보기로 돌아와요.'],
         ['#ai-build', 'AI 조건', '원하는 특징을 문장으로 적고 ✦를 누르세요. 실제 생성 대기에는 Thinking Orbs가 표시돼요.'],
         ['#sc-form', '검토·적용·저장', 'AI 제안을 검토해 적용한 뒤 조건을 직접 수정하고 저장하세요. 완료 안내가 나와야 저장된 상태예요. 오류면 다시 확인하세요.'],
       ],
@@ -585,13 +585,15 @@ export const TOUR_JS = `
     var key = 'gnm-tour-v243-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
     try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-' + kind) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
     if (seen && !forced) return;
-    var steps = STEPS[kind].filter(function (s) { var el = document.querySelector(s[0]); return el && (s[3] || el.getClientRects().length); });
+    // G-260: a step may name 'page part|bar part'; on phones the part in the bottom bar is used (and the bar shows its own row).
+    var pick = function (sel) { var xs = sel.split('|'); for (var k = 0; k < xs.length; k++) { var e = document.querySelector(xs[k]); if (e && /bottom-nav/.test(xs[k])) { var nv = e.closest('.bottom-nav'); if (nv && nv.hasAttribute('data-dock')) nv.classList.add('ctx'); } if (e && e.getClientRects().length) return e; } return document.querySelector(xs[0]); };
+    var steps = STEPS[kind].filter(function (s) { var el = pick(s[0]); return el && (s[3] || el.getClientRects().length); });
     if (!steps.length) return;
     var i = 0, hole, tip, focusBefore = document.activeElement, originalTab = document.querySelector('.chips [aria-selected=true]');
     var end = function () { try { localStorage.setItem(key, '1'); } catch (e) {} if (hole) hole.remove(); if (tip) tip.remove(); window.removeEventListener('resize', place); window.removeEventListener('scroll', place); window.removeEventListener('keydown', escapeTour); if (originalTab) { if (window.GNM_showTab) window.GNM_showTab(originalTab.getAttribute('aria-controls').replace('tab-','')); else originalTab.click(); } if (focusBefore && focusBefore.isConnected) focusBefore.focus({preventScroll:true}); };
     var escapeTour = function(e){if(e.key === 'Escape') end();};
     var place = function () {
-      var el = document.querySelector(steps[i][0]); if (!el) return;
+      var el = pick(steps[i][0]); if (!el) return;
       var r = el.getBoundingClientRect(), pad = 6;
       // G-196: moved with transform, not top/left, so the spotlight never counts as the page jumping (it was nearly all the layout shift on a first visit).
       // The first placement snaps (no fly-in from the corner); later steps glide.
@@ -602,7 +604,7 @@ export const TOUR_JS = `
       if (first) { void hole.offsetWidth; hole.dataset.on = '1'; hole.classList.remove('still'); tip.classList.remove('still'); }
     };
     var show = function () {
-      var s = steps[i]; if (s[3]) { if (window.GNM_showTab) window.GNM_showTab(s[3]); else { var tab = document.getElementById('t-' + s[3]); if (tab) tab.click(); } } var el = document.querySelector(s[0]);
+      var s = steps[i]; if (s[3]) { if (window.GNM_showTab) window.GNM_showTab(s[3]); else { var tab = document.getElementById('t-' + s[3]); if (tab) tab.click(); } } var el = pick(s[0]);
       el.scrollIntoView({ block: 'center' });
       tip.innerHTML = '<div class="tr-n">' + (i + 1) + ' / ' + steps.length + '</div><b>' + s[1] + '</b><p>' + s[2] + '</p><div class="tr-b"><button type="button" data-t="x">그만 보기</button>' + (i ? '<button type="button" data-t="p">이전</button>' : '') + '<button type="button" data-t="n" class="tr-next">' + (i === steps.length - 1 ? '끝' : '다음') + '</button></div>';
       tip.querySelector('[data-t=n]').focus({preventScroll:true}); setTimeout(place, 60);

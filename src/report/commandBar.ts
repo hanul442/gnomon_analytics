@@ -73,6 +73,12 @@ html[data-theme=dark]{--glass-bg:linear-gradient(180deg,rgba(40,48,60,.82),rgba(
 .nav-seg a i{position:absolute;z-index:2;top:5px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#E5484D;color:#fff;font:800 10.5px/16px sans-serif;font-style:normal;text-align:center}
 .bottom-nav .nav-field{flex-direction:row;justify-content:flex-start;flex:1;min-width:0;height:50px;display:flex;align-items:center;gap:9px;padding:0 16px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--muted);font-size:13px;text-align:left;cursor:text}
 .nav-field svg{width:20px;height:20px}
+.nav-round .nav-n{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--fg);color:var(--page);font:800 10.5px/16px sans-serif;font-style:normal;text-align:center}
+body:has(.bottom-nav[data-dock=find]) .find-head{display:none}
+body.dock-searching .find-head{display:block!important;position:fixed;z-index:45;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));margin:0;animation:nav-up .3s var(--ease-out)}
+body.dock-searching .find-head .search-results{max-height:calc(100dvh - 180px);overflow:auto}
+body.dock-searching .find-head .search-box,body.dock-searching .find-head .search-results{background:var(--surface-solid,#fff)}
+body.dock-searching::before{content:"";position:fixed;inset:0;z-index:44;background:rgba(10,12,16,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:nav-up .25s}
 .bottom-nav .nav-ask{flex-direction:row;justify-content:flex-start;flex:1;min-width:0;height:50px;display:flex;align-items:center;gap:9px;padding:0 5px 0 16px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--muted);font-size:13px;text-align:left;cursor:pointer}
 .nav-ask svg{width:20px;height:20px}.nav-ask span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav-ask i{flex:0 0 40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--page);background:var(--fg)}.nav-ask i svg{width:19px;height:19px}
@@ -118,9 +124,18 @@ export const COMMAND_BAR_JS = `
   var back = nav.querySelector('.nav-back'); if (back) back.addEventListener('click', function () { clearTimeout(t); set(false); });
   nav.querySelectorAll('.nav-tabs a').forEach(function (a) { a.addEventListener('click', function (e) { if (a.getAttribute('aria-current') === 'page' && !nav.classList.contains('ctx')) { e.preventDefault(); set(true); } }); });
   var field = nav.querySelector('[data-dock-search]');
-  if (field) field.addEventListener('click', function () { var q = document.getElementById('q'); if (!q) { location.href = (document.body.getAttribute('data-base') || '') + 'screener.html#search'; return; } q.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' }); q.focus({ preventScroll: true }); });
+  // G-260: on phones 찾기's own search box hides; the bar's field opens it at the top of the screen.
+  var q = document.getElementById('q'), head = document.querySelector('.find-head');
+  var search = function () { if (!q) { location.href = (document.body.getAttribute('data-base') || '') + 'screener.html#search'; return; } document.body.classList.add('dock-searching'); q.focus(); };
+  if (field) field.addEventListener('click', search);
+  if (q && head && field) {
+    q.addEventListener('blur', function () { setTimeout(function () { if (!q.value && document.activeElement !== q) document.body.classList.remove('dock-searching'); }, 200); });
+    q.addEventListener('keydown', function (e) { if (e.key === 'Escape') { q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true })); q.blur(); document.body.classList.remove('dock-searching'); } });
+    if (location.hash === '#search') setTimeout(search, 300);
+  }
   var flt = nav.querySelector('[data-dock-filter]'), open = document.getElementById('sc-filter-open');
-  if (flt) { if (open) flt.addEventListener('click', function () { open.click(); }); else flt.remove(); }
+  // G-260: the filter count rides on the bar's filter button.
+  if (flt) { if (open) { flt.addEventListener('click', function () { open.click(); }); var n = document.getElementById('sc-filter-n'), badge = document.createElement('i'); badge.className = 'nav-n'; flt.appendChild(badge); var sync = function () { badge.textContent = n ? n.textContent : ''; badge.hidden = !badge.textContent; }; sync(); if (n && window.MutationObserver) new MutationObserver(sync).observe(n, { childList: true, characterData: true, subtree: true }); } else flt.remove(); }
   nav.querySelectorAll('[data-q]').forEach(function (b) { b.addEventListener('click', function () { var q = b.getAttribute('data-q'); setTimeout(function () { var box = document.getElementById('chat-q'); if (box) { box.value = q; box.dispatchEvent(new Event('input', { bubbles: true })); box.focus(); } }, 60); }); });
 })();
 (function () {
