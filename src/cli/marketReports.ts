@@ -17,6 +17,8 @@ import type { CoinRow } from './coins.js';
 import { fetchRss, googleNewsSearchUrl, GOOGLE_NEWS_SOURCE } from '../sources/news.js';
 import type { MarketNews } from '../report/marketReport.js';
 const json=async(path:string)=>JSON.parse(await readFile(path,'utf8').catch(()=> 'null'));
+/** G-256: the last 30 closes up to the report date, for the index card's area line. */
+const sparkOf=(bars:readonly {date:string;close:number}[],date:string):[string,number][]=>[...new Map(bars.filter(b=>b.date<=date&&Number.isFinite(b.close)&&b.close>0).map(b=>[b.date,b.close] as [string,number])).entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-30);
 export async function collectMarketGroups(root:string,date:string,period:Period,universe:readonly UniverseRow[]):Promise<MarketGroup[]> {
  const from=period==='weekly'?weekStart(date):date;
  const groups:MarketGroup[]=[];
@@ -24,6 +26,7 @@ export async function collectMarketGroups(root:string,date:string,period:Period,
   const rows=universe.filter(r=>r.market===market&&r.kind==='stock');
   const bars=await readLog<PriceBar>(join(root,'data','prices',`${market}.jsonl`)).catch(()=>[]);
   const index=periodAsset(market,name,bars,date,from,period);
+  if(index)index.spark=sparkOf(bars,date);
   const assets=index?[index]:[];
   const selected=[...rows].sort((a,b)=>(b.marketCap??0)-(a.marketCap??0)).slice(0,30);
   for(const row of selected){const page=await json(join(root,'site','s',`${row.symbol}.json`)); const history=page?.bars?.map((b:[string,number,number,number,number])=>({date:b[0],close:b[4]}))??await readLog<PriceBar>(join(root,'data','prices',`${row.symbol}.jsonl`)).catch(()=>[]); const asset=periodAsset(row.symbol,row.name,history,date,from,period);if(asset)assets.push(asset);}
@@ -32,7 +35,7 @@ export async function collectMarketGroups(root:string,date:string,period:Period,
  }
  for(const [id,name,file,folder] of [['M3','코인','coins.json','c'],['M4','ETF','etfs.json','s'],['M5','미국','usstocks.json','u']] as const){
   const list=await json(join(root,'site',file)); const rows:CoinRow[]=list?.rows??[]; const assets=[];
-  for(const row of [...rows].sort((a,b)=>(b[12]??0)-(a[12]??0))){const page=await json(join(root,'site',folder,`${row[0]}.json`)); const bars=page?.bars?.map((b:[string,number,number,number,number])=>({date:b[0],close:b[4]}))??[]; const asset=periodAsset(row[0],row[1],bars,date,from,period,row[12]);if(asset)assets.push(asset);}
+  for(const row of [...rows].sort((a,b)=>(b[12]??0)-(a[12]??0))){const page=await json(join(root,'site',folder,`${row[0]}.json`)); const bars=page?.bars?.map((b:[string,number,number,number,number])=>({date:b[0],close:b[4]}))??[]; const asset=periodAsset(row[0],row[1],bars,date,from,period,row[12]);if(asset&&(!assets.length||row[0]==='SPY'))asset.spark=sparkOf(bars,date);if(asset)assets.push(asset);}
   const signalCalcs=(await Promise.all(rows.map(async r=>(await json(join(root,'site',folder,r[0]+'.json')))?.calc as StockCalc|null))).filter((c):c is StockCalc=>!!c&&c.date<=date);
   groups.push({id,name,temperature:marketPulse(signalCalcs),source:id==='M5'?'네이버 해외 주식 일봉(달러, 미국 현지 날짜) · 시가총액 상위 종목 표본 · 지수 자료 없음':id==='M3'?'업비트 원화마켓 일봉 · 09:00 KST 경계 · 스냅샷 등락은 전일 종가(09:00 KST) 대비 · 거래대금만 24시간 기준':'네이버 금융 국내 상장 ETF 일봉 · 가격 수익률',universe:rows.length,assets,snapshotDate:list?.date??null,breadth:{up:rows.filter(r=>(r[5]??0)>0).length,down:rows.filter(r=>(r[5]??0)<0).length,flat:rows.filter(r=>r[5]===0).length}});
  }
