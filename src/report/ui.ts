@@ -230,7 +230,6 @@ export const MENU_FOOT: readonly [string, string][] = [['FAQ·1:1 문의', 'faq.
 export const TABS: readonly [string, string, string][] = [
   ['홈', 'index.html#top', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'],
   ['찾기', 'screener.html', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'],
-  ['내 종목', 'watch.html', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>'],
   ['위원회', 'reports.html', '<rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9.5 4h5v3h-5zM9 13.5l2 2 4-4"/>'],
   ['나', 'settings.html', '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>'],
 ];
@@ -240,15 +239,18 @@ export const TABS: readonly [string, string, string][] = [
  */
 export const MODE_GROUPS: readonly { key: string; label: string; modes: readonly [string, string][] }[] = [
   { key: 'find', label: '찾기', modes: [['주식', 'screener.html'], ['미국 주식', 'screener.html#us'], ['ETF', 'screener.html#etf'], ['코인', 'screener.html#coin'], ['테마', 'themes.html'], ['공시', 'signals.html']] },
-  { key: 'mine', label: '내 종목', modes: [['관심', 'watch.html'], ['알림', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html']] },
+  // G-255: 내 종목 is no longer a tab; its pages are 나's 내 기록 (관심 종목 itself lives on 홈).
+  { key: 'record', label: '내 기록', modes: [['알림함', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html']] },
   { key: 'committee', label: '위원회', modes: [['AI 리포트', 'reports.html'], ['성적표', 'scorecard.html'], ['시장 데일리', 'market-reports.html']] },
 ];
 /** Pages that belong to the 나 tab (account, money, help). */
 const ME_PAGES = ['account.html', 'pricing.html', 'login.html', 'onboarding.html', 'checkout.html', 'guide.html', 'faq.html', 'updates.html', 'survey.html', 'terms.html', 'privacy.html', 'hanul.html'];
 /** page file → the tab link (data-tab-link) it lights up. */
+const GROUP_TAB: Record<string, string> = { find: 'screener.html', committee: 'reports.html', record: 'settings.html' };
 const TAB_OF: Record<string, string> = Object.fromEntries([
-  ...MODE_GROUPS.flatMap((g) => g.modes.map(([, h]) => [h.split('#')[0], g.modes[0]![1]] as const)),
+  ...MODE_GROUPS.flatMap((g) => g.modes.map(([, h]) => [h.split('#')[0], GROUP_TAB[g.key] ?? g.modes[0]![1]] as const)),
   ...ME_PAGES.map((p) => [p, 'settings.html'] as const),
+  ['watch.html', 'top'] as const,
 ]);
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const SPARK_ICON = '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>';
@@ -293,6 +295,11 @@ export function menuHtml(base: string): { button: string; drawer: string } {
 /** G-245: the top of the 나 tab — the account row, the app install, the ops link for admins (filled by alpha.ts). */
 export function meHead(base: string): string {
   return `<div class="me-head"><a class="me-acct" href="${base}pricing.html" data-acct-tab="1"><span><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></span><i aria-hidden="true">›</i></a><button type="button" class="me-install" data-install hidden>그노몬 앱 설치<small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button><div id="sm-admin"></div></div>`;
+}
+/** G-255: 나's 내 기록 rows — what used to be the 내 종목 tab, one tap each. */
+export function meRecord(base: string): string {
+  const rows: readonly [string, string, string][] = [['관심 종목', 'watch.html', '☆를 누른 종목'], ['알림함', 'inbox.html', '가격·리포트·공시 알림'], ['내 리포트', 'myreports.html', '내가 요청한 리포트'], ['내 토론', 'mydebates.html', '위원회에 한 질문']];
+  return `<section class="card st-rows me-rec">${rows.map(([l, h, d]) => `<a href="${base}${h}"><span><b>${escM(l)}</b><small>${escM(d)}</small></span><i aria-hidden="true">›</i></a>`).join('')}</section>`;
 }
 /** G-245: the 나 tab's help rows (사용법 and what used to be the small links under the 전체 sheet). */
 export function meHelp(base: string): string {

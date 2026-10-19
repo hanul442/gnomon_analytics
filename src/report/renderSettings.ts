@@ -5,7 +5,7 @@
 
 import { esc } from './html.js';
 import { shell } from './renderHtml.js';
-import { meHead, meHelp } from './ui.js';
+import { meHead, meHelp, meRecord } from './ui.js';
 import { PERSONAS } from './persona.js';
 import { SECTORS } from './sectors.js';
 import { ASSETS, EXPLAIN, HORIZON, LEVEL } from './profile.js';
@@ -36,6 +36,8 @@ export function renderSettings(): string {
 .pf-state{font-size:13px;color:var(--muted);margin:10px 0 0}.pf-state:empty{display:none}.pf-links{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;margin-top:6px}
 </style><div class="pf">
 ${meHead('')}
+<h2 class="st-h" id="record">내 기록</h2>
+${meRecord('')}
 <nav class="st-nav" aria-label="설정 바로가기"><a href="#profile">내 투자 방식</a><a href="#committee">내 위원회</a><a href="#screen">화면</a><a href="#alerts">알림</a><a href="#account">계정</a><a href="#help">도움말</a></nav>
 <h2 class="st-h" id="profile">내 투자 방식</h2><p class="muted small">홈 화면, 종목 화면, AI 답변이 이 값을 따라요.</p><p class="pf-state" id="pf-state" aria-live="polite"></p>
 <section class="card" id="pf-form">
