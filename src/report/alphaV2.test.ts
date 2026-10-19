@@ -166,3 +166,11 @@ test('G-249: the scenario strip places the three ranges and today on one ruler',
  assert.ok(left('r-bear')<left('r-base')&&left('r-base')<left('r-bull'),'low to high');
  report.price=undefined as any;assert.equal(scenarioRail(report),'');
 });
+
+test('G-256: one stock in six parts, with 내 기록 and the old panels kept for links', async () => {
+  const { TABS, mineTab } = await import('./renderHtml.js');
+  assert.deepEqual(TABS.filter((t) => !t.ghost).map((t) => t.label), ['위원회', '차트', '뉴스', '공시', '기업', '내 기록']);
+  assert.deepEqual(TABS.filter((t) => t.ghost).map((t) => t.key), ['ai', 'technical']);
+  const mine = mineTab('../', '005930');
+  assert.ok(mine.includes('data-mine="005930"') && mine.includes('class="btn-primary mi-pa"') && mine.includes('href="../mydebates.html"'));
+});
