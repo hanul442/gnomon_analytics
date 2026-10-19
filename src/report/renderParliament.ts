@@ -187,5 +187,8 @@ export function consensusNote(report: DailyReport): string {
     { label: '중립 위원', value: count('NEUTRAL') / n, color: 'var(--muted)', text: `${count('NEUTRAL')}명` },
     { label: '약세 위원', value: count('BEARISH') / n, color: '#3182f6', text: `${count('BEARISH')}명` },
   ], { label: `위원 ${as.length}명 중 강세 ${count('BULLISH')}명, 중립 ${count('NEUTRAL')}명, 약세 ${count('BEARISH')}명. 높을 확률 약 ${k.upPct}%`, big: `${k.upPct}%`, small: '높을 확률', cls: 'pl-ring' });
-  return `${ring}<p class="pl-consensus"><b>위원 ${k.n}명 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b> <span class="muted small">${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>`;
+  // G-246: the statistical 80% range scored best in the hidden-future test, so it leads; the vote follows.
+  const f = report.market?.forecasts?.find((x) => x.horizon === 20);
+  const range = f ? `<b>20거래일 뒤 가격 범위(80%): ${won(f.p10)} ~ ${won(f.p90)}</b> <span class="muted small">과거 시험에서 열 번 중 여덟 번꼴로 이 안에 들었어요.</span><br>` : '';
+  return `<p class="pl-consensus">${range}<b>위원 ${k.n}명 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b> <span class="muted small">${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : k.prior ? '과거 데이터 시험(종목·날짜를 가린 1,000건)에서 순위를 잘 맞힌 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>${ring}`;
 }
