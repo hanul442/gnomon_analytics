@@ -15,7 +15,8 @@ import type { PriceBar } from '../types.js';
 import { readLog } from '../store/jsonlLog.js';
 import type { CoinRow } from './coins.js';
 import { fetchRss, googleNewsSearchUrl, GOOGLE_NEWS_SOURCE } from '../sources/news.js';
-import type { MarketNews } from '../report/marketReport.js';
+import type { MacroCard, MarketNews } from '../report/marketReport.js';
+import { MACRO_SERIES, type MacroPoint } from '../sources/fred.js';
 const json=async(path:string)=>JSON.parse(await readFile(path,'utf8').catch(()=> 'null'));
 /** G-258: the last 30 closes up to the report date, for the index card's area line. */
 const sparkOf=(bars:readonly {date:string;close:number}[],date:string):[string,number][]=>[...new Map(bars.filter(b=>b.date<=date&&Number.isFinite(b.close)&&b.close>0).map(b=>[b.date,b.close] as [string,number])).entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-30);
@@ -55,6 +56,12 @@ export async function collectMarketNews(date:string, options:{fetch?:typeof fetc
  }
  return out;
 }
+/** G-258: the FRED series the committee reads (US rates, the won, VIX) with their last 30 points, for the market page. */
+export async function macroCards(root:string,date:string):Promise<{macro?:MacroCard[]}>{
+ const cards:MacroCard[]=[];
+ for(const s of MACRO_SERIES){const xs=(await readLog<MacroPoint>(join(root,'data','macro',`${s.id}.jsonl`)).catch(()=>[])).filter(p=>p.date<=date&&Number.isFinite(p.value));const by=[...new Map(xs.map(p=>[p.date,p.value] as [string,number])).entries()].sort((a,b)=>a[0].localeCompare(b[0]));const last=by.at(-1);if(!last)continue;const prev=by.at(-21);cards.push({id:s.id,label:s.label,unit:s.unit,date:last[0],value:last[1],chg20:prev?last[1]-prev[1]:null,spark:by.slice(-30)});}
+ return cards.length?{macro:cards}:{};
+}
 export async function writeMarketReports(root:string, now:Date, universe:readonly UniverseRow[], apiKey?:string, injectedClient?:Anthropic, sharedBudget?:AiBudget, regenerate=process.env.MARKET_REGEN==='1', newsFetch?:typeof fetch):Promise<void>{
  const date=runDay(now).date, dir=join(root,'reports','market');await mkdir(dir,{recursive:true});
  const budget=sharedBudget??await AiBudget.load(root,now);
@@ -64,7 +71,7 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
   const done=old?.schema==='curia.market-report.v4'&&old.ai.status==='OK'&&!!(old.ai.council||old.ai.sealed);
   if(done&&!regenerate){await savePrivateMarketReport(file,old!);continue;}
   const news=await collectMarketNews(date,newsFetch?{fetch:newsFetch}:{});
-  const report:MarketReport={schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),...(news.length?{news}:{}),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
+  const report:MarketReport={schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),...await macroCards(root,date),...(news.length?{news}:{}),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
   // The committee's structure is checked strictly, so a regeneration gets up to three tries; each failure is logged (no secrets in it).
   const hasToday=report.groups.some(g=>g.assets.some(a=>a.date===date));
   for(let attempt=1;attempt<=(regenerate?3:2)&&report.ai.status!=='OK'&&(apiKey||injectedClient)&&hasToday&&budget.allows('market');attempt++){

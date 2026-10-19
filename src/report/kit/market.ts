@@ -118,6 +118,14 @@ export interface StatAreaInput {
   /** HTML under the area (already escaped). */
   foot?: string;
   href?: string;
+  /** G-258 stat-card-line: a thin line with today's dot, no fill (Bklit stat-card-line-01). */
+  line?: boolean;
+  /** Word under the big number (default 종가). */
+  label?: string;
+  /** Badge text and tone instead of the % change (e.g. a 20-session move in bp). */
+  badge?: { text: string; tone: string };
+  /** How the period under the line is described (default 거래일). */
+  unit?: string;
 }
 const fmtNum = (v: number, digits: number) => v.toLocaleString('ko-KR', { maximumFractionDigits: digits, minimumFractionDigits: Math.min(digits, 2) });
 /**
@@ -126,19 +134,20 @@ const fmtNum = (v: number, digits: number) => v.toLocaleString('ko-KR', { maximu
  */
 export function kmStatArea(i: StatAreaInput): string {
   const digits = i.digits ?? 2, t = toneOf(i.change);
-  const badge = i.change == null ? '<span class="km-badge">—</span>' : `<span class="km-badge ${t}">${i.change > 0 ? '▲' : i.change < 0 ? '▼' : ''} ${signed(i.change)}%</span>`;
+  const badge = i.badge ? `<span class="km-badge ${i.badge.tone}">${esc(i.badge.text)}</span>` : i.change == null ? '<span class="km-badge">—</span>' : `<span class="km-badge ${t}">${i.change > 0 ? '▲' : i.change < 0 ? '▼' : ''} ${signed(i.change)}%</span>`;
+  const lbl = esc(i.label ?? '종가');
   const s = (i.series ?? []).filter((p) => Number.isFinite(p[1]));
   let area = '';
   if (s.length >= 2) {
     const lo = Math.min(...s.map((p) => p[1])), hi = Math.max(...s.map((p) => p[1])), sp = hi - lo || 1, W = 200, H = 56;
     const pts = s.map((p, k) => [r1((k / (s.length - 1)) * W), r1(4 + (1 - (p[1] - lo) / sp) * (H - 8))] as const);
-    const trend = (s.at(-1)![1] / s[0]![1] - 1) * 100, color = trend > 0 ? UP : trend < 0 ? DOWN : 'var(--muted)', id = gradId('kma');
+    const trend = (s.at(-1)![1] / s[0]![1] - 1) * 100, color = i.badge ? (i.badge.tone === 'up' ? UP : i.badge.tone === 'down' ? DOWN : 'var(--muted)') : trend > 0 ? UP : trend < 0 ? DOWN : 'var(--muted)', id = gradId('kma');
     const line = smoothD(pts.map((p) => p.join(',')).join(' '));
     const data = s.map((p, k) => [p[0], p[1], pts[k]![0], pts[k]![1]]);
-    area = `<svg class="km-sa" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(`${i.title} 최근 ${s.length}거래일 ${signed(trend, 1)}%`)}" tabindex="0" data-km-spark="${esc(JSON.stringify(data))}" data-km-digits="${digits}"><defs>${fadeGrad(id, trend > 0 ? UP : trend < 0 ? DOWN : '#8b95a1', 0.32)}</defs><path class="km-sa-f" d="${line}L${W} ${H}L0 ${H}Z" fill="url(#${id})"/><path class="km-sa-l" d="${line}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg><small class="km-sa-n">최근 ${s.length}거래일 <span class="${toneOf(trend)}">${signed(trend, 1)}%</span></small>`;
+    area = `${i.line ? '<div class="km-sa-wrap">' : ''}<svg class="km-sa" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(`${i.title} 최근 ${s.length}거래일 ${signed(trend, 1)}%`)}" tabindex="0" data-km-spark="${esc(JSON.stringify(data))}" data-km-digits="${digits}"><defs>${fadeGrad(id, trend > 0 ? UP : trend < 0 ? DOWN : '#8b95a1', 0.32)}</defs>${i.line ? '' : `<path class="km-sa-f" d="${line}L${W} ${H}L0 ${H}Z" fill="url(#${id})"/>`}<path class="km-sa-l" d="${line}" fill="none" stroke="${color}" stroke-width="${i.line ? 1.6 : 2}" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>${i.line ? `<i class="km-ld" style="left:${(pts.at(-1)![0] / W * 100).toFixed(1)}%;top:${(pts.at(-1)![1] / H * 100).toFixed(1)}%;color:${color}" aria-hidden="true"></i></div>` : ''}<small class="km-sa-n">최근 ${s.length}${esc(i.unit ?? '거래일')} <span class="${toneOf(trend)}">${signed(trend, 1)}%</span></small>`;
   }
   const tag = i.href ? 'a' : 'div';
-  return `<${tag} class="card km-stat km-anim"${i.href ? ` href="${esc(i.href)}"` : ''}><div class="km-st-h"><span class="km-st-t">${esc(i.title)}${i.sub ? ` <small>${esc(i.sub)}</small>` : ''}</span>${badge}</div><div class="km-st-v"><b class="km-sv" data-v0="${i.value == null ? '—' : esc(fmtNum(i.value, digits))}">${i.value == null ? '—' : esc(fmtNum(i.value, digits))}</b><small class="km-sl" data-l0="종가">종가</small></div>${area}${i.foot ?? ''}</${tag}>`;
+  return `<${tag} class="card km-stat${i.line ? ' km-stat-line' : ''} km-anim"${i.href ? ` href="${esc(i.href)}"` : ''}><div class="km-st-h"><span class="km-st-t">${esc(i.title)}${i.sub ? ` <small>${esc(i.sub)}</small>` : ''}</span>${badge}</div><div class="km-st-v"><b class="km-sv" data-v0="${i.value == null ? '—' : esc(fmtNum(i.value, digits))}">${i.value == null ? '—' : esc(fmtNum(i.value, digits))}</b><small class="km-sl" data-l0="${lbl}">${lbl}</small></div>${area}${i.foot ?? ''}</${tag}>`;
 }
 
 // ---------------------------------------------------------------- choropleth-chart (a compact world map)
@@ -265,6 +274,7 @@ export const KIT_MARKET_CSS = `
 .km-stat{display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden;text-decoration:none;color:inherit;position:relative}a.km-stat:hover{border-color:var(--accent)}
 .km-st-h{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0}.km-st-t{font-size:13px;font-weight:700;color:var(--fg2);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.km-st-t small{font-weight:600;color:var(--muted)}
 .km-badge{flex:none;font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 7px;background:var(--soft);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}.km-badge.up{color:${UP};background:rgba(240,68,82,.12)}.km-badge.down{color:${DOWN};background:rgba(49,130,246,.13)}
+.km-sa-wrap{position:relative;margin:8px 4px 0}.km-stat-line .km-sa-n{display:none}.km-sa-wrap .km-sa{width:100%;margin:0}.km-stat-line{position:relative}.km-ld{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 22%,transparent);pointer-events:none}
 .km-st-v{display:flex;align-items:baseline;gap:6px;min-width:0}.km-sv{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em;white-space:nowrap}.km-sl{font-size:11.5px;color:var(--muted);white-space:nowrap}
 .km-sa{display:block;width:calc(100% + 28px);margin:6px -14px 0;height:56px;touch-action:pan-y;cursor:crosshair;outline:none}.km-sa:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}.km-sa-n{font-size:11.5px;color:var(--muted)}.km-sa-n .up{color:${UP}}.km-sa-n .down{color:${DOWN}}
 .km-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 12px}.km-stats .km-stat{padding:12px 14px;box-shadow:none}
@@ -340,7 +350,7 @@ export const KIT_MARKET_JS = `
     var r = svg.getBoundingClientRect(), cr = p.card.getBoundingClientRect(), i = Math.max(0, Math.min(D.length - 1, Math.round((cx - r.left) / r.width * (D.length - 1)))), q = D[i];
     var x = r.left - cr.left + q[2] / 200 * r.width, y = r.top - cr.top + q[3] / 56 * r.height;
     p.dot.style.color = D[D.length - 1][1] >= D[0][1] ? '#f04452' : '#3182f6'; p.dot.hidden = p.ln.hidden = false; p.dot.style.left = x + 'px'; p.dot.style.top = y + 'px'; p.ln.style.left = x + 'px'; p.ln.style.top = (r.top - cr.top) + 'px'; p.ln.style.height = r.height + 'px';
-    if (p.v) p.v.textContent = fmt(q[1], Number(svg.getAttribute('data-km-digits') || 2)); if (p.l) p.l.textContent = day(q[0]) + ' 종가';
+    if (p.v) p.v.textContent = fmt(q[1], Number(svg.getAttribute('data-km-digits') || 2)); if (p.l) p.l.textContent = day(q[0]) + (p.l.getAttribute('data-l0') === '종가' ? ' 종가' : '');
     stat.svg = svg; stat.i = i;
   };
   var unscrub = function (svg) { var p = svg && parts(svg); if (!p) return; p.dot.hidden = p.ln.hidden = true; if (p.v) p.v.textContent = p.v.getAttribute('data-v0'); if (p.l) p.l.textContent = p.l.getAttribute('data-l0'); stat.svg = null; stat.i = -1; };

@@ -40,7 +40,8 @@ export function parseMarketCouncil(text:string):MarketCouncil {
 export type MarketCouncil = z.infer<typeof MarketCouncilSchema>;
 /** A headline the committee may cite as N1, N2 … (public: title, outlet, time and link only). */
 export interface MarketNews { id: string; title: string; publisher: string; publishedAt: string; url: string }
-export interface MarketReport { schema: 'curia.market-report.v2' | 'curia.market-report.v3' | 'curia.market-report.v4'; date: string; from: string; generatedAt: string; period: Period; groups: MarketGroup[]; news?: MarketNews[]; ai: { status: 'OK' | 'SKIPPED' | 'FAILED'; error?: string; model?: string; council?: MarketCouncil; summary?: MarketCouncil['summary']; sealed?: string } }
+export interface MacroCard { id: string; label: string; unit: string; date: string; value: number; chg20: number | null; spark: [string, number][] }
+export interface MarketReport { schema: 'curia.market-report.v2' | 'curia.market-report.v3' | 'curia.market-report.v4'; date: string; from: string; generatedAt: string; period: Period; groups: MarketGroup[]; news?: MarketNews[]; /** G-258: US rates, the won and VIX with their last 30 points (FRED), for the stat-line cards. */ macro?: MacroCard[]; ai: { status: 'OK' | 'SKIPPED' | 'FAILED'; error?: string; model?: string; council?: MarketCouncil; summary?: MarketCouncil['summary']; sealed?: string } }
 /** Weekly return is measured from the last close BEFORE Monday, never substituted with 5-session return. */
 export function periodAsset(symbol: string, name: string, bars: readonly { date: string; close: number }[], date: string, from: string, period: Period, value: number | null = null): MarketAsset | null {
  const history = [...new Map(bars.filter(b => b.date <= date && Number.isFinite(b.close) && b.close > 0).map(b => [b.date,b])).values()].sort((a,b)=>a.date.localeCompare(b.date));
@@ -87,6 +88,12 @@ export function marketClaimText(text:string):string {
 }
 const claims=(items: readonly z.infer<typeof claim>[])=>`<ul class="market-claims">${items.map(c=>`<li><span class="tag">${c.kind==='FACT'?'사실':c.kind==='INFERENCE'?'해석':'가정'}</span> ${esc(marketClaimText(c.text))} <small>${c.refs.map(r=>`<a href="#${esc(r)}">${esc(r)}</a>`).join(' · ')}</small></li>`).join('')}</ul>`;
 export const marketSymbol=(period:Period)=>`MARKET-${period.toUpperCase()}`;
+/** G-258 (Bklit stat-card-line): one macro series as a big number, its 20-session move and a thin line. */
+export function macroStat(m: MacroCard): string {
+  const c = m.chg20, tone = c == null || c === 0 ? '' : c > 0 ? 'up' : 'down';
+  const text = c == null ? '—' : `${c > 0 ? '▲' : c < 0 ? '▼' : ''} ${m.unit === '%' ? `${Math.abs(c * 100).toFixed(0)}bp` : m.unit === '원' ? `${Math.abs(c).toFixed(1)}원` : Math.abs(c).toFixed(1)}`;
+  return kmStatArea({ title: m.label, value: m.value, change: null, badge: { text, tone }, series: m.spark, digits: m.unit === '%' ? 2 : 1, line: true, label: m.unit === '%' ? `% · ${m.date.slice(5).replace('-', '/')}` : m.unit === '원' ? `원 · ${m.date.slice(5).replace('-', '/')}` : m.date.slice(5).replace('-', '/'), unit: '일' });
+}
 export function renderMarketDeep(r:MarketReport):string {
  const groupHtml=r.groups.map(g=>{
   const available=g.assets.filter(a=>a.returnPct!==null); const sort=[...available].sort((a,b)=>b.returnPct!-a.returnPct!);
@@ -149,6 +156,7 @@ export function renderMarketReport(r:MarketReport, base='', nav:{prev?:string|un
  // the S&P 500 ETF SPY for the United States (the US group has no index of its own), so only those two are coloured.
  const kospi=r.groups.find(g=>g.id==='M1')?.assets.find(a=>a.symbol==='KOSPI'),spy=r.groups.find(g=>g.id==='M5')?.assets.find(a=>a.symbol==='SPY');
  const mapRows:MapEntry[]=[...(kospi?[{iso:'KR' as const,country:'한국',index:'코스피',change:kospi.returnPct,date:kospi.date}]:[]),...(spy?[{iso:'US' as const,country:'미국',index:'S&P 500',change:spy.returnPct,date:spy.date}]:[])];
+ const macro=r.macro?.length?`<section class="block"><div class="block-head"><h2>금리·환율·변동성</h2><span class="muted small">미국 자료(FRED)라 하루 늦어요 · 배지는 20거래일 변화</span></div><div class="mk-ix">${r.macro.map(macroStat).join('')}</div></section>`:'';
  const world=mapRows.length?`<section class="card block"><div class="block-head" style="margin:0 0 6px"><h2>세계 증시 지도</h2><span class="muted small">${r.period==='weekly'?'이번 주 누적':'일간'} 등락</span></div>${kmWorldMap(mapRows,'GNOMON은 한국(코스피)과 미국(S&P 500을 따라가는 SPY ETF) 자료만 모아서 두 나라만 색칠했어요. 회색은 자료가 없는 나라예요.')}</section>`:'';
  const points=`<section class="card block"><h2>핵심 포인트</h2><ul class="mk-points">${marketPoints(r).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p class="fine">수집한 숫자만으로 정리했어요. 해석은 아래 AI 요약과 위원회 판단을 보세요.</p></section>`;
  const row=(a:MarketAsset)=>`<div class="mk-row"><span>${esc(a.name)}</span><b class="${toneOf(a.returnPct)}">${moveText(a.returnPct)}</b></div>`;
@@ -161,7 +169,7 @@ export function renderMarketReport(r:MarketReport, base='', nav:{prev?:string|un
  const news=r.news?.length?`<section class="card block" id="news"><div class="head"><h2>오늘의 시장 뉴스</h2><span class="sub" style="margin:0">위원회가 N 번호로 인용해요</span></div><ol class="mk-news">${r.news.map(n=>`<li id="${esc(n.id)}"><span class="mk-nid">${esc(n.id)}</span><div><a href="${esc(n.url)}" rel="noopener" target="_blank">${esc(n.title)}</a><small>${esc(n.publisher)} · ${esc(kstTime(n.publishedAt))}</small></div></li>`).join('')}</ol><p class="fine">뉴스 검색과 언론사 RSS에서 오늘 나온 기사 제목만 모았어요. 같은 이야기는 하나로 묶었어요.</p></section>`:'';
  const md=(x:string)=>{const t=new Date(`${x}T00:00:00Z`);return `${t.getUTCMonth()+1}월 ${t.getUTCDate()}일`;};
  const pager=nav.prev||nav.next?`<nav class="mk-pager" aria-label="다른 날 시장 데일리">${nav.prev?`<a href="daily-${esc(nav.prev)}.html"><small>‹ 전날</small><b>${md(nav.prev)}</b></a>`:'<span></span>'}<a class="mk-all" href="${base}market-reports.html">모아 보기</a>${nav.next?`<a class="nx" href="daily-${esc(nav.next)}.html"><small>다음 날 ›</small><b>${md(nav.next)}</b></a>`:'<span></span>'}</nav>`:'';
- const body=`${MARKET_CSS}${lead}${ix}${world}${points}${ai}${news}${markets}<div class="block-head" style="margin-top:8px"><h2>AI 위원회 판단</h2><span class="muted small">전문가 11명 판단 · 시나리오 · 토론</span></div>${deepSlot(marketSymbol(r.period),r.date)}<div class="join-wrap"><div class="card">${gate(joinBox({symbol:marketSymbol(r.period),name:`${r.date} 시장 데일리`}).replace('data-name=',`data-report-date="${esc(r.date)}" data-name=`),{base,what:'시장 위원회에 질문·반론하기', feature: 'marketAsk'})}</div></div>${pager}`;
+ const body=`${MARKET_CSS}${lead}${ix}${world}${macro}${points}${ai}${news}${markets}<div class="block-head" style="margin-top:8px"><h2>AI 위원회 판단</h2><span class="muted small">전문가 11명 판단 · 시나리오 · 토론</span></div>${deepSlot(marketSymbol(r.period),r.date)}<div class="join-wrap"><div class="card">${gate(joinBox({symbol:marketSymbol(r.period),name:`${r.date} 시장 데일리`}).replace('data-name=',`data-report-date="${esc(r.date)}" data-name=`),{base,what:'시장 위원회에 질문·반론하기', feature: 'marketAsk'})}</div></div>${pager}`;
  const tabs=`<script>document.addEventListener('click',function(e){var b=e.target.closest('[data-mk-tab]');if(!b)return;var id=b.getAttribute('data-mk-tab');document.querySelectorAll('[data-mk-tab]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});document.querySelectorAll('.mk-panel').forEach(function(p){p.hidden=p.getAttribute('data-mk')!==id;});});</script>`;
  return shell(base,`${title} | GNOMON`,body,{scripts:EVIDENCE_SCRIPT+DEBATE_FILTER_SCRIPT+DEBATE_PLAY_SCRIPT+DEEP_SCRIPT+tabs+`<script>document.addEventListener('click',function(e){var a=e.target.closest('a[href^="#M"],a[href^="#N"]');if(!a)return;var target=document.getElementById(a.getAttribute('href').slice(1));if(target){var p=target.parentElement;while(p){if(p.tagName==='DETAILS')p.open=true;p=p.parentElement;}}});</script>`});
 }
