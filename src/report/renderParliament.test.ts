@@ -16,7 +16,11 @@ test('consensus note gives the pooled chance and says how many judged alone (G-2
     { analyst: 'trend_momentum', stance: 'BULLISH', confidence: 70 }, { analyst: 'fundamental', stance: 'NEUTRAL', confidence: 60 },
   ] }, market: {} } as unknown as Parameters<typeof consensusNote>[0];
   const html = consensusNote(report);
-  assert.match(html, /위원 2명 종합: 20거래일 뒤 지금보다 높을 확률 약 60%/);
+  assert.match(html, /위원 2명 종합: 20거래일 뒤 지금보다 높을 확률 약 57%/); // trend PM carries half weight (G-246)
+  assert.match(html, /순위를 잘 맞힌 위원에게 더 무게/);
   assert.match(html, /1명은 위원회 전에 혼자 판단/);
+  assert.doesNotMatch(html, /가격 범위/);
+  const withRange = consensusNote({ ...report, market: { forecasts: [{ horizon: 20, p10: 9000, p90: 12000 }] } } as unknown as Parameters<typeof consensusNote>[0]);
+  assert.ok(withRange.indexOf('가격 범위(80%)') < withRange.indexOf('높을 확률')); // G-246: range leads
   assert.equal(consensusNote({ commentary: { status: 'FAILED' } } as unknown as Parameters<typeof consensusNote>[0]), '');
 });
