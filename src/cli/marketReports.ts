@@ -18,7 +18,7 @@ import { fetchRss, googleNewsSearchUrl, GOOGLE_NEWS_SOURCE } from '../sources/ne
 import type { MacroCard, MarketNews } from '../report/marketReport.js';
 import { MACRO_SERIES, type MacroPoint } from '../sources/fred.js';
 const json=async(path:string)=>JSON.parse(await readFile(path,'utf8').catch(()=> 'null'));
-/** G-259: the last 30 closes up to the report date, for the index card's area line. */
+/** G-265: the last 30 closes up to the report date, for the index card's area line. */
 const sparkOf=(bars:readonly {date:string;close:number}[],date:string):[string,number][]=>[...new Map(bars.filter(b=>b.date<=date&&Number.isFinite(b.close)&&b.close>0).map(b=>[b.date,b.close] as [string,number])).entries()].sort((a,b)=>a[0].localeCompare(b[0])).slice(-30);
 export async function collectMarketGroups(root:string,date:string,period:Period,universe:readonly UniverseRow[]):Promise<MarketGroup[]> {
  const from=period==='weekly'?weekStart(date):date;
@@ -56,7 +56,7 @@ export async function collectMarketNews(date:string, options:{fetch?:typeof fetc
  }
  return out;
 }
-/** G-259: the FRED series the committee reads (US rates, the won, VIX) with their last 30 points, for the market page. */
+/** G-265: the FRED series the committee reads (US rates, the won, VIX) with their last 30 points, for the market page. */
 export async function macroCards(root:string,date:string):Promise<{macro?:MacroCard[]}>{
  const cards:MacroCard[]=[];
  for(const s of MACRO_SERIES){const xs=(await readLog<MacroPoint>(join(root,'data','macro',`${s.id}.jsonl`)).catch(()=>[])).filter(p=>p.date<=date&&Number.isFinite(p.value));const by=[...new Map(xs.map(p=>[p.date,p.value] as [string,number])).entries()].sort((a,b)=>a[0].localeCompare(b[0]));const last=by.at(-1);if(!last)continue;const prev=by.at(-21);cards.push({id:s.id,label:s.label,unit:s.unit,date:last[0],value:last[1],chg20:prev?last[1]-prev[1]:null,spark:by.slice(-30)});}

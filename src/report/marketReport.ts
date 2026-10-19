@@ -10,7 +10,7 @@ import { kmStatArea, kmWorldMap, type MapEntry } from './kit/market.js';
 import { gate } from './plans.js';
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, EVIDENCE_SCRIPT } from './renderReportExtras.js';
 export type Period = 'daily' | 'weekly';
-/** spark (G-259): the last 30 [date, close] up to the report date, kept only on each market's headline asset. */
+/** spark (G-265): the last 30 [date, close] up to the report date, kept only on each market's headline asset. */
 export interface MarketAsset { symbol: string; name: string; date: string; close: number; returnPct: number | null; baseline: string | null; value: number | null; spark?: [string, number][] }
 export interface MarketGroup { id: string; name: string; source: string; universe: number; assets: MarketAsset[]; snapshotDate: string | null; temperature?: MarketPulse | null; breadth: { up: number; down: number; flat: number } }
 const claim = z.object({ text: z.string(), kind: z.enum(['FACT','INFERENCE','ASSUMPTION']), refs: z.array(z.string()).min(1) });
@@ -41,7 +41,7 @@ export type MarketCouncil = z.infer<typeof MarketCouncilSchema>;
 /** A headline the committee may cite as N1, N2 … (public: title, outlet, time and link only). */
 export interface MarketNews { id: string; title: string; publisher: string; publishedAt: string; url: string }
 export interface MacroCard { id: string; label: string; unit: string; date: string; value: number; chg20: number | null; spark: [string, number][] }
-export interface MarketReport { schema: 'curia.market-report.v2' | 'curia.market-report.v3' | 'curia.market-report.v4'; date: string; from: string; generatedAt: string; period: Period; groups: MarketGroup[]; news?: MarketNews[]; /** G-259: US rates, the won and VIX with their last 30 points (FRED), for the stat-line cards. */ macro?: MacroCard[]; ai: { status: 'OK' | 'SKIPPED' | 'FAILED'; error?: string; model?: string; council?: MarketCouncil; summary?: MarketCouncil['summary']; sealed?: string } }
+export interface MarketReport { schema: 'curia.market-report.v2' | 'curia.market-report.v3' | 'curia.market-report.v4'; date: string; from: string; generatedAt: string; period: Period; groups: MarketGroup[]; news?: MarketNews[]; /** G-265: US rates, the won and VIX with their last 30 points (FRED), for the stat-line cards. */ macro?: MacroCard[]; ai: { status: 'OK' | 'SKIPPED' | 'FAILED'; error?: string; model?: string; council?: MarketCouncil; summary?: MarketCouncil['summary']; sealed?: string } }
 /** Weekly return is measured from the last close BEFORE Monday, never substituted with 5-session return. */
 export function periodAsset(symbol: string, name: string, bars: readonly { date: string; close: number }[], date: string, from: string, period: Period, value: number | null = null): MarketAsset | null {
  const history = [...new Map(bars.filter(b => b.date <= date && Number.isFinite(b.close) && b.close > 0).map(b => [b.date,b])).values()].sort((a,b)=>a.date.localeCompare(b.date));
@@ -88,7 +88,7 @@ export function marketClaimText(text:string):string {
 }
 const claims=(items: readonly z.infer<typeof claim>[])=>`<ul class="market-claims">${items.map(c=>`<li><span class="tag">${c.kind==='FACT'?'사실':c.kind==='INFERENCE'?'해석':'가정'}</span> ${esc(marketClaimText(c.text))} <small>${c.refs.map(r=>`<a href="#${esc(r)}">${esc(r)}</a>`).join(' · ')}</small></li>`).join('')}</ul>`;
 export const marketSymbol=(period:Period)=>`MARKET-${period.toUpperCase()}`;
-/** G-259 (Bklit stat-card-line): one macro series as a big number, its 20-session move and a thin line. */
+/** G-265 (Bklit stat-card-line): one macro series as a big number, its 20-session move and a thin line. */
 export function macroStat(m: MacroCard): string {
   const c = m.chg20, tone = c == null || c === 0 ? '' : c > 0 ? 'up' : 'down';
   const text = c == null ? '—' : `${c > 0 ? '▲' : c < 0 ? '▼' : ''} ${m.unit === '%' ? `${Math.abs(c * 100).toFixed(0)}bp` : m.unit === '원' ? `${Math.abs(c).toFixed(1)}원` : Math.abs(c).toFixed(1)}`;
@@ -150,9 +150,9 @@ export function renderMarketReport(r:MarketReport, base='', nav:{prev?:string|un
  const d=new Date(`${r.date}T00:00:00Z`),title=`${d.getUTCMonth()+1}월 ${d.getUTCDate()}일 시장 데일리`;
  const lead=`<section class="card block market-lead mk-lead"><a class="ml-back" href="${base}market-reports.html">‹ 시장 데일리 모음</a><h1>${esc(title)}</h1><p class="mk-verdict">${esc(verdict(r))}</p><p class="mk-meta">코스피 · 코스닥 · 코인 · ETF · 가격 기준 ${esc(r.date)}${r.period==='weekly'?' · 주중 누적 집계':''}</p><details><summary class="muted small">데이터 기준·분석 범위</summary><p class="fine">생성 ${esc(r.generatedAt)} · 한국 증시: 거래일 종가 · 코인: 업비트 원화 일봉(09:00 KST 경계), 당일 봉은 진행 중 가격 스냅샷입니다. 휴장·수집 실패는 각 자산의 실제 기준일로 확인하세요.</p><p class="fine">국내 주식의 시가총액 상위 표본과 수집된 ETF·업비트 원화 코인 기준입니다. ETF 가격 수익률은 분배금을 포함한 총수익률이 아닙니다.</p></details></section>`;
  const ix=`<section class="block"><div class="block-head"><h2>지수 한눈에</h2><span class="muted small">선은 최근 30거래일 · 막대는 오른·보합·내린 종목 비율</span></div><div class="mk-ix">${r.groups.map(g=>{const h=headline(g),t=g.breadth.up+g.breadth.down+g.breadth.flat||1;
-  // G-259: a Bklit stat card: the close, today's move as the badge, the last 30 closes as a soft area (reports from before G-259 have none).
+  // G-265: a Bklit stat card: the close, today's move as the badge, the last 30 closes as a soft area (reports from before G-265 have none).
   return kmStatArea({title:g.name,...(h&&!isIndex(h)?{sub:h.name}:{}),value:h?.close??null,change:h?.returnPct??null,...(h?.spark?{series:h.spark}:{}),digits:!h||isIndex(h)?2:h.close>=1000?0:h.close>=1?2:4,foot:`<div class="mk-br" aria-hidden="true"><i class="u" style="width:${(g.breadth.up/t*100).toFixed(1)}%"></i><i class="f" style="width:${(g.breadth.flat/t*100).toFixed(1)}%"></i><i class="d" style="width:${(g.breadth.down/t*100).toFixed(1)}%"></i></div><small class="n"><span class="up">▲${g.breadth.up.toLocaleString('ko-KR')}</span> · <span class="down">▼${g.breadth.down.toLocaleString('ko-KR')}</span></small>`});}).join('')}</div></section>`;
- // G-259: a small world map (Bklit choropleth). GNOMON collects one index-like series per country: 코스피 for Korea and
+ // G-265: a small world map (Bklit choropleth). GNOMON collects one index-like series per country: 코스피 for Korea and
  // the S&P 500 ETF SPY for the United States (the US group has no index of its own), so only those two are coloured.
  const kospi=r.groups.find(g=>g.id==='M1')?.assets.find(a=>a.symbol==='KOSPI'),spy=r.groups.find(g=>g.id==='M5')?.assets.find(a=>a.symbol==='SPY');
  const mapRows:MapEntry[]=[...(kospi?[{iso:'KR' as const,country:'한국',index:'코스피',change:kospi.returnPct,date:kospi.date}]:[]),...(spy?[{iso:'US' as const,country:'미국',index:'S&P 500',change:spy.returnPct,date:spy.date}]:[])];

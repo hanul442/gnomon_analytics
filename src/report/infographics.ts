@@ -38,7 +38,7 @@ export function healthAxes(m: MarketSection, close: number | null): Axis[] {
   ];
 }
 
-// G-259: drawn by the chart kit in Bklit UI's radar look (round rings, soft fill, haloed dots).
+// G-265: drawn by the chart kit in Bklit UI's radar look (round rings, soft fill, haloed dots).
 const radar = (axes: readonly Axis[]) => radarChart(axes);
 
 /** 기업 체력 한눈에 (G-148): the radar beside one short line per axis; the thresholds sit in each line's title. */
@@ -75,7 +75,7 @@ function bars(years: readonly string[], series: readonly { label: string; color:
   if (!all.length) return '';
   const max = Math.max(0, ...all), min = Math.min(0, ...all), span = max - min || 1, W = 320, H = 150, top = 16, bottom = 22, h = H - top - bottom;
   const zero = top + (max / span) * h, gw = W / years.length, bw = Math.min(26, (gw - 16) / series.length), glass = gradId('kf-gl');
-  // G-259: each bar in Bklit's bar-depth look (a glass catch at the tip, a soft shadow at the base), see kit/finance.ts.
+  // G-265: each bar in Bklit's bar-depth look (a glass catch at the tip, a soft shadow at the base), see kit/finance.ts.
   const rects = years.map((y, i) => series.map((x, j) => {
     const v = x.values[i]; if (v == null) return '';
     const x0 = i * gw + (gw - bw * series.length) / 2 + j * bw, y0 = v >= 0 ? zero - (v / span) * h : zero, hh = Math.max(1, Math.abs(v / span) * h);
@@ -94,7 +94,7 @@ export function quarterBars(quarters: readonly FinancePeriod[]): string {
   if (ps.length < 2) return '';
   const v = (k: string) => ps.map((q) => (q.metrics[k] == null ? null : q.metrics[k]! * financeScale()));
   const labels = ps.map((q) => `${q.period.slice(2, 4)}.${q.period.slice(4)}${q.isEstimate ? 'E' : ''}`);
-  // G-259: with 영업이익률 for at least two quarters, Bklit's composed chart: the same bars plus the margin as a line.
+  // G-265: with 영업이익률 for at least two quarters, Bklit's composed chart: the same bars plus the margin as a line.
   const margin = ps.map((q) => q.metrics['영업이익률'] ?? (q.metrics['영업이익'] != null && q.metrics['매출액'] ? (q.metrics['영업이익']! / q.metrics['매출액']!) * 100 : null));
   const composed = composedChart({ labels, bars: [{ label: '매출', color: '#2e4268', values: v('매출액') }, { label: '영업이익', color: '#f04452', values: v('영업이익') }], line: { label: '영업이익률', values: margin }, short, money: shortMoney });
   if (composed) return composed;
@@ -112,7 +112,7 @@ export function statementChart(st: FullStatements, kind: StKind): string {
     chart = bars(st.years, [{ label: '매출', color: '#2e4268', values: rev }, { label: '영업이익', color: '#f04452', values: op }, { label: '순이익', color: '#e9a23b', values: net }]);
     const last = st.years.length - 1, m = rev[last] && op[last] != null ? (op[last]! / rev[last]!) * 100 : null;
     if (m != null) note = `${esc(st.years[last]!)}년 영업이익률 <b>${m.toFixed(1)}%</b>`;
-    // G-259: the latest year as a flow (Bklit sankey); left out when the rows do not add up to one.
+    // G-265: the latest year as a flow (Bklit sankey); left out when the rows do not add up to one.
     const cogs = val('ifrs-full_CostOfSales', KEY_ROWS.IS[1]![1]), gp = val('ifrs-full_GrossProfit', KEY_ROWS.IS[2]![1]);
     flow = incomeSankey({ year: st.years[last]!, rev: rev[last] ?? null, cogs: cogs[last] ?? null, gp: gp[last] ?? null, op: op[last] ?? null, net: net[last] ?? null, short: shortMoney });
     if (flow) flow = `<h3 class="fs-sub">${esc(st.years[last]!)}년 손익 흐름</h3>${flow}`;

@@ -1,4 +1,4 @@
-// G-259: every Bklit UI chart type, redrawn as plain SVG in GNOMON's style (no React; Bklit is MIT).
+// G-265: every Bklit UI chart type, redrawn as plain SVG in GNOMON's style (no React; Bklit is MIT).
 // Each file owns its charts, their CSS and their page script; this file only joins them for renderHtml.
 import { KIT_FINANCE_CSS, KIT_FINANCE_JS } from './finance.js';
 import { KIT_MARKET_CSS, KIT_MARKET_JS } from './market.js';

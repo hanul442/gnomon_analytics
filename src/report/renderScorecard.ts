@@ -136,7 +136,7 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
   // three lines under it, then one group at a time behind tabs instead of every section stacked.
   const fcSay = fcHit === null ? '예측은 기간이 지나면 실제 가격으로 채점해요.' : fcHit < 70 ? '범위를 좁게 잡는 편이에요.' : fcHit > 90 ? '범위를 넓게 잡는 편이에요.' : '정직한 범위에 가까워요.';
   const line = (label: string, sub: string, v: string, cls = '') => `<div class="sc-line"><span><b>${label}</b><small>${sub}</small></span><b class="sc-lv ${cls}">${v}</b></div>`;
-  // G-259 (Bklit ring chart): the three headline records as concentric rings (a ring stays empty until it is scored).
+  // G-265 (Bklit ring chart): the three headline records as concentric rings (a ring stays empty until it is scored).
   const hitText = (v: number | null) => (v === null ? '채점 전' : `${Math.round(v)}%`);
   const scoreRing = live.length ? ringChart([
     { label: '예측 범위 적중', value: fcHit === null ? null : fcHit / 100, color: 'var(--accent)', text: hitText(fcHit) },
