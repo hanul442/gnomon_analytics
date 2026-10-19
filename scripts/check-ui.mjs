@@ -300,8 +300,8 @@ try{
   await page.unroute(/\/notifications$/);}
  await page.setViewportSize({width:390,height:844});
  // G-133: 관심 opens its own page with just the watched names.
- await page.setViewportSize({width:390,height:844});await page.goto(origin+'/index.html');await page.evaluate(()=>localStorage.setItem('gnm-watch',JSON.stringify(['999999'])));
- await page.locator('.bottom-nav a[href$="watch.html"]').click();await page.waitForURL(/watch\.html/);await page.locator('#wp-list .wp-row').first().waitFor();
+ await page.setViewportSize({width:390,height:844});await page.goto(origin+'/settings.html');await page.evaluate(()=>localStorage.setItem('gnm-watch',JSON.stringify(['999999'])));
+ await page.locator('.me-rec a[href$="watch.html"]').click();await page.waitForURL(/watch\.html/);await page.locator('#wp-list .wp-row').first().waitFor();
  assert.equal(await page.locator('#wp-list .wp-row').count(),1);assert.equal(await page.locator('#wp-n').innerText(),'1');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.screenshot({path:'test-artifacts/watch-390.png'});
  // G-213, G-244: 위원별 탭의 판단 narrows to the watchlist on one tap, at phone and desktop widths.
@@ -328,11 +328,11 @@ try{
  const here=page.url();await page.locator('[data-open-chat]').first().click();await page.locator('#chat:not([hidden])').waitFor();
  const box=await page.locator('#chat').boundingBox();assert.ok(box.width>=389&&box.height>=840,'chat fills the phone screen: '+JSON.stringify(box));
  await page.waitForTimeout(100);await page.goBack();await page.locator('#chat').waitFor({state:'hidden'});assert.equal(page.url(),here);
- // G-245: five tabs and no 전체 sheet; 찾기 lights up on its sibling pages, and a mode tap moves the pill, then opens the page.
- assert.equal(await page.locator('.bottom-nav a').count(),5);assert.equal(await page.locator('[data-all-menu]').count(),0);
+ // G-245, G-255: four tabs and no 전체 sheet; 찾기 lights up on its sibling pages, and a mode tap moves the pill, then opens the page.
+ assert.equal(await page.locator('.bottom-nav a').count(),4);assert.equal(await page.locator('[data-all-menu]').count(),0);
  await page.locator('.mode-tabs a[href$="themes.html"]').click();await page.waitForURL(/themes\.html/);
  assert.equal(await page.locator('.bottom-nav [aria-current=page]').getAttribute('aria-label'),'찾기');assert.equal(await page.locator('.mode-tabs [aria-current=page]').textContent(),'테마');
- await page.locator('.bottom-nav a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),7);await page.screenshot({path:'test-artifacts/me-390.png'});
+ await page.locator('.bottom-nav a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),7);await page.locator('.me-rec a[href$="inbox.html"]').click();await page.waitForURL(/inbox\.html/);assert.equal(await page.locator('.bottom-nav [aria-current=page]').getAttribute('aria-label'),'나','G-255: 알림함 lights up 나');await page.screenshot({path:'test-artifacts/me-390.png'});
  await page.goto(here);await page.waitForLoadState('load');
  // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.
  // G-252: phones have no top bar, so there the button is the one in the 나 tab.

@@ -56,7 +56,7 @@ test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab
   const { tabBar, modeBar } = await import('./ui.js');
   const { renderSettings } = await import('./renderSettings.js');
   const bar = tabBar('', 'bottom');
-  assert.deepEqual([...bar.matchAll(/aria-label="([^"]+)" data-tab-link/g)].map((m) => m[1]), ['홈', '찾기', '내 종목', '위원회', '나']);
+  assert.deepEqual([...bar.matchAll(/aria-label="([^"]+)" data-tab-link/g)].map((m) => m[1]), ['홈', '찾기', '위원회', '나']);
   assert.ok(!bar.includes('data-all-menu'));
   const themes = modeBar('', 'themes.html');
   assert.ok(themes.includes('<a href="themes.html" aria-current="page">테마</a>') && themes.includes('href="signals.html"') && themes.includes('href="screener.html#etf"'));
@@ -65,4 +65,8 @@ test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab
   const me = renderSettings();
   assert.ok(me.includes('class="me-acct"') && me.includes('id="sm-admin"') && me.includes('id="help"') && me.includes('href="guide.html"'));
   assert.ok(!me.includes('id="side-menu"'));
+  // G-255: four tabs; 내 종목's pages are rows under 나 › 내 기록, and 관심 종목 lights up 홈.
+  assert.ok(me.includes('class="card st-rows me-rec"') && ['watch.html', 'inbox.html', 'myreports.html', 'mydebates.html'].every((h) => me.includes(`href="${h}"`)));
+  assert.ok(modeBar('', 'inbox.html').includes('href="mydebates.html"') && !modeBar('', 'inbox.html').includes('watch.html'));
+  assert.ok(!bar.includes('href="watch.html"'));
 });
