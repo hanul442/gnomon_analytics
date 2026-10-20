@@ -1,4 +1,4 @@
-// G-272: Monte Carlo luck checks on the hidden-future panel (src/analysis/monteCarlo.ts). For each result we
+// G-275: Monte Carlo luck checks on the hidden-future panel (src/analysis/monteCarlo.ts). For each result we
 // ship or quote, make thousands of skill-free fakes (per-date shuffles and block bootstraps of whole runs of
 // dates) and see where the real result falls. Same panel as evalBase.ts/evalMore.ts: each evaluation day's
 // most-traded stocks, delisted included, 20 sessions apart. No AI. Reads .cache/eval/, writes

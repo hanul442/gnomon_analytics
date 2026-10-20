@@ -1,4 +1,4 @@
-// G-272: "is this result skill, or could luck give it?" Monte Carlo checks for the hidden-future evaluation.
+// G-275: "is this result skill, or could luck give it?" Monte Carlo checks for the hidden-future evaluation.
 //
 // Every result there is a per-date number (a rank correlation, a top-minus-bottom spread, a Brier gap) averaged
 // over evaluation dates 20 sessions apart. Two ways to make fake, skill-free versions of it:

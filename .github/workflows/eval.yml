@@ -55,7 +55,7 @@ jobs:
       - name: Committee base model and MAX check (G-264)
         if: inputs.version == 'base'
         run: node --max-old-space-size=6000 dist/cli/evalBase.js | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Monte Carlo luck checks (G-272)
+      - name: Monte Carlo luck checks (G-275)
         if: inputs.version == 'luck'
         run: node --max-old-space-size=6000 dist/cli/evalLuck.js | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Commit the results

@@ -71,7 +71,7 @@ export function hemicycle(n: number): { x: number; y: number; r: number }[] {
   for (let i = 0, guard = 0; left < 0 && guard < rows * n; i = (i + 1) % rows, guard += 1) if (counts[i]! > 1) { counts[i]! -= 1; left += 1; }
   // As large as the tightest row and the row gap allow.
   const along = Math.min(...radii.map((r, i) => (counts[i]! > 1 ? (Math.PI * r) / (counts[i]! - 1) : 1)));
-  // G-271: a small chamber (one row) uses a shorter arc so seats sit close and the bottom ends clear the tally.
+  // G-274: a small chamber (one row) uses a shorter arc so seats sit close and the bottom ends clear the tally.
   const span = rows === 1 ? (n <= 4 ? 0.5 : n <= 8 ? 0.62 : n <= 12 ? 0.78 : 0.9) : 1;
   const seatR = Math.min(along * span * 0.42, gap ? gap * 0.44 : 0.12, rows === 1 ? 0.13 : 0.11);
   const out: { x: number; y: number; r: number; a: number }[] = [];
@@ -189,7 +189,7 @@ export function consensusNote(report: DailyReport): string {
   const pos = base != null ? basePosition(base) : null;
   const locked = c?.lockedAnalysts?.length ?? 0;
   // G-246: the statistical 80% range scored best in the hidden-future test; G-268: the position leads it.
-  // G-271: three short label/value rows under the seats (the ring repeated the seat count, so it went); the how-it-was-made text folds away under one toggle.
+  // G-274: three short label/value rows under the seats (the ring repeated the seat count, so it went); the how-it-was-made text folds away under one toggle.
   const f = report.market?.forecasts?.find((x) => x.horizon === 20);
   const how = k.basePct != null
     ? `오를 확률은 10년 과거 자료로 맞춘 통계 기준 ${k.basePct}%(변동성·최근 급등·52주 고가)에서 출발해, ${k.textN ? `실적·공시·뉴스를 읽은 위원 ${k.textN}명이 ${k.aiPts > 0 ? `+${k.aiPts}%p` : k.aiPts < 0 ? `${k.aiPts}%p` : '그대로'} ${k.aiPts ? '움직였어요' : '두었어요'}` : '글 근거를 읽은 위원이 없어 기준 그대로예요'}. 차트를 보는 위원 판단은 기준에 이미 들어 있어 숫자에 더하지 않아요${k.calibrated ? '. 지난 위원회 채점으로 한 번 더 맞췄어요' : ''}.`
