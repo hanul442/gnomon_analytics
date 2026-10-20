@@ -187,7 +187,7 @@ function marketLine(indices: readonly IndexQuote[], href: string, day: string): 
 }
 
 /**
- * G-269 (Bklit 대조표, 한서님 10/20): a tiny area line of the index's recent closes beside its number (Bklit area-chart look).
+ * G-270 (Bklit 대조표, 한서님 10/20): a tiny area line of the index's recent closes beside its number (Bklit area-chart look).
  * Drawn in the text colour (one neutral accent, G-267): the 30-day shape and today's red/blue number never disagree in colour.
  * Nothing is drawn with fewer than 5 closes.
  */

@@ -65,7 +65,7 @@ test('page script is plain JavaScript and the styles keep motion behind html.mo'
   assert.match(KIT_STOCK_JS, /GNM_kit = \{ scatter: scatter, funnel: funnel \}/);
 });
 
-test('G-269 outcomeSunburst splits calls by result, then member, and skips empty data', () => {
+test('G-270 outcomeSunburst splits calls by result, then member, and skips empty data', () => {
   const svg = outcomeSunburst([
     { label: '맞음', key: 'ok', children: [{ label: '추세', value: 3 }, { label: '가치', value: 1 }] },
     { label: '빗나감', key: 'no', children: [{ label: '추세', value: 2 }, { label: '가치', value: 0 }] },

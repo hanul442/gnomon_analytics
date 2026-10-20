@@ -376,7 +376,7 @@ export const KIT_STOCK_JS = `
 export interface SunGroup { label: string; key: 'ok' | 'no' | 'wait'; children: readonly { label: string; value: number }[] }
 
 /**
- * G-269 (Bklit 대조표, 한서님 10/20 "선버스트 괜찮네"): 위원 판단을 안쪽 고리 맞음·빗나감·대기, 바깥 고리 위원별로 나눈
+ * G-270 (Bklit 대조표, 한서님 10/20 "선버스트 괜찮네"): 위원 판단을 안쪽 고리 맞음·빗나감·대기, 바깥 고리 위원별로 나눈
  * Bklit sunburst-chart 모양. 맞음 옅은 초록 · 빗나감 옅은 분홍 · 대기 회색(G-266 칩과 같은 색, 가격 빨강·파랑과 안 겹침).
  * Static SVG; every slice carries its count in a <title> so a long press reads it.
  */

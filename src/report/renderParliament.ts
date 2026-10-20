@@ -6,7 +6,7 @@
 
 import type { DailyReport } from './dailyReport.js';
 import { ANALYSTS } from '../analysis/analysts.js';
-import { committeeOdds, reportBase } from '../analysis/baseOdds.js';
+import { basePosition, committeeOdds, reportBase } from '../analysis/baseOdds.js';
 import { esc } from './html.js';
 import { won } from './format.js';
 import { ringChart } from './kit/stock.js';
@@ -181,8 +181,11 @@ export const PARLIAMENT_SCRIPT = `<script>
  */
 export function consensusNote(report: DailyReport): string {
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
-  const k = committeeOdds(reportBase(report), c?.analysts ?? [], report.market?.analystBoard ?? [], report.market?.committeeCalibration);
+  const base = reportBase(report);
+  const k = committeeOdds(base, c?.analysts ?? [], report.market?.analystBoard ?? [], report.market?.committeeCalibration);
   if (!k) return '';
+  // G-268: ranking against the day's other stocks held up far better than calling a direction, so it leads.
+  const pos = base != null ? basePosition(base) : null;
   const locked = c?.lockedAnalysts?.length ?? 0;
   // G-265 (Bklit ring chart): the council's split as concentric rings, the pooled chance in the middle.
   const as = c?.analysts ?? [], count = (s: string) => as.filter((a) => a.stance === s).length, n = as.length || 1;
@@ -190,12 +193,14 @@ export function consensusNote(report: DailyReport): string {
     { label: '강세 위원', value: count('BULLISH') / n, color: '#f04452', text: `${count('BULLISH')}명` },
     { label: '중립 위원', value: count('NEUTRAL') / n, color: 'var(--muted)', text: `${count('NEUTRAL')}명` },
     { label: '약세 위원', value: count('BEARISH') / n, color: '#3182f6', text: `${count('BEARISH')}명` },
-  ], { label: `위원 ${as.length}명 중 강세 ${count('BULLISH')}명, 중립 ${count('NEUTRAL')}명, 약세 ${count('BEARISH')}명. 높을 확률 약 ${k.upPct}%`, big: `${k.upPct}%`, small: '높을 확률', cls: 'pl-ring' });
+  ], { label: `위원 ${as.length}명 중 강세 ${count('BULLISH')}명, 중립 ${count('NEUTRAL')}명, 약세 ${count('BEARISH')}명. ${pos ? `다른 종목 대비 ${pos.label}` : `높을 확률 약 ${k.upPct}%`}`, big: pos ? pos.label : `${k.upPct}%`, small: pos ? '종목 비교' : '높을 확률', cls: 'pl-ring' });
   // G-246: the statistical 80% range scored best in the hidden-future test, so it leads; the vote follows.
   const f = report.market?.forecasts?.find((x) => x.horizon === 20);
   const range = f ? `<b>20거래일 뒤 가격 범위(80%): ${won(f.p10)} ~ ${won(f.p90)}</b> <span class="muted small">과거 시험에서 열 번 중 여덟 번꼴로 이 안에 들었어요.</span><br>` : '';
   const how = k.basePct != null
     ? `10년 과거 자료로 맞춘 통계 기준 ${k.basePct}%(변동성·최근 급등·52주 고가)에서 출발해, ${k.textN ? `실적·공시·뉴스를 읽은 위원 ${k.textN}명이 ${k.aiPts > 0 ? `+${k.aiPts}%p` : k.aiPts < 0 ? `${k.aiPts}%p` : '그대로'} ${k.aiPts ? '움직였어요' : '두었어요'}` : '글 근거를 읽은 위원이 없어 기준 그대로예요'}. 차트를 보는 위원 판단은 기준에 이미 들어 있어 숫자에 더하지 않아요${k.calibrated ? ' · 지난 위원회 채점으로 한 번 더 맞췄어요' : ''}`
     : `${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : k.prior ? '과거 데이터 시험(종목·날짜를 가린 1,000건)에서 순위를 잘 맞힌 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요`;
-  return `<p class="pl-consensus">${range}<b>위원회 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b> <span class="muted small">${how}${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>${ring}`;
+  const position = pos ? `<b>같은 날 다른 종목과 비교: ${pos.label} (다섯 묶음 중 아래에서 ${pos.fifth + 1}번째)</b> <span class="muted small">10년 자료로 맞춘 점수(변동성·최근 급등·52주 고가)로 거래대금 상위 종목을 다섯 묶음으로 나눈 위치예요. 2023년 이후 이 묶음이 20거래일 동안 같은 날 평균보다 더 오른 비율은 ${pos.beatPct}%${pos.fifth === 0 ? `였고, 평균보다 약 ${Math.abs(pos.excessPct).toFixed(1)}%p 덜 올랐어요` : '였어요'}.</span><br>` : '';
+  const odds = pos ? `위원회 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%` : `<b>위원회 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b>`;
+  return `<p class="pl-consensus">${position}${range}${odds} <span class="muted small">${pos ? '방향은 맞히기 어려워 참고로만 보세요. ' : ''}${how}${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>${ring}`;
 }
