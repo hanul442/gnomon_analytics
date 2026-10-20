@@ -6,7 +6,7 @@
 
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { fitLogistic, oddsFeatures, predictOdds, type OddsModel } from '../analysis/baseOdds.js';
+import { fitOddsModel, oddsFeatures, predictOdds, type OddsModel } from '../analysis/baseOdds.js';
 import { costCheck, splitCheck, subset, type Dated } from '../analysis/evalMore.js';
 import { crossSection, H, liquidSets, panelStock, scoreSignal, ymd, type MarketView, type PanelStock, type RawBar } from '../analysis/evalPanel.js';
 
@@ -53,20 +53,12 @@ async function main() {
     const s = stocks.get(r.symbol)!, ft = oddsFeatures(s.bars.slice(Math.max(0, r.i - 260), r.i + 1));
     if (ft) obs.push({ date: d.date, ...ft, up: r.ret > 0 ? 1 : 0, excess: r.excess });
   }
-  const fit = (rows: readonly Obs[]) => {
-    const lv = rows.map((o) => Math.log(o.vol60)), hh = rows.map((o) => o.high52), mx = rows.map((o) => o.max20);
-    const ms = (xs: number[]) => { const m = xs.reduce((a, x) => a + x, 0) / xs.length; return { mean: m, sd: Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / xs.length) }; };
-    const logVol = ms(lv), high52 = ms(hh), max20 = ms(mx);
-    const z = (v: number, s: { mean: number; sd: number }) => Math.max(-4, Math.min(4, (v - s.mean) / s.sd));
-    const X = rows.map((o, k) => [z(lv[k]!, logVol), z(hh[k]!, high52), z(mx[k]!, max20)]);
-    const b = fitLogistic(X, rows.map((o) => o.up)) as [number, number, number, number];
-    return { logVol, high52, max20, b };
-  };
+  const fit = (rows: readonly Obs[]) => fitOddsModel(rows);
   const disc = obs.filter((o) => o.date < CUT), conf = obs.filter((o) => o.date >= CUT);
   const upRate = (rows: readonly Obs[]) => rows.reduce((a, o) => a + o.up, 0) / rows.length;
   const brier = (rows: readonly Obs[], p: (o: Obs) => number) => rows.reduce((a, o) => a + (p(o) - o.up) ** 2, 0) / rows.length;
   const mDisc = fit(disc);
-  const asModel = (m: ReturnType<typeof fit>): OddsModel => ({ method: 'gnm-base-v1', ...m, fitted: { from: '', to: '', n: 0, upRate: 0, brier: 0, brierBase: 0, confirmFrom: '', confirmBrier: 0, confirmBrierBase: 0 } });
+  const asModel = (m: OddsModel): OddsModel => m;
   const discRate = upRate(disc);
   const check = {
     discovery: { n: disc.length, upRate: discRate, brier: brier(disc, (o) => predictOdds(o, asModel(mDisc))), brierBase: brier(disc, () => discRate) },
