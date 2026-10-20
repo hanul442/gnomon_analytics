@@ -47,5 +47,5 @@ test('a Korean stock\'s note leads with where it sits among the day\'s stocks (G
   assert.ok(at('다른 종목과 비교') >= 0 && at('다른 종목과 비교') < at('가격 범위(80%)') && at('가격 범위(80%)') < at('오를 확률(참고)'));
   assert.match(html, /pl-of">\d\/5</);
   assert.match(html, /<details class="pl-how">/); // G-270: the explanation folds away
-  assert.match(html, /<b>\d\/5<\/b><small>(가장 )?(낮음|중간|높음)</); // the ring's centre
+  assert.doesNotMatch(html, /kit-ring/); // G-271: the seats already show the split
 });
