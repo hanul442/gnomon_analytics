@@ -15,7 +15,7 @@ const root = process.cwd(), dir = join(root, '.cache', 'eval');
 const readJson = async <T>(p: string, d: T): Promise<T> => JSON.parse(await readFile(p, 'utf8').catch(() => JSON.stringify(d))) as T;
 
 export const COMBO = ['lowvol', 'high52', 'rev5', 'meanrev'] as const;
-const FOCUS = ['combo', 'lowvol', 'high52', 'rev5', 'meanrev', 'mom12_1', 'momentum', 'trend', 'breakout', 'volsurge'];
+const FOCUS = ['combo', 'lowvol', 'high52', 'rev5', 'meanrev', 'mom12_1', 'momentum', 'trend', 'breakout', 'volsurge', 'max20'];
 
 const f = (v: number, k = 3) => (Number.isFinite(v) ? v.toFixed(k) : '–');
 const ci = (x: { mean: number; lo: number; hi: number } | undefined, k = 3) => (x ? `${f(x.mean, k)} [${f(x.lo, k)}, ${f(x.hi, k)}]${x.lo > 0 ? ' ▲' : x.hi < 0 ? ' ▼' : ''}` : '–');

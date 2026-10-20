@@ -69,6 +69,7 @@ import { isRelevant } from '../analysis/news.js';
 import { collectMarketData, financeKey, flowKey, intradayKey, marketPaths, researchKey, snapshotKey } from './marketData.js';
 import { buildMarketSection } from '../report/marketSection.js';
 import { scenarioCallOf } from '../analysis/scenarioScore.js';
+import { readCommitteeCalibration, refreshCommitteeCalibration } from './calibrate.js';
 import { forecastKey, type PriceForecast } from '../analysis/valuation.js';
 import { analystCallKey, type AnalystCall } from '../analysis/analysts.js';
 import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
@@ -244,6 +245,8 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   // Core stocks report on Friday's settled run, or the first settled run once their last report is 8+ days old.
   // Picks get AI and a dated report only on the day they are picked; on other days every page is a live dashboard.
   const corpCodes = await readCorpCodes(root);
+  // G-264: the committee number's recalibration, refitted from every scored committee report before today's reports.
+  await refreshCommitteeCalibration(root, now).catch((e) => console.error(`calibration: ${String(e).slice(0, 160)}`));
   const core = new Set(options.tickers.map((t) => t.symbol));
   const weeklyDue = async (symbol: string) => {
     const last = (await readdir(join(root, 'reports', symbol)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0, 10) < today.date).sort().at(-1)?.slice(0, 10);
@@ -648,6 +651,7 @@ export async function composeReport(
     paperEntries: (await readLog<PaperEntry>(join(root, 'data', 'paper', `${SYMBOL}.jsonl`))).filter((e) => e.recordedAt <= now.toISOString()),
     // G-227: stored reports are never rewritten, so their scenario probabilities are the log.
     scenarioCalls: earlier.flatMap((r) => { const c = scenarioCallOf(r); return c ? [c] : []; }),
+    committeeCalibration: await readCommitteeCalibration(root),
     status: options.marketStatus ?? [],
   };
   built.market = inCurrency(() => buildMarketSection(marketInput));

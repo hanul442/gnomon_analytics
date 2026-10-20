@@ -102,6 +102,8 @@ export const SIGNALS: readonly SignalDef[] = [
   { key: 'rev5', name: '5일 반전(최근 하락)', group: 'factor', value: (s, i) => (i >= 5 ? -(s.bars[i]!.close / s.bars[i - 5]!.close - 1) : null) },
   { key: 'high52', name: '52주 고가 근접', group: 'factor', value: (s, i) => { if (i < 249) return null; let h = 0; for (let k = i - 249; k <= i; k += 1) h = Math.max(h, s.bars[k]!.high); return s.bars[i]!.close / h; } },
   { key: 'lowvol', name: '낮은 변동성', group: 'factor', value: (s, i) => { if (i < 60) return null; let a = 0, b = 0; for (let k = i - 59; k <= i; k += 1) { const r = Math.log(s.bars[k]!.close / s.bars[k - 1]!.close); a += r; b += r * r; } return -Math.sqrt(b / 60 - (a / 60) ** 2); } },
+  // G-264: the month's biggest one-day gain (Bali, Cakici & Whitelaw's MAX; Korean evidence: Kang & Shim 2014). Lottery-like stocks retail investors chase.
+  { key: 'max20', name: '최근 20일 최대 하루 상승(급등)', group: 'factor', value: (s, i) => { if (i < 21) return null; let m = -Infinity; for (let k = i - 19; k <= i; k += 1) m = Math.max(m, s.bars[k]!.close / s.bars[k - 1]!.close - 1); return m; } },
   { key: 'volsurge', name: '거래량 급증(5일/60일)', group: 'factor', value: (s, i) => { if (i < 65) return null; let a = 0, b = 0; for (let k = i - 4; k <= i; k += 1) a += s.bars[k]!.volume; for (let k = i - 64; k <= i - 5; k += 1) b += s.bars[k]!.volume; return b > 0 ? (a / 5) / (b / 60) : null; } },
   { key: 'flow20', name: '외국인+기관 20일 순매수(거래량 대비)', group: 'flow', value: (s, i) => flowShare(s, i, (x) => x.foreign + x.inst) },
   { key: 'foreign20', name: '외국인 20일 순매수(거래량 대비)', group: 'flow', value: (s, i) => flowShare(s, i, (x) => x.foreign) },
