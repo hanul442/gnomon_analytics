@@ -85,7 +85,7 @@ export interface Ring { label: string; value: number | null; color: string; text
  * a null value draws only the track. `cls` is added to the figure (callers keep their own hooks).
  */
 export function ringChart(rings: readonly Ring[], opts: { label: string; big: string; small?: string; cls?: string }): string {
-  const rs = rings.slice(0, 4), S = 120, c = S / 2, sw = rs.length > 3 ? 7 : 9, gap = sw + 4;
+  const rs = rings.slice(0, 4), S = 120, c = S / 2, sw = rs.length > 3 ? 6 : rs.length > 2 ? 7 : 9, gap = sw + 3; // G-270: thinner when stacked so the middle text clears the inner ring
   const arcs = rs.map((r, i) => {
     const rad = c - sw / 2 - 2 - i * gap, v = r.value == null ? 0 : Math.max(0, Math.min(1, r.value));
     return `<circle class="kr-t" cx="${c}" cy="${c}" r="${rad}" stroke-width="${sw}"/>`

@@ -16,12 +16,12 @@ test('consensus note gives the pooled chance and says how many judged alone (G-2
     { analyst: 'trend_momentum', stance: 'BULLISH', confidence: 70 }, { analyst: 'fundamental', stance: 'NEUTRAL', confidence: 60 },
   ] }, market: {} } as unknown as Parameters<typeof consensusNote>[0];
   const html = consensusNote(report);
-  assert.match(html, /위원회 종합: 20거래일 뒤 지금보다 높을 확률 약 57%/); // no bars, no base: the pooled vote; trend PM carries half weight (G-246)
+  assert.match(html, /위원회 종합<\/dt><dd><b>약 57%/); // no bars, no base: the pooled vote; trend PM carries half weight (G-246)
   assert.match(html, /순위를 잘 맞힌 위원에게 더 무게/);
   assert.match(html, /1명은 위원회 전에 혼자 판단/);
   assert.doesNotMatch(html, /가격 범위/);
   const withRange = consensusNote({ ...report, market: { forecasts: [{ horizon: 20, p10: 9000, p90: 12000 }] } } as unknown as Parameters<typeof consensusNote>[0]);
-  assert.ok(withRange.indexOf('가격 범위(80%)') < withRange.indexOf('높을 확률')); // G-246: range leads
+  assert.ok(withRange.indexOf('가격 범위(80%)') < withRange.indexOf('위원회 종합')); // G-246: range leads
   assert.equal(consensusNote({ commentary: { status: 'FAILED' } } as unknown as Parameters<typeof consensusNote>[0]), '');
 });
 
@@ -44,7 +44,8 @@ test('a Korean stock\'s note leads with where it sits among the day\'s stocks (G
     market: { forecasts: [{ horizon: 20, p10: 90, p90: 110 }] } } as unknown as Parameters<typeof consensusNote>[0];
   const html = consensusNote(report);
   const at = (s: string) => html.indexOf(s);
-  assert.ok(at('같은 날 다른 종목과 비교') >= 0 && at('같은 날 다른 종목과 비교') < at('가격 범위(80%)') && at('가격 범위(80%)') < at('높을 확률 약'));
-  assert.match(html, /다섯 묶음 중 아래에서 \d번째/);
-  assert.match(html, /종목 비교</); // the ring's centre
+  assert.ok(at('다른 종목과 비교') >= 0 && at('다른 종목과 비교') < at('가격 범위(80%)') && at('가격 범위(80%)') < at('오를 확률(참고)'));
+  assert.match(html, /pl-of">\d\/5</);
+  assert.match(html, /<details class="pl-how">/); // G-270: the explanation folds away
+  assert.match(html, /<b>\d\/5<\/b><small>(가장 )?(낮음|중간|높음)</); // the ring's centre
 });
