@@ -663,7 +663,10 @@ ${report.kind ? '' : peersSlot(report.symbol)}
 <section class="block"><div class="card paper-link"><div><b>모의투자 장부</b><p class="muted small">전략 챔피언과 AI 분석가를 따라 했다면 어땠는지, 리포트 종목 전체를 모아 따로 보여 줘요.</p></div><a class="btn-primary" href="${base}scorecard.html#paper">성적표에서 보기</a></div></section>`;
   // Investor flows and fundamentals are public data: free. Our footprint reading is Plus.
   const flowsTab = insightLine(report, 'flow', base) + (report.kind==='coin' ? coinFlow(report) : `<div data-slot="flows">${m ? flowsPanel(m.flows, m.footprint, (h) => gate(h, { base, what: '수급 흔적(매집·분산 분석)', feature: 'flowTraces' })) : '<div class="card empty">이 리포트에는 수급 기록이 없어요.</div>'}</div>`) + edgeFlows(report) + (report.kind === 'coin' || report.currency === 'USD' ? '' : shortSlot(report.symbol));
-  const fundTab = insightLine(report, 'fundamental', base) + (!report.kind && report.currency !== 'USD' ? companySlot(report.symbol) : '') + `<div data-slot="fundamentals">${(m ? fundamentalsPanel(m, report.price?.close ?? null, report.name, report.recentBars ?? [], report.statements) : '') || '<div class="card empty">기업 정보를 아직 받지 못했어요.</div>'}</div>` + edgeFundamentals(report);
+  // A US report saved while SEC refused our requests (EDGAR_HTTP_403, before G-236) has no financials and is never rebuilt:
+  // its page asks the API (/usinfo) for today's SEC financials and swaps them in, along with the insider section.
+  const usRefill = report.currency === 'USD' && !report.kind && !!m && !m.quarters.some((q) => !q.isEstimate) && !m.years.some((y) => !y.isEstimate);
+  const fundTab = insightLine(report, 'fundamental', base) + (!report.kind && report.currency !== 'USD' ? companySlot(report.symbol) : '') + `<div data-slot="fundamentals"${usRefill ? ` data-usinfo="${escape(report.symbol)}"` : ''}>${(m ? fundamentalsPanel(m, report.price?.close ?? null, report.name, report.recentBars ?? [], report.statements) : '') || '<div class="card empty">기업 정보를 아직 받지 못했어요.</div>'}</div>` + edgeFundamentals(report);
   // G-168: a report written before v3.5.0 may carry the old short summary; it offers the committee report in its place.
   const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>이전 형식의 간단 해설이에요</b><p class="muted small">이제 AI 리포트는 모두 AI 위원회 심층 리포트(데스크 5곳·분석가 6명·레드팀·시나리오)로 써요. 이 종목도 심층 리포트로 새로 만들 수 있어요.</p></div>${reportButton(report.symbol, report.name)}</div></section>` : '';
   // G-114: an older committee says so with a way to a fresh one, on the AI tab as on the summary.
@@ -685,8 +688,25 @@ ${panel('news', newsTab)}
 <footer id="sources" style="padding:24px 0 0"><p>${report.currency === 'USD' ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜)과 지표(PER·EPS·PBR·시가총액·52주), SEC EDGAR(공시·XBRL 재무·Form 4 내부자 거래), 구글 뉴스(영문). 투자자별 수급과 증권가 목표가는 없어요. 환율 변동은 반영하지 않아요.' : report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`, report.kind);
   const title = ctx.live ? `${report.name} 리서치 대시보드 | GNOMON` : `${report.name} ${report.date} 일일 리포트 | GNOMON`;
-  return shell(base, title, body, { tabs: tabsFor(report.kind), scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+  return shell(base, title, body, { tabs: tabsFor(report.kind), scripts: chart.script + TAB_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : '') + (usRefill ? US_REFILL_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
+
+/**
+ * The refill for a US report without SEC financials (see usRefill): on success the slot gets the fresh panels, the old
+ * insider section goes (the new panels carry their own), and so does the AI line written from the empty data.
+ */
+const US_REFILL_SCRIPT = `<script>
+(function () {
+  var slot = document.querySelector('[data-usinfo]'), meta = document.querySelector('meta[name=gnm-api]'), api = meta && meta.content;
+  if (!slot || !api) return;
+  fetch(api.replace(/[/]$/, '') + '/usinfo/' + encodeURIComponent(slot.getAttribute('data-usinfo'))).then(function (r) { return r.ok ? r.json() : null; }).then(function (x) {
+    if (!x || !x.fundamentals || x.fundamentals.indexOf('ig-hc') < 0) return;
+    var tab = document.getElementById('tab-fundamentals');
+    if (tab) tab.querySelectorAll('.insight, #tab-flows').forEach(function (el) { el.remove(); });
+    slot.innerHTML = x.fundamentals; slot.setAttribute('data-filled', '');
+  }).catch(function () {});
+})();
+</script>`;
 
 /**
  * G-115: the AI committee tab's body — conclusion, the seat chart, then the debate with its evidence, the
