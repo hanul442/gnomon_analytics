@@ -6,16 +6,21 @@ import type { PriceBar } from '../types.js';
 export const UPBIT_SOURCE = 'upbit:candles:days';
 const BASE = 'https://api.upbit.com/v1';
 
-export interface CoinMarket { market: string; name: string; english: string; warning: boolean }
+export interface CoinMarket { market: string; name: string; english: string; warning: boolean; cautions?: string[] }
 
-/** KRW markets only; `warning` is Upbit's 유의 종목 flag. */
+/** Upbit's five 주의 flags (market_event.caution), in its order (G-272: shown on the coin's 체력 tab). */
+export const UPBIT_CAUTIONS: readonly [string, string][] = [['PRICE_FLUCTUATIONS', '가격 급등락'], ['TRADING_VOLUME_SOARING', '거래량 급등'], ['DEPOSIT_AMOUNT_SOARING', '입금량 급등'], ['GLOBAL_PRICE_DIFFERENCES', '해외 가격 차이'], ['CONCENTRATION_OF_SMALL_ACCOUNTS', '소수 계정 집중']];
+
+/** KRW markets only; `warning` is Upbit's 유의 종목 flag, `cautions` the 주의 flags that are on (with isDetails). */
 export function parseUpbitMarkets(json: unknown): CoinMarket[] {
   if (!Array.isArray(json)) throw new Error('UPBIT_MARKETS_SHAPE');
   return (json as Record<string, unknown>[])
     .filter((m) => typeof m.market === 'string' && /^KRW-[A-Z0-9]{1,15}$/.test(m.market) && typeof m.korean_name === 'string')
     .map((m) => {
-      const ev = m.market_event as { warning?: unknown } | undefined;
-      return { market: m.market as string, name: (m.korean_name as string).trim(), english: typeof m.english_name === 'string' ? m.english_name : '', warning: m.market_warning === 'CAUTION' || ev?.warning === true };
+      const ev = m.market_event as { warning?: unknown; caution?: Record<string, unknown> } | undefined;
+      const out: CoinMarket = { market: m.market as string, name: (m.korean_name as string).trim(), english: typeof m.english_name === 'string' ? m.english_name : '', warning: m.market_warning === 'CAUTION' || ev?.warning === true };
+      if (ev?.caution && typeof ev.caution === 'object') out.cautions = UPBIT_CAUTIONS.filter(([k]) => ev.caution![k] === true).map(([, label]) => label);
+      return out;
     });
 }
 
@@ -33,11 +38,12 @@ export function parseUpbitDays(json: unknown, market: string, retrievedAt: Date)
 }
 
 /** Trading value of the last 24 hours, KRW, per market (one request for many markets). */
-export function parseUpbitTickers(json: unknown): Map<string, { value24h: number; changePct: number }> {
-  const out = new Map<string, { value24h: number; changePct: number }>();
+export function parseUpbitTickers(json: unknown): Map<string, { value24h: number; changePct: number; price?: number }> {
+  const out = new Map<string, { value24h: number; changePct: number; price?: number }>();
   if (!Array.isArray(json)) return out;
   for (const t of json as Record<string, unknown>[]) {
-    if (typeof t.market === 'string') out.set(t.market, { value24h: Number(t.acc_trade_price_24h) || 0, changePct: (Number(t.signed_change_rate) || 0) * 100 });
+    const price = Number(t.trade_price);
+    if (typeof t.market === 'string') out.set(t.market, { value24h: Number(t.acc_trade_price_24h) || 0, changePct: (Number(t.signed_change_rate) || 0) * 100, ...(price > 0 ? { price } : {}) });
   }
   return out;
 }

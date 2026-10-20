@@ -28,7 +28,7 @@ export const DEPTH: Record<2 | 3, readonly string[]> = {
   3: ['#tab-strategy', '#horizons', '.sh-card'],
 };
 
-/** One line per tab, for 초보자: what the tab answers, in plain words. A coin's 기업 체력 tab is 수급. */
+/** One line per tab, for 초보자: what the tab answers, in plain words. A coin's 기업 체력 tab is 체력 (G-272). */
 export function levelGuide(tab: string, kind?: string, report = true): string {
   const text: Record<string, string> = {
     // Only a report page has the "쉽게 보면" card (personaCards).
@@ -36,7 +36,7 @@ export function levelGuide(tab: string, kind?: string, report = true): string {
       : '맨 위 숫자가 오늘 가격이고, 그 아래 작은 차트가 최근 흐름이에요. 모르는 말은 옆의 ? 를 누르면 풀이가 나와요.',
     technical: '타이밍은 가격 흐름과 지표로 지금이 오르는 흐름(강세)인지 내리는 흐름(약세)인지 보는 탭이에요. 앞날을 맞힌다는 뜻은 아니에요.',
     fundamentals: kind === 'coin'
-      ? '수급은 누가 얼마나 사고팔았는지, 돈이 들어오는 쪽인지 나가는 쪽인지 보는 탭이에요.'
+      ? '체력은 코인의 덩치(시가총액), 거래가 얼마나 활발한지, 앞으로 풀릴 물량, 해외와 가격 차이, 거래해 온 기간을 보는 탭이에요. 아래 수급에서 돈이 들어오는 쪽인지 나가는 쪽인지도 봐요.'
       : '기업 체력은 회사가 돈을 잘 버는지(실적), 이익에 비해 주가가 비싼지(PER·PBR), 누가 사고파는지(수급)를 보는 탭이에요.',
     news: kind === 'coin' ? '이 코인에 관한 뉴스를 모았어요. 제목만 보고 판단하지 말고 원문을 열어 확인해 주세요.'
       : '이 회사 뉴스와, 회사가 법에 따라 직접 알린 공시를 모았어요. 공시가 원문이라 뉴스보다 정확해요.',
