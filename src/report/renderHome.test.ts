@@ -10,7 +10,7 @@ const entry = (symbol: string, changePct: number, kind: HomeEntry['kind'] = 'sto
   report: { symbol, name: symbol, date: '2026-10-06', headline: '한 줄', price: { close: 100, changePct, volume: 1, volumeRatio20: 1 } } as unknown as DailyReport,
 });
 
-test('home: no view bar or market tabs, and no picks, saved screens or search box (G-264)', () => {
+test('home: no view bar or market tabs, and no picks, saved screens or search box (G-266)', () => {
   const html = renderHome({ entries: [entry('AAA', 9), entry('BBB', 0.1, 'etf')], selection: null, universe: null, pulse: null, indices: [] });
   assert.ok(!html.includes('id="pz-note"') && !html.includes('class="mkt-tabs"'));
   for (const gone of ['id="today"', 'id="myscreens"', 'class="top-search"', 'id="more"', 'class="home-rail"', 'id="home-filings"']) assert.ok(!html.includes(gone), gone);
@@ -37,7 +37,7 @@ test('G-231: a live page rebuilt today is not a report made today; lists, pills 
   assert.deepEqual([info.OLD!.d, info.NEW!.d, info.NONE!.d], ['2026-10-05', '2026-10-16', '']);
 });
 
-test('G-264: home is the date with the market in one line, my stocks, three issues and the scorecard line', async () => {
+test('G-266: home is the date with the market in one line, my stocks, three issues and the scorecard line', async () => {
   const { marketPulse } = await import('../analysis/quickCalc.js');
   const calcs = [['BEARISH', 20], ['BULLISH', 80], ['NEUTRAL', 50]].map(([level, score]) => ({ date: '2026-10-16', signal: { level, score: Number(score) / 100 }, moves: [{ days: 20, pct: 0 }] }));
   const html = renderHome({ entries: [entry('AAA', 9), entry('BBB', 1)], selection: null, universe: null, pulse: marketPulse(calcs as never), indices: [{ symbol: 'KOSPI', name: '코스피', date: '2026-10-16', close: 5668.05, changePct: 2.05, closes: [] }] });

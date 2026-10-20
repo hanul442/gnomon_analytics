@@ -163,7 +163,7 @@ export function renderHome(data: HomeData): string {
   const entries = data.entries.filter((e) => e.group !== 'past' && e.group !== 'daily' && e.group !== 'request');
   const order = { core: 0, weekly: 1, request: 2, past: 3, daily: 4 } as const;
   const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
-  // G-264 (UI 덜어내기): four blocks: the date with the market in one line, my stocks, three issues, the scorecard line.
+  // G-266 (UI 덜어내기): four blocks: the date with the market in one line, my stocks, three issues, the scorecard line.
   // The notices sit as one slim line right under the date (한서님 10/20).
   // Search lives in 찾기; picks, saved screens, filings, the plan card and 더 보기 moved to their own tabs.
   const day = data.pulse?.date ?? data.indices[0]?.date ?? '';
@@ -176,7 +176,7 @@ ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...
 }
 
 /**
- * G-264 (UI 덜어내기, 한서님 10/20): the market as one line under the date. The big index card, the market sentence,
+ * G-266 (UI 덜어내기, 한서님 10/20): the market as one line under the date. The big index card, the market sentence,
  * the bar and the four shortcuts are gone; the indices link to the market report.
  */
 function marketLine(indices: readonly IndexQuote[], href: string, day: string): string {

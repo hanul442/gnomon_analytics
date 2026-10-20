@@ -150,7 +150,7 @@ test('daily picks (G-56): drawn once a day from the screener, reported once, sho
   assert.equal(calls.length, picks.length);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
   const reports = await readFile(join(root, 'site', 'reports.html'), 'utf8');
-  assert.ok(home.includes('<title>') && reports.includes('id="daily"') && reports.includes(`href="${picks[0]!.symbol}/index.html"`), 'G-264: daily picks live in the report list');
+  assert.ok(home.includes('<title>') && reports.includes('id="daily"') && reports.includes(`href="${picks[0]!.symbol}/index.html"`), 'G-266: daily picks live in the report list');
   // A re-run the same day draws nothing new and calls no model.
   calls.length = 0;
   await runDaily({ ...opts, now: new Date('2026-10-05T11:00:00Z') });

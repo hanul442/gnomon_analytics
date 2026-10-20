@@ -84,7 +84,7 @@ test('a settled run writes the report once and renders the site', async () => {
   assert.ok(page.includes('HBM4 양산 돌입'));
   assert.ok(page.includes('3분기 영업이익 사상 최대'));
   assert.match(await readFile(join(root, 'site', '000660', 'index.html'), 'utf8'), /2026-10-02/);
-  // The report list names the covered stocks (G-264: no longer on the home page).
+  // The report list names the covered stocks (G-266: no longer on the home page).
   const list = await readFile(join(root, 'site', 'reports.html'), 'utf8');
   assert.ok(list.includes('href="000660/index.html"') && list.includes('SK하이닉스'));
   // Search (in 찾기) covers listed stocks; without a list this run it still has the covered ones.
