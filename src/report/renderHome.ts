@@ -182,7 +182,9 @@ ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...
 function marketLine(indices: readonly IndexQuote[], href: string, day: string): string {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(day) ? `${Number(day.slice(5, 7))}월 ${Number(day.slice(8, 10))}일` : '오늘';
   const ix = indices.slice(0, 2).map((i) => `<span class="hh-ix">${esc(i.name)} <b>${i.close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span></span>`).join('');
-  return `<section class="block hh" id="mkt-hero"><h1 class="hh-d">${d}</h1>${ix ? `<a class="hh-ixs" href="${esc(href)}">${ix}<span class="hh-go" aria-hidden="true">›</span></a>` : ''}</section>`;
+  // G-268: one more line into 세계 (world indices, rates, FX, commodities, world news); its numbers come from world.json.
+  const world = `<a class="hh-world" href="world.html"><b>세계</b><span id="hh-world">증시·금리·환율·원자재·뉴스 한눈에</span><span class="hh-go" aria-hidden="true">›</span></a>`;
+  return `<section class="block hh" id="mkt-hero"><h1 class="hh-d">${d}</h1>${ix ? `<a class="hh-ixs" href="${esc(href)}">${ix}<span class="hh-go" aria-hidden="true">›</span></a>` : ''}${world}</section>`;
 }
 
 /** G-244: the scorecard's headline as one line in the page (the full card stays in the wide screen's side rail). */
@@ -289,6 +291,7 @@ const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;m
 .mh-go i{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:var(--pill);border:1px solid var(--line);box-shadow:0 6px 16px -10px rgba(10,22,38,.35);color:var(--fg);transition:transform .2s cubic-bezier(.34,1.5,.64,1)}.mh-go a:active i{transform:scale(.9)}.mh-go svg{width:21px;height:21px}
 #news-issues .card{border-radius:26px}#ni-home .ni-stocks,#ni-home-when{display:none}#ni-home .ni-row{grid-template-columns:30px minmax(0,1fr) auto;align-items:center;padding:12px 0}#ni-home .ni-n{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--soft);font-size:13px}#ni-home .ni-t{-webkit-line-clamp:1;font-weight:600}
 .mh-us-btn{flex:none;min-height:40px;padding:0 12px;border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer}.mh-us{margin-top:10px}.mh-us[hidden]{display:none}
+.hh-world{display:flex;align-items:baseline;gap:8px;margin-top:6px;font-size:13px;color:var(--muted);text-decoration:none}.hh-world b{font-weight:700;color:var(--fg)}.hh-world #hh-world{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hh-world .up{color:#f04452}.hh-world .down{color:#3182f6}
 .hh{margin-top:18px}.hh-d{margin:0;font-size:26px;line-height:1.25;font-weight:500;letter-spacing:-.02em;color:var(--fg)}.hh-ixs{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;margin-top:4px;font-size:13px;color:var(--muted);text-decoration:none}.hh-ix b{font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums}.hh-go{margin-left:auto}#mkt-hero+#watch-slot+#watch,.hh+#watch-slot+#watch{margin-top:22px}
 #mkt-hero~.banner{margin-top:14px}:root body #mkt-hero~.banner .bn-slide{display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 14px;border-radius:18px;background:var(--surface);border:1px solid var(--glass-line,var(--line));box-shadow:none;color:var(--fg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 :root body #mkt-hero~.banner .bn-tag{flex:none;order:1;background:var(--soft);color:var(--fg2);font-size:11px;font-weight:600}:root body #mkt-hero~.banner .bn-art{flex:none;order:0;width:30px;height:30px;font-size:16px;background:var(--soft);box-shadow:none}:root body #mkt-hero~.banner .bn-slide b{order:2;flex:1;min-width:0;font-size:14.5px;font-weight:500;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -304,6 +307,9 @@ const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;m
 </style>`;
 
 const HOME_SCRIPT = `<script>
+// G-268: three world numbers on the 세계 line (S&P 500, 니케이, WTI) from world.json, when it is there.
+fetch('world.json').then(function(r){return r.ok?r.json():null;}).then(function(j){var el=document.getElementById('hh-world');if(!j||!el)return;var all=(j.indices||[]).concat(j.macro||[]);var pick=[['.INX','S&P'],['.N225','니케이'],['WTI','유가']].map(function(p){var q=all.filter(function(x){return x.key===p[0];})[0];if(!q||q.changePct==null)return '';var v=q.changePct;return p[1]+' <span class="'+(v>0?'up':v<0?'down':'')+'">'+(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1)+'%</span>';}).filter(Boolean);if(pick.length)el.innerHTML=pick.join(' · ');}).catch(function(){});
+
 (function () {
   var KEY = 'gnm-watch';
   var read = function () { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
