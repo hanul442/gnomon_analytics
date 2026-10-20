@@ -1,3 +1,5 @@
+import { benchmarkSide, changeFrom, CLOSE_HHMM, COMMITTEE_MIN_UP, committeeSide, CONTEST_METHOD, CONTEST_START_KRW, expectedFillDate, fillIndex, MAX_HOLDINGS, MAX_ORDER_KRW, MAX_WEIGHT, MIN_ORDER_KRW, playerSide, RANK_MIN_CARDS, ranking as contestRanking, tierOf, TIERS, cleanNickname, review as contestReview, seasonOf as contestSeasonOf, weekdaysLeft, type Order as ContestOrder, type SeasonFile, type Side as ContestSide, type ContestIndex } from '../analysis/contest.js';
+import { invalidationOf } from '../analysis/analysts.js';
 import { cleanPrefs, notifyUser, prefsOf } from './notify.js';
 import { fetchWorldBars, parseWorldQuote, US_CODE, usTicker, worldQuoteUrl } from '../sources/naverWorld.js';
 import { US_PAGE_BARS, usPage } from '../analysis/usPage.js';
@@ -537,15 +539,15 @@ route('GET', '/me/export', async ({ req, env, now }) => {
   const u = await authed(req, env, now), db = env.DB;
   const all = (t: string) => db.prepare(`SELECT * FROM ${t} WHERE user_id = ?`).bind(u.id).all().then((r) => r.results);
   const mailLog = await db.prepare('SELECT kind, subject, status, error, created_at FROM mail_log WHERE user_id = ? ORDER BY id').bind(u.id).all().then((r) => r.results);
-  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'custom_experts', 'price_alerts', 'notify_prefs', 'user_settings'].map(all));
-  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings, mailLog };
+  const [ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings, contestOrders, contestProfile] = await Promise.all(['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'custom_experts', 'price_alerts', 'notify_prefs', 'user_settings', 'contest_orders', 'contest_profiles'].map(all));
+  return { exportedAt: iso(now), user: { email: u.email, plan: u.plan, createdAt: u.created_at }, ledger, creditRequests, actions, questions, surveys, feedback, events, screens, notifications, watchlist, reportJobs, experts, priceAlerts, notifyPrefs, settings, contestOrders, contestProfile, mailLog };
 });
 
 route('POST', '/me/delete', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
   if (b.confirm !== '삭제') fail(400, 'CONFIRM', "확인 문구 '삭제'를 적어 주세요.");
   const db = env.DB;
-  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'custom_experts', 'push_subs', 'notify_prefs', 'price_alerts', 'user_settings', 'mail_log', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
+  await db.batch([...['ledger', 'credit_requests', 'action_requests', 'questions', 'surveys', 'feedback', 'events', 'screens', 'notifications', 'watchlists', 'report_jobs', 'ai_requests', 'custom_experts', 'push_subs', 'notify_prefs', 'price_alerts', 'user_settings', 'contest_orders', 'contest_profiles', 'mail_log', 'sessions'].map((t) => db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).bind(u.id)),
     db.prepare('DELETE FROM login_tokens WHERE email = ?').bind(u.email), db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)]);
   return { ok: true };
 });
@@ -1037,6 +1039,138 @@ route('POST', '/alerts/price', async ({ req, env, now }) => {
 route('POST', '/alerts/price/(\\d+)/delete', async ({ req, env, now, params }) => {
   const u = await authed(req, env, now);
   await env.DB.prepare('DELETE FROM price_alerts WHERE id = ? AND user_id = ?').bind(Number(params[0]), u.id).run();
+  return { ok: true };
+});
+
+// G-251: the mock-trading contest against the AI committee (나 vs 위원회). Orders live here; the season file the
+// daily build publishes (contest/<season>.json) has the sessions, closes and the committee's log, and every
+// account, fill and score is replayed from the two (analysis/contest.ts). No real money, no AI view on a trade.
+const contestCache = new Map<string, { at: number; value: Promise<unknown> }>();
+async function siteJson<T>(env: Env, deps: Deps, path: string, now: Date): Promise<T | null> {
+  const hit = contestCache.get(path);
+  if (hit && now.getTime() - hit.at < 5 * 60_000) return hit.value as Promise<T | null>;
+  const value = deps.fetch(`${env.SITE_URL.replace(/\/$/, '')}/${path}`, { signal: AbortSignal.timeout(10_000) }).then((r) => (r.ok ? r.json() as Promise<T> : null)).catch(() => null);
+  contestCache.set(path, { at: now.getTime(), value });
+  value.then((v) => { if (v == null) contestCache.delete(path); });
+  return value;
+}
+const emptySeason = (season: string): SeasonFile => ({ method: CONTEST_METHOD, season, builtAt: '', sessions: [], closed: false, names: {}, closes: {}, committee: [] });
+interface OrderRow { id: number; user_id: string; season: string; side: 'BUY' | 'SELL'; symbol: string; amount: number; up_pct: number | null; invalidation: number | null; reason: string; created_at: string; cancelled_at: string | null }
+const toOrder = (r: OrderRow): ContestOrder => ({ id: r.id, createdAt: r.created_at, side: r.side, symbol: r.symbol, amount: r.amount, upPct: r.up_pct, invalidation: r.invalidation, reason: r.reason, cancelled: !!r.cancelled_at });
+const sideView = (x: ContestSide) => ({
+  started: x.start >= 0, balance: Math.round(x.balance), ret: x.ret, maxDrawdown: x.maxDrawdown, cash: Math.round(x.cash), trades: x.trades,
+  skill: x.skill, brier: x.brier, cards: x.cards.length, scored: x.cards.filter((c) => c.hit != null).length,
+  holdings: x.holdings.map((h) => ({ symbol: h.symbol, name: h.name, weight: h.weight, value: Math.round(h.value), cost: Math.round(h.cost), price: h.price })),
+});
+async function maybeAuthed(req: Request, env: Env, now: Date): Promise<User | null> {
+  return req.headers.get('Authorization') ? authed(req, env, now) : null;
+}
+
+route('GET', '/contest', async ({ req, env, deps, now }) => {
+  const u = await maybeAuthed(req, env, now);
+  const index = await siteJson<ContestIndex>(env, deps, 'contest.json', now);
+  if (!index) fail(503, 'CONTEST_NOT_READY', '대회 자료를 아직 만들지 못했어요. 다음 업데이트 뒤 다시 열어 주세요.');
+  const want = new URL(req.url).searchParams.get('season') ?? index!.current;
+  if (!/^\d{4}-\d{2}$/.test(want) || !index!.seasons.includes(want)) fail(404, 'NO_SEASON', '없는 시즌이에요.');
+  const file = (await siteJson<SeasonFile>(env, deps, `contest/${want}.json`, now)) ?? emptySeason(want);
+  const rows = (await env.DB.prepare('SELECT * FROM contest_orders WHERE season = ? ORDER BY id').bind(want).all<OrderRow>()).results;
+  const byUser = new Map<string, ContestOrder[]>();
+  for (const r of rows) (byUser.get(r.user_id) ?? byUser.set(r.user_id, []).get(r.user_id)!).push(toOrder(r));
+  const committee = committeeSide(file), bench = benchmarkSide(file);
+  const players = [...byUser].map(([id, os]) => ({ id, side: playerSide(file, os).side }));
+  const rank = contestRanking(players, committee);
+  // G-251: only readers who chose a public nickname are listed; nobody's holdings or account during a season.
+  const profiles = new Map((await env.DB.prepare('SELECT user_id, nickname, public FROM contest_profiles').all<{ user_id: string; nickname: string; public: number }>()).results.map((p) => [p.user_id, { nickname: p.nickname, public: !!p.public }]));
+  const sideOf = new Map(players.map((p) => [p.id, p.side]));
+  const listed = rank.ranked.filter((r) => profiles.get(r.id)?.public);
+  const closedSeason = file.closed || want < index!.current;
+  const leaderboard = listed.slice(0, 20).map((r) => ({ rank: r.rank, nickname: profiles.get(r.id)!.nickname, tier: tierOf(sideOf.get(r.id)!), skill: r.skill, cards: sideOf.get(r.id)!.cards.length, me: r.id === u?.id }));
+  // After the season: the top listed players' cards (stock, date, chance, outcome), without their written reasons.
+  const shown = closedSeason ? listed.slice(0, 10).map((r) => ({ rank: r.rank, nickname: profiles.get(r.id)!.nickname, tier: tierOf(sideOf.get(r.id)!), skill: r.skill,
+    cards: sideOf.get(r.id)!.cards.map((c) => ({ symbol: c.symbol, name: c.name, date: c.date, upPct: c.upPct, hit: c.hit })) })) : [];
+  const current = want === index!.current;
+  const mine = u ? byUser.get(u.id) ?? [] : [];
+  const revealed = new Set(mine.filter((o) => o.side === 'BUY' && !o.cancelled).map((o) => o.symbol));
+  const held = new Set(committee.holdings.map((h) => h.symbol));
+  let me: Record<string, unknown> | null = null;
+  if (u) {
+    const r = playerSide(file, mine), side = r.side;
+    const status = new Map(r.statuses.map((st) => [st.id, st]));
+    me = {
+      ...sideView(side),
+      vs: side.start >= 0 ? { committee: changeFrom(committee, side.start), benchmark: changeFrom(bench, side.start), since: file.sessions[side.start] } : null,
+      cardList: side.cards.map((c) => ({ symbol: c.symbol, name: c.name, date: c.date, price: c.price, upPct: c.upPct, close: c.close, hit: c.hit, invalidation: c.invalidation, brokeOn: c.brokeOn, reason: c.reason, committeeUp: c.committeeUp })),
+      orders: mine.map((o) => ({ id: o.id, side: o.side, symbol: o.symbol, name: file.names[o.symbol] ?? index!.live.find((l) => l.symbol === o.symbol)?.name ?? o.symbol, amount: o.amount, upPct: o.upPct, createdAt: o.createdAt, ...status.get(o.id) })).reverse(),
+      review: contestReview(side),
+      rank: rank.ranked.find((x) => x.id === u.id)?.rank ?? null,
+      tier: tierOf(side),
+      profile: profiles.get(u.id) ?? null,
+    };
+  }
+  return {
+    season: want, current: index!.current, seasons: index!.seasons, closed: closedSeason, asOf: file.sessions.at(-1) ?? null,
+    sessions: file.sessions.length, left: current && file.sessions.length ? weekdaysLeft(file.sessions.at(-1)!) : current ? null : 0,
+    rules: { start: CONTEST_START_KRW, maxWeight: MAX_WEIGHT, maxHoldings: MAX_HOLDINGS, minOrder: MIN_ORDER_KRW, rankMinCards: RANK_MIN_CARDS, committeeMinUp: COMMITTEE_MIN_UP, closeAt: CLOSE_HHMM },
+    committee: sideView(committee), benchmark: sideView(bench),
+    // The board to buy from (this season only). The committee's number shows once the reader has filed a card on it.
+    board: current ? index!.live.map((l) => ({ symbol: l.symbol, name: l.name, close: l.close, held: held.has(l.symbol), ...(revealed.has(l.symbol) ? { upPct: l.upPct } : {}) })) : [],
+    players: rank.n, entrants: byUser.size, committeeRank: rank.committeeRank, committeeTier: tierOf(committee), leaderboard, shown,
+    tiers: TIERS.map((t) => ({ name: t.name, min: Number.isFinite(t.min) ? t.min : null })), me,
+  };
+});
+
+route('POST', '/contest/orders', async ({ req, env, deps, now }) => {
+  const u = await authed(req, env, now), b = await body(req), db = env.DB;
+  const index = await siteJson<ContestIndex>(env, deps, 'contest.json', now);
+  if (!index) fail(503, 'CONTEST_NOT_READY', '대회 자료를 아직 만들지 못했어요. 다음 업데이트 뒤 다시 해 주세요.');
+  const side = b.side === 'SELL' ? 'SELL' : b.side === 'BUY' ? 'BUY' : fail(400, 'BAD_SIDE', '사기 또는 팔기를 골라 주세요.');
+  const symbol = str(b.symbol, 12).toUpperCase();
+  const fillDate = expectedFillDate(now), season = contestSeasonOf(fillDate);
+  const today = await db.prepare('SELECT COUNT(*) AS n FROM contest_orders WHERE user_id = ? AND created_at >= ?').bind(u.id, kstDayStart(now)).first<{ n: number }>();
+  if ((today?.n ?? 0) >= 20) fail(429, 'ORDER_LIMIT', '대회 주문은 하루 20번까지예요. 내일 다시 해 주세요.');
+  const file = (await siteJson<SeasonFile>(env, deps, `contest/${season}.json`, now)) ?? emptySeason(season);
+  const mine = (await db.prepare('SELECT * FROM contest_orders WHERE user_id = ? AND season = ? ORDER BY id').bind(u.id, season).all<OrderRow>()).results.map(toOrder);
+  const r = playerSide(file, mine), pendingIds = new Set(r.statuses.filter((x) => x.state === 'pending').map((x) => x.id));
+  const pending = mine.filter((o) => pendingIds.has(o.id));
+  const holding = new Set([...r.side.holdings.map((h) => h.symbol), ...pending.filter((o) => o.side === 'BUY').map((o) => o.symbol)]);
+  for (const o of pending) if (o.side === 'SELL') holding.delete(o.symbol);
+  let amount = 0, upPct: number | null = null, invalidation: number | null = null;
+  if (side === 'BUY') {
+    const l = index!.live.find((x) => x.symbol === symbol);
+    if (!l) fail(400, 'NOT_ON_BOARD', '대회 종목은 위원회가 지금 판단 중인 국내 주식이에요. 목록에서 골라 주세요.');
+    amount = int(b.amount); upPct = int(b.upPct);
+    if (!(amount >= MIN_ORDER_KRW && amount <= MAX_ORDER_KRW)) fail(400, 'BAD_AMOUNT', `금액은 ${MIN_ORDER_KRW.toLocaleString('ko-KR')}원부터 ${MAX_ORDER_KRW.toLocaleString('ko-KR')}원까지 원 단위로 적어 주세요.`);
+    if (!(upPct >= 1 && upPct <= 99)) fail(400, 'CARD_REQUIRED', '판단 카드: 시즌 끝에 산 가격보다 높을 확률을 1~99%로 적어 주세요.');
+    if (b.invalidation != null && b.invalidation !== '') {
+      invalidation = invalidationOf('BULLISH', l!.close, b.invalidation) ?? fail(400, 'BAD_INVALIDATION', `틀렸다고 볼 가격은 지금 가격(${l!.close.toLocaleString('ko-KR')}원)보다 낮고 3분의 2보다는 높게 적어 주세요.`);
+    }
+    if (!holding.has(symbol) && holding.size >= MAX_HOLDINGS) fail(400, 'MAX_HOLDINGS', `한 번에 ${MAX_HOLDINGS}종목까지 가질 수 있어요. 먼저 하나를 팔아 주세요.`);
+  } else {
+    if (!holding.has(symbol)) fail(400, 'NOT_HELD', '갖고 있거나 체결을 기다리는 종목만 팔 수 있어요.');
+  }
+  const row = await db.prepare('INSERT INTO contest_orders (user_id, season, side, symbol, amount, up_pct, invalidation, reason, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id')
+    .bind(u.id, season, side, symbol, amount, upPct, invalidation, side === 'BUY' ? str(b.reason, 80) : '', iso(now)).first<{ id: number }>();
+  return { id: row?.id, season, fillDate };
+});
+
+route('POST', '/contest/profile', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req), db = env.DB;
+  const show = b.public === true;
+  if (!show && !b.nickname) { await db.prepare('DELETE FROM contest_profiles WHERE user_id = ?').bind(u.id).run(); return { ok: true, profile: null }; }
+  const nickname = cleanNickname(b.nickname) ?? fail(400, 'BAD_NICKNAME', '닉네임은 한글·영문·숫자·_ 2~12자로 적어 주세요. 연락처나 대화방을 떠올리게 하는 말은 쓸 수 없어요.');
+  const taken = await db.prepare('SELECT user_id FROM contest_profiles WHERE nickname = ? COLLATE NOCASE AND user_id != ?').bind(nickname, u.id).first();
+  if (taken) fail(409, 'NICK_TAKEN', '다른 사람이 쓰는 닉네임이에요.');
+  await db.prepare('INSERT INTO contest_profiles (user_id, nickname, public, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET nickname = excluded.nickname, public = excluded.public, updated_at = excluded.updated_at').bind(u.id, nickname, show ? 1 : 0, iso(now)).run();
+  return { ok: true, profile: { nickname, public: show } };
+});
+
+route('POST', '/contest/orders/(\\d+)/cancel', async ({ req, env, deps, now, params }) => {
+  const u = await authed(req, env, now), db = env.DB;
+  const o = await db.prepare('SELECT * FROM contest_orders WHERE id = ? AND user_id = ?').bind(Number(params[0]), u.id).first<OrderRow>();
+  if (!o || o.cancelled_at) fail(404, 'NO_ORDER', '취소할 주문이 없어요.');
+  const file = await siteJson<SeasonFile>(env, deps, `contest/${o!.season}.json`, now);
+  if (file && fillIndex(file.sessions, o!.created_at) >= 0) fail(400, 'FILLED', '이미 체결된 주문이에요. 팔기로 정리해 주세요.');
+  await db.prepare('UPDATE contest_orders SET cancelled_at = ? WHERE id = ?').bind(iso(now), o!.id).run();
   return { ok: true };
 });
 

@@ -30,6 +30,8 @@ import { renderCoinsRedirect } from '../report/renderCoins.js';
 import { watchInfo } from '../report/conclusion.js';
 import { renderGuide, renderUpdates, renderSurvey, validBanners } from '../report/alphaPages.js';
 import { trackSignals } from './signals.js';
+import { updateContest } from './contest.js';
+import { renderVsPage } from '../report/renderVs.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
 import { SITE_CONFIG } from '../report/alpha.js';
 import { renderAccount, renderLogin, renderOnboarding } from '../report/renderAlpha.js';
@@ -894,6 +896,9 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const issueChanges = new Map<string, number | null>([...home.map((e) => [e.symbol, e.report?.price?.changePct ?? null] as const), ...lite.filter((r) => r.changePct != null).map((r) => [r.symbol, r.changePct] as const)]);
   await writeFile(join(siteDir, 'news-issues.json'), JSON.stringify(rankNewsIssues(newsArticles, { now: new Date(), names: issueNames, changes: issueChanges })));
   await writeFile(join(siteDir, 'issues.html'), renderNewsIssuesPage());
+  // G-251: the contest against the committee (나 vs 위원회): the committee's decision log and the season files.
+  await updateContest(root, siteDir, extras.now ?? new Date(), issueNames);
+  await writeFile(join(siteDir, 'vs.html'), renderVsPage());
   await writeFile(join(siteDir, 'signals.html'), renderSignalsPage());
   // The chart library is served from the site itself, not a CDN.
   // "exports" hides the standalone build; package.json is exported, so locate it from there.

@@ -8,6 +8,15 @@ import { SAMPLE_XML, zipOf } from '../sources/dartDocument.test.js';
 
 const SITE = 'https://hanul442.github.io/gnomon_analytics';
 
+/** G-251: what the daily build published for the contest; tests change it and move the clock past the 5-minute cache. */
+const board = [{ symbol: '000660', name: 'SK하이닉스', upPct: 70, baseDate: '2026-10-01', close: 100 }, { symbol: '005930', name: '삼성전자', upPct: 40, baseDate: '2026-10-01', close: 50 }];
+const contest = {
+  index: { method: 'gnm-contest-v1', current: '2026-10', seasons: ['2026-10'], asOf: '2026-10-02', live: board, target: ['000660'] },
+  file: { method: 'gnm-contest-v1', season: '2026-10', builtAt: 'x', closed: false, sessions: ['2026-10-01', '2026-10-02'], names: { '000660': 'SK하이닉스', '005930': '삼성전자' },
+    closes: { '000660': [100, 100], '005930': [50, 50] } as Record<string, number[]>,
+    committee: [{ date: '2026-09-30', live: board, target: ['000660'], method: 'gnm-contest-v1', recordedAt: 'x' }] },
+};
+
 /** Uses up a user's free opens this month (G-126) so a test can check the paid path. */
 async function spendFreeOpens(t: { env: Env }, email: string): Promise<void> {
   const id = (await t.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first<{ id: string }>())!.id;
@@ -25,6 +34,8 @@ function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
       seen.push(String(url));
       if (String(url).startsWith('https://opendart.fss.or.kr/api/document.xml')) { const no = new URL(String(url)).searchParams.get('rcept_no')!; return no === '20261002000999' ? new Response('<?xml version="1.0"?><result><status>014</status></result>', { headers: { 'content-type': 'application/xml' } }) : new Response(zipOf({ [`${no}.xml`]: SAMPLE_XML })); }
       if (String(url).startsWith('https://api.resend.com')) { const b = JSON.parse(String(init!.body)); mails.push({ to: b.to[0], text: b.text }); return new Response('{}', { status: 200 }); }
+      if (String(url) === `${SITE}/contest.json`) return Response.json(contest.index);
+      if (String(url) === `${SITE}/contest/2026-10.json`) return Response.json(contest.file);
       if (String(url).endsWith('/s/000660.json')) return Response.json({ name: 'SK하이닉스', market: 'KOSPI', bars: [['2026-10-02', 1, 2, 1, 2, 10]] });
       if (String(url).startsWith('https://api.stock.naver.com/chart/foreign/item/ZZZZ.O/')) return Response.json([]);
       if (String(url) === 'https://www.sec.gov/files/company_tickers.json') return Response.json({ 0: { cik_str: 1682852, ticker: 'MRNA', title: 'Moderna, Inc.' } });
@@ -898,4 +909,66 @@ test('plan checks (G-215): every server gate answers by the permission table for
       assert.notEqual(r.status, 500, `${plan} ${feature}: ${JSON.stringify(r.body)}`);
     }
   }
+});
+
+test('contest (G-251): cards required, the committee number shows after my card, fills at the next close, cancel only while pending', async () => {
+  const t = setup();
+  const out = await t.call('GET', '/contest');
+  assert.equal(out.status, 200, JSON.stringify(out.body));
+  assert.equal(out.body.me, null);
+  assert.equal(out.body.board.some((b: { upPct?: number }) => b.upPct != null), false);
+  assert.equal(out.body.committee.started, true);
+  const boss = await t.login('boss@example.com');
+  const inv = await t.call('POST', '/admin/invites', { plan: 'beta', maxUses: 1 }, boss.session);
+  const a = await t.login('a@example.com', inv.body.code);
+  assert.equal((await t.call('POST', '/contest/orders', { side: 'BUY', symbol: '000660', amount: 3_000_000 }, a.session)).body.error, 'CARD_REQUIRED');
+  assert.equal((await t.call('POST', '/contest/orders', { side: 'BUY', symbol: '035420', amount: 3_000_000, upPct: 60 }, a.session)).body.error, 'NOT_ON_BOARD');
+  assert.equal((await t.call('POST', '/contest/orders', { side: 'BUY', symbol: '000660', amount: 3_000_000, upPct: 60, invalidation: 120 }, a.session)).body.error, 'BAD_INVALIDATION');
+  const buy = await t.call('POST', '/contest/orders', { side: 'BUY', symbol: '000660', amount: 3_000_000, upPct: 65, invalidation: 90, reason: '실적' }, a.session);
+  assert.equal(buy.status, 200, JSON.stringify(buy.body));
+  assert.equal(buy.body.fillDate, '2026-10-05'); // Monday 12:00 KST: that day's close
+  assert.equal((await t.call('POST', '/contest/orders', { side: 'SELL', symbol: '005930' }, a.session)).body.error, 'NOT_HELD');
+  const sell = await t.call('POST', '/contest/orders', { side: 'SELL', symbol: '000660' }, a.session);
+  assert.equal(sell.status, 200);
+  assert.equal((await t.call('POST', `/contest/orders/${sell.body.id}/cancel`, undefined, a.session)).body.ok, true);
+  let r = await t.call('GET', '/contest', undefined, a.session);
+  assert.deepEqual(r.body.board.map((b: { upPct?: number }) => b.upPct ?? null), [70, null]);
+  assert.deepEqual(r.body.me.orders.map((o: { state: string }) => o.state), ['cancelled', 'pending']);
+  // The build adds Monday's close.
+  contest.file.sessions = ['2026-10-01', '2026-10-02', '2026-10-05'];
+  contest.file.closes = { '000660': [100, 100, 110], '005930': [50, 50, 50] };
+  t.tick(10 * 60_000);
+  r = await t.call('GET', '/contest', undefined, a.session);
+  assert.equal(r.body.me.orders[1].state, 'filled');
+  assert.equal(r.body.me.orders[1].price, 110);
+  assert.equal(r.body.me.cards, 1);
+  assert.equal(r.body.me.cardList[0].committeeUp, 70);
+  assert.equal(r.body.me.holdings[0].symbol, '000660');
+  assert.equal((await t.call('POST', `/contest/orders/${buy.body.id}/cancel`, undefined, a.session)).body.error, 'FILLED');
+  assert.equal((await t.call('GET', '/me/export', undefined, a.session)).body.contestOrders.length, 2);
+  assert.equal((await t.call('GET', '/contest?season=2025-01')).status, 404);
+  // G-251: tiers after three cards, the leaderboard lists public nicknames only, cards open once the season is over.
+  for (let i = 0; i < 2; i++) assert.equal((await t.call('POST', '/contest/orders', { side: 'BUY', symbol: '005930', amount: 1_000_000, upPct: 30, reason: '비밀' }, a.session)).status, 200);
+  assert.equal((await t.call('POST', '/contest/profile', { nickname: '리딩방고수', public: true }, a.session)).body.error, 'BAD_NICKNAME');
+  assert.equal((await t.call('POST', '/contest/profile', { nickname: '해시계', public: true }, a.session)).body.profile.public, true);
+  const b2 = await t.login('boss2@example.com', (await t.call('POST', '/admin/invites', { plan: 'beta', maxUses: 1 }, boss.session)).body.code);
+  assert.equal((await t.call('POST', '/contest/profile', { nickname: '해시계', public: true }, b2.session)).body.error, 'NICK_TAKEN');
+  contest.file.sessions = ['2026-10-01', '2026-10-02', '2026-10-05', '2026-10-06'];
+  contest.file.closes = { '000660': [100, 100, 110, 120], '005930': [50, 50, 50, 45] };
+  t.tick(10 * 60_000);
+  r = await t.call('GET', '/contest', undefined, a.session);
+  assert.equal(r.body.me.cards, 3);
+  assert.equal(r.body.me.skill, Math.round(100 * (1 - ((0.35 ** 2 + 0.3 ** 2 * 2) / 3) / 0.25)));
+  assert.equal(r.body.me.tier.name, '다이아');
+  assert.deepEqual(r.body.leaderboard.map((x: { nickname: string; me: boolean }) => [x.nickname, x.me]), [['해시계', true]]);
+  assert.deepEqual(r.body.shown, []);
+  assert.equal((await t.call('GET', '/contest', undefined, b2.session)).body.leaderboard[0].me, false);
+  (contest.file as { closed: boolean }).closed = true;
+  t.tick(10 * 60_000);
+  r = await t.call('GET', '/contest');
+  assert.equal(r.body.shown[0].nickname, '해시계');
+  assert.equal(r.body.shown[0].cards.length, 3);
+  assert.equal(JSON.stringify(r.body).includes('비밀'), false, 'written reasons stay private');
+  assert.equal(JSON.stringify(r.body.leaderboard).includes('holdings'), false);
+  (contest.file as { closed: boolean }).closed = false;
 });
