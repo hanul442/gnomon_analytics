@@ -701,7 +701,9 @@ route('GET','/us/page/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,deps,params
 // XBRL financials, filings and Form 4 insider trades, and English news, built into the same report as a requested
 // US report (minus the AI) and returned as the panels the page fills. Kept 3 hours per code; the SEC ticker→CIK
 // map is read once a day per isolate, so a page without a CIK does not download it each time.
-const usInfos=new Map<string,{at:number;pending:Promise<Record<string,string>|null>}>();
+const usInfos=new Map<string,{at:number;pending:Promise<Record<string,string>|null>;keep?:number}>();
+// G-270: panels built while SEC or the news feed failed are kept 10 minutes, not 3 hours, so a passing outage does not leave 기업 체력 blank all afternoon.
+const US_INFO_KEEP=3*3600_000,US_INFO_RETRY=10*60_000;
 let cikCache:{at:number;map:Promise<Map<string,number>>}|null=null;
 route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,params,now})=>{
  const code=params[0]!;if(!US_CODE.test(code))fail(400,'BAD_CODE','미국 종목 코드가 아니에요.');
@@ -710,7 +712,7 @@ route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,par
  // The panels depend on the name, CIK and kind the page passes, so they are part of the key (one caller cannot set another's).
  const given=q.get('cik'),key=[code,given&&/^\d{1,10}$/.test(given)?given:'',etf?'etf':'',nameEng.toLowerCase()].join('|');
  let hit=usInfos.get(key);
- if(!hit||now.getTime()-hit.at>=3*3600_000){
+ if(!hit||now.getTime()-hit.at>=(hit.keep??US_INFO_KEEP)){
   usFreshStart(req,now,'info');
   if(usInfos.size>=200)usInfos.delete(usInfos.keys().next().value!);
   const contact=env.EDGAR_CONTACT;
@@ -719,9 +721,11 @@ route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,par
    if(!cikCache||now.getTime()-cikCache.at>=24*3600_000){const map=deps.fetch(tickersUrl,{headers:{'User-Agent':edgarUserAgent(contact),Accept:'application/json'}}).then(r=>{if(!r.ok)throw new Error(`SEC_${r.status}`);return r.json();}).then(b=>cikMap(b));cikCache={at:now.getTime(),map};map.catch(()=>{cikCache=null;});}
    return (await cikCache.map.catch(()=>new Map<string,number>())).get(ticker.replace(/\./g,'-'))??null;
   };
-  const entry={at:now.getTime(),pending:Promise.all([barsOf(code,now,deps.fetch),cikOf()]).then(async([bars,cik])=>{
+  const entry:{at:number;pending:Promise<Record<string,string>|null>;keep?:number}={at:now.getTime(),pending:Promise.all([barsOf(code,now,deps.fetch),cikOf()]).then(async([bars,cik])=>{
    if(bars.length<2)return null;
    const research=await gatherUsResearch({symbol:code,ticker,nameEng,cik,fetch:deps.fetch,now:()=>now,...(contact?{contact}:{})});
+   // A stock with a CIK whose SEC reads failed, or a failed news feed: worth another try soon.
+   if((!etf&&cik==null&&cikCache==null)||research.status.some((x)=>!x.ok))entry.keep=US_INFO_RETRY;
    const report=buildUsReport({symbol:code,name:nameEng,nameEng,ticker,...(etf?{kind:'etf' as const}:{}),bars,research,now});
    return withCurrency('USD',()=>({
     fundamentals:(report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name,report.recentBars??[]):'')+insiderSection(report),

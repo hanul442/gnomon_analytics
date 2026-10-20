@@ -576,7 +576,7 @@ export const TOUR_JS = `
         ['#search|.bottom-nav .nav-field', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
         ['.mode-tabs', '모드 선택', '주식·ETF·코인·테마·공시를 바꿔 가며 보세요. 시장별로 지원되는 조건이 달라요.'],
         ['#sc-filter-open|.bottom-nav [data-dock-filter]', '필터 · AI 조건', '필터를 누르면 AI 조건(원하는 특징을 문장으로)과 직접 조건을 정하는 화면이 열려요. 결과 보기로 돌아와요.'],
-        // G-270 (Bklit funnel, 한서님 10/20 "퍼널차트 가로로된거 스크리너 설명할때"): the funnel gets its own step (skipped while hidden).
+        // G-271 (Bklit funnel, 한서님 10/20 "퍼널차트 가로로된거 스크리너 설명할때"): the funnel gets its own step (skipped while hidden).
         ['#sc-funnel', '조건별로 남은 종목', '조건을 위에서부터 하나씩 걸 때마다 몇 종목이 남는지 가로 깔때기로 보여요. 갑자기 확 줄어드는 줄이 가장 까다로운 조건이에요. 결과가 너무 적으면 그 조건부터 풀어 보세요.'],
         ['#ai-build', 'AI 조건', '원하는 특징을 문장으로 적고 ✦를 누르세요. 실제 생성 대기에는 Thinking Orbs가 표시돼요.'],
         ['#sc-form', '검토·적용·저장', 'AI 제안을 검토해 적용한 뒤 조건을 직접 수정하고 저장하세요. 완료 안내가 나와야 저장된 상태예요. 오류면 다시 확인하세요.'],

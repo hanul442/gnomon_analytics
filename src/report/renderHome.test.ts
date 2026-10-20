@@ -74,7 +74,16 @@ test('G-269: a picture banner on home is the same slim line, its title and 티�
   assert.match(html, /bn-play/);
 });
 
-test('G-270 miniArea draws a small area line only with 5+ closes, in the neutral text colour', async () => {
+test('G-269: the 4.0.0 update film banner says 영상 보기, a teaser film still says 티저 보기', async () => {
+  const { bannerHtml, validBanners } = await import('./alphaPages.js');
+  const list = validBanners([{ title: '알파 4.0.0 업데이트', image: { wide: 'assets/banners/update-4.0.0-wide.jpg', video: 'assets/banners/update-4.0.0.mp4', poster: 'assets/banners/update-4.0.0-poster.jpg' } }, { title: '티저', image: { wide: 'assets/banners/a.jpg', video: 'assets/banners/teaser-beta.mp4' } }], '2026-10-20');
+  const html = bannerHtml(list);
+  assert.match(html, /data-video="assets\/banners\/update-4\.0\.0\.mp4"[^>]*aria-label="알파 4\.0\.0 업데이트 · 영상 보기"/);
+  assert.match(html, /<\/svg>영상 보기<\/span>/);
+  assert.match(html, /<\/svg>티저 보기<\/span>/);
+});
+
+test('G-271 miniArea draws a small area line only with 5+ closes, in the neutral text colour', async () => {
   const { miniArea } = await import('./renderHome.js');
   assert.equal(miniArea([1, 2, 3]), '');
   const svg = miniArea([100, 101, 99, 102, 104]);

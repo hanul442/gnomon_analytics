@@ -105,7 +105,7 @@ ${c.invalidation ? `<div class="mb-line"><span class="mb-k">철회</span>종가 
 ${calibration(x)}${x.kill && x.kill.broke ? `<p class="muted small">철회 가격에 닿은 판단 ${x.kill.broke}건 중 ${x.kill.brokeMissed}건이 결국 빗나갔어요 <span class="fine">(철회 가격을 정한 채점 ${x.kill.set}건)</span></p>` : ''}
 ${mine.length ? `<ol class="mb-calls">${mine.map(row).join('')}</ol><p class="empty mb-none" hidden>관심 종목에 대한 판단이 아직 없어요.</p>${mine.length > 4 ? `<button type="button" class="more-all">최근 판단 ${mine.length}개 모두 보기</button>` : ''}` : '<p class="empty">아직 기록된 판단이 없어요.</p>'}</article>`;
   };
-  // G-270 (Bklit sunburst): every call split by result, then by the member who made it.
+  // G-271 (Bklit sunburst): every call split by result, then by the member who made it.
   const kids = (f: (x: Tally) => number) => board.map(([, x]) => ({ label: x.name, value: Math.round(f(x)) }));
   const sun = outcomeSunburst([
     { label: '맞음', key: 'ok', children: kids((x) => x.hits) },

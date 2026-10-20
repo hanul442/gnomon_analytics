@@ -165,7 +165,7 @@ export function renderHome(data: HomeData): string {
   const order = { core: 0, weekly: 1, request: 2, past: 3, daily: 4 } as const;
   const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
   // G-266 (UI 덜어내기): four blocks: the date with the market in one line, my stocks, three issues, the scorecard line.
-  // The notices sit as one slim line right under the date (한서님 10/20).
+  // The notices sit as one line right under the date (한서님 10/20), a little larger after '맨위 배너만 좀 크게' (G-269).
   // Search lives in 찾기; picks, saved screens, filings, the plan card and 더 보기 moved to their own tabs.
   const day = data.pulse?.date ?? data.indices[0]?.date ?? '';
   const body = `${HOME_STYLE}${marketLine(data.indices, latestDaily(data), day)}
@@ -183,11 +183,13 @@ ${bannerHtml([...wrapupBanners(data.today ?? new Date(Date.now() + 9 * 3600_000)
 function marketLine(indices: readonly IndexQuote[], href: string, day: string): string {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(day) ? `${Number(day.slice(5, 7))}월 ${Number(day.slice(8, 10))}일` : '오늘';
   const ix = indices.slice(0, 2).map((i) => `<span class="hh-ix">${esc(i.name)} <b>${i.close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span>${miniArea(i.closes)}</span>`).join('');
-  return `<section class="block hh" id="mkt-hero"><h1 class="hh-d">${d}</h1>${ix ? `<a class="hh-ixs" href="${esc(href)}">${ix}<span class="hh-go" aria-hidden="true">›</span></a>` : ''}</section>`;
+  // G-268: one more line into 세계 (world indices, rates, FX, commodities, world news); its numbers come from world.json.
+  const world = `<a class="hh-world" href="world.html"><b>세계</b><span id="hh-world">증시·금리·환율·원자재·뉴스 한눈에</span><span class="hh-go" aria-hidden="true">›</span></a>`;
+  return `<section class="block hh" id="mkt-hero"><h1 class="hh-d">${d}</h1>${ix ? `<a class="hh-ixs" href="${esc(href)}">${ix}<span class="hh-go" aria-hidden="true">›</span></a>` : ''}${world}</section>`;
 }
 
 /**
- * G-270 (Bklit 대조표, 한서님 10/20): a tiny area line of the index's recent closes beside its number (Bklit area-chart look).
+ * G-271 (Bklit 대조표, 한서님 10/20): a tiny area line of the index's recent closes beside its number (Bklit area-chart look).
  * Drawn in the text colour (one neutral accent, G-267): the 30-day shape and today's red/blue number never disagree in colour.
  * Nothing is drawn with fewer than 5 closes.
  */
@@ -305,11 +307,12 @@ const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;m
 .mh-go i{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:var(--pill);border:1px solid var(--line);box-shadow:0 6px 16px -10px rgba(10,22,38,.35);color:var(--fg);transition:transform .2s cubic-bezier(.34,1.5,.64,1)}.mh-go a:active i{transform:scale(.9)}.mh-go svg{width:21px;height:21px}
 #news-issues .card{border-radius:26px}#ni-home .ni-stocks,#ni-home-when{display:none}#ni-home .ni-row{grid-template-columns:30px minmax(0,1fr) auto;align-items:center;padding:12px 0}#ni-home .ni-n{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--soft);font-size:13px}#ni-home .ni-t{-webkit-line-clamp:1;font-weight:600}
 .mh-us-btn{flex:none;min-height:40px;padding:0 12px;border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer}.mh-us{margin-top:10px}.mh-us[hidden]{display:none}
+.hh-world{display:flex;align-items:baseline;gap:8px;margin-top:6px;font-size:13px;color:var(--muted);text-decoration:none}.hh-world b{font-weight:700;color:var(--fg)}.hh-world #hh-world{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hh-world .up{color:#f04452}.hh-world .down{color:#3182f6}
 .hh{margin-top:18px}.hh-d{margin:0;font-size:26px;line-height:1.25;font-weight:500;letter-spacing:-.02em;color:var(--fg)}.hh-ixs{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;margin-top:4px;font-size:13px;color:var(--muted);text-decoration:none}.hh-ix b{font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums}.hh-go{margin-left:auto}.hh-sa{width:56px;height:18px;margin-left:6px;vertical-align:-3px;color:var(--fg2)}#mkt-hero+#watch-slot+#watch,.hh+#watch-slot+#watch{margin-top:22px}
-#mkt-hero~.banner{margin-top:14px}:root body #mkt-hero~.banner .bn-slide{display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 14px;border-radius:18px;background:var(--surface);border:1px solid var(--glass-line,var(--line));box-shadow:none;color:var(--fg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-:root body #mkt-hero~.banner .bn-tag{flex:none;order:1;background:var(--soft);color:var(--fg2);font-size:11px;font-weight:600}:root body #mkt-hero~.banner .bn-art{flex:none;order:0;width:30px;height:30px;font-size:16px;background:var(--soft);box-shadow:none}:root body #mkt-hero~.banner .bn-slide b{order:2;flex:1;min-width:0;font-size:14.5px;font-weight:500;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-:root body #mkt-hero~.banner .bn-text{display:none}:root body #mkt-hero~.banner .bn-cta{order:3;margin:0;padding:5px 11px;font-size:12.5px;font-weight:600;background:none;border:1px solid var(--line-strong);color:var(--fg)}:root body #mkt-hero~.banner .bn-logo{order:0;flex:none;width:auto;height:22px;border-radius:4px}:root body #mkt-hero~.banner .bn-benefits{order:4;flex:none}:root body #mkt-hero~.banner .bn-benefits[open]{flex-basis:100%}
-:root body #mkt-hero~.banner .bn-slide.bn-img{aspect-ratio:auto;min-height:56px;padding:9px 14px}:root body #mkt-hero~.banner .bn-img picture{display:none}:root body #mkt-hero~.banner .bn-img .bn-alt{display:block}:root body #mkt-hero~.banner .bn-play{position:static;order:3;flex:none;padding:5px 11px;font-size:12.5px;font-weight:600;background:none;border:1px solid var(--line-strong);color:var(--fg);backdrop-filter:none}:root body #mkt-hero~.banner .bn-play svg{width:12px;height:12px}
+#mkt-hero~.banner{margin-top:14px}:root body #mkt-hero~.banner .bn-slide{display:flex;align-items:center;gap:12px;min-height:76px;padding:14px 18px;border-radius:22px;background:var(--surface);border:1px solid var(--glass-line,var(--line));box-shadow:none;color:var(--fg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+:root body #mkt-hero~.banner .bn-tag{flex:none;order:1;background:var(--soft);color:var(--fg2);font-size:12px;font-weight:600}:root body #mkt-hero~.banner .bn-art{flex:none;order:0;width:40px;height:40px;font-size:20px;background:var(--soft);box-shadow:none}:root body #mkt-hero~.banner .bn-slide b{order:2;flex:1;min-width:0;font-size:16.5px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:root body #mkt-hero~.banner .bn-text{display:none}:root body #mkt-hero~.banner .bn-cta{order:3;margin:0;padding:8px 14px;font-size:13.5px;font-weight:600;background:none;border:1px solid var(--line-strong);color:var(--fg)}:root body #mkt-hero~.banner .bn-logo{order:0;flex:none;width:auto;height:22px;border-radius:4px}:root body #mkt-hero~.banner .bn-benefits{order:4;flex:none}:root body #mkt-hero~.banner .bn-benefits[open]{flex-basis:100%}
+:root body #mkt-hero~.banner .bn-slide.bn-img{aspect-ratio:auto;min-height:76px;padding:14px 18px}:root body #mkt-hero~.banner .bn-img picture{display:none}:root body #mkt-hero~.banner .bn-img .bn-alt{display:block}:root body #mkt-hero~.banner .bn-play{position:static;order:3;flex:none;padding:8px 14px;font-size:13.5px;font-weight:600;background:none;border:1px solid var(--line-strong);color:var(--fg);backdrop-filter:none}:root body #mkt-hero~.banner .bn-play svg{width:12px;height:12px}
 :root body #mkt-hero~.banner .bn-dots{position:static;transform:none;justify-content:center;margin-top:4px;background:none}:root body #mkt-hero~.banner .bn-dots button::before{background:var(--line-strong)}:root body #mkt-hero~.banner .bn-dots button[aria-pressed=true]::before{background:var(--fg)}
 .home-main>.block{margin-top:28px}.home-main>.block[hidden]{display:none}
 .tp-grid{gap:0;grid-template-columns:minmax(0,1fr)}.tp{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:14px 40px 14px 0}.tp:first-child{border-top:0}.tp:hover{border-color:var(--line)}.tp .star{top:10px;right:-4px}.tp-line{margin:4px 0 0;font-size:13.5px;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -321,6 +324,9 @@ const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;m
 </style>`;
 
 const HOME_SCRIPT = `<script>
+// G-268: three world numbers on the 세계 line (S&P 500, 니케이, WTI) from world.json, when it is there.
+fetch('world.json').then(function(r){return r.ok?r.json():null;}).then(function(j){var el=document.getElementById('hh-world');if(!j||!el)return;var all=(j.indices||[]).concat(j.macro||[]);var pick=[['.INX','S&P'],['.N225','니케이'],['WTI','유가']].map(function(p){var q=all.filter(function(x){return x.key===p[0];})[0];if(!q||q.changePct==null)return '';var v=q.changePct;return p[1]+' <span class="'+(v>0?'up':v<0?'down':'')+'">'+(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1)+'%</span>';}).filter(Boolean);if(pick.length)el.innerHTML=pick.join(' · ');}).catch(function(){});
+
 (function () {
   var KEY = 'gnm-watch';
   var read = function () { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };

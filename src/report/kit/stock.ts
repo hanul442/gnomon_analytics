@@ -306,7 +306,7 @@ export const KIT_STOCK_JS = `
     watch(host);
   };
 
-  // ---- live line: a coin's price as it trades (G-270: and a Korean stock's day, 1-minute closes then live quotes),
+  // ---- live line: a coin's price as it trades (G-271: and a Korean stock's day, 1-minute closes then live quotes),
   // scrolling left, the last point pulsing ----
   var OK = /^(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})$/;
   var live = function () {
@@ -352,7 +352,7 @@ export const KIT_STOCK_JS = `
       var k = Math.max(0, pts.length - 60); SPAN = Math.max(180, Math.min(3600, Math.round(last - pts[k].t)));
       var note = sec.querySelector('[data-kv-note]');
       note.textContent = '업비트 체결가 · 최근 ' + Math.round(SPAN / 60) + '분'; if (r.kind && r.kind !== 'trades') note.textContent = '최근 1분 종가 · 이후 실시간';
-      // G-270: a stock shows its whole session (up to 6.5 hours of 1-minute closes), named by its day when that is not today.
+      // G-271: a stock shows its whole session (up to 6.5 hours of 1-minute closes), named by its day when that is not today.
       if (!coin) { SPAN = Math.max(180, Math.min(23400, Math.round(last - pts[0].t))); var kd = new Date((end + 9 * 3600) * 1000).toISOString().slice(0, 10), td = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); note.textContent = (kd === td ? '오늘' : Number(kd.slice(5, 7)) + '/' + Number(kd.slice(8, 10))) + ' 1분 종가 · 장중 실시간'; }
       shift = 0; draw();
     }).catch(function () {});
@@ -382,7 +382,7 @@ export const KIT_STOCK_JS = `
 export interface SunGroup { label: string; key: 'ok' | 'no' | 'wait'; children: readonly { label: string; value: number }[] }
 
 /**
- * G-270 (Bklit 대조표, 한서님 10/20 "선버스트 괜찮네"): 위원 판단을 안쪽 고리 맞음·빗나감·대기, 바깥 고리 위원별로 나눈
+ * G-271 (Bklit 대조표, 한서님 10/20 "선버스트 괜찮네"): 위원 판단을 안쪽 고리 맞음·빗나감·대기, 바깥 고리 위원별로 나눈
  * Bklit sunburst-chart 모양. 맞음 옅은 초록 · 빗나감 옅은 분홍 · 대기 회색(G-266 칩과 같은 색, 가격 빨강·파랑과 안 겹침).
  * Static SVG; every slice carries its count in a <title> so a long press reads it.
  */

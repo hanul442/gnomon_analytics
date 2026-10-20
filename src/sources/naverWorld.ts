@@ -13,6 +13,13 @@ export const US_CODE = /^(?!KRW-)[A-Z][A-Z0-9-]{0,9}(\.[A-Z])?$/;
 /** G-194: the ticker without Naver's exchange letter (.O NASDAQ, .K AMEX/Arca, .N NYSE); a share class such as BRK.B keeps its letter. */
 export const US_EXCHANGE_LETTER = '[.][OKN]$';
 export const usTicker = (code: string) => code.replace(new RegExp(US_EXCHANGE_LETTER), '');
+/**
+ * G-270: share classes. Naver writes Berkshire's class B as BRKb (lowercase class letter, no exchange letter); GNOMON
+ * keeps it as BRK.B, the way people and SEC (BRK-B) write it. A class O, K or N would read as an exchange letter, so
+ * those stay out. Every Naver URL takes naverCode(code).
+ */
+export const fromNaverCode = (rc: string): string => { const m = /^([A-Z][A-Z0-9]{0,8})([a-jlmp-z])$/.exec(rc); return m ? `${m[1]}.${m[2]!.toUpperCase()}` : rc; };
+export const naverCode = (code: string): string => { const m = /^([A-Z][A-Z0-9]{0,8})\.([A-JLMP-Z])$/.exec(code); return m ? `${m[1]}${m[2]!.toLowerCase()}` : code; };
 
 const num = (v: unknown) => { const n = typeof v === 'number' ? v : Number(String(v ?? '').replace(/,/g, '')); return Number.isFinite(n) ? n : null; };
 
@@ -34,21 +41,21 @@ export async function fetchWorldBars(code: string, days: number, options: { now?
   const now = (options.now ?? (() => new Date()))();
   const from = new Date(now.getTime() - Math.ceil(days * 1.5) * 86_400_000);
   const stamp = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '') + '0000';
-  const url = `https://api.stock.naver.com/chart/foreign/item/${code}/day?startDateTime=${stamp(from)}&endDateTime=${stamp(new Date(now.getTime() + 86_400_000))}`;
+  const url = `https://api.stock.naver.com/chart/foreign/item/${naverCode(code)}/day?startDateTime=${stamp(from)}&endDateTime=${stamp(new Date(now.getTime() + 86_400_000))}`;
   const r = await (options.fetch ?? fetch)(url, { signal: AbortSignal.timeout(15_000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } });
   if (!r.ok) throw new Error(`NAVER_WORLD_HTTP_${r.status}`);
   return parseWorldBars(await r.json(), code, now).slice(-days);
 }
 
 export function worldQuoteUrl(code: string): string {
-  return `https://polling.finance.naver.com/api/realtime/worldstock/stock/${code}`;
+  return `https://polling.finance.naver.com/api/realtime/worldstock/stock/${naverCode(code)}`;
 }
 
 /** The polling answer → the same Quote the Korean feed gives; pre/after-market price when that session is open. */
 export function parseWorldQuote(body: unknown): Quote | null {
   const d = (body as { datas?: Record<string, unknown>[] })?.datas?.[0];
   if (!d) return null;
-  const code = String(d.reutersCode ?? '');
+  const code = fromNaverCode(String(d.reutersCode ?? ''));
   const close = num(d.closePrice), chg = num(d.compareToPreviousClosePrice), pct = num(d.fluctuationsRatio);
   if (!US_CODE.test(code) || close == null) return null;
   const over = d.overMarketPriceInfo as Record<string, unknown> | undefined;
@@ -77,16 +84,20 @@ export function usdHangeul(v: unknown): number | null {
   return Math.round((jo ? Number(jo[1]) * 1e12 : 0) + (eok ? Number(eok[1]) * 1e8 : 0) + (man ? Number(man[1]) * 1e4 : 0));
 }
 
-/** One page of /stock/exchange/<EX>/marketValue. */
-export function parseUsRanking(body: unknown, exchange: UsListing['exchange']): UsListing[] {
-  const rows = (body as { stocks?: Record<string, unknown>[] })?.stocks;
-  if (!Array.isArray(rows)) throw new Error('NAVER_WORLD_UNEXPECTED');
+/** The rows of a ranking page: `stocks` for an exchange, `etfs` for the ETF list. */
+const rankingRows = (body: unknown): Record<string, unknown>[] | null => { const b = body as { stocks?: unknown; etfs?: unknown } | null; const rows = b?.stocks ?? b?.etfs; return Array.isArray(rows) ? rows : null; };
+/** One page of /stock/exchange/<EX>/marketValue, or (exchange 'ETF', G-270) of /etf/marketValue?nationType=USA. */
+export function parseUsRanking(body: unknown, exchange: UsListing['exchange'] | 'ETF'): UsListing[] {
+  const rows = rankingRows(body);
+  if (!rows) throw new Error('NAVER_WORLD_UNEXPECTED');
   return rows.flatMap((r) => {
-    const code = String(r.reutersCode ?? '');
+    const code = fromNaverCode(String(r.reutersCode ?? ''));
     if (!US_CODE.test(code)) return [];
+    const listed = String((r.stockExchangeType as { name?: unknown } | undefined)?.name ?? '');
+    const ex: UsListing['exchange'] = exchange !== 'ETF' ? exchange : listed === 'NASDAQ' ? 'NASDAQ' : listed === 'NYSE' ? 'NYSE' : 'AMEX';
     return [{
-      code, ticker: String(r.symbolCode ?? usTicker(code)), name: String(r.stockName ?? code), nameEng: String(r.stockNameEng ?? ''), exchange,
-      kind: r.stockEndType === 'etf' ? 'etf' as const : 'stock' as const, industry: String((r.industryCodeType as { industryGroupKor?: string } | undefined)?.industryGroupKor ?? ''),
+      code, ticker: String(r.symbolCode ?? usTicker(code)).replace(/ ([A-Z])$/, '.$1'), name: String(r.stockName ?? code), nameEng: String(r.stockNameEng ?? ''), exchange: ex,
+      kind: r.stockEndType === 'etf' || exchange === 'ETF' ? 'etf' as const : 'stock' as const, industry: String((r.industryCodeType as { industryGroupKor?: string } | undefined)?.industryGroupKor ?? ''),
       marketCapUsd: num(r.marketValueFullRaw ?? r.marketValueFull) ?? usdHangeul(r.marketValueHangeul), close: num(r.closePrice), changePct: num(r.fluctuationsRatio), valueUsd: usdHangeul(r.accumulatedTradingValue),
     }];
   });
@@ -107,7 +118,9 @@ export function parseUsSearch(body: unknown, ticker: string): UsListing | null {
 type Exchange = UsListing['exchange'];
 const EXCHANGES = ['NASDAQ', 'NYSE', 'AMEX'] as const;
 const PAGE = 50;
-const rankingUrl = (ex: Exchange, page: number) => `https://api.stock.naver.com/stock/exchange/${ex}/marketValue?page=${page}&pageSize=${PAGE}`;
+const rankingUrl = (ex: Exchange | 'ETF', page: number) => ex === 'ETF' ? `https://api.stock.naver.com/etf/marketValue?nationType=USA&page=${page}&pageSize=${PAGE}` : `https://api.stock.naver.com/stock/exchange/${ex}/marketValue?page=${page}&pageSize=${PAGE}`;
+/** G-270: how many US ETFs search knows (Naver lists about 5,800; all of them, under a ceiling). */
+export const US_ETF_DIRECTORY = 6000;
 /** A JSON GET with Naver's headers; null on any failure. */
 const naverGet = (f: typeof fetch) => (url: string): Promise<unknown> => f(url, { signal: AbortSignal.timeout(15_000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
@@ -117,13 +130,13 @@ const naverGet = (f: typeof fetch) => (url: string): Promise<unknown> => f(url, 
  * new code (an out-of-range page answered with the last one), or `maxPages`. A page is tried three times; if it
  * still fails the exchange stops there and is listed in `partial`, so callers know its tail is missing.
  */
-export async function fetchUsDirectory(options: { fetch?: typeof fetch; maxPages?: number } = {}): Promise<{ listings: UsListing[]; partial: Exchange[] }> {
-  const get = naverGet(options.fetch ?? fetch), max = options.maxPages ?? 120, partial: Exchange[] = [];
-  const walk = async (ex: Exchange): Promise<UsListing[]> => {
-    const out = new Map<string, UsListing>();
-    for (let page = 1; page <= max; page += 1) {
+export async function fetchUsDirectory(options: { fetch?: typeof fetch; maxPages?: number; etfs?: boolean } = {}): Promise<{ listings: UsListing[]; partial: (Exchange | 'ETF')[] }> {
+  const get = naverGet(options.fetch ?? fetch), max = options.maxPages ?? 120, partial: (Exchange | 'ETF')[] = [];
+  const walk = async (ex: Exchange | 'ETF'): Promise<UsListing[]> => {
+    const out = new Map<string, UsListing>(), pages = ex === 'ETF' ? Math.min(max, Math.ceil(US_ETF_DIRECTORY / PAGE)) : max;
+    for (let page = 1; page <= pages; page += 1) {
       let rows: UsListing[] | null = null, raw = 0;
-      for (let tries = 0; tries < 3 && rows === null; tries += 1) { const body = await get(rankingUrl(ex, page)); if (body) try { rows = parseUsRanking(body, ex); raw = (body as { stocks: unknown[] }).stocks.length; } catch { rows = null; } }
+      for (let tries = 0; tries < 3 && rows === null; tries += 1) { const body = await get(rankingUrl(ex, page)); if (body) try { rows = parseUsRanking(body, ex); raw = rankingRows(body)!.length; } catch { rows = null; } }
       if (rows === null) { partial.push(ex); break; }
       const before = out.size;
       for (const l of rows) if (!out.has(l.code)) out.set(l.code, l);
@@ -133,7 +146,8 @@ export async function fetchUsDirectory(options: { fetch?: typeof fetch; maxPages
     }
     return [...out.values()];
   };
-  const lists = await Promise.all(EXCHANGES.map(walk));
+  // The ETF list comes after the stocks, so a code on both keeps its stock row (G-270: every US ETF in search, not just 20).
+  const lists = await Promise.all([...EXCHANGES, ...(options.etfs === false ? [] : ['ETF' as const])].map(walk));
   const seen = new Set<string>(), listings: UsListing[] = [];
   for (const l of lists.flat()) if (!seen.has(l.code)) { seen.add(l.code); listings.push(l); }
   return { listings, partial };
@@ -143,11 +157,11 @@ export async function fetchUsDirectory(options: { fetch?: typeof fetch; maxPages
  * The computed set: the top of each exchange by market value plus popular ETFs. With `directory`, an exchange's top
  * is taken from it unless that exchange's walk stopped early and holds fewer than wanted (then it is walked here).
  */
-export async function fetchUsUniverse(options: { fetch?: typeof fetch; perExchange?: Partial<Record<Exchange, number>>; directory?: { listings: readonly UsListing[]; partial: readonly Exchange[] } } = {}): Promise<UsListing[]> {
+export async function fetchUsUniverse(options: { fetch?: typeof fetch; perExchange?: Partial<Record<Exchange, number>>; directory?: { listings: readonly UsListing[]; partial: readonly (Exchange | 'ETF')[] } } = {}): Promise<UsListing[]> {
   const get = naverGet(options.fetch ?? fetch), want = { NASDAQ: 300, NYSE: 300, AMEX: 40, ...options.perExchange };
   const out = new Map<string, UsListing>();
   for (const ex of EXCHANGES) {
-    const known = options.directory?.listings.filter((x) => x.exchange === ex) ?? [];
+    const known = options.directory?.listings.filter((x) => x.exchange === ex && x.kind !== 'etf') ?? [];
     if (known.length && (known.length >= want[ex] || !options.directory!.partial.includes(ex))) { for (const l of known.slice(0, want[ex])) out.set(l.code, l); continue; }
     for (let page = 1; (page - 1) * PAGE < want[ex]; page += 1) {
       const body = await get(rankingUrl(ex, page));
@@ -165,7 +179,7 @@ export async function fetchUsUniverse(options: { fetch?: typeof fetch; perExchan
 /** Valuation figures Naver shows for a US stock (PER, EPS, PBR, 시가총액, 52주 범위, 배당수익률). */
 export const NAVER_WORLD_BASIC_SOURCE = 'naver:world:basic';
 export function worldBasicUrl(code: string): string {
-  return `https://api.stock.naver.com/stock/${code}/basic`;
+  return `https://api.stock.naver.com/stock/${naverCode(code)}/basic`;
 }
 const money = (v: unknown): number | null => { const s = String(v ?? '').replace(/[$,\s]/g, '').replace(/(배|%|USD|원)$/g, ''); const n = Number(s); return s && Number.isFinite(n) ? n : null; };
 /**
