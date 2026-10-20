@@ -17,6 +17,7 @@ import { rankNewsIssues, type TaggedArticle } from '../analysis/newsIssues.js';
 import { collectRiskFilings } from './riskCollect.js';
 import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
 import { writeUsPages } from './usStocks.js';
+import { collectWorld, writeWorldPage } from './world.js';
 import type { SignalLevel } from '../analysis/technicals.js';
 import { fetchWorldBars, usTicker } from '../sources/naverWorld.js';
 import { gatherUsResearch } from '../report/usResearch.js';
@@ -223,7 +224,7 @@ export interface DailyRunResult {
   selected: string | null;
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; usStocks?: boolean; dailyPicks?: boolean; weeklyReports?: boolean }): Promise<DailyRunResult> {
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; usStocks?: boolean; world?: boolean; dailyPicks?: boolean; weeklyReports?: boolean }): Promise<DailyRunResult> {
   const { root, now } = options;
   await configureSite(root);
   const today = runDay(now);
@@ -356,6 +357,11 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     const coins = await writeCoinPages(join(root, 'site'), { now: () => now, ...fetchOpt });
     universe.status.push(coins.status);
     coinList = coins.rows;
+  }
+  // G-268: the world screen's indices, rates, FX, commodities and world news. Best effort, never fails the run.
+  if (options.world !== false) {
+    try { universe.status.push(...await collectWorld(root, { now: () => now, ...fetchOpt })); }
+    catch (e) { universe.status.push({ source: 'world', ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }); }
   }
   // 3.0 US stocks (G-143): best effort, never fails the run.
   let usTemp: UsTemp | null = null, usRows: CoinRow[] = [];
@@ -898,6 +904,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const issueChanges = new Map<string, number | null>([...home.map((e) => [e.symbol, e.report?.price?.changePct ?? null] as const), ...lite.filter((r) => r.changePct != null).map((r) => [r.symbol, r.changePct] as const)]);
   await writeFile(join(siteDir, 'news-issues.json'), JSON.stringify(rankNewsIssues(newsArticles, { now: new Date(), names: issueNames, changes: issueChanges })));
   await writeFile(join(siteDir, 'issues.html'), renderNewsIssuesPage());
+  await writeWorldPage(root, siteDir, extras.now ?? new Date());
   await writeFile(join(siteDir, 'signals.html'), renderSignalsPage());
   // The chart library is served from the site itself, not a CDN.
   // "exports" hides the standalone build; package.json is exported, so locate it from there.
