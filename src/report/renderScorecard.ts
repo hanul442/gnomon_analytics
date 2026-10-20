@@ -10,7 +10,7 @@ import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystTrack } from '../analysis/analysts.js';
 import { mergeBoards, UNIFORM_BRIER, type ScenarioBoard } from '../analysis/scenarioScore.js';
 import { paperPanel } from './renderArena.js';
-import { ringChart } from './kit/stock.js';
+import { outcomeSunburst, ringChart } from './kit/stock.js';
 import { shell, type HomeEntry } from './renderHtml.js';
 import { esc } from './html.js';
 import { won, tone, pct as fmtPct } from './format.js';
@@ -105,6 +105,13 @@ ${c.invalidation ? `<div class="mb-line"><span class="mb-k">철회</span>종가 
 ${calibration(x)}${x.kill && x.kill.broke ? `<p class="muted small">철회 가격에 닿은 판단 ${x.kill.broke}건 중 ${x.kill.brokeMissed}건이 결국 빗나갔어요 <span class="fine">(철회 가격을 정한 채점 ${x.kill.set}건)</span></p>` : ''}
 ${mine.length ? `<ol class="mb-calls">${mine.map(row).join('')}</ol><p class="empty mb-none" hidden>관심 종목에 대한 판단이 아직 없어요.</p>${mine.length > 4 ? `<button type="button" class="more-all">최근 판단 ${mine.length}개 모두 보기</button>` : ''}` : '<p class="empty">아직 기록된 판단이 없어요.</p>'}</article>`;
   };
+  // G-270 (Bklit sunburst): every call split by result, then by the member who made it.
+  const kids = (f: (x: Tally) => number) => board.map(([, x]) => ({ label: x.name, value: Math.round(f(x)) }));
+  const sun = outcomeSunburst([
+    { label: '맞음', key: 'ok', children: kids((x) => x.hits) },
+    { label: '빗나감', key: 'no', children: kids((x) => x.scored - x.hits) },
+    { label: '대기', key: 'wait', children: kids((x) => x.pending) },
+  ], { label: '위원 판단 결과와 위원별 나눔' });
   const analystCard = `<section class="block"><div class="block-head"><h2>위원별 판단</h2><span class="muted">전 종목 합산</span></div>
 <div class="mb-bar" hidden><button type="button" class="chip-toggle mb-watch" aria-pressed="false">관심 종목만</button></div>
 ${board.length ? `<div class="mb-grid">${board.map(member).join('')}</div>` : '<div class="card"><p class="empty">아직 위원 판단이 없어요.</p></div>'}
@@ -151,7 +158,7 @@ ${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면
   const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}" role="tabpanel" aria-labelledby="sct-${k}">${html}</div>`;
   const body = `${hero}
 ${group('forecast', gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">'), { base: '', what: '기간별 예측 적중', feature: 'scoreSummary' }) + gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' }))}
-${group('analysts', gate(analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '위원별 판단과 결과', feature: 'scoreSummary' }))}
+${group('analysts', (sun ? `<section class="block sc-sec"><div class="block-head"><h2>판단 결과 한눈에</h2><span class="muted">전 위원 합산</span></div><div class="card">${sun}</div></section>` : '') + gate(analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '위원별 판단과 결과', feature: 'scoreSummary' }))}
 ${group('scenarios', scenarioCard || '<section class="block sc-sec" id="scenarios"><div class="card"><p class="empty">아직 채점한 시나리오가 없어요.</p></div></section>')}
 ${group('paper', strategyCard + signalCard(signals))}
 <style>.sc-hero{margin-top:18px}.sc-k{font-size:13px;color:var(--muted)}.sc-hv{display:flex;align-items:baseline;gap:10px;margin:6px 0 0}.sc-hv b{font-size:56px;line-height:1;font-weight:800;color:var(--accent-strong);font-variant-numeric:tabular-nums}.sc-hv small{font-size:14px;font-weight:500;color:var(--muted)}
