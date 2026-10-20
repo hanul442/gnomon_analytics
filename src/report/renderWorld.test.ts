@@ -4,6 +4,7 @@ import { renderWorldPage, worldSentence, bands } from './renderWorld.js';
 import { parseIndexBars, parseIndexBasic, parseMarketIndexMajors, parseMarketIndexPrices, type WorldMarkets, type WorldIndexQuote, type WorldMacroQuote } from '../sources/naverGlobal.js';
 import { rankWorldIssues, topicsOf } from '../analysis/worldNews.js';
 import { kmWorldMapAll } from './kit/worldMap.js';
+import { marketWorld, renderMarketReport, type MarketReport } from './marketReport.js';
 
 const ix = (key: string, name: string, country: string, iso: WorldIndexQuote['iso'], region: WorldIndexQuote['region'], changePct: number | null, open = false): WorldIndexQuote =>
   ({ key, name, country, iso, region, value: 100, change: null, changePct, at: '2026-10-20T15:30:00+09:00', open, series: [['2026-10-19', 99], ['2026-10-20', 100]] });
@@ -63,4 +64,18 @@ test('the page has five tabs, the map and numbers, and an empty state', () => {
   assert.match(html, /−1\.1bp/);
   assert.match(html, /사고팔라는 뜻이 아니에요/);
   assert.match(renderWorldPage(null), /아직 받지 못했어요/);
+});
+
+test('G-276: the market daily uses the world snapshot for its 13-country map and rate cards; old reports keep theirs', () => {
+  const w = marketWorld(markets)!;
+  assert.ok(w.indices.every((x) => !('series' in x)), 'indices are kept without their lines');
+  assert.deepEqual(w.macro.map((x) => x.key), ['US10Y', 'WTI']);
+  const base: MarketReport = { schema: 'curia.market-report.v4', date: '2026-10-20', from: '2026-10-20', generatedAt: '2026-10-20T11:00:00Z', period: 'daily', groups: [], ai: { status: 'SKIPPED' } };
+  const html = renderMarketReport({ ...base, world: w }, '../');
+  assert.match(html, /wm-map/);
+  assert.match(html, /하루 등락 · 5곳/);
+  assert.match(html, /<h2>금리·환율·원자재<\/h2>/);
+  assert.match(html, /href="\.\.\/world\.html"/);
+  const old = renderMarketReport({ ...base, macro: [{ id: 'DGS10', label: '미국 10년', unit: '%', date: '2026-10-17', value: 4.1, chg20: 0.1, spark: [] }] }, '../');
+  assert.ok(!old.includes('wm-map') && old.includes('금리·환율·변동성'));
 });

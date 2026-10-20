@@ -54,6 +54,19 @@ export function worldSentence(m: WorldMarkets): string {
   return tail ? `${head}고, ${tail}` : `${head}어요.`;
 }
 
+/** One map row per country (its first index), plus Europe as the average of its countries. Shared with the market daily. */
+export function worldMapRows(indices: readonly WorldIndexQuote[]): WorldMapEntry[] {
+  const main = mainOf(indices);
+  const europe = main.filter((x) => x.region === '유럽' && x.iso !== 'EU');
+  return [
+    ...main.filter((x) => x.iso !== 'EU').map((x) => ({ iso: x.iso, country: x.country, index: x.name, change: x.changePct, note: x.open ? '지금 거래 중' : '마감' })),
+    ...(europe.length ? [{ iso: 'EU', country: '유럽', index: '영국·독일·프랑스 평균', change: avg(europe.map((x) => x.changePct)) }] : []),
+  ];
+}
+
+/** A rate, currency or commodity as the kit's stat card (bonds badge their move in bp). Shared with the market daily. */
+export const worldMacroStat = (x: WorldMacroQuote | null, line = false): string => (x ? kmStatArea({ title: x.group === 'bond' ? `${x.name} 10년` : x.name, value: x.value, change: x.changePct, series: x.series, digits: digitsOf(x), label: x.unit === '%' ? '%' : x.unit === '$' ? '달러' : x.unit || '', unit: '일', line, ...(x.group === 'bond' ? { badge: { text: moveText(x), tone: tone(x.change) } } : {}) }) : '');
+
 const spark = (series: readonly (readonly [string, number])[], w = 64, h = 22) => {
   if (series.length < 2) return '';
   const vs = series.map((p) => p[1]), lo = Math.min(...vs), hi = Math.max(...vs), sp = hi - lo || 1;
@@ -88,14 +101,10 @@ export function renderWorldPage(p: WorldPage | null): string {
 
   // 요약
   const main = mainOf(m.indices);
-  const europe = main.filter((x) => x.region === '유럽');
-  const mapRows: WorldMapEntry[] = [
-    ...main.filter((x) => x.iso !== 'EU').map((x) => ({ iso: x.iso, country: x.country, index: x.name, change: x.changePct, note: x.open ? '지금 거래 중' : '마감' })),
-    ...(europe.length ? [{ iso: 'EU', country: '유럽', index: '영국·독일·프랑스 평균', change: avg(europe.filter((x) => x.iso !== 'EU').map((x) => x.changePct)) }] : []),
-  ];
+  const mapRows = worldMapRows(m.indices);
   const bandHtml = `<div class="wd-bands">${bands(m.indices).map((b) => `<div class="wd-band${b.open ? ' on' : ''}"><small>${esc(b.name)} · ${b.open ? '거래 중' : '마감'}</small><b class="${tone(b.change)}">${pct(b.change, 1)}</b><small>${b.total}곳 중 ${b.down}곳 내림</small></div>`).join('')}</div>`;
   const statIx = (x: WorldIndexQuote | null) => (x ? kmStatArea({ title: x.name, value: x.value, change: x.changePct, series: x.series, digits: 2, label: x.open ? '거래 중' : '종가', unit: '일' }) : '');
-  const statMacro = (x: WorldMacroQuote | null, line = false) => (x ? kmStatArea({ title: x.group === 'bond' ? `${x.name} 10년` : x.name, value: x.value, change: x.changePct, series: x.series, digits: digitsOf(x), label: x.unit === '%' ? '%' : x.unit === '$' ? '달러' : x.unit || '', unit: '일', line, ...(x.group === 'bond' ? { badge: { text: moveText(x), tone: tone(x.change) } } : {}) }) : '');
+  const statMacro = worldMacroStat;
   const key6 = [statIx(ix('KOSPI')), statIx(ix('.INX')), statMacro(q('USDKRW')), statMacro(q('WTI')), statMacro(q('GOLD')), statMacro(q('US10Y'), true)].join('');
   const issues = p.news.issues;
   const top = issues.length ? `<section class="card wd-card"><div class="wd-h"><h2>세계 이슈 순위</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length}개 보기 ›</button></div><ol class="wd-iss">${issues.slice(0, 3).map((i) => issueRow(i, mk, false)).join('')}</ol></section>` : '';
