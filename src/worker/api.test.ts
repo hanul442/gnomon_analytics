@@ -899,3 +899,39 @@ test('plan checks (G-215): every server gate answers by the permission table for
     }
   }
 });
+
+test('alpha wrap-up survey (G-241): a beta application needs the contact consent, never changes the plan, and /me asks only in the last week', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('wrap@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  assert.equal((await t.call('GET', '/me', undefined, u.session)).body.survey.wrapupDue, false, 'before 10/24 nothing asks');
+  t.tick(Date.parse('2026-10-24T02:00:00Z') - Date.parse('2026-10-05T03:00:00Z'));
+  const s = (await t.login('wrap@example.com')).session;
+  assert.equal((await t.call('GET', '/me', undefined, s)).body.survey.wrapupDue, true);
+  const no = await t.call('POST', '/survey', { kind: 'wrapup', answers: { nps: 8, beta: '신청할게요', consent: false } }, s);
+  assert.equal(no.status, 400);
+  assert.equal(no.body.error, 'BETA_CONSENT');
+  assert.equal((await t.call('POST', '/survey', { kind: 'wrapup', answers: { nps: 8, keep: 'AI 위원회', beta: '신청할게요', contact: '', consent: true } }, s)).status, 200);
+  const me = (await t.call('GET', '/me', undefined, s)).body;
+  assert.equal(me.survey.wrapupDue, false, 'answered: no more asking');
+  assert.equal(me.user.plan, 'alpha', 'applying for the beta leaves the account as it is');
+  const ov = await t.call('GET', '/admin/overview', undefined, boss.session);
+  assert.deepEqual(ov.body.surveys.filter((x: any) => x.kind === 'wrapup').map((x: any) => [x.email, JSON.parse(x.answers).beta]), [['wrap@example.com', '신청할게요']]);
+  assert.equal((await t.call('POST', '/survey', { kind: 'wrapup', answers: { nps: 5, beta: '이번엔 괜찮아요' } }, s)).status, 200, 'saying no needs no consent');
+});
+
+test('a US report request does not reuse a research context saved while SEC refused us (no financials)', async () => {
+ const {reportInput}=await import('./reports.js');
+ const bars=Array.from({length:40},(_,i)=>{const d=new Date(Date.UTC(2026,8,1+i)).toISOString().slice(0,10);return [d,150+i,152+i,149+i,151+i,2000];});
+ const last=bars.at(-1)![0] as string;
+ const research={symbol:'GOOGL.O',name:'알파벳',currency:'USD',price:{sessionDate:last,close:189},notes:['OLD CONTEXT'],market:{status:[{source:'sec:edgar',ok:false,count:0,error:'EDGAR_HTTP_403'}],quarters:[],years:[]}};
+ const now=new Date('2026-10-12T00:00:00Z');
+ const fetch=(async (url: RequestInfo|URL)=>{const u=String(url);if(u.endsWith('/research/GOOGL.O.json'))return Response.json(research);if(u.endsWith('/u/GOOGL.O.json'))return Response.json({name:'알파벳',ticker:'GOOGL',english:'Alphabet Inc',market:'NASDAQ',cik:1652044,bars});return new Response('no',{status:404});}) as typeof globalThis.fetch;
+ const input=await reportInput('https://site.test','GOOGL.O',{now:()=>now,fetch});
+ assert.ok(!input.notes.includes('OLD CONTEXT'),'built fresh, so SEC is asked again');
+ assert.equal(input.price!.sessionDate,last);
+ // With working SEC data the same context is reused as before.
+ const ok={...research,market:{...research.market,status:[{source:'sec:edgar:xbrl',ok:true,count:8}]}};
+ const fetch2=(async (url: RequestInfo|URL)=>String(url).endsWith('/research/GOOGL.O.json')?Response.json(ok):fetch(url)) as typeof globalThis.fetch;
+ assert.ok((await reportInput('https://site.test','GOOGL.O',{now:()=>now,fetch:fetch2})).notes.includes('OLD CONTEXT'));
+});

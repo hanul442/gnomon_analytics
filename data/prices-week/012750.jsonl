@@ -261,3 +261,4 @@
 {"symbol":"012750","date":"2026-10-16","open":84300,"high":106500,"low":84300,"close":97100,"volume":749411,"source":"naver:fchart:week","retrievedAt":"2026-10-16T09:52:37.772Z"}
 {"symbol":"012750","date":"2026-10-16","open":84300,"high":106500,"low":84300,"close":97200,"volume":749423,"source":"naver:fchart:week","retrievedAt":"2026-10-16T09:59:36.226Z"}
 {"symbol":"012750","date":"2026-10-16","open":84300,"high":106500,"low":84300,"close":97300,"volume":750292,"source":"naver:fchart:week","retrievedAt":"2026-10-16T11:04:39.100Z"}
+{"symbol":"012750","date":"2026-10-19","open":97000,"high":98500,"low":96400,"close":97300,"volume":267846,"source":"naver:fchart:week","retrievedAt":"2026-10-19T16:41:51.332Z"}

@@ -112,7 +112,7 @@ export const ALPHA_SCRIPT = `<script>
     var b = document.createElement('button'); b.type = 'button'; b.id = 'bell'; b.className = 'bell-btn'; b.setAttribute('aria-label', '알림'); b.innerHTML = '🔔';
     nav.insertBefore(b, acct);
     // The bell opens a small window under it (the owner's choice, phones too); 알림함 has the full list.
-    var ICONS = { watchReport: '⭐', daily: '📰', request: '📄', price: '🔔', screen: '🔎', update: '✨', intraday: '⚡' };
+    var ICONS = { watchReport: '⭐', daily: '📰', request: '📄', price: '🔔', screen: '🔎', update: '✨', intraday: '⚡', notice: '📝' };
     var pop = null, close = function () { if (pop) { pop.remove(); pop = null; b.setAttribute('aria-expanded', 'false'); } };
     var when = function (iso) { var d = new Date(String(iso).replace(' ', 'T') + (/Z|[+-]\d\d:?\d\d$/.test(iso) ? '' : 'Z')), k = new Date(d.getTime() + 9 * 3600e3), now = new Date(Date.now() + 9 * 3600e3); var hm = String(k.getUTCHours()).padStart(2, '0') + ':' + String(k.getUTCMinutes()).padStart(2, '0'); return k.toISOString().slice(0, 10) === now.toISOString().slice(0, 10) ? hm : (k.getUTCMonth() + 1) + '/' + k.getUTCDate() + ' ' + hm; };
     b.setAttribute('aria-haspopup', 'dialog'); b.setAttribute('aria-expanded', 'false');
@@ -330,13 +330,20 @@ export const ALPHA_SCRIPT = `<script>
   var nudges = function () {
     var m = G.me, path = location.pathname;
     if (!m || /(login|onboarding|admin)\\.html$/.test(path)) return;
+    // G-241: the last week of the alpha asks for the wrap-up survey (and the beta application) first, on every page.
+    if (m.survey.wrapupDue && !/survey\\.html$/.test(path) && !document.querySelector('.alpha-bar') && sessionStorage.getItem('gnm-nudge-wrap') !== '1') {
+      var wb = document.createElement('div'); wb.className = 'alpha-bar';
+      wb.innerHTML = '<span>알파가 곧 끝나요. 3분 마무리 설문에 답하고 클로즈드 베타도 신청해 주세요.</span><a href="' + base + 'survey.html?k=wrapup">설문하기</a><button type="button" aria-label="닫기">×</button>';
+      document.body.insertBefore(wb, document.body.firstChild);
+      wb.querySelector('button').addEventListener('click', function () { wb.remove(); try { sessionStorage.setItem('gnm-nudge-wrap', '1'); } catch (e) {} });
+    }
     if (!m.survey.onboarding && !document.querySelector('.alpha-bar') && sessionStorage.getItem('gnm-nudge') !== '1') {
       var bar = document.createElement('div'); bar.className = 'alpha-bar';
       bar.innerHTML = '<span>1분 설문에 답하면 홈 화면을 내 관심 종목과 투자 스타일에 맞춰 드려요.</span><a href="' + base + 'onboarding.html">설문 시작</a><button type="button" aria-label="닫기">×</button>';
       document.body.insertBefore(bar, document.body.firstChild);
       bar.querySelector('button').addEventListener('click', function () { bar.remove(); try { sessionStorage.setItem('gnm-nudge', '1'); } catch (e) {} });
     }
-    if (m.survey.pulseDue && !document.querySelector('.wk-pulse') && sessionStorage.getItem('gnm-pulse') !== 'later') {
+    if (m.survey.pulseDue && !m.survey.wrapupDue && !document.querySelector('.wk-pulse') && sessionStorage.getItem('gnm-pulse') !== 'later') {
       var p = document.createElement('section'); p.className = 'wk-pulse'; p.setAttribute('aria-label', '이번 주 설문');
       var nps = ''; for (var i = 0; i <= 10; i += 1) nps += '<button type="button" data-n="' + i + '" aria-pressed="false">' + i + '</button>';
       p.innerHTML = '<h3>이번 주 그노몬, 어땠어요?</h3><div class="muted small">투자하는 친구에게 추천할 만한가요?</div><div class="nps">' + nps + '</div><div class="ends"><span>전혀 아님</span><span>꼭 추천</span></div><textarea maxlength="500" placeholder="이번 주 가장 아쉬웠던 점 한 가지"></textarea><textarea maxlength="500" placeholder="가장 좋았던 점 (선택)"></textarea><div class="row"><button type="button" class="later">나중에</button><button type="button" class="go">보내기</button></div>';

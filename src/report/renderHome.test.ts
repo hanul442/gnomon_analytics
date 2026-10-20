@@ -66,3 +66,19 @@ test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab
   assert.ok(modeBar('', 'inbox.html').includes('href="mydebates.html"') && !modeBar('', 'inbox.html').includes('watch.html'));
   assert.ok(!bar.includes('href="watch.html"'));
 });
+
+test('G-269: a picture banner on home is the same slim line, its title and 티저 보기', async () => {
+  const { bannerHtml } = await import('./alphaPages.js');
+  const html = bannerHtml([{ title: '정보의 바다는, 끝.', image: { wide: 'assets/banners/a.jpg', video: 'assets/banners/t.mp4' } }]);
+  assert.match(html, /<b class="bn-alt">정보의 바다는, 끝\.<\/b>/);
+  assert.match(html, /bn-play/);
+});
+
+test('G-269: the 4.0.0 update film banner says 영상 보기, a teaser film still says 티저 보기', async () => {
+  const { bannerHtml, validBanners } = await import('./alphaPages.js');
+  const list = validBanners([{ title: '알파 4.0.0 업데이트', image: { wide: 'assets/banners/update-4.0.0-wide.jpg', video: 'assets/banners/update-4.0.0.mp4', poster: 'assets/banners/update-4.0.0-poster.jpg' } }, { title: '티저', image: { wide: 'assets/banners/a.jpg', video: 'assets/banners/teaser-beta.mp4' } }], '2026-10-20');
+  const html = bannerHtml(list);
+  assert.match(html, /data-video="assets\/banners\/update-4\.0\.0\.mp4"[^>]*aria-label="알파 4\.0\.0 업데이트 · 영상 보기"/);
+  assert.match(html, /<\/svg>영상 보기<\/span>/);
+  assert.match(html, /<\/svg>티저 보기<\/span>/);
+});

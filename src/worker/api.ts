@@ -21,6 +21,7 @@ import { renderDeep } from '../report/renderHtml.js';
 import { renderOps } from '../report/renderAlpha.js';
 import { mailButton, mailLayout, mailList, sendMail as deliverMail } from './mail.js';
 import { withCurrency } from '../report/format.js';
+import { BETA_YES, inWrapup } from '../report/wrapup.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
@@ -190,18 +191,19 @@ async function authed(req: Request, env: Env, now: Date): Promise<User> {
 async function me(env: Env, u: User, now: Date) {
   await monthlyGrant(env.DB, u, now);
   const db = env.DB;
-  const [balance, onboarding, lastPulse, requests, asksToday] = await Promise.all([
+  const [balance, onboarding, lastPulse, requests, asksToday, wrapup] = await Promise.all([
     balanceOf(db, u.id),
     db.prepare("SELECT answers FROM surveys WHERE user_id = ? AND kind = 'onboarding' ORDER BY id DESC LIMIT 1").bind(u.id).first<{ answers: string }>(),
     db.prepare("SELECT created_at FROM surveys WHERE user_id = ? AND kind = 'pulse' ORDER BY id DESC LIMIT 1").bind(u.id).first<{ created_at: string }>(),
     db.prepare('SELECT id, amount, reason, status, granted, admin_note, created_at, decided_at FROM credit_requests WHERE user_id = ? ORDER BY id DESC LIMIT 5').bind(u.id).all(),
     db.prepare("SELECT COUNT(*) AS n FROM questions WHERE user_id = ? AND created_at >= ? AND status = 'OK'").bind(u.id, kstDayStart(now)).first<{ n: number }>(),
+    db.prepare("SELECT 1 AS done FROM surveys WHERE user_id = ? AND kind = 'wrapup' LIMIT 1").bind(u.id).first<{ done: number }>(),
   ]);
   const days = (now.getTime() - Date.parse(u.created_at)) / 86_400_000;
   return {
     user: { hasPassword: !!(await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(u.id).first<{ password_hash: string | null }>())?.password_hash, email: u.email, plan: u.plan, planName: isTester(u.plan) ? TESTERS[u.plan].name : u.plan, rankAs: isTester(u.plan) ? ALPHA.rankAs : u.plan, tester: isTester(u.plan), admin: u.role === 'admin', ...(u.viewAs ? { viewAs: u.viewAs } : {}), createdAt: u.created_at },
     credits: { balance, monthly: isTester(u.plan) ? TESTERS[u.plan].monthlyCredits : 0, maxRequest: ALPHA.maxRequest },
-    survey: { onboarding: onboarding ? JSON.parse(onboarding.answers) : null, pulseDue: days >= 3 && (!lastPulse || now.getTime() - Date.parse(lastPulse.created_at) >= 7 * 86_400_000) },
+    survey: { onboarding: onboarding ? JSON.parse(onboarding.answers) : null, pulseDue: days >= 3 && (!lastPulse || now.getTime() - Date.parse(lastPulse.created_at) >= 7 * 86_400_000), wrapupDue: inWrapup(now) && !wrapup },
     requests: requests.results,
     asks: { today: asksToday?.n ?? 0, limit: Number(env.USER_DAILY_ASKS ?? 30) },
     costs: CREDIT_COST,
@@ -699,7 +701,9 @@ route('GET','/us/page/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,deps,params
 // XBRL financials, filings and Form 4 insider trades, and English news, built into the same report as a requested
 // US report (minus the AI) and returned as the panels the page fills. Kept 3 hours per code; the SEC ticker→CIK
 // map is read once a day per isolate, so a page without a CIK does not download it each time.
-const usInfos=new Map<string,{at:number;pending:Promise<Record<string,string>|null>}>();
+const usInfos=new Map<string,{at:number;pending:Promise<Record<string,string>|null>;keep?:number}>();
+// G-270: panels built while SEC or the news feed failed are kept 10 minutes, not 3 hours, so a passing outage does not leave 기업 체력 blank all afternoon.
+const US_INFO_KEEP=3*3600_000,US_INFO_RETRY=10*60_000;
 let cikCache:{at:number;map:Promise<Map<string,number>>}|null=null;
 route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,params,now})=>{
  const code=params[0]!;if(!US_CODE.test(code))fail(400,'BAD_CODE','미국 종목 코드가 아니에요.');
@@ -708,7 +712,7 @@ route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,par
  // The panels depend on the name, CIK and kind the page passes, so they are part of the key (one caller cannot set another's).
  const given=q.get('cik'),key=[code,given&&/^\d{1,10}$/.test(given)?given:'',etf?'etf':'',nameEng.toLowerCase()].join('|');
  let hit=usInfos.get(key);
- if(!hit||now.getTime()-hit.at>=3*3600_000){
+ if(!hit||now.getTime()-hit.at>=(hit.keep??US_INFO_KEEP)){
   usFreshStart(req,now,'info');
   if(usInfos.size>=200)usInfos.delete(usInfos.keys().next().value!);
   const contact=env.EDGAR_CONTACT;
@@ -717,9 +721,11 @@ route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,par
    if(!cikCache||now.getTime()-cikCache.at>=24*3600_000){const map=deps.fetch(tickersUrl,{headers:{'User-Agent':edgarUserAgent(contact),Accept:'application/json'}}).then(r=>{if(!r.ok)throw new Error(`SEC_${r.status}`);return r.json();}).then(b=>cikMap(b));cikCache={at:now.getTime(),map};map.catch(()=>{cikCache=null;});}
    return (await cikCache.map.catch(()=>new Map<string,number>())).get(ticker.replace(/\./g,'-'))??null;
   };
-  const entry={at:now.getTime(),pending:Promise.all([barsOf(code,now,deps.fetch),cikOf()]).then(async([bars,cik])=>{
+  const entry:{at:number;pending:Promise<Record<string,string>|null>;keep?:number}={at:now.getTime(),pending:Promise.all([barsOf(code,now,deps.fetch),cikOf()]).then(async([bars,cik])=>{
    if(bars.length<2)return null;
    const research=await gatherUsResearch({symbol:code,ticker,nameEng,cik,fetch:deps.fetch,now:()=>now,...(contact?{contact}:{})});
+   // A stock with a CIK whose SEC reads failed, or a failed news feed: worth another try soon.
+   if((!etf&&cik==null&&cikCache==null)||research.status.some((x)=>!x.ok))entry.keep=US_INFO_RETRY;
    const report=buildUsReport({symbol:code,name:nameEng,nameEng,ticker,...(etf?{kind:'etf' as const}:{}),bars,research,now});
    return withCurrency('USD',()=>({
     fundamentals:(report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name,report.recentBars??[]):'')+insiderSection(report),
@@ -894,9 +900,11 @@ route('POST', '/ask/(\\d+)/rate', async ({ req, env, now, params }) => {
 
 route('POST', '/survey', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
-  if (!['onboarding', 'pulse', 'midterm', 'weekly'].includes(String(b.kind))) fail(400, 'BAD_SURVEY', '설문 종류가 맞지 않아요.');
+  if (!['onboarding', 'pulse', 'midterm', 'weekly', 'wrapup'].includes(String(b.kind))) fail(400, 'BAD_SURVEY', '설문 종류가 맞지 않아요.');
   const answers = JSON.stringify(b.answers ?? {});
   if (answers.length > 12000 || typeof b.answers !== 'object') fail(400, 'BAD_SURVEY', '응답이 너무 길어요.');
+  // G-241: a beta application is kept only with the consent to keep the contact; it never touches the plan.
+  if (b.kind === 'wrapup' && (b.answers as Record<string, unknown>)?.beta === BETA_YES && (b.answers as Record<string, unknown>).consent !== true) fail(400, 'BETA_CONSENT', '베타를 신청하려면 연락처 보관에 동의해 주세요.');
   await env.DB.prepare('INSERT INTO surveys (user_id, kind, answers, created_at) VALUES (?, ?, ?, ?)').bind(u.id, b.kind, answers, iso(now)).run();
   return { ok: true };
 });
@@ -1291,7 +1299,7 @@ route('POST', '/admin/invites', async ({ req, env, now }) => {
   const b = await body(req), code = (str(b.code, 40) || inviteCode()).toUpperCase(), maxUses = b.maxUses === undefined ? 1 : int(b.maxUses), credits = b.credits === undefined ? 0 : int(b.credits);
   if (!/^[A-Z0-9-]{4,40}$/.test(code) || !(maxUses >= 1 && maxUses <= 500) || !(credits >= 0 && credits <= 1000)) fail(400, 'BAD_INVITE', '초대 코드 설정을 확인해 주세요.');
   const expires = typeof b.expiresAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.expiresAt) ? new Date(Date.parse(`${b.expiresAt}T23:59:59+09:00`)).toISOString() : null;
-  // G-240: which test account the code makes. The ops screen sends beta unless the admin picks alpha.
+  // G-240: which test account the code makes. Alpha unless asked; the ops screen has no beta choice until the beta starts (한서 10/18).
   const plan = b.plan === undefined ? 'alpha' : String(b.plan);
   if (!isTester(plan)) fail(400, 'BAD_INVITE', '초대 코드의 계정 종류(알파·베타)를 확인해 주세요.');
   const r = await env.DB.prepare('INSERT OR IGNORE INTO invites (code, note, max_uses, credits, expires_at, created_at, plan) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(code, str(b.note, 200), maxUses, credits, expires, iso(now), plan).run();

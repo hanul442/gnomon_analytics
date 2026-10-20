@@ -1,4 +1,5 @@
 import { ALPHA, WATCH_LIMIT } from './plans.js';
+import { WRAPUP } from './wrapup.js';
 // Shared UI layer (docs/DESIGN.md §4.5, G-41): design tokens, a sticky price bar for stock pages,
 // a glossary ("?" next to financial terms), loading skeletons and the active page in the header.
 // Everything here is presentation; it never changes what a page says.
@@ -643,7 +644,7 @@ export const SURVEY_POP_JS = `
     var week = k.getUTCFullYear() + '-' + Math.ceil(((k - Date.UTC(k.getUTCFullYear(), 0, 1)) / 864e5 + new Date(Date.UTC(k.getUTCFullYear(), 0, 1)).getUTCDay() + 1) / 7);
     var pick = null;
     if (!get('gnm-prefs') && Number(get('gnm-pop-onb') || 0) < now) pick = { key: 'gnm-pop-onb', later: now + 3 * 864e5, icon: '📝', title: '7분 맞춤 설문으로 내 화면 만들기', text: '투자 경험과 스타일을 알려 주시면 보기 방식, 오늘 볼 것, 설명 수준이 나에게 맞춰져요.', href: 'onboarding.html', cta: '설문 하기' };
-    else if ((day === 5 || day === 6 || day === 0) && get('gnm-pop-week') !== week) pick = { key: 'gnm-pop-week', later: week, icon: '🗓️', title: '이번 주 설문 (1분)', text: '이번 주에 좋았던 것과 불편했던 것 하나씩만 알려 주세요. 다음 주 개선 순서를 정해요.', href: 'survey.html?k=weekly', cta: '1분 설문 하기' };
+    else if ((day === 5 || day === 6 || day === 0) && get('gnm-pop-week') !== week && !(now >= ${Date.parse(WRAPUP.from)} && now < ${Date.parse(WRAPUP.until)})) pick = { key: 'gnm-pop-week', later: week, icon: '🗓️', title: '이번 주 설문 (1분)', text: '이번 주에 좋았던 것과 불편했던 것 하나씩만 알려 주세요. 다음 주 개선 순서를 정해요.', href: 'survey.html?k=weekly', cta: '1분 설문 하기' };
     if (!pick) return;
     var base = document.body.getAttribute('data-base') || '';
     var open = function () {
@@ -720,5 +721,9 @@ export const BANNER_CSS = `.bn-slide[hidden]{display:none!important}.banner{posi
 .bn-hanul{background:#000;grid-template-columns:minmax(0,1fr) minmax(160px,32%)}.bn-hanul .bn-logo{grid-column:2;grid-row:1/5;width:100%;height:auto;align-self:center}.bn-hanul .bn-tag{background:#262626;color:#eee}.bn-hanul .bn-cta{background:#fff;color:#111;border-color:#fff}.bn-hanul b{font-size:25px;overflow-wrap:anywhere}.bn-hanul:focus-visible{outline:3px solid #668bc6;outline-offset:3px}
 @media(max-width:820px){.bn-slide.bn-hanul{grid-template-columns:minmax(0,1fr);gap:8px;min-height:290px}.bn-hanul .bn-logo{grid-column:1;grid-row:2;width:220px;max-width:80%;justify-self:start}.bn-hanul .bn-text,.bn-hanul .bn-cta{grid-column:1}.bn-hanul b{font-size:21px}}
 .bn-dots{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);display:flex;gap:0;padding:0 5px;border-radius:999px;background:rgba(0,0,0,.16)}.bn-dots button{position:relative;width:24px;height:26px;border:0;padding:0;background:none;cursor:pointer}.bn-dots button::before{content:'';position:absolute;left:9px;right:9px;top:10px;height:6px;border-radius:3px;background:rgba(255,255,255,.45);transition:opacity var(--dur-fast)}.bn-dots button[aria-pressed=true]{width:36px}.bn-dots button[aria-pressed=true]::before{background:#fff}.bn-dots.has-thumb>[aria-pressed=true]::before{opacity:0}
+.bn-slide.bn-img{display:block;padding:0;min-height:0;background:#02040a;aspect-ratio:4/1}.bn-img picture,.bn-img .bn-pic{display:block;width:100%;height:100%;object-fit:cover}.bn-alt{display:none}.bn-img:focus-visible{outline:3px solid #668bc6;outline-offset:3px}.bn-play{position:absolute;right:16px;bottom:14px;display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 10px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff;font-size:13px;font-weight:700;backdrop-filter:blur(6px)}
+.bn-film{padding:0;border:0;border-radius:18px;background:#000;width:min(420px,92vw);max-height:92vh;overflow:visible}.bn-film::backdrop{background:rgba(0,0,0,.78)}.bn-film video{display:block;width:100%;max-height:92vh;aspect-ratio:9/16;border-radius:18px;background:#000}.bn-film-x{position:absolute;top:-14px;right:-14px;width:40px;height:40px;border-radius:50%;border:0;background:#fff;color:#111;font-size:24px;line-height:1;cursor:pointer;z-index:1}.bn-film-x:focus-visible{outline:3px solid #668bc6;outline-offset:2px}
+@media (max-width:820px){.bn-play{right:10px;bottom:30px;font-size:12px;padding:5px 10px 5px 8px}.bn-film-x{top:8px;right:8px;background:rgba(255,255,255,.9)}}
+@media (max-width:820px){.bn-slide.bn-img{aspect-ratio:12/7;min-height:0;padding:0}}
 @media (max-width:820px){.banner{margin-top:10px}.bn-slide{grid-template-columns:1fr 64px;padding:22px 18px 36px;min-height:210px;gap:6px 10px}.bn-art{width:64px;height:64px;font-size:36px;grid-row:1/3;align-self:start;box-shadow:none}.bn-slide b{font-size:21px}.bn-text{font-size:14.5px;grid-column:1/3}.bn-cta{grid-column:1/3}}`;
 

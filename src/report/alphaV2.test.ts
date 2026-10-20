@@ -154,6 +154,38 @@ test('a report generated on request paints the same 뉴스·공시 body as a dai
  assert.equal(reportFragments(report).news,body);
 });
 
+test('picture banners: only our own files, words kept as alt text, phone picture for narrow screens',async()=>{
+ const {validBanners,bannerHtml}=await import('./alphaPages.js');
+ const list=validBanners([
+  {title:'정보의 바다는, 끝.',text:'새 화면',image:{wide:'assets/banners/a-wide.jpg',narrow:'assets/banners/a-narrow.jpg'}},
+  {title:'밖의 그림',image:{wide:'https://evil.example/x.jpg'}},
+  {title:'지난 배너',image:{wide:'assets/banners/b.jpg'},until:'2026-01-01'},
+ ],'2026-10-18');
+ assert.equal(list.length,2);
+ assert.deepEqual(list[0]!.image,{wide:'assets/banners/a-wide.jpg',narrow:'assets/banners/a-narrow.jpg'});
+ assert.equal(list[1]!.image,undefined);
+ const html=bannerHtml(list);
+ assert.match(html,/class="bn-slide[^"]* bn-img"/);
+ assert.match(html,/<source media="\(max-width:820px\)" srcset="assets\/banners\/a-narrow.jpg">/);
+ assert.match(html,/<img class="bn-pic" src="assets\/banners\/a-wide.jpg" alt="정보의 바다는, 끝. 새 화면"/);
+ assert.doesNotMatch(html,/evil\.example/);
+});
+
+test('film banners: a teaser film under assets/banners/ opens in a pop-up, other films are dropped',async()=>{
+ const {validBanners,bannerHtml,BANNER_JS}=await import('./alphaPages.js');
+ const list=validBanners([
+  {title:'새 화면',image:{wide:'assets/banners/a.jpg',video:'assets/banners/t.mp4',poster:'assets/banners/t.jpg'}},
+  {title:'밖의 영상',image:{wide:'assets/banners/b.jpg',video:'https://evil.example/t.mp4',poster:'assets/banners/t.jpg'}},
+ ],'2026-10-18');
+ assert.deepEqual(list[0]!.image,{wide:'assets/banners/a.jpg',video:'assets/banners/t.mp4',poster:'assets/banners/t.jpg'});
+ assert.deepEqual(list[1]!.image,{wide:'assets/banners/b.jpg'});
+ const html=bannerHtml(list);
+ assert.match(html,/<a class="bn-slide[^"]*" data-i="0" aria-roledescription="배너" href="assets\/banners\/t.mp4" data-video="assets\/banners\/t.mp4" data-poster="assets\/banners\/t.jpg"/);
+ assert.equal((html.match(/bn-play/g)??[]).length,1);
+ assert.doesNotMatch(html,/evil\.example/);
+ assert.match(BANNER_JS,/showModal\(\)/);
+});
+
 test('G-249: the scenario strip places the three ranges and today on one ruler',async()=>{
  const {scenarioRail}=await import('./conclusion.js');
  const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-10-06',generatedAt:new Date(),bars:Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000})),disclosures:[],sources:[]});

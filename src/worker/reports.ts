@@ -36,7 +36,9 @@ export async function reportInput(site:string,symbol:string,deps:ReportDeps):Pro
  // behind the stock's own daily file. Use it as is only when it is as fresh; otherwise build from the newest prices
  // and keep its fundamentals, flows, news and filings, or a "new data" request would make the same old report again.
  const lastBar=d?.bars?.at(-1)?.[0];
- const usable=!!(research&&research.symbol===symbol&&research.price);
+ // A US context saved while SEC refused us (no financials) is not reused: a fresh build reads SEC again.
+ const secFailed=us&&!research?.kind&&!!research?.market?.status?.some(s=>s.source.startsWith('sec:edgar')&&!s.ok);
+ const usable=!!(research&&research.symbol===symbol&&research.price)&&!secFailed;
  if(usable&&(!lastBar||research!.price!.sessionDate>=lastBar||!Array.isArray(d?.bars)||d!.bars.length<20)){delete research!.commentary;return research!;}
  if(!d)throw new Error('분석에 필요한 데이터가 없어요. 데이터 갱신 뒤 다시 요청해 주세요.');
  const fresh=await buildFromBars(symbol,d,us,deps);
