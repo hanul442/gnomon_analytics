@@ -121,3 +121,5 @@
 {"at":"2026-10-19T16:41:51.332Z","month":"2026-10","symbol":"MSTR.O","model":"claude-opus-5-5","tier":"deep","inputTokens":8318,"outputTokens":14512,"cacheWriteTokens":12037,"usd":0.3837}
 {"at":"2026-10-19T16:41:51.332Z","month":"2026-10","symbol":"MSTR.O","model":"claude-haiku-5-5","tier":"deep","inputTokens":11106,"outputTokens":4489,"cacheWriteTokens":4450,"usd":0.00391}
 {"at":"2026-10-19T16:41:51.332Z","month":"2026-10","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":16279,"outputTokens":5898,"usd":0.18308}
+{"at":"2026-10-20T12:41:23.976Z","month":"2026-10","symbol":"KRW-UNI","model":"claude-opus-5-5","tier":"deep","inputTokens":5266,"outputTokens":10649,"cacheWriteTokens":12266,"usd":0.29537}
+{"at":"2026-10-20T12:41:23.976Z","month":"2026-10","symbol":"KRW-UNI","model":"claude-haiku-5-5","tier":"deep","inputTokens":8386,"outputTokens":5661,"cacheWriteTokens":7794,"usd":0.00464}

@@ -965,3 +965,4 @@
 {"date":"2026-10-19","preset":"top","symbol":"014820","market":"P","close":22600,"method":"gnm-signal-v1"}
 {"date":"2026-10-19","preset":"rebound","symbol":"900300","market":"Q","close":2880,"method":"gnm-signal-v1"}
 {"date":"2026-10-19","preset":"large","symbol":"030000","market":"P","close":19780,"method":"gnm-signal-v1"}
+{"date":"2026-10-19","preset":"risky","symbol":"278470","market":"P","close":329500,"method":"gnm-signal-v1"}
