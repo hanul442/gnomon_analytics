@@ -29,7 +29,6 @@ export function sparkline(values: readonly number[], label: string, width = 120,
   return `<svg viewBox="0 0 ${width} ${height}" class="spark" overflow="visible" role="img" aria-label="${esc(label)}"><defs>${fadeGrad(id, color, 0.18)}</defs><path d="${d}L${width},${height}L0,${height}Z" fill="url(#${id})"/><path class="spark-l" d="${d}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${end[0]}" cy="${end[1]}" r="2.4" fill="${color}"/></svg>`;
 }
 
-const FOOTPRINT_WORD = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' } as const;
 const POSITION_WORD = { ABOVE: '적정 범위 위', INSIDE: '적정 범위 안', BELOW: '적정 범위 아래' } as const;
 
 export type Freshness = { state: 'LIVE' | 'STALE' | 'DEGRADED' | 'NOT_AVAILABLE'; label: string; detail: string };
@@ -114,11 +113,9 @@ export function heroChart(report: DailyReport): string {
 
 export function hero(report: DailyReport, options: { live: boolean; asOf: string }): string {
   const p = report.price, m = report.market;
-  const mid = m?.horizons.find((h) => h.key === 'MEDIUM')?.summary;
   const points = [
-    mid ? ['중기 기술 신호', mid.label, mid.score === null ? '' : mid.score >= 0.1 ? 'up' : mid.score <= -0.1 ? 'down' : ''] : null,
+    // G-267: no signal words ('강세', '매집 쪽') in the first screen; they read as buy/sell calls. The timing and flow tabs keep them.
     m?.fairValue ? ['기술적 적정가', `${won(m.fairValue.center)} (${POSITION_WORD[m.fairValue.position]})`, ''] : null,
-    m ? ['수급 흔적', FOOTPRINT_WORD[m.footprint.state], m.footprint.state === 'ACCUMULATION_LIKE' ? 'up' : m.footprint.state === 'DISTRIBUTION_LIKE' ? 'down' : ''] : null,
     m?.snapshot?.consensus?.targetPriceMean ? ['증권가 평균 목표가', won(m.snapshot.consensus.targetPriceMean), ''] : null,
   ].filter((x): x is string[] => x !== null);
   return `<section class="hero" id="top" data-session="${esc(p?.sessionDate ?? report.date)}"><div class="orb" aria-hidden="true"></div>

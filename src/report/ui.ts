@@ -274,7 +274,6 @@ function dockOf(page: string): 'find' | 'committee' | 'me' | undefined {
   return undefined;
 }
 /** The 종목 bar's question chips (G-258): one tap opens the chat with the question typed in. */
-const ASK_CHIPS = ['시나리오 쉽게 풀어 줘', '지금 가격은 어디쯤이야?', '최근 공시 무슨 뜻이야?', '오늘 뉴스 요약해 줘'];
 /**
  * One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones).
  * G-258: the phone bar is one glass pill. Icons only, the current one named in a small bubble. With `ask` (stock and
@@ -287,7 +286,7 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   const dock = ask ? 'ask' : page ? dockOf(page) : undefined;
   const seg = (rows: readonly (readonly [string, string, boolean, string?])[]) => `<div class="nav-seg">${rows.map(([l, h, on, extra]) => `<a href="${base}${h}" aria-label="${escM(l)}"${on ? ' aria-current="page"' : ''}>${svgI(DOCK_ICONS[h] ?? '')}<span>${escM(l)}</span>${extra ?? ''}</a>`).join('')}</div>`;
   let ctx = '';
-  if (dock === 'ask') ctx = `<div class="nav-chips">${ASK_CHIPS.map((q) => `<button type="button" ${chat} data-q="${escM(q)}">${escM(q)}</button>`).join('')}</div><button type="button" class="nav-ask" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(ASK_ICON)}<span>물어보기</span><i aria-hidden="true">${svgI('<path d="M12 19V5M6 11l6-6 6 6"/>')}</i></button>`;
+  if (dock === 'ask') ctx = `<button type="button" class="nav-ask" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(ASK_ICON)}<span>물어보기</span><i aria-hidden="true">${svgI('<path d="M12 19V5M6 11l6-6 6 6"/>')}</i></button>`;
   else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목·ETF·코인</span></button><button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
   else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
   else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 기록', 'myreports.html', page === 'myreports.html' || page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);

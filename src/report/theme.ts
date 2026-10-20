@@ -67,4 +67,8 @@ html[data-theme=dark] .card{border-radius:24px}
   --page-grad:radial-gradient(900px 600px at 85% -20%,rgba(255,255,255,.07),transparent 60%),radial-gradient(800px 600px at -10% 30%,rgba(255,255,255,.035),transparent 60%)}
 :root[data-theme=dark] .topbar,:root[data-theme=dark] body .topbar{background:rgba(15,16,18,.86)}
 :root[data-theme=dark] .topbar>.chips:not(.analysis-tabs){background:linear-gradient(180deg,rgba(38,40,44,.92),rgba(20,21,24,.92))}
+/* G-267 (한서님 10/20 'ㄱㄱ', 덜어내기 기준): one quiet accent, near-black in light and near-white in dark, so links, chips,
+   selected states and the chart kit stop using blue. Blue stays only for falling prices (--down). */
+html:root[data-theme=light]{--accent:#141416;--accent-strong:#141416;--accent-soft:rgba(20,20,22,.06);--accent-line:rgba(20,20,22,.18);--focus:#141416;--brand-grad:linear-gradient(135deg,#2A2C31 0%,#141416 100%)}
+html:root[data-theme=dark]{--accent:#ECEDEF;--accent-strong:#ECEDEF;--accent-soft:rgba(255,255,255,.08);--accent-line:rgba(255,255,255,.22);--focus:#ECEDEF;--brand-grad:linear-gradient(135deg,#F4F5F7 0%,#C9CCD1 100%)}
 `;

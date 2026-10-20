@@ -140,8 +140,8 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
   const hitText = (v: number | null) => (v === null ? '채점 전' : `${Math.round(v)}%`);
   const scoreRing = live.length ? ringChart([
     { label: '예측 범위 적중', value: fcHit === null ? null : fcHit / 100, color: 'var(--accent)', text: hitText(fcHit) },
-    { label: '위원 방향 적중', value: aiHit === null ? null : aiHit / 100, color: '#9b6cf0', text: hitText(aiHit) },
-    { label: '챔피언이 보유보다 나은 종목', value: beat / live.length, color: '#e8930c', text: `${beat}/${live.length}` },
+    { label: '위원 방향 적중', value: aiHit === null ? null : aiHit / 100, color: 'var(--fg2)', text: hitText(aiHit) },
+    { label: '챔피언이 보유보다 나은 종목', value: beat / live.length, color: 'var(--muted)', text: `${beat}/${live.length}` },
   ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: hitText(fcHit), small: '예측 적중', cls: 'sc-ring' }) : '';
   const hero = `<section class="block sc-hero" id="top"><div class="sc-k">예측 범위 적중률 · 리포트 종목 ${live.length}개</div><h1 class="sc-hv"><b>${fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`}</b><small>목표 80% 안팎</small></h1>
 ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 ${Math.round(fcHit)}%, 목표 80%"><i style="width:${Math.max(0, Math.min(100, fcHit)).toFixed(0)}%"></i><em style="left:80%"></em></div>`}

@@ -91,7 +91,7 @@ body.dock-searching::before{content:"";position:fixed;inset:0;z-index:44;backgro
 .bottom-nav.ctx .nav-tabs,.bottom-nav.ctx .nav-spark{display:none}
 .bottom-nav.ctx .nav-back{display:grid;animation:nav-pop .4s cubic-bezier(.34,1.5,.64,1)}
 .bottom-nav.ctx .nav-ctx{display:flex;animation:nav-in .38s var(--ease-out)}
-.bottom-nav.ctx:not(.mini) .nav-chips{display:flex;animation:nav-up .45s var(--ease-out) .15s backwards}
+/* G-267: the question chips no longer float over the page; the chat opens with its own suggested questions. */
 .bottom-nav:not(.ctx) .nav-tabs{animation:nav-in .38s var(--ease-out)}
 .bottom-nav.morph{animation:nav-squish .5s var(--ease-out)}
 @keyframes nav-in{from{opacity:0;transform:translateX(10px)}}
