@@ -109,14 +109,13 @@ test('report failures preserve actionable categories without exposing provider d
  assert.doesNotMatch(reportFailureMessage('API_401:sensitive server details'),/sensitive server details/);
 });
 
-test('G-244: no release card on any page; home links the release note from 더 보기; the ad strip goes after the page everywhere',async()=>{
+test('G-244: no release card on any page; the ad strip goes after the page everywhere',async()=>{
  const {shell}=await import('./renderHtml.js');const {renderHome}=await import('./renderHome.js');
  assert.doesNotMatch(shell('','홈','',{active:'home'}),/class="version-banner"/);
  assert.doesNotMatch(renderStockPage(),/class="version-banner"/);
  assert.doesNotMatch(renderGuide(),/class="version-banner"/);
  const home=renderHome({entries:[],selection:null,universe:null,pulse:null,indices:[]});
- assert.match(home,/class="ml-row" href="updates\.html"/);
- assert.ok(home.indexOf('class="ad-strip"')>home.indexOf('id="more"'),'the ad strip comes after the page');
+ assert.ok(home.indexOf('class="ad-strip"')>home.indexOf('id="news-issues"'),'the ad strip comes after the page');
  assert.ok(renderStockPage().indexOf('class="ad-strip"')>renderStockPage().indexOf('id="tab-news"'),'on every page');
 });
 

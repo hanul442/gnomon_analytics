@@ -5,18 +5,12 @@ import type { MarketReport } from './marketReport.js';
 // reports as one-line rows, today's movers, a watchlist kept in the browser,
 // the scorecard summary and this week's filings. Pure rendering.
 
-import { ORBS } from './ui.js';
 import { NEWS_ISSUES_CARD, NEWS_ISSUES_SCRIPT } from './newsIssues.js';
-import type { DailyReport, ReportedFiling } from './dailyReport.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { MarketPulse, StockCalc } from '../analysis/quickCalc.js';
-import { marketTemperature } from './marketTemperature.js';
-import { madeOn, SEARCH_SCRIPT, shell, type HomeEntry } from './renderHtml.js';
-import { gate } from './plans.js';
+import { madeOn, shell, type HomeEntry } from './renderHtml.js';
 import { ALPHA_BANNERS, BANNER_JS, bannerHtml, eventBanners, type Banner } from './alphaPages.js';
 import { openEvents } from './events.js';
-import { VERSION } from './releases.js';
-import { FIELD_INDEX, matches, PRESETS } from '../analysis/screenRules.js';
 import { esc } from './html.js';
 import { won, tone, move as signed } from './format.js';
 
@@ -93,82 +87,13 @@ function reportRows(entries: readonly HomeEntry[], selection: HomeData['selectio
     const kind = aiKind(e);
     const lean = mid?.score == null ? '' : mid.score >= 0.1 ? 'bull' : mid.score <= -0.1 ? 'bear' : 'flat';
     return `<div class="rr" data-kind="${kind}" data-lean="${lean}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b>${aiPill(e)}</div><p class="rr-line">${esc(line)}</p></a>
-<div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : '<span class="muted small">가격 기록 없음</span>'}${mid ? `<span class="sig ${tone(mid.score === null ? null : mid.score >= 0.1 ? 1 : mid.score <= -0.1 ? -1 : 0)}">${esc(mid.label)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
+<div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : '<span class="muted small">가격 기록 없음</span>'}</div>${star(e.symbol, e.name)}</div>`;
   }).join('');
   const chip = (f: string, label: string, n?: number) => `<button type="button" class="chip-toggle" data-rf="${f}" aria-pressed="${f === ''}">${label}${n === undefined ? '' : ` ${n}`}</button>`;
   const count = (k: string) => entries.filter((e) => aiKind(e) === k).length;
   return `<section class="block" id="reports"><div class="block-head"><h2>추적 종목 ${entries.length}개</h2><span class="muted">${selection ? `${esc(selection.date)} 선정 · ` : ''}가격·지표는 매일 바뀌어요</span></div>
-<div class="card list rr-list"><div class="pl-chips rr-chips" role="group" aria-label="리포트 거르기">${chip('', '전체', entries.length)}${count('core') ? chip('core', '위원회', count('core')) : ''}${count('weekly') ? chip('weekly', '간단(이전)', count('weekly')) : ''}${count('request') ? chip('request', '요청', count('request')) : ''}${chip('bull', '강세')}${chip('bear', '약세')}</div>${rows || '<p class="empty">아직 리포트가 없어요.</p>'}</div>
-<p class="muted small">대표 종목과 시가총액·거래대금·공시·움직임으로 고른 종목이에요. 가격·지표·신호는 매일 바뀌고, AI 리포트는 표시된 날짜에 쓴 내용이에요(매일 리포트나 요청으로 새로 만들어요). 신호는 중기(일봉) 기술 신호예요.</p></section>`;
-}
-
-type View = 'beginner' | 'trader' | 'swing' | 'long';
-const VIEW_LEAD: Record<View, string> = {
-  beginner: '처음 보기 좋은 대표 종목과 ETF부터',
-  trader: '오늘 많이 움직이고 거래가 붙은 종목부터',
-  swing: '강세·약세 전환 가격에 가까운 종목부터',
-  long: '적정 범위 아래이거나 실적을 볼 만한 종목부터',
-};
-
-/** How much each view would want this pick today, and the one line that says why (G-67). */
-function viewFit(e: HomeEntry): Record<View, { score: number; why: string }> {
-  const r = e.report, p = r?.price, kind = e.kind ?? 'stock', deep = e.tier === 'deep' || e.group === 'core';
-  const base = e.reasons?.[0] ?? (e.group === 'core' ? '대표 종목' : '이번 주 위원회 리포트');
-  const move = Math.abs(p?.changePct ?? 0), vol = p?.volumeRatio20 ?? null;
-  const c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
-  const lv = r?.market?.structure?.levels ?? [];
-  const up = c?.scenarios?.find((x) => x.kind === 'BULL')?.trigger ?? lv.filter((l) => p && l.price > p.close).sort((a, b) => a.price - b.price)[0]?.price;
-  const dn = c?.scenarios?.find((x) => x.kind === 'BEAR')?.trigger ?? lv.filter((l) => p && l.price < p.close).sort((a, b) => b.price - a.price)[0]?.price;
-  const gapTo = (t?: number) => (p && t ? t / p.close - 1 : null);
-  const gu = gapTo(up), gd = gapTo(dn);
-  const near = gu === null && gd === null ? null : gd === null || (gu !== null && Math.abs(gu) <= Math.abs(gd)) ? { t: up!, g: gu!, w: '강세 전환' } : { t: dn!, g: gd!, w: '약세 전환' };
-  const fv = r?.market?.fairValue, per = r?.market?.snapshot?.per;
-  return {
-    beginner: {
-      score: (e.group === 'core' ? 3 : 0) + (kind === 'etf' ? 2.5 : 0) + (deep ? 1 : 0) - (kind === 'coin' ? 2 : 0) - move / 4,
-      why: kind === 'etf' ? '여러 종목을 묶은 ETF라 한 종목보다 덜 출렁여요' : e.group === 'core' ? '많이 보는 대표 종목이에요' : base,
-    },
-    trader: {
-      score: move + (vol ?? 1) * 1.5 + (kind === 'coin' ? 0.5 : 0),
-      why: p ? `오늘 ${signed(p.changePct)}${vol != null ? ` · 거래량 평소 ${vol.toFixed(1)}배` : ''}` : base,
-    },
-    swing: {
-      score: (near ? Math.max(0, 10 - Math.abs(near.g) * 100) : 0) + (deep ? 2 : 0),
-      why: near ? `${near.w} 가격 ${won(near.t)}까지 ${near.g > 0 ? '+' : ''}${(near.g * 100).toFixed(1)}%` : base,
-    },
-    long: {
-      score: (kind === 'stock' ? 2 : kind === 'etf' ? 1 : -3) + (fv?.position === 'BELOW' ? 4 : fv?.position === 'INSIDE' ? 1 : 0) + (per != null ? 1 : 0) + (deep ? 1 : 0),
-      why: fv ? `적정 범위 ${fv.position === 'BELOW' ? '아래' : fv.position === 'ABOVE' ? '위' : '안'}${per != null ? ` · PER ${per.toFixed(1)}배` : ''}` : base,
-    },
-  };
-}
-
-/**
- * "오늘 볼 것" (G-64, G-67): the few reports worth a look today, picked for the reader's view. Every
- * candidate is on the page with a score and a reason per view; the page shows the view's top four.
- */
-function todayPicks(daily: readonly HomeEntry[], weekly: readonly HomeEntry[]): string {
-  // G-197: the last five pick days, newest first (a weekend or holiday day holds only a coin, so looking at one
-  // day filled the rest with the same standing names every time). Standing names rotate by date after them.
-  const days = [...new Set(daily.map((e) => e.pickDate ?? ''))].filter(Boolean).sort().reverse().slice(0, 5);
-  const age = new Map(days.map((d, i) => [d, i]));
-  const deepFirst = (a: HomeEntry, b: HomeEntry) => (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1);
-  const recentDaily = daily.filter((e) => age.has(e.pickDate ?? '')).sort((a, b) => (age.get(a.pickDate!)! - age.get(b.pickDate!)!) || deepFirst(a, b));
-  const turn = days[0] ? Number(days[0].replace(/-/g, '')) : 0;
-  const rotated = weekly.length ? [...weekly.slice(turn % weekly.length), ...weekly.slice(0, turn % weekly.length)] : [];
-  const seen = new Set<string>();
-  const picks = [...recentDaily, ...rotated].filter((e) => e.report && !seen.has(e.symbol) && seen.add(e.symbol)).slice(0, 16);
-  if (!picks.length) return '';
-  const views = Object.keys(VIEW_LEAD) as View[];
-  const card = (e: HomeEntry) => {
-    const r = e.report, p = r?.price, c = r?.commentary?.status === 'OK' ? r.commentary : undefined;
-    const line = (c?.summary?.text ?? r?.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
-    const fit = viewFit(e);
-    return `<div class="tp" data-pick-daily="${e.group==='daily'?'1':'0'}" data-age="${e.group === 'daily' ? age.get(e.pickDate ?? '') ?? 4 : 0}" data-sym="${esc(e.symbol)}" ${views.map((v) => `data-s-${v}="${fit[v].score.toFixed(2)}"`).join(' ')}><a class="tp-main" href="${esc(e.href)}"><div class="tp-top">${e.kind && e.kind !== 'stock' ? `<span class="tier t-k">${KIND[e.kind]}</span>` : ''}${aiPill(e)}${views.map((v) => `<span class="tp-why pw pw-${v}">${esc(fit[v].why)}</span>`).join('')}</div>
-<div class="tp-name"><b>${esc(e.name)}</b>${p ? `<span class="tp-px"><b data-live="${esc(e.symbol)}" data-live-f="price">${won(p.close)}</b> <span class="${tone(p.changePct)}" data-live="${esc(e.symbol)}" data-live-f="pct">${signed(p.changePct)}</span></span>` : ''}</div><p class="tp-line">${esc(line)}</p></a>${star(e.symbol, e.name)}</div>`;
-  };
-  return `<section class="block" id="today"><div class="block-head"><h2>오늘 볼 종목</h2><a class="more-link" href="reports.html">리포트 모음 ›</a></div>
-<div class="tp-grid" id="tp-grid">${picks.map(card).join('')}</div></section>`;
+<div class="card list rr-list"><div class="pl-chips rr-chips" role="group" aria-label="리포트 거르기">${chip('', '전체', entries.length)}${count('core') ? chip('core', '위원회', count('core')) : ''}${count('weekly') ? chip('weekly', '간단(이전)', count('weekly')) : ''}${count('request') ? chip('request', '요청', count('request')) : ''}</div>${rows || '<p class="empty">아직 리포트가 없어요.</p>'}</div>
+<p class="muted small">대표 종목과 시가총액·거래대금·공시·움직임으로 고른 종목이에요. 가격·지표는 매일 바뀌고, AI 리포트는 표시된 날짜에 쓴 내용이에요(매일 리포트나 요청으로 새로 만들어요).</p></section>`;
 }
 
 /**
@@ -226,140 +151,38 @@ export function renderReportsPage(data: HomeData): string {
 }
 
 
-function scorecard(entries: readonly HomeEntry[]): string {
-  const reports = entries.map((e) => e.report).filter((r): r is DailyReport => !!r?.market);
-  let fScored = 0, fInside = 0;
-  for (const r of reports) for (const s of r.market!.forecastScores) { fScored += s.scored; fInside += (s.coverage ?? 0) * s.scored; }
-  const by = new Map<string, { name: string; scored: number; hits: number; pending: number }>();
-  for (const r of reports) for (const a of r.market!.analystBoard) {
-    const x = by.get(a.analyst) ?? { name: a.name, scored: 0, hits: 0, pending: 0 };
-    x.scored += a.scored; x.hits += (a.hitRate ?? 0) * a.scored; x.pending += a.pending; by.set(a.analyst, x);
-  }
-  const board = [...by.values()].filter((x) => x.scored > 0).sort((a, b) => b.hits / b.scored - a.hits / a.scored).slice(0, 3);
-  const pending = [...by.values()].reduce((s, x) => s + x.pending, 0);
-  const detail = `<div class="card sc-card"><div class="sc-k">AI 분석가 방향 적중</div>${board.length ? `<ol class="sc-board">${board.map((x) => `<li><span>${esc(x.name)}</span><b>${Math.round((x.hits / x.scored) * 100)}%</b><span class="muted small">${x.scored}건</span></li>`).join('')}</ol>` : `<div class="muted">채점 대기 ${pending.toLocaleString('ko-KR')}건. 첫 채점은 예측 20거래일 뒤예요.</div>`}</div>`;
-  // Free: the headline number. Plus: the analyst ranking.
-  return `<section class="block"><div class="block-head"><h2>성적표</h2><a href="scorecard.html" class="more-link">전체 보기 ›</a></div><div class="card sc-card sc-free"><div class="sc-k">예측 범위 적중</div>${fScored ? `<div class="sc-v">${Math.round((fInside / fScored) * 100)}%</div><div class="muted small">채점 ${fScored.toLocaleString('ko-KR')}건 · 10~90% 범위라 정직하면 80% 안팎이에요</div>` : '<div class="muted">아직 채점 전이에요. 예측은 기간이 지나면 실제 가격으로 채점해요.</div>'}</div>${gate(detail, { base: '', what: 'AI 분석가 순위', feature: 'analystRanking' })}</section>`;
-}
-
-function filings(entries: readonly HomeEntry[]): string {
-  const seen = new Set<string>();
-  const list: (ReportedFiling & { name: string; href: string })[] = [];
-  for (const e of entries) for (const f of e.report?.recentFilings ?? []) {
-    if (f.importance === 'LOW' || seen.has(f.receiptNo)) continue;
-    seen.add(f.receiptNo); list.push({ ...f, name: e.name, href: e.href });
-  }
-  list.sort((a, b) => (a.filedDate < b.filedDate ? 1 : -1));
-  const top = list.slice(0, 8);
-  return `<section class="block" id="home-filings"><div class="block-head"><h2>주요 공시</h2><span class="muted">리포트 종목 · 최근</span></div><div class="card list">${top.length ? top.map((f) => `<div class="fl"><span class="muted small">${esc(f.filedDate.slice(5))}</span><div><a href="${esc(f.href)}#tab-news"><b>${esc(f.name)}</b></a><div class="small">${esc(f.title)}</div></div></div>`).join('') : '<p class="empty">최근 주요 공시가 없어요.</p>'}</div></section>`;
-}
-
-const PLAN_CARD = `<section class="block"><div class="card plan-cta"><div class="pl-k">지금 요금제 <b data-plan-name>무료</b> · <span data-credits>0</span> 크레딧</div>
-<p>무료는 결론·차트·지표, <b>플러스</b>는 상세 열기·리포트 요청·AI 질문, <b>프로</b>는 위원회 전체와 전문가 초청, <b>맥스</b>는 내 종목 전담 위원회예요. 크레딧 기능은 플러스부터 사용해요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></section>`;
-
-/** G-78: the reader's saved screens (or the first preset), run on today's screener.json in the page. */
-const MY_SCREENS = `<section class="block" id="myscreens"><div class="block-head"><h2 id="ms-title">내 조건에 걸린 종목</h2><a class="more-link" href="screener.html#ai-build">AI로 조건 만들기 ›</a></div><p class="muted small" id="ms-date" hidden></p><div id="ms-body" class="ms-grid"><div class="orbs-load" style="grid-column:1/-1">${ORBS}<span>내 조건으로 오늘 종목을 찾는 중이에요</span></div></div></section>`;
-const MY_SCREENS_SCRIPT = `<script>
-(function () {
-  var box = document.getElementById('ms-body'); if (!box) return;
-  var IDX = ${JSON.stringify(FIELD_INDEX)}, PRESET = ${JSON.stringify(PRESETS.slice(0, 1).map((x) => ({ name: x.label, screen: x.screen, key: x.key })))}[0];
-  var matches = ${matches.toString()};
-  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var won = function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
-  var local = function () { try { return JSON.parse(localStorage.getItem('gnm-screens') || '[]'); } catch (e) { return []; } };
-  var screens = function () { var G = window.GNM; return G && G.api && G.me ? G.call('GET', '/screens').then(function (r) { return r.screens || []; }).catch(function () { return []; }) : Promise.resolve(local()); };
-  Promise.all([fetch('screener.json').then(function (r) { return r.json(); }), (window.GNM && GNM.ready ? GNM.ready : Promise.resolve()).then(screens)]).then(function (all) {
-    var rows = (all[0] && all[0].rows) || [], list = all[1].slice(0, 3), mine = list.length;
-    if (!mine) {list = [PRESET];document.getElementById('ms-title').textContent='추천 검색 조건';}
-    box.classList.toggle('ms-single',list.length===1);
-    var score = IDX.score;
-    // G-186: one card per condition — how many match, how many are new today (this browser remembers yesterday's
-    // matches per condition), and the top three with their signal, today's move and where they sit in the 52-week range.
-    var LV = { STRONG_BULLISH: ['강한 강세', 'up'], BULLISH: ['강세', 'up'], SLIGHTLY_BULLISH: ['약간 강세', 'up'], NEUTRAL: ['중립', ''], SLIGHTLY_BEARISH: ['약간 약세', 'down'], BEARISH: ['약세', 'down'], STRONG_BEARISH: ['강한 약세', 'down'] };
-    var day = all[0].date || all[0].at || '', seen = {}, keep = {}; try { seen = JSON.parse(localStorage.getItem('gnm-ms-seen') || '{}') || {}; } catch (e) {}
-    var md = function (d) { return String(d || '').slice(5, 10).replace('-', '/'); };
-    var pos52 = function (r) { var a = r[IDX.hi52], b = r[IDX.lo52]; if (a == null || b == null) return null; var x = 1 - 1 / (1 + b / 100), y = 1 / (1 + a / 100) - 1 / (1 + b / 100); return y > 0 ? Math.max(0, Math.min(1, x / y)) : null; };
-    box.innerHTML = list.map(function (x) {
-      var key = 'k' + (x.id || x.key || x.name), hit = rows.filter(function (r) { return matches(r, x.screen, IDX); }).sort(function (a, b) { return (b[score] || 0) - (a[score] || 0); });
-      // 'New' means new since the last data date this browser saw for this condition (stored per condition, the
-      // 1,000 strongest codes at most; conditions no longer listed are dropped).
-      var codes = hit.slice(0, 1000).map(function (r) { return r[0]; }), mem = seen[key] || {};
-      var rec = mem.day && mem.day !== day ? { day: day, codes: codes, prev: mem.codes, prevDay: mem.day } : { day: day, codes: codes, prev: mem.prev || null, prevDay: mem.prevDay || null };
-      keep[key] = rec; var prev = rec.prev;
-      var fresh = prev ? codes.filter(function (c) { return prev.indexOf(c) < 0; }) : [];
-      var top = hit.slice(0, 3).map(function (r) {
-        var c = r[IDX.chg], lv = LV[r[IDX.level]] || null, p = pos52(r), href = r[13] ? r[0] + '/index.html' : 'stock.html?c=' + r[0], isNew = fresh.indexOf(r[0]) >= 0;
-        return '<a class="ms-row" href="' + href + '"><span class="ms-l"><b>' + esc(r[1]) + (isNew ? '<em class="ms-new">새로</em>' : '') + '</b>' + (lv ? '<i class="ms-lv ' + lv[1] + '">' + lv[0] + '</i>' : '') + '</span>' +
-          '<span class="ms-r"><span class="ms-px"><span data-live="' + r[0] + '" data-live-f="price">' + won(r[IDX.close]) + '</span><span class="' + (c > 0 ? 'up' : c < 0 ? 'down' : '') + '" data-live="' + r[0] + '" data-live-f="pct">' + (c > 0 ? '▲ +' : c < 0 ? '▼ ' : '') + Number(c).toFixed(2) + '%</span></span>' +
-          (p == null ? '' : '<span class="ms-52" title="52주 범위 안 위치 ' + Math.round(p * 100) + '%"><i style="left:' + (p * 100).toFixed(0) + '%"></i></span>') + '</span></a>';
-      }).join('');
-      return '<div class="card ms-card"><div class="ms-head"><b>' + esc(x.name) + '</b>' + (x.alert ? '<span class="ms-bell" title="알림 켜짐">🔔</span>' : '') + '</div>' +
-        '<div class="ms-stat"><span><b class="ms-n">' + hit.length + '</b>종목</span>' + (prev ? '<span class="' + (fresh.length ? 'ms-fresh' : 'muted') + '" title="이 기기에서 마지막으로 본 데이터(' + esc(rec.prevDay || '') + ')와 비교">' + esc(md(rec.prevDay)) + ' 뒤 새로 <b>' + fresh.length + '</b></span>' : '<span class="muted small">다음 데이터부터 새로 걸린 종목을 표시해요</span>') + '</div>' +
-        (top || '<p class="muted small">오늘은 걸린 종목이 없어요.</p>') + '<a class="ms-more" href="screener.html' + '?screen=' + encodeURIComponent(JSON.stringify(x.screen)) + '">' + hit.length + '종목 모두 보기 ›</a></div>';
-    }).join('') + (mine ? '' : '<p class="muted small ms-note">저장한 조건이 없어 추천 조건을 보여드려요. AI로 조건을 만들고 저장해 보세요.</p>');
-    try { localStorage.setItem('gnm-ms-seen', JSON.stringify(keep)); } catch (e) {}
-    var stamp = document.getElementById('ms-date'); if (stamp) { stamp.hidden = false; stamp.textContent = (day ? String(day).slice(0, 10) + ' 데이터' : '일일 갱신 데이터') + ' · 신호 점수 높은 순'; }
-    if (window.GNM_live) GNM_live.tick();
-  }).catch(function () { box.innerHTML = '<p class="muted small">조건 검색 데이터를 불러오지 못했어요.</p>'; });
-})();
-</script>`;
-
 // G-201: one "내 종목" card: the stocks starred (☆) and the ones named in the survey, then the survey's sector chips
 // (each opens its strongest theme today) and the screener preset that fits the holding period.
 const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" aria-hidden="true"></span><div class="block-head"><h2>내 종목 오늘</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card my-card"><p class="feed-sum" id="feed-sum" hidden></p><div class="list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div><div id="feed-chips" class="feed-chips"></div><a class="feed-redo" href="settings.html#profile" id="feed-redo">내 투자 방식 바꾸기 ›</a></div></section>`;
 
-/** The filter menu (G-94): presets grouped by what the reader is looking for, each with its one-line meaning. */
 
 
 
 export function renderHome(data: HomeData): string {
   // Reports someone requested stay off the front page (G-61): they are found by search and opened with credits.
   const entries = data.entries.filter((e) => e.group !== 'past' && e.group !== 'daily' && e.group !== 'request');
-  const daily = data.entries.filter((e) => e.group === 'daily');
   const order = { core: 0, weekly: 1, request: 2, past: 3, daily: 4 } as const;
   const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
-  const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
-<div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
-</div></section>
-<i id="watch-slot" hidden></i>${WATCH}
-${marketHero(data.indices, data.universe, data.pulse, latestDaily(data), data.us ?? null)}
-
-<div class="home-grid"><div class="home-main">${NEWS_ISSUES_CARD}${MY_SCREENS}${todayPicks(daily, sorted)}${scoreLine(sorted)}${moreList()}</div>
-<aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
+  // G-266 (UI 덜어내기): four blocks: the date with the market in one line, my stocks, three issues, the scorecard line.
+  // The notices sit as one slim line right under the date (한서님 10/20).
+  // Search lives in 찾기; picks, saved screens, filings, the plan card and 더 보기 moved to their own tabs.
+  const day = data.pulse?.date ?? data.indices[0]?.date ?? '';
+  const body = `${HOME_STYLE}${marketLine(data.indices, latestDaily(data), day)}
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
+<i id="watch-slot" hidden></i>${WATCH}
+<div class="home-grid"><div class="home-main">${NEWS_ISSUES_CARD}${scoreLine(sorted)}</div></div>
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', scripts: NEWS_ISSUES_SCRIPT + SEARCH_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + HOME_FOLD_SCRIPT + TODAY_SCRIPT + MY_SCREENS_SCRIPT + MORE_SCRIPT });
+  return shell('', 'GNOMON | 오늘 시장', body, { active: 'home', scripts: NEWS_ISSUES_SCRIPT + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
 }
 
 /**
- * G-244 (화면 개편 1단계): the market in one block at the top of home. One sentence from every stock's signal,
- * one three-part bar, and the indices on one line; the US market opens under 미국. Replaces the index cards and
- * the two temperature cards (indexStrip), which took most of a phone screen before anything personal.
+ * G-266 (UI 덜어내기, 한서님 10/20): the market as one line under the date. The big index card, the market sentence,
+ * the bar and the four shortcuts are gone; the indices link to the market report.
  */
-function marketHero(indices: readonly IndexQuote[], universe: readonly UniverseRow[] | null, pulse: MarketPulse | null, href: string, us: UsTemp | null): string {
-  const rows = (universe ?? []).filter((r) => r.kind === 'stock' && r.changePct !== null);
-  const up = rows.filter((r) => r.changePct! > 0).length, down = rows.filter((r) => r.changePct! < 0).length, flat = rows.length - up - down;
-  // From the signals when there are some, else from today's up/down count.
-  const [bull, mid, bear, total, base] = pulse ? [pulse.bull, pulse.neutral, pulse.bear, pulse.counted, `전 종목 ${pulse.counted.toLocaleString('ko-KR')}개 기술 신호`] : [up, flat, down, up + flat + down, '오늘 오른 종목과 내린 종목'];
-  const lean = bull - bear, pct = (n: number) => (total ? Math.round((n / total) * 100) : 0);
-  const verdict = !total ? '' : lean > total * 0.1 ? (pulse ? '강세 종목이 많은 날이에요' : '오른 종목이 많은 날이에요') : lean < -total * 0.1 ? (pulse ? '약세 종목이 많은 날이에요' : '내린 종목이 많은 날이에요') : (pulse ? '강세·약세가 엇갈린 날이에요' : '등락이 엇갈린 날이에요');
-  const day = pulse?.date ?? indices[0]?.date ?? '';
-  const [bullWord, bearWord] = pulse ? ['강세', '약세'] : ['상승', '하락'];
-  // G-249 (Payrix 화면 구성, 한서님 10/19): one card. The first index as one big thin number, the market sentence under it,
-  // the slim bar, the other indices on one line, then four round shortcuts.
-  const lead = indices[0];
-  const big = lead ? `<div class="mh-top"><span>오늘 시장</span>${day ? `<small>${esc(day.slice(5).replace('-', '/'))} 마감</small>` : ''}</div><a class="mh-big" href="${esc(href)}"><b>${lead.close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>${esc(lead.name)} <span class="${tone(lead.changePct)}">${signed(lead.changePct)}</span></small></a>` : '';
-  const main = verdict ? `<a class="mh-main" href="${esc(href)}">${lead ? '' : `<div class="mh-k">${day ? `${esc(day.slice(5).replace('-', '/'))} 장 마감 · ` : ''}${base}</div>`}<h1 class="mh-v">${verdict}</h1>
-<div class="mh-bar" role="img" aria-label="${bullWord} ${pct(bull)}%, 중립 ${pct(mid)}%, ${bearWord} ${pct(bear)}%"><span class="s-bull" style="flex:${bull}"></span><span class="s-neutral" style="flex:${mid}"></span><span class="s-bear" style="flex:${bear}"></span></div>
-<div class="mh-n"><span class="up">${bullWord} ${pct(bull)}%</span><span class="mh-base">${base}</span><span class="down">${bearWord} ${pct(bear)}%</span></div></a>` : '';
-  const ix = indices.slice(lead ? 1 : 0).map((i) => `<span class="mh-ix">${esc(i.name)} <b>${Math.round(i.close).toLocaleString('ko-KR')}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span></span>`).join('');
-  // G-179's US temperature card, folded: tapped open on the same line as the indices.
-  const usCard = us && (us.pulse || us.up || us.down) ? marketTemperature(us.pulse, { up: us.up, down: us.down, flat: us.flat }, '미국', 'screener.html#us') : '';
-  const strip = ix || usCard ? `<div class="mh-strip"><a class="mh-ixs" href="${esc(href)}">${ix}</a>${usCard ? '<button type="button" class="mh-us-btn" aria-expanded="false" aria-controls="mh-us">미국 ›</button>' : ''}</div>${usCard ? `<div class="mh-us" id="mh-us" hidden>${usCard}</div>` : ''}` : '';
-  const ic = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-  const go = ([l, h, d]: readonly [string, string, string]) => `<a href="${h}"><i>${ic(d)}</i><span>${l}</span></a>`;
-  const quick = `<nav class="mh-go" aria-label="바로 가기">${([['찾기', 'screener.html', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'], ['관심', 'watch.html', '<path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>'], ['리포트', 'reports.html', '<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4"/>'], ['성적표', 'scorecard.html', '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4v2h6V4M9 13l2 2 4-4"/>']] as const).map(go).join('')}</nav>`;
-  return main || strip ? `<section class="block mh" id="mkt-hero"><div class="mh-card">${big}${main}${strip}${quick}</div></section>` : '';
+function marketLine(indices: readonly IndexQuote[], href: string, day: string): string {
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(day) ? `${Number(day.slice(5, 7))}월 ${Number(day.slice(8, 10))}일` : '오늘';
+  const ix = indices.slice(0, 2).map((i) => `<span class="hh-ix">${esc(i.name)} <b>${i.close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span></span>`).join('');
+  return `<section class="block hh" id="mkt-hero"><h1 class="hh-d">${d}</h1>${ix ? `<a class="hh-ixs" href="${esc(href)}">${ix}<span class="hh-go" aria-hidden="true">›</span></a>` : ''}</section>`;
 }
 
 /** G-244: the scorecard's headline as one line in the page (the full card stays in the wide screen's side rail). */
@@ -369,36 +192,6 @@ function scoreLine(entries: readonly HomeEntry[]): string {
   if (!scored) return '';
   return `<section class="block sl-wrap"><a class="sl" href="scorecard.html"><b class="sl-v">${Math.round((inside / scored) * 100)}%</b><span><b>위원회 예측 범위 적중률</b><small>채점 ${scored.toLocaleString('ko-KR')}건 · 정직하면 80% 근처예요</small></span><span class="sl-go" aria-hidden="true">›</span></a></section>`;
 }
-
-/**
- * G-244: what used to be stacked on home (strongest themes, movers, the filing radar, market reports and the
- * release note) as one list of links, one line each. The themes row names today's top two when they load.
- */
-function moreList(): string {
-  const row = (href: string, title: string, sub: string, id = '') => `<a class="ml-row" href="${href}"${id ? ` id="${id}"` : ''}><span><b>${title}</b><small>${sub}</small></span><span class="ml-go" aria-hidden="true">›</span></a>`;
-  return `<section class="block" id="more"><div class="block-head"><h2>더 보기</h2></div><div class="ml">${row('themes.html', '오늘 강한 테마', '테마별 등락과 종목', 'ml-themes')}${row('screener.html', '오늘 움직인 종목', '상승 · 하락 · 거래대금 순서')}${row('signals.html', '공시 레이더', '자사주 · 임원 매매 · 계약 · 배당')}${row('market-reports.html', '시장 리포트', '시장 데일리와 주중 위클리')}${row('updates.html', '업데이트 소식', `v${esc(VERSION)} 바뀐 점`)}</div></section>`;
-}
-const MORE_SCRIPT = `<script>
-(function () {
-  var a = document.getElementById('ml-themes'); if (!a) return;
-  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  (window.gnmThemesHome = window.gnmThemesHome || fetch('themes-home.json').then(function (r) { if (!r.ok) throw r; return r; }).catch(function () { return fetch('themes.json'); }).then(function (r) { return r.json(); })).then(function (j) {
-    var ts = (j.themes || []).filter(function (t) { return t.avg != null && t.members.length >= 3; }).slice(0, 2); if (!ts.length) return;
-    a.querySelector('small').innerHTML = ts.map(function (t) { return esc(t.name) + ' <i class="' + (t.avg > 0 ? 'up' : t.avg < 0 ? 'down' : '') + '">' + (t.avg > 0 ? '+' : '') + t.avg.toFixed(2) + '%</i>'; }).join(' · ');
-  }).catch(function () {});
-})();
-</script>`;
-
-/** G-244: 내 조건 only for readers who saved one (or are signed in); the US market opens under the indices. */
-const HOME_FOLD_SCRIPT = `<script>
-(function () {
-  var ms = document.getElementById('myscreens');
-  var fold = function () { var saved = 0; try { saved = (JSON.parse(localStorage.getItem('gnm-screens') || '[]') || []).length; } catch (e) {} if (ms) ms.hidden = !saved && !(window.GNM && GNM.me); };
-  fold(); setTimeout(function () { if (window.GNM && GNM.ready) GNM.ready.then(fold, function () {}); }, 0);
-  var b = document.querySelector('.mh-us-btn'), us = document.getElementById('mh-us');
-  if (b && us) b.addEventListener('click', function () { var open = us.hidden; us.hidden = !open; b.setAttribute('aria-expanded', String(open)); b.textContent = open ? '미국 접기' : '미국 ›'; });
-})();
-</script>`;
 
 /** The survey's part of 내 종목 (G-46, G-201): the note on top, the holding-period preset and the sector chips. */
 const FEED_SCRIPT = `<script>
@@ -429,25 +222,6 @@ const FEED_SCRIPT = `<script>
       a.innerHTML = '<b>' + esc(s) + '</b><small>' + esc(t[1]) + (t[2] == null ? '' : ' <i class="' + (t[2] > 0 ? 'up' : t[2] < 0 ? 'down' : '') + '">' + (t[2] > 0 ? '+' : '') + Number(t[2]).toFixed(1) + '%</i>') + '</small>';
     });
   }).catch(function () {});
-})();
-</script>`;
-
-/** "오늘 볼 것" by view (G-67): sort by the view's score, keep four. */
-const TODAY_SCRIPT = `<script>
-(function () {
-  var grid = document.getElementById('tp-grid'); if (!grid) return;
-  var apply = function () {
-    var p = document.documentElement.getAttribute('data-persona') || 'swing'; if (p === 'all') p = 'swing';
-    var cards = [].slice.call(grid.children);
-    // G-85: stocks the reader holds or watches (survey, ☆) come first, marked as theirs.
-    var mine = {}; try { (JSON.parse(localStorage.getItem('gnm-watch') || '[]') || []).forEach(function (x) { mine[x] = 1; }); ((JSON.parse(localStorage.getItem('gnm-prefs') || '{}') || {}).tickers || []).forEach(function (t) { mine[t[0]] = 2; }); } catch (e) {}
-    var sc = function (c) { return Number(c.getAttribute('data-s-' + p)) + (c.getAttribute('data-pick-daily')==='1'?100-15*Number(c.getAttribute('data-age')||0):0) + (mine[c.getAttribute('data-sym')] ? 1000 : 0); };
-    cards.forEach(function (c) { var t = c.querySelector('.tp-top'), had = c.querySelector('.t-mine'); if (mine[c.getAttribute('data-sym')] && !had && t) t.insertAdjacentHTML('afterbegin', '<span class="tier t-mine">' + (mine[c.getAttribute('data-sym')] === 2 ? '내 보유' : '내 관심') + '</span>'); });
-    cards.sort(function (a, b) { return sc(b) - sc(a); });
-    cards.forEach(function (c, i) { grid.appendChild(c); c.hidden = i >= 3; });
-  };
-  window.addEventListener('gnm-persona', apply);
-  apply();
 })();
 </script>`;
 
@@ -487,7 +261,7 @@ const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;m
 .home-hero{grid-template-columns:minmax(0,1fr)}.home-hero h1{font-size:30px}.home-hero .search-block{margin-top:14px;position:relative}
 .ix-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.ix-row.ix-4{grid-template-columns:repeat(4,minmax(0,1fr))}.ix-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.ix-v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}.ix-c{font-weight:600;font-size:14px}
 .br-bar,.pulse-bar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:10px 0 6px}.pulse-bar>span,.br-bar>span{min-width:4px}.br-bar .s-bull{background:var(--up)}.br-bar .s-neutral{background:var(--line-strong)}.br-bar .s-bear{background:var(--down)}.br-n{display:flex;justify-content:space-between;font-weight:700;font-size:14px}
-.tt-list{padding:4px 14px}.tt-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit}.tt-row:first-child{border-top:0}.tt-n{font-weight:800;color:var(--muted);text-align:center}.tt-main b{display:block;font-size:14.5px}.tt-main small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tt-v{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}.tt-v small{display:block;font-weight:500;color:var(--muted);font-size:11px}.home-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}.home-rail{position:sticky;top:76px}
+.tt-list{padding:4px 14px}.tt-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;color:inherit}.tt-row:first-child{border-top:0}.tt-n{font-weight:800;color:var(--muted);text-align:center}.tt-main b{display:block;font-size:14.5px}.tt-main small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tt-v{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}.tt-v small{display:block;font-weight:500;color:var(--muted);font-size:11px}.home-grid{display:block;max-width:760px}.home-rail{position:sticky;top:76px}
 .pulse-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}.pulse-head b{font-size:22px}.pulse-bar{height:16px;border-radius:8px}
 .pulse-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--fg2)}.pulse-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
 .rr{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;gap:10px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.rr-chips{padding:10px 0 4px}
@@ -515,12 +289,17 @@ const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;m
 .mh-go i{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:var(--pill);border:1px solid var(--line);box-shadow:0 6px 16px -10px rgba(10,22,38,.35);color:var(--fg);transition:transform .2s cubic-bezier(.34,1.5,.64,1)}.mh-go a:active i{transform:scale(.9)}.mh-go svg{width:21px;height:21px}
 #news-issues .card{border-radius:26px}#ni-home .ni-stocks,#ni-home-when{display:none}#ni-home .ni-row{grid-template-columns:30px minmax(0,1fr) auto;align-items:center;padding:12px 0}#ni-home .ni-n{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--soft);font-size:13px}#ni-home .ni-t{-webkit-line-clamp:1;font-weight:600}
 .mh-us-btn{flex:none;min-height:40px;padding:0 12px;border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer}.mh-us{margin-top:10px}.mh-us[hidden]{display:none}
+.hh{margin-top:18px}.hh-d{margin:0;font-size:26px;line-height:1.25;font-weight:500;letter-spacing:-.02em;color:var(--fg)}.hh-ixs{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;margin-top:4px;font-size:13px;color:var(--muted);text-decoration:none}.hh-ix b{font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums}.hh-go{margin-left:auto}#mkt-hero+#watch-slot+#watch,.hh+#watch-slot+#watch{margin-top:22px}
+#mkt-hero~.banner{margin-top:14px}:root body #mkt-hero~.banner .bn-slide{display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 14px;border-radius:18px;background:var(--surface);border:1px solid var(--glass-line,var(--line));box-shadow:none;color:var(--fg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+:root body #mkt-hero~.banner .bn-tag{flex:none;order:1;background:var(--soft);color:var(--fg2);font-size:11px;font-weight:600}:root body #mkt-hero~.banner .bn-art{flex:none;order:0;width:30px;height:30px;font-size:16px;background:var(--soft);box-shadow:none}:root body #mkt-hero~.banner .bn-slide b{order:2;flex:1;min-width:0;font-size:14.5px;font-weight:500;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:root body #mkt-hero~.banner .bn-text{display:none}:root body #mkt-hero~.banner .bn-cta{order:3;margin:0;padding:5px 11px;font-size:12.5px;font-weight:600;background:none;border:1px solid var(--line-strong);color:var(--fg)}:root body #mkt-hero~.banner .bn-logo{order:0;flex:none;width:auto;height:22px;border-radius:4px}:root body #mkt-hero~.banner .bn-benefits{order:4;flex:none}:root body #mkt-hero~.banner .bn-benefits[open]{flex-basis:100%}
+:root body #mkt-hero~.banner .bn-dots{position:static;transform:none;justify-content:center;margin-top:4px;background:none}:root body #mkt-hero~.banner .bn-dots button::before{background:var(--line-strong)}:root body #mkt-hero~.banner .bn-dots button[aria-pressed=true]::before{background:var(--fg)}
 .home-main>.block{margin-top:28px}.home-main>.block[hidden]{display:none}
 .tp-grid{gap:0;grid-template-columns:minmax(0,1fr)}.tp{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:14px 40px 14px 0}.tp:first-child{border-top:0}.tp:hover{border-color:var(--line)}.tp .star{top:10px;right:-4px}.tp-line{margin:4px 0 0;font-size:13.5px;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 @media (min-width:821px){.tp-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.tp{border:1px solid var(--line);border-radius:14px;padding:14px 40px 14px 16px;background:var(--surface)}.tp:first-child{border-top:1px solid var(--line)}.tp .star{top:8px;right:6px}}
 .sl{display:flex;align-items:center;gap:14px;padding:16px;border-radius:14px;background:var(--soft);text-decoration:none;color:var(--fg)}.sl-v{font-size:30px;font-weight:800;color:var(--accent-strong);font-variant-numeric:tabular-nums}.sl span{display:flex;flex-direction:column;gap:2px;min-width:0}.sl span b{font-size:15px}.sl small{font-size:13px;color:var(--muted)}.sl-go{margin-left:auto;color:var(--muted)}
 .ml-row{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--fg)}.ml-row:first-child{border-top:0}.ml-row>span:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}.ml-row b{font-size:15px}.ml-row small{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ml-row small i{font-style:normal;font-weight:700}.ml-row small i.up{color:var(--up)}.ml-row small i.down{color:var(--down)}.ml-go{margin-left:auto;color:var(--muted)}
-.home-grid+.banner{margin-top:28px}@media (max-width:1100px){.home-rail{display:none}}@media (min-width:1101px){.sl-wrap{display:none}}
+.home-grid+.banner{margin-top:28px}@media (max-width:1100px){.home-rail{display:none}}
 .wl-px{display:flex;flex-direction:column;align-items:flex-end;gap:1px;font-variant-numeric:tabular-nums;white-space:nowrap}.wl-px b{font-weight:600}.wl-st{font-size:12.5px;font-weight:600}
 </style>`;
 

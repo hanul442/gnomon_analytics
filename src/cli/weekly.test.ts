@@ -50,9 +50,9 @@ test('the first settled run picks the week: core and the largest company get the
   // The report lists live on reports.html (G-64); the front page shows a few picks.
   const list = await readFile(join(root, 'site', 'reports.html'), 'utf8');
   assert.ok(list.includes('추적 종목 3개') && list.includes('href="222220/index.html"') && list.includes('data-kind="data"') && list.includes('data-kind="core"'));
-  assert.ok(home.includes('id="today"') && !home.includes('id="reports"'));
+  assert.ok(!home.includes('id="today"') && !home.includes('id="reports"'));
   // The market dashboard: index quotes, temperature from every stock's computation, movers; pricing pages exist.
-  assert.ok(home.includes('id="mkt-hero"') && home.includes('id="more"') && home.includes('id="watch"'));
+  assert.ok(home.includes('id="mkt-hero"') && home.includes('id="watch"'));
   // Alpha (G-44~G-46): the feed slot, the chat on every page, a shorter menu and the account pages.
   assert.ok(home.includes('id="feed"') && home.includes('class="chat-fab"') && !home.includes('>최신</a>') && !/top-links[^]*>모의투자</.test(home.split('</nav>')[0]!));
   for (const page of ['login.html', 'onboarding.html', 'account.html', 'coins.html', 'coin.html', 'etfs.html']) assert.ok((await readFile(join(root, 'site', page), 'utf8')).includes('<title>'), page);
@@ -135,7 +135,7 @@ test('a refresh request writes one new deep report in the current prompt, even o
   assert.deepEqual(calls, []);
 });
 
-test('daily picks (G-56): drawn once a day from the screener, reported once, shown on the front page', async () => {
+test('daily picks (G-56): drawn once a day from the screener, reported once, shown in the report list', async () => {
   const root = await tempDir('gnm-');
   const tickers = (await loadTickers(join(process.cwd(), 'tickers.json'))).filter((t) => t.symbol === '000660');
   const calls: string[] = [];
@@ -149,8 +149,8 @@ test('daily picks (G-56): drawn once a day from the screener, reported once, sho
   assert.equal(picks[0]!.tier, 'deep');
   assert.equal(calls.length, picks.length);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
-  assert.ok(home.includes('id="today"') && home.includes(`href="${picks[0]!.symbol}/index.html"`));
-  assert.ok((await readFile(join(root, 'site', 'reports.html'), 'utf8')).includes('id="daily"'));
+  const reports = await readFile(join(root, 'site', 'reports.html'), 'utf8');
+  assert.ok(home.includes('<title>') && reports.includes('id="daily"') && reports.includes(`href="${picks[0]!.symbol}/index.html"`), 'G-266: daily picks live in the report list');
   // A re-run the same day draws nothing new and calls no model.
   calls.length = 0;
   await runDaily({ ...opts, now: new Date('2026-10-05T11:00:00Z') });

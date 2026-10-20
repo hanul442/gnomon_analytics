@@ -193,7 +193,7 @@ try{
  await page.goto(origin+'/us.html?s=AAPL.O');await page.locator('#sp-name').filter({hasText:'애플'}).waitFor();assert.match(await page.locator('#sp-market').innerText(),/미국 · NASDAQ/);assert.match(await page.locator('#sp-price').innerText(),/^\$\d/);
  await page.locator('.pb-price[data-live="AAPL.O"]').filter({hasText:'$340.50'}).waitFor({state:'attached'});assert.equal(await page.locator('#sp-line').evaluate(e=>e.classList.contains('skel')),false);await page.screenshot({path:'test-artifacts/us-stock.png'});
  await page.goto(origin+'/screener.html#us');await page.locator('#sc-body a[href^="us.html?s=AAPL.O"]').waitFor();assert.match(await page.locator('#sc-body tr').first().innerText(),/\$\d/);
- await page.goto(origin+'/index.html');await page.locator('#q, input[type=search]').first().fill('AAPL');await page.locator('a.sr-go[href^="us.html?s=AAPL.O"]').waitFor();
+ await page.setViewportSize({width:1280,height:900});await page.goto(origin+'/screener.html');await page.locator('#q').fill('AAPL');await page.locator('a.sr-go[href^="us.html?s=AAPL.O"]').waitFor();
  for(const width of [375,390,768,1280]){
   // G-185: the ops console is its own page (the API serves it at /ops); here it signs in with a fixture admin session.
   await page.setViewportSize({width,height:850});await page.goto(origin+'/ops-preview.html');await page.evaluate(()=>localStorage.setItem('gnm-ops-session','ops-fixture'));await page.reload();await page.locator('#adm .kpis').waitFor();await page.locator('[data-tab=action]').click();await page.locator('[data-act=fixture-action]').waitFor();
@@ -231,7 +231,7 @@ try{
  for(const width of [375,390,768,1280]){
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');
   assert.equal(await page.locator('#market-report-cards').count(),0);assert.equal(await page.locator('#market-daily-link').count(),0);if(await page.locator('.ix-row .tmp').count())assert.match(await page.locator('.ix-row .tmp').getAttribute('href'),/market/);
-  assert.ok(await page.evaluate(()=>{const search=document.querySelector('.top-search'),banner=document.getElementById('banner');return !!banner&&!!(search.compareDocumentPosition(banner)&Node.DOCUMENT_POSITION_FOLLOWING);}));
+  assert.ok(await page.evaluate(()=>{const search=document.getElementById('mkt-hero'),banner=document.getElementById('banner');return !!banner&&!!(search.compareDocumentPosition(banner)&Node.DOCUMENT_POSITION_FOLLOWING);}));
   const ad=page.locator('.bn-hanul');const slide=await ad.getAttribute('data-i');await page.locator('[data-go="'+slide+'"]').click();
   assert.ok(await ad.isVisible());assert.ok(await ad.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);

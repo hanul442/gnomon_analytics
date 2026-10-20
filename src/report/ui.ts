@@ -274,7 +274,6 @@ function dockOf(page: string): 'find' | 'committee' | 'me' | undefined {
   return undefined;
 }
 /** The 종목 bar's question chips (G-258): one tap opens the chat with the question typed in. */
-const ASK_CHIPS = ['시나리오 쉽게 풀어 줘', '지금 가격은 어디쯤이야?', '최근 공시 무슨 뜻이야?', '오늘 뉴스 요약해 줘'];
 /**
  * One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones).
  * G-258: the phone bar is one glass pill. Icons only, the current one named in a small bubble. With `ask` (stock and
@@ -287,7 +286,7 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   const dock = ask ? 'ask' : page ? dockOf(page) : undefined;
   const seg = (rows: readonly (readonly [string, string, boolean, string?])[]) => `<div class="nav-seg">${rows.map(([l, h, on, extra]) => `<a href="${base}${h}" aria-label="${escM(l)}"${on ? ' aria-current="page"' : ''}>${svgI(DOCK_ICONS[h] ?? '')}<span>${escM(l)}</span>${extra ?? ''}</a>`).join('')}</div>`;
   let ctx = '';
-  if (dock === 'ask') ctx = `<div class="nav-chips">${ASK_CHIPS.map((q) => `<button type="button" ${chat} data-q="${escM(q)}">${escM(q)}</button>`).join('')}</div><button type="button" class="nav-ask" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(ASK_ICON)}<span>물어보기</span><i aria-hidden="true">${svgI('<path d="M12 19V5M6 11l6-6 6 6"/>')}</i></button>`;
+  if (dock === 'ask') ctx = `<button type="button" class="nav-ask" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(ASK_ICON)}<span>물어보기</span><i aria-hidden="true">${svgI('<path d="M12 19V5M6 11l6-6 6 6"/>')}</i></button>`;
   else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목·ETF·코인</span></button><button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
   else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
   else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 기록', 'myreports.html', page === 'myreports.html' || page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);
@@ -558,10 +557,10 @@ export const TOUR_JS = `
     var STEPS = {
       // G-244: three stops, not seven: the market line, the reader's own stocks and the menu.
       home: [
-        ['#mkt-hero', '오늘 시장', '전 종목의 기술 신호를 모아 오늘 시장을 한 줄로 말해요. 누르면 시장 리포트가 열리고, 미국을 누르면 미국 시장이 펼쳐져요.'],
+        ['#mkt-hero', '오늘 시장', '날짜 아래에 코스피·코스닥을 한 줄로 보여줘요. 누르면 시장 리포트가 열려요.'],
         ['#watch', '내 종목', '어디서든 ☆를 누른 종목과 설문에서 고른 종목이 여기 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
         ['.bottom-nav', '아래 탭', '다섯 탭이 전부예요. 찾기에서 주식·ETF·코인·테마·공시를 바꿔 가며 보고, 위원회에서 AI 리포트와 성적표를 봐요.'],
-        ['.top-tabs', '위쪽 탭', '찾기에서 종목·ETF·코인을 검색하고 조건으로 골라요. 테마, 공시 레이더, 시장 리포트는 홈 맨 아래 더 보기에 있어요.'],
+        ['.top-tabs', '위쪽 탭', '찾기에서 종목·ETF·코인을 검색하고 조건으로 골라요. 테마와 공시 레이더도 찾기에 있어요.'],
       ],
       report: [
         ['.chips', '다섯 탭', '요약 · 타이밍(기술 신호와 전략) · 기업 체력(종목정보·재무제표·수급) · AI 위원회 · 뉴스·공시가 같은 위치에 있어요. 차트는 요약의 작은 차트를 누르면 전체 화면으로 열려요. 리포트가 없으면 AI 분석은 잠금으로 보여요.'],
@@ -580,7 +579,7 @@ export const TOUR_JS = `
         ['#sc-form', '검토·적용·저장', 'AI 제안을 검토해 적용한 뒤 조건을 직접 수정하고 저장하세요. 완료 안내가 나와야 저장된 상태예요. 오류면 다시 확인하세요.'],
       ],
     };
-    var kind = document.getElementById('tab-ai') ? 'report' : document.getElementById('today') ? 'home' : document.getElementById('ai-build') ? 'find' : null;
+    var kind = document.getElementById('tab-ai') ? 'report' : document.getElementById('mkt-hero') ? 'home' : document.getElementById('ai-build') ? 'find' : null;
     if (!kind) return;
     var key = 'gnm-tour-v243-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
     try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-' + kind) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
@@ -639,7 +638,7 @@ export const TOUR_CSS = `.tr-hole{position:fixed;top:0;left:0;z-index:200;border
 export const SURVEY_POP_JS = `
   (function () {
     var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
-    if (!document.getElementById('today') || !get('gnm-session')) return;
+    if (!(document.getElementById('mkt-hero') || document.getElementById('today')) || !get('gnm-session')) return;
     var now = Date.now(), k = new Date(now + 9 * 3600e3), day = k.getUTCDay();
     var week = k.getUTCFullYear() + '-' + Math.ceil(((k - Date.UTC(k.getUTCFullYear(), 0, 1)) / 864e5 + new Date(Date.UTC(k.getUTCFullYear(), 0, 1)).getUTCDay() + 1) / 7);
     var pick = null;

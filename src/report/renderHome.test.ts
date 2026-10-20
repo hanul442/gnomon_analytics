@@ -10,13 +10,10 @@ const entry = (symbol: string, changePct: number, kind: HomeEntry['kind'] = 'sto
   report: { symbol, name: symbol, date: '2026-10-06', headline: '한 줄', price: { close: 100, changePct, volume: 1, volumeRatio20: 1 } } as unknown as DailyReport,
 });
 
-test('home: no view bar or market tabs; temperature card; today picks carry a score and a reason per view (G-67)', () => {
+test('home: no view bar or market tabs, and no picks, saved screens or search box (G-266)', () => {
   const html = renderHome({ entries: [entry('AAA', 9), entry('BBB', 0.1, 'etf')], selection: null, universe: null, pulse: null, indices: [] });
   assert.ok(!html.includes('id="pz-note"') && !html.includes('class="mkt-tabs"'));
-  assert.ok(html.includes('data-s-trader=') && html.includes('pw-trader') && html.includes('오늘 ▲ +9.00%'));
-  const s = (sym: string, v: string) => Number(new RegExp(`data-s-${v}="([-\\d.]+)"[^>]*>(?:(?!class="tp").)*?${sym}/index`, 's').exec(html)?.[1]);
-  assert.ok(s('AAA', 'trader') > s('BBB', 'trader'), 'the big mover leads for traders');
-  assert.ok(s('BBB', 'beginner') > s('AAA', 'beginner'), 'the ETF leads for beginners');
+  for (const gone of ['id="today"', 'id="myscreens"', 'class="top-search"', 'id="more"', 'class="home-rail"', 'id="home-filings"']) assert.ok(!html.includes(gone), gone);
 });
 
 test('the shared scripts parse (a bad escape in a template once broke every page)', async () => {
@@ -40,18 +37,15 @@ test('G-231: a live page rebuilt today is not a report made today; lists, pills 
   assert.deepEqual([info.OLD!.d, info.NEW!.d, info.NONE!.d], ['2026-10-05', '2026-10-16', '']);
 });
 
-test('G-244: home leads with one market sentence and folds the rest into 더 보기', async () => {
+test('G-266: home is the date with the market in one line, my stocks, three issues and the scorecard line', async () => {
   const { marketPulse } = await import('../analysis/quickCalc.js');
-  const calcs = [['BEARISH', 20], ['BEARISH', 25], ['STRONG_BEARISH', 10], ['BULLISH', 80], ['NEUTRAL', 50]].map(([level, score]) => ({ date: '2026-10-16', signal: { level, score: Number(score) / 100 }, moves: [{ days: 20, pct: 0 }] }));
-  const html = renderHome({ entries: [entry('AAA', 9), entry('BBB', 1), entry('CCC', -2), entry('DDD', 3)], selection: null, universe: null, pulse: marketPulse(calcs as never), indices: [{ symbol: 'KOSPI', name: '코스피', date: '2026-10-16', close: 5668.05, changePct: 2.05, closes: [] }] });
-  assert.match(html, /<h1 class="mh-v">약세 종목이 많은 날이에요<\/h1>/);
-  assert.match(html, /<b>5,668\.05<\/b><small>코스피 /, 'G-249: the first index as the big number');
-  for (const gone of ['id="movers"', 'id="themes-top"', 'id="signals"', 'id="show-all"', 'class="find-row"', 'class="block ix-row']) assert.ok(!html.includes(gone), gone);
-  for (const link of ['themes.html', 'screener.html', 'signals.html', 'market-reports.html', 'updates.html']) assert.match(html, new RegExp(`class="ml-row" href="${link.replace('.', '\\.')}"`));
-  // G-257: 내 종목 오늘 opens home (above the market card); with nothing starred the script moves it under 이슈.
-  assert.ok(html.indexOf('id="watch-slot"') < html.indexOf('id="watch"') && html.indexOf('id="watch"') < html.indexOf('id="mkt-hero"') && html.indexOf('id="mkt-hero"') < html.indexOf('id="today"') && html.indexOf('id="today"') < html.indexOf('id="banner"'), 'mine, market, picks, then the banner');
+  const calcs = [['BEARISH', 20], ['BULLISH', 80], ['NEUTRAL', 50]].map(([level, score]) => ({ date: '2026-10-16', signal: { level, score: Number(score) / 100 }, moves: [{ days: 20, pct: 0 }] }));
+  const html = renderHome({ entries: [entry('AAA', 9), entry('BBB', 1)], selection: null, universe: null, pulse: marketPulse(calcs as never), indices: [{ symbol: 'KOSPI', name: '코스피', date: '2026-10-16', close: 5668.05, changePct: 2.05, closes: [] }] });
+  assert.match(html, /<h1 class="hh-d">10월 16일<\/h1>/);
+  assert.match(html, /코스피 <b>5,668\.05<\/b> <span class="up">/);
+  for (const gone of ['class="mh-v"', 'class="mh-bar"', 'class="mh-go"', 'class="ml-row"']) assert.ok(!html.includes(gone), gone);
+  assert.ok(html.indexOf('id="mkt-hero"') < html.indexOf('id="banner"') && html.indexOf('id="banner"') < html.indexOf('id="watch-slot"') && html.indexOf('id="watch-slot"') < html.indexOf('id="watch"') && html.indexOf('id="watch"') < html.indexOf('id="news-issues"'), 'date, the notice line, mine, then issues');
   assert.ok(html.includes('<h2>내 종목 오늘</h2>') && html.includes('wl-rail'));
-  assert.match(html, /c\.hidden = i >= 3/, 'three picks');
 });
 
 test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab', async () => {

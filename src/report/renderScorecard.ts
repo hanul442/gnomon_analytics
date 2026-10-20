@@ -10,6 +10,7 @@ import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystTrack } from '../analysis/analysts.js';
 import { mergeBoards, UNIFORM_BRIER, type ScenarioBoard } from '../analysis/scenarioScore.js';
 import { paperPanel } from './renderArena.js';
+import { ringChart } from './kit/stock.js';
 import { shell, type HomeEntry } from './renderHtml.js';
 import { esc } from './html.js';
 import { won, tone, pct as fmtPct } from './format.js';
@@ -84,9 +85,9 @@ ${totalScored ? `<table class="compact"><thead><tr><th>기간</th><th>채점</th
   const STANCE = { BULLISH: ['강세', 'up'], BEARISH: ['약세', 'down'], NEUTRAL: ['중립', 'muted'] } as const;
   const md = (d: string) => d.slice(5).replace('-', '/');
   const verdict = (c: AnalystTrack) => c.done
-    ? `<b class="mb-v ${c.hit ? 'ok' : 'no'}">${c.hit ? '맞았어요' : '빗나갔어요'}</b> <span class="muted">20거래일 뒤 ${won(c.close!)} (${chg(c.close!, c.baseClose)})</span>`
+    ? `<b class="mb-v ${c.hit ? 'ok' : 'no'}">${c.hit ? '맞음' : '빗나감'}</b> <span class="muted">20거래일 뒤 ${won(c.close!)} (${chg(c.close!, c.baseClose)})</span>`
     : c.close === null ? '<span class="muted">가격 기록을 찾지 못했어요</span>'
-    : `<span class="mb-v wait">${c.sessions}/${ANALYST_HORIZON}거래일</span> <span class="muted">지금 ${won(c.close)} (${chg(c.close, c.baseClose)})${c.hit === null ? ' · 아직 움직임이 없어요' : c.hit ? ' · 전망과 같은 쪽이에요' : ' · 전망과 반대쪽이에요'}</span>`;
+    : `<span class="mb-v wait">대기 ${c.sessions}/${ANALYST_HORIZON}</span> <span class="muted">지금 ${won(c.close)} (${chg(c.close, c.baseClose)})${c.hit === null ? ' · 아직 움직임이 없어요' : c.hit ? ' · 전망과 같은 쪽이에요' : ' · 전망과 반대쪽이에요'}</span>`;
   const row = ({ e, c }: { e: HomeEntry; c: AnalystTrack }, i: number) => {
     const [word, cls] = STANCE[c.stance];
     const dated = `${e.href.replace(/index\.html$/, '')}reports/${c.reportDate}.html`;
@@ -135,9 +136,16 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
   // three lines under it, then one group at a time behind tabs instead of every section stacked.
   const fcSay = fcHit === null ? '예측은 기간이 지나면 실제 가격으로 채점해요.' : fcHit < 70 ? '범위를 좁게 잡는 편이에요.' : fcHit > 90 ? '범위를 넓게 잡는 편이에요.' : '정직한 범위에 가까워요.';
   const line = (label: string, sub: string, v: string, cls = '') => `<div class="sc-line"><span><b>${label}</b><small>${sub}</small></span><b class="sc-lv ${cls}">${v}</b></div>`;
+  // G-265 (Bklit ring chart): the three headline records as concentric rings (a ring stays empty until it is scored).
+  const hitText = (v: number | null) => (v === null ? '채점 전' : `${Math.round(v)}%`);
+  const scoreRing = live.length ? ringChart([
+    { label: '예측 범위 적중', value: fcHit === null ? null : fcHit / 100, color: 'var(--accent)', text: hitText(fcHit) },
+    { label: '위원 방향 적중', value: aiHit === null ? null : aiHit / 100, color: 'var(--fg2)', text: hitText(aiHit) },
+    { label: '챔피언이 보유보다 나은 종목', value: beat / live.length, color: 'var(--muted)', text: `${beat}/${live.length}` },
+  ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: hitText(fcHit), small: '예측 적중', cls: 'sc-ring' }) : '';
   const hero = `<section class="block sc-hero" id="top"><div class="sc-k">예측 범위 적중률 · 리포트 종목 ${live.length}개</div><h1 class="sc-hv"><b>${fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`}</b><small>목표 80% 안팎</small></h1>
 ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 ${Math.round(fcHit)}%, 목표 80%"><i style="width:${Math.max(0, Math.min(100, fcHit)).toFixed(0)}%"></i><em style="left:80%"></em></div>`}
-<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
+${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
 <div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언을 따라 했다면', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
 <div class="sc-tabs" role="tablist" aria-label="성적 종류">${[['forecast', '예측'], ['analysts', '위원별'], ['scenarios', '시나리오'], ['paper', '따라 하기']].map(([k, l], n) => `<button type="button" role="tab" id="sct-${k}" data-sc-tab="${k}" aria-controls="scg-${k}" aria-selected="${n === 0}">${l}</button>`).join('')}</div>`;
   const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}" role="tabpanel" aria-labelledby="sct-${k}">${html}</div>`;
@@ -155,7 +163,8 @@ ${group('paper', strategyCard + signalCard(signals))}
 .sc-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}.sc-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}.sc-tile b{display:block;font-size:22px}.sc-tile small{color:var(--muted);font-size:12px}
 .more-all{display:block;margin:10px auto 0;border:1px dashed var(--line-strong);background:var(--surface);border-radius:999px;padding:8px 16px;font:inherit;font-size:13.5px;font-weight:700;color:var(--accent-strong);cursor:pointer}.fr-table{table-layout:auto;width:100%}.fr-open{margin-left:4px;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}.fr-open[aria-expanded=true]{background:var(--navy);color:var(--on-accent)}.fr-ledger td{background:var(--soft);white-space:normal}.fr-ledger td>*{max-width:calc(100vw - 48px);overflow-x:auto;box-sizing:border-box}
 .mb-bar{margin:0 0 10px}.mb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mb-card{min-width:0;scroll-margin-top:120px}.mb-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.mb-head h3{margin:0;font-size:16px}.mb-head p{margin:2px 0 0}.mb-stats{display:flex;gap:12px}.mb-stats span{display:flex;flex-direction:column;align-items:flex-end}.mb-stats small{font-size:11.5px;color:var(--muted);font-weight:700}.mb-stats b{font-size:15px}
-.mb-calls{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.mb-row{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}.mb-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.mb-top a{font-weight:800}.mb-st{margin-left:auto;font-size:13px;white-space:nowrap}.mb-line{font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}.mb-k{display:inline-block;min-width:34px;font-size:12px;font-weight:700;color:var(--muted)}.mb-v{font-size:13px;font-weight:800}.mb-v.ok{color:var(--up)}.mb-v.no{color:var(--down)}.mb-v.wait{color:var(--fg2)}.mb-why{align-self:flex-end;font-size:12.5px;font-weight:700;text-decoration:none;color:var(--accent-strong)}
+.mb-calls{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.mb-row{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}.mb-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.mb-top a{font-weight:800}.mb-st{margin-left:auto;font-size:13px;white-space:nowrap}.mb-line{font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}.mb-k{display:inline-block;min-width:34px;font-size:12px;font-weight:700;color:var(--muted)}.mb-v{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.5;white-space:nowrap}.mb-v.ok{background:rgba(56,170,104,.14);color:#1E7346;box-shadow:0 0 14px rgba(56,170,104,.22)}.mb-v.no{background:rgba(216,96,146,.13);color:#A3315F;box-shadow:0 0 14px rgba(216,96,146,.2)}.mb-v.wait{background:var(--soft);color:var(--fg2)}
+:root[data-theme=dark] .mb-v.ok{background:rgba(88,200,134,.16);color:#8EDCAE}:root[data-theme=dark] .mb-v.no{background:rgba(236,120,168,.15);color:#F2A3C4}.mb-why{align-self:flex-end;font-size:12.5px;font-weight:700;text-decoration:none;color:var(--accent-strong)}
 .mb-row[hidden],.mb-only .mb-row.nw{display:none}.mb-only .mb-row.more-row:not(.nw){display:flex}.mb-only .more-all{display:none}
 @media (max-width:820px){.mb-grid{grid-template-columns:1fr}.sc-bigs{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-tiles{gap:6px}.sc-tile{padding:10px}.sc-tile b{font-size:17px}.sc-tile .pl-k{font-size:11.5px}.hide-m{display:none}}</style>
 <footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 모의투자는 가상 계좌예요. 투자 권유가 아니에요.</p></footer>`;
