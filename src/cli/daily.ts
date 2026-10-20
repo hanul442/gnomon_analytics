@@ -18,6 +18,7 @@ import { collectRiskFilings } from './riskCollect.js';
 import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
 import { writeUsPages } from './usStocks.js';
 import { collectWorld, writeWorldPage } from './world.js';
+import type { WorldMarkets } from '../sources/naverGlobal.js';
 import type { SignalLevel } from '../analysis/technicals.js';
 import { fetchWorldBars, usTicker } from '../sources/naverWorld.js';
 import { gatherUsResearch } from '../report/usResearch.js';
@@ -861,8 +862,10 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     if (last) indices.push({ symbol, name, date: last.date, close: last.close, changePct: prev ? (last.close / prev.close - 1) * 100 : null, closes: bars.slice(-60).map((b) => b.close) });
   }
   const marketReports = await publishMarketReports(root, siteDir);
+  // G-272: the world snapshot gives home its one-line summary and the S&P 500 and won numbers.
+  const world = JSON.parse(await readFile(join(root, 'data', 'world', 'markets.json'), 'utf8').catch(() => 'null')) as WorldMarkets | null;
   const homeData = {
-    marketReports,
+    marketReports, world,
     banners,
     entries: home, universe, indices, pulse: extras.pulse ?? null, us: extras.us ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
     selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,
