@@ -73,3 +73,11 @@ test('G-268: a picture banner on home is the same slim line, its title and 티�
   assert.match(html, /<b class="bn-alt">정보의 바다는, 끝\.<\/b>/);
   assert.match(html, /bn-play/);
 });
+
+test('G-269 miniArea draws a small area line only with 5+ closes, in the neutral text colour', async () => {
+  const { miniArea } = await import('./renderHome.js');
+  assert.equal(miniArea([1, 2, 3]), '');
+  const svg = miniArea([100, 101, 99, 102, 104]);
+  assert.match(svg, /class="hh-sa"/);
+  assert.match(svg, /currentColor/);
+});

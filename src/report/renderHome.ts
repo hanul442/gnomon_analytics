@@ -12,6 +12,7 @@ import { madeOn, shell, type HomeEntry } from './renderHtml.js';
 import { ALPHA_BANNERS, BANNER_JS, bannerHtml, eventBanners, wrapupBanners, type Banner } from './alphaPages.js';
 import { openEvents } from './events.js';
 import { esc } from './html.js';
+import { fadeGrad, gradId, smoothD } from './chartLook.js';
 import { won, tone, move as signed } from './format.js';
 
 // G-84: a move always carries its arrow (▲ red up, ▼ blue down) next to the number.
@@ -181,8 +182,23 @@ ${bannerHtml([...wrapupBanners(data.today ?? new Date(Date.now() + 9 * 3600_000)
  */
 function marketLine(indices: readonly IndexQuote[], href: string, day: string): string {
   const d = /^\d{4}-\d{2}-\d{2}$/.test(day) ? `${Number(day.slice(5, 7))}월 ${Number(day.slice(8, 10))}일` : '오늘';
-  const ix = indices.slice(0, 2).map((i) => `<span class="hh-ix">${esc(i.name)} <b>${i.close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span></span>`).join('');
+  const ix = indices.slice(0, 2).map((i) => `<span class="hh-ix">${esc(i.name)} <b>${i.close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span>${miniArea(i.closes)}</span>`).join('');
   return `<section class="block hh" id="mkt-hero"><h1 class="hh-d">${d}</h1>${ix ? `<a class="hh-ixs" href="${esc(href)}">${ix}<span class="hh-go" aria-hidden="true">›</span></a>` : ''}</section>`;
+}
+
+/**
+ * G-269 (Bklit 대조표, 한서님 10/20): a tiny area line of the index's recent closes beside its number (Bklit area-chart look).
+ * Drawn in the text colour (one neutral accent, G-267): the 30-day shape and today's red/blue number never disagree in colour.
+ * Nothing is drawn with fewer than 5 closes.
+ */
+export function miniArea(closes: readonly number[] | undefined): string {
+  const c = (closes ?? []).filter((v) => Number.isFinite(v)).slice(-30);
+  if (c.length < 5) return '';
+  const W = 56, H = 18, lo = Math.min(...c), hi = Math.max(...c), span = hi - lo || 1;
+  const pts = c.map((v, k) => `${((k / (c.length - 1)) * W).toFixed(1)},${(H - 1 - ((v - lo) / span) * (H - 2)).toFixed(1)}`).join(' ');
+  const d = smoothD(pts);
+  const id = gradId('hha');
+  return `<svg class="hh-sa" viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs>${fadeGrad(id, 'currentColor', 0.22)}</defs><path d="${d}L${W} ${H}L0 ${H}Z" fill="url(#${id})"/><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;
 }
 
 /** G-244: the scorecard's headline as one line in the page (the full card stays in the wide screen's side rail). */
@@ -289,7 +305,7 @@ const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;m
 .mh-go i{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:var(--pill);border:1px solid var(--line);box-shadow:0 6px 16px -10px rgba(10,22,38,.35);color:var(--fg);transition:transform .2s cubic-bezier(.34,1.5,.64,1)}.mh-go a:active i{transform:scale(.9)}.mh-go svg{width:21px;height:21px}
 #news-issues .card{border-radius:26px}#ni-home .ni-stocks,#ni-home-when{display:none}#ni-home .ni-row{grid-template-columns:30px minmax(0,1fr) auto;align-items:center;padding:12px 0}#ni-home .ni-n{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--soft);font-size:13px}#ni-home .ni-t{-webkit-line-clamp:1;font-weight:600}
 .mh-us-btn{flex:none;min-height:40px;padding:0 12px;border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer}.mh-us{margin-top:10px}.mh-us[hidden]{display:none}
-.hh{margin-top:18px}.hh-d{margin:0;font-size:26px;line-height:1.25;font-weight:500;letter-spacing:-.02em;color:var(--fg)}.hh-ixs{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;margin-top:4px;font-size:13px;color:var(--muted);text-decoration:none}.hh-ix b{font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums}.hh-go{margin-left:auto}#mkt-hero+#watch-slot+#watch,.hh+#watch-slot+#watch{margin-top:22px}
+.hh{margin-top:18px}.hh-d{margin:0;font-size:26px;line-height:1.25;font-weight:500;letter-spacing:-.02em;color:var(--fg)}.hh-ixs{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;margin-top:4px;font-size:13px;color:var(--muted);text-decoration:none}.hh-ix b{font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums}.hh-go{margin-left:auto}.hh-sa{width:56px;height:18px;margin-left:6px;vertical-align:-3px;color:var(--fg2)}#mkt-hero+#watch-slot+#watch,.hh+#watch-slot+#watch{margin-top:22px}
 #mkt-hero~.banner{margin-top:14px}:root body #mkt-hero~.banner .bn-slide{display:flex;align-items:center;gap:10px;min-height:56px;padding:9px 14px;border-radius:18px;background:var(--surface);border:1px solid var(--glass-line,var(--line));box-shadow:none;color:var(--fg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 :root body #mkt-hero~.banner .bn-tag{flex:none;order:1;background:var(--soft);color:var(--fg2);font-size:11px;font-weight:600}:root body #mkt-hero~.banner .bn-art{flex:none;order:0;width:30px;height:30px;font-size:16px;background:var(--soft);box-shadow:none}:root body #mkt-hero~.banner .bn-slide b{order:2;flex:1;min-width:0;font-size:14.5px;font-weight:500;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 :root body #mkt-hero~.banner .bn-text{display:none}:root body #mkt-hero~.banner .bn-cta{order:3;margin:0;padding:5px 11px;font-size:12.5px;font-weight:600;background:none;border:1px solid var(--line-strong);color:var(--fg)}:root body #mkt-hero~.banner .bn-logo{order:0;flex:none;width:auto;height:22px;border-radius:4px}:root body #mkt-hero~.banner .bn-benefits{order:4;flex:none}:root body #mkt-hero~.banner .bn-benefits[open]{flex-basis:100%}

@@ -370,3 +370,45 @@ export const KIT_STOCK_JS = `
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 `;
+
+// ---------------------------------------------------------------- sunburst (성적표)
+
+export interface SunGroup { label: string; key: 'ok' | 'no' | 'wait'; children: readonly { label: string; value: number }[] }
+
+/**
+ * G-269 (Bklit 대조표, 한서님 10/20 "선버스트 괜찮네"): 위원 판단을 안쪽 고리 맞음·빗나감·대기, 바깥 고리 위원별로 나눈
+ * Bklit sunburst-chart 모양. 맞음 옅은 초록 · 빗나감 옅은 분홍 · 대기 회색(G-266 칩과 같은 색, 가격 빨강·파랑과 안 겹침).
+ * Static SVG; every slice carries its count in a <title> so a long press reads it.
+ */
+export function outcomeSunburst(groups: readonly SunGroup[], opts: { label: string }): string {
+  const gs = groups.map((g) => ({ ...g, children: g.children.filter((c) => c.value > 0), total: g.children.reduce((s, c) => s + Math.max(0, c.value), 0) })).filter((g) => g.total > 0);
+  const total = gs.reduce((s, g) => s + g.total, 0);
+  if (!total) return '';
+  const S = 200, c = S / 2, P = Math.PI / 180;
+  const pt = (r: number, a: number) => `${r1(c + r * Math.sin(a * P))} ${r1(c - r * Math.cos(a * P))}`;
+  const arc = (r0: number, rr: number, a0: number, a1: number) => {
+    const b = a1 - a0 >= 359.99 ? 359.99 : a1 - a0, e = a0 + b, big = b > 180 ? 1 : 0;
+    return `M${pt(rr, a0)}A${rr} ${rr} 0 ${big} 1 ${pt(rr, e)}L${pt(r0, e)}A${r0} ${r0} 0 ${big} 0 ${pt(r0, a0)}Z`;
+  };
+  let a = 0, inner = '', outer = '', i = 0;
+  const legend: string[] = [];
+  for (const g of gs) {
+    const span = (g.total / total) * 360, a0 = a;
+    inner += `<path class="ks-seg ks-${g.key}" style="--i:${i++}" d="${arc(40, 66, a0 + 0.6, a0 + span - 0.6)}"><title>${esc(g.label)} ${g.total}건</title></path>`;
+    let b = a0;
+    for (const ch of g.children) {
+      const s2 = (ch.value / total) * 360;
+      outer += `<path class="ks-seg ks-${g.key} ks-o" style="--i:${i++}" d="${arc(69, 96, b + 0.5, b + s2 - 0.5)}"><title>${esc(g.label)} · ${esc(ch.label)} ${ch.value}건</title></path>`;
+      b += s2;
+    }
+    legend.push(`<li><i class="ks-${g.key}"></i><span>${esc(g.label)}</span><b>${g.total}건</b><small>${Math.round((g.total / total) * 100)}%</small></li>`);
+    a += span;
+  }
+  return `<figure class="kit-sun"><div class="ks-fig"><svg viewBox="0 0 ${S} ${S}" role="img" aria-label="${esc(opts.label)}">${inner}${outer}</svg><div class="ks-c"><b>${total}</b><small>판단</small></div></div><ul class="ks-leg">${legend.join('')}</ul><figcaption class="fine">안쪽은 결과, 바깥쪽은 그 결과를 낸 위원이에요. 칸 크기는 판단 수예요.</figcaption></figure>`;
+}
+
+export const KIT_SUN_CSS = `.kit-sun{margin:14px 0 4px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px}.ks-fig{position:relative;width:180px;height:180px;flex:none}.ks-fig svg{width:100%;height:100%;display:block}.ks-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}.ks-c b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--fg)}.ks-c small{font-size:12px;color:var(--muted)}
+.ks-seg{stroke:var(--surface-solid,var(--surface));stroke-width:1}.ks-seg.ks-o{opacity:.78}path.ks-ok,i.ks-ok{fill:#7FCB9C;background:#7FCB9C}path.ks-no,i.ks-no{fill:#EE9DBE;background:#EE9DBE}path.ks-wait,i.ks-wait{fill:#C4C8CE;background:#C4C8CE}
+:root[data-theme=dark] path.ks-ok{fill:#4E9E6E}:root[data-theme=dark] path.ks-no{fill:#B9668A}:root[data-theme=dark] path.ks-wait{fill:#5A5F66}
+.ks-leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:150px;flex:1}.ks-leg li{display:flex;align-items:center;gap:8px;font-size:14px}.ks-leg i{width:10px;height:10px;border-radius:3px;flex:none}.ks-leg b{margin-left:auto;font-variant-numeric:tabular-nums}.ks-leg small{color:var(--muted);width:36px;text-align:right}.kit-sun figcaption{flex-basis:100%;margin:0}
+@media (prefers-reduced-motion:no-preference){.kit-sun .ks-seg{animation:ks-in .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 30ms)}@keyframes ks-in{from{opacity:0}}}`;
