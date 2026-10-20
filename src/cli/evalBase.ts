@@ -17,7 +17,7 @@ const readJson = async <T>(p: string, d: T): Promise<T> => JSON.parse(await read
 const f = (v: number | null | undefined, k = 3) => (v != null && Number.isFinite(v) ? v.toFixed(k) : '–');
 const ci = (x: { mean: number; lo: number; hi: number } | undefined, k = 3) => (x ? `${f(x.mean, k)} [${f(x.lo, k)}, ${f(x.hi, k)}]${x.lo > 0 ? ' ▲' : x.hi < 0 ? ' ▼' : ''}` : '–');
 
-interface Obs { date: string; vol60: number; high52: number; max20: number; up: number }
+interface Obs { date: string; vol60: number; high52: number; max20: number; up: number; excess: number }
 
 async function main() {
   const names = await readJson<Record<string, string>>(join(dir, 'names.json'), {});
@@ -51,7 +51,7 @@ async function main() {
   const obs: Obs[] = [];
   for (const d of dates) for (const r of d.rows) {
     const s = stocks.get(r.symbol)!, ft = oddsFeatures(s.bars.slice(Math.max(0, r.i - 260), r.i + 1));
-    if (ft) obs.push({ date: d.date, ...ft, up: r.ret > 0 ? 1 : 0 });
+    if (ft) obs.push({ date: d.date, ...ft, up: r.ret > 0 ? 1 : 0, excess: r.excess });
   }
   const fit = (rows: readonly Obs[]) => {
     const lv = rows.map((o) => Math.log(o.vol60)), hh = rows.map((o) => o.high52), mx = rows.map((o) => o.max20);
@@ -83,10 +83,19 @@ async function main() {
     },
   };
   const spread = predictSpread(obs, model);
+  // G-268: fifths of the model score, for "where this stock sits among the most-traded". Cut points from the
+  // shipped model over all ten years; each fifth's outcome out of sample: the 2016–2022 model on 2023–2026.
+  const cuts = [0.2, 0.4, 0.6, 0.8].map((q) => { const ps = obs.map((o) => predictOdds(o, model)).sort((a, b) => a - b); return Number(ps[Math.floor(q * (ps.length - 1))]!.toFixed(4)); });
+  const discCuts = [0.2, 0.4, 0.6, 0.8].map((q) => { const ps = disc.map((o) => predictOdds(o, asModel(mDisc))).sort((a, b) => a - b); return ps[Math.floor(q * (ps.length - 1))]!; });
+  const fifthOf = (p: number, cs: readonly number[]) => cs.filter((c) => p > c).length;
+  const fifths = [0, 1, 2, 3, 4].map((k) => {
+    const xs = conf.filter((o) => fifthOf(predictOdds(o, asModel(mDisc)), discCuts) === k);
+    return { fifth: k, n: xs.length, excessPct: Number(((xs.reduce((a, o) => a + o.excess, 0) / Math.max(1, xs.length)) * 100).toFixed(2)), beatPct: Number(((xs.filter((o) => o.excess > 0).length / Math.max(1, xs.length)) * 100).toFixed(1)) };
+  });
 
   const day = new Date().toISOString().slice(0, 10);
   await mkdir(join(root, 'data/eval'), { recursive: true });
-  await writeFile(join(root, 'data/eval', `base-${day}.json`), `${JSON.stringify({ method: 'gnm-base-eval-v1', madeAt: new Date().toISOString(), top: TOP, from: FROM, cut: CUT, dates: dates.length, max, check, model, spread }, null, 1)}\n`);
+  await writeFile(join(root, 'data/eval', `base-${day}.json`), `${JSON.stringify({ method: 'gnm-base-eval-v1', madeAt: new Date().toISOString(), top: TOP, from: FROM, cut: CUT, dates: dates.length, max, check, model, spread, cuts, fifths }, null, 1)}\n`);
   const skill = (b: number, base: number) => `${((1 - b / base) * 100).toFixed(2)}%`;
   const md = [
     `# 통계 기준 확률과 급등(MAX) 신호 ${day}`, '',
@@ -106,6 +115,10 @@ async function main() {
     '확인 구간 보정표:', '', '| 모델이 말한 확률 | 건수 | 실제로 오른 비율 |', '|---|---:|---:|',
     ...check.bins.map((b) => `| ${b.lo}~${b.hi}% | ${b.n} | ${b.n ? `${b.happened.toFixed(1)}%` : '–'} |`), '',
     `전체 기간으로 다시 맞춘 계수(앱에 들어가는 값): b0 ${model.b[0]}, 변동성 ${model.b[1]}, 52주 고가 ${model.b[2]}, 급등 ${model.b[3]}. 종목별 기준 확률 10%·50%·90% 지점: ${spread.map((x) => `${x.toFixed(0)}%`).join(' · ')}.`, '',
+    '## 3. 같은 날 다른 종목과 비교한 위치 (모델 점수 다섯 묶음)', '',
+    `2016~2022로 맞춘 모델의 점수로 다섯 묶음을 나누고, 2023~2026년에 그날 평균 대비 20거래일 초과수익을 봤어요. 앱에 들어가는 경계(전체 기간 모델): ${cuts.map((c) => `${(c * 100).toFixed(1)}%`).join(' · ')}.`, '',
+    '| 묶음 | 건수 | 평균 대비 초과수익 | 평균을 이긴 비율 |', '|---|---:|---:|---:|',
+    ...fifths.map((x) => `| ${['가장 낮음', '낮음', '중간', '높음', '가장 높음'][x.fifth]} | ${x.n} | ${x.excessPct > 0 ? '+' : ''}${x.excessPct}%p | ${x.beatPct}% |`), '',
   ].join('\n');
   await writeFile(join(root, 'data/eval', `base-${day}.md`), `${md}\n`);
   console.log(md);
