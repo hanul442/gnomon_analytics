@@ -1037,7 +1037,7 @@ ${coin ? derivSlot('') : ''}${coin ? '<div class="request-card"><div class="lk-h
 <p class="fine" id="sp-ma-note">이동평균 20·60과 거래량이에요.</p></div></section>
 ${open}${gate(detail, { base: '', what: '기술적 적정가', feature: 'technicalDetail' })}${gate(forecast, { base: '', what: '예측 가격 범위', feature: 'forecast' })}
 ${coin || us ? '' : `<section class="block"><div class="block-head"><h2>AI 리포트가 생기면 열리는 분석</h2></div><div class="locked-grid">${locked}</div></section>`}
-<footer id="sources" style="padding:24px 0 0"><p>${us ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜)과 지표, SEC EDGAR 공시·XBRL 재무·Form 4 내부자 거래, 영문 뉴스. 매일 저녁 갱신하고, 시세는 실시간이에요. 환율 변동은 반영하지 않아요.' : coin ? '데이터: 업비트 원화 마켓 일봉(09:00 KST 기준). 매일 저녁 갱신해요. 가상자산은 원금 손실 위험이 커요.' : '데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
+<footer id="sources" style="padding:24px 0 0"><p>${us ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜)과 지표, SEC EDGAR 공시·XBRL 재무·Form 4 내부자 거래, 영문 뉴스. 매일 저녁 갱신하고, 시세는 실시간이에요. 환율 변동은 반영하지 않아요.' : coin ? '데이터: 업비트 원화 마켓 일봉(09:00 KST 기준). 매일 저녁 갱신해요. 가상자산은 원금 손실 위험이 커요. <span id="sp-hist"></span>' : '데이터: Naver 금융 일봉. 매일 장 마감 뒤 갱신해요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   const split=body.indexOf('<section class="block"><div class="card chart-card">');
   const ending=body.indexOf('<footer id="sources"');
   const techAt=body.indexOf('<section class="block"><div class="grid-eq">',split);
@@ -1095,6 +1095,9 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
     // ETFs and coins picked for a daily AI report (G-56) keep their chart page; point to the report.
     if (!US) fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { var rc = document.querySelector('.request-card'); if (r.ok && rc) rc.innerHTML = '<div class="lk-head"><b>AI 리포트가 있어요</b></div><p>매일 AI 리포트로 고른 적이 있어서 위원회 해설과 전체 대시보드가 있어요.</p><a class="btn-primary" href="' + code + '/index.html">AI 리포트 보기</a>'; }, function () {});
     $('sp-name').textContent = d.name; $('sp-code').textContent = US ? (d.ticker || d.symbol) : d.symbol; $('sp-market').textContent = US ? '미국 · ' + d.market + (d.kind === 'etf' ? ' ETF' : '') : COIN ? '업비트 원화' + (d.warning ? ' · 유의 종목' : '') : (d.market === 'KOSDAQ' ? '코스닥' : '코스피') + (d.kind === 'etf' ? ' ETF' : ''); $('sp-market').className = 'mkt-chip ' + (US ? 'mk-us' : COIN ? 'mk-coin' : d.kind === 'etf' ? 'mk-etf' : d.market === 'KOSDAQ' ? 'mk-kosdaq' : 'mk-kospi');
+    // G-271: days before the Upbit listing came from another exchange, converted to won; say so.
+    var hs = d.history, hn = $('sp-hist'), HS = { binance: '바이낸스', okx: 'OKX', bithumb: '빗썸' };
+    if (COIN && hs && hn) hn.textContent = (hs.added ? '업비트 상장(' + hs.upbitSince + ') 전 ' + hs.added + '일은 ' + HS[hs.source] + ' 가격을 원화로 바꿔 이어 붙였어요' + (hs.premiumPct != null ? ' (상장 뒤 겹친 날의 업비트 프리미엄 ' + (hs.premiumPct > 0 ? '+' : '') + hs.premiumPct.toFixed(1) + '% 반영)' : '') + '. ' : '') + (hs.trimmed ? '상장 첫날 몇 분 동안 튄 고가·저가는 ' + (hs.added ? '다른 거래소 가격' : '시가·다음 날 가격') + ' 수준으로 잘라 52주 고점 계산에서 뺐어요.' : '');
     var bars = d.bars.map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] }; });
     var last = bars[bars.length - 1], prev = bars[bars.length - 2];
     if (last) {
