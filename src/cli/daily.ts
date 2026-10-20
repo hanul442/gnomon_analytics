@@ -493,7 +493,7 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
 
   // About four years of sessions: enough history for strategy backtests.
   const coin = ticker.market === 'UPBIT', us = isUsMarket(ticker.market);
-  // G-271: a coin listed on Upbit later than four years ago gets its older days from another exchange, in won.
+  // G-276: a coin listed on Upbit later than four years ago gets its older days from another exchange, in won.
   const bars = coin ? (await withOuterHistory(await fetchUpbitDaysLong(SYMBOL, now, 1000, options.fetch), 1000, { usdtKrw: await fetchUsdtKrw(options.fetch), ...(options.fetch ? { fetch: options.fetch } : {}) })).bars : us ? await fetchWorldBars(SYMBOL, 1000, fetchOptions) : await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
   // G-179: a US stock's filings, financials, insider trades, snapshot and English news come from EDGAR, Naver and Google,
   // and land in the same logs the Korean sources fill, so composeReport reads them the same way.

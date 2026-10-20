@@ -1,4 +1,4 @@
-// G-271: a coin's history before Upbit listed it. Upbit only has candles from its own listing day, so a coin that
+// G-276: a coin's history before Upbit listed it. Upbit only has candles from its own listing day, so a coin that
 // traded for years on Binance shows a "52-week high" that is really its Upbit listing-day spike, and every signal
 // reads a few weeks of noise. Here the older days come from another exchange, converted to won by the price gap
 // seen on the days both list it (USDT→KRW plus the kimchi premium), and the listing day's spike is trimmed.

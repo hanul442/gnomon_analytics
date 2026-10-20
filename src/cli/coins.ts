@@ -49,9 +49,9 @@ export async function writeCoinPages(siteDir: string, options: { now: () => Date
   for (let i = 0; i < markets.length; i += 100) {
     try { for (const [k, v] of await fetchUpbitTickers(markets.slice(i, i + 100).map((m) => m.market), fetcher)) tickers.set(k, v); } catch { /* the list still works without 24h values */ }
   }
-  // G-271: coins newer on Upbit than the 400 days asked get their older days from Binance, OKX or Bithumb in won.
+  // G-276: coins newer on Upbit than the 400 days asked get their older days from Binance, OKX or Bithumb in won.
   const usdtKrw = await fetchUsdtKrw(fetcher);
-  // G-272: market cap, supply, all-time high and first trade for the coin's 체력 tab (one request for 2,000 coins).
+  // G-277: market cap, supply, all-time high and first trade for the coin's 체력 tab (one request for 2,000 coins).
   const paprika = await fetchPaprikaTickers(fetcher), today = new Date(now.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
   const base = (market: string) => market.replace(/^KRW-/, '');
   const unmatched = paprika.length ? markets.flatMap((m) => { const p = tickers.get(m.market)?.price; return p && !matchPaprika(paprika, base(m.market), p, usdtKrw) ? [{ symbol: base(m.market), price: p }] : []; }) : [];

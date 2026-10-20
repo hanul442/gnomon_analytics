@@ -1,4 +1,4 @@
-// G-272: a coin's 체력, in place of the stock 기업 체력 a coin cannot have (no sales, no debt). Five axes, each 0–100
+// G-277: a coin's 체력, in place of the stock 기업 체력 a coin cannot have (no sales, no debt). Five axes, each 0–100
 // from a stated threshold, the way the stock's five are: 규모 (market cap), 유동성 (Upbit trading value), 공급 (coins
 // issued ÷ hard cap), 가격 괴리 (Upbit against the world price), 이력 (years traded). Pure.
 
@@ -15,7 +15,7 @@ export interface CoinFitness {
   timeline: { date: string; text: string }[];
   /** Upbit's 주의 flags that are on, and its 유의 종목 flag. */
   cautions: string[]; warning: boolean;
-  /** How the price history was put together (G-271 splice), in one sentence; '' when it is Upbit's alone. */
+  /** How the price history was put together (G-276 splice), in one sentence; '' when it is Upbit's alone. */
   historyNote: string;
 }
 

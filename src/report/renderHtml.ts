@@ -361,7 +361,7 @@ export const TABS: readonly TabDef[] = [
   { key: 'technical', label: '타이밍·전략', ghost: true },
 ];
 
-/** G-176: a coin has no company to weigh. G-272: its tab is 체력 (코인 체력 한눈에, then 수급). */
+/** G-176: a coin has no company to weigh. G-277: its tab is 체력 (코인 체력 한눈에, then 수급). */
 // G-256: a coin has no filings, and a US stock page without a report shows SEC filings with its news.
 const tabsFor = (kind?: string, noFilings = false) => (kind === 'coin' ? TABS.filter((t) => t.key !== 'filings').map((t) => (t.key === 'fundamentals' ? { ...t, label: '체력' } : t)) : noFilings ? TABS.filter((t) => t.key !== 'filings') : TABS);
 
@@ -1116,7 +1116,7 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
     // ETFs and coins picked for a daily AI report (G-56) keep their chart page; point to the report.
     if (!US) fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { var rc = document.querySelector('.request-card'); if (r.ok && rc) rc.innerHTML = '<div class="lk-head"><b>AI 리포트가 있어요</b></div><p>매일 AI 리포트로 고른 적이 있어서 위원회 해설과 전체 대시보드가 있어요.</p><a class="btn-primary" href="' + code + '/index.html">AI 리포트 보기</a>'; }, function () {});
     $('sp-name').textContent = d.name; $('sp-code').textContent = US ? (d.ticker || d.symbol) : d.symbol; $('sp-market').textContent = US ? '미국 · ' + d.market + (d.kind === 'etf' ? ' ETF' : '') : COIN ? '업비트 원화' + (d.warning ? ' · 유의 종목' : '') : (d.market === 'KOSDAQ' ? '코스닥' : '코스피') + (d.kind === 'etf' ? ' ETF' : ''); $('sp-market').className = 'mkt-chip ' + (US ? 'mk-us' : COIN ? 'mk-coin' : d.kind === 'etf' ? 'mk-etf' : d.market === 'KOSDAQ' ? 'mk-kosdaq' : 'mk-kospi');
-    // G-271: days before the Upbit listing came from another exchange, converted to won; say so.
+    // G-276: days before the Upbit listing came from another exchange, converted to won; say so.
     var hs = d.history, hn = $('sp-hist'), HS = { binance: '바이낸스', okx: 'OKX', bithumb: '빗썸' };
     if (COIN && hs && hn) hn.textContent = (hs.added ? '업비트 상장(' + hs.upbitSince + ') 전 ' + hs.added + '일은 ' + HS[hs.source] + ' 가격을 원화로 바꿔 이어 붙였어요' + (hs.premiumPct != null ? ' (상장 뒤 겹친 날의 업비트 프리미엄 ' + (hs.premiumPct > 0 ? '+' : '') + hs.premiumPct.toFixed(1) + '% 반영)' : '') + '. ' : '') + (hs.trimmed ? '상장 첫날 몇 분 동안 튄 고가·저가는 ' + (hs.added ? '다른 거래소 가격' : '시가·다음 날 가격') + ' 수준으로 잘라 52주 고점 계산에서 뺐어요.' : '');
     var bars = d.bars.map(function (b) { return { time: b[0], open: b[1], high: b[2], low: b[3], close: b[4], volume: b[5] }; });

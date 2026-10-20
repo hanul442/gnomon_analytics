@@ -1,4 +1,4 @@
-// G-272: the coin's 체력 tab card (in place of 기업 체력): the same radar and verdict lines as a stock's 기업 체력
+// G-277: the coin's 체력 tab card (in place of 기업 체력): the same radar and verdict lines as a stock's 기업 체력
 // 한눈에, then the coin's dated history and Upbit's caution flags. Built when the coin list is (src/cli/coins.ts) and
 // kept as html in c/<market>.json, so the free coin page and a coin's report page show the same card.
 

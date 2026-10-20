@@ -28,7 +28,7 @@ export const DEPTH: Record<2 | 3, readonly string[]> = {
   3: ['#tab-strategy', '#horizons', '.sh-card'],
 };
 
-/** One line per tab, for 초보자: what the tab answers, in plain words. A coin's 기업 체력 tab is 체력 (G-272). */
+/** One line per tab, for 초보자: what the tab answers, in plain words. A coin's 기업 체력 tab is 체력 (G-277). */
 export function levelGuide(tab: string, kind?: string, report = true): string {
   const text: Record<string, string> = {
     // Only a report page has the "쉽게 보면" card (personaCards).

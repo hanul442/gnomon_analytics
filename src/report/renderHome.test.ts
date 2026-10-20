@@ -82,3 +82,11 @@ test('G-269: the 4.0.0 update film banner says 영상 보기, a teaser film stil
   assert.match(html, /<\/svg>영상 보기<\/span>/);
   assert.match(html, /<\/svg>티저 보기<\/span>/);
 });
+
+test('G-271 miniArea draws a small area line only with 5+ closes, in the neutral text colour', async () => {
+  const { miniArea } = await import('./renderHome.js');
+  assert.equal(miniArea([1, 2, 3]), '');
+  const svg = miniArea([100, 101, 99, 102, 104]);
+  assert.match(svg, /class="hh-sa"/);
+  assert.match(svg, /currentColor/);
+});

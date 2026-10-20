@@ -8,7 +8,7 @@ const BASE = 'https://api.upbit.com/v1';
 
 export interface CoinMarket { market: string; name: string; english: string; warning: boolean; cautions?: string[] }
 
-/** Upbit's five 주의 flags (market_event.caution), in its order (G-272: shown on the coin's 체력 tab). */
+/** Upbit's five 주의 flags (market_event.caution), in its order (G-277: shown on the coin's 체력 tab). */
 export const UPBIT_CAUTIONS: readonly [string, string][] = [['PRICE_FLUCTUATIONS', '가격 급등락'], ['TRADING_VOLUME_SOARING', '거래량 급등'], ['DEPOSIT_AMOUNT_SOARING', '입금량 급등'], ['GLOBAL_PRICE_DIFFERENCES', '해외 가격 차이'], ['CONCENTRATION_OF_SMALL_ACCOUNTS', '소수 계정 집중']];
 
 /** KRW markets only; `warning` is Upbit's 유의 종목 flag, `cautions` the 주의 flags that are on (with isDetails). */

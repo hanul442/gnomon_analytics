@@ -12,7 +12,7 @@ const TICKERS = [
   { id: 'bad', symbol: 'X', quotes: { USD: { price: 0 } } },
 ];
 
-test('G-272: CoinPaprika tickers parse; a coin is matched by symbol and price, not by symbol alone', () => {
+test('G-277: CoinPaprika tickers parse; a coin is matched by symbol and price, not by symbol alone', () => {
   const list = parsePaprikaTickers(TICKERS);
   assert.deepEqual(list.map((c) => c.id), ['btc-bitcoin', 'puffer-puffer', 'ai-other']);
   assert.equal(list[2]!.maxSupply, null);
@@ -23,7 +23,7 @@ test('G-272: CoinPaprika tickers parse; a coin is matched by symbol and price, n
   assert.deepEqual(parsePaprikaTickers({ error: 1 }), []);
 });
 
-test('G-272: five axes from stated thresholds; a missing source leaves its axis out of the mean', () => {
+test('G-277: five axes from stated thresholds; a missing source leaves its axis out of the mean', () => {
   const [btc, puffer] = parsePaprikaTickers(TICKERS);
   const b = coinFitness({ date: '2026-10-20', upbitPrice: 109_061_000, value24hKrw: 670e8, usdtKrw: 1337, paprika: btc!, history: null, upbitFirst: '2025-09-15', listed: false });
   assert.deepEqual(b.axes.map((a) => [a.key, a.score]), [['size', 100], ['liquidity', 71], ['supply', 96], ['gap', 99], ['age', 100]]);
@@ -46,7 +46,7 @@ test('G-272: five axes from stated thresholds; a missing source leaves its axis 
   assert.equal(wonWords(1.78e10), '178억 원');
 });
 
-test('G-272: Upbit caution flags come with the market list', () => {
+test('G-277: Upbit caution flags come with the market list', () => {
   const [m] = parseUpbitMarkets([{ market: 'KRW-PUFFER', korean_name: '퍼퍼', market_event: { warning: false, caution: { PRICE_FLUCTUATIONS: true, TRADING_VOLUME_SOARING: false, GLOBAL_PRICE_DIFFERENCES: true } } }]);
   assert.deepEqual(m!.cautions, ['가격 급등락', '해외 가격 차이']);
 });

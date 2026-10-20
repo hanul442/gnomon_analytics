@@ -1,4 +1,4 @@
-// G-272: CoinPaprika's free ticker list (https://api.coinpaprika.com, no key): the top 2,000 coins with market cap,
+// G-277: CoinPaprika's free ticker list (https://api.coinpaprika.com, no key): the top 2,000 coins with market cap,
 // supply, all-time high and first trade date, in one request. Feeds a coin's 체력 tab. CoinGecko throttles cloud
 // runners, so it is not used.
 
