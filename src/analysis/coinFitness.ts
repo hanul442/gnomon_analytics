@@ -44,7 +44,7 @@ export function coinFitness(input: {
     value: mcap ? `시가총액 약 ${wonWords(mcap)}` : '자료 없음',
     note: mcap ? `전 세계 ${p!.rank ? `${p!.rank.toLocaleString('ko-KR')}위` : '순위 밖'}. 작을수록 적은 돈으로도 크게 흔들려요. (100억 원 20점, 100조 원 이상 100점)` : '시가총액을 아는 곳이 없어요.' };
   const v = input.value24hKrw;
-  const liquidity: FitAxis = { key: 'liquidity', label: '유동성', score: v && v > 0 ? clamp((Math.log10(v) - 8) * 25) : null,
+  const liquidity: FitAxis = { key: 'liquidity', label: '거래', score: v && v > 0 ? clamp((Math.log10(v) - 8) * 25) : null,
     value: v && v > 0 ? `업비트 24시간 ${wonWords(v)}` : '자료 없음',
     note: v && v > 0 ? `사고팔기 쉬운 정도예요.${mcap && v > mcap ? ' 시가총액보다 하루 거래가 많아 손바뀜이 매우 빨라요.' : ''} (1억 원 0점, 1,000억 원 75점)` : '업비트 거래대금을 받지 못했어요.' };
   const issued = p?.totalSupply ?? null, cap = p?.maxSupply ?? null;
