@@ -185,7 +185,7 @@ export const PLAN_BOOT = `<script>try{var p;if(document.querySelector('meta[name
 // gives lightweight-charts its text, grid and candle colours from the CSS tokens and re-applies them on a switch.
 export const THEME_BOOT = `<script>(function(){var d=document.documentElement,mq=window.matchMedia?matchMedia('(prefers-color-scheme: light)'):null;
 var resolve=function(t){return t==='auto'?(mq&&mq.matches?'light':'dark'):(t==='light'?'light':'dark');};
-var saved=function(){try{return localStorage.getItem('gnm-theme')||'dark'}catch(e){return 'dark'}};
+var saved=function(){try{return localStorage.getItem('gnm-theme')||'auto'}catch(e){return 'auto'}};
 var paint=function(on){d.setAttribute('data-theme',on);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',on==='dark'?'#0A1626':'#EEF3F8');};
 paint(resolve(saved()));
 var v=function(n,f){return getComputedStyle(d).getPropertyValue(n).trim()||f||'';};

@@ -2,6 +2,7 @@
 // move, the 20-session return and a 60-session line for each, in a strip that scrolls sideways (drag on
 // desktop, swipe on phones) — and where this stock stands: its return against the theme's average and its
 // PER against the theme's median. No imports, so any page module can include it.
+import { SMOOTH_JS } from './chartLook.js';
 
 /** Placeholder the script fills; hidden until a theme is found for the stock. */
 export const peersSlot = (symbol: string): string => `<section class="block" id="peers" data-peers="${symbol.replace(/[^0-9A-Z-]/g, '')}" hidden></section>`;
@@ -14,17 +15,18 @@ export const PEERS_CSS = `.pe-verdict{margin:8px 2px 0;font-size:13.5px;color:va
 
 export const PEERS_JS = `
 (function(){
+ ${SMOOTH_JS}
  var host=document.querySelector('[data-peers]');if(!host)return;
  var sym=host.getAttribute('data-peers')||new URLSearchParams(location.search).get('c')||'';if(!/^[0-9][0-9A-Z]{5}$/.test(sym))return;
  var sort='cap',asc=false,current=null,epoch=0;var base=document.body.getAttribute('data-base')||'',esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
  var pct=function(v){return v==null?'—':(v>0?'+':'')+v.toFixed(1)+'%';},tone=function(v){return v==null?'':v>0?'up':v<0?'down':'';};
- var spark=function(c,up){if(!c||c.length<2)return '';var lo=Math.min.apply(null,c),hi=Math.max.apply(null,c),sp=hi-lo||1;return '<svg viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="'+(up?'#f04452':'#3182f6')+'" stroke-width="1.6" points="'+c.map(function(v,i){return (i/(c.length-1)*120).toFixed(1)+','+(33-(v-lo)/sp*30).toFixed(1);}).join(' ')+'"/></svg>';};
+ var spark=function(c,up){if(!c||c.length<2)return '';var lo=Math.min.apply(null,c),hi=Math.max.apply(null,c),sp=hi-lo||1;return '<svg viewBox="0 0 120 36" preserveAspectRatio="none" aria-hidden="true"><path fill="none" stroke="'+(up?'#f04452':'#3182f6')+'" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" d="'+smoothD(c.map(function(v,i){return (i/(c.length-1)*120).toFixed(1)+','+(33-(v-lo)/sp*30).toFixed(1);}).join(' '))+'"/></svg>';};
  var median=function(xs){var a=xs.slice().sort(function(x,y){return x-y;});if(!a.length)return null;var m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2;};
  var drag=function(el){var down=false,x0=0,s0=0,moved=false;el.addEventListener('pointerdown',function(e){if(e.pointerType!=='mouse')return;down=true;moved=false;x0=e.clientX;s0=el.scrollLeft;});el.addEventListener('pointermove',function(e){if(!down)return;var dx=e.clientX-x0;if(Math.abs(dx)>4){moved=true;el.classList.add('drag');}el.scrollLeft=s0-dx;});var up=function(){down=false;el.classList.remove('drag');};el.addEventListener('pointerup',up);el.addEventListener('pointerleave',up);el.addEventListener('click',function(e){if(moved){e.preventDefault();e.stopPropagation();moved=false;}},true);};
  fetch(base+'theme-index.json').then(function(r){return r.json();}).then(function(idx){
   var mine=(idx&&idx[sym])||[];if(!mine.length)return;
   host.hidden=false;
-  host.innerHTML='<div class="card"><div class="pe-head"><h2>같은 테마 종목 비교</h2><a class="more-link" href="'+base+'themes.html#'+esc(mine[0][0])+'">테마 전체 ›</a></div><div class="pe-themes" role="group" aria-label="테마">'+mine.slice(0,6).map(function(t,i){return '<button type="button" class="chip-toggle" data-no="'+esc(t[0])+'" aria-pressed="'+(i===0)+'">'+esc(t[1])+'</button>';}).join('')+'</div><div class="pe-sort"><label>비교 정렬 <select data-pe-sort><option value="cap">시가총액</option><option value="day">오늘 등락률</option><option value="return">20일 수익률</option><option value="name">이름</option></select></label><button type="button" class="chip-toggle" data-pe-direction>내림차순 ↓</button><small>최대 16개 비교 종목</small></div><div class="pe-sum"></div><div class="pe-strip" tabindex="0" aria-label="같은 테마 종목, 옆으로 넘겨 보세요"></div><p class="fine">20일 수익률과 PER을 같은 테마 종목과 비교해요. PER은 네이버 증권의 최근 값이고, 적자 종목(PER 없음)은 중간값에서 빼요.</p></div>';
+  host.innerHTML='<div class="card"><div class="pe-head"><h2>같은 테마 종목 비교</h2><a class="more-link" href="'+base+'themes.html#'+esc(mine[0][0])+'">테마 전체 ›</a></div><div class="pe-themes" role="group" aria-label="테마">'+mine.slice(0,6).map(function(t,i){return '<button type="button" class="chip-toggle" data-no="'+esc(t[0])+'" aria-pressed="'+(i===0)+'">'+esc(t[1])+'</button>';}).join('')+'</div><div class="pe-sort"><label>비교 정렬 <select data-pe-sort><option value="cap">시가총액</option><option value="day">오늘 등락률</option><option value="return">20일 수익률</option><option value="name">이름</option></select></label><button type="button" class="chip-toggle" data-pe-direction>내림차순 ↓</button><small>최대 16개 비교 종목</small></div><div class="pe-sum"></div><div class="pe-strip" tabindex="0" aria-label="같은 테마 종목, 옆으로 넘겨 보세요"></div><div class="pe-scatter" hidden></div><p class="fine">20일 수익률과 PER을 같은 테마 종목과 비교해요. PER은 네이버 증권의 최근 값이고, 적자 종목(PER 없음)은 중간값에서 빼요.</p></div>';
   var strip=host.querySelector('.pe-strip'),sum=host.querySelector('.pe-sum');drag(strip);
   var draw=function(t){current=t;var ticket=++epoch;
    sum.innerHTML='<div class="muted">불러오는 중…</div>';strip.innerHTML='';
@@ -38,6 +40,8 @@ export const PEERS_JS = `
     var api=window.GNM&&GNM.api;if(!api){host.querySelector('.pe-per').textContent='PER은 API 연결 후 보여요.';return;}
     fetch(api+'/valuation?s='+ms.map(function(m){return m[0];}).join(',')).then(function(r){return r.json();}).then(function(v){if(ticket!==epoch)return;
      var items=(v&&v.items)||{};strip.querySelectorAll('.pe-card').forEach(function(c){var x=items[c.getAttribute('data-sym')];c.querySelector('[data-per]').textContent=x&&x.per!=null?(x.per>0?x.per.toFixed(1)+'배':'적자'):'—';});
+     // G-265 (Bklit scatter): PER against ROE (PBR ÷ PER) for the peers with earnings, this stock in red.
+     var sc=host.querySelector('.pe-scatter');if(sc&&window.GNM_kit){var nm={};ms.forEach(function(m){nm[m[0]]=m[1];});GNM_kit.scatter(sc,Object.keys(items).filter(function(k){var x=items[k];return nm[k]&&x&&x.per>0&&x.pbr>0;}).map(function(k){var x=items[k];return {x:Math.round(x.per*10)/10,y:Math.round(x.pbr/x.per*1000)/10,name:nm[k],me:k===sym};}),{title:'PER과 ROE',sub:'점 하나가 종목 하나 · 빨간 점이 이 종목',xl:'PER(배)',yl:'ROE(%)',xf:function(x){return x+'배';},yf:function(y){return y+'%';},label:'같은 테마 종목의 PER과 ROE',note:'ROE는 PBR÷PER로 계산했어요. 적자 종목은 빼요. 점선은 테마 중간값이에요. 점을 누르면 종목 이름과 값이 나와요.'});}
      var mp=items[sym]&&items[sym].per,peers=Object.keys(items).filter(function(k){return k!==sym&&items[k].per!=null&&items[k].per>0;}).map(function(k){return items[k].per;}),md=median(peers);
      host.querySelector('.pe-per').innerHTML=mp!=null&&mp>0&&md?(function(){
       // A PER far above the theme usually means very small earnings, not a pricier business: say so plainly.

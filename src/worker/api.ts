@@ -7,7 +7,9 @@ import { cikMap, edgarUserAgent, tickersUrl } from '../sources/edgar.js';
 import { fundamentalsPanel } from '../report/renderMarket.js';
 import { edgeCard, insiderSection } from '../report/renderEdge.js';
 import { latestLists } from '../report/appParts.js';
-import { newsTabBody } from '../report/renderHtml.js';
+import { coinNewsFragments, newsTabBody } from '../report/renderHtml.js';
+import { buildDailyReport } from '../report/dailyReport.js';
+import { fetchRss, GOOGLE_NEWS_SOURCE, googleNewsSearchUrl } from '../sources/news.js';
 import { fetchOkxDeriv, type DerivSnapshot } from '../sources/okxDeriv.js';
 import { fetchKrxShort, type CreditMemo, type ShortSnapshot } from '../sources/krxShort.js';
 import { fetchCompanyProfile, type CompanyProfile, type IndustryMemo } from '../sources/companyProfile.js';
@@ -701,7 +703,9 @@ route('GET','/us/page/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,deps,params
 // XBRL financials, filings and Form 4 insider trades, and English news, built into the same report as a requested
 // US report (minus the AI) and returned as the panels the page fills. Kept 3 hours per code; the SEC ticker→CIK
 // map is read once a day per isolate, so a page without a CIK does not download it each time.
-const usInfos=new Map<string,{at:number;pending:Promise<Record<string,string>|null>}>();
+const usInfos=new Map<string,{at:number;pending:Promise<Record<string,string>|null>;keep?:number}>();
+// G-270: panels built while SEC or the news feed failed are kept 10 minutes, not 3 hours, so a passing outage does not leave 기업 체력 blank all afternoon.
+const US_INFO_KEEP=3*3600_000,US_INFO_RETRY=10*60_000;
 let cikCache:{at:number;map:Promise<Map<string,number>>}|null=null;
 route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,params,now})=>{
  const code=params[0]!;if(!US_CODE.test(code))fail(400,'BAD_CODE','미국 종목 코드가 아니에요.');
@@ -710,7 +714,7 @@ route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,par
  // The panels depend on the name, CIK and kind the page passes, so they are part of the key (one caller cannot set another's).
  const given=q.get('cik'),key=[code,given&&/^\d{1,10}$/.test(given)?given:'',etf?'etf':'',nameEng.toLowerCase()].join('|');
  let hit=usInfos.get(key);
- if(!hit||now.getTime()-hit.at>=3*3600_000){
+ if(!hit||now.getTime()-hit.at>=(hit.keep??US_INFO_KEEP)){
   usFreshStart(req,now,'info');
   if(usInfos.size>=200)usInfos.delete(usInfos.keys().next().value!);
   const contact=env.EDGAR_CONTACT;
@@ -719,9 +723,11 @@ route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,par
    if(!cikCache||now.getTime()-cikCache.at>=24*3600_000){const map=deps.fetch(tickersUrl,{headers:{'User-Agent':edgarUserAgent(contact),Accept:'application/json'}}).then(r=>{if(!r.ok)throw new Error(`SEC_${r.status}`);return r.json();}).then(b=>cikMap(b));cikCache={at:now.getTime(),map};map.catch(()=>{cikCache=null;});}
    return (await cikCache.map.catch(()=>new Map<string,number>())).get(ticker.replace(/\./g,'-'))??null;
   };
-  const entry={at:now.getTime(),pending:Promise.all([barsOf(code,now,deps.fetch),cikOf()]).then(async([bars,cik])=>{
+  const entry:{at:number;pending:Promise<Record<string,string>|null>;keep?:number}={at:now.getTime(),pending:Promise.all([barsOf(code,now,deps.fetch),cikOf()]).then(async([bars,cik])=>{
    if(bars.length<2)return null;
    const research=await gatherUsResearch({symbol:code,ticker,nameEng,cik,fetch:deps.fetch,now:()=>now,...(contact?{contact}:{})});
+   // A stock with a CIK whose SEC reads failed, or a failed news feed: worth another try soon.
+   if((!etf&&cik==null&&cikCache==null)||research.status.some((x)=>!x.ok))entry.keep=US_INFO_RETRY;
    const report=buildUsReport({symbol:code,name:nameEng,nameEng,ticker,...(etf?{kind:'etf' as const}:{}),bars,research,now});
    return withCurrency('USD',()=>({
     fundamentals:(report.market?fundamentalsPanel(report.market,report.price?.close??null,report.name,report.recentBars??[]):'')+insiderSection(report),
@@ -734,6 +740,28 @@ route('GET','/usinfo/([A-Z][A-Z0-9-]{0,9}(?:\\.[A-Z])?)',async({req,env,deps,par
  const info=await hit.pending.catch(()=>fail(502,'US_DATA','미국 종목 정보를 가져오지 못했어요. 잠시 후 다시 열어 주세요.'));
  if(!info)fail(404,'US_NOT_FOUND','이 미국 종목의 가격이 없어요. 코드가 맞는지 확인해 주세요.');
  return {symbol:code,...info,retrievedAt:iso(now)};
+});
+// G-270: news for a coin without a report (its page had empty 최신 뉴스 and 뉴스 tabs): Google News for "<이름> 코인",
+// kept to stories naming the coin or its ticker, grouped like a report's. Kept an hour per coin (ten minutes after a failure).
+const coinNews=new Map<string,{at:number;keep:number;pending:Promise<{news:string;homeNews:string}>}>();
+route('GET','/coinnews/(KRW-[A-Z0-9]{1,15})',async({req,deps,params,now})=>{
+ const symbol=params[0]!,ticker=symbol.slice(4);
+ const name=(new URL(req.url).searchParams.get('name')??'').replace(/[^0-9A-Za-z가-힣 ().-]/g,'').trim().slice(0,30)||ticker,key=symbol+'|'+name;
+ const hit=coinNews.get(key);if(hit&&now.getTime()-hit.at<hit.keep)return hit.pending.then(x=>({symbol,...x}));
+ freshStart(req,now,'info',20,'코인을 너무 빠르게 열고 있어요. 1분 뒤 다시 열어 주세요.');
+ if(coinNews.size>=300)coinNews.delete(coinNews.keys().next().value!);
+ const esc=(t:string)=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),parts=name.split(/[()]/).map(x=>x.trim()).filter(x=>x.length>=2);
+ if(!parts.length)parts.push(ticker);
+ const entry={at:now.getTime(),keep:3600_000,pending:fetchRss(googleNewsSearchUrl(`${parts.length>1?`(${parts.join(' OR ')})`:parts[0]} 코인`),GOOGLE_NEWS_SOURCE,{fetch:deps.fetch,now:()=>now}).then(items=>{
+  const date=new Date(now.getTime()+9*3600_000).toISOString().slice(0,10);
+  const report=buildDailyReport({symbol,name,kind:'coin',date,generatedAt:now,bars:[],disclosures:[],sources:[],news:items,newsStatus:[{source:GOOGLE_NEWS_SOURCE,ok:true,count:items.length}],newsAliases:new RegExp([...parts.map(esc),`\\b${esc(ticker)}\\b`].join('|'),'i')});
+  return coinNewsFragments(report);
+ })};
+ entry.pending.catch(()=>{if(coinNews.get(key)===entry)coinNews.delete(key);});
+ coinNews.set(key,entry);
+ const x=await entry.pending.catch(()=>fail(502,'NEWS_UPSTREAM','뉴스를 지금 받지 못했어요. 잠시 뒤 다시 열어 주세요.'));
+ if(!x.homeNews)entry.keep=10*60_000;
+ return {symbol,...x};
 });
 // G-118: PER and PBR for a handful of stocks (a theme's members), from Naver's per-stock summary.
 // Kept 6 hours per stock; one that fails is left out rather than failing the rest.

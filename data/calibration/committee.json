@@ -1,0 +1,13 @@
+{
+ "method": "platt-v1",
+ "a": 0,
+ "b": 1,
+ "n": 0,
+ "active": false,
+ "brierSaid": null,
+ "brierFitted": null,
+ "brierBase": null,
+ "saidPct": null,
+ "happenedPct": null,
+ "madeAt": "2026-10-20T09:24:45.245Z"
+}

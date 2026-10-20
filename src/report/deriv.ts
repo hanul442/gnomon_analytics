@@ -1,6 +1,7 @@
 // G-142: 선물 지표 card for coins (funding, open interest, long/short accounts, recent liquidations), filled
 // in the browser from the API's /deriv (OKX public data, cached a minute). A coin without a USDT perpetual
 // hides the card.
+import { SMOOTH_JS } from './chartLook.js';
 
 import { esc } from './html.js';
 
@@ -16,9 +17,10 @@ export const DERIV_CSS = `.dv-card{margin:14px 0}.dv-card .head{display:flex;jus
 
 export const DERIV_JS = `
 (function () {
+  ${SMOOTH_JS}
   var boxes = document.querySelectorAll('[data-deriv]'); if (!boxes.length) return;
   var usd = function (v) { var a = Math.abs(v); return '$' + (a >= 1e9 ? (v / 1e9).toFixed(2) + 'B' : a >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : a >= 1e3 ? (v / 1e3).toFixed(0) + 'K' : v.toFixed(0)); };
-  var spark = function (vals, color) { if (vals.length < 2) return ''; var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), sp = hi - lo || 1; var p = vals.map(function (v, i) { return (i / (vals.length - 1) * 200).toFixed(1) + ',' + (32 - (v - lo) / sp * 28).toFixed(1); }).join(' '); return '<svg viewBox="0 0 200 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + p + '" fill="none" stroke="' + color + '" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'; };
+  var spark = function (vals, color) { if (vals.length < 2) return ''; var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), sp = hi - lo || 1; var p = vals.map(function (v, i) { return (i / (vals.length - 1) * 200).toFixed(1) + ',' + (32 - (v - lo) / sp * 28).toFixed(1); }).join(' '); return '<svg viewBox="0 0 200 34" preserveAspectRatio="none" aria-hidden="true"><path d="' + smoothD(p) + '" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="' + color + '" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'; };
   var hm = function (iso) { var d = new Date(iso); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
   var paint = function (box, d) {
     var t = [];

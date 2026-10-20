@@ -5,7 +5,8 @@
 // voted that way; chips highlight one faction. Pure rendering from the report.
 
 import type { DailyReport } from './dailyReport.js';
-import { ANALYSTS, committeeConsensus } from '../analysis/analysts.js';
+import { ANALYSTS } from '../analysis/analysts.js';
+import { basePosition, committeeOdds, reportBase } from '../analysis/baseOdds.js';
 import { esc } from './html.js';
 import { won } from './format.js';
 
@@ -70,12 +71,14 @@ export function hemicycle(n: number): { x: number; y: number; r: number }[] {
   for (let i = 0, guard = 0; left < 0 && guard < rows * n; i = (i + 1) % rows, guard += 1) if (counts[i]! > 1) { counts[i]! -= 1; left += 1; }
   // As large as the tightest row and the row gap allow.
   const along = Math.min(...radii.map((r, i) => (counts[i]! > 1 ? (Math.PI * r) / (counts[i]! - 1) : 1)));
-  const seatR = Math.min(along * 0.42, gap ? gap * 0.44 : 0.12, rows === 1 ? 0.12 : 0.11);
+  // G-274: a small chamber (one row) uses a shorter arc so seats sit close and the bottom ends clear the tally.
+  const span = rows === 1 ? (n <= 4 ? 0.5 : n <= 8 ? 0.62 : n <= 12 ? 0.78 : 0.9) : 1;
+  const seatR = Math.min(along * span * 0.42, gap ? gap * 0.44 : 0.12, rows === 1 ? 0.13 : 0.11);
   const out: { x: number; y: number; r: number; a: number }[] = [];
   radii.forEach((rad, i) => {
     const k = counts[i]!;
     for (let j = 0; j < k; j += 1) {
-      const a = k === 1 ? Math.PI / 2 : Math.PI - (Math.PI * j) / (k - 1);
+      const a = k === 1 ? Math.PI / 2 : Math.PI / 2 + span * Math.PI * (0.5 - j / (k - 1));
       out.push({ x: rad * Math.cos(a), y: rad * Math.sin(a), r: seatR, a });
     }
   });
@@ -171,13 +174,35 @@ export const PARLIAMENT_SCRIPT = `<script>
 </script>`;
 
 /**
- * G-228: one line under the committee vote: the analysts' calls pooled into a chance the price is higher in
- * 20 sessions (log-odds average, skill-weighted once records are long enough). The same for every reader.
+ * One line under the committee vote: a chance the price is higher in 20 sessions, the same for every reader.
+ * G-264: for a Korean stock it starts from the statistical base (volatility, a recent one-day jump, the 52-week
+ * high; fitted on ten years) and only the analysts who read earnings, filings and news move it, by at most
+ * AI_CAP points; the Platt line refitted on scored committee numbers applies once it is active. Otherwise
+ * (G-228) every analyst's call pooled in log-odds, skill-weighted once records are long enough.
  */
 export function consensusNote(report: DailyReport): string {
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
-  const k = committeeConsensus(c?.analysts ?? [], report.market?.analystBoard ?? []);
+  const base = reportBase(report);
+  const k = committeeOdds(base, c?.analysts ?? [], report.market?.analystBoard ?? [], report.market?.committeeCalibration);
   if (!k) return '';
+  // G-268: ranking against the day's other stocks held up far better than calling a direction, so it leads.
+  const pos = base != null ? basePosition(base) : null;
   const locked = c?.lockedAnalysts?.length ?? 0;
-  return `<p class="pl-consensus"><b>위원 ${k.n}명 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b> <span class="muted small">${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>`;
+  // G-246: the statistical 80% range scored best in the hidden-future test; G-268: the position leads it.
+  // G-274: three short label/value rows under the seats (the ring repeated the seat count, so it went); the how-it-was-made text folds away under one toggle.
+  const f = report.market?.forecasts?.find((x) => x.horizon === 20);
+  const how = k.basePct != null
+    ? `오를 확률은 10년 과거 자료로 맞춘 통계 기준 ${k.basePct}%(변동성·최근 급등·52주 고가)에서 출발해, ${k.textN ? `실적·공시·뉴스를 읽은 위원 ${k.textN}명이 ${k.aiPts > 0 ? `+${k.aiPts}%p` : k.aiPts < 0 ? `${k.aiPts}%p` : '그대로'} ${k.aiPts ? '움직였어요' : '두었어요'}` : '글 근거를 읽은 위원이 없어 기준 그대로예요'}. 차트를 보는 위원 판단은 기준에 이미 들어 있어 숫자에 더하지 않아요${k.calibrated ? '. 지난 위원회 채점으로 한 번 더 맞췄어요' : ''}.`
+    : `오를 확률은 ${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : k.prior ? '과거 데이터 시험(종목·날짜를 가린 1,000건)에서 순위를 잘 맞힌 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요.`;
+  const row = (label: string, value: string, sub: string, cls = '') => `<div${cls ? ` class="${cls}"` : ''}><dt>${label}</dt><dd><b>${value}</b><small>${sub}</small></dd></div>`;
+  const rows = [
+    pos ? row('다른 종목과 비교', `${pos.label} <span class="pl-of">${pos.fifth + 1}/5</span>`, `이 묶음이 같은 날 평균보다 더 오른 비율 ${pos.beatPct}%${pos.fifth === 0 ? `, 평균보다 약 ${Math.abs(pos.excessPct).toFixed(1)}%p 덜 올랐어요` : ''}`) : '',
+    f ? row('20거래일 뒤 가격 범위(80%)', `${won(f.p10)} ~ ${won(f.p90)}`, '과거 시험에서 열 번 중 여덟 번꼴로 이 안에 들었어요') : '',
+    row(pos ? '오를 확률(참고)' : '위원회 종합', `약 ${k.upPct}%`, pos ? '방향은 맞히기 어려워 참고로만 보세요' : '20거래일 뒤 지금보다 높을 확률', pos ? 'pl-ref' : ''),
+  ].join('');
+  const detail = [
+    pos ? '다른 종목과 비교는 10년 자료로 맞춘 점수(변동성·최근 급등·52주 고가)로 거래대금 상위 종목을 다섯 묶음으로 나눈 위치예요. 1/5이 가장 낮고 5/5가 가장 높아요. 비율은 2023년 이후 기록이에요.' : '',
+    how, locked ? `${locked}명은 위원회 전에 혼자 판단했어요.` : '',
+  ].filter(Boolean).map((t) => `<p>${t}</p>`).join('');
+  return `<div class="pl-consensus"><dl class="pl-stats">${rows}</dl><details class="pl-how"><summary>어떻게 계산했나요</summary>${detail}</details><p class="fine">예측이지 권유가 아니에요.</p></div>`;
 }

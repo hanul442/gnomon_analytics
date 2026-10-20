@@ -109,11 +109,14 @@ test('report failures preserve actionable categories without exposing provider d
  assert.doesNotMatch(reportFailureMessage('API_401:sensitive server details'),/sensitive server details/);
 });
 
-test('release banner appears on the home page only',async()=>{
- const {shell}=await import('./renderHtml.js');
- assert.match(shell('','홈','',{active:'home'}),/class="version-banner"/);
+test('G-244: no release card on any page; the ad strip goes after the page everywhere',async()=>{
+ const {shell}=await import('./renderHtml.js');const {renderHome}=await import('./renderHome.js');
+ assert.doesNotMatch(shell('','홈','',{active:'home'}),/class="version-banner"/);
  assert.doesNotMatch(renderStockPage(),/class="version-banner"/);
  assert.doesNotMatch(renderGuide(),/class="version-banner"/);
+ const home=renderHome({entries:[],selection:null,universe:null,pulse:null,indices:[]});
+ assert.ok(home.indexOf('class="ad-strip"')>home.indexOf('id="news-issues"'),'the ad strip comes after the page');
+ assert.ok(renderStockPage().indexOf('class="ad-strip"')>renderStockPage().indexOf('id="tab-news"'),'on every page');
 });
 
 
@@ -181,4 +184,24 @@ test('film banners: a teaser film under assets/banners/ opens in a pop-up, other
  assert.equal((html.match(/bn-play/g)??[]).length,1);
  assert.doesNotMatch(html,/evil\.example/);
  assert.match(BANNER_JS,/showModal\(\)/);
+});
+
+test('G-249: the scenario strip places the three ranges and today on one ruler',async()=>{
+ const {scenarioRail}=await import('./conclusion.js');
+ const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-10-06',generatedAt:new Date(),bars:Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000})),disclosures:[],sources:[]});
+ const sc=(kind:string,zone:[number,number])=>({kind,narrative:{text:kind},catalysts:[],invalidation:[],zone});
+ report.commentary={status:'OK',scenarios:[sc('BULL',[140,160]),sc('BASE',[120,140]),sc('BEAR',[100,120])]} as any;
+ const html=scenarioRail(report);
+ for(const k of ['r-bear','r-base','r-bull','cl-rail-now']) assert.ok(html.includes(k),k);
+ const left=(k:string)=>Number(html.match(new RegExp(k+'" style="left:([0-9.]+)%'))![1]);
+ assert.ok(left('r-bear')<left('r-base')&&left('r-base')<left('r-bull'),'low to high');
+ report.price=undefined as any;assert.equal(scenarioRail(report),'');
+});
+
+test('G-256: one stock in six parts, with 내 기록 and the old panels kept for links', async () => {
+  const { TABS, mineTab } = await import('./renderHtml.js');
+  assert.deepEqual(TABS.filter((t) => !t.ghost).map((t) => t.label), ['위원회', '차트', '뉴스', '공시', '기업', '내 기록']);
+  assert.deepEqual(TABS.filter((t) => t.ghost).map((t) => t.key), ['ai', 'technical']);
+  const mine = mineTab('../', '005930');
+  assert.ok(mine.includes('data-mine="005930"') && mine.includes('class="btn-primary mi-pa"') && mine.includes('href="../mydebates.html"'));
 });

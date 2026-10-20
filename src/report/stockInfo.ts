@@ -33,10 +33,11 @@ export const STOCK_INFO_JS = `
 (function(){
  // A report whose summary has no news or filings yet (G-132) asks for the latest too, for those two lists only.
  var b=document.body,only=!b.hasAttribute('data-fill');var empty=document.querySelector('[data-slot=homeNews][data-empty],[data-slot=homeFilings][data-empty]');if(only&&!empty)return;var api=window.GNM&&GNM.api;var sym=only?((document.querySelector('[data-symbol]')||{}).dataset||{}).symbol:b.getAttribute('data-fill');
- var done=function(){document.querySelectorAll('[data-slot=homeNews][data-empty]:not([data-filled]),[data-slot=homeFilings][data-empty]:not([data-filled])').forEach(function(el){el.innerHTML='<p class="empty">'+(el.getAttribute('data-slot')==='homeNews'?'최근 뉴스가 아직 없어요.':'최근 공시가 아직 없어요.')+'</p>';});};if(!api||!/^[0-9][0-9A-Z]{5}$/.test(sym||'')){done();return;}
- var close=b.getAttribute('data-close')||'';
- fetch(api+'/stockinfo/'+sym+(close?'?close='+encodeURIComponent(close):'')).then(function(r){return r.ok?r.json():null;}).then(function(d){if(!d){done();return;}
-  var KEYS=only?['homeNews','homeFilings']:['fundamentals','flows','news','filings','homeNews','homeFilings'];
+ var done=function(){document.querySelectorAll('[data-slot=homeNews][data-empty]:not([data-filled]),[data-slot=homeFilings][data-empty]:not([data-filled])').forEach(function(el){el.innerHTML='<p class="empty">'+(el.getAttribute('data-slot')==='homeNews'?'최근 뉴스가 아직 없어요.':'최근 공시가 아직 없어요.')+'</p>';});};var coin=/^KRW-[A-Z0-9]{1,15}$/.test(sym||'');if(!api||!(coin||/^[0-9][0-9A-Z]{5}$/.test(sym||''))){done();return;}
+ var close=b.getAttribute('data-close')||'',nm=b.getAttribute('data-name')||((document.querySelector('h1')||{}).textContent||'').trim();
+ // G-270: a coin asks /coinnews (its news only; a coin has no filings or company panels).
+ fetch(coin?api+'/coinnews/'+sym+'?name='+encodeURIComponent(nm):api+'/stockinfo/'+sym+(close?'?close='+encodeURIComponent(close):'')).then(function(r){return r.ok?r.json():null;}).then(function(d){if(!d){done();return;}
+  var KEYS=coin?(only?['homeNews']:['news','homeNews']):only?['homeNews','homeFilings']:['fundamentals','flows','news','filings','homeNews','homeFilings'];
   KEYS.forEach(function(k){if(!d[k])return;document.querySelectorAll('[data-slot="'+k+'"]').forEach(function(el){el.innerHTML=d[k];el.setAttribute('data-filled','');});});
  done();}).catch(done);
 })();`;

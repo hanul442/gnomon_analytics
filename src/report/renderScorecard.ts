@@ -10,6 +10,7 @@ import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystTrack } from '../analysis/analysts.js';
 import { mergeBoards, UNIFORM_BRIER, type ScenarioBoard } from '../analysis/scenarioScore.js';
 import { paperPanel } from './renderArena.js';
+import { outcomeSunburst, ringChart } from './kit/stock.js';
 import { shell, type HomeEntry } from './renderHtml.js';
 import { esc } from './html.js';
 import { won, tone, pct as fmtPct } from './format.js';
@@ -84,9 +85,9 @@ ${totalScored ? `<table class="compact"><thead><tr><th>기간</th><th>채점</th
   const STANCE = { BULLISH: ['강세', 'up'], BEARISH: ['약세', 'down'], NEUTRAL: ['중립', 'muted'] } as const;
   const md = (d: string) => d.slice(5).replace('-', '/');
   const verdict = (c: AnalystTrack) => c.done
-    ? `<b class="mb-v ${c.hit ? 'ok' : 'no'}">${c.hit ? '맞았어요' : '빗나갔어요'}</b> <span class="muted">20거래일 뒤 ${won(c.close!)} (${chg(c.close!, c.baseClose)})</span>`
+    ? `<b class="mb-v ${c.hit ? 'ok' : 'no'}">${c.hit ? '맞음' : '빗나감'}</b> <span class="muted">20거래일 뒤 ${won(c.close!)} (${chg(c.close!, c.baseClose)})</span>`
     : c.close === null ? '<span class="muted">가격 기록을 찾지 못했어요</span>'
-    : `<span class="mb-v wait">${c.sessions}/${ANALYST_HORIZON}거래일</span> <span class="muted">지금 ${won(c.close)} (${chg(c.close, c.baseClose)})${c.hit === null ? ' · 아직 움직임이 없어요' : c.hit ? ' · 전망과 같은 쪽이에요' : ' · 전망과 반대쪽이에요'}</span>`;
+    : `<span class="mb-v wait">대기 ${c.sessions}/${ANALYST_HORIZON}</span> <span class="muted">지금 ${won(c.close)} (${chg(c.close, c.baseClose)})${c.hit === null ? ' · 아직 움직임이 없어요' : c.hit ? ' · 전망과 같은 쪽이에요' : ' · 전망과 반대쪽이에요'}</span>`;
   const row = ({ e, c }: { e: HomeEntry; c: AnalystTrack }, i: number) => {
     const [word, cls] = STANCE[c.stance];
     const dated = `${e.href.replace(/index\.html$/, '')}reports/${c.reportDate}.html`;
@@ -104,6 +105,13 @@ ${c.invalidation ? `<div class="mb-line"><span class="mb-k">철회</span>종가 
 ${calibration(x)}${x.kill && x.kill.broke ? `<p class="muted small">철회 가격에 닿은 판단 ${x.kill.broke}건 중 ${x.kill.brokeMissed}건이 결국 빗나갔어요 <span class="fine">(철회 가격을 정한 채점 ${x.kill.set}건)</span></p>` : ''}
 ${mine.length ? `<ol class="mb-calls">${mine.map(row).join('')}</ol><p class="empty mb-none" hidden>관심 종목에 대한 판단이 아직 없어요.</p>${mine.length > 4 ? `<button type="button" class="more-all">최근 판단 ${mine.length}개 모두 보기</button>` : ''}` : '<p class="empty">아직 기록된 판단이 없어요.</p>'}</article>`;
   };
+  // G-271 (Bklit sunburst): every call split by result, then by the member who made it.
+  const kids = (f: (x: Tally) => number) => board.map(([, x]) => ({ label: x.name, value: Math.round(f(x)) }));
+  const sun = outcomeSunburst([
+    { label: '맞음', key: 'ok', children: kids((x) => x.hits) },
+    { label: '빗나감', key: 'no', children: kids((x) => x.scored - x.hits) },
+    { label: '대기', key: 'wait', children: kids((x) => x.pending) },
+  ], { label: '위원 판단 결과와 위원별 나눔' });
   const analystCard = `<section class="block"><div class="block-head"><h2>위원별 판단</h2><span class="muted">전 종목 합산</span></div>
 <div class="mb-bar" hidden><button type="button" class="chip-toggle mb-watch" aria-pressed="false">관심 종목만</button></div>
 ${board.length ? `<div class="mb-grid">${board.map(member).join('')}</div>` : '<div class="card"><p class="empty">아직 위원 판단이 없어요.</p></div>'}
@@ -127,27 +135,47 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
 <p class="fine">챔피언 장부 수익이 높은 순이에요. 장부는 기록을 시작한 날부터 다음 거래일 수익으로 쌓고, 사고팔 때 비용을 빼요. 종목의 '장부'를 누르면 매매 내역과 수익 곡선이 펼쳐져요.</p></div>`, { base: '', what: '종목별 장부 · 매매 내역 · 수익 곡선', feature: 'paperLedger' })}</section>`;
   misses.sort((a, b) => (a.target < b.target ? 1 : -1));
   const missCard = `<section class="block"><div class="block-head"><h2>빗나간 예측</h2><span class="muted">범위 밖으로 나간 최근 예측</span></div><div class="card table-wrap">${misses.length ? `<table class="compact"><thead><tr><th>종목</th><th>기간</th><th>예측 범위</th><th>실제</th><th>중앙값 대비</th></tr></thead><tbody>${misses.slice(0, 40).map((x, i) => `<tr${i >= 10 ? ' class="more-row" hidden' : ''}><td><a href="${esc(x.href)}">${esc(x.name)}</a><div class="muted small">${esc(x.base)} → ${esc(x.target)}</div></td><td>${x.horizon}거래일</td><td>${won(x.p10)} ~ ${won(x.p90)}</td><td><b>${won(x.actual)}</b></td><td class="${tone(x.err)}">${pct(x.err)}</td></tr>`).join('')}</tbody></table>${misses.length > 10 ? `<button type="button" class="more-all">전체 ${Math.min(misses.length, 40)}건 보기</button>` : ''}` : '<p class="empty">아직 범위 밖으로 나간 예측이 없어요.</p>'}</div></section>`;
-  // G-77: four numbers first, then one section per question; 모의투자 lives here as '따라 했다면'.
   const fcHit = totalScored ? (horizons.reduce((x, [, y]) => x + y.inside, 0) / totalScored) * 100 : null;
   const aiScored = board.reduce((x, [, b]) => x + b.scored, 0), aiHit = aiScored ? (board.reduce((x, [, b]) => x + b.hits, 0) / aiScored) * 100 : null;
   const champ = avg((f) => f === 'champion'), hold = avg((f) => f === 'hold');
-  const big = (label: string, v: string, sub: string, href: string) => `<a class="sc-big" href="${href}"><span>${label}</span><b>${v}</b><small>${sub}</small></a>`;
   const scenarioCard = scenarioSection(live.flatMap((e) => (e.report.market!.scenarioBoard ? [e.report.market!.scenarioBoard] : [])));
-  const head = `<section class="block"><div class="sc-bigs">${big('예측 범위 적중', fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`, totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건 · 정직하면 약 80%` : `기록 ${pending.toLocaleString('ko-KR')}건 채점 대기`, '#forecast')}${big('위원 방향 적중', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', '#analysts')}${big('챔피언 vs 보유', `${beat}/${live.length}`, '챔피언이 더 나았던 종목', '#paper')}${big('따라 하기 (챔피언)', pct(champ, 2), `보유 ${pct(hold, 2)}`, '#paper')}</div>
-<nav class="sc-nav" aria-label="성적표 바로 가기"><a href="#forecast">예측</a><a href="#analysts">위원별 판단</a><a href="#scenarios">시나리오 확률</a><a href="#paper">따라 했다면</a><a href="#signals">스크리너 신호</a><a href="#misses">빗나간 예측</a></nav></section>`;
-  const body = `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>성적표</span><span>리포트 종목 ${live.length}개</span></div><h1>맞았는지, 기록으로 보여 드려요</h1>
-<p class="hero-line">예측과 판단은 만든 날 그대로 기록하고, 기간이 지나면 실제 가격으로 채점해요. 틀린 기록도 지우지 않아요. 모의투자(따라 했다면)도 여기 있어요.</p></div></section>
-${head}${gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">') + analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '기간별 예측 적중 · 위원별 판단과 결과', feature: 'scoreSummary' })}${scenarioCard}${strategyCard}${signalCard(signals)}${gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' })}
-<style>.sc-bigs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.sc-big{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;text-decoration:none;color:inherit}.sc-big:hover{border-color:var(--accent)}.sc-big span{font-size:12.5px;font-weight:700;color:var(--muted)}.sc-big b{font-size:26px}.sc-big small{font-size:12px;color:var(--muted)}
+  // G-244 (화면 개편 3단계): one number first (forecast hit rate against the 80% an honest 10~90% range should get),
+  // three lines under it, then one group at a time behind tabs instead of every section stacked.
+  const fcSay = fcHit === null ? '예측은 기간이 지나면 실제 가격으로 채점해요.' : fcHit < 70 ? '범위를 좁게 잡는 편이에요.' : fcHit > 90 ? '범위를 넓게 잡는 편이에요.' : '정직한 범위에 가까워요.';
+  const line = (label: string, sub: string, v: string, cls = '') => `<div class="sc-line"><span><b>${label}</b><small>${sub}</small></span><b class="sc-lv ${cls}">${v}</b></div>`;
+  // G-265 (Bklit ring chart): the three headline records as concentric rings (a ring stays empty until it is scored).
+  const hitText = (v: number | null) => (v === null ? '채점 전' : `${Math.round(v)}%`);
+  const scoreRing = live.length ? ringChart([
+    { label: '예측 범위 적중', value: fcHit === null ? null : fcHit / 100, color: 'var(--accent)', text: hitText(fcHit) },
+    { label: '위원 방향 적중', value: aiHit === null ? null : aiHit / 100, color: 'var(--fg2)', text: hitText(aiHit) },
+    { label: '챔피언이 보유보다 나은 종목', value: beat / live.length, color: 'var(--muted)', text: `${beat}/${live.length}` },
+  ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: hitText(fcHit), small: '예측 적중', cls: 'sc-ring' }) : '';
+  const hero = `<section class="block sc-hero" id="top"><div class="sc-k">예측 범위 적중률 · 리포트 종목 ${live.length}개</div><h1 class="sc-hv"><b>${fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`}</b><small>목표 80% 안팎</small></h1>
+${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 ${Math.round(fcHit)}%, 목표 80%"><i style="width:${Math.max(0, Math.min(100, fcHit)).toFixed(0)}%"></i><em style="left:80%"></em></div>`}
+${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
+<div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언을 따라 했다면', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
+<div class="sc-tabs" role="tablist" aria-label="성적 종류">${[['forecast', '예측'], ['analysts', '위원별'], ['scenarios', '시나리오'], ['paper', '따라 하기']].map(([k, l], n) => `<button type="button" role="tab" id="sct-${k}" data-sc-tab="${k}" aria-controls="scg-${k}" aria-selected="${n === 0}">${l}</button>`).join('')}</div>`;
+  const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}" role="tabpanel" aria-labelledby="sct-${k}">${html}</div>`;
+  const body = `${hero}
+${group('forecast', gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">'), { base: '', what: '기간별 예측 적중', feature: 'scoreSummary' }) + gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' }))}
+${group('analysts', (sun ? `<section class="block sc-sec"><div class="block-head"><h2>판단 결과 한눈에</h2><span class="muted">전 위원 합산</span></div><div class="card">${sun}</div></section>` : '') + gate(analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '위원별 판단과 결과', feature: 'scoreSummary' }))}
+${group('scenarios', scenarioCard || '<section class="block sc-sec" id="scenarios"><div class="card"><p class="empty">아직 채점한 시나리오가 없어요.</p></div></section>')}
+${group('paper', strategyCard + signalCard(signals))}
+<style>.sc-hero{margin-top:18px}.sc-k{font-size:13px;color:var(--muted)}.sc-hv{display:flex;align-items:baseline;gap:10px;margin:6px 0 0}.sc-hv b{font-size:56px;line-height:1;font-weight:800;color:var(--accent-strong);font-variant-numeric:tabular-nums}.sc-hv small{font-size:14px;font-weight:500;color:var(--muted)}
+.sc-meter{position:relative;height:8px;border-radius:4px;background:var(--soft);margin-top:18px}.sc-meter i{display:block;height:8px;border-radius:4px;background:var(--accent)}.sc-meter em{position:absolute;top:-5px;width:2px;height:18px;background:var(--fg)}
+.sc-say{margin:16px 0 0;font-size:15px;line-height:1.65;color:var(--fg2)}.sc-lines{margin-top:14px}.sc-line{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.sc-line>span{display:flex;flex-direction:column;gap:2px;min-width:0}.sc-line b{font-size:15px}.sc-line small{font-size:13px;color:var(--muted)}.sc-lv{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}.sc-lv.muted{color:var(--muted)}
+.sc-tabs{position:sticky;top:calc(var(--topbar-h,56px) + 4px);z-index:5;display:flex;gap:4px;margin:24px 0 4px;padding:4px;border-radius:12px;background:var(--surface-solid,var(--surface));border:1px solid var(--line)}.sc-tabs button{flex:1;min-height:40px;border:0;border-radius:9px;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--fg2);cursor:pointer}.sc-tabs button[aria-selected=true]{background:var(--soft);color:var(--fg)}.sc-group[hidden]{display:none}
+.sc-bigs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.sc-big{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;text-decoration:none;color:inherit}.sc-big:hover{border-color:var(--accent)}.sc-big span{font-size:12.5px;font-weight:700;color:var(--muted)}.sc-big b{font-size:26px}.sc-big small{font-size:12px;color:var(--muted)}
 .sc-nav{display:flex;gap:6px;overflow-x:auto;margin-top:12px;padding:6px 0}.sc-nav a{flex:none;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 13px;font-size:13.5px;font-weight:700;text-decoration:none;color:var(--fg)}.sc-sec{scroll-margin-top:120px}
 .sc-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}.sc-tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}.sc-tile b{display:block;font-size:22px}.sc-tile small{color:var(--muted);font-size:12px}
 .more-all{display:block;margin:10px auto 0;border:1px dashed var(--line-strong);background:var(--surface);border-radius:999px;padding:8px 16px;font:inherit;font-size:13.5px;font-weight:700;color:var(--accent-strong);cursor:pointer}.fr-table{table-layout:auto;width:100%}.fr-open{margin-left:4px;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}.fr-open[aria-expanded=true]{background:var(--navy);color:var(--on-accent)}.fr-ledger td{background:var(--soft);white-space:normal}.fr-ledger td>*{max-width:calc(100vw - 48px);overflow-x:auto;box-sizing:border-box}
 .mb-bar{margin:0 0 10px}.mb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.mb-card{min-width:0;scroll-margin-top:120px}.mb-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.mb-head h3{margin:0;font-size:16px}.mb-head p{margin:2px 0 0}.mb-stats{display:flex;gap:12px}.mb-stats span{display:flex;flex-direction:column;align-items:flex-end}.mb-stats small{font-size:11.5px;color:var(--muted);font-weight:700}.mb-stats b{font-size:15px}
-.mb-calls{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.mb-row{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}.mb-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.mb-top a{font-weight:800}.mb-st{margin-left:auto;font-size:13px;white-space:nowrap}.mb-line{font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}.mb-k{display:inline-block;min-width:34px;font-size:12px;font-weight:700;color:var(--muted)}.mb-v{font-size:13px;font-weight:800}.mb-v.ok{color:var(--up)}.mb-v.no{color:var(--down)}.mb-v.wait{color:var(--fg2)}.mb-why{align-self:flex-end;font-size:12.5px;font-weight:700;text-decoration:none;color:var(--accent-strong)}
+.mb-calls{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}.mb-row{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}.mb-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.mb-top a{font-weight:800}.mb-st{margin-left:auto;font-size:13px;white-space:nowrap}.mb-line{font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}.mb-k{display:inline-block;min-width:34px;font-size:12px;font-weight:700;color:var(--muted)}.mb-v{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;line-height:1.5;white-space:nowrap}.mb-v.ok{background:rgba(56,170,104,.14);color:#1E7346;box-shadow:0 0 14px rgba(56,170,104,.22)}.mb-v.no{background:rgba(216,96,146,.13);color:#A3315F;box-shadow:0 0 14px rgba(216,96,146,.2)}.mb-v.wait{background:var(--soft);color:var(--fg2)}
+:root[data-theme=dark] .mb-v.ok{background:rgba(88,200,134,.16);color:#8EDCAE}:root[data-theme=dark] .mb-v.no{background:rgba(236,120,168,.15);color:#F2A3C4}.mb-why{align-self:flex-end;font-size:12.5px;font-weight:700;text-decoration:none;color:var(--accent-strong)}
 .mb-row[hidden],.mb-only .mb-row.nw{display:none}.mb-only .mb-row.more-row:not(.nw){display:flex}.mb-only .more-all{display:none}
 @media (max-width:820px){.mb-grid{grid-template-columns:1fr}.sc-bigs{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-tiles{gap:6px}.sc-tile{padding:10px}.sc-tile b{font-size:17px}.sc-tile .pl-k{font-size:11.5px}.hide-m{display:none}}</style>
 <footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 모의투자는 가상 계좌예요. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '성적표 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS });
+  return shell('', '성적표 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS, mode: 'scorecard.html' });
 }
 
 /** G-77: 모의투자 is part of the scorecard ('따라 했다면'); the old address forwards there. */
@@ -157,6 +185,18 @@ export function renderPaper(): string {
 
 /** '전체 보기' opens the rest of a list; '장부' opens a stock's ledger under its row; '관심 종목만' (G-213) narrows the members' calls to the watchlist. */
 const SCORE_JS = `<script>
+// G-244: one group at a time; a link to #paper, #misses and the like opens the group that holds it.
+(function () {
+  var tabs = [].slice.call(document.querySelectorAll('[data-sc-tab]')); if (!tabs.length) return;
+  var show = function (k, scroll) {
+    tabs.forEach(function (t) { var on = t.getAttribute('data-sc-tab') === k; t.setAttribute('aria-selected', String(on)); var g = document.getElementById('scg-' + t.getAttribute('data-sc-tab')); if (g) g.hidden = !on; });
+    if (scroll) { var el = document.getElementById(scroll); if (el) el.scrollIntoView(); }
+  };
+  var fromHash = function () { var id = location.hash.slice(1), el = id && document.getElementById(id), g = el && el.closest && el.closest('.sc-group'); if (g) show(g.id.slice(4), id); };
+  tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.getAttribute('data-sc-tab')); }); });
+  window.addEventListener('hashchange', fromHash);
+  show('forecast'); fromHash();
+})();
 (function () {
   var w = []; try { w = JSON.parse(localStorage.getItem('gnm-watch') || '[]'); } catch (e) {}
   var bar = document.querySelector('.mb-bar'), btn = bar && bar.querySelector('.mb-watch'), sec = bar && bar.parentNode;

@@ -93,3 +93,16 @@ test('directory (G-188): each exchange to its short, empty or repeated page, a f
   const top = await fetchUsUniverse({ fetch: make(true), directory: cut, perExchange: { NASDAQ: 3, NYSE: 1, AMEX: 0 } });
   assert.deepEqual(top.map((x) => x.code), ['N1X0.O', 'N1X1.O', 'N1X2.O', 'Y1X0.O']);
 });
+
+test('G-270: share classes read as BRK.B and go back to Naver as BRKb; the ETF ranking lists every US ETF', async () => {
+  const { naverCode, fromNaverCode, worldQuoteUrl } = await import('./naverWorld.js');
+  assert.equal(fromNaverCode('BRKb'), 'BRK.B');
+  assert.equal(naverCode('BRK.B'), 'BRKb');
+  assert.equal(naverCode('AAPL.O'), 'AAPL.O');
+  assert.equal(fromNaverCode('AAPL.O'), 'AAPL.O');
+  assert.match(worldQuoteUrl('BRK.B'), /stock\/BRKb$/);
+  const r = parseUsRanking({ stocks: [{ reutersCode: 'BRKb', symbolCode: 'BRK B', stockName: '버크셔 해서웨이 Class B' }, { reutersCode: 'BAC_pm' }] }, 'NYSE');
+  assert.deepEqual(r.map((x) => [x.code, x.ticker]), [['BRK.B', 'BRK.B']]);
+  const e = parseUsRanking({ etfs: [{ reutersCode: 'SQQQ.O', symbolCode: 'SQQQ', stockName: 'ProShares UltraPro Short QQQ', stockExchangeType: { name: 'NASDAQ' } }] }, 'ETF');
+  assert.deepEqual(e.map((x) => [x.code, x.exchange, x.kind]), [['SQQQ.O', 'NASDAQ', 'etf']]);
+});

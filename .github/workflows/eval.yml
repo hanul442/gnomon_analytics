@@ -1,0 +1,67 @@
+name: Hidden-future evaluation
+# G-244/G-245: scores the strategy rules, price/flow/filing signals and blind AI PMs on history with the next
+# 20 sessions hidden, then commits data/eval/ to the branch it ran on. Internal research, not advertising.
+# v1: data/prices only. v2: ten years of every stock DART knows (delisted included), flows and filings,
+# fetched into .cache/eval (kept in the Actions cache). AI uses ANTHROPIC_API_KEY on the cheap analyst model
+# and stops before the budget (USD).
+on:
+  workflow_dispatch:
+    inputs:
+      version: { description: 'v1, v2, more (extended checks, no AI) base (committee base model and MAX check, no AI) or luck (Monte Carlo luck checks, no AI)', default: 'v2' }
+      budget: { description: 'AI budget, USD', default: '5' }
+      dates: { description: 'v2: evaluation dates for the AI', default: '100' }
+      perDate: { description: 'v2: stocks per date for the AI', default: '10' }
+permissions:
+  contents: write
+concurrency:
+  group: blind-eval
+  cancel-in-progress: false
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: v1 (data/prices)
+        if: (inputs.version || 'v2') == 'v1'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node dist/cli/blindEval.js --ai --samples 300 --budget "${{ inputs.budget || '3' }}" --probe 30 | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Restore the v2 data cache
+        if: (inputs.version || 'v2') != 'v1'
+        uses: actions/cache@v4
+        with:
+          path: .cache/eval
+          key: eval-v2-${{ github.run_id }}
+          restore-keys: eval-v2-
+      - name: v2 data
+        if: (inputs.version || 'v2') != 'v1'
+        env:
+          OPENDART_API_KEY: ${{ secrets.OPENDART_API_KEY }}
+        run: node dist/cli/evalFetch.js
+      - name: v2 evaluation
+        if: (inputs.version || 'v2') == 'v2'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node dist/cli/evalRun.js --ai --budget "${{ inputs.budget || '5' }}" --dates "${{ inputs.dates || '100' }}" --perDate "${{ inputs.perDate || '10' }}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Extended checks (G-247)
+        if: inputs.version == 'more'
+        run: node --max-old-space-size=6000 dist/cli/evalMore.js | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Committee base model and MAX check (G-264)
+        if: inputs.version == 'base'
+        run: node --max-old-space-size=6000 dist/cli/evalBase.js | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Monte Carlo luck checks (G-275)
+        if: inputs.version == 'luck'
+        run: node --max-old-space-size=6000 dist/cli/evalLuck.js | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Commit the results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data/eval
+          git commit -m "data: hidden-future evaluation $(date -u +%F)" || exit 0
+          for i in 1 2 3; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break; sleep 5; done

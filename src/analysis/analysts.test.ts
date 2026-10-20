@@ -62,17 +62,32 @@ test('consensus pools the calls in log-odds and weights by skill only after 30 s
     { analyst: 'volume_flow' as const, stance: 'BULLISH' as const, confidence: 70 },
     { analyst: 'mean_reversion' as const, stance: 'BEARISH' as const, confidence: 60 },
   ];
-  const plain = committeeConsensus(calls)!;
+  const plain = committeeConsensus(calls, [], {})!;
   // logit(.7)*2 + logit(.4) = 1.6946 - 0.4055 = 1.289; /3 → 0.4297 → 60.6%
-  assert.deepEqual(plain, { upPct: 61, weighted: false, n: 3 });
-  const few = committeeConsensus(calls, [{ analyst: 'mean_reversion', scored: 29, brier: 0 }])!;
+  assert.deepEqual(plain, { upPct: 61, weighted: false, prior: false, n: 3 });
+  const few = committeeConsensus(calls, [{ analyst: 'mean_reversion', scored: 29, brier: 0 }], {})!;
   assert.equal(few.weighted, false);
   // A perfect bear with 30 scored weighs 1 vs the bulls' 1 each; a bad one (brier .25) weighs 0.1.
-  const bad = committeeConsensus(calls, [{ analyst: 'mean_reversion', scored: 30, brier: 0.25 }])!;
+  const bad = committeeConsensus(calls, [{ analyst: 'mean_reversion', scored: 30, brier: 0.25 }], {})!;
   assert.equal(bad.weighted, true);
   assert.ok(bad.upPct > plain.upPct);
   assert.equal(committeeConsensus([]), null);
   assert.equal(committeeConsensus([{ analyst: 'fundamental', stance: 'NEUTRAL', confidence: 90 }])!.upPct, 50);
+});
+
+test('G-246: blind-test weights lean on mean reversion until live records take over', () => {
+  const calls = [
+    { analyst: 'trend_momentum' as const, stance: 'BULLISH' as const, confidence: 70 },
+    { analyst: 'mean_reversion' as const, stance: 'BEARISH' as const, confidence: 70 },
+  ];
+  // Equal weights: 50%. Blind prior: trend 0.5 vs mean reversion 1.5 → leans bearish.
+  assert.equal(committeeConsensus(calls, [], {})!.upPct, 50);
+  const k = committeeConsensus(calls)!;
+  assert.ok(k.upPct < 50);
+  assert.deepEqual([k.prior, k.weighted], [true, false]);
+  // Once both have 30 live calls with the same record, the prior no longer counts.
+  const live = committeeConsensus(calls, [{ analyst: 'trend_momentum', scored: 30, brier: 0.2 }, { analyst: 'mean_reversion', scored: 30, brier: 0.2 }])!;
+  assert.deepEqual([live.upPct, live.prior, live.weighted], [50, false, true]);
 });
 
 test('an invalidation price is checked every session and counted once scored (G-229)', () => {
