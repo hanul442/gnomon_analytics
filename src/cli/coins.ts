@@ -11,6 +11,10 @@ import type { UniverseRow } from '../sources/naverList.js';
 import { fetchUpbitDaysLong, fetchUpbitMarkets, fetchUpbitTickers } from '../sources/upbit.js';
 import { renderCalculationPage } from '../report/calculationPage.js';
 import { coinCalc, sig } from '../analysis/compactCalc.js';
+import { fetchUsdtKrw, withOuterHistory } from '../sources/coinHistory.js';
+import { fetchPaprikaTickers, matchPaprika, paprikaLookup } from '../sources/coinpaprika.js';
+import { coinFitness } from '../analysis/coinFitness.js';
+import { coinFitnessCard } from '../report/coinFitness.js';
 
 /** [market, name, english, warning, close, change24h%, level, score×100, r5, r20, r120, vol1×, value24h(억), fairGap%, position, hi52Gap%]. */
 export type CoinRow = [string, string, string, 0 | 1, number, number | null, string, number | null, number | null, number | null, number | null, number | null, number | null, number | null, 'A' | 'I' | 'B' | null, number | null];
@@ -41,20 +45,34 @@ export async function writeCoinPages(siteDir: string, options: { now: () => Date
       if (options.pauseMs !== 0) await sleep(attempt ? 10_000 : 3_000);
     }
   }
-  const tickers = new Map<string, { value24h: number; changePct: number }>();
+  const tickers = new Map<string, { value24h: number; changePct: number; price?: number }>();
   for (let i = 0; i < markets.length; i += 100) {
     try { for (const [k, v] of await fetchUpbitTickers(markets.slice(i, i + 100).map((m) => m.market), fetcher)) tickers.set(k, v); } catch { /* the list still works without 24h values */ }
   }
+  // G-272: coins newer on Upbit than the 400 days asked get their older days from Binance, OKX or Bithumb in won.
+  const usdtKrw = await fetchUsdtKrw(fetcher);
+  // G-273: market cap, supply, all-time high and first trade for the coin's 체력 tab (one request for 2,000 coins).
+  const paprika = await fetchPaprikaTickers(fetcher), today = new Date(now.getTime() + 9 * 3600_000).toISOString().slice(0, 10);
+  const base = (market: string) => market.replace(/^KRW-/, '');
+  const unmatched = paprika.length ? markets.flatMap((m) => { const p = tickers.get(m.market)?.price; return p && !matchPaprika(paprika, base(m.market), p, usdtKrw) ? [{ symbol: base(m.market), price: p }] : []; }) : [];
+  const extra = await paprikaLookup(unmatched, usdtKrw, fetcher);
+  const paprikaOf = (market: string, price: number) => matchPaprika(paprika, base(market), price, usdtKrw) ?? extra.get(base(market)) ?? null;
   const rows: CoinRow[] = [], errors: string[] = [];
+  let spliced = 0;
   // Under the quotation limit (about 10 a second): two at a time with a short pause.
   for (let i = 0; i < markets.length; i += 2) {
     await Promise.all(markets.slice(i, i + 2).map(async (m) => {
       try {
-        const bars = await fetchUpbitDaysLong(m.market, now, 400, fetcher);
-        if (bars.length < 2) return;
+        const upbit = await fetchUpbitDaysLong(m.market, now, 400, fetcher);
+        if (upbit.length < 2) return;
+        const { bars, history } = await withOuterHistory(upbit, 400, { usdtKrw, fetch: fetcher });
+        if (history?.added) spliced += 1;
         const calc = quickCalc(m.market, bars, now), t = tickers.get(m.market), last = bars.at(-1)!, prev = bars.at(-2)!;
+        const price = t?.price ?? last.close;
+        const fit = coinFitness({ date: today, upbitPrice: price, value24hKrw: t?.value24h ?? null, usdtKrw, paprika: paprikaOf(m.market, price),
+          history, upbitFirst: upbit[0]!.date, listed: upbit.length < 400, cautions: m.cautions ?? [], warning: m.warning });
         await writeFile(join(dir, `${m.market}.json`), JSON.stringify({ pageUrl: `c/${m.market}.html`, symbol: m.market, name: m.name, english: m.english, market: 'UPBIT', warning: m.warning,
-          bars: bars.map((b) => [b.date, b.open, b.high, b.low, b.close, b.volume]), calc: calc ? coinCalc(calc) : null }));
+          bars: bars.map((b) => [b.date, b.open, b.high, b.low, b.close, b.volume]), calc: calc ? coinCalc(calc) : null, ...(history ? { history } : {}), fitness: { total: fit.total, scores: fit.axes.map((a) => a.score), html: coinFitnessCard(fit) } }));
         await writeFile(join(dir, `${m.market}.html`),renderCalculationPage({symbol:m.market,name:m.name,kind:'coin',bars,now}));
         const mv = (d: number) => { const v = calc?.moves.find((x) => x.days === d)?.pct; return v == null ? null : Math.round(v * 10) / 10; };
         const r1 = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10) / 10);
@@ -69,6 +87,7 @@ export async function writeCoinPages(siteDir: string, options: { now: () => Date
     if (options.pauseMs !== 0) await sleep(options.pauseMs ?? 250);
   }
   rows.sort((a, b) => (b[12] ?? 0) - (a[12] ?? 0));
+  if (spliced) console.log(`coins: ${spliced} with days from before their Upbit listing`);
   const failed = markets.length - rows.length;
   await writeFile(join(siteDir, 'coins.json'), JSON.stringify({ date: now.toISOString(), rows }));
   return { status: { source: 'upbit:candles:days:all', ok: failed <= markets.length * 0.05, count: rows.length, ...(failed ? { error: `${failed} failed ${errors.join(' ')}` } : {}) }, rows };

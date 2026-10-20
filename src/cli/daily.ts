@@ -26,6 +26,7 @@ import { withCurrency } from '../report/format.js';
 import { weeklyFromDaily } from '../analysis/horizons.js';
 import { chooseDailyPicks, type DailyPick } from '../analysis/dailyPicks.js';
 import { fetchUpbitDays, fetchUpbitDaysLong, UPBIT_SOURCE } from '../sources/upbit.js';
+import { fetchUsdtKrw, withOuterHistory } from '../sources/coinHistory.js';
 import { escapeRegex } from './weekly.js';
 import { renderCoinsRedirect } from '../report/renderCoins.js';
 import { watchInfo } from '../report/conclusion.js';
@@ -492,7 +493,8 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
 
   // About four years of sessions: enough history for strategy backtests.
   const coin = ticker.market === 'UPBIT', us = isUsMarket(ticker.market);
-  const bars = coin ? await fetchUpbitDaysLong(SYMBOL, now, 1000, options.fetch) : us ? await fetchWorldBars(SYMBOL, 1000, fetchOptions) : await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
+  // G-272: a coin listed on Upbit later than four years ago gets its older days from another exchange, in won.
+  const bars = coin ? (await withOuterHistory(await fetchUpbitDaysLong(SYMBOL, now, 1000, options.fetch), 1000, { usdtKrw: await fetchUsdtKrw(options.fetch), ...(options.fetch ? { fetch: options.fetch } : {}) })).bars : us ? await fetchWorldBars(SYMBOL, 1000, fetchOptions) : await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
   // G-179: a US stock's filings, financials, insider trades, snapshot and English news come from EDGAR, Naver and Google,
   // and land in the same logs the Korean sources fill, so composeReport reads them the same way.
   let usResearch: Awaited<ReturnType<typeof gatherUsResearch>> | null = null;
