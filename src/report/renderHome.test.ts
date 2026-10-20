@@ -44,7 +44,7 @@ test('G-264: home is the date with the market in one line, my stocks, three issu
   assert.match(html, /<h1 class="hh-d">10월 16일<\/h1>/);
   assert.match(html, /코스피 <b>5,668\.05<\/b> <span class="up">/);
   for (const gone of ['class="mh-v"', 'class="mh-bar"', 'class="mh-go"', 'class="ml-row"']) assert.ok(!html.includes(gone), gone);
-  assert.ok(html.indexOf('id="mkt-hero"') < html.indexOf('id="watch-slot"') && html.indexOf('id="watch-slot"') < html.indexOf('id="watch"') && html.indexOf('id="watch"') < html.indexOf('id="news-issues"') && html.indexOf('id="news-issues"') < html.indexOf('id="banner"'), 'date, mine, issues, then the banner');
+  assert.ok(html.indexOf('id="mkt-hero"') < html.indexOf('id="banner"') && html.indexOf('id="banner"') < html.indexOf('id="watch-slot"') && html.indexOf('id="watch-slot"') < html.indexOf('id="watch"') && html.indexOf('id="watch"') < html.indexOf('id="news-issues"'), 'date, the notice line, mine, then issues');
   assert.ok(html.includes('<h2>내 종목 오늘</h2>') && html.includes('wl-rail'));
 });
 
