@@ -554,6 +554,12 @@ ${c.promptVersion >= 'gnm-committee-v3' ? '<p class="fine">주장마다 <span cl
 export function newsTabBody(report: DailyReport): string {
   return newsOnly(report) + '\n' + filingsBody(report);
 }
+/** G-270: a coin without a report gets its news on demand (/coinnews): the 뉴스 tab's clusters and the summary's three. */
+export function coinNewsFragments(report: DailyReport): { news: string; homeNews: string } {
+  const IMP = { HIGH: '중요', MEDIUM: '보통', LOW: '참고' } as const;
+  const homeNews = (report.news?.clusters ?? []).slice(0, 3).map((c) => `<div class="row-item"><span class="badge b-${c.importance}">${IMP[c.importance]}</span><div class="ri-main"><a href="${escape(c.url)}" rel="noopener" target="_blank">${escape(c.title)}</a><div class="muted small">${escape(c.publisher)} ${escape(new Date(Date.parse(c.firstAt) + 9 * 3600_000).toISOString().slice(5, 16).replace('T', ' '))}</div></div></div>`).join('');
+  return { news: report.news?.clusters.length ? newsSection(report) : '', homeNews };
+}
 /** G-256: the 뉴스 tab's part (the 공시 tab holds the rest). */
 export function newsOnly(report: DailyReport): string {
   return `<div data-slot="news">${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}</div>`;
@@ -705,8 +711,9 @@ ${m ? marketStatusWarning(m) : ''}
   const aiTab = report.commentary?.status === 'OK'
     ? `${upgrade}${fromNote}${committeeTab(report, { base, from: ctx.commentaryFrom ?? null, ...(ctx.previous !== undefined ? { previous: ctx.previous } : {}), previousHref: ctx.previousHref ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
     : `${report.commentary?whySection(report):''}${conclusionMini(report)}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 위원회 토론이 아직 없어요</b>${reportButton(report.symbol, report.name)}</div></div>${joinBox(report)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
+  // G-270: a coin has no filings at all, so its 뉴스 tab is news only (no empty 공시 and 공시 구성 cards).
   const noFilings = report.kind === 'coin';
-  const newsTab = `${insightLine(report, 'news', base)}${noFilings ? newsTabBody(report) : newsOnly(report)}`;
+  const newsTab = `${insightLine(report, 'news', base)}${newsOnly(report)}`;
   const p = report.price;
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
   // G-244 (화면 개편 4단계): 기업 체력 shows one part at a time: 기업 (종목 정보, 한눈에, 지표, 재무), 수급, 같은 테마.
