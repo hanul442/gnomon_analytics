@@ -1,5 +1,5 @@
 {
- "at": "2026-10-20T16:58:03.993Z",
+ "at": "2026-10-20T18:43:20.285Z",
  "selected": null,
  "universe": [
   {
@@ -36,7 +36,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 41
+   "count": 39
   },
   {
    "source": "google:topic-business-ko",
@@ -56,7 +56,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 53
+   "count": 54
   },
   {
    "source": "naver:world:day:all",
@@ -67,11 +67,6 @@
    "source": "opendart:risk-filings",
    "ok": true,
    "count": 566
-  },
-  {
-   "source": "naver:themes",
-   "ok": true,
-   "count": 264
   }
  ],
  "stocks": [
