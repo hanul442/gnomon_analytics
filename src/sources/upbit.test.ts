@@ -34,6 +34,14 @@ test('coin pages: every KRW market gets a chart file and a list row; small price
   // Upbit unreachable: the run goes on with a failed status.
   const down = await writeCoinPages(site, { now: () => new Date(), fetch: (async () => new Response('', { status: 503 })) as typeof fetch, pauseMs: 0 });
   assert.deepEqual([down.status.ok, down.rows.length], [false, 0]);
+  // One timeout on the market list no longer empties every coin page (2026-10-18): the list is tried again.
+  let listCalls = 0;
+  const flaky = (async (url: string) => {
+    if (String(url).includes('/market/all') && ++listCalls === 1) throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+    return fake(url);
+  }) as typeof fetch;
+  const again = await writeCoinPages(site, { now: () => new Date('2026-10-05T12:00:00Z'), fetch: flaky, pauseMs: 0 });
+  assert.deepEqual([again.status.ok, again.rows.length, listCalls], [true, 2, 2]);
 });
 
 test('upbit: long history pages back 200 days at a time with `to`', async () => {
