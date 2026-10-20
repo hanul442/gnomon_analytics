@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dailyCalendar, KIT_STOCK_CSS, KIT_STOCK_JS, multiLine, outcomeSunburst, pnlLine, ringChart } from './stock.js';
+import { dailyCalendar, hitLine, hitSteps, KIT_STOCK_CSS, KIT_STOCK_JS, multiLine, outcomeSunburst, pnlLine, ringChart } from './stock.js';
 
 const day = (i: number) => new Date(Date.UTC(2025, 9, 6) + i * 864e5).toISOString().slice(0, 10);
 
@@ -75,4 +75,12 @@ test('G-270 outcomeSunburst splits calls by result, then member, and skips empty
   assert.equal((svg.match(/ ks-o"/g) ?? []).length, 3);
   assert.doesNotMatch(svg, /대기/);
   assert.equal(outcomeSunburst([{ label: '맞음', key: 'ok', children: [] }], { label: 'x' }), '');
+});
+
+test('G-271 hitSteps counts closed trades +1 up / −1 otherwise; hitLine is neutral', () => {
+  assert.deepEqual(hitSteps([{ exit: 'a', ret: 0.1 }, { exit: 'b', ret: -0.02 }, { exit: 'c', ret: 0 }, { exit: null, ret: 0.5 }]), [0, 1, 0, -1]);
+  const svg = hitLine([0, 1, 2, 1], 'x');
+  assert.match(svg, /currentColor/);
+  assert.doesNotMatch(svg, /#f04452|#3182f6/);
+  assert.equal(hitLine([0], 'x'), '');
 });

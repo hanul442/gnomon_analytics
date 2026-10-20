@@ -1,8 +1,8 @@
 // G-265: Bklit UI chart kit, stock charts, redrawn as plain SVG in GNOMON's style (Bklit UI is MIT; only the look is
 // borrowed, no React). Server-side pictures are functions that return markup; the ones drawn from data the page
 // fetches (peer scatter, screener funnel, live coin line) live in KIT_STOCK_JS as window.GNM_kit.*.
-//   profit-loss line  pnlLine()        전략 레이스 · 모의투자 장부 rows (renderArena.ts)
-//   line chart        multiLine()      전략별 수익 곡선 (renderArena.ts arenaPanel)
+//   profit-loss line  pnlLine()        모의투자 장부 rows; 전략 레이스는 hitLine() (G-271) (renderArena.ts)
+//   line chart        multiLine()      전략별 맞음−빗나감 누적 (G-271) (renderArena.ts arenaPanel)
 //   ring chart        ringChart()      위원회 합의 (renderParliament.ts) · 성적표 (renderScorecard.ts)
 //   heatmap calendar  dailyCalendar()  요약 탭, 지난 1년 하루 등락 (appParts.ts latestLists)
 //   scatter           GNM_kit.scatter  같은 테마 PER·ROE (peers.ts)
@@ -413,8 +413,31 @@ export function outcomeSunburst(groups: readonly SunGroup[], opts: { label: stri
   return `<figure class="kit-sun"><div class="ks-fig"><svg viewBox="0 0 ${S} ${S}" role="img" aria-label="${esc(opts.label)}">${inner}${outer}</svg><div class="ks-c"><b>${total}</b><small>판단</small></div></div><ul class="ks-leg">${legend.join('')}</ul><figcaption class="fine">안쪽은 결과, 바깥쪽은 그 결과를 낸 위원이에요. 칸 크기는 판단 수예요.</figcaption></figure>`;
 }
 
-export const KIT_SUN_CSS = `.kit-sun{margin:14px 0 4px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px}.ks-fig{position:relative;width:180px;height:180px;flex:none}.ks-fig svg{width:100%;height:100%;display:block}.ks-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}.ks-c b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--fg)}.ks-c small{font-size:12px;color:var(--muted)}
+export const KIT_SUN_CSS = `.kit-hit{color:var(--fg2)}.kit-sun{margin:14px 0 4px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px}.ks-fig{position:relative;width:180px;height:180px;flex:none}.ks-fig svg{width:100%;height:100%;display:block}.ks-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}.ks-c b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--fg)}.ks-c small{font-size:12px;color:var(--muted)}
 .ks-seg{stroke:var(--surface-solid,var(--surface));stroke-width:1}.ks-seg.ks-o{opacity:.78}path.ks-ok,i.ks-ok{fill:#7FCB9C;background:#7FCB9C}path.ks-no,i.ks-no{fill:#EE9DBE;background:#EE9DBE}path.ks-wait,i.ks-wait{fill:#C4C8CE;background:#C4C8CE}
 :root[data-theme=dark] path.ks-ok{fill:#4E9E6E}:root[data-theme=dark] path.ks-no{fill:#B9668A}:root[data-theme=dark] path.ks-wait{fill:#5A5F66}
 .ks-leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:150px;flex:1}.ks-leg li{display:flex;align-items:center;gap:8px;font-size:14px}.ks-leg i{width:10px;height:10px;border-radius:3px;flex:none}.ks-leg b{margin-left:auto;font-variant-numeric:tabular-nums}.ks-leg small{color:var(--muted);width:36px;text-align:right}.kit-sun figcaption{flex-basis:100%;margin:0}
 @media (prefers-reduced-motion:no-preference){.kit-sun .ks-seg{animation:ks-in .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 30ms)}@keyframes ks-in{from{opacity:0}}}`;
+
+// ---------------------------------------------------------------- hit-count line (G-271)
+
+/**
+ * G-271 (한서님 10/20 카드 "바꾸기"): a strategy's closed trades as a running score, +1 when the trade ended up and
+ * −1 when it did not, oldest first, starting at 0. Open trades are not counted. Replaces return curves, which read
+ * like a returns ad.
+ */
+export function hitSteps(trades: readonly { exit: string | null; ret: number }[]): number[] {
+  const out = [0];
+  for (const t of trades) if (t.exit !== null && Number.isFinite(t.ret)) out.push(out.at(-1)! + (t.ret > 0 ? 1 : -1));
+  return out;
+}
+
+/** A small neutral line of a running score with its zero line; straight steps (counts are whole numbers). */
+export function hitLine(values: readonly number[], label: string, opts: { w?: number; h?: number } = {}): string {
+  if (values.length < 2) return '';
+  const w = opts.w ?? 140, h = opts.h ?? 40, lo = Math.min(0, ...values), hi = Math.max(0, ...values), span = hi - lo || 1;
+  const y = (v: number) => h - 3 - ((v - lo) / span) * (h - 6);
+  const pts = values.map((v, i) => `${i ? 'L' : 'M'}${r1((i / (values.length - 1)) * w)},${r1(y(v))}`).join('');
+  const end = values.at(-1)!;
+  return `<svg viewBox="0 0 ${w} ${h}" class="spark kit-hit" role="img" aria-label="${esc(`${label}: 맞음−빗나감 ${end > 0 ? '+' : ''}${end}`)}"><line class="kp-base" x1="0" x2="${w}" y1="${r1(y(0))}" y2="${r1(y(0))}"/><path class="spark-l" d="${pts}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${w}" cy="${r1(y(end))}" r="2.4" fill="currentColor"/></svg>`;
+}
