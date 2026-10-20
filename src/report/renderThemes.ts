@@ -5,6 +5,7 @@ import { shell } from './renderHtml.js';
 import type { Theme } from '../sources/naverTheme.js';
 import { EVENT_RULES, type EventFiling } from '../analysis/edge.js';
 import { SECTORS, SECTOR_THEME_SKIP, SECTOR_THEME_WORDS } from './sectors.js';
+import { kmHeatmap, kmSectorMap, kmSunburst } from './kit/market.js';
 
 export interface UniverseLite { symbol: string; name: string; close: number | null; changePct: number | null; tradingValue: number | null; marketCap: number | null }
 
@@ -73,7 +74,8 @@ var href=function(s){return 'stock.html?c='+encodeURIComponent(s);};`;
 
 export function renderThemesPage(): string {
   const body = `${PAGE_CSS}<div class="tm"><section class="card tm-hero"><div class="pl-k">테마</div><h1>테마별 종목</h1><p>같은 재료로 함께 움직이는 종목 묶음이에요. 오늘 많이 오른 테마부터 보여 주고, 테마를 누르면 소속 종목과 편입 이유가 나와요.</p></section>
-<div id="tm-list-wrap"><div class="tm-tools"><input id="tm-q" type="search" placeholder="테마나 종목 이름 (예: 2차전지, 삼성)" aria-label="테마 검색"><div class="seg tm-seg" role="group" aria-label="정렬"><button type="button" data-sort="avg" aria-pressed="true">상승률</button><button type="button" data-sort="value" aria-pressed="false">거래대금</button><button type="button" data-sort="low" aria-pressed="false">하락률</button><button type="button" data-sort="count" aria-pressed="false">종목 수</button><button type="button" data-sort="name" aria-pressed="false">이름순</button></div><button type="button" id="tm-list-direction" class="chip-toggle" aria-label="테마 목록 정렬 방향">내림차순 ↓</button></div><div class="tm-list" id="tm-list"><p class="muted">불러오는 중…</p></div></div>
+<div id="tm-list-wrap"><section class="card km-tmap" id="tm-map" hidden><div class="km-tmap-h"><h2>오늘 업종 지도</h2><div class="seg" role="group" aria-label="지도 종류"><button type="button" data-tmv="heat" aria-pressed="true">히트맵</button><button type="button" data-tmv="sun" aria-pressed="false">시장 지도</button></div></div><div data-tmp="heat"></div><div data-tmp="sun" hidden></div><p class="fine" data-tmp="heat">업종마다 거래대금이 큰 테마 4개예요. 색이 진할수록 오늘 많이 움직였고, 칸을 누르면 테마로 가요.</p></section>
+<div class="tm-tools"><input id="tm-q" type="search" placeholder="테마나 종목 이름 (예: 2차전지, 삼성)" aria-label="테마 검색"><div class="seg tm-seg" role="group" aria-label="정렬"><button type="button" data-sort="avg" aria-pressed="true">상승률</button><button type="button" data-sort="value" aria-pressed="false">거래대금</button><button type="button" data-sort="low" aria-pressed="false">하락률</button><button type="button" data-sort="count" aria-pressed="false">종목 수</button><button type="button" data-sort="name" aria-pressed="false">이름순</button></div><button type="button" id="tm-list-direction" class="chip-toggle" aria-label="테마 목록 정렬 방향">내림차순 ↓</button></div><div class="tm-list" id="tm-list"><p class="muted">불러오는 중…</p></div></div>
 <div class="tm-detail" id="tm-detail" hidden></div>
 <p class="fine">테마 분류와 편입 이유는 네이버 금융 기준이고 매주 다시 가져와요. 등락은 장 마감 기준이에요. 투자 권유가 아니에요.</p></div>
 <script>
@@ -95,7 +97,11 @@ export function renderThemesPage(): string {
   d.hidden=false;w.hidden=true;window.scrollTo(0,0);
  };
  var route=function(){var no=location.hash.slice(1);if(no)detail(no);else{document.getElementById('tm-detail').hidden=true;document.getElementById('tm-list-wrap').hidden=false;}};
- fetch('themes.json').then(function(r){return r.json();}).then(function(j){data=j;list();route();}).catch(function(){document.getElementById('tm-list').innerHTML='<p class="muted">테마 자료를 아직 모으지 못했어요. 다음 업데이트 뒤 다시 확인해 주세요.</p>';});
+ // G-265: 업종 heatmap and sunburst (Bklit heatmap-chart / sunburst-chart), drawn from the same themes.json.
+ var sectorMap=(${kmSectorMap.toString()}),heatmap=(${kmHeatmap.toString()}),sunburst=(${kmSunburst.toString()});
+ var tmap=function(){try{var rows=sectorMap(data.themes,${JSON.stringify(Object.fromEntries(SECTORS.map((s) => [s, SECTOR_THEME_WORDS[s]])))},${JSON.stringify(SECTOR_THEME_SKIP)});if(!rows.length)return;var box=document.getElementById('tm-map');box.querySelector('div[data-tmp=heat]').innerHTML=heatmap(rows);box.querySelector('div[data-tmp=sun]').innerHTML=sunburst(rows);box.hidden=false;
+  box.querySelectorAll('[data-tmv]').forEach(function(b){b.onclick=function(){var v=b.getAttribute('data-tmv');box.querySelectorAll('[data-tmv]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});box.querySelectorAll('[data-tmp]').forEach(function(p){p.hidden=p.getAttribute('data-tmp')!==v;});};});}catch(e){}};
+ fetch('themes.json').then(function(r){return r.json();}).then(function(j){data=j;list();tmap();route();}).catch(function(){document.getElementById('tm-list').innerHTML='<p class="muted">테마 자료를 아직 모으지 못했어요. 다음 업데이트 뒤 다시 확인해 주세요.</p>';});
  document.getElementById('tm-q').addEventListener('input',function(){if(data)list();});
  document.querySelectorAll('[data-sort]').forEach(function(b){b.onclick=function(){sort=b.getAttribute('data-sort');listAsc=sort==='low'||sort==='name';document.getElementById('tm-list-direction').textContent=listAsc?'오름차순 ↑':'내림차순 ↓';document.querySelectorAll('[data-sort]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});if(data)list();};});
  document.getElementById('tm-list-direction').onclick=function(){listAsc=!listAsc;this.textContent=listAsc?'오름차순 ↑':'내림차순 ↓';if(data)list();};

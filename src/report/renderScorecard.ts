@@ -10,6 +10,7 @@ import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystTrack } from '../analysis/analysts.js';
 import { mergeBoards, UNIFORM_BRIER, type ScenarioBoard } from '../analysis/scenarioScore.js';
 import { paperPanel } from './renderArena.js';
+import { ringChart } from './kit/stock.js';
 import { shell, type HomeEntry } from './renderHtml.js';
 import { esc } from './html.js';
 import { won, tone, pct as fmtPct } from './format.js';
@@ -135,9 +136,16 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
   // three lines under it, then one group at a time behind tabs instead of every section stacked.
   const fcSay = fcHit === null ? '예측은 기간이 지나면 실제 가격으로 채점해요.' : fcHit < 70 ? '범위를 좁게 잡는 편이에요.' : fcHit > 90 ? '범위를 넓게 잡는 편이에요.' : '정직한 범위에 가까워요.';
   const line = (label: string, sub: string, v: string, cls = '') => `<div class="sc-line"><span><b>${label}</b><small>${sub}</small></span><b class="sc-lv ${cls}">${v}</b></div>`;
+  // G-265 (Bklit ring chart): the three headline records as concentric rings (a ring stays empty until it is scored).
+  const hitText = (v: number | null) => (v === null ? '채점 전' : `${Math.round(v)}%`);
+  const scoreRing = live.length ? ringChart([
+    { label: '예측 범위 적중', value: fcHit === null ? null : fcHit / 100, color: 'var(--accent)', text: hitText(fcHit) },
+    { label: '위원 방향 적중', value: aiHit === null ? null : aiHit / 100, color: '#9b6cf0', text: hitText(aiHit) },
+    { label: '챔피언이 보유보다 나은 종목', value: beat / live.length, color: '#e8930c', text: `${beat}/${live.length}` },
+  ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: hitText(fcHit), small: '예측 적중', cls: 'sc-ring' }) : '';
   const hero = `<section class="block sc-hero" id="top"><div class="sc-k">예측 범위 적중률 · 리포트 종목 ${live.length}개</div><h1 class="sc-hv"><b>${fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`}</b><small>목표 80% 안팎</small></h1>
 ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 ${Math.round(fcHit)}%, 목표 80%"><i style="width:${Math.max(0, Math.min(100, fcHit)).toFixed(0)}%"></i><em style="left:80%"></em></div>`}
-<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
+${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
 <div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언을 따라 했다면', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
 <div class="sc-tabs" role="tablist" aria-label="성적 종류">${[['forecast', '예측'], ['analysts', '위원별'], ['scenarios', '시나리오'], ['paper', '따라 하기']].map(([k, l], n) => `<button type="button" role="tab" id="sct-${k}" data-sc-tab="${k}" aria-controls="scg-${k}" aria-selected="${n === 0}">${l}</button>`).join('')}</div>`;
   const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}" role="tabpanel" aria-labelledby="sct-${k}">${html}</div>`;

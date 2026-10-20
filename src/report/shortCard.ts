@@ -1,6 +1,7 @@
 // G-195: 공매도·신용 card for Korean stocks, filled in the browser from the API's /short (KRX short selling, Naver
 // volume and market credit, cached an hour). It borrows the coin 선물 지표 card's tiles (DERIV_CSS). A code KRX
 // does not know, or no API, hides the card.
+import { SMOOTH_JS } from './chartLook.js';
 
 import { esc } from './html.js';
 
@@ -8,16 +9,17 @@ export function shortSlot(code: string): string {
   return `<section class="card dv-card sh-card" data-short="${esc(code)}" hidden><div class="head"><h2>공매도·신용</h2><span class="sub">한국거래소·네이버 증권 · 하루 한 번 갱신</span></div><div class="dv-body"><p class="muted">불러오는 중이에요…</p></div></section>`;
 }
 
-export const SHORT_CSS = `.sh-card .dv-t svg polyline{stroke:var(--accent)}.sh-card .dv-t b.hot{color:var(--warn-strong)}`;
+export const SHORT_CSS = `.sh-card .dv-t svg path{stroke:var(--accent)}.sh-card .dv-t b.hot{color:var(--warn-strong)}`;
 
 export const SHORT_JS = `
 (function () {
+  ${SMOOTH_JS}
   var boxes = document.querySelectorAll('[data-short]'); if (!boxes.length) return;
   var won = function (v) { var e = v / 1e8; return Math.abs(e) >= 1e4 ? (e / 1e4).toFixed(2) + '조' : Math.abs(e) >= 1 ? Math.round(e).toLocaleString('ko-KR') + '억' : Math.round(v / 1e4).toLocaleString('ko-KR') + '만'; };
   var eok = function (v) { return v >= 1e4 ? (v / 1e4).toFixed(1) + '조' : Math.round(v).toLocaleString('ko-KR') + '억'; };
   var md = function (d) { return Number(d.slice(5, 7)) + '/' + Number(d.slice(8, 10)); };
   var pct = function (v, d) { return (v > 0 ? '+' : '') + v.toFixed(d == null ? 1 : d) + '%'; };
-  var spark = function (vals) { if (vals.length < 2) return ''; var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), sp = hi - lo || 1; var p = vals.map(function (v, i) { return (i / (vals.length - 1) * 200).toFixed(1) + ',' + (32 - (v - lo) / sp * 28).toFixed(1); }).join(' '); return '<svg viewBox="0 0 200 34" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + p + '" fill="none" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'; };
+  var spark = function (vals) { if (vals.length < 2) return ''; var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals), sp = hi - lo || 1; var p = vals.map(function (v, i) { return (i / (vals.length - 1) * 200).toFixed(1) + ',' + (32 - (v - lo) / sp * 28).toFixed(1); }).join(' '); return '<svg viewBox="0 0 200 34" preserveAspectRatio="none" aria-hidden="true"><path d="' + smoothD(p) + '" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'; };
   var avg = function (xs) { return xs.length ? xs.reduce(function (a, b) { return a + b; }, 0) / xs.length : null; };
   var paint = function (box, s) {
     var t = [], vol = {}; s.volume.forEach(function (x) { vol[x[0]] = x[1]; });

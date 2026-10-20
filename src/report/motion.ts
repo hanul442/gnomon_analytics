@@ -6,8 +6,8 @@
 // G-170: a picture plays once it is well on screen, a little slower, and plays again after it was scrolled away or its tab hidden.
 
 export const MOTION_CSS = `
-html.mo .mo-line,html.mo .hero-chart:not(.mo-in) polyline,html.mo .hero-chart:not(.mo-in) polygon,html.mo .flow-chart:not(.mo-in) polyline{clip-path:inset(0 100% 0 0)}
-html.mo .mo-in .mo-line,html.mo .hero-chart.mo-in polyline,html.mo .hero-chart.mo-in polygon,html.mo .flow-chart.mo-in polyline{clip-path:inset(0 0 0 0);transition:clip-path 1.4s var(--ease-out)}
+html.mo .mo-line,html.mo .hero-chart:not(.mo-in) path,html.mo .flow-chart:not(.mo-in) polyline{clip-path:inset(0 100% 0 0)}
+html.mo .mo-in .mo-line,html.mo .hero-chart.mo-in path,html.mo .flow-chart.mo-in polyline{clip-path:inset(0 0 0 0);transition:clip-path 1.4s var(--ease-out)}
 html.mo .flow-chart:not(.mo-in) .flow-label{opacity:0}html.mo .flow-chart.mo-in .flow-label{opacity:1;transition:opacity .4s 1.1s}
 html.mo .scenario-band{opacity:0;transform:scaleY(.2);transform-box:fill-box;transform-origin:center}
 html.mo .mo-in .scenario-band{opacity:1;transform:none;transition:opacity .6s .9s,transform .8s .9s var(--ease-out)}
@@ -43,14 +43,19 @@ html.mo .fc-card:not(.mo-in) .fc-mid{opacity:0;transform:scale(.4)}.fc-mid{trans
 .mo-tip.below{transform:translate(-50%,12px)}.mo-tip[hidden]{display:none}.mo-tip b{font-weight:800}.mo-tip .up{color:#FF8A8F}.mo-tip .down{color:#8db4ff}
 .mo-tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:0}
 .mo-hdot{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--surface-solid);border:2.5px solid currentColor;pointer-events:none;box-sizing:border-box}
-.mo-hline{position:absolute;width:0;border-left:1px dashed var(--muted);pointer-events:none}.mo-hdot[hidden],.mo-hline[hidden]{display:none}
+.mo-hline{position:absolute;width:1px;margin-left:-.5px;background:linear-gradient(to bottom,transparent,var(--muted) 25%,var(--muted) 75%,transparent);opacity:.7;pointer-events:none}.mo-hdot[hidden],.mo-hline[hidden]{display:none}
+/* G-254 (Bklit UI look): sparklines trace in like the big charts; loading words shimmer. */
+html.mo .spark:not(.mo-in) .spark-l{clip-path:inset(0 100% 0 0)}html.mo .spark.mo-in .spark-l{clip-path:inset(0 0 0 0);transition:clip-path 1.1s var(--ease-out)}
+html.mo .spark:not(.mo-in) circle{opacity:0}html.mo .spark.mo-in circle{opacity:1;transition:opacity .3s 1s}
+html.mo .gnm-loading>span,html.mo .orb-line:not(td){background:linear-gradient(100deg,var(--muted) 35%,var(--fg) 50%,var(--muted) 65%) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gnm-shimmer 2s linear infinite}
+@keyframes gnm-shimmer{from{background-position:100% 0}to{background-position:-150% 0}}
 `;
 
 export const MOTION_JS = `
 (function () {
   var root = document.documentElement, reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!reduce) root.classList.add('mo');
-  var SEL = '.scenario-figure, .hero-chart, .flow-chart, .mo-bars, .ig-radar, .ig-bs, .mini-gauge, .ig-hc, .si-card, .fc-card, .lv-card, .gbars, .gauge';
+  var SEL = '.scenario-figure, .hero-chart, .spark, .flow-chart, .mo-bars, .ig-radar, .ig-bs, .mini-gauge, .ig-hc, .si-card, .fc-card, .lv-card, .gbars, .gauge';
   var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var money = function (v) { if (root.getAttribute('data-ccy') === 'USD') return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
   var day = function (d) { d = String(d || ''); return /^\\d{4}-\\d{2}-\\d{2}/.test(d) ? d.slice(2, 4) + '.' + d.slice(5, 7) + '.' + d.slice(8, 10) : d; };
