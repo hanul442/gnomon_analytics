@@ -1,4 +1,5 @@
 [
+  {"title": "알파 4.0.0 업데이트", "text": "덜어내고, 하나씩. 새 화면 · 탭 4개 · 위원회 확률", "image": {"wide": "assets/banners/update-4.0.0-wide.jpg", "narrow": "assets/banners/update-4.0.0-narrow.jpg", "video": "assets/banners/update-4.0.0.mp4", "poster": "assets/banners/update-4.0.0-poster.jpg"}, "until": "2026-11-19"},
   {"title": "정보의 바다는, 끝.", "text": "새 화면 · GNOMON 클로즈드 베타 테스터 모집 11.20", "image": {"wide": "assets/banners/teaser-screen-wide.jpg", "narrow": "assets/banners/teaser-screen-narrow.jpg", "video": "assets/banners/teaser-beta.mp4", "poster": "assets/banners/teaser-beta-poster.jpg"}, "until": "2026-11-30"},
   {"title": "누가 맞았는지, 전부 드러납니다.", "text": "채점받는 AI 위원회 · GNOMON 클로즈드 베타 테스터 모집 11.20", "image": {"wide": "assets/banners/teaser-committee-wide.jpg", "narrow": "assets/banners/teaser-committee-narrow.jpg", "video": "assets/banners/teaser-beta.mp4", "poster": "assets/banners/teaser-beta-poster.jpg"}, "until": "2026-11-30"},
   {"title": "클로즈드 알파에 오신 걸 환영해요", "text": "10/6~10/12 사이 순차 오픈 · 이제 이메일과 비밀번호로 로그인해요", "href": "guide.html", "cta": "시작하기", "tone": "rose", "until": "2026-10-31"}
