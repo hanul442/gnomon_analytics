@@ -7,6 +7,7 @@
 //   - period high/low marks for whatever range is on screen;
 //   - magnet crosshair, save as an image, and landscape / browser full screen.
 // Choices are remembered on this device.
+import { SMOOTH_JS } from './chartLook.js';
 
 export const CHART_PRO_CSS = `
 .hc-range{margin:6px 0 0;max-width:520px;width:100%;display:flex}.hc-range button{flex:1}
@@ -155,6 +156,7 @@ export const CHART_PRO_PARTS = {
 /** G-141: period chips under the 요약 mini chart, Toss-style; the chart itself still opens the full-screen one. */
 export const HERO_RANGE_JS = `
 (function () {
+  ${SMOOTH_JS}
   var won = function (v) { if (document.documentElement.getAttribute('data-ccy') === 'USD') return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
   var P = [['1주', 5], ['1달', 21], ['3달', 63], ['6달', 126], ['1년', 250]], n0 = 63;
   try { n0 = Number(localStorage.getItem('gnm-hero-range')) || 63; } catch (e) {}
@@ -165,7 +167,7 @@ export const HERO_RANGE_JS = `
     var pts = c.map(function (v, i) { return (i / (c.length - 1) * w).toFixed(1) + ',' + (h - 4 - (v - lo) / sp * (h - 10)).toFixed(1); }).join(' ');
     var g = (c[c.length - 1] / c[0] - 1) * 100, col = g >= 0 ? '#f04452' : '#3182f6', id = 'hcg' + Math.random().toString(36).slice(2, 7);
     var label = (P.filter(function (p) { return p[1] === n; })[0] || ['', 0])[0];
-    a.querySelector('svg').innerHTML = '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".22"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs><polygon points="0,' + h + ' ' + pts + ' ' + w + ',' + h + '" fill="url(#' + id + ')"/><polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>';
+    a.querySelector('svg').innerHTML = '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".22"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs><path class="hc-a" d="' + smoothD(pts) + 'L' + w + ',' + h + 'L0,' + h + 'Z" fill="url(#' + id + ')"/><path class="hc-l" d="' + smoothD(pts) + '" fill="none" stroke="' + col + '" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/>';
     var meta = a.querySelector('.hc-meta > span'); if (meta) meta.innerHTML = label + ' <b class="' + (g > 0 ? 'up' : g < 0 ? 'down' : '') + '">' + (g > 0 ? '▲ +' : g < 0 ? '▼ ' : '') + g.toFixed(1) + '%</b> · 최고 ' + won(hi) + ' · 최저 ' + won(lo);
     a.setAttribute('aria-label', '최근 ' + label + ' 차트, 눌러서 전체 화면 차트 열기');
   };

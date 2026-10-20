@@ -163,5 +163,5 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 </script>`;
-  return shell('', '알림함 | GNOMON', body, { ads: false });
+  return shell('', '알림함 | GNOMON', body, { ads: false, mode: 'inbox.html' });
 }

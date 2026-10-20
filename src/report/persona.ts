@@ -30,10 +30,10 @@ export const HOME_ORDER: Record<Exclude<Persona, 'all'>, string[]> = {
 };
 /** Report tabs each view keeps (the rest come back with "전체 보기"). */
 export const TAB_KEEP: Record<Exclude<Persona, 'all'>, string[]> = {
-  beginner: ['home', 'chart', 'technical', 'fundamentals', 'ai', 'news'],
-  trader: ['home', 'chart', 'technical', 'fundamentals', 'ai', 'news'],
-  swing: ['home', 'chart', 'technical', 'fundamentals', 'ai', 'news'],
-  long: ['home', 'chart', 'technical', 'fundamentals', 'ai', 'news'],
+  beginner: ['home', 'chart', 'technical', 'fundamentals', 'ai', 'news', 'filings', 'mine'],
+  trader: ['home', 'chart', 'technical', 'fundamentals', 'ai', 'news', 'filings', 'mine'],
+  swing: ['home', 'chart', 'technical', 'fundamentals', 'ai', 'news', 'filings', 'mine'],
+  long: ['home', 'chart', 'technical', 'fundamentals', 'ai', 'news', 'filings', 'mine'],
 };
 
 export const PERSONA_CSS = `${(Object.keys(TAB_KEEP) as Exclude<Persona, 'all'>[]).map((p) => `html[data-persona=${p}]:not(.show-all) .chips [role=tab]:not(${TAB_KEEP[p].map((t) => `#t-${t}`).join(',')})`).join(',')}{display:none}
@@ -49,8 +49,8 @@ export const PERSONA_BAR = `<div class="persona-bar" role="group" aria-label="�
 
 /** The switch's behaviour; pages listen for the gnm-persona event to re-arrange. */
 export const PERSONA_JS = `
-  // G-181: the theme switch (dark by default, light, or the device's); charts and pictures listen for gnm-theme.
-  var markTheme = function () { var t = 'dark'; try { t = localStorage.getItem('gnm-theme') || 'dark'; } catch (x) {} document.querySelectorAll('.theme-bar [data-theme-pick]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-theme-pick') === t ? 'true' : 'false'); }); };
+  // G-181: the theme switch (G-245: follows the device by default, or dark or light); charts and pictures listen for gnm-theme.
+  var markTheme = function () { var t = 'auto'; try { t = localStorage.getItem('gnm-theme') || 'auto'; } catch (x) {} document.querySelectorAll('.theme-bar [data-theme-pick]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-theme-pick') === t ? 'true' : 'false'); }); };
   markTheme();
   document.addEventListener('click', function (e) {
     var tb = e.target.closest && e.target.closest('.theme-bar [data-theme-pick]');

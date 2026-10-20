@@ -3,6 +3,8 @@ import { renderWatchPage } from '../report/renderWatch.js';
 import { writeMarketReports, publishMarketReports } from './marketReports.js';
 import { publicPanels } from '../report/publicPanels.js';
 import { diffBasis } from '../report/renderReportExtras.js';
+import { renderNewsIssuesPage } from '../report/newsIssues.js';
+import { rankNewsIssues, type TaggedArticle } from '../analysis/newsIssues.js';
 // One daily run: for every stock in tickers.json collect, append, write
 // today's report once; then render the site.
 //
@@ -67,6 +69,7 @@ import { isRelevant } from '../analysis/news.js';
 import { collectMarketData, financeKey, flowKey, intradayKey, marketPaths, researchKey, snapshotKey } from './marketData.js';
 import { buildMarketSection } from '../report/marketSection.js';
 import { scenarioCallOf } from '../analysis/scenarioScore.js';
+import { readCommitteeCalibration, refreshCommitteeCalibration } from './calibrate.js';
 import { forecastKey, type PriceForecast } from '../analysis/valuation.js';
 import { analystCallKey, type AnalystCall } from '../analysis/analysts.js';
 import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
@@ -242,6 +245,8 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   // Core stocks report on Friday's settled run, or the first settled run once their last report is 8+ days old.
   // Picks get AI and a dated report only on the day they are picked; on other days every page is a live dashboard.
   const corpCodes = await readCorpCodes(root);
+  // G-264: the committee number's recalibration, refitted from every scored committee report before today's reports.
+  await refreshCommitteeCalibration(root, now).catch((e) => console.error(`calibration: ${String(e).slice(0, 160)}`));
   const core = new Set(options.tickers.map((t) => t.symbol));
   const weeklyDue = async (symbol: string) => {
     const last = (await readdir(join(root, 'reports', symbol)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0, 10) < today.date).sort().at(-1)?.slice(0, 10);
@@ -646,6 +651,7 @@ export async function composeReport(
     paperEntries: (await readLog<PaperEntry>(join(root, 'data', 'paper', `${SYMBOL}.jsonl`))).filter((e) => e.recordedAt <= now.toISOString()),
     // G-227: stored reports are never rewritten, so their scenario probabilities are the log.
     scenarioCalls: earlier.flatMap((r) => { const c = scenarioCallOf(r); return c ? [c] : []; }),
+    committeeCalibration: await readCommitteeCalibration(root),
     status: options.marketStatus ?? [],
   };
   built.market = inCurrency(() => buildMarketSection(marketInput));
@@ -884,6 +890,16 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const eventLog = (await readFile(join(root, 'data', 'event-filings.jsonl'), 'utf8').catch(() => '')).split('\n').filter(Boolean).map((l) => JSON.parse(l) as EventFiling);
   await writeFile(join(siteDir, 'signals.json'), JSON.stringify(signalData(eventLog, lite, kstParts(new Date()).date)));
   await writeFile(join(siteDir, 'themes.html'), renderThemesPage());
+  // G-243: the most covered news issues of the last 24 hours, across every collected stock's news.
+  const newsArticles: TaggedArticle[] = [];
+  for (const file of (await readdir(join(root, 'data', 'news')).catch(() => [] as string[])).filter((f) => f.endsWith('.jsonl'))) {
+    const symbol = file.slice(0, -'.jsonl'.length);
+    for (const item of await readLog<NewsItem>(join(root, 'data', 'news', file))) newsArticles.push({ item, symbols: [symbol] });
+  }
+  const issueNames = new Map<string, string>([...lite.map((r) => [r.symbol, r.name] as const), ...home.map((e) => [e.symbol, e.name] as const)]);
+  const issueChanges = new Map<string, number | null>([...home.map((e) => [e.symbol, e.report?.price?.changePct ?? null] as const), ...lite.filter((r) => r.changePct != null).map((r) => [r.symbol, r.changePct] as const)]);
+  await writeFile(join(siteDir, 'news-issues.json'), JSON.stringify(rankNewsIssues(newsArticles, { now: new Date(), names: issueNames, changes: issueChanges })));
+  await writeFile(join(siteDir, 'issues.html'), renderNewsIssuesPage());
   await writeFile(join(siteDir, 'signals.html'), renderSignalsPage());
   // The chart library is served from the site itself, not a CDN.
   // "exports" hides the standalone build; package.json is exported, so locate it from there.

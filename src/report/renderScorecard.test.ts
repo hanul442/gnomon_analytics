@@ -25,9 +25,9 @@ test('the scorecard shows each member\'s calls from stance to result, with the d
   const rows = html.match(/<li class="mb-row[^]*?<\/li>/g) ?? [];
   assert.equal(rows.length, 3);
   // Newest report first; each row opens that day's report at the vote.
-  assert.match(rows[0]!, /data-sym="222222"[^]*나 종목[^]*강세 60%[^]*4\/20거래일[^]*전망과 같은 쪽이에요[^]*href="222222\/reports\/2026-02-06\.html#parliament-ai"/);
+  assert.match(rows[0]!, /data-sym="222222"[^]*나 종목[^]*강세 60%[^]*대기 4\/20[^]*전망과 같은 쪽이에요[^]*href="222222\/reports\/2026-02-06\.html#parliament-ai"/);
   assert.match(rows[1]!, /약세 60%[^]*전망과 반대쪽이에요/);
-  assert.match(rows[2]!, /맞았어요[^]*20거래일 뒤/);
+  assert.match(rows[2]!, /맞음[^]*20거래일 뒤/);
   assert.ok(html.includes('class="mb-bar" hidden'), 'the watchlist filter shows only when the reader has a watchlist');
   assert.ok(!html.includes('AI 분석가 순위'), 'the old ranking table is now the members\' cards');
 });

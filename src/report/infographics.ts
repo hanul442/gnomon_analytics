@@ -7,6 +7,8 @@ import type { FinancePeriod } from '../types.js';
 import type { FullStatements, StatementRow } from '../sources/dartStatements.js';
 import { esc } from './html.js';
 import { bigMoney, currency, financeScale, financeUnit } from './format.js';
+import { composedChart, depthBar, depthDefs, incomeSankey, radarChart } from './kit/finance.js';
+import { gradId } from './chartLook.js';
 
 const clamp = (v: number) => Math.max(0, Math.min(100, v));
 const fmtPct = (v: number | null | undefined, d = 1) => (v == null || !Number.isFinite(v) ? '없음' : `${v > 0 ? '+' : ''}${v.toFixed(d)}%`);
@@ -38,19 +40,8 @@ export function healthAxes(m: MarketSection, close: number | null): Axis[] {
   return currency() === 'USD' ? axes.filter((a) => a.key !== 'flow') : axes;
 }
 
-function radar(axes: readonly Axis[]): string {
-  const cx = 110, cy = 104, r = 78, n = axes.length;
-  const pt = (i: number, v: number) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [cx + Math.cos(a) * r * v, cy + Math.sin(a) * r * v] as const; };
-  const ring = (v: number) => axes.map((_, i) => pt(i, v).map((x) => x.toFixed(1)).join(',')).join(' ');
-  const shape = axes.map((a, i) => pt(i, (a.score ?? 0) / 100).map((x) => x.toFixed(1)).join(',')).join(' ');
-  const labels = axes.map((a, i) => { const [x, y] = pt(i, 1.2); return `<text x="${x.toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="middle" class="${a.score == null ? 'na' : ''}">${esc(a.label)}</text>`; }).join('');
-  // G-184: the shape is filled with a light that is brightest in the middle (stop colours come from CSS so both themes work).
-  // The id comes from the scores, so the same report renders the same page (two equal radars share an identical gradient).
-  const gid = `ig-rg-${axes.map((a) => (a.score == null ? 'x' : Math.round(a.score))).join('-')}`;
-  return `<svg class="ig-radar" viewBox="0 0 220 210" role="img" aria-label="${axes.map((a) => `${a.label} ${a.score == null ? '자료 없음' : Math.round(a.score) + '점'}`).join(', ')}"><defs><radialGradient id="${gid}" cx="50%" cy="50%" r="60%"><stop offset="0" class="s0"/><stop offset="1" class="s1"/></radialGradient></defs>
-${[0.33, 0.66, 1].map((v) => `<polygon points="${ring(v)}" class="grid"/>`).join('')}${axes.map((_, i) => { const [x, y] = pt(i, 1); return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" class="grid"/>`; }).join('')}
-<polygon points="${shape}" class="area" fill="url(#${gid})"/>${axes.map((a, i) => a.score == null ? '' : (() => { const [x, y] = pt(i, a.score / 100); return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" class="dot" data-i="${i}" style="--i:${i}"><title>${esc(a.label)} ${Math.round(a.score)}점</title></circle>`; })()).join('')}${labels}</svg>`;
-}
+// G-265: drawn by the chart kit in Bklit UI's radar look (round rings, soft fill, haloed dots).
+const radar = (axes: readonly Axis[]) => radarChart(axes);
 
 /** 기업 체력 한눈에 (G-148): the radar beside one short line per axis; the thresholds sit in each line's title. */
 export function healthInfographic(m: MarketSection | undefined, close: number | null): string {
@@ -85,14 +76,15 @@ function bars(years: readonly string[], series: readonly { label: string; color:
   const all = series.flatMap((x) => x.values).filter((v): v is number => v != null);
   if (!all.length) return '';
   const max = Math.max(0, ...all), min = Math.min(0, ...all), span = max - min || 1, W = 320, H = 150, top = 16, bottom = 22, h = H - top - bottom;
-  const zero = top + (max / span) * h, gw = W / years.length, bw = Math.min(26, (gw - 16) / series.length);
+  const zero = top + (max / span) * h, gw = W / years.length, bw = Math.min(26, (gw - 16) / series.length), glass = gradId('kf-gl');
+  // G-265: each bar in Bklit's bar-depth look (a glass catch at the tip, a soft shadow at the base), see kit/finance.ts.
   const rects = years.map((y, i) => series.map((x, j) => {
     const v = x.values[i]; if (v == null) return '';
     const x0 = i * gw + (gw - bw * series.length) / 2 + j * bw, y0 = v >= 0 ? zero - (v / span) * h : zero, hh = Math.max(1, Math.abs(v / span) * h);
-    return `<rect${v < 0 ? ' class="neg"' : ''} data-g="${i}" style="--i:${i * series.length + j}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${(bw - 3).toFixed(1)}" height="${hh.toFixed(1)}" rx="2" fill="${x.color}"><title>${esc(y)} ${esc(x.label)} ${shortMoney(v)}</title></rect>${j === 0 ? `<text x="${(x0 + (bw - 3) / 2).toFixed(1)}" y="${(v >= 0 ? y0 - 4 : y0 + hh + 11).toFixed(1)}" text-anchor="middle" class="ig-bl">${short(v)}</text>` : ''}`;
+    return `${depthBar({ x: x0, y: y0, w: bw - 3, h: hh, neg: v < 0, fill: x.color, g: i, i: i * series.length + j, title: `${y} ${x.label} ${shortMoney(v)}`, glass })}${j === 0 ? `<text x="${(x0 + (bw - 3) / 2).toFixed(1)}" y="${(v >= 0 ? y0 - 4 : y0 + hh + 11).toFixed(1)}" text-anchor="middle" class="ig-bl">${short(v)}</text>` : ''}`;
   }).join('') + `<text x="${(i * gw + gw / 2).toFixed(1)}" y="${H - 6}" text-anchor="middle" class="ig-bx">${esc(y)}</text>`).join('');
   const tip = { y: years, s: series.map((x) => ({ l: x.label, c: x.color, v: x.values.map((v) => (v == null ? null : shortMoney(v))) })) };
-  return `<figure class="ig-bars mo-bars" data-tip="${esc(JSON.stringify(tip))}"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map((x) => x.label).join('·'))} 연도별 막대"><line x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}" class="ig-b0"/>${rects}</svg><figcaption>${series.map((x) => `<span><i style="background:${x.color}"></i>${esc(x.label)}</span>`).join('')}</figcaption></figure>`;
+  return `<figure class="ig-bars mo-bars" data-tip="${esc(JSON.stringify(tip))}"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(series.map((x) => x.label).join('·'))} 연도별 막대"><defs>${depthDefs(glass)}</defs><line x1="0" x2="${W}" y1="${zero.toFixed(1)}" y2="${zero.toFixed(1)}" class="ig-b0"/>${rects}</svg><figcaption>${series.map((x) => `<span><i style="background:${x.color}"></i>${esc(x.label)}</span>`).join('')}</figcaption></figure>`;
 }
 
 /**
@@ -103,6 +95,11 @@ export function quarterBars(quarters: readonly FinancePeriod[]): string {
   const ps = quarters.filter((q) => q.metrics['매출액'] != null).slice(-6);
   if (ps.length < 2) return '';
   const v = (k: string) => ps.map((q) => (q.metrics[k] == null ? null : q.metrics[k]! * financeScale()));
+  const labels = ps.map((q) => `${q.period.slice(2, 4)}.${q.period.slice(4)}${q.isEstimate ? 'E' : ''}`);
+  // G-265: with 영업이익률 for at least two quarters, Bklit's composed chart: the same bars plus the margin as a line.
+  const margin = ps.map((q) => q.metrics['영업이익률'] ?? (q.metrics['영업이익'] != null && q.metrics['매출액'] ? (q.metrics['영업이익']! / q.metrics['매출액']!) * 100 : null));
+  const composed = composedChart({ labels, bars: [{ label: '매출', color: '#2e4268', values: v('매출액') }, { label: '영업이익', color: '#f04452', values: v('영업이익') }], line: { label: '영업이익률', values: margin }, short, money: shortMoney });
+  if (composed) return composed;
   return bars(ps.map((q) => `${q.period.slice(2, 4)}.${q.period.slice(4)}${q.isEstimate ? 'E' : ''}`), [{ label: '매출', color: '#2e4268', values: v('매출액') }, { label: '영업이익', color: '#f04452', values: v('영업이익') }]);
 }
 
@@ -111,12 +108,16 @@ export function statementChart(st: FullStatements, kind: StKind): string {
   const rows = st.statements[kind];
   if (!rows.length) return '';
   const val = (id: string, re: RegExp) => findRow(rows, id, re)?.values ?? st.years.map(() => null);
-  let chart = '', note = '';
+  let chart = '', note = '', flow = '';
   if (kind === 'IS') {
     const rev = val('ifrs-full_Revenue', KEY_ROWS.IS[0]![1]), op = val('dart_OperatingIncomeLoss', KEY_ROWS.IS[3]![1]), net = val('ifrs-full_ProfitLoss', KEY_ROWS.IS[5]![1]);
     chart = bars(st.years, [{ label: '매출', color: '#2e4268', values: rev }, { label: '영업이익', color: '#f04452', values: op }, { label: '순이익', color: '#e9a23b', values: net }]);
     const last = st.years.length - 1, m = rev[last] && op[last] != null ? (op[last]! / rev[last]!) * 100 : null;
     if (m != null) note = `${esc(st.years[last]!)}년 영업이익률 <b>${m.toFixed(1)}%</b>`;
+    // G-265: the latest year as a flow (Bklit sankey); left out when the rows do not add up to one.
+    const cogs = val('ifrs-full_CostOfSales', KEY_ROWS.IS[1]![1]), gp = val('ifrs-full_GrossProfit', KEY_ROWS.IS[2]![1]);
+    flow = incomeSankey({ year: st.years[last]!, rev: rev[last] ?? null, cogs: cogs[last] ?? null, gp: gp[last] ?? null, op: op[last] ?? null, net: net[last] ?? null, short: shortMoney });
+    if (flow) flow = `<h3 class="fs-sub">${esc(st.years[last]!)}년 손익 흐름</h3>${flow}`;
   } else if (kind === 'BS') {
     // A narrow part shows its amount only, a very narrow one nothing (the bar's label and the 부채비율 still say it).
     const seg = (word: string, v: number, w: number) => (w >= 36 ? `${word} ${short(v)}` : w >= 20 ? short(v) : '');
@@ -129,7 +130,7 @@ export function statementChart(st: FullStatements, kind: StKind): string {
     chart = bars(st.years, [{ label: '영업', color: '#2e4268', values: ocf }, { label: '투자', color: '#8a96a8', values: inv }, { label: '재무', color: '#c9a227', values: fin }, ...(fcf.some((v) => v != null) ? [{ label: '잉여현금(FCF)', color: '#16a34a', values: fcf }] : [])]);
     note = '영업으로 번 현금에서 설비 투자(유형자산 취득)를 뺀 것이 잉여현금흐름(FCF)이에요.';
   }
-  return `${chart}${note ? `<p class="ig-note">${note}</p>` : ''}`;
+  return `${chart}${note ? `<p class="ig-note">${note}</p>` : ''}${flow}`;
 }
 
 /** One DART statement: the key rows, then every row folded. */
@@ -172,7 +173,7 @@ export const INFOGRAPHIC_CSS = `.ig-card .head{display:flex;justify-content:spac
 .ig-bullish{background:var(--up)}.ig-neutral{background:var(--line-strong)}.ig-bearish{background:var(--accent)}.ig-legend{display:flex;justify-content:space-between;gap:6px;font-size:12px;color:var(--muted);margin-top:6px}.ig-legend b{color:var(--fg)}
 
 
-.ig-health{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:center}.ig-hc{margin:0 0 14px}.ig-hl{list-style:none;margin:0;padding:0;max-width:560px;display:flex;flex-direction:column;gap:2px}.ig-hl li{display:grid;grid-template-columns:3.4em auto minmax(0,1fr);align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}.ig-hl li:last-child{border-bottom:0}.ig-hl .ig-v{justify-self:start;font-size:inherit;line-height:1.45;padding:1px 9px}.ig-hl em{font-style:normal;font-size:inherit;color:var(--fg2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ig-radar{width:100%;max-width:260px;margin:0 auto;display:block}.ig-radar .grid{fill:none;stroke:var(--line-strong);stroke-width:1}.ig-radar .area{fill-opacity:1;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;filter:drop-shadow(0 0 6px rgba(0,166,251,.35))}.ig-radar .s0{stop-color:var(--accent);stop-opacity:.55}.ig-radar .s1{stop-color:var(--accent);stop-opacity:.22}.ig-radar .dot{fill:var(--accent);stroke:var(--surface-solid);stroke-width:1.5}.ig-radar text{font-size:12px;font-weight:700;fill:var(--fg2)}.ig-radar text.na{fill:var(--muted)}
+.ig-health{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:center}.ig-hc{margin:0 0 14px}.ig-hl{list-style:none;margin:0;padding:0;max-width:560px;display:flex;flex-direction:column;gap:2px}.ig-hl li{display:grid;grid-template-columns:3.4em auto minmax(0,1fr);align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}.ig-hl li:last-child{border-bottom:0}.ig-hl .ig-v{justify-self:start;font-size:inherit;line-height:1.45;padding:1px 9px}.ig-hl em{font-style:normal;font-size:inherit;color:var(--fg2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ig-radar{width:100%;max-width:260px;margin:0 auto;display:block}
 .ig-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.ig-tile{background:var(--soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}.ig-tile>div{display:flex;justify-content:space-between;align-items:center;gap:6px}.ig-tile strong{font-size:14px}.ig-tile small{font-size:11.5px;color:var(--muted)}.ig-v{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;line-height:1.5}.ig-v.good{background:var(--good-soft);color:var(--good-strong)}.ig-v.mid{background:var(--soft);color:var(--fg2)}.ig-v.warn{background:var(--up-soft);color:var(--up-strong)}.ig-v.na{background:var(--soft);color:var(--muted)}
 .ig-seg{margin:2px 0 10px;width:max-content}.ig-fs td.num,.ig-fs th.num{text-align:right;font-variant-numeric:tabular-nums}.ig-fs table{min-width:520px}.ig-fs th[scope=row]{position:sticky;left:0;background:var(--surface-solid);white-space:nowrap;text-align:left;font-weight:700}.ig-fs th small,.ig-fs th[scope=row] small{display:block;font-size:10.5px;font-weight:500;color:var(--muted)}
 .ig-seg.seg{max-width:100%;overflow-x:auto;flex-wrap:nowrap!important;scrollbar-width:none}.ig-dart table{min-width:0!important;width:100%}.ig-dart th[scope=row]{white-space:normal!important;min-width:84px}.ig-dart th,.ig-dart td{padding:8px 5px!important;font-size:13px}.ig-dart td.num{letter-spacing:-.2px}.ig-seg button{flex:none;white-space:nowrap}

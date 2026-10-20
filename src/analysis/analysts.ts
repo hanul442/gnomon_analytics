@@ -84,7 +84,7 @@ export function invalidationOf(stance: AnalystCall['stance'], close: number, pri
 const crossed = (c: Pick<AnalystCall, 'stance' | 'invalidation'>, close: number) =>
   c.invalidation != null && (c.stance === 'BULLISH' ? close <= c.invalidation : c.stance === 'BEARISH' ? close >= c.invalidation : false);
 export const TRACK_KEEP = 5;
-const hitOf = (c: AnalystCall, close: number) => {
+export const hitOf = (c: Pick<AnalystCall, 'stance' | 'target' | 'baseClose'>, close: number) => {
   const move = close / c.baseClose - 1;
   if (c.stance === 'NEUTRAL') return Math.abs(move) <= 0.02;
   return Math.sign(c.target - c.baseClose) === Math.sign(move);
@@ -150,6 +150,14 @@ export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { da
 export const SKILL_MIN_SCORED = 30;
 
 /**
+ * G-246: starting weights from the hidden-future test (docs/BLIND_EVAL.md v2, 1,000 blind stock-dates): how well
+ * each PM ranked stocks 20 sessions ahead with the stock and date hidden. Mean reversion ranked them right
+ * (IC +0.11), trend/momentum the wrong way round (−0.09), wave/structure leaned wrong (−0.06, not significant).
+ * Used only until an analyst has SKILL_MIN_SCORED live calls on the stock; the live record then replaces it.
+ */
+export const BLIND_PRIOR: Partial<Record<AnalystId, number>> = { mean_reversion: 1.5, trend_momentum: 0.5, wave_structure: 0.75 };
+
+/**
  * G-228: the committee's one number. Each analyst's call becomes a chance the price is higher in 20
  * sessions (BULLISH: its confidence, BEARISH: 100 minus it, NEUTRAL: 50), and the chances are averaged in
  * log-odds, which beats a plain mean or median for pooling forecasts (ForecastBench, Karger et al. 2024;
@@ -159,17 +167,20 @@ export const SKILL_MIN_SCORED = 30;
 export function committeeConsensus(
   calls: readonly { analyst: AnalystId; stance: 'BULLISH' | 'BEARISH' | 'NEUTRAL'; confidence: number }[],
   board: readonly Pick<AnalystScore, 'analyst' | 'scored' | 'brier'>[] = [],
-): { upPct: number; weighted: boolean; n: number } | null {
+  prior: Partial<Record<AnalystId, number>> = BLIND_PRIOR,
+): { upPct: number; weighted: boolean; prior: boolean; n: number } | null {
   if (!calls.length) return null;
   const logit = (p: number) => Math.log(p / (1 - p));
-  let sum = 0, weights = 0, weighted = false;
+  let sum = 0, weights = 0, weighted = false, usedPrior = false;
   for (const c of calls) {
     const conf = Math.max(2, Math.min(98, c.confidence)) / 100;
     const up = c.stance === 'BULLISH' ? conf : c.stance === 'BEARISH' ? 1 - conf : 0.5;
     const rec = board.find((b) => b.analyst === c.analyst);
-    const w = rec && rec.scored >= SKILL_MIN_SCORED && rec.brier != null ? Math.max(0.1, 1 - rec.brier / 0.25) : 1;
-    if (w !== 1) weighted = true;
+    const live = !!rec && rec.scored >= SKILL_MIN_SCORED && rec.brier != null;
+    const w = live ? Math.max(0.1, 1 - rec!.brier! / 0.25) : prior[c.analyst] ?? 1;
+    if (live && w !== 1) weighted = true;
+    if (!live && w !== 1) usedPrior = true;
     sum += w * logit(up); weights += w;
   }
-  return { upPct: Math.round(100 / (1 + Math.exp(-sum / weights))), weighted, n: calls.length };
+  return { upPct: Math.round(100 / (1 + Math.exp(-sum / weights))), weighted, prior: usedPrior, n: calls.length };
 }

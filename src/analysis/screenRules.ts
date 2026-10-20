@@ -39,7 +39,7 @@ export const FIELD_INDEX: Record<string, number> = Object.fromEntries(FIELDS.map
 
 /** Ready-made screens; picking one fills the builder, so every preset can be edited. */
 export const PRESETS: readonly { key: string; label: string; hint: string; screen: Screen }[] = [
-  { key: 'top', label: '강세 신호 상위', hint: '지표 16개 종합 점수가 높은 순', screen: { match: 'all', rules: [{ f: 'level', op: '=', v: 'BULL' }], maxRisk: 2 } },
+  { key: 'top', label: '기술 점수 상위', hint: '지표 16개 종합 점수가 높은 순', screen: { match: 'all', rules: [{ f: 'level', op: '=', v: 'BULL' }], maxRisk: 2 } },
   { key: 'bottomvol', label: '바닥권 거래량 폭발 (아직 안 오름)', hint: '52주 저점 20% 안쪽, 최근 10일 안에 거래량이 평소 3배 넘게 터졌는데 20일 등락이 +5% 이하인 종목', screen: { match: 'all', rules: [{ f: 'lo52', op: '<=', v: 20 }, { f: 'spike10', op: '>=', v: 3 }, { f: 'r20', op: '<=', v: 5 }, { f: 'tv', op: '>=', v: 3 }], maxRisk: 2 } },
   { key: 'volsurge', label: '거래량 급증·상승', hint: '오늘 거래량이 20일 평균의 3배 이상이고 오른 종목', screen: { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 3 }, { f: 'chg', op: '>=', v: 1 }], maxRisk: 2 } },
   { key: 'accum', label: '매집 흔적', hint: 'OBV는 올랐는데 가격은 제자리인 종목', screen: { match: 'all', rules: [{ f: 'flow', op: '=', v: 'A' }, { f: 'tv', op: '>=', v: 10 }], maxRisk: 2 } },

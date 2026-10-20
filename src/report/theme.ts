@@ -23,4 +23,52 @@ html[data-theme=dark] .topbar,html[data-theme=dark] .bottom-nav{background:rgba(
 input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 ::selection{background:var(--accent-soft);color:var(--fg)}
 input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--accent)}
+
+/* G-248: the light theme in the Payrix feel, GNOMON colours (한서님 10/18 '이런 깔끔함을 원해', '우리색으로'): a soft grey ground lit by
+   GNOMON-blue glows, frosted white cards with large radii and soft shadows, a near-black ink for pills and buttons, the blue kept
+   for links and prices. The header floats as frosted glass. Prices keep red up / blue down. The dark theme keeps its tokens. */
+html[data-theme=light]{--page:#EEF0F3;--surface:rgba(255,255,255,.74);--surface-solid:#FFFFFF;--soft:rgba(10,22,38,.045);--line:rgba(10,22,38,.07);--line-strong:rgba(10,22,38,.14);
+  --fg:#15171A;--fg2:#4A4F57;--muted:#8E939B;--bar:#0A1626;--accent:#0582CA;--accent-strong:#006494;--accent-soft:#E3F3FD;--accent-line:#B6E0FA;--navy:#0A1626;
+  --btn-bg:#0A1626;--btn-fg:#FFFFFF;--on-accent:#FFFFFF;--glass-blur:22px;--focus:#0582CA;--track:rgba(10,22,38,.06);--pill:#FFFFFF;--glass-line:rgba(255,255,255,.75);
+  --shadow:0 1px 2px rgba(10,22,38,.04),0 14px 34px -18px rgba(10,22,38,.22);
+  --page-grad:radial-gradient(620px 460px at 90% -90px,rgba(255,255,255,.95),transparent 70%),radial-gradient(520px 420px at -120px 140px,rgba(255,255,255,.7),transparent 70%),linear-gradient(180deg,#F4F5F7,#ECEEF1);border-color:rgba(255,255,255,.8);box-shadow:var(--shadow)}
+html[data-theme=light] .price-bar{color:var(--fg)}html[data-theme=light] .price-bar .up{color:var(--up)}html[data-theme=light] .price-bar .down{color:var(--down)}html[data-theme=light] .price-bar .pb-code{color:var(--muted)}html[data-theme=light] .price-bar .fresh{background:var(--soft);color:var(--fg2)}html[data-theme=light] .top-links a[aria-current=page]{background:var(--soft);color:var(--fg)}
+html[data-theme=light] .topbar{background:transparent;color:var(--fg);border-bottom:0}
+html[data-theme=light] .topbar::before{display:none}
+html[data-theme=light] .brand{color:var(--fg)}html[data-theme=light] .brand small{color:var(--muted)}html[data-theme=light] .gnomon-mark img,html[data-theme=light] .boot-veil img{filter:invert(1)}
+html[data-theme=light] .topbar .top-links a,html[data-theme=light] .topbar .top-links button{color:var(--fg);border-color:var(--line-strong);background:transparent}
+html[data-theme=light] .topbar>.chips:not(.analysis-tabs){border-color:rgba(255,255,255,.8);background:rgba(255,255,255,.6);box-shadow:var(--shadow)}
+html[data-theme=light] .topbar>.chips:not(.analysis-tabs) a{color:var(--muted)}html[data-theme=light] .topbar>.chips:not(.analysis-tabs) a:hover{color:var(--fg)}
+html[data-theme=light] .topbar>.chips:not(.analysis-tabs) a[aria-selected=true]{color:#FFFFFF}
+html[data-theme=light] .topbar>.chips:not(.has-ind) a[aria-selected=true],html[data-theme=light] .chips-ind{background:#0A1626;box-shadow:none}
+html[data-theme=light] .topbar-in{border-color:rgba(255,255,255,.8);background:rgba(255,255,255,.66);box-shadow:var(--shadow);backdrop-filter:blur(22px) saturate(160%);-webkit-backdrop-filter:blur(22px) saturate(160%)}
+html[data-theme=light] .top-tabs a,html[data-theme=light] .top-tabs button{color:#6B7076}
+html[data-theme=light] .top-tabs a:hover,html[data-theme=light] .top-tabs [data-dock-near=true]{color:var(--fg);background:rgba(10,22,38,.05);box-shadow:none;border-color:transparent}
+html[data-theme=light] .top-tabs [aria-current=page]{color:#FFFFFF;background:#0A1626;box-shadow:0 10px 22px -12px rgba(10,22,38,.6)}
+html[data-theme=light] .top-links .acct{color:#FFFFFF;background:#0A1626;box-shadow:none}html[data-theme=light] .top-links .acct i{color:#B9C0CA}
+html[data-theme=light] .chip-toggle[aria-pressed=true]{background:#0A1626;color:#FFFFFF;border-color:#0A1626}
+@media (max-width:820px){html[data-theme=light] .topbar{background:rgba(238,240,243,.72);backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%)}}
+/* G-249 (Payrix 화면 구성, 한서님 10/19): big numbers are thin, a card never holds another bordered card, and the
+   scorecard's headline sits in one card. Both themes. ":root body" beats the page rules that load later. */
+:root body .hero h1{font-size:23px;font-weight:600;letter-spacing:-.02em;margin:4px 0 2px}
+:root body .hero-price{gap:2px 10px}:root body .hero-price b{font-size:44px;font-weight:300;letter-spacing:-.035em;line-height:1.1}:root body .hero-price>span{font-size:14px}:root body .hero-price b *{font-weight:inherit}
+:root body .hero-chart{border:0;background:var(--soft);border-radius:18px}
+:root body .key-points{border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;padding:14px 2px 0;margin-top:14px}
+:root body .big{font-weight:300;letter-spacing:-.02em}
+html[data-theme=dark] .card{border-radius:24px}
+:root body .sc-hero{padding:20px;border-radius:26px;background:var(--surface);border:1px solid var(--glass-line);box-shadow:var(--shadow)}
+:root body .sc-hv b{font-weight:300;letter-spacing:-.04em;color:var(--fg)}
+/* G-252 (한서님 10/19 '맨 위에 그노몬 있는거 없애자'): on phones the GNOMON brand row is gone. Login and the app install live in
+   the 나 tab; the top bar only appears for a report's tabs, and for its name and price once the price scrolls away. */
+@media (max-width:820px){:root body .topbar .brand,:root body .topbar .top-links{display:none}:root body .topbar:not(.scrolled) .topbar-in{display:none}
+:root body .topbar:not(:has(>.chips)):not(.scrolled){display:none}:root body .topbar.scrolled .topbar-in{padding-left:16px}}
+/* G-259 (한서님 10/19 '무채색 ㄱ'): the dark theme loses its navy. Near-black ground, grey surfaces, no blue glow. */
+:root[data-theme=dark]{--page:#0F1012;--surface-solid:#1B1D21;--bar:#0B0C0E;--tip-bg:rgba(30,32,36,.95);--ink:#E6E8EB;--btn-fg:#111214;--on-accent:#111214;--seat-ring:#111214;
+  --page-grad:radial-gradient(900px 600px at 85% -20%,rgba(255,255,255,.07),transparent 60%),radial-gradient(800px 600px at -10% 30%,rgba(255,255,255,.035),transparent 60%)}
+:root[data-theme=dark] .topbar,:root[data-theme=dark] body .topbar{background:rgba(15,16,18,.86)}
+:root[data-theme=dark] .topbar>.chips:not(.analysis-tabs){background:linear-gradient(180deg,rgba(38,40,44,.92),rgba(20,21,24,.92))}
+/* G-267 (한서님 10/20 'ㄱㄱ', 덜어내기 기준): one quiet accent, near-black in light and near-white in dark, so links, chips,
+   selected states and the chart kit stop using blue. Blue stays only for falling prices (--down). */
+html:root[data-theme=light]{--accent:#141416;--accent-strong:#141416;--accent-soft:rgba(20,20,22,.06);--accent-line:rgba(20,20,22,.18);--focus:#141416;--brand-grad:linear-gradient(135deg,#2A2C31 0%,#141416 100%)}
+html:root[data-theme=dark]{--accent:#ECEDEF;--accent-strong:#ECEDEF;--accent-soft:rgba(255,255,255,.08);--accent-line:rgba(255,255,255,.22);--focus:#ECEDEF;--brand-grad:linear-gradient(135deg,#F4F5F7 0%,#C9CCD1 100%)}
 `;

@@ -37,19 +37,72 @@ export const COMMAND_BAR_CSS = `
 .top-links .bell-btn:hover,.top-links .install-btn:hover{color:#F4F7FA;background:rgba(255,255,255,.06)}
 }
 @media (max-width:820px){
-.bottom-nav{left:50%;right:auto;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:2px;width:max-content;max-width:calc(100% - 24px);padding:6px;
-  border:1px solid rgba(255,255,255,.07);border-radius:999px;background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92));
-  box-shadow:0 18px 40px -16px rgba(0,0,0,.65),inset 0 1px rgba(255,255,255,.05);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%)}
-html[data-theme=dark] .bottom-nav{background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92))}
-.bottom-nav a,.bottom-nav button{flex-direction:row;flex:none;gap:6px;height:46px;min-width:48px;padding:0 13px;border-radius:999px;color:#9AA8B8;font-size:13.5px;font-weight:700;
-  transition:color .16s,background .2s,transform .32s var(--ease-spring)}
-.bottom-nav a span,.bottom-nav button span{display:none}
-.bottom-nav [aria-current=page] span,.bottom-nav [aria-expanded=true] span{display:inline}
-.bottom-nav [aria-current=page],.bottom-nav [aria-expanded=true]{color:#0A1626;font-weight:800;background:linear-gradient(180deg,#ffffff,#dfe6f0);box-shadow:0 10px 22px -12px rgba(0,166,251,.75),inset 0 -1px rgba(0,0,0,.14)}
-.bottom-nav a:active,.bottom-nav button:active{transform:scale(.9);transition-duration:.08s}
-.bottom-nav svg{width:22px;height:22px}
-body:has(.bottom-nav){padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+/* G-258 (한서님 10/19 '글래스모피즘으로', '화면마다 인터랙티브하게', '아이콘으로, 글자는 작게'): one glass pill. Icons only; the
+   current one sits in a snug white pill with its name in a small bubble above. Each screen swaps the right side (.nav-ctx):
+   찾기 a search field, 종목 the ask bar, 위원회 and 나 their own icons. The grid button opens the four tabs; tapping the
+   current tab goes back. Reading down shrinks the bar. */
+.bottom-nav,html[data-theme] body .bottom-nav{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;gap:4px;
+  width:auto;max-width:520px;margin:0 auto;height:64px;padding:0 7px;border:1px solid var(--glass-edge);border-radius:32px;background:var(--glass-bg);
+  box-shadow:0 18px 40px -16px rgba(10,22,38,.38),inset 0 1px 0 var(--glass-hi),inset 0 -1px 0 rgba(255,255,255,.18);backdrop-filter:blur(24px) saturate(190%);-webkit-backdrop-filter:blur(24px) saturate(190%);
+  transform-origin:50% 100%;transition:transform .38s cubic-bezier(.34,1.3,.64,1),opacity .3s}
+.bottom-nav::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 20% -30%,var(--glass-hi),transparent 55%);opacity:.6;pointer-events:none}
+html{--glass-bg:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,255,255,.68));--glass-edge:rgba(255,255,255,.75);--glass-hi:rgba(255,255,255,.9);--glass-pill:rgba(255,255,255,.95);--glass-soft:rgba(255,255,255,.7)}
+html[data-theme=dark]{--glass-bg:linear-gradient(180deg,rgba(40,48,60,.82),rgba(18,22,30,.74));--glass-edge:rgba(255,255,255,.12);--glass-hi:rgba(255,255,255,.14);--glass-pill:rgba(255,255,255,.16);--glass-soft:rgba(255,255,255,.08)}
+.bottom-nav.mini{transform:scale(.86) translateY(4px)}
+.bottom-nav button{font:inherit}
+.bottom-nav .nav-spark,.bottom-nav .nav-back,.bottom-nav .nav-round{position:relative;flex:0 0 50px;width:50px;height:50px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.5,.64,1)}
+/* 한서님 10/19: no blue/orange glow; the ✦ is a plain dark glass button. */
+.bottom-nav .nav-spark{color:var(--page);background:var(--fg);box-shadow:0 8px 18px -8px rgba(10,22,38,.55),inset 0 1px 0 rgba(255,255,255,.18)}
+.bottom-nav .nav-back,.bottom-nav .nav-round{display:none;color:var(--fg);background:var(--glass-soft);border:1px solid var(--glass-edge)}
+.bottom-nav .nav-round{display:grid}
+.bottom-nav svg{width:23px;height:23px;flex:none}.bottom-nav .nav-spark svg,.bottom-nav .nav-back svg,.bottom-nav .nav-round svg{width:22px;height:22px}
+.bottom-nav .nav-spark:active,.bottom-nav .nav-back:active,.bottom-nav .nav-round:active{transform:scale(.9)}
+.nav-tabs,.nav-seg{position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:2px}
+.nav-ctx{display:none;flex:1;min-width:0;align-items:center;gap:4px}
+.nav-tabs a,.nav-seg a,html[data-theme] .bottom-nav .nav-tabs a{position:relative;flex:1;min-width:0;height:50px;display:grid;place-items:center;padding:0;border-radius:25px;color:var(--muted);background:none;text-decoration:none;
+  transition:color .2s,transform .2s}
+.nav-tabs a svg,.nav-seg a svg{position:relative;z-index:1}
+.nav-tabs a[aria-current=page]::before,.nav-seg a[aria-current=page]::before{content:"";position:absolute;left:50%;top:50%;width:58px;height:46px;margin:-23px 0 0 -29px;border-radius:23px;background:var(--glass-pill);
+  box-shadow:0 6px 16px -8px rgba(10,22,38,.45),inset 0 -1px 0 rgba(0,0,0,.06);animation:nav-pill .38s cubic-bezier(.34,1.4,.64,1)}
+.nav-tabs a[aria-current=page],.nav-seg a[aria-current=page],html[data-theme] .bottom-nav .nav-tabs a[aria-current=page]{color:var(--fg);background:none;box-shadow:none}
+.nav-tabs a span,.nav-seg a span{position:absolute;z-index:2;bottom:47px;left:50%;transform:translateX(-50%);display:none;padding:3px 8px;border-radius:9px;font-size:11.5px;font-weight:700;line-height:1.3;white-space:nowrap;color:#fff;background:rgba(10,22,38,.84);box-shadow:0 4px 10px -4px rgba(0,0,0,.4);pointer-events:none}
+.nav-tabs a span::after,.nav-seg a span::after{content:"";position:absolute;left:50%;top:100%;margin-left:-4px;border:4px solid transparent;border-top-color:rgba(10,22,38,.84)}
+.nav-tabs a[aria-current=page] span,.nav-seg a[aria-current=page] span{display:block;animation:nav-tip .32s var(--ease-out)}
+.bottom-nav.mini .nav-tabs a span,.bottom-nav.mini .nav-seg a span{display:none}
+.nav-tabs a:active,.nav-seg a:active{transform:scale(.9);transition-duration:.08s}
+.nav-seg a i{position:absolute;z-index:2;top:5px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#E5484D;color:#fff;font:800 10.5px/16px sans-serif;font-style:normal;text-align:center}
+.bottom-nav .nav-field{flex-direction:row;justify-content:flex-start;flex:1;min-width:0;height:50px;display:flex;align-items:center;gap:9px;padding:0 16px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--muted);font-size:13px;text-align:left;cursor:text}
+.nav-field svg{width:20px;height:20px}
+.nav-round .nav-n{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--fg);color:var(--page);font:800 10.5px/16px sans-serif;font-style:normal;text-align:center}
+body:has(.bottom-nav[data-dock=find]) .find-head{display:none}
+/* G-263: 위원회 switches its pages from the bar, so the row of text tabs at the top goes on phones. */
+body:has(.bottom-nav[data-dock=committee]) .mode-tabs{display:none}
+body.dock-searching .find-head{display:block!important;position:fixed;z-index:45;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));margin:0;animation:nav-up .3s var(--ease-out)}
+body.dock-searching .find-head .search-results{max-height:calc(100dvh - 180px);overflow:auto}
+body.dock-searching .find-head .search-box,body.dock-searching .find-head .search-results{background:var(--surface-solid,#fff)}
+body.dock-searching::before{content:"";position:fixed;inset:0;z-index:44;background:rgba(10,12,16,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:nav-up .25s}
+.bottom-nav .nav-ask{flex-direction:row;justify-content:flex-start;flex:1;min-width:0;height:50px;display:flex;align-items:center;gap:9px;padding:0 5px 0 16px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--muted);font-size:13px;text-align:left;cursor:pointer}
+.nav-ask svg{width:20px;height:20px}.nav-ask span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-ask i{flex:0 0 40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--page);background:var(--fg)}.nav-ask i svg{width:19px;height:19px}
+.nav-chips{position:absolute;left:0;right:0;bottom:74px;display:none;gap:7px;overflow-x:auto;scrollbar-width:none}
+.nav-chips::-webkit-scrollbar{display:none}
+.bottom-nav .nav-chips button{flex:none;flex-direction:row;min-height:0;height:32px;padding:0 12px;border:1px solid var(--glass-edge);border-radius:16px;background:var(--glass-bg);color:var(--fg);font-size:12.5px;font-weight:600;cursor:pointer;
+  backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);box-shadow:0 8px 20px -12px rgba(10,22,38,.4)}
+.bottom-nav.ctx .nav-tabs,.bottom-nav.ctx .nav-spark{display:none}
+.bottom-nav.ctx .nav-back{display:grid;animation:nav-pop .4s cubic-bezier(.34,1.5,.64,1)}
+.bottom-nav.ctx .nav-ctx{display:flex;animation:nav-in .38s var(--ease-out)}
+/* G-267: the question chips no longer float over the page; the chat opens with its own suggested questions. */
+.bottom-nav:not(.ctx) .nav-tabs{animation:nav-in .38s var(--ease-out)}
+.bottom-nav.morph{animation:nav-squish .5s var(--ease-out)}
+@keyframes nav-in{from{opacity:0;transform:translateX(10px)}}
+@keyframes nav-up{from{opacity:0;transform:translateY(8px)}}
+@keyframes nav-pop{from{opacity:0;transform:scale(.6) rotate(-45deg)}}
+@keyframes nav-pill{from{opacity:0;transform:scale(.7)}}
+@keyframes nav-tip{from{opacity:0;transform:translate(-50%,4px)}}
+@keyframes nav-squish{0%{transform:scaleX(1)}35%{transform:scaleX(.96) scaleY(1.04)}70%{transform:scaleX(1.01)}100%{transform:none}}
+body:has(.bottom-nav){padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 }
+@media (prefers-reduced-motion:reduce){.bottom-nav,.bottom-nav *{animation:none!important}}
 @media (prefers-reduced-motion:reduce){.top-tabs a,.top-tabs button{transform:none!important}.bottom-nav a,.bottom-nav button{transition:none}}`;
 
 /**
@@ -59,6 +112,34 @@ body:has(.bottom-nav){padding-bottom:calc(76px + env(safe-area-inset-bottom))}
  * width +17, height +16, drop 3.5.
  */
 export const COMMAND_BAR_JS = `
+(function () {
+  // G-258: each screen's own bar (.nav-ctx) slides in shortly after the page opens; the grid button shows the four
+  // tabs and tapping the current tab goes back. Reading down shrinks the bar, scrolling up grows it.
+  var nav = document.querySelector('.bottom-nav'); if (!nav) return;
+  var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var set = function (on) { nav.classList.toggle('ctx', on); nav.classList.remove('morph'); void nav.offsetWidth; if (!still) nav.classList.add('morph'); };
+  nav.addEventListener('animationend', function (e) { if (e.target === nav) nav.classList.remove('morph'); });
+  var lastY = window.scrollY || 0, ticking = false;
+  window.addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { var y = window.scrollY || 0; if (Math.abs(y - lastY) > 6) { nav.classList.toggle('mini', y > lastY && y > 80); lastY = y; } ticking = false; }); }, { passive: true });
+  if (!nav.hasAttribute('data-dock')) return;
+  var t = setTimeout(function () { set(true); }, still ? 0 : 600);
+  var back = nav.querySelector('.nav-back'); if (back) back.addEventListener('click', function () { clearTimeout(t); set(false); });
+  nav.querySelectorAll('.nav-tabs a').forEach(function (a) { a.addEventListener('click', function (e) { if (a.getAttribute('aria-current') === 'page' && !nav.classList.contains('ctx')) { e.preventDefault(); set(true); } }); });
+  var field = nav.querySelector('[data-dock-search]');
+  // G-260: on phones 찾기's own search box hides; the bar's field opens it at the top of the screen.
+  var q = document.getElementById('q'), head = document.querySelector('.find-head');
+  var search = function () { if (!q) { location.href = (document.body.getAttribute('data-base') || '') + 'screener.html#search'; return; } document.body.classList.add('dock-searching'); q.focus(); };
+  if (field) field.addEventListener('click', search);
+  if (q && head && field) {
+    q.addEventListener('blur', function () { setTimeout(function () { if (!q.value && document.activeElement !== q) document.body.classList.remove('dock-searching'); }, 200); });
+    q.addEventListener('keydown', function (e) { if (e.key === 'Escape') { q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true })); q.blur(); document.body.classList.remove('dock-searching'); } });
+    if (location.hash === '#search') setTimeout(search, 300);
+  }
+  var flt = nav.querySelector('[data-dock-filter]'), open = document.getElementById('sc-filter-open');
+  // G-260: the filter count rides on the bar's filter button.
+  if (flt) { if (open) { flt.addEventListener('click', function () { open.click(); }); var n = document.getElementById('sc-filter-n'), badge = document.createElement('i'); badge.className = 'nav-n'; flt.appendChild(badge); var sync = function () { badge.textContent = n ? n.textContent : ''; badge.hidden = !badge.textContent; }; sync(); if (n && window.MutationObserver) new MutationObserver(sync).observe(n, { childList: true, characterData: true, subtree: true }); } else flt.remove(); }
+  nav.querySelectorAll('[data-q]').forEach(function (b) { b.addEventListener('click', function () { var q = b.getAttribute('data-q'); setTimeout(function () { var box = document.getElementById('chat-q'); if (box) { box.value = q; box.dispatchEvent(new Event('input', { bubbles: true })); box.focus(); } }, 60); }); });
+})();
 (function () {
   var root = document.querySelector('.top-tabs'); if (!root || !window.matchMedia) return;
   var O = { proximity: 122, spring: 0.19, damping: 0.7, widthGrowth: 17, heightGrowth: 16, drop: 3.5 };
@@ -138,6 +219,7 @@ export const COMMAND_BAR_JS = `
  * phone's bottom bar, and the white pill slides from tab to tab on a spring instead of jumping.
  */
 export const REPORT_TABS_CSS = `
+.chips [role=tab][hidden]{display:none!important}
 .topbar>.chips:not(.analysis-tabs){position:relative;width:max-content;max-width:calc(100% - 24px);margin:2px auto 10px;padding:5px;gap:2px;
   border:1px solid rgba(255,255,255,.07);border-radius:999px;background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92));
   box-shadow:0 14px 32px -16px rgba(0,0,0,.7),inset 0 1px rgba(255,255,255,.05);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);overflow-x:auto;scrollbar-width:none}

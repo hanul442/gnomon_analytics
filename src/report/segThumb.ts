@@ -18,7 +18,7 @@ export const SEG_THUMB_CSS = `
 @keyframes seg-squish{0%{transform:scaleY(1)}35%{transform:scaleY(.84)}70%{transform:scaleY(1.04)}100%{transform:scaleY(1)}}
 .has-thumb>.seg-thumb.still{transition:none!important}
 .has-thumb>:not(.seg-thumb){position:relative;z-index:1}
-.has-thumb:not(.thumb-off)>[aria-pressed=true],.has-thumb:not(.thumb-off)>[aria-selected=true]{background:transparent!important;box-shadow:none!important;border-color:transparent!important}
+.has-thumb:not(.thumb-off)>[aria-pressed=true],.has-thumb:not(.thumb-off)>[aria-selected=true],.has-thumb:not(.thumb-off)>[aria-current=page]{background:transparent!important;box-shadow:none!important;border-color:transparent!important}
 .thumb-off>.seg-thumb{display:none}
 html.chart-fs .cfs-foot>.seg>.seg-thumb{background:var(--soft);box-shadow:none}
 .bn-dots>.seg-thumb{height:6px!important;margin:10px 8px 0;background:#fff;box-shadow:0 0 10px rgba(255,255,255,.45)}
@@ -27,8 +27,8 @@ html.chart-fs .cfs-foot>.seg>.seg-thumb{background:var(--soft);box-shadow:none}
 
 export const SEG_THUMB_JS = `
 (function () {
-  var SEL = '.seg,.find-tabs,.adm-tabs,.bn-dots';
-  var ON = '[aria-pressed=true],[aria-selected=true]';
+  var SEL = '.seg,.find-tabs,.mode-tabs,.adm-tabs,.bn-dots';
+  var ON = '[aria-pressed=true],[aria-selected=true],[aria-current=page]';
   var kids = function (g) { var out = [], c = g.children; for (var i = 0; i < c.length; i++) if (c[i] !== g.__thumb) out.push(c[i]); return out; };
   var place = function (g, lean) {
     var t = g.__thumb; if (!t) return;
@@ -53,7 +53,7 @@ export const SEG_THUMB_JS = `
     g.insertBefore(t, g.firstChild); g.__thumb = t; g.classList.add('has-thumb');
     t.addEventListener('animationend', function () { t.classList.remove('squish'); });
     var settle = function () { place(g); };
-    if (window.MutationObserver) new MutationObserver(settle).observe(g, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-pressed', 'aria-selected', 'hidden'] });
+    if (window.MutationObserver) new MutationObserver(settle).observe(g, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-pressed', 'aria-selected', 'aria-current', 'hidden'] });
     if (window.ResizeObserver) new ResizeObserver(function () { var t2 = g.__thumb; t2.classList.add('still'); place(g); void t2.offsetWidth; t2.classList.remove('still'); }).observe(g);
     g.addEventListener('pointerdown', function (e) {
       var b = e.target.closest && e.target.closest('button,a'); if (!b || b.parentNode !== g || b.matches(ON) || b.disabled || !g.__box) return;
