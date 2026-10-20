@@ -7,6 +7,9 @@ import { z } from 'zod';
 import { shell, deepSlot, DEEP_SCRIPT, joinBox } from './renderHtml.js';
 import { esc } from './html.js';
 import { kmStatArea, kmWorldMap, type MapEntry } from './kit/market.js';
+import { kmWorldMapAll, KIT_WORLD_CSS } from './kit/worldMap.js';
+import { worldMapRows, worldMacroStat } from './renderWorld.js';
+import type { WorldIndexQuote, WorldMacroQuote } from '../sources/naverGlobal.js';
 import { gate } from './plans.js';
 import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, EVIDENCE_SCRIPT } from './renderReportExtras.js';
 export type Period = 'daily' | 'weekly';
@@ -41,7 +44,14 @@ export type MarketCouncil = z.infer<typeof MarketCouncilSchema>;
 /** A headline the committee may cite as N1, N2 … (public: title, outlet, time and link only). */
 export interface MarketNews { id: string; title: string; publisher: string; publishedAt: string; url: string }
 export interface MacroCard { id: string; label: string; unit: string; date: string; value: number; chg20: number | null; spark: [string, number][] }
-export interface MarketReport { schema: 'curia.market-report.v2' | 'curia.market-report.v3' | 'curia.market-report.v4'; date: string; from: string; generatedAt: string; period: Period; groups: MarketGroup[]; news?: MarketNews[]; /** G-265: US rates, the won and VIX with their last 30 points (FRED), for the stat-line cards. */ macro?: MacroCard[]; ai: { status: 'OK' | 'SKIPPED' | 'FAILED'; error?: string; model?: string; council?: MarketCouncil; summary?: MarketCouncil['summary']; sealed?: string } }
+export interface MarketWorld { generatedAt: string; indices: Omit<WorldIndexQuote, 'series'>[]; macro: WorldMacroQuote[] }
+/** The world rows a market daily keeps: every index without its line, and the cards' rates, FX and commodities with theirs. */
+export const WORLD_DAILY_KEYS = ['US10Y', 'USDKRW', 'DXY', 'VIX', 'WTI', 'GOLD'] as const;
+export function marketWorld(m: { generatedAt: string; indices: readonly WorldIndexQuote[]; macro: readonly WorldMacroQuote[] }): MarketWorld | null {
+ const macro = WORLD_DAILY_KEYS.map((k) => m.macro.find((q) => q.key === k)).filter((q): q is WorldMacroQuote => !!q);
+ return m.indices.length || macro.length ? { generatedAt: m.generatedAt, indices: m.indices.map(({ series: _s, ...q }) => q), macro } : null;
+}
+export interface MarketReport { schema: 'curia.market-report.v2' | 'curia.market-report.v3' | 'curia.market-report.v4'; date: string; from: string; generatedAt: string; period: Period; groups: MarketGroup[]; news?: MarketNews[]; /** G-265: US rates, the won and VIX with their last 30 points (FRED), for the stat-line cards. */ macro?: MacroCard[]; /** G-276: the world screen's snapshot from the same run (17 indices, and the rates, FX and commodities the cards show). */ world?: MarketWorld; ai: { status: 'OK' | 'SKIPPED' | 'FAILED'; error?: string; model?: string; council?: MarketCouncil; summary?: MarketCouncil['summary']; sealed?: string } }
 /** Weekly return is measured from the last close BEFORE Monday, never substituted with 5-session return. */
 export function periodAsset(symbol: string, name: string, bars: readonly { date: string; close: number }[], date: string, from: string, period: Period, value: number | null = null): MarketAsset | null {
  const history = [...new Map(bars.filter(b => b.date <= date && Number.isFinite(b.close) && b.close > 0).map(b => [b.date,b])).values()].sort((a,b)=>a.date.localeCompare(b.date));
@@ -152,12 +162,17 @@ export function renderMarketReport(r:MarketReport, base='', nav:{prev?:string|un
  const ix=`<section class="block"><div class="block-head"><h2>지수 한눈에</h2><span class="muted small">선은 최근 30거래일 · 막대는 오른·보합·내린 종목 비율</span></div><div class="mk-ix">${r.groups.map(g=>{const h=headline(g),t=g.breadth.up+g.breadth.down+g.breadth.flat||1;
   // G-265: a Bklit stat card: the close, today's move as the badge, the last 30 closes as a soft area (reports from before G-265 have none).
   return kmStatArea({title:g.name,...(h&&!isIndex(h)?{sub:h.name}:{}),value:h?.close??null,change:h?.returnPct??null,...(h?.spark?{series:h.spark}:{}),digits:!h||isIndex(h)?2:h.close>=1000?0:h.close>=1?2:4,foot:`<div class="mk-br" aria-hidden="true"><i class="u" style="width:${(g.breadth.up/t*100).toFixed(1)}%"></i><i class="f" style="width:${(g.breadth.flat/t*100).toFixed(1)}%"></i><i class="d" style="width:${(g.breadth.down/t*100).toFixed(1)}%"></i></div><small class="n"><span class="up">▲${g.breadth.up.toLocaleString('ko-KR')}</span> · <span class="down">▼${g.breadth.down.toLocaleString('ko-KR')}</span></small>`});}).join('')}</div></section>`;
- // G-265: a small world map (Bklit choropleth). GNOMON collects one index-like series per country: 코스피 for Korea and
- // the S&P 500 ETF SPY for the United States (the US group has no index of its own), so only those two are coloured.
+ // G-276: the same 13-country map and rate cards as the 세계 screen, from the run's world snapshot. Reports from before
+ // G-276 keep the G-265 two-country map (코스피, SPY) and the FRED cards.
  const kospi=r.groups.find(g=>g.id==='M1')?.assets.find(a=>a.symbol==='KOSPI'),spy=r.groups.find(g=>g.id==='M5')?.assets.find(a=>a.symbol==='SPY');
  const mapRows:MapEntry[]=[...(kospi?[{iso:'KR' as const,country:'한국',index:'코스피',change:kospi.returnPct,date:kospi.date}]:[]),...(spy?[{iso:'US' as const,country:'미국',index:'S&P 500',change:spy.returnPct,date:spy.date}]:[])];
- const macro=r.macro?.length?`<section class="block"><div class="block-head"><h2>금리·환율·변동성</h2><span class="muted small">미국 자료(FRED)라 하루 늦어요 · 배지는 20거래일 변화</span></div><div class="mk-ix">${r.macro.map(macroStat).join('')}</div></section>`:'';
- const world=mapRows.length?`<section class="card block"><div class="block-head" style="margin:0 0 6px"><h2>세계 증시 지도</h2><span class="muted small">${r.period==='weekly'?'이번 주 누적':'일간'} 등락</span></div>${kmWorldMap(mapRows,'GNOMON은 한국(코스피)과 미국(S&P 500을 따라가는 SPY ETF) 자료만 모아서 두 나라만 색칠했어요. 회색은 자료가 없는 나라예요.')}</section>`:'';
+ const w=r.world,wx=w?.indices.length?worldMapRows(w.indices.map(q=>({...q,series:[]}))):[];
+ const more=`<a class="mk-more" href="${base}world.html">세계 화면에서 더 보기 ›</a>`;
+ const world=wx.length?`<style>${KIT_WORLD_CSS}.mk-more{display:block;margin-top:8px;font-size:13px;font-weight:600;color:var(--fg);text-decoration:none}</style><section class="card block"><div class="block-head" style="margin:0 0 6px"><h2>세계 증시 지도</h2><span class="muted small">하루 등락 · ${wx.filter(x=>x.iso!=='EU').length}곳</span></div>${kmWorldMapAll(wx,'나라를 누르면 지수와 등락이 떠요. 빨강은 오름, 파랑은 내림, 진할수록 많이 움직였어요.')}${more}</section>`
+  :mapRows.length?`<section class="card block"><div class="block-head" style="margin:0 0 6px"><h2>세계 증시 지도</h2><span class="muted small">${r.period==='weekly'?'이번 주 누적':'일간'} 등락</span></div>${kmWorldMap(mapRows,'GNOMON은 한국(코스피)과 미국(S&P 500을 따라가는 SPY ETF) 자료만 모아서 두 나라만 색칠했어요. 회색은 자료가 없는 나라예요.')}</section>`:'';
+ const wq=(k:string)=>w?.macro.find(q=>q.key===k)??null;
+ const macro=w?.macro.length?`<section class="block"><div class="block-head"><h2>금리·환율·원자재</h2><span class="muted small">하루 등락 · 선은 최근 30일</span></div><div class="mk-ix">${[worldMacroStat(wq('US10Y'),true),worldMacroStat(wq('USDKRW'),true),worldMacroStat(wq('DXY'),true),worldMacroStat(wq('VIX'),true),worldMacroStat(wq('WTI')),worldMacroStat(wq('GOLD'))].join('')}</div></section>`
+  :r.macro?.length?`<section class="block"><div class="block-head"><h2>금리·환율·변동성</h2><span class="muted small">미국 자료(FRED)라 하루 늦어요 · 배지는 20거래일 변화</span></div><div class="mk-ix">${r.macro.map(macroStat).join('')}</div></section>`:'';
  const points=`<section class="card block"><h2>핵심 포인트</h2><ul class="mk-points">${marketPoints(r).map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p class="fine">수집한 숫자만으로 정리했어요. 해석은 아래 AI 요약과 위원회 판단을 보세요.</p></section>`;
  const row=(a:MarketAsset)=>`<div class="mk-row"><span>${esc(a.name)}</span><b class="${toneOf(a.returnPct)}">${moveText(a.returnPct)}</b></div>`;
  const panels=r.groups.map((g,i)=>{const rest=g.assets.filter(a=>!isIndex(a)&&a.returnPct!=null).sort((a,b)=>b.returnPct!-a.returnPct!);

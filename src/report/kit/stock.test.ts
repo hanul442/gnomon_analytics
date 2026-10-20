@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dailyCalendar, KIT_STOCK_CSS, KIT_STOCK_JS, multiLine, pnlLine, ringChart } from './stock.js';
+import { dailyCalendar, hitLine, hitSteps, KIT_STOCK_CSS, KIT_STOCK_JS, multiLine, outcomeSunburst, pnlLine, ringChart } from './stock.js';
 
 const day = (i: number) => new Date(Date.UTC(2025, 9, 6) + i * 864e5).toISOString().slice(0, 10);
 
@@ -63,4 +63,24 @@ test('page script is plain JavaScript and the styles keep motion behind html.mo'
   assert.doesNotMatch(KIT_STOCK_JS, /[`]/);
   for (const rule of KIT_STOCK_CSS.match(/[^{}]*:not\(\.kit-in\)[^{}]*\{/g) ?? []) assert.match(rule, /html\.mo /, rule);
   assert.match(KIT_STOCK_JS, /GNM_kit = \{ scatter: scatter, funnel: funnel \}/);
+});
+
+test('G-271 outcomeSunburst splits calls by result, then member, and skips empty data', () => {
+  const svg = outcomeSunburst([
+    { label: '맞음', key: 'ok', children: [{ label: '추세', value: 3 }, { label: '가치', value: 1 }] },
+    { label: '빗나감', key: 'no', children: [{ label: '추세', value: 2 }, { label: '가치', value: 0 }] },
+    { label: '대기', key: 'wait', children: [] },
+  ], { label: 'x' });
+  assert.match(svg, /<b>6<\/b>/);
+  assert.equal((svg.match(/ ks-o"/g) ?? []).length, 3);
+  assert.doesNotMatch(svg, /대기/);
+  assert.equal(outcomeSunburst([{ label: '맞음', key: 'ok', children: [] }], { label: 'x' }), '');
+});
+
+test('G-271 hitSteps counts closed trades +1 up / −1 otherwise; hitLine is neutral', () => {
+  assert.deepEqual(hitSteps([{ exit: 'a', ret: 0.1 }, { exit: 'b', ret: -0.02 }, { exit: 'c', ret: 0 }, { exit: null, ret: 0.5 }]), [0, 1, 0, -1]);
+  const svg = hitLine([0, 1, 2, 1], 'x');
+  assert.match(svg, /currentColor/);
+  assert.doesNotMatch(svg, /#f04452|#3182f6/);
+  assert.equal(hitLine([0], 'x'), '');
 });

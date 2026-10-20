@@ -1,13 +1,13 @@
 // G-265: Bklit UI chart kit, stock charts, redrawn as plain SVG in GNOMON's style (Bklit UI is MIT; only the look is
 // borrowed, no React). Server-side pictures are functions that return markup; the ones drawn from data the page
 // fetches (peer scatter, screener funnel, live coin line) live in KIT_STOCK_JS as window.GNM_kit.*.
-//   profit-loss line  pnlLine()        전략 레이스 · 모의투자 장부 rows (renderArena.ts)
-//   line chart        multiLine()      전략별 수익 곡선 (renderArena.ts arenaPanel)
+//   profit-loss line  pnlLine()        모의투자 장부 rows; 전략 레이스는 hitLine() (G-271) (renderArena.ts)
+//   line chart        multiLine()      전략별 맞음−빗나감 누적 (G-271) (renderArena.ts arenaPanel)
 //   ring chart        ringChart()      위원회 합의 (renderParliament.ts) · 성적표 (renderScorecard.ts)
 //   heatmap calendar  dailyCalendar()  요약 탭, 지난 1년 하루 등락 (appParts.ts latestLists)
 //   scatter           GNM_kit.scatter  같은 테마 PER·ROE (peers.ts)
 //   funnel            GNM_kit.funnel   스크리너 조건별 남은 종목 (renderScreener.ts)
-//   live line         KIT_STOCK_JS     코인 실시간 가격 (coin pages, from /ticks and the live feed)
+//   live line         KIT_STOCK_JS     코인·국내 주식 실시간 가격 (coin and stock pages, from /ticks and the live feed)
 // Candles stay on lightweight-charts. Every picture is finished without motion; html.mo only adds the entrance.
 import { smoothD, SMOOTH_JS, gradId } from '../chartLook.js';
 import { esc } from '../html.js';
@@ -85,7 +85,7 @@ export interface Ring { label: string; value: number | null; color: string; text
  * a null value draws only the track. `cls` is added to the figure (callers keep their own hooks).
  */
 export function ringChart(rings: readonly Ring[], opts: { label: string; big: string; small?: string; cls?: string }): string {
-  const rs = rings.slice(0, 4), S = 120, c = S / 2, sw = rs.length > 3 ? 7 : 9, gap = sw + 4;
+  const rs = rings.slice(0, 4), S = 120, c = S / 2, sw = rs.length > 3 ? 6 : rs.length > 2 ? 7 : 9, gap = sw + 3; // G-274: thinner when stacked so the middle text clears the inner ring
   const arcs = rs.map((r, i) => {
     const rad = c - sw / 2 - 2 - i * gap, v = r.value == null ? 0 : Math.max(0, Math.min(1, r.value));
     return `<circle class="kr-t" cx="${c}" cy="${c}" r="${rad}" stroke-width="${sw}"/>`
@@ -306,14 +306,17 @@ export const KIT_STOCK_JS = `
     watch(host);
   };
 
-  // ---- live line: a coin's price as it trades, scrolling left, the last point pulsing ----
+  // ---- live line: a coin's price as it trades (G-271: and a Korean stock's day, 1-minute closes then live quotes),
+  // scrolling left, the last point pulsing ----
+  var OK = /^(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})$/;
   var live = function () {
     var q = new URLSearchParams(location.search), sym = q.get('m') || ((document.querySelector('[data-symbol]') || {}).dataset || {}).symbol || '';
-    if (!/^KRW-[A-Z0-9]{1,15}$/.test(sym)) { var lv = document.querySelector('.hero [data-live^="KRW-"]'); sym = lv ? lv.getAttribute('data-live') : ''; }
-    if (!/^KRW-[A-Z0-9]{1,15}$/.test(sym) || document.querySelector('.kit-live')) return;
+    if (!OK.test(sym)) { var lv = document.querySelector('.hero [data-live]'); sym = lv ? lv.getAttribute('data-live') : ''; }
+    if (!OK.test(sym) || document.querySelector('.kit-live')) return;
+    var coin = sym.indexOf('KRW-') === 0;
     var hero = document.querySelector('#tab-home .hero') || document.querySelector('.hero'); if (!hero) return;
     var sec = document.createElement('section'); sec.className = 'block kit-live'; sec.hidden = true;
-    sec.innerHTML = '<div class="card"><div class="kv-h"><h2>실시간 가격</h2><small data-kv-note>업비트 체결가 · 최근 3분</small></div><div class="kv-plot" role="img" aria-label="실시간 가격 선"></div><div class="kv-foot"><span data-kv-from></span><span>지금</span></div></div>';
+    sec.innerHTML = '<div class="card"><div class="kv-h"><h2>실시간 가격</h2><small data-kv-note>' + (coin ? '업비트 체결가 · 최근 3분' : '1분 종가 · 장중 실시간') + '</small></div><div class="kv-plot" role="img" aria-label="실시간 가격 선"></div><div class="kv-foot"><span data-kv-from></span><span>지금</span></div></div>';
     hero.after(sec);
     var plot = sec.querySelector('.kv-plot'), pts = [], SPAN = 180, raf = 0, shift = 0, from = 0, to = 0, t0 = 0, last = 0;
     var draw = function () {
@@ -343,11 +346,14 @@ export const KIT_STOCK_JS = `
     if (api) fetch(api + '/ticks/' + sym).then(function (r) { return r.json(); }).then(function (r) {
       var ps = (r && r.points) || []; if (!ps.length) return; var end = ps[ps.length - 1].time, off = (pts.length ? pts[0].t - 1 : Date.now() / 1000) - end;
       // Recent trades keep their spacing and end where the live feed starts.
-      pts.unshift.apply(pts, ps.slice(-120).filter(function (p) { return p.price > 0; }).map(function (p) { return { t: p.time + off, v: p.price }; }));
+      pts.unshift.apply(pts, ps.slice(coin ? -120 : -400).filter(function (p) { return p.price > 0; }).map(function (p) { return { t: p.time + off, v: p.price }; }));
       last = pts.length ? pts[pts.length - 1].t : 0;
       // The window holds about the last 60 trades (three minutes at least, an hour at most) at a fixed time scale.
       var k = Math.max(0, pts.length - 60); SPAN = Math.max(180, Math.min(3600, Math.round(last - pts[k].t)));
-      sec.querySelector('[data-kv-note]').textContent = '업비트 체결가 · 최근 ' + Math.round(SPAN / 60) + '분'; if (r.kind && r.kind !== 'trades') sec.querySelector('[data-kv-note]').textContent = '최근 1분 종가 · 이후 실시간';
+      var note = sec.querySelector('[data-kv-note]');
+      note.textContent = '업비트 체결가 · 최근 ' + Math.round(SPAN / 60) + '분'; if (r.kind && r.kind !== 'trades') note.textContent = '최근 1분 종가 · 이후 실시간';
+      // G-271: a stock shows its whole session (up to 6.5 hours of 1-minute closes), named by its day when that is not today.
+      if (!coin) { SPAN = Math.max(180, Math.min(23400, Math.round(last - pts[0].t))); var kd = new Date((end + 9 * 3600) * 1000).toISOString().slice(0, 10), td = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); note.textContent = (kd === td ? '오늘' : Number(kd.slice(5, 7)) + '/' + Number(kd.slice(8, 10))) + ' 1분 종가 · 장중 실시간'; }
       shift = 0; draw();
     }).catch(function () {});
     window.addEventListener('gnm-quote', function (e) { var d = e.detail; if (!d || d.symbol !== sym || !(d.quote && d.quote.price > 0)) return; add(Date.now() / 1000, d.quote.price); });
@@ -370,3 +376,68 @@ export const KIT_STOCK_JS = `
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
 `;
+
+// ---------------------------------------------------------------- sunburst (성적표)
+
+export interface SunGroup { label: string; key: 'ok' | 'no' | 'wait'; children: readonly { label: string; value: number }[] }
+
+/**
+ * G-271 (Bklit 대조표, 한서님 10/20 "선버스트 괜찮네"): 위원 판단을 안쪽 고리 맞음·빗나감·대기, 바깥 고리 위원별로 나눈
+ * Bklit sunburst-chart 모양. 맞음 옅은 초록 · 빗나감 옅은 분홍 · 대기 회색(G-266 칩과 같은 색, 가격 빨강·파랑과 안 겹침).
+ * Static SVG; every slice carries its count in a <title> so a long press reads it.
+ */
+export function outcomeSunburst(groups: readonly SunGroup[], opts: { label: string }): string {
+  const gs = groups.map((g) => ({ ...g, children: g.children.filter((c) => c.value > 0), total: g.children.reduce((s, c) => s + Math.max(0, c.value), 0) })).filter((g) => g.total > 0);
+  const total = gs.reduce((s, g) => s + g.total, 0);
+  if (!total) return '';
+  const S = 200, c = S / 2, P = Math.PI / 180;
+  const pt = (r: number, a: number) => `${r1(c + r * Math.sin(a * P))} ${r1(c - r * Math.cos(a * P))}`;
+  const arc = (r0: number, rr: number, a0: number, a1: number) => {
+    const b = a1 - a0 >= 359.99 ? 359.99 : a1 - a0, e = a0 + b, big = b > 180 ? 1 : 0;
+    return `M${pt(rr, a0)}A${rr} ${rr} 0 ${big} 1 ${pt(rr, e)}L${pt(r0, e)}A${r0} ${r0} 0 ${big} 0 ${pt(r0, a0)}Z`;
+  };
+  let a = 0, inner = '', outer = '', i = 0;
+  const legend: string[] = [];
+  for (const g of gs) {
+    const span = (g.total / total) * 360, a0 = a;
+    inner += `<path class="ks-seg ks-${g.key}" style="--i:${i++}" d="${arc(40, 66, a0 + 0.6, a0 + span - 0.6)}"><title>${esc(g.label)} ${g.total}건</title></path>`;
+    let b = a0;
+    for (const ch of g.children) {
+      const s2 = (ch.value / total) * 360;
+      outer += `<path class="ks-seg ks-${g.key} ks-o" style="--i:${i++}" d="${arc(69, 96, b + 0.5, b + s2 - 0.5)}"><title>${esc(g.label)} · ${esc(ch.label)} ${ch.value}건</title></path>`;
+      b += s2;
+    }
+    legend.push(`<li><i class="ks-${g.key}"></i><span>${esc(g.label)}</span><b>${g.total}건</b><small>${Math.round((g.total / total) * 100)}%</small></li>`);
+    a += span;
+  }
+  return `<figure class="kit-sun"><div class="ks-fig"><svg viewBox="0 0 ${S} ${S}" role="img" aria-label="${esc(opts.label)}">${inner}${outer}</svg><div class="ks-c"><b>${total}</b><small>판단</small></div></div><ul class="ks-leg">${legend.join('')}</ul><figcaption class="fine">안쪽은 결과, 바깥쪽은 그 결과를 낸 위원이에요. 칸 크기는 판단 수예요.</figcaption></figure>`;
+}
+
+export const KIT_SUN_CSS = `.kit-hit{color:var(--fg2)}.kit-sun{margin:14px 0 4px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px}.ks-fig{position:relative;width:180px;height:180px;flex:none}.ks-fig svg{width:100%;height:100%;display:block}.ks-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}.ks-c b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--fg)}.ks-c small{font-size:12px;color:var(--muted)}
+.ks-seg{stroke:var(--surface-solid,var(--surface));stroke-width:1}.ks-seg.ks-o{opacity:.78}path.ks-ok,i.ks-ok{fill:#7FCB9C;background:#7FCB9C}path.ks-no,i.ks-no{fill:#EE9DBE;background:#EE9DBE}path.ks-wait,i.ks-wait{fill:#C4C8CE;background:#C4C8CE}
+:root[data-theme=dark] path.ks-ok{fill:#4E9E6E}:root[data-theme=dark] path.ks-no{fill:#B9668A}:root[data-theme=dark] path.ks-wait{fill:#5A5F66}
+.ks-leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:150px;flex:1}.ks-leg li{display:flex;align-items:center;gap:8px;font-size:14px}.ks-leg i{width:10px;height:10px;border-radius:3px;flex:none}.ks-leg b{margin-left:auto;font-variant-numeric:tabular-nums}.ks-leg small{color:var(--muted);width:36px;text-align:right}.kit-sun figcaption{flex-basis:100%;margin:0}
+@media (prefers-reduced-motion:no-preference){.kit-sun .ks-seg{animation:ks-in .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 30ms)}@keyframes ks-in{from{opacity:0}}}`;
+
+// ---------------------------------------------------------------- hit-count line (G-271)
+
+/**
+ * G-271 (한서님 10/20 카드 "바꾸기"): a strategy's closed trades as a running score, +1 when the trade ended up and
+ * −1 when it did not, oldest first, starting at 0. Open trades are not counted. Replaces return curves, which read
+ * like a returns ad.
+ */
+export function hitSteps(trades: readonly { exit: string | null; ret: number }[]): number[] {
+  const out = [0];
+  for (const t of trades) if (t.exit !== null && Number.isFinite(t.ret)) out.push(out.at(-1)! + (t.ret > 0 ? 1 : -1));
+  return out;
+}
+
+/** A small neutral line of a running score with its zero line; straight steps (counts are whole numbers). */
+export function hitLine(values: readonly number[], label: string, opts: { w?: number; h?: number } = {}): string {
+  if (values.length < 2) return '';
+  const w = opts.w ?? 140, h = opts.h ?? 40, lo = Math.min(0, ...values), hi = Math.max(0, ...values), span = hi - lo || 1;
+  const y = (v: number) => h - 3 - ((v - lo) / span) * (h - 6);
+  const pts = values.map((v, i) => `${i ? 'L' : 'M'}${r1((i / (values.length - 1)) * w)},${r1(y(v))}`).join('');
+  const end = values.at(-1)!;
+  return `<svg viewBox="0 0 ${w} ${h}" class="spark kit-hit" role="img" aria-label="${esc(`${label}: 맞음−빗나감 ${end > 0 ? '+' : ''}${end}`)}"><line class="kp-base" x1="0" x2="${w}" y1="${r1(y(0))}" y2="${r1(y(0))}"/><path class="spark-l" d="${pts}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${w}" cy="${r1(y(end))}" r="2.4" fill="currentColor"/></svg>`;
+}

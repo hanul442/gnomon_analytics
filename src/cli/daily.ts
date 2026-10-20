@@ -17,6 +17,8 @@ import { rankNewsIssues, type TaggedArticle } from '../analysis/newsIssues.js';
 import { collectRiskFilings } from './riskCollect.js';
 import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
 import { writeUsPages } from './usStocks.js';
+import { collectWorld, writeWorldPage } from './world.js';
+import type { WorldMarkets } from '../sources/naverGlobal.js';
 import type { SignalLevel } from '../analysis/technicals.js';
 import { fetchWorldBars, usTicker } from '../sources/naverWorld.js';
 import { gatherUsResearch } from '../report/usResearch.js';
@@ -25,6 +27,7 @@ import { withCurrency } from '../report/format.js';
 import { weeklyFromDaily } from '../analysis/horizons.js';
 import { chooseDailyPicks, type DailyPick } from '../analysis/dailyPicks.js';
 import { fetchUpbitDays, fetchUpbitDaysLong, UPBIT_SOURCE } from '../sources/upbit.js';
+import { fetchUsdtKrw, withOuterHistory } from '../sources/coinHistory.js';
 import { escapeRegex } from './weekly.js';
 import { renderCoinsRedirect } from '../report/renderCoins.js';
 import { watchInfo } from '../report/conclusion.js';
@@ -223,7 +226,7 @@ export interface DailyRunResult {
   selected: string | null;
 }
 
-export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; usStocks?: boolean; dailyPicks?: boolean; weeklyReports?: boolean }): Promise<DailyRunResult> {
+export async function runDaily(options: RunOptions & { tickers: readonly Ticker[]; requests?: readonly ReportRequest[]; concurrency?: number; selectionParams?: SelectionParams; stockPages?: boolean; coins?: boolean; usStocks?: boolean; world?: boolean; dailyPicks?: boolean; weeklyReports?: boolean }): Promise<DailyRunResult> {
   const { root, now } = options;
   await configureSite(root);
   const today = runDay(now);
@@ -357,6 +360,11 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     universe.status.push(coins.status);
     coinList = coins.rows;
   }
+  // G-268: the world screen's indices, rates, FX, commodities and world news. Best effort, never fails the run.
+  if (options.world !== false) {
+    try { universe.status.push(...await collectWorld(root, { now: () => now, ...fetchOpt })); }
+    catch (e) { universe.status.push({ source: 'world', ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }); }
+  }
   // 3.0 US stocks (G-143): best effort, never fails the run.
   let usTemp: UsTemp | null = null, usRows: CoinRow[] = [];
   if (options.usStocks !== false) {
@@ -486,7 +494,8 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
 
   // About four years of sessions: enough history for strategy backtests.
   const coin = ticker.market === 'UPBIT', us = isUsMarket(ticker.market);
-  const bars = coin ? await fetchUpbitDaysLong(SYMBOL, now, 1000, options.fetch) : us ? await fetchWorldBars(SYMBOL, 1000, fetchOptions) : await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
+  // G-272: a coin listed on Upbit later than four years ago gets its older days from another exchange, in won.
+  const bars = coin ? (await withOuterHistory(await fetchUpbitDaysLong(SYMBOL, now, 1000, options.fetch), 1000, { usdtKrw: await fetchUsdtKrw(options.fetch), ...(options.fetch ? { fetch: options.fetch } : {}) })).bars : us ? await fetchWorldBars(SYMBOL, 1000, fetchOptions) : await fetchNaverDailyBars(SYMBOL, 1000, fetchOptions);
   // G-179: a US stock's filings, financials, insider trades, snapshot and English news come from EDGAR, Naver and Google,
   // and land in the same logs the Korean sources fill, so composeReport reads them the same way.
   let usResearch: Awaited<ReturnType<typeof gatherUsResearch>> | null = null;
@@ -855,8 +864,10 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     if (last) indices.push({ symbol, name, date: last.date, close: last.close, changePct: prev ? (last.close / prev.close - 1) * 100 : null, closes: bars.slice(-60).map((b) => b.close) });
   }
   const marketReports = await publishMarketReports(root, siteDir);
+  // G-276: the world snapshot gives home its one-line summary and the S&P 500 and won numbers.
+  const world = JSON.parse(await readFile(join(root, 'data', 'world', 'markets.json'), 'utf8').catch(() => 'null')) as WorldMarkets | null;
   const homeData = {
-    marketReports,
+    marketReports, world,
     banners,
     entries: home, universe, indices, pulse: extras.pulse ?? null, us: extras.us ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
     selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,
@@ -900,6 +911,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const issueChanges = new Map<string, number | null>([...home.map((e) => [e.symbol, e.report?.price?.changePct ?? null] as const), ...lite.filter((r) => r.changePct != null).map((r) => [r.symbol, r.changePct] as const)]);
   await writeFile(join(siteDir, 'news-issues.json'), JSON.stringify(rankNewsIssues(newsArticles, { now: new Date(), names: issueNames, changes: issueChanges })));
   await writeFile(join(siteDir, 'issues.html'), renderNewsIssuesPage());
+  await writeWorldPage(root, siteDir, extras.now ?? new Date());
   await writeFile(join(siteDir, 'signals.html'), renderSignalsPage());
   // The chart library is served from the site itself, not a CDN.
   // "exports" hides the standalone build; package.json is exported, so locate it from there.

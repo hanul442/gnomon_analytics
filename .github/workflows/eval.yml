@@ -7,7 +7,7 @@ name: Hidden-future evaluation
 on:
   workflow_dispatch:
     inputs:
-      version: { description: 'v1, v2, more (extended checks, no AI) or base (committee base model and MAX check, no AI)', default: 'v2' }
+      version: { description: 'v1, v2, more (extended checks, no AI) base (committee base model and MAX check, no AI) or luck (Monte Carlo luck checks, no AI)', default: 'v2' }
       budget: { description: 'AI budget, USD', default: '5' }
       dates: { description: 'v2: evaluation dates for the AI', default: '100' }
       perDate: { description: 'v2: stocks per date for the AI', default: '10' }
@@ -55,6 +55,9 @@ jobs:
       - name: Committee base model and MAX check (G-264)
         if: inputs.version == 'base'
         run: node --max-old-space-size=6000 dist/cli/evalBase.js | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Monte Carlo luck checks (G-275)
+        if: inputs.version == 'luck'
+        run: node --max-old-space-size=6000 dist/cli/evalLuck.js | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Commit the results
         run: |
           git config user.name "github-actions[bot]"

@@ -16,6 +16,7 @@ import {
 import { BLIND2_LENS, BLIND2_PMS, BLIND2_SYSTEM, eventEvidence, flowEvidence, parseBlind2 } from '../analysis/blindEval2.js';
 import { LOCK_MODEL } from '../analysis/lockedAnalysts.js';
 import { usd } from './aiBudget.js';
+import { luckTest, luckVerdict, shuffle, type LuckTest } from '../analysis/monteCarlo.js';
 
 const arg = (k: string, d: string) => { const i = process.argv.indexOf(`--${k}`); return i > 0 ? process.argv[i + 1] ?? d : d; };
 const TOP = Number(arg('top', '200')), FROM = arg('from', '2016-01-01');
@@ -147,10 +148,13 @@ async function runAi(key: string, dates: { date: string; outcome: string; rows: 
     const brierBase = xs.reduce((s, x) => s + (baseRate - (x.excess > 0 ? 1 : 0)) ** 2, 0) / xs.length;
     const byDate = new Map<string, Answer[]>(); for (const x of xs) (byDate.get(x.date) ?? byDate.set(x.date, []).get(x.date)!).push(x);
     const ics = [...byDate.values()].filter((v) => v.length >= 5).map((v) => spearman(v.map((x) => x.beat), v.map((x) => x.excess))).filter((v): v is number => v !== null);
+    // G-275: could luck give this IC? Block bootstrap over dates plus a per-date shuffle of the answers.
+    const days = [...byDate.values()].filter((v) => v.length >= 5);
+    const luck = luckTest(days.map((v) => spearman(v.map((x) => x.beat), v.map((x) => x.excess)) ?? NaN), { block: 6, shuffled: (sd) => { const r = rng(sd); return days.map((v) => spearman(shuffle(v.map((x) => x.beat), r), v.map((x) => x.excess)) ?? NaN); } });
     const cov = xs.filter((x) => 1 + x.ret >= x.p10 / 100 && 1 + x.ret <= x.p90 / 100).length / xs.length;
     const width = xs.reduce((s, x) => s + (x.p90 - x.p10), 0) / xs.length;
     const years = Object.fromEntries([...new Set(xs.map((x) => x.date.slice(0, 4)))].sort().map((y) => { const ys = xs.filter((x) => x.date.startsWith(y)); return [y, { n: ys.length, brier: ys.reduce((s, x) => s + (x.beat - (x.excess > 0 ? 1 : 0)) ** 2, 0) / ys.length }]; }));
-    return { pm, n: xs.length, avgBeat: xs.reduce((s, x) => s + x.beat, 0) / xs.length, brier, brierBase, skill: 1 - brier / brierBase, ic: meanCI(ics, 5), coverage: cov, avgWidth: width, years };
+    return { pm, n: xs.length, avgBeat: xs.reduce((s, x) => s + x.beat, 0) / xs.length, brier, brierBase, skill: 1 - brier / brierBase, ic: meanCI(ics, 5), luck, coverage: cov, avgWidth: width, years };
   }).filter(Boolean);
   // Leakage probe on the latest dates (the most likely to be after the model's training).
   const probes: { name: string; year: string; guessName: string; guessYear: string; nameRight: boolean; yearRight: boolean }[] = [];
@@ -170,15 +174,15 @@ async function runAi(key: string, dates: { date: string; outcome: string; rows: 
 }
 
 function aiMarkdown(ai: Record<string, unknown>): string[] {
-  const board = ai.board as { pm: string; n: number; avgBeat: number; brier: number; brierBase: number; skill: number; ic: { mean: number; lo: number; hi: number }; coverage: number; avgWidth: number }[];
+  const board = ai.board as { pm: string; n: number; avgBeat: number; brier: number; brierBase: number; skill: number; ic: { mean: number; lo: number; hi: number }; luck?: LuckTest | null; coverage: number; avgWidth: number }[];
   const probe = ai.probe as { n: number; nameRight: number; yearRight: number };
   const nm = (k: string) => (k === 'committee' ? '위원 합의' : ANALYSTS.find((a) => a.id === k)?.name ?? k);
   return [
     `## AI 위원 블라인드 v2 (${String(ai.model)}, 평가일 ${String(ai.dates)}개 × 종목, ${String(ai.stockDates)}건, 호출 ${String(ai.calls)}번, 비용 $${String(ai.costUsd)})`, '',
     '종목명·날짜를 숨기고 가격 100 기준으로 바꾼 자료에 수급(거래량 대비 비율)과 공시 종류(종목명 없이)를 더했어요. 질문은 "20거래일 동안 그날 다른 종목 평균을 이길 확률"과 "20거래일 뒤 가격의 하단·상단(80%)".', '',
-    '| 위원 | 건수 | 평균 확률 | 시장 이기기 Brier | 기준선 대비 | 같은 날 순위 상관(IC) | 80% 범위 적중 | 평균 범위 폭 |',
-    '|---|---:|---:|---:|---:|---:|---:|---:|',
-    ...board.map((b) => `| ${nm(b.pm)} | ${b.n} | ${pc(b.avgBeat, 0)} | ${f3(b.brier)} | ${b.skill >= 0 ? '+' : ''}${(b.skill * 100).toFixed(1)}% | ${ci(b.ic)} ${sig(b.ic)} | ${pc(b.coverage)} | ${b.avgWidth.toFixed(1)} |`), '',
+    '| 위원 | 건수 | 평균 확률 | 시장 이기기 Brier | 기준선 대비 | 같은 날 순위 상관(IC) | 운 검사(G-275) | 80% 범위 적중 | 평균 범위 폭 |',
+    '|---|---:|---:|---:|---:|---:|---|---:|---:|',
+    ...board.map((b) => `| ${nm(b.pm)} | ${b.n} | ${pc(b.avgBeat, 0)} | ${f3(b.brier)} | ${b.skill >= 0 ? '+' : ''}${(b.skill * 100).toFixed(1)}% | ${ci(b.ic)} ${sig(b.ic)} | ${b.luck ? `p ${b.luck.p < 0.001 ? '<0.001' : b.luck.p.toFixed(3)} · ${luckVerdict(b.luck)}` : '–'} | ${pc(b.coverage)} | ${b.avgWidth.toFixed(1)} |`), '',
     `누출 점검(가장 최근 평가일 ${probe.n}건): 종목 이름 맞힘 ${probe.nameRight}건, 연도 맞힘 ${probe.yearRight}건`,
   ];
 }

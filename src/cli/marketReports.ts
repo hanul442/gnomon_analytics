@@ -9,7 +9,7 @@ import { AiBudget } from './aiBudget.js';
 import { runDay } from './kst.js';
 /** The market committee runs on the small model (one call a day over every group's numbers). */
 const MARKET_MODEL = 'claude-haiku-4-5';
-import { MarketCouncilSchema, MarketCouncilGenerationSchema, parseMarketCouncil, periodAsset, weekStart, validCouncil, marketNumberIssues, marketSymbol, renderMarketDeep, renderMarketReport, renderMarketReportIndex, type MarketReport, type MarketGroup, type Period } from '../report/marketReport.js';
+import { marketWorld, MarketCouncilSchema, MarketCouncilGenerationSchema, parseMarketCouncil, periodAsset, weekStart, validCouncil, marketNumberIssues, marketSymbol, renderMarketDeep, renderMarketReport, renderMarketReportIndex, type MarketReport, type MarketGroup, type Period } from '../report/marketReport.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { PriceBar } from '../types.js';
 import { readLog } from '../store/jsonlLog.js';
@@ -62,6 +62,12 @@ export async function macroCards(root:string,date:string):Promise<{macro?:MacroC
  for(const s of MACRO_SERIES){const xs=(await readLog<MacroPoint>(join(root,'data','macro',`${s.id}.jsonl`)).catch(()=>[])).filter(p=>p.date<=date&&Number.isFinite(p.value));const by=[...new Map(xs.map(p=>[p.date,p.value] as [string,number])).entries()].sort((a,b)=>a[0].localeCompare(b[0]));const last=by.at(-1);if(!last)continue;const prev=by.at(-21);cards.push({id:s.id,label:s.label,unit:s.unit,date:last[0],value:last[1],chg20:prev?last[1]-prev[1]:null,spark:by.slice(-30)});}
  return cards.length?{macro:cards}:{};
 }
+/** G-276: the world screen's snapshot (data/world/markets.json) when this run collected it, for the daily's map and cards. */
+export async function worldSnapshot(root:string,now:Date):Promise<{world?:NonNullable<MarketReport['world']>}>{
+ const m=JSON.parse(await readFile(join(root,'data','world','markets.json'),'utf8').catch(()=>'null'));
+ if(!m||!Array.isArray(m.indices)||!Array.isArray(m.macro)||!(now.getTime()-Date.parse(m.generatedAt)<6*3600_000))return {};
+ const w=marketWorld(m);return w?{world:w}:{};
+}
 export async function writeMarketReports(root:string, now:Date, universe:readonly UniverseRow[], apiKey?:string, injectedClient?:Anthropic, sharedBudget?:AiBudget, regenerate=process.env.MARKET_REGEN==='1', newsFetch?:typeof fetch):Promise<void>{
  const date=runDay(now).date, dir=join(root,'reports','market');await mkdir(dir,{recursive:true});
  const budget=sharedBudget??await AiBudget.load(root,now);
@@ -69,9 +75,10 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
   const file=join(dir,`${period}-${date}.json`); const old=await json(file) as MarketReport|null;
   // A finished report is kept; MARKET_REGEN=1 (manual run) asks for a fresh committee, keeping the old one if that fails.
   const done=old?.schema==='curia.market-report.v4'&&old.ai.status==='OK'&&!!(old.ai.council||old.ai.sealed);
-  if(done&&!regenerate){await savePrivateMarketReport(file,old!);continue;}
+  const world=await worldSnapshot(root,now);
+  if(done&&!regenerate){await savePrivateMarketReport(file,old!.world?old!:{...old!,...world});continue;}
   const news=await collectMarketNews(date,newsFetch?{fetch:newsFetch}:{});
-  const report:MarketReport={schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),...await macroCards(root,date),...(news.length?{news}:{}),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
+  const report:MarketReport={schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),...await macroCards(root,date),...world,...(news.length?{news}:{}),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
   // The committee's structure is checked strictly, so a regeneration gets up to three tries; each failure is logged (no secrets in it).
   const hasToday=report.groups.some(g=>g.assets.some(a=>a.date===date));
   for(let attempt=1;attempt<=(regenerate?3:2)&&report.ai.status!=='OK'&&(apiKey||injectedClient)&&hasToday&&budget.allows('market');attempt++){
