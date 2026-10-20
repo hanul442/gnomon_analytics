@@ -137,7 +137,7 @@ export const ALPHA_SCRIPT = `<script>
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && pop) close(); });
     G.call('GET', '/notifications').then(function (r) {
       if (r.error) return;
-      if (r.unread) b.insertAdjacentHTML('beforeend', '<i>' + r.unread + '</i>');
+      if (r.unread) { b.insertAdjacentHTML('beforeend', '<i>' + r.unread + '</i>'); document.querySelectorAll('[data-dock-unread]').forEach(function (d) { d.textContent = r.unread > 99 ? '99+' : r.unread; d.hidden = false; }); }
       if (G.push && G.push.supported) G.push.state().then(function (st) { if (st.on) b.classList.add('push-on'); });
     });
   };

@@ -306,7 +306,7 @@ const MY_SCREENS_SCRIPT = `<script>
 
 // G-201: one "내 종목" card: the stocks starred (☆) and the ones named in the survey, then the survey's sector chips
 // (each opens its strongest theme today) and the screener preset that fits the holding period.
-const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" aria-hidden="true"></span><div class="block-head"><h2>내 종목</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card my-card"><p class="feed-sum" id="feed-sum" hidden></p><div class="list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div><div id="feed-chips" class="feed-chips"></div><a class="feed-redo" href="settings.html#profile" id="feed-redo">내 투자 방식 바꾸기 ›</a></div></section>`;
+const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" aria-hidden="true"></span><div class="block-head"><h2>내 종목 오늘</h2><span class="muted" id="watch-where">로그인하면 계정에 저장돼요</span></div><div class="card my-card"><p class="feed-sum" id="feed-sum" hidden></p><div class="list" id="watch-list"><p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p></div><div id="feed-chips" class="feed-chips"></div><a class="feed-redo" href="settings.html#profile" id="feed-redo">내 투자 방식 바꾸기 ›</a></div></section>`;
 
 /** The filter menu (G-94): presets grouped by what the reader is looking for, each with its one-line meaning. */
 
@@ -321,9 +321,10 @@ export function renderHome(data: HomeData): string {
   const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
 </div></section>
+<i id="watch-slot" hidden></i>${WATCH}
 ${marketHero(data.indices, data.universe, data.pulse, latestDaily(data), data.us ?? null)}
 
-<div class="home-grid"><div class="home-main">${NEWS_ISSUES_CARD}${WATCH}${MY_SCREENS}${todayPicks(daily, sorted)}${scoreLine(sorted)}${moreList()}</div>
+<div class="home-grid"><div class="home-main">${NEWS_ISSUES_CARD}${MY_SCREENS}${todayPicks(daily, sorted)}${scoreLine(sorted)}${moreList()}</div>
 <aside class="home-rail">${scorecard(sorted)}${filings(sorted)}${PLAN_CARD}</aside></div>
 ${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 <footer id="sources" style="padding:24px 0 0"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS. 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
@@ -344,14 +345,21 @@ function marketHero(indices: readonly IndexQuote[], universe: readonly UniverseR
   const verdict = !total ? '' : lean > total * 0.1 ? (pulse ? '강세 종목이 많은 날이에요' : '오른 종목이 많은 날이에요') : lean < -total * 0.1 ? (pulse ? '약세 종목이 많은 날이에요' : '내린 종목이 많은 날이에요') : (pulse ? '강세·약세가 엇갈린 날이에요' : '등락이 엇갈린 날이에요');
   const day = pulse?.date ?? indices[0]?.date ?? '';
   const [bullWord, bearWord] = pulse ? ['강세', '약세'] : ['상승', '하락'];
-  const main = verdict ? `<a class="mh-main" href="${esc(href)}"><div class="mh-k">${day ? `${esc(day.slice(5).replace('-', '/'))} 장 마감 · ` : ''}${base}</div><h1 class="mh-v">${verdict}</h1>
+  // G-249 (Payrix 화면 구성, 한서님 10/19): one card. The first index as one big thin number, the market sentence under it,
+  // the slim bar, the other indices on one line, then four round shortcuts.
+  const lead = indices[0];
+  const big = lead ? `<div class="mh-top"><span>오늘 시장</span>${day ? `<small>${esc(day.slice(5).replace('-', '/'))} 마감</small>` : ''}</div><a class="mh-big" href="${esc(href)}"><b>${lead.close.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b><small>${esc(lead.name)} <span class="${tone(lead.changePct)}">${signed(lead.changePct)}</span></small></a>` : '';
+  const main = verdict ? `<a class="mh-main" href="${esc(href)}">${lead ? '' : `<div class="mh-k">${day ? `${esc(day.slice(5).replace('-', '/'))} 장 마감 · ` : ''}${base}</div>`}<h1 class="mh-v">${verdict}</h1>
 <div class="mh-bar" role="img" aria-label="${bullWord} ${pct(bull)}%, 중립 ${pct(mid)}%, ${bearWord} ${pct(bear)}%"><span class="s-bull" style="flex:${bull}"></span><span class="s-neutral" style="flex:${mid}"></span><span class="s-bear" style="flex:${bear}"></span></div>
-<div class="mh-n"><span class="up">${bullWord} ${pct(bull)}%</span><span class="down">${bearWord} ${pct(bear)}%</span></div></a>` : '';
-  const ix = indices.map((i) => `<span class="mh-ix">${esc(i.name)} <b>${Math.round(i.close).toLocaleString('ko-KR')}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span></span>`).join('');
+<div class="mh-n"><span class="up">${bullWord} ${pct(bull)}%</span><span class="mh-base">${base}</span><span class="down">${bearWord} ${pct(bear)}%</span></div></a>` : '';
+  const ix = indices.slice(lead ? 1 : 0).map((i) => `<span class="mh-ix">${esc(i.name)} <b>${Math.round(i.close).toLocaleString('ko-KR')}</b> <span class="${tone(i.changePct)}">${signed(i.changePct)}</span></span>`).join('');
   // G-179's US temperature card, folded: tapped open on the same line as the indices.
   const usCard = us && (us.pulse || us.up || us.down) ? marketTemperature(us.pulse, { up: us.up, down: us.down, flat: us.flat }, '미국', 'screener.html#us') : '';
   const strip = ix || usCard ? `<div class="mh-strip"><a class="mh-ixs" href="${esc(href)}">${ix}</a>${usCard ? '<button type="button" class="mh-us-btn" aria-expanded="false" aria-controls="mh-us">미국 ›</button>' : ''}</div>${usCard ? `<div class="mh-us" id="mh-us" hidden>${usCard}</div>` : ''}` : '';
-  return main || strip ? `<section class="block mh" id="mkt-hero">${main}${strip}</section>` : '';
+  const ic = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const go = ([l, h, d]: readonly [string, string, string]) => `<a href="${h}"><i>${ic(d)}</i><span>${l}</span></a>`;
+  const quick = `<nav class="mh-go" aria-label="바로 가기">${([['찾기', 'screener.html', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'], ['관심', 'watch.html', '<path d="M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8z"/>'], ['리포트', 'reports.html', '<path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4"/>'], ['성적표', 'scorecard.html', '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4v2h6V4M9 13l2 2 4-4"/>']] as const).map(go).join('')}</nav>`;
+  return main || strip ? `<section class="block mh" id="mkt-hero"><div class="mh-card">${big}${main}${strip}${quick}</div></section>` : '';
 }
 
 /** G-244: the scorecard's headline as one line in the page (the full card stays in the wide screen's side rail). */
@@ -444,7 +452,8 @@ const TODAY_SCRIPT = `<script>
 </script>`;
 
 
-const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;font-weight:600;margin-top:2px}.wl-new{color:var(--warn-strong);background:var(--warn-soft);border-radius:6px;padding:0 6px}
+const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;margin:7px 0 3px;max-width:180px;border-radius:3px;background:linear-gradient(90deg,var(--down-soft,rgba(5,130,202,.18)) 0 33%,var(--track,rgba(0,0,0,.07)) 33% 67%,var(--up-soft,rgba(229,57,53,.16)) 67%)}.wl-rail i{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--fg);box-shadow:0 0 0 2px var(--surface-solid,#fff)}
+.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12.5px;font-weight:600;margin-top:2px}.wl-new{color:var(--warn-strong);background:var(--warn-soft);border-radius:6px;padding:0 6px}
 .tier.t-mine{background:var(--warn-soft);color:var(--warn-strong)}#sig-list{padding:6px 12px}#sig-list .row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-size:14px}#sig-list .row:first-child{border-top:0}#sig-list .row small{font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}#sig-list .row>span:last-child{white-space:nowrap;font-weight:700}
 .find-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:8px 0 0}.find-row .flt-btn{margin:0}@media(max-width:820px){.find-row{gap:4px 8px}.find-row .find-link,.find-row .flt-btn{font-size:12px;white-space:nowrap}}.find-link{display:inline-flex;align-items:center;min-height:36px;font-size:14px;font-weight:800;text-decoration:none;color:var(--accent-strong)}
 .flt-btn{display:flex;align-items:baseline;gap:8px;margin:8px 0 0;border:0;background:none;font:inherit;font-size:14px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 2px}.flt-btn small{font-weight:500;color:var(--muted)}.flt{margin-top:6px;padding:14px 16px}.flt-k{font-size:12.5px;font-weight:800;color:var(--muted);margin:2px 0 6px}.flt-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.flt-seg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--soft);border-radius:12px;padding:4px;margin-bottom:12px}.flt-seg a{text-align:center;padding:8px 4px;border-radius:9px;font-size:13.5px;font-weight:800;text-decoration:none;color:var(--fg)}.flt-seg a:hover{background:var(--surface)}.flt-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;margin-bottom:12px}.flt-list a{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:12px;padding:9px 12px;text-decoration:none;color:var(--fg);background:var(--surface)}.flt-list a:hover{border-color:var(--accent)}.flt-list b{font-size:14px}.flt-list small{font-size:12px;color:var(--muted);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.flt-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.flt-actions .flt-more{display:block;text-align:center;border-radius:12px;padding:10px;background:var(--navy);color:var(--on-accent);text-decoration:none;font-size:14px}.flt-actions .ai{background:var(--surface);color:var(--accent-strong);border:1.5px solid var(--accent)}.flt-foot{font-size:12px;color:var(--muted);margin:8px 0 0}.flt-row a{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:700;text-decoration:none;color:var(--fg)}.flt-row a:hover{border-color:var(--accent);color:var(--accent-strong)}.flt-more{font-weight:800;font-size:14px}.flt-pop{position:fixed;inset:0;z-index:160;background:rgba(10,20,35,.5);display:grid;place-items:center;padding:20px}.flt-sheet{width:min(1080px,100%);height:min(88vh,900px);background:var(--surface-solid);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}.flt-top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}.flt-top b{font-size:17px}.flt-x{border:0;background:none;font-size:28px;line-height:1;cursor:pointer;color:var(--muted)}.flt-sheet iframe{flex:1;border:0;width:100%}@media (max-width:820px){.flt-pop{padding:0;place-items:end stretch}.flt-sheet{height:92vh;border-radius:18px 18px 0 0}}
@@ -495,10 +504,16 @@ const HOME_STYLE = `<style>.wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-
 @media (max-width:1100px){.home-grid{grid-template-columns:minmax(0,1fr)}.home-rail{position:static}}
 @media (max-width:820px){.ix-row,.ix-row.ix-4{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}.ix-row>.tmp{grid-column:1/3}.ix .spark{display:none}.ix-v{font-size:18px}.home-hero h1{font-size:24px}.home-hero .hero-line{display:block;font-size:13px}.rr-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.rr-chips>*{flex:none}}
 /* G-244 화면 개편 1단계: home */
-.mh{margin-top:14px}.mh-main{display:block;text-decoration:none;color:var(--fg)}.mh-k{font-size:13px;color:var(--muted)}.mh-v{margin:6px 0 14px;font-size:26px;line-height:1.35;font-weight:800;letter-spacing:-.01em}
-.mh-bar{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}.mh-bar span{min-width:3px}.mh-bar .s-bull{background:var(--up)}.mh-bar .s-neutral{background:var(--line-strong)}.mh-bar .s-bear{background:var(--down)}
-.mh-n{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;font-weight:700}
-.mh-strip{display:flex;align-items:center;gap:8px;margin-top:16px;padding:4px 4px 4px 14px;border-radius:12px;background:var(--soft)}.mh-ixs{display:flex;flex-wrap:wrap;gap:4px 16px;flex:1;min-width:0;padding:8px 0;text-decoration:none;color:var(--fg2);font-size:14px;font-variant-numeric:tabular-nums}.mh-ix b{color:var(--fg);font-weight:600}.mh-ix span{font-size:13px}
+.mh{margin-top:14px}.mh-card{padding:20px 20px 16px;border-radius:26px;background:var(--surface);border:1px solid var(--glass-line);box-shadow:var(--shadow);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}
+.mh-top{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:600;color:var(--fg)}.mh-top small{font-size:12.5px;font-weight:500;color:var(--muted)}
+.mh-big{display:block;margin:6px 0 2px;text-decoration:none;color:var(--fg)}.mh-big b{display:block;font-size:46px;line-height:1.1;font-weight:300;letter-spacing:-.035em;font-variant-numeric:tabular-nums}.mh-big small{font-size:13px;color:var(--muted);font-weight:500}.mh-big small span{font-weight:700}
+.mh-main{display:block;text-decoration:none;color:var(--fg)}.mh-k{font-size:13px;color:var(--muted)}.mh-v{margin:12px 0 12px;font-size:15.5px;line-height:1.5;font-weight:500;letter-spacing:-.01em;color:var(--fg2)}
+.mh-bar{display:flex;gap:2px;height:5px;border-radius:3px;overflow:hidden}.mh-bar span{min-width:3px}.mh-bar .s-bull{background:var(--up)}.mh-bar .s-neutral{background:var(--line-strong)}.mh-bar .s-bear{background:var(--down)}
+.mh-n{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:12px;font-weight:700}.mh-n .mh-base{font-weight:500;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mh-strip{display:flex;align-items:center;gap:8px;margin-top:12px;padding:2px 2px 2px 14px;border-radius:14px;background:var(--soft)}.mh-ixs{display:flex;flex-wrap:wrap;gap:4px 14px;flex:1;min-width:0;padding:8px 0;text-decoration:none;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}.mh-ix b{color:var(--fg);font-weight:600}.mh-ix span{font-size:12.5px}
+.mh-go{display:grid;grid-template-columns:repeat(4,1fr);margin-top:16px}.mh-go a{display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none;color:var(--fg2);font-size:12.5px;font-weight:600}
+.mh-go i{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:var(--pill);border:1px solid var(--line);box-shadow:0 6px 16px -10px rgba(10,22,38,.35);color:var(--fg);transition:transform .2s cubic-bezier(.34,1.5,.64,1)}.mh-go a:active i{transform:scale(.9)}.mh-go svg{width:21px;height:21px}
+#news-issues .card{border-radius:26px}#ni-home .ni-stocks,#ni-home-when{display:none}#ni-home .ni-row{grid-template-columns:30px minmax(0,1fr) auto;align-items:center;padding:12px 0}#ni-home .ni-n{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--soft);font-size:13px}#ni-home .ni-t{-webkit-line-clamp:1;font-weight:600}
 .mh-us-btn{flex:none;min-height:40px;padding:0 12px;border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer}.mh-us{margin-top:10px}.mh-us[hidden]{display:none}
 .home-main>.block{margin-top:28px}.home-main>.block[hidden]{display:none}
 .tp-grid{gap:0;grid-template-columns:minmax(0,1fr)}.tp{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:14px 40px 14px 0}.tp:first-child{border-top:0}.tp:hover{border-color:var(--line)}.tp .star{top:10px;right:-4px}.tp-line{margin:4px 0 0;font-size:13.5px;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -526,6 +541,9 @@ const HOME_SCRIPT = `<script>
     var named = {}, mineList = w;
     try { ((JSON.parse(localStorage.getItem('gnm-prefs') || 'null') || {}).tickers || []).forEach(function (t) { if (t && t[0]) named[t[0]] = t[1]; }); } catch (e) {}
     var sum = document.getElementById('feed-sum');
+    // G-257: my stocks open home; with none yet the card waits under 오늘의 이슈.
+    var wEl = document.getElementById('watch'), slot = document.getElementById('watch-slot'), hm = document.querySelector('.home-main');
+    if (wEl && slot && hm) { if (mineList.length) { if (slot.nextElementSibling !== wEl) slot.after(wEl); } else if (wEl.parentNode !== hm) hm.insertBefore(wEl, hm.children[1] || null); }
     if (!mineList.length) { box.innerHTML = '<p class="empty">☆를 눌러 관심 종목·ETF·코인을 모아 보세요.</p>'; if (sum) sum.hidden = true; return; }
     var show = function () {
       var up = 0, dn = 0;
@@ -538,7 +556,10 @@ const HOME_SCRIPT = `<script>
         if (wi) {
           var near = [wi.up ? ['▲', wi.up] : null, wi.dn ? ['▼', wi.dn] : null].filter(Boolean).map(function (x) { return [x[0], x[1], (x[1] / (p || wi.c) - 1) * 100]; }).sort(function (a, b) { return Math.abs(a[2]) - Math.abs(b[2]); })[0];
           // G-244: one line under the name: a new filing first, else the nearest price level. News counts stay on the stock page.
-          st = wi.f ? '<div class="wl-st"><span class="wl-new">새 공시 ' + wi.f + '건</span></div>' : near ? '<div class="wl-st"><span class="' + (near[0] === '▲' ? 'up' : 'down') + '">' + (near[0] === '▲' ? '강세' : '약세') + ' 전환 가격까지 ' + (near[2] > 0 ? '+' : '') + near[2].toFixed(1) + '%</span></div>' : '';
+          // G-257: the stock's scenario strip in small — 약세 전환 at the left, 강세 전환 at the right, a dot for now.
+          var now = p || wi.c, rail = '';
+          if (wi.up && wi.dn && now && wi.up > wi.dn) { var at = Math.max(0, Math.min(100, (now - wi.dn) / (wi.up - wi.dn) * 100)); rail = '<span class="wl-rail" role="img" aria-label="약세 전환 ' + Math.round(wi.dn).toLocaleString('ko-KR') + '원과 강세 전환 ' + Math.round(wi.up).toLocaleString('ko-KR') + '원 사이 ' + Math.round(at) + '% 자리"><i style="left:' + at.toFixed(1) + '%"></i></span>'; }
+          st = rail + (wi.f ? '<div class="wl-st"><span class="wl-new">새 공시 ' + wi.f + '건</span></div>' : near ? '<div class="wl-st"><span class="' + (near[0] === '▲' ? 'up' : 'down') + '">' + (near[0] === '▲' ? '강세' : '약세') + ' 전환 가격까지 ' + (near[2] > 0 ? '+' : '') + near[2].toFixed(1) + '%</span></div>' : '');
         }
         return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b>' + (coin || it[2] === 'ETF' ? ' <span class="muted small">' + (coin ? '코인' : 'ETF') + '</span>' : '') + st + '</a><span class="wl-px">' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="' + starred + '" aria-label="' + (starred ? '관심 종목에서 빼기' : '관심 종목에 담기') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
       }).join('');

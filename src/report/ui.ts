@@ -230,7 +230,6 @@ export const MENU_FOOT: readonly [string, string][] = [['FAQ·1:1 문의', 'faq.
 export const TABS: readonly [string, string, string][] = [
   ['홈', 'index.html#top', '<path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/>'],
   ['찾기', 'screener.html', '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>'],
-  ['내 종목', 'watch.html', '<path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/>'],
   ['위원회', 'reports.html', '<rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9.5 4h5v3h-5zM9 13.5l2 2 4-4"/>'],
   ['나', 'settings.html', '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>'],
 ];
@@ -240,28 +239,78 @@ export const TABS: readonly [string, string, string][] = [
  */
 export const MODE_GROUPS: readonly { key: string; label: string; modes: readonly [string, string][] }[] = [
   { key: 'find', label: '찾기', modes: [['주식', 'screener.html'], ['미국 주식', 'screener.html#us'], ['ETF', 'screener.html#etf'], ['코인', 'screener.html#coin'], ['테마', 'themes.html'], ['공시', 'signals.html']] },
-  { key: 'mine', label: '내 종목', modes: [['관심', 'watch.html'], ['알림', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html']] },
+  // G-255: 내 종목 is no longer a tab; its pages are 나's 내 기록 (관심 종목 itself lives on 홈).
+  { key: 'record', label: '내 기록', modes: [['알림함', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html']] },
   { key: 'committee', label: '위원회', modes: [['AI 리포트', 'reports.html'], ['성적표', 'scorecard.html'], ['시장 데일리', 'market-reports.html']] },
 ];
 /** Pages that belong to the 나 tab (account, money, help). */
 const ME_PAGES = ['account.html', 'pricing.html', 'login.html', 'onboarding.html', 'checkout.html', 'guide.html', 'faq.html', 'updates.html', 'survey.html', 'terms.html', 'privacy.html', 'hanul.html'];
 /** page file → the tab link (data-tab-link) it lights up. */
+const GROUP_TAB: Record<string, string> = { find: 'screener.html', committee: 'reports.html', record: 'settings.html' };
 const TAB_OF: Record<string, string> = Object.fromEntries([
-  ...MODE_GROUPS.flatMap((g) => g.modes.map(([, h]) => [h.split('#')[0], g.modes[0]![1]] as const)),
+  ...MODE_GROUPS.flatMap((g) => g.modes.map(([, h]) => [h.split('#')[0], GROUP_TAB[g.key] ?? g.modes[0]![1]] as const)),
   ...ME_PAGES.map((p) => [p, 'settings.html'] as const),
+  ['watch.html', 'top'] as const,
 ]);
-/** The mode row for `page` (a file name such as 'themes.html'), or '' when the page is in no group. */
+const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const SPARK_ICON = '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>';
+const GRID_ICON = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>';
+const DOCK_ICONS: Record<string, string> = {
+  'reports.html': '<path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z"/><path d="M14 3.5V8h4M10 12h5M10 15.5h5"/>',
+  'scorecard.html': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
+  'vs.html': '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/>',
+  'market-reports.html': '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  'inbox.html': '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  'myreports.html': '<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/><path d="M12 8v4l3 2"/>',
+  'settings.html': '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',
+};
+const FILTER_ICON = '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>';
+/** G-258: which screen's own bar a page gets: 찾기 a search field, 위원회 and 나 their icons. */
+function dockOf(page: string): 'find' | 'committee' | 'me' | undefined {
+  const g = MODE_GROUPS.find((x) => x.modes.some(([, h]) => h.split('#')[0] === page));
+  if (g?.key === 'find' || page === 'screener.html') return 'find';
+  if (g?.key === 'committee') return 'committee';
+  if (g?.key === 'record' || page === 'settings.html' || ME_PAGES.includes(page)) return 'me';
+  return undefined;
+}
+/** The 종목 bar's question chips (G-258): one tap opens the chat with the question typed in. */
+const ASK_CHIPS = ['시나리오 쉽게 풀어 줘', '지금 가격은 어디쯤이야?', '최근 공시 무슨 뜻이야?', '오늘 뉴스 요약해 줘'];
+/**
+ * One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones).
+ * G-258: the phone bar is one glass pill. Icons only, the current one named in a small bubble. With `ask` (stock and
+ * report pages) or a `page` that has its own bar, the right side turns into that screen's bar after the page opens.
+ */
+export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page?: string): string {
+  const links = TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('');
+  if (where === 'top') return `<nav class="top-tabs" aria-label="주 메뉴">${links}</nav>`;
+  const chat = 'data-open-chat aria-haspopup="dialog" aria-controls="chat"';
+  const dock = ask ? 'ask' : page ? dockOf(page) : undefined;
+  const seg = (rows: readonly (readonly [string, string, boolean, string?])[]) => `<div class="nav-seg">${rows.map(([l, h, on, extra]) => `<a href="${base}${h}" aria-label="${escM(l)}"${on ? ' aria-current="page"' : ''}>${svgI(DOCK_ICONS[h] ?? '')}<span>${escM(l)}</span>${extra ?? ''}</a>`).join('')}</div>`;
+  let ctx = '';
+  if (dock === 'ask') ctx = `<div class="nav-chips">${ASK_CHIPS.map((q) => `<button type="button" ${chat} data-q="${escM(q)}">${escM(q)}</button>`).join('')}</div><button type="button" class="nav-ask" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(ASK_ICON)}<span>물어보기</span><i aria-hidden="true">${svgI('<path d="M12 19V5M6 11l6-6 6 6"/>')}</i></button>`;
+  else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목·ETF·코인</span></button><button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
+  else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
+  else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 기록', 'myreports.html', page === 'myreports.html' || page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);
+  const back = dock ? `<button type="button" class="nav-back" aria-label="탭 4개 보기">${svgI(GRID_ICON)}</button>` : '';
+  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button><div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}</nav>`;
+}
+const ASK_ICON = '<path d="M5 5h14v10h-8l-4 4v-4H5z"/>';
+/**
+ * G-262 (was G-247 before beta took that number): one header block per screen (한서님 10/18 '바가 너무 많다'): the screen's name, then one row of text tabs whose
+ * underline is the chewy pill (G-189). On phones it replaces the top bar; it sits at the start of <main>.
+ * `tabs` overrides the row (찾기 keeps its in-page market buttons); with neither a group nor `tabs` only the title shows.
+ */
+export function pageHead(base: string, opts: { page?: string; title?: string; tabs?: string }): string {
+  const g = opts.page ? MODE_GROUPS.find((x) => x.modes.some(([, h]) => h === opts.page)) : undefined;
+  const title = opts.title ?? g?.label ?? '';
+  const tabs = opts.tabs ?? (g ? `<nav class="mode-tabs" aria-label="${escM(g.label)}">${g.modes.map(([l, h]) => `<a href="${base}${h}"${h === opts.page ? ' aria-current="page"' : ''}>${escM(l)}</a>`).join('')}</nav>` : '');
+  return `<div class="pg-title"><h1>${escM(title)}</h1><button type="button" class="pg-ask" data-open-chat aria-haspopup="dialog" aria-controls="chat" aria-label="AI에게 묻기">${svgI(ASK_ICON)}</button></div>${tabs}`;
+}
+/** Kept for callers that only want the row: the same text tabs as pageHead. */
 export function modeBar(base: string, page: string): string {
   const g = MODE_GROUPS.find((x) => x.modes.some(([, h]) => h === page));
-  if (!g) return '';
-  return `<nav class="find-tabs mode-bar" aria-label="${escM(g.label)}">${g.modes.map(([l, h]) => `<a href="${base}${h}"${h === page ? ' aria-current="page"' : ''}>${escM(l)}</a>`).join('')}</nav>`;
+  return g ? pageHead(base, { page }).replace(/^<div class="pg-title">.*?<\/div>/, '') : '';
 }
-const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
-/** One tab bar; `where` = 'top' (wide screens, in the header) or 'bottom' (phones). */
-export function tabBar(base: string, where: 'top' | 'bottom'): string {
-  return `<nav class="${where === 'top' ? 'top-tabs' : 'bottom-nav'}" aria-label="${where === 'top' ? '주 메뉴' : '빠른 이동'}">${TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('')}</nav>`;
-}
-
 
 /** The top bar's tabs (wide screens). G-245: there is no 전체 sheet any more; `drawer` stays empty for old callers. */
 export function menuHtml(base: string): { button: string; drawer: string } {
@@ -271,6 +320,11 @@ export function menuHtml(base: string): { button: string; drawer: string } {
 /** G-245: the top of the 나 tab — the account row, the app install, the ops link for admins (filled by alpha.ts). */
 export function meHead(base: string): string {
   return `<div class="me-head"><a class="me-acct" href="${base}pricing.html" data-acct-tab="1"><span><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></span><i aria-hidden="true">›</i></a><button type="button" class="me-install" data-install hidden>그노몬 앱 설치<small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button><div id="sm-admin"></div></div>`;
+}
+/** G-255: 나's 내 기록 rows — what used to be the 내 종목 tab, one tap each. */
+export function meRecord(base: string): string {
+  const rows: readonly [string, string, string][] = [['관심 종목', 'watch.html', '☆를 누른 종목'], ['알림함', 'inbox.html', '가격·리포트·공시 알림'], ['내 리포트', 'myreports.html', '내가 요청한 리포트'], ['내 토론', 'mydebates.html', '위원회에 한 질문']];
+  return `<section class="card st-rows me-rec">${rows.map(([l, h, d]) => `<a href="${base}${h}"><span><b>${escM(l)}</b><small>${escM(d)}</small></span><i aria-hidden="true">›</i></a>`).join('')}</section>`;
 }
 /** G-245: the 나 tab's help rows (사용법 and what used to be the small links under the 전체 sheet). */
 export function meHelp(base: string): string {
@@ -519,9 +573,9 @@ export const TOUR_JS = `
         ['#tab-news', '뉴스·공시', '제목으로 원문을 확인하고 더 보기로 나머지를 펼쳐요. 기업 이벤트와 테마 확장은 준비 중이에요.', 'news'],
       ],
       find: [
-        ['#search', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
-        ['.find-tabs', '시장 선택', '주식·ETF·코인을 선택하세요. 시장별로 지원되는 조건이 달라요.'],
-        ['#sc-filter-open', '필터 · AI 조건', '필터를 누르면 AI 조건(원하는 특징을 문장으로)과 직접 조건을 정하는 화면이 열려요. 결과 보기로 돌아와요.'],
+        ['#search|.bottom-nav .nav-field', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
+        ['.mode-tabs', '모드 선택', '주식·ETF·코인·테마·공시를 바꿔 가며 보세요. 시장별로 지원되는 조건이 달라요.'],
+        ['#sc-filter-open|.bottom-nav [data-dock-filter]', '필터 · AI 조건', '필터를 누르면 AI 조건(원하는 특징을 문장으로)과 직접 조건을 정하는 화면이 열려요. 결과 보기로 돌아와요.'],
         ['#ai-build', 'AI 조건', '원하는 특징을 문장으로 적고 ✦를 누르세요. 실제 생성 대기에는 Thinking Orbs가 표시돼요.'],
         ['#sc-form', '검토·적용·저장', 'AI 제안을 검토해 적용한 뒤 조건을 직접 수정하고 저장하세요. 완료 안내가 나와야 저장된 상태예요. 오류면 다시 확인하세요.'],
       ],
@@ -531,13 +585,15 @@ export const TOUR_JS = `
     var key = 'gnm-tour-v243-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
     try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-' + kind) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
     if (seen && !forced) return;
-    var steps = STEPS[kind].filter(function (s) { var el = document.querySelector(s[0]); return el && (s[3] || el.getClientRects().length); });
+    // G-260: a step may name 'page part|bar part'; on phones the part in the bottom bar is used (and the bar shows its own row).
+    var pick = function (sel) { var xs = sel.split('|'); for (var k = 0; k < xs.length; k++) { var e = document.querySelector(xs[k]); if (e && /bottom-nav/.test(xs[k])) { var nv = e.closest('.bottom-nav'); if (nv && nv.hasAttribute('data-dock')) nv.classList.add('ctx'); } if (e && e.getClientRects().length) return e; } return document.querySelector(xs[0]); };
+    var steps = STEPS[kind].filter(function (s) { var el = pick(s[0]); return el && (s[3] || el.getClientRects().length); });
     if (!steps.length) return;
     var i = 0, hole, tip, focusBefore = document.activeElement, originalTab = document.querySelector('.chips [aria-selected=true]');
     var end = function () { try { localStorage.setItem(key, '1'); } catch (e) {} if (hole) hole.remove(); if (tip) tip.remove(); window.removeEventListener('resize', place); window.removeEventListener('scroll', place); window.removeEventListener('keydown', escapeTour); if (originalTab) { if (window.GNM_showTab) window.GNM_showTab(originalTab.getAttribute('aria-controls').replace('tab-','')); else originalTab.click(); } if (focusBefore && focusBefore.isConnected) focusBefore.focus({preventScroll:true}); };
     var escapeTour = function(e){if(e.key === 'Escape') end();};
     var place = function () {
-      var el = document.querySelector(steps[i][0]); if (!el) return;
+      var el = pick(steps[i][0]); if (!el) return;
       var r = el.getBoundingClientRect(), pad = 6;
       // G-196: moved with transform, not top/left, so the spotlight never counts as the page jumping (it was nearly all the layout shift on a first visit).
       // The first placement snaps (no fly-in from the corner); later steps glide.
@@ -548,7 +604,7 @@ export const TOUR_JS = `
       if (first) { void hole.offsetWidth; hole.dataset.on = '1'; hole.classList.remove('still'); tip.classList.remove('still'); }
     };
     var show = function () {
-      var s = steps[i]; if (s[3]) { if (window.GNM_showTab) window.GNM_showTab(s[3]); else { var tab = document.getElementById('t-' + s[3]); if (tab) tab.click(); } } var el = document.querySelector(s[0]);
+      var s = steps[i]; if (s[3]) { if (window.GNM_showTab) window.GNM_showTab(s[3]); else { var tab = document.getElementById('t-' + s[3]); if (tab) tab.click(); } } var el = pick(s[0]);
       el.scrollIntoView({ block: 'center' });
       tip.innerHTML = '<div class="tr-n">' + (i + 1) + ' / ' + steps.length + '</div><b>' + s[1] + '</b><p>' + s[2] + '</p><div class="tr-b"><button type="button" data-t="x">그만 보기</button>' + (i ? '<button type="button" data-t="p">이전</button>' : '') + '<button type="button" data-t="n" class="tr-next">' + (i === steps.length - 1 ? '끝' : '다음') + '</button></div>';
       tip.querySelector('[data-t=n]').focus({preventScroll:true}); setTimeout(place, 60);
@@ -623,7 +679,16 @@ export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);bac
 /* G-245: the 나 tab's head (account, install, ops) and the mode rows (sibling pages as one screen, G-189 pill). */
 .me-head{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}.me-acct{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:60px;padding:12px 16px;border-radius:14px;background:var(--soft);color:var(--fg);text-decoration:none}.me-acct b{display:block;font-size:16px}.me-acct small{color:var(--muted);font-size:13px;font-weight:600}.me-acct i{font-style:normal;color:var(--muted);font-size:18px}
 .me-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:1px solid var(--line-strong);background:transparent;border-radius:14px;padding:12px 16px;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:var(--fg)}.me-install[hidden]{display:none}.me-install small{color:var(--muted);font-size:12.5px;font-weight:400}#sm-admin:empty{display:none}#sm-admin .sm-title{font-size:12px;font-weight:800;color:var(--muted);margin:6px 2px}#sm-admin a{display:flex;align-items:center;min-height:44px}
-.mode-bar{display:flex;gap:6px;overflow-x:auto;max-width:1180px;margin:14px auto 4px;padding:0 24px;scrollbar-width:none}.mode-bar>a{flex:none;display:inline-flex;align-items:center;min-height:40px;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:0 16px;font-size:14.5px;font-weight:700;text-decoration:none;color:var(--fg)}.mode-bar::-webkit-scrollbar{display:none}.find-tabs a[aria-current=page]{background:var(--navy);color:var(--on-accent);border-color:var(--navy)}@media (max-width:820px){.mode-bar{padding:0 14px;margin-top:10px}}`;
+.pg-title{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 24px 4px}.pg-title h1{margin:0;font-size:32px;font-weight:300;letter-spacing:-.035em;line-height:1.15}
+.pg-ask{display:none;width:46px;height:46px;border:1px solid var(--glass-line);border-radius:50%;background:var(--surface);color:var(--fg);cursor:pointer;align-items:center;justify-content:center;box-shadow:var(--shadow);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}.pg-ask svg{width:22px;height:22px}
+/* G-248: the mode row is a segmented track with the chewy white pill (G-189) instead of underlined text. */
+.mode-tabs{position:sticky;top:8px;z-index:20;display:flex;gap:2px;width:max-content;max-width:calc(100% - 48px);margin:10px 24px 14px;padding:4px;overflow-x:auto;scrollbar-width:none;border-radius:999px;background:var(--track);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}.mode-tabs::-webkit-scrollbar{display:none}
+@media (min-width:1228px){.mode-tabs{margin-left:calc(50% - 566px)}}
+.mode-tabs>a,.mode-tabs>button{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:38px;padding:0 15px;border:0;border-radius:999px;background:none!important;font:inherit;font-size:14.5px;font-weight:600;color:var(--muted);text-decoration:none;cursor:pointer;white-space:nowrap;transition:color .2s}
+.mode-tabs>[aria-current=page],.mode-tabs>[aria-selected=true]{color:var(--fg)}.mode-tabs .muted{display:none}
+.mode-tabs>.seg-thumb{background:var(--pill)!important;box-shadow:0 1px 2px rgba(10,22,38,.08),0 6px 16px -8px rgba(10,22,38,.25)!important}
+@media (min-width:821px){.mode-tabs{top:72px}}
+@media (max-width:820px){body:has(.pg-title) .topbar{display:none}.pg-title{padding:18px 20px 0}.pg-ask{display:inline-flex}.mode-tabs{margin:12px 16px 14px;max-width:calc(100% - 32px)}body:has(.bottom-nav) .chat-fab{display:none!important}}`;
 
 export const MENU_JS = `
   // G-245: the five tabs light up by page (sibling pages light their group's tab), and a mode row moves its pill
@@ -633,9 +698,9 @@ export const MENU_JS = `
     var mark = function () { var h = location.hash.slice(1); document.querySelectorAll('[data-tab-link]').forEach(function (a) { var k = a.getAttribute('data-tab-link'), on = here === 'index.html' ? k === 'top' : (k === here || TAB_OF[here] === k); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); };
     mark(); window.addEventListener('hashchange', mark);
     var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.querySelectorAll('.mode-bar').forEach(function (bar) { var a = bar.querySelector('[aria-current=page]'); if (a) bar.scrollLeft += a.getBoundingClientRect().left - bar.getBoundingClientRect().left - (bar.clientWidth - a.offsetWidth) / 2; });
+    document.querySelectorAll('.mode-tabs').forEach(function (bar) { var a = bar.querySelector('[aria-current=page]'); if (a) bar.scrollLeft += a.getBoundingClientRect().left - bar.getBoundingClientRect().left - (bar.clientWidth - a.offsetWidth) / 2; });
     document.addEventListener('click', function (e) {
-      var a = e.target.closest && e.target.closest('.find-tabs a[href]'); if (!a || a.getAttribute('aria-current') === 'page') return;
+      var a = e.target.closest && e.target.closest('.find-tabs a[href], .mode-tabs a[href]'); if (!a || a.getAttribute('aria-current') === 'page') return;
       if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target === '_blank') return;
       var url = a.href; if (url.split('#')[0] === location.href.split('#')[0]) return;
       e.preventDefault();

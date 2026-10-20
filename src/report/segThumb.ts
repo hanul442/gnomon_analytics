@@ -27,7 +27,7 @@ html.chart-fs .cfs-foot>.seg>.seg-thumb{background:var(--soft);box-shadow:none}
 
 export const SEG_THUMB_JS = `
 (function () {
-  var SEL = '.seg,.find-tabs,.adm-tabs,.bn-dots';
+  var SEL = '.seg,.find-tabs,.mode-tabs,.adm-tabs,.bn-dots';
   var ON = '[aria-pressed=true],[aria-selected=true],[aria-current=page]';
   var kids = function (g) { var out = [], c = g.children; for (var i = 0; i < c.length; i++) if (c[i] !== g.__thumb) out.push(c[i]); return out; };
   var place = function (g, lean) {
