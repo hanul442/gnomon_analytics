@@ -212,3 +212,25 @@ export function saidOdds(base: number, calls: readonly Call[], board: readonly P
   const k = text.length ? committeeConsensus(text, board, {}) : null;
   return clamp(base + (k ? clamp(AI_SHRINK * (k.upPct - 50), -AI_CAP, AI_CAP) : 0) / 100, 0.05, 0.95);
 }
+
+// ---------- where a stock sits among the most-traded (G-268) ----------
+
+/**
+ * Fifths of the base score over ten years of each day's 200 most-traded stocks (cut points of the shipped model),
+ * and how each fifth did out of sample: the 2016–2022 model's fifths on 2023–2026, the 20-session return against
+ * that day's average (data/eval/base-2026-10-20.md §3). Ranking against other stocks held up far better than
+ * calling a direction, so the page leads with this. The lowest fifth (high volatility, a recent jump) is the clear one.
+ */
+export const BASE_FIFTH_CUTS = [0.398, 0.425, 0.445, 0.466] as const;
+export const BASE_FIFTHS = [
+  { label: '가장 낮음', beatPct: 35.6, excessPct: -1.95 },
+  { label: '낮음', beatPct: 42.1, excessPct: 1.03 },
+  { label: '중간', beatPct: 44.0, excessPct: 0.7 },
+  { label: '높음', beatPct: 45.1, excessPct: 0.33 },
+  { label: '가장 높음', beatPct: 46.8, excessPct: 0.45 },
+] as const;
+
+export function basePosition(base: number): { fifth: number; label: string; beatPct: number; excessPct: number } {
+  const fifth = BASE_FIFTH_CUTS.filter((c) => base > c).length;
+  return { fifth, ...BASE_FIFTHS[fifth]! };
+}
