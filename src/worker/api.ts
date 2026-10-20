@@ -1291,7 +1291,7 @@ route('POST', '/admin/invites', async ({ req, env, now }) => {
   const b = await body(req), code = (str(b.code, 40) || inviteCode()).toUpperCase(), maxUses = b.maxUses === undefined ? 1 : int(b.maxUses), credits = b.credits === undefined ? 0 : int(b.credits);
   if (!/^[A-Z0-9-]{4,40}$/.test(code) || !(maxUses >= 1 && maxUses <= 500) || !(credits >= 0 && credits <= 1000)) fail(400, 'BAD_INVITE', '초대 코드 설정을 확인해 주세요.');
   const expires = typeof b.expiresAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.expiresAt) ? new Date(Date.parse(`${b.expiresAt}T23:59:59+09:00`)).toISOString() : null;
-  // G-240: which test account the code makes. The ops screen sends beta unless the admin picks alpha.
+  // G-240: which test account the code makes. Alpha unless asked; the ops screen has no beta choice until the beta starts (한서 10/18).
   const plan = b.plan === undefined ? 'alpha' : String(b.plan);
   if (!isTester(plan)) fail(400, 'BAD_INVITE', '초대 코드의 계정 종류(알파·베타)를 확인해 주세요.');
   const r = await env.DB.prepare('INSERT OR IGNORE INTO invites (code, note, max_uses, credits, expires_at, created_at, plan) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(code, str(b.note, 200), maxUses, credits, expires, iso(now), plan).run();
