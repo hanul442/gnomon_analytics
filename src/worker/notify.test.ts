@@ -222,3 +222,33 @@ test('the weekly summary mail (G-180): Sunday evening only, once a week, to user
   assert.match(page, /&lt;b&gt;제목&lt;\/b&gt;/);
   assert.match(page, /투자 권유가 아니고/);
 });
+
+test('alpha wrap-up notice (G-241): from 10/24 10:00 KST, once per tester, 🔔 and mail, skipping who already answered', async () => {
+  const db = testDb();
+  const { runWrapupNotify } = await import('./notify.js');
+  await db.prepare("INSERT INTO users (id, email, plan, role, created_at) VALUES ('u1', 'a@example.com', 'alpha', 'user', '2026-10-06T00:00:00Z'), ('u2', 'b@example.com', 'alpha', 'user', '2026-10-06T00:00:00Z'), ('u3', 'c@example.com', 'alpha', 'user', '2026-10-06T00:00:00Z')").run();
+  await db.prepare("UPDATE users SET disabled = 1 WHERE id = 'u3'").run();
+  await db.prepare("INSERT INTO notify_prefs (user_id, prefs, updated_at) VALUES ('u1', '{\"update\":false,\"daily\":false}', '2026-10-06T00:00:00Z')").run();
+  await db.prepare("INSERT INTO surveys (user_id, kind, answers, created_at) VALUES ('u2', 'wrapup', '{}', '2026-10-24T00:30:00Z')").run();
+  const sent: { to: string; subject: string; html: string }[] = [];
+  const fetchFn = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (String(url).startsWith('https://api.resend.com')) { const b = JSON.parse(String(init!.body)); sent.push({ to: b.to[0], subject: b.subject, html: b.html }); return new Response('{}', { status: 200 }); }
+    return new Response('', { status: 404 });
+  }) as typeof fetch;
+  const env = { RESEND_API_KEY: 'k', SITE_URL: SITE };
+  const at = (iso: string) => ({ db, fetch: fetchFn, site: SITE, now: new Date(iso) });
+  assert.deepEqual(await runWrapupNotify(at('2026-10-24T00:50:00Z'), env), { sent: 0, mailed: 0 }, '09:50 KST: not yet');
+  assert.deepEqual(await runWrapupNotify(at('2026-10-24T01:00:00Z'), env), { sent: 1, mailed: 1 }, 'u1 only: u2 answered, u3 is off');
+  const n = await db.prepare("SELECT kind, title, link FROM notifications WHERE user_id = 'u1'").first<{ kind: string; title: string; link: string }>();
+  assert.deepEqual({ ...n }, { kind: 'notice', title: '알파 마무리 설문 · 클로즈드 베타 신청', link: 'survey.html?k=wrapup' }, 'a service notice ignores the per-kind switches');
+  assert.equal(sent[0]!.to, 'a@example.com');
+  assert.match(sent[0]!.subject, /\[그노몬\] 알파 마무리 설문/);
+  assert.match(sent[0]!.html, /survey\.html\?k=wrapup/);
+  assert.match(sent[0]!.html, /계정이 바뀌지는 않아요/);
+  assert.deepEqual(await runWrapupNotify(at('2026-10-24T01:10:00Z'), env), { sent: 0, mailed: 0 }, 'once');
+  // A tester who joins during the week still hears once; after the alpha ends nobody does.
+  await db.prepare("INSERT INTO users (id, email, plan, role, created_at) VALUES ('u4', 'd@example.com', 'alpha', 'user', '2026-10-27T00:00:00Z')").run();
+  assert.deepEqual(await runWrapupNotify(at('2026-10-27T01:00:00Z'), env), { sent: 1, mailed: 1 });
+  await db.prepare("INSERT INTO users (id, email, plan, role, created_at) VALUES ('u5', 'e@example.com', 'alpha', 'user', '2026-10-31T00:00:00Z')").run();
+  assert.deepEqual(await runWrapupNotify(at('2026-10-31T15:00:00Z'), env), { sent: 0, mailed: 0 });
+});

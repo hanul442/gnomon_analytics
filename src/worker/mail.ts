@@ -5,7 +5,7 @@
 
 import type { D1 } from './db.js';
 
-export type MailKind = 'login' | 'screen' | 'weekly' | 'test';
+export type MailKind = 'login' | 'screen' | 'weekly' | 'notice' | 'test';
 export interface MailEnv { RESEND_API_KEY?: string; MAIL_FROM?: string; SITE_URL: string }
 export interface MailBody { kind: MailKind; to: string; subject: string; /** The part between the header and the footer; already HTML. */ html: string; text: string; userId?: string | null }
 
