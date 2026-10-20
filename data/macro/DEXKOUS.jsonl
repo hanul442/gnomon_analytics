@@ -268,3 +268,7 @@
 {"series":"DEXKOUS","date":"2026-10-07","value":1339.12,"source":"fred:csv","retrievedAt":"2026-10-17T10:14:12.213Z"}
 {"series":"DEXKOUS","date":"2026-10-08","value":1343.34,"source":"fred:csv","retrievedAt":"2026-10-17T10:14:12.213Z"}
 {"series":"DEXKOUS","date":"2026-10-09","value":1342.13,"source":"fred:csv","retrievedAt":"2026-10-17T10:14:12.213Z"}
+{"series":"DEXKOUS","date":"2026-10-13","value":1341.16,"source":"fred:csv","retrievedAt":"2026-10-20T00:46:07.241Z"}
+{"series":"DEXKOUS","date":"2026-10-14","value":1343.02,"source":"fred:csv","retrievedAt":"2026-10-20T00:46:07.241Z"}
+{"series":"DEXKOUS","date":"2026-10-15","value":1343.31,"source":"fred:csv","retrievedAt":"2026-10-20T00:46:07.241Z"}
+{"series":"DEXKOUS","date":"2026-10-16","value":1334.03,"source":"fred:csv","retrievedAt":"2026-10-20T00:46:07.241Z"}
