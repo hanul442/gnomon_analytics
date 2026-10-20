@@ -20,8 +20,14 @@ export function healthAxes(m: MarketSection, close: number | null): Axis[] {
   const q = m.quarters.filter((p) => !p.isEstimate), y = m.years.filter((p) => !p.isEstimate);
   const last = q.at(-1), yearAgo = last ? q.find((p) => p.period === `${Number(last.period.slice(0, 4)) - 1}${last.period.slice(4)}`) : undefined;
   const salesNow = last?.metrics['매출액'] ?? null, salesThen = yearAgo?.metrics['매출액'] ?? null;
-  const growth = salesNow != null && salesThen ? (salesNow / salesThen - 1) * 100 : null;
-  const om = y.at(-1)?.metrics['영업이익률'] ?? last?.metrics['영업이익률'] ?? null;
+  // G-270: a filer with only yearly reports (TSMC, Alibaba …) or amounts in another currency keeps its revenue growth
+  // as a ratio; a company with no operating income line (banks, insurers, Eli Lilly) is judged on its net margin.
+  const quarterGrowth = salesNow != null && salesThen ? (salesNow / salesThen - 1) * 100 : last?.metrics['매출성장률'] ?? null;
+  const yearGrowth = y.at(-1)?.metrics['매출성장률'] ?? null;
+  const growth = quarterGrowth ?? yearGrowth;
+  const opm = y.at(-1)?.metrics['영업이익률'] ?? last?.metrics['영업이익률'] ?? null;
+  const netm = opm == null ? y.at(-1)?.metrics['순이익률'] ?? last?.metrics['순이익률'] ?? null : null;
+  const om = opm ?? netm;
   const debt = last?.metrics['부채비율'] ?? y.at(-1)?.metrics['부채비율'] ?? null;
   const f20 = m.flows?.sums.find((s) => s.days === 20);
   const inst = f20 ? (f20.foreignValue ?? f20.foreign ?? 0) + (f20.institutionValue ?? f20.institution ?? 0) : null;
@@ -30,8 +36,8 @@ export function healthAxes(m: MarketSection, close: number | null): Axis[] {
   const per = s?.per ?? null;
   const value = upside != null ? clamp(50 + upside * 1.5) : per != null && per > 0 ? (per < 10 ? 80 : per < 20 ? 60 : per < 40 ? 40 : 20) : null;
   const axes: Axis[] = [
-    { key: 'growth', label: '성장', score: growth == null ? null : clamp(50 + growth * 2.5), value: growth == null ? '자료 없음' : `매출 ${fmtPct(growth)}`, note: '최근 분기 매출, 1년 전 같은 분기 대비' },
-    { key: 'profit', label: '수익성', score: om == null ? null : clamp(om * 5), value: om == null ? '자료 없음' : `영업이익률 ${om.toFixed(1)}%`, note: '20%면 만점' },
+    { key: 'growth', label: '성장', score: growth == null ? null : clamp(50 + growth * 2.5), value: growth == null ? '자료 없음' : `매출 ${fmtPct(growth)}`, note: quarterGrowth == null && yearGrowth != null ? '최근 연도 매출, 1년 전 대비' : '최근 분기 매출, 1년 전 같은 분기 대비' },
+    { key: 'profit', label: '수익성', score: om == null ? null : clamp(om * 5), value: om == null ? '자료 없음' : `${netm != null ? '순이익률' : '영업이익률'} ${om.toFixed(1)}%`, note: '20%면 만점' },
     { key: 'safety', label: '안정성', score: debt == null ? null : clamp(100 - debt / 2), value: debt == null ? '자료 없음' : `부채비율 ${debt.toFixed(0)}%`, note: '0%면 만점, 200%면 0점' },
     { key: 'flow', label: '수급', score: f20 ? (both === 2 ? 85 : both === 1 ? (inst != null && inst > 0 ? 65 : 45) : 20) : null, value: f20 ? (both === 2 ? '외국인·기관 동반 순매수' : both === 1 ? '외국인·기관 엇갈림' : '외국인·기관 순매도') : '자료 없음', note: '최근 20거래일' },
     { key: 'value', label: '가치', score: value, value: upside != null ? `목표가까지 ${fmtPct(upside)}` : per != null ? `PER ${per.toFixed(1)}배` : '자료 없음', note: upside != null ? '증권가 평균 목표가 기준' : 'PER 기준' },

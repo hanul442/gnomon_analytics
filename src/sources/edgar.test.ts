@@ -135,3 +135,31 @@ test('fetchEdgar: the CIK map is skipped when the CIK is known, every part is be
   const none = await fetchEdgar({ symbol: 'ZZZZ', ticker: 'ZZZZ', fetch: fake, now: () => AT });
   assert.deepEqual([none.cik, none.status[0]!.error], [null, 'EDGAR_NO_CIK']);
 });
+
+test('G-270: a foreign filer in IFRS and its own currency keeps ratios only; a missing liabilities line is derived', () => {
+  const y = (end: string, val: number, extra: Record<string, unknown> = {}) => ({ end, val, start: `${end.slice(0, 4)}-01-01`, fp: 'FY', form: '20-F', filed: `${Number(end.slice(0, 4)) + 1}-04-01`, frame: `CY${end.slice(0, 4)}`, ...extra });
+  const i = (end: string, val: number) => ({ end, val, fp: 'FY', form: '20-F', filed: `${Number(end.slice(0, 4)) + 1}-04-01`, frame: `CY${end.slice(0, 4)}Q4I` });
+  const ifrs = { facts: { 'ifrs-full': {
+    Revenue: { units: { TWD: [y('2023-12-31', 2000), y('2024-12-31', 2600)], USD: [y('2024-12-31', 80)] } },
+    ProfitLossFromOperatingActivities: { units: { TWD: [y('2024-12-31', 1170)] } },
+    ProfitLoss: { units: { TWD: [y('2023-12-31', 800), y('2024-12-31', 1100)] } },
+    Liabilities: { units: { TWD: [i('2024-12-31', 1000)] } },
+    Equity: { units: { TWD: [i('2024-12-31', 2000)] } },
+  } } };
+  const f = parseCompanyFacts(ifrs, 'TSM', AT), last = f.at(-1)!;
+  assert.equal(last.period, '202412');
+  assert.equal(last.metrics['매출액'], undefined);
+  assert.equal(last.metrics['영업이익률'], 45);
+  assert.equal(Math.round(last.metrics['매출성장률']!), 30);
+  assert.equal(last.metrics['부채비율'], 50);
+  const gaap = { facts: { 'us-gaap': {
+    Revenues: { units: { USD: [y('2024-12-31', 100e6, { form: '10-K' })] } },
+    NetIncomeLoss: { units: { USD: [y('2024-12-31', 10e6, { form: '10-K' })] } },
+    LiabilitiesAndStockholdersEquity: { units: { USD: [i('2024-12-31', 300e6)] } },
+    StockholdersEquity: { units: { USD: [i('2024-12-31', 100e6)] } },
+  } } };
+  const k = parseCompanyFacts(gaap, 'KO', AT).at(-1)!;
+  assert.equal(k.metrics['매출액'], 100);
+  assert.equal(k.metrics['부채비율'], 200);
+  assert.equal(Object.keys(k.metrics).some((x) => x.startsWith('_')), false);
+});
