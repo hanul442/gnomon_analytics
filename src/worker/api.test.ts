@@ -935,3 +935,20 @@ test('a US report request does not reuse a research context saved while SEC refu
  const fetch2=(async (url: RequestInfo|URL)=>String(url).endsWith('/research/GOOGL.O.json')?Response.json(ok):fetch(url)) as typeof globalThis.fetch;
  assert.ok((await reportInput('https://site.test','GOOGL.O',{now:()=>now,fetch:fetch2})).notes.includes('OLD CONTEXT'));
 });
+
+test('coinnews (G-270): a coin without a report gets its news from Google News, only stories naming the coin', async () => {
+  const t = setup(), base = t.deps.fetch;
+  let asked = '';
+  const item = (title: string, link: string) => `<item><title>${title} - 연합뉴스</title><link>${link}</link><pubDate>${new Date(Date.parse('2026-10-05T02:00:00Z')).toUTCString()}</pubDate><source url="https://www.yna.co.kr">연합뉴스</source></item>`;
+  t.deps.fetch = (async (url: string, init?: RequestInit) => {
+    const u = String(url);
+    if (u.startsWith('https://news.google.com/rss/search')) { asked = decodeURIComponent(new URL(u).searchParams.get('q') ?? ''); return new Response(`<rss><channel>${item('리플 급등, XRP 거래 늘어', 'https://www.yna.co.kr/view/1')}${item('비트코인 숨 고르기', 'https://www.yna.co.kr/view/2')}</channel></rss>`, { headers: { 'content-type': 'application/rss+xml; charset=utf-8' } }); }
+    return base(url, init);
+  }) as typeof fetch;
+  const r = await t.call('GET', '/coinnews/KRW-XRP?name=' + encodeURIComponent('엑스알피(리플)'));
+  assert.equal(r.status, 200);
+  assert.equal(asked, '(엑스알피 OR 리플) 코인');
+  assert.match(r.body.homeNews, /리플 급등/);
+  assert.doesNotMatch(r.body.homeNews, /비트코인 숨 고르기/);
+  assert.match(r.body.news, /리플 급등/);
+});
