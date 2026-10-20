@@ -5,7 +5,8 @@
 // voted that way; chips highlight one faction. Pure rendering from the report.
 
 import type { DailyReport } from './dailyReport.js';
-import { ANALYSTS, committeeConsensus } from '../analysis/analysts.js';
+import { ANALYSTS } from '../analysis/analysts.js';
+import { committeeOdds, reportBase } from '../analysis/baseOdds.js';
 import { esc } from './html.js';
 import { won } from './format.js';
 
@@ -171,16 +172,22 @@ export const PARLIAMENT_SCRIPT = `<script>
 </script>`;
 
 /**
- * G-228: one line under the committee vote: the analysts' calls pooled into a chance the price is higher in
- * 20 sessions (log-odds average, skill-weighted once records are long enough). The same for every reader.
+ * One line under the committee vote: a chance the price is higher in 20 sessions, the same for every reader.
+ * G-264: for a Korean stock it starts from the statistical base (volatility, a recent one-day jump, the 52-week
+ * high; fitted on ten years) and only the analysts who read earnings, filings and news move it, by at most
+ * AI_CAP points; the Platt line refitted on scored committee numbers applies once it is active. Otherwise
+ * (G-228) every analyst's call pooled in log-odds, skill-weighted once records are long enough.
  */
 export function consensusNote(report: DailyReport): string {
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
-  const k = committeeConsensus(c?.analysts ?? [], report.market?.analystBoard ?? []);
+  const k = committeeOdds(reportBase(report), c?.analysts ?? [], report.market?.analystBoard ?? [], report.market?.committeeCalibration);
   if (!k) return '';
   const locked = c?.lockedAnalysts?.length ?? 0;
   // G-246: the statistical 80% range scored best in the hidden-future test, so it leads; the vote follows.
   const f = report.market?.forecasts?.find((x) => x.horizon === 20);
   const range = f ? `<b>20거래일 뒤 가격 범위(80%): ${won(f.p10)} ~ ${won(f.p90)}</b> <span class="muted small">과거 시험에서 열 번 중 여덟 번꼴로 이 안에 들었어요.</span><br>` : '';
-  return `<p class="pl-consensus">${range}<b>위원 ${k.n}명 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b> <span class="muted small">${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : k.prior ? '과거 데이터 시험(종목·날짜를 가린 1,000건)에서 순위를 잘 맞힌 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>`;
+  const how = k.basePct != null
+    ? `10년 과거 자료로 맞춘 통계 기준 ${k.basePct}%(변동성·최근 급등·52주 고가)에서 출발해, ${k.textN ? `실적·공시·뉴스를 읽은 위원 ${k.textN}명이 ${k.aiPts > 0 ? `+${k.aiPts}%p` : k.aiPts < 0 ? `${k.aiPts}%p` : '그대로'} ${k.aiPts ? '움직였어요' : '두었어요'}` : '글 근거를 읽은 위원이 없어 기준 그대로예요'}. 차트를 보는 위원 판단은 기준에 이미 들어 있어 숫자에 더하지 않아요${k.calibrated ? ' · 지난 위원회 채점으로 한 번 더 맞췄어요' : ''}`
+    : `${k.weighted ? '지난 성적이 좋은 위원에게 더 무게를 둬' : k.prior ? '과거 데이터 시험(종목·날짜를 가린 1,000건)에서 순위를 잘 맞힌 위원에게 더 무게를 둬' : '위원마다 같은 무게로'} 확신도를 모은 값이에요`;
+  return `<p class="pl-consensus">${range}<b>위원회 종합: 20거래일 뒤 지금보다 높을 확률 약 ${k.upPct}%</b> <span class="muted small">${how}${locked ? ` · ${locked}명은 위원회 전에 혼자 판단했어요` : ''}. 예측이지 권유가 아니에요.</span></p>`;
 }
