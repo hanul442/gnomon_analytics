@@ -37,3 +37,14 @@ test('a Korean stock\'s note starts from the statistical base and only text anal
   // A coin keeps the pooled vote.
   assert.doesNotMatch(consensusNote({ ...report, kind: 'coin' } as unknown as Parameters<typeof consensusNote>[0]), /통계 기준/);
 });
+
+test('a Korean stock\'s note leads with where it sits among the day\'s stocks (G-268)', () => {
+  const bars = Array.from({ length: 260 }, (_, i) => ({ date: `d${i}`, open: 100, high: 101 + (i % 3), low: 99, close: 100 + (i % 3), volume: 1 }));
+  const report = { exchange: 'KOSPI', recentBars: bars, commentary: { status: 'OK', analysts: [{ analyst: 'fundamental', stance: 'NEUTRAL', confidence: 50 }] },
+    market: { forecasts: [{ horizon: 20, p10: 90, p90: 110 }] } } as unknown as Parameters<typeof consensusNote>[0];
+  const html = consensusNote(report);
+  const at = (s: string) => html.indexOf(s);
+  assert.ok(at('같은 날 다른 종목과 비교') >= 0 && at('같은 날 다른 종목과 비교') < at('가격 범위(80%)') && at('가격 범위(80%)') < at('높을 확률 약'));
+  assert.match(html, /다섯 묶음 중 아래에서 \d번째/);
+  assert.match(html, /종목 비교</); // the ring's centre
+});
