@@ -98,22 +98,31 @@ export function parseSubmissions(body: unknown, input: { symbol: string; cik: nu
 // ---- XBRL company facts → FinancePeriod (백만 달러; EPS and dividends per share in dollars) ----
 
 type FactKind = 'duration' | 'instant' | 'perShare';
-const METRICS: readonly [string, readonly string[], FactKind][] = [
-  ['매출액', ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet', 'RevenuesNetOfInterestExpense'], 'duration'],
-  ['영업이익', ['OperatingIncomeLoss'], 'duration'],
-  ['당기순이익', ['NetIncomeLoss', 'ProfitLoss'], 'duration'],
-  ['영업현금흐름', ['NetCashProvidedByUsedInOperatingActivities'], 'duration'],
-  ['자산총계', ['Assets'], 'instant'],
-  ['부채총계', ['Liabilities'], 'instant'],
-  ['자본총계', ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'], 'instant'],
-  ['현금', ['CashAndCashEquivalentsAtCarryingValue'], 'instant'],
-  ['유동자산', ['AssetsCurrent'], 'instant'],
-  ['유동부채', ['LiabilitiesCurrent'], 'instant'],
-  ['EPS', ['EarningsPerShareDiluted', 'EarningsPerShareBasic'], 'perShare'],
-  ['주당배당금', ['CommonStockDividendsPerShareDeclared'], 'perShare'],
+type Taxonomy = 'us-gaap' | 'ifrs-full';
+// Each metric's tags per taxonomy. Names starting with _ are helpers: they fill a gap below and are then dropped.
+const METRICS: readonly [string, Record<Taxonomy, readonly string[]>, FactKind][] = [
+  ['매출액', { 'us-gaap': ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'SalesRevenueNet', 'RevenuesNetOfInterestExpense'], 'ifrs-full': ['Revenue', 'RevenueFromContractsWithCustomers'] }, 'duration'],
+  ['영업이익', { 'us-gaap': ['OperatingIncomeLoss'], 'ifrs-full': ['ProfitLossFromOperatingActivities'] }, 'duration'],
+  ['당기순이익', { 'us-gaap': ['NetIncomeLoss', 'ProfitLoss'], 'ifrs-full': ['ProfitLoss', 'ProfitLossAttributableToOwnersOfParent'] }, 'duration'],
+  ['영업현금흐름', { 'us-gaap': ['NetCashProvidedByUsedInOperatingActivities'], 'ifrs-full': ['CashFlowsFromUsedInOperatingActivities'] }, 'duration'],
+  ['자산총계', { 'us-gaap': ['Assets'], 'ifrs-full': ['Assets'] }, 'instant'],
+  ['부채총계', { 'us-gaap': ['Liabilities'], 'ifrs-full': ['Liabilities'] }, 'instant'],
+  ['_부채와자본', { 'us-gaap': ['LiabilitiesAndStockholdersEquity'], 'ifrs-full': ['EquityAndLiabilities'] }, 'instant'],
+  ['자본총계', { 'us-gaap': ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'], 'ifrs-full': ['Equity', 'EquityAttributableToOwnersOfParent'] }, 'instant'],
+  ['_자본총계(비지배 포함)', { 'us-gaap': ['StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'], 'ifrs-full': ['Equity'] }, 'instant'],
+  ['현금', { 'us-gaap': ['CashAndCashEquivalentsAtCarryingValue'], 'ifrs-full': ['CashAndCashEquivalents'] }, 'instant'],
+  ['유동자산', { 'us-gaap': ['AssetsCurrent'], 'ifrs-full': ['CurrentAssets'] }, 'instant'],
+  ['유동부채', { 'us-gaap': ['LiabilitiesCurrent'], 'ifrs-full': ['CurrentLiabilities'] }, 'instant'],
+  ['EPS', { 'us-gaap': ['EarningsPerShareDiluted', 'EarningsPerShareBasic'], 'ifrs-full': ['DilutedEarningsLossPerShare', 'BasicEarningsLossPerShare'] }, 'perShare'],
+  ['주당배당금', { 'us-gaap': ['CommonStockDividendsPerShareDeclared'], 'ifrs-full': [] }, 'perShare'],
 ];
+/** Amounts in the filer's own currency; when that is not dollars only the ratios below are kept. */
+const AMOUNTS = ['매출액', '영업이익', '당기순이익', '영업현금흐름', '자산총계', '부채총계', '자본총계', '현금', '유동자산', '유동부채', 'EPS', '주당배당금'] as const;
 interface Fact { end: string; start?: string; val: number; fy?: number; fp?: string; form?: string; filed?: string; frame?: string }
+type Facts = Record<string, { units?: Record<string, Fact[]> }>;
 const MILLION = 1e6;
+// A year's report: 10-K for US companies, 20-F and 40-F for foreign ones (TSMC, Novo Nordisk, Alibaba …).
+const ANNUAL_FORM = /^(10-K|20-F|40-F)/;
 
 /** CY2026Q2 → 202606 (quarter); CY2025 → 202512 (year); the trailing I marks an instant. */
 function periodOfFrame(frame: string): { period: string; type: 'QUARTER' | 'ANNUAL' } | null {
@@ -124,16 +133,55 @@ function periodOfFrame(frame: string): { period: string; type: 'QUARTER' | 'ANNU
 const days = (a: string, b: string) => (Date.parse(b) - Date.parse(a)) / 86_400_000;
 
 /**
+ * G-270: which taxonomy and currency a filer's income lines use. A foreign filer reports in IFRS (TSMC, Novo
+ * Nordisk) or in US GAAP in its own currency (Alibaba in yuan, ASML in euros), and some add a few dollar
+ * "convenience" figures; the currency with the most revenue and profit facts is the one its statements are in.
+ */
+function reportingBasis(facts: Partial<Record<Taxonomy, Facts>>): { taxonomy: Taxonomy; unit: string } | null {
+  // The newest period wins (Sony and Toyota moved from US GAAP to IFRS), then the number of facts.
+  let best: { taxonomy: Taxonomy; unit: string; last: string; n: number } | null = null;
+  for (const taxonomy of ['us-gaap', 'ifrs-full'] as const) {
+    const tags = facts[taxonomy];
+    if (!tags || typeof tags !== 'object') continue;
+    const seen = new Map<string, { last: string; n: number }>();
+    for (const [metric, byTax] of METRICS) {
+      if (metric !== '매출액' && metric !== '당기순이익') continue;
+      for (const t of byTax[taxonomy]) for (const [unit, list] of Object.entries(tags[t]?.units ?? {})) {
+        if (!/^[A-Z]{3}$/.test(unit) || !Array.isArray(list)) continue;
+        const s = seen.get(unit) ?? { last: '', n: 0 };
+        for (const f of list) if (typeof f.end === 'string' && f.end > s.last) s.last = f.end;
+        s.n += list.length; seen.set(unit, s);
+      }
+    }
+    // A currency counts as the filer's when it carries a good share of the facts (not a few convenience figures).
+    const most = Math.max(0, ...[...seen.values()].map((x) => x.n));
+    for (const [unit, x] of seen) {
+      if (x.n < most / 3) continue;
+      if (!best || x.last.slice(0, 4) > best.last.slice(0, 4) || (x.last.slice(0, 4) === best.last.slice(0, 4) && x.n > best.n)) best = { taxonomy, unit, ...x };
+    }
+  }
+  return best && { taxonomy: best.taxonomy, unit: best.unit };
+}
+
+/**
  * companyfacts/CIK….json → quarters and years. Calendar frames are SEC's own de-duplicated view of each period;
  * a company whose fiscal year is not the calendar year (Apple, Microsoft …) has no CY frame for its years, so
- * those come from the 10-K facts themselves (fp FY, a year-long duration). Values are divided to 백만 달러
- * and the ratio rows (영업이익률·순이익률·부채비율·ROE) are computed here, as Naver gives them for Korean stocks.
+ * those come from the annual report's facts themselves (fp FY, a year-long duration). Values are divided to 백만 달러
+ * and the ratio rows (영업이익률·순이익률·부채비율·ROE·매출성장률) are computed here, as Naver gives them for Korean stocks.
+ * G-270: a filer reporting in another currency keeps only the ratios (its amounts are not dollars); a missing
+ * total liabilities line is read as liabilities-and-equity minus equity.
  */
 export function parseCompanyFacts(body: unknown, symbol: string, retrievedAt: Date): FinancePeriod[] {
-  const gaap = (body as { facts?: { 'us-gaap'?: Record<string, { units?: Record<string, Fact[]> }> } })?.facts?.['us-gaap'];
-  if (!gaap || typeof gaap !== 'object') throw new Error('EDGAR_FACTS_UNEXPECTED');
-  // The fiscal year's last month, from the 10-K's year-long income facts (Apple: 9, most companies: 12).
-  const fyMonth = fiscalMonth(gaap);
+  const all = (body as { facts?: Partial<Record<Taxonomy, Facts>> })?.facts;
+  if (!all || typeof all !== 'object') throw new Error('EDGAR_FACTS_UNEXPECTED');
+  const basis = reportingBasis(all);
+  if (!basis) {
+    if (!all['us-gaap'] && !all['ifrs-full']) throw new Error('EDGAR_FACTS_UNEXPECTED');
+    return [];
+  }
+  const tagsOf = all[basis.taxonomy]!, unit = basis.unit, dollars = unit === 'USD';
+  // The fiscal year's last month, from the annual report's year-long income facts (Apple: 9, most companies: 12).
+  const fyMonth = fiscalMonth(tagsOf, basis);
   const at = retrievedAt.toISOString();
   const periods = new Map<string, FinancePeriod>();
   const slot = (period: string, type: 'QUARTER' | 'ANNUAL') => {
@@ -142,9 +190,9 @@ export function parseCompanyFacts(body: unknown, symbol: string, retrievedAt: Da
     if (!p) { p = { symbol, periodType: type, period, isEstimate: false, metrics: {}, source: EDGAR_FACTS_SOURCE, retrievedAt: at }; periods.set(key, p); }
     return p;
   };
-  for (const [metric, tags, kind] of METRICS) {
+  for (const [metric, byTax, kind] of METRICS) {
     // A filer may tag the same line differently over the years (Revenues, then RevenueFromContract…): read them all.
-    const facts = tags.flatMap((t) => (kind === 'perShare' ? gaap[t]?.units?.['USD/shares'] : gaap[t]?.units?.['USD']) ?? []);
+    const facts = byTax[basis.taxonomy].flatMap((t) => tagsOf[t]?.units?.[kind === 'perShare' ? `${unit}/shares` : unit] ?? []);
     if (!facts.length) continue;
     const scale = kind === 'perShare' ? 1 : MILLION;
     // Newest filing wins when the same period was restated.
@@ -160,9 +208,9 @@ export function parseCompanyFacts(body: unknown, symbol: string, retrievedAt: Da
         if (fr.type === 'ANNUAL') yearsSeen.add(fr.period.slice(0, 4));
       }
     }
-    // Fiscal years without a calendar frame: the 10-K's own year-long (or year-end) facts.
+    // Fiscal years without a calendar frame: the annual report's own year-long (or year-end) facts.
     for (const f of sorted) {
-      if (f.fp !== 'FY' || !/^10-K/.test(f.form ?? '')) continue;
+      if (f.fp !== 'FY' || !ANNUAL_FORM.test(f.form ?? '')) continue;
       if (kind !== 'instant' && (!f.start || Math.abs(days(f.start, f.end) - 365) > 20)) continue;
       const period = f.end.slice(0, 7).replace('-', '');
       if (yearsSeen.has(period.slice(0, 4))) continue;
@@ -170,25 +218,36 @@ export function parseCompanyFacts(body: unknown, symbol: string, retrievedAt: Da
     }
   }
   for (const p of periods.values()) {
-    const m = p.metrics, rev = m['매출액'], op = m['영업이익'], net = m['당기순이익'], debt = m['부채총계'];
+    const m = p.metrics;
+    if (m['부채총계'] == null && m['_부채와자본'] != null) { const eq = m['_자본총계(비지배 포함)'] ?? m['자본총계']; if (eq != null) m['부채총계'] = m['_부채와자본']! - eq; }
+    const rev = m['매출액'], op = m['영업이익'], net = m['당기순이익'], debt = m['부채총계'];
     if (m['자본총계'] == null && m['자산총계'] != null && debt != null) m['자본총계'] = m['자산총계']! - debt;
     const eq = m['자본총계'];
     if (rev && op != null) m['영업이익률'] = (op / rev) * 100;
     if (rev && net != null) m['순이익률'] = (net / rev) * 100;
-    if (eq && debt != null) m['부채비율'] = (debt / eq) * 100;
+    if (eq && eq > 0 && debt != null) m['부채비율'] = (debt / eq) * 100;
     if (p.periodType === 'ANNUAL' && eq && net != null) m['ROE'] = (net / eq) * 100;
   }
-  // Only periods with an income line or a balance sheet; the last eight quarters and five years.
+  // Revenue growth against the same period a year before, so a filer whose amounts are dropped below keeps it.
+  for (const p of periods.values()) {
+    const before = periods.get(`${p.periodType}:${Number(p.period.slice(0, 4)) - 1}${p.period.slice(4)}`)?.metrics['매출액'], now = p.metrics['매출액'];
+    if (now != null && before && before > 0) p.metrics['매출성장률'] = (now / before - 1) * 100;
+  }
   // Only periods with an income line: a balance sheet alone (a Q4 instant, a stray year-end) is not a period to show.
   const keep = [...periods.values()].filter((p) => p.metrics['매출액'] != null || p.metrics['당기순이익'] != null).sort((a, b) => (a.period < b.period ? -1 : 1));
+  for (const p of keep) {
+    for (const k of Object.keys(p.metrics)) if (k.startsWith('_')) delete p.metrics[k];
+    if (!dollars) for (const k of AMOUNTS) delete p.metrics[k];
+  }
   return [...keep.filter((p) => p.periodType === 'QUARTER').slice(-8), ...keep.filter((p) => p.periodType === 'ANNUAL').slice(-5)];
 }
 
-function fiscalMonth(gaap: Record<string, { units?: Record<string, Fact[]> }>): number {
+function fiscalMonth(tags: Facts, basis: { taxonomy: Taxonomy; unit: string }): number {
   const count = new Map<number, number>();
-  for (const tag of ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'NetIncomeLoss', 'OperatingIncomeLoss']) {
-    for (const f of gaap[tag]?.units?.['USD'] ?? []) {
-      if (f.fp !== 'FY' || !/^10-K/.test(f.form ?? '') || !f.start || Math.abs(days(f.start, f.end) - 365) > 20) continue;
+  const income = METRICS.filter(([m]) => m === '매출액' || m === '당기순이익' || m === '영업이익').flatMap(([, byTax]) => byTax[basis.taxonomy]);
+  for (const tag of income) {
+    for (const f of tags[tag]?.units?.[basis.unit] ?? []) {
+      if (f.fp !== 'FY' || !ANNUAL_FORM.test(f.form ?? '') || !f.start || Math.abs(days(f.start, f.end) - 365) > 20) continue;
       const m = Number(f.end.slice(5, 7)); count.set(m, (count.get(m) ?? 0) + 1);
     }
   }
