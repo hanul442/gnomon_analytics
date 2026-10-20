@@ -75,6 +75,17 @@ export const reportBase = (r: { kind?: string; currency?: string; exchange?: str
  * Logistic regression by Newton's method with a small ridge on the slopes (not the intercept). Rows are
  * [x1, x2, …]; returns [b0, b1, …]. Deterministic.
  */
+/** Standardizes the three inputs on `rows` and fits the logistic model on them (G-264; used by evalBase and evalLuck). */
+export function fitOddsModel(rows: readonly (OddsFeatures & { up: number })[]): OddsModel {
+  const lv = rows.map((o) => Math.log(o.vol60)), hh = rows.map((o) => o.high52), mx = rows.map((o) => o.max20);
+  const ms = (xs: number[]) => { const m = xs.reduce((a, x) => a + x, 0) / xs.length; return { mean: m, sd: Math.sqrt(xs.reduce((a, x) => a + (x - m) ** 2, 0) / xs.length) }; };
+  const logVol = ms(lv), high52 = ms(hh), max20 = ms(mx);
+  const z = (v: number, s: { mean: number; sd: number }) => clamp((v - s.mean) / s.sd, -4, 4);
+  const X = rows.map((_, k) => [z(lv[k]!, logVol), z(hh[k]!, high52), z(mx[k]!, max20)]);
+  const b = fitLogistic(X, rows.map((o) => o.up)) as [number, number, number, number];
+  return { method: 'gnm-base-v1', logVol, high52, max20, b, fitted: { from: '', to: '', n: rows.length, upRate: 0, brier: 0, brierBase: 0, confirmFrom: '', confirmBrier: 0, confirmBrierBase: 0 } };
+}
+
 export function fitLogistic(X: readonly (readonly number[])[], y: readonly number[], ridge = 1e-3, iters = 50): number[] {
   const k = (X[0]?.length ?? 0) + 1, n = X.length;
   const b = new Array<number>(k).fill(0);
