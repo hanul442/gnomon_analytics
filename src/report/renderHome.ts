@@ -13,7 +13,7 @@ import { marketTemperature } from './marketTemperature.js';
 import { sparkline } from './appParts.js';
 import { madeOn, SEARCH_SCRIPT, shell, type HomeEntry } from './renderHtml.js';
 import { gate } from './plans.js';
-import { ALPHA_BANNERS, BANNER_JS, bannerHtml, eventBanners, type Banner } from './alphaPages.js';
+import { ALPHA_BANNERS, BANNER_JS, bannerHtml, eventBanners, wrapupBanners, type Banner } from './alphaPages.js';
 import { openEvents } from './events.js';
 import { HOME_ORDER } from './persona.js';
 import { FIELD_INDEX, matches, PRESETS } from '../analysis/screenRules.js';
@@ -378,7 +378,7 @@ export function renderHome(data: HomeData): string {
   const body = `${HOME_STYLE}<section class="top-search" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="종목 검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div>
 <div class="find-row"><a class="flt-btn" href="screener.html">${QUICK_ICONS.filter}필터</a><a class="find-link" href="themes.html">${QUICK_ICONS.themes}테마별 종목</a><a class="find-link" href="signals.html">${QUICK_ICONS.radar}공시 레이더</a></div></div></section>
-${bannerHtml([...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
+${bannerHtml([...wrapupBanners(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10)), ...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10))), ...ALPHA_BANNERS])}
 ${indexStrip(data.indices, data.universe, data.pulse, latestDaily(data), data.us ?? null)}
 
 <div class="home-grid"><div class="home-main">${WATCH}${todayPicks(daily, sorted)}${THEMES_TOP}${SIGNALS}

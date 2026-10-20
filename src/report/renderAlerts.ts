@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var G = window.GNM || {}, box = document.getElementById('ib-list'), clear = document.getElementById('ib-clear');
   var siteLink = function (l) { var c = l.charAt(0); return /^[a-z]+:/i.test(l) || c === '/' || c === '#' ? l : (document.body.getAttribute('data-base') || '') + l; };
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
-  var ICON = { watchReport: '⭐', daily: '📰', request: '📄', price: '🔔', screen: '🔎', update: '✨', intraday: '⚡' };
+  var ICON = { watchReport: '⭐', daily: '📰', request: '📄', price: '🔔', screen: '🔎', update: '✨', intraday: '⚡', notice: '📝' };
   var kst = function (t) { var d = new Date(Date.parse(t) + 9 * 3600e3).toISOString(); return { day: d.slice(0, 10), hm: d.slice(11, 16) }; };
   var items = [];
   var paint = function () {
