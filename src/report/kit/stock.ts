@@ -7,7 +7,7 @@
 //   heatmap calendar  dailyCalendar()  요약 탭, 지난 1년 하루 등락 (appParts.ts latestLists)
 //   scatter           GNM_kit.scatter  같은 테마 PER·ROE (peers.ts)
 //   funnel            GNM_kit.funnel   스크리너 조건별 남은 종목 (renderScreener.ts)
-//   live line         KIT_STOCK_JS     코인 실시간 가격 (coin pages, from /ticks and the live feed)
+//   live line         KIT_STOCK_JS     코인·국내 주식 실시간 가격 (coin and stock pages, from /ticks and the live feed)
 // Candles stay on lightweight-charts. Every picture is finished without motion; html.mo only adds the entrance.
 import { smoothD, SMOOTH_JS, gradId } from '../chartLook.js';
 import { esc } from '../html.js';
@@ -306,14 +306,17 @@ export const KIT_STOCK_JS = `
     watch(host);
   };
 
-  // ---- live line: a coin's price as it trades, scrolling left, the last point pulsing ----
+  // ---- live line: a coin's price as it trades (G-270: and a Korean stock's day, 1-minute closes then live quotes),
+  // scrolling left, the last point pulsing ----
+  var OK = /^(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})$/;
   var live = function () {
     var q = new URLSearchParams(location.search), sym = q.get('m') || ((document.querySelector('[data-symbol]') || {}).dataset || {}).symbol || '';
-    if (!/^KRW-[A-Z0-9]{1,15}$/.test(sym)) { var lv = document.querySelector('.hero [data-live^="KRW-"]'); sym = lv ? lv.getAttribute('data-live') : ''; }
-    if (!/^KRW-[A-Z0-9]{1,15}$/.test(sym) || document.querySelector('.kit-live')) return;
+    if (!OK.test(sym)) { var lv = document.querySelector('.hero [data-live]'); sym = lv ? lv.getAttribute('data-live') : ''; }
+    if (!OK.test(sym) || document.querySelector('.kit-live')) return;
+    var coin = sym.indexOf('KRW-') === 0;
     var hero = document.querySelector('#tab-home .hero') || document.querySelector('.hero'); if (!hero) return;
     var sec = document.createElement('section'); sec.className = 'block kit-live'; sec.hidden = true;
-    sec.innerHTML = '<div class="card"><div class="kv-h"><h2>실시간 가격</h2><small data-kv-note>업비트 체결가 · 최근 3분</small></div><div class="kv-plot" role="img" aria-label="실시간 가격 선"></div><div class="kv-foot"><span data-kv-from></span><span>지금</span></div></div>';
+    sec.innerHTML = '<div class="card"><div class="kv-h"><h2>실시간 가격</h2><small data-kv-note>' + (coin ? '업비트 체결가 · 최근 3분' : '1분 종가 · 장중 실시간') + '</small></div><div class="kv-plot" role="img" aria-label="실시간 가격 선"></div><div class="kv-foot"><span data-kv-from></span><span>지금</span></div></div>';
     hero.after(sec);
     var plot = sec.querySelector('.kv-plot'), pts = [], SPAN = 180, raf = 0, shift = 0, from = 0, to = 0, t0 = 0, last = 0;
     var draw = function () {
@@ -343,11 +346,14 @@ export const KIT_STOCK_JS = `
     if (api) fetch(api + '/ticks/' + sym).then(function (r) { return r.json(); }).then(function (r) {
       var ps = (r && r.points) || []; if (!ps.length) return; var end = ps[ps.length - 1].time, off = (pts.length ? pts[0].t - 1 : Date.now() / 1000) - end;
       // Recent trades keep their spacing and end where the live feed starts.
-      pts.unshift.apply(pts, ps.slice(-120).filter(function (p) { return p.price > 0; }).map(function (p) { return { t: p.time + off, v: p.price }; }));
+      pts.unshift.apply(pts, ps.slice(coin ? -120 : -400).filter(function (p) { return p.price > 0; }).map(function (p) { return { t: p.time + off, v: p.price }; }));
       last = pts.length ? pts[pts.length - 1].t : 0;
       // The window holds about the last 60 trades (three minutes at least, an hour at most) at a fixed time scale.
       var k = Math.max(0, pts.length - 60); SPAN = Math.max(180, Math.min(3600, Math.round(last - pts[k].t)));
-      sec.querySelector('[data-kv-note]').textContent = '업비트 체결가 · 최근 ' + Math.round(SPAN / 60) + '분'; if (r.kind && r.kind !== 'trades') sec.querySelector('[data-kv-note]').textContent = '최근 1분 종가 · 이후 실시간';
+      var note = sec.querySelector('[data-kv-note]');
+      note.textContent = '업비트 체결가 · 최근 ' + Math.round(SPAN / 60) + '분'; if (r.kind && r.kind !== 'trades') note.textContent = '최근 1분 종가 · 이후 실시간';
+      // G-270: a stock shows its whole session (up to 6.5 hours of 1-minute closes), named by its day when that is not today.
+      if (!coin) { SPAN = Math.max(180, Math.min(23400, Math.round(last - pts[0].t))); var kd = new Date((end + 9 * 3600) * 1000).toISOString().slice(0, 10), td = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); note.textContent = (kd === td ? '오늘' : Number(kd.slice(5, 7)) + '/' + Number(kd.slice(8, 10))) + ' 1분 종가 · 장중 실시간'; }
       shift = 0; draw();
     }).catch(function () {});
     window.addEventListener('gnm-quote', function (e) { var d = e.detail; if (!d || d.symbol !== sym || !(d.quote && d.quote.price > 0)) return; add(Date.now() / 1000, d.quote.price); });
