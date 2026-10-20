@@ -36,9 +36,14 @@ export async function writeCoinPages(siteDir: string, options: { now: () => Date
   const fetcher = options.fetch ?? fetch, now = options.now();
   const dir = join(siteDir, 'c');
   await mkdir(dir, { recursive: true });
+  // The site is rebuilt every run, so a failed market list empties every coin page until the next run.
+  // One Upbit timeout did that on 2026-10-18; try the list three times before giving up.
   let markets;
-  try { markets = await fetchUpbitMarkets(fetcher); } catch (e) {
-    return { status: { source: 'upbit:market:all', ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }, rows: [] };
+  for (let attempt = 0; ; attempt++) {
+    try { markets = await fetchUpbitMarkets(fetcher); break; } catch (e) {
+      if (attempt >= 2) return { status: { source: 'upbit:market:all', ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }, rows: [] };
+      if (options.pauseMs !== 0) await sleep(attempt ? 10_000 : 3_000);
+    }
   }
   const tickers = new Map<string, { value24h: number; changePct: number; price?: number }>();
   for (let i = 0; i < markets.length; i += 100) {

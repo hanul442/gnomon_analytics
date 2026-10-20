@@ -59,7 +59,7 @@ const QUICK: readonly { key: string; label: string; rule?: { f: string; op: '>='
   { key: 'watch', label: '☆ 관심 종목만' },
 ];
 
-const FIND_TABS = `<nav class="mode-tabs" role="tablist" aria-label="시장"><button type="button" role="tab" data-find="stock" aria-selected="true">주식 <span id="sc-count" class="muted"></span></button><button type="button" role="tab" data-find="us" aria-selected="false">미국 주식</button><button type="button" role="tab" data-find="etf" aria-selected="false">ETF</button><button type="button" role="tab" data-find="coin" aria-selected="false">코인</button><a href="themes.html">테마</a><a href="signals.html">공시</a></nav>`;
+const FIND_TABS = `<nav class="mode-tabs" role="tablist" aria-label="시장"><button type="button" role="tab" data-find="stock" aria-selected="true">주식<span class="muted sc-count"></span></button><button type="button" role="tab" data-find="us" aria-selected="false">미국 주식<span class="muted sc-count"></span></button><button type="button" role="tab" data-find="etf" aria-selected="false">ETF<span class="muted sc-count"></span></button><button type="button" role="tab" data-find="coin" aria-selected="false">코인<span class="muted sc-count"></span></button><a href="themes.html">테마</a><a href="signals.html">공시</a></nav>`;
 
 export function renderScreener(): string {
   // G-72: 찾기 — one place to find anything: search across stocks, ETFs and coins, then browse each
@@ -67,7 +67,7 @@ export function renderScreener(): string {
   const body = `<section class="find-head" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 이름이나 코드 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div>
 </section>
-<div id="find-stock"><div class="pl-chips sc-mkt" id="sc-mkt" role="group" aria-label="거래소"><button type="button" class="chip-toggle" data-mkt="" aria-pressed="true">전체</button><button type="button" class="chip-toggle" data-mkt="P" aria-pressed="false">코스피</button><button type="button" class="chip-toggle" data-mkt="Q" aria-pressed="false">코스닥</button></div><p class="muted small" id="sc-kind-note" hidden style="margin:6px 0 0">ETF·코인도 주식과 같은 조건으로 걸러요. 시가총액·외국인 수급·공시 항목은 없어서 그 조건은 빼고 봐요. 코인의 '유의 종목'은 공시 위험 2단계로 쳐요.</p>
+<div id="find-stock"><div class="pl-chips sc-mkt" id="sc-mkt" role="group" aria-label="거래소"><button type="button" class="chip-toggle" data-mkt="" aria-pressed="true">전체</button><button type="button" class="chip-toggle" data-mkt="P" aria-pressed="false">코스피</button><button type="button" class="chip-toggle" data-mkt="Q" aria-pressed="false">코스닥</button></div>
 <section class="block sc-bar"><div class="sc-line" role="group" aria-label="조건 만들기와 내 조건"><button type="button" class="chip-toggle sc-filter-btn" id="sc-filter-open" aria-haspopup="dialog" aria-controls="sc-sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>필터<b id="sc-filter-n"></b></button><button type="button" class="chip-toggle sc-mk" id="sc-make-rule" title="지표·수급·재무를 골라 조합해요">＋ 조건 만들기</button><button type="button" class="chip-toggle sc-mk sc-mk-ai" id="sc-make-ai" title="원하는 종목을 문장으로 적어요">✦ AI로 만들기</button><span class="sc-mine" id="sc-mine" hidden></span></div>
 <div class="sc-line sc-quick" id="sc-quick" role="group" aria-label="빠른 조건"><span class="sc-presets">${PRESETS.map((p, i) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${i === 0}" title="${p.hint}">${p.label}${i ? ' <span class="lockmark">플러스</span>' : ''}</button>`).join('')}</span><i class="sc-sep" aria-hidden="true"></i>${QUICK.map((q) => `<button type="button" class="sc-q" data-q="${q.key}"${q.kinds ? ` data-kinds="${q.kinds}"` : ''} aria-pressed="false">${q.label}</button>`).join('')}</div></section>
 <div class="sc-sheet" id="sc-sheet" role="dialog" aria-label="필터"><div class="sc-sheet-head"><button type="button" class="sc-sheet-x" aria-label="필터 닫기">‹</button><b>필터</b></div>
@@ -77,7 +77,7 @@ export function renderScreener(): string {
 <label class="sc-inline"><input type="checkbox" name="norisk" checked> 공시 위험 2단계 이상 빼기</label>
 </div>
 <div class="rules" id="rules"></div>
-<div class="sc-actions"><button type="button" class="chip-toggle" id="add-rule">+ 조건</button><button type="button" class="chip-toggle" id="save-screen">저장</button><span class="muted small" id="sc-desc"></span></div>
+<div class="sc-actions"><button type="button" class="chip-toggle" id="add-rule">+ 조건</button><button type="button" class="chip-toggle" id="save-screen">저장</button><span class="muted small" id="sc-desc"></span></div><p class="muted small" id="sc-kind-note" hidden style="margin:8px 0 0">이 시장엔 시가총액·외국인 수급·공시 정보가 없어서 그 조건은 빼고 걸러요. 코인의 '유의 종목'은 공시 위험 2단계로 쳐요.</p>
 <div class="saved" id="saved" hidden><div class="pl-k">저장한 조건</div><div id="saved-list" class="saved-list"></div><p class="muted small" id="alert-note" hidden>🔔를 켜면 매일 장 마감 뒤 새로 걸린 종목을 알림으로 보내 드려요. 플러스는 3개, 프로·알파는 20개까지예요.</p></div>
 <p class="muted small only-free" style="margin:8px 0 0">무료는 '기술 점수 상위'와 결과 5개까지예요. 조건 빌더, 저장, 알림, 전체 결과는 ${needText('screenTools')}예요.</p></div></section>
 <div class="sc-sheet-foot"><button type="button" class="sc-sheet-go" id="sc-sheet-go">결과 보기</button></div></div>
@@ -98,7 +98,7 @@ export function renderScreener(): string {
 .sc-sheet-head{display:none;position:sticky;top:0;z-index:2;align-items:center;gap:6px;margin:0 -14px 6px;padding:calc(6px + env(safe-area-inset-top)) 10px 8px;background:var(--surface-solid);border-bottom:1px solid var(--line)}.sc-sheet-head b{font-size:17px}.sc-sheet-x{width:44px;height:44px;border:0;background:none;font-size:30px;line-height:1;cursor:pointer;color:var(--fg)}
 .sc-sheet-foot{display:none;position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--surface-solid);border-top:1px solid var(--line)}.sc-sheet-go{width:100%;min-height:52px;border:0;border-radius:14px;background:var(--navy,#13294b);color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer}
 /* G-151: on a phone the results come right after the quick chips (conditions follow), and each result is a two-line row: name and price, code and change, then the signal and volume. */
-@media (max-width:600px){#find-stock{display:flex;flex-direction:column}#find-stock>.block{order:3}#find-stock>.block:first-of-type{order:1}#find-stock>.sc-results{order:2}#find-stock>#sc-kind-note{order:0}#find-stock>.sc-sheet{order:3}
+@media (max-width:600px){#find-stock{display:flex;flex-direction:column}#find-stock>.block{order:3}#find-stock>.block:first-of-type{order:1}#find-stock>.sc-results{order:2}#find-stock>.sc-sheet{order:3}
 .sc-sheet:not(.open){display:none}.sc-sheet.open{position:fixed;inset:0;z-index:80;background:var(--page);background-image:var(--page-grad);overflow-y:auto;overscroll-behavior:contain;padding:0 14px calc(84px + env(safe-area-inset-bottom))}.sc-sheet.open .sc-sheet-head{display:flex}.sc-sheet.open .sc-sheet-foot{display:block}
 .sc-table{min-width:0!important;width:100%}.sc-table thead{display:none}.sc-table,.sc-table tbody{display:block}.sc-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"n p" "n c" "v v";gap:3px 12px;padding:12px 2px;border-bottom:1px solid var(--line)}.sc-table td{border:0!important;padding:0!important;min-width:0}
 .sc-table td:nth-child(1){grid-area:n}.sc-table td:nth-child(1) b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}.sc-table td:nth-child(2){grid-area:p;font-weight:800;font-size:15px}.sc-table td:nth-child(3){grid-area:c;font-size:13.5px;display:block!important;text-align:right}.sc-table td:nth-child(2){text-align:right}.sc-table td:nth-child(4){grid-area:v;font-size:12.5px;color:var(--fg2)}.sc-table td:nth-child(4) .sub-sh{display:none}.sc-table td:nth-child(n+5){display:none}.sc-table td.empty{grid-column:1/-1}.sc-table tr.sc-more-row{display:block;border:0;padding:4px 0}.sc-table tr.sc-more-row td{display:block!important}}
@@ -290,7 +290,7 @@ const SCREENER_SCRIPT = `<script>
     out = sorted(out); paintSort();
     var shown = out.slice(0, Math.min(200, scShown));
     $('sc-n').textContent = shown.length < total ? total.toLocaleString('ko-KR') + '개 중 ' + shown.length + '개' : '결과 ' + total.toLocaleString('ko-KR') + '개';
-    $('sc-count').textContent = rows.length.toLocaleString('ko-KR') + '종목 중 ' + total.toLocaleString('ko-KR') + '개';
+    document.querySelectorAll('[data-find] .sc-count').forEach(function (c) { c.textContent = c.parentNode.getAttribute('data-find') === currentMarket ? ' ' + rows.length.toLocaleString('ko-KR') + '종목 중 ' + total.toLocaleString('ko-KR') + '개' : ''; });
     $('sc-desc').textContent = sc.rules.length + '개 조건' + (sc.maxRisk ? ' · 공시 위험 제외' : '');
     $('sc-filter-n').textContent = sc.rules.length ? String(sc.rules.length) : ''; $('sc-sheet-go').textContent = '결과 ' + total.toLocaleString('ko-KR') + '개 보기';
     // G-191: the columns the conditions (and the sort) looked at, shown in every row unless the row already has them.
@@ -414,7 +414,7 @@ const SCREENER_SCRIPT = `<script>
     return fetch(url).then(function (r) { return r.json(); }).then(function (d) { cache[url] = kind === 'stock' ? d.rows || [] : (d.rows || []).map(fromList(kind)); return cache[url]; });
   };
   window.GNM_screenSource = function (kind) {
-    var ticket=++sourceTicket;currentMarket=kind;
+    var ticket=++sourceTicket;currentMarket=kind;document.querySelectorAll('[data-find] .sc-count').forEach(function (c) { c.textContent = ''; });
     var note = document.getElementById('sc-kind-note'); if (note) note.hidden = kind === 'stock'; var mk = document.getElementById('sc-mkt'); if (mk) mk.hidden = kind !== 'stock';
     return source(kind).then(function (r) { if(ticket!==sourceTicket)return; rows = r; draw(); var shared=new URLSearchParams(location.search).get('screen');if(shared){try{var sc=(${cleanScreen.toString()})(JSON.parse(shared));if(sc)load(sc);}catch(e){}} }).catch(function () { $('sc-body').innerHTML = '<tr><td colspan="7" class="empty">목록을 불러오지 못했어요.</td></tr>'; });
   };

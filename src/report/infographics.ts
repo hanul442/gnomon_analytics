@@ -20,8 +20,14 @@ export function healthAxes(m: MarketSection, close: number | null): Axis[] {
   const q = m.quarters.filter((p) => !p.isEstimate), y = m.years.filter((p) => !p.isEstimate);
   const last = q.at(-1), yearAgo = last ? q.find((p) => p.period === `${Number(last.period.slice(0, 4)) - 1}${last.period.slice(4)}`) : undefined;
   const salesNow = last?.metrics['매출액'] ?? null, salesThen = yearAgo?.metrics['매출액'] ?? null;
-  const growth = salesNow != null && salesThen ? (salesNow / salesThen - 1) * 100 : null;
-  const om = y.at(-1)?.metrics['영업이익률'] ?? last?.metrics['영업이익률'] ?? null;
+  // G-270: a filer with only yearly reports (TSMC, Alibaba …) or amounts in another currency keeps its revenue growth
+  // as a ratio; a company with no operating income line (banks, insurers, Eli Lilly) is judged on its net margin.
+  const quarterGrowth = salesNow != null && salesThen ? (salesNow / salesThen - 1) * 100 : last?.metrics['매출성장률'] ?? null;
+  const yearGrowth = y.at(-1)?.metrics['매출성장률'] ?? null;
+  const growth = quarterGrowth ?? yearGrowth;
+  const opm = y.at(-1)?.metrics['영업이익률'] ?? last?.metrics['영업이익률'] ?? null;
+  const netm = opm == null ? y.at(-1)?.metrics['순이익률'] ?? last?.metrics['순이익률'] ?? null : null;
+  const om = opm ?? netm;
   const debt = last?.metrics['부채비율'] ?? y.at(-1)?.metrics['부채비율'] ?? null;
   const f20 = m.flows?.sums.find((s) => s.days === 20);
   const inst = f20 ? (f20.foreignValue ?? f20.foreign ?? 0) + (f20.institutionValue ?? f20.institution ?? 0) : null;
@@ -29,13 +35,15 @@ export function healthAxes(m: MarketSection, close: number | null): Axis[] {
   const s = m.snapshot, target = s?.consensus?.targetPriceMean, upside = target && close ? (target / close - 1) * 100 : null;
   const per = s?.per ?? null;
   const value = upside != null ? clamp(50 + upside * 1.5) : per != null && per > 0 ? (per < 10 ? 80 : per < 20 ? 60 : per < 40 ? 40 : 20) : null;
-  return [
-    { key: 'growth', label: '성장', score: growth == null ? null : clamp(50 + growth * 2.5), value: growth == null ? '자료 없음' : `매출 ${fmtPct(growth)}`, note: '최근 분기 매출, 1년 전 같은 분기 대비' },
-    { key: 'profit', label: '수익성', score: om == null ? null : clamp(om * 5), value: om == null ? '자료 없음' : `영업이익률 ${om.toFixed(1)}%`, note: '20%면 만점' },
+  const axes: Axis[] = [
+    { key: 'growth', label: '성장', score: growth == null ? null : clamp(50 + growth * 2.5), value: growth == null ? '자료 없음' : `매출 ${fmtPct(growth)}`, note: quarterGrowth == null && yearGrowth != null ? '최근 연도 매출, 1년 전 대비' : '최근 분기 매출, 1년 전 같은 분기 대비' },
+    { key: 'profit', label: '수익성', score: om == null ? null : clamp(om * 5), value: om == null ? '자료 없음' : `${netm != null ? '순이익률' : '영업이익률'} ${om.toFixed(1)}%`, note: '20%면 만점' },
     { key: 'safety', label: '안정성', score: debt == null ? null : clamp(100 - debt / 2), value: debt == null ? '자료 없음' : `부채비율 ${debt.toFixed(0)}%`, note: '0%면 만점, 200%면 0점' },
     { key: 'flow', label: '수급', score: f20 ? (both === 2 ? 85 : both === 1 ? (inst != null && inst > 0 ? 65 : 45) : 20) : null, value: f20 ? (both === 2 ? '외국인·기관 동반 순매수' : both === 1 ? '외국인·기관 엇갈림' : '외국인·기관 순매도') : '자료 없음', note: '최근 20거래일' },
     { key: 'value', label: '가치', score: value, value: upside != null ? `목표가까지 ${fmtPct(upside)}` : per != null ? `PER ${per.toFixed(1)}배` : '자료 없음', note: upside != null ? '증권가 평균 목표가 기준' : 'PER 기준' },
   ];
+  // A US stock has no investor-type flows (외국인·기관) at all: the axis does not apply, so it is left out rather than shown as missing.
+  return currency() === 'USD' ? axes.filter((a) => a.key !== 'flow') : axes;
 }
 
 // G-265: drawn by the chart kit in Bklit UI's radar look (round rings, soft fill, haloed dots).
@@ -49,7 +57,7 @@ export function healthInfographic(m: MarketSection | undefined, close: number | 
   const verdict = (s: number | null) => (s == null ? ['na', '자료 없음'] : s >= 67 ? ['good', '좋음'] : s >= 34 ? ['mid', '보통'] : ['warn', '주의']);
   return `<section class="card ig-card ig-hc"><div class="head"><h2>기업 체력 한눈에</h2></div>
 <div class="ig-health">${radar(axes)}<ul class="ig-hl">${axes.map((a, i) => { const [cls, word] = verdict(a.score); return `<li title="${esc(a.note)}" data-i="${i}" tabindex="0"><b>${esc(a.label)}</b><span class="ig-v ${cls}">${word}</span><em>${esc(a.value)}</em></li>`; }).join('')}</ul></div>
-<p class="fine">단순 기준으로 환산한 참고값이에요(영업이익률 20%·부채비율 0%면 만점). 같은 업종끼리 비교해 보세요.</p></section>`;
+<p class="fine">단순 기준으로 환산한 참고값이에요(영업이익률 20%·부채비율 0%면 만점). ${axes.length < 5 ? '미국 주식은 외국인·기관 수급 자료가 없어서 수급 축은 빼고 봐요. ' : ''}같은 업종끼리 비교해 보세요.</p></section>`;
 }
 
 const ROWS: readonly [string, string][] = [['매출액', '억원'], ['영업이익', '억원'], ['당기순이익', '억원'], ['지배주주순이익', '억원'], ['영업이익률', '%'], ['순이익률', '%'], ['ROE', '%'], ['부채비율', '%'], ['당좌비율', '%'], ['유보율', '%'], ['EPS', '원'], ['BPS', '원'], ['주당배당금', '원']];
