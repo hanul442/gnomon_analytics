@@ -67,7 +67,7 @@ test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab
   assert.ok(!bar.includes('href="watch.html"'));
 });
 
-test('G-268: a picture banner on home is the same slim line, its title and 티저 보기', async () => {
+test('G-269: a picture banner on home is the same slim line, its title and 티저 보기', async () => {
   const { bannerHtml } = await import('./alphaPages.js');
   const html = bannerHtml([{ title: '정보의 바다는, 끝.', image: { wide: 'assets/banners/a.jpg', video: 'assets/banners/t.mp4' } }]);
   assert.match(html, /<b class="bn-alt">정보의 바다는, 끝\.<\/b>/);
