@@ -84,11 +84,11 @@ test('a settled run writes the report once and renders the site', async () => {
   assert.ok(page.includes('HBM4 양산 돌입'));
   assert.ok(page.includes('3분기 영업이익 사상 최대'));
   assert.match(await readFile(join(root, 'site', '000660', 'index.html'), 'utf8'), /2026-10-02/);
-  // The site root lists the covered stocks.
-  const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
-  assert.ok(home.includes('href="000660/index.html"') && home.includes('SK하이닉스'));
-  // Search covers listed stocks; without a list this run it still has the covered ones.
-  assert.ok(home.includes('id="q"'));
+  // The report list names the covered stocks (G-264: no longer on the home page).
+  const list = await readFile(join(root, 'site', 'reports.html'), 'utf8');
+  assert.ok(list.includes('href="000660/index.html"') && list.includes('SK하이닉스'));
+  // Search (in 찾기) covers listed stocks; without a list this run it still has the covered ones.
+  assert.ok((await readFile(join(root, 'site', 'screener.html'), 'utf8')).includes('id="q"'));
   const search = JSON.parse(await readFile(join(root, 'site', 'search.json'), 'utf8')) as { items: unknown[][] };
   // G-175: without today's stock list, a covered stock carries its report's last close.
   const sk = search.items.find((i) => i[0] === '000660')!;

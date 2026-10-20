@@ -558,10 +558,10 @@ export const TOUR_JS = `
     var STEPS = {
       // G-244: three stops, not seven: the market line, the reader's own stocks and the menu.
       home: [
-        ['#mkt-hero', '오늘 시장', '전 종목의 기술 신호를 모아 오늘 시장을 한 줄로 말해요. 누르면 시장 리포트가 열리고, 미국을 누르면 미국 시장이 펼쳐져요.'],
+        ['#mkt-hero', '오늘 시장', '날짜 아래에 코스피·코스닥을 한 줄로 보여줘요. 누르면 시장 리포트가 열려요.'],
         ['#watch', '내 종목', '어디서든 ☆를 누른 종목과 설문에서 고른 종목이 여기 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
         ['.bottom-nav', '아래 탭', '다섯 탭이 전부예요. 찾기에서 주식·ETF·코인·테마·공시를 바꿔 가며 보고, 위원회에서 AI 리포트와 성적표를 봐요.'],
-        ['.top-tabs', '위쪽 탭', '찾기에서 종목·ETF·코인을 검색하고 조건으로 골라요. 테마, 공시 레이더, 시장 리포트는 홈 맨 아래 더 보기에 있어요.'],
+        ['.top-tabs', '위쪽 탭', '찾기에서 종목·ETF·코인을 검색하고 조건으로 골라요. 테마와 공시 레이더도 찾기에 있어요.'],
       ],
       report: [
         ['.chips', '다섯 탭', '요약 · 타이밍(기술 신호와 전략) · 기업 체력(종목정보·재무제표·수급) · AI 위원회 · 뉴스·공시가 같은 위치에 있어요. 차트는 요약의 작은 차트를 누르면 전체 화면으로 열려요. 리포트가 없으면 AI 분석은 잠금으로 보여요.'],
@@ -580,7 +580,7 @@ export const TOUR_JS = `
         ['#sc-form', '검토·적용·저장', 'AI 제안을 검토해 적용한 뒤 조건을 직접 수정하고 저장하세요. 완료 안내가 나와야 저장된 상태예요. 오류면 다시 확인하세요.'],
       ],
     };
-    var kind = document.getElementById('tab-ai') ? 'report' : document.getElementById('today') ? 'home' : document.getElementById('ai-build') ? 'find' : null;
+    var kind = document.getElementById('tab-ai') ? 'report' : document.getElementById('mkt-hero') ? 'home' : document.getElementById('ai-build') ? 'find' : null;
     if (!kind) return;
     var key = 'gnm-tour-v243-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
     try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-' + kind) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
@@ -639,7 +639,7 @@ export const TOUR_CSS = `.tr-hole{position:fixed;top:0;left:0;z-index:200;border
 export const SURVEY_POP_JS = `
   (function () {
     var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
-    if (!document.getElementById('today') || !get('gnm-session')) return;
+    if (!(document.getElementById('mkt-hero') || document.getElementById('today')) || !get('gnm-session')) return;
     var now = Date.now(), k = new Date(now + 9 * 3600e3), day = k.getUTCDay();
     var week = k.getUTCFullYear() + '-' + Math.ceil(((k - Date.UTC(k.getUTCFullYear(), 0, 1)) / 864e5 + new Date(Date.UTC(k.getUTCFullYear(), 0, 1)).getUTCDay() + 1) / 7);
     var pick = null;
