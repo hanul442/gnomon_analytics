@@ -3035,6 +3035,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "0158S0",
+  "name": "엘리스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "016090",
   "name": "대현",
   "market": "KOSPI"
