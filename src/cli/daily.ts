@@ -431,7 +431,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
       if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
     }
   }
-  if (today.hour >= SETTLED_HOUR_KST) await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget);
+  const market = today.hour >= SETTLED_HOUR_KST ? await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget) : undefined;
   await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp, now });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
@@ -441,6 +441,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     universe: universe.status,
     stocks: results.map((r) => ({ symbol: r.symbol, report: r.report, failedSources: failedSources([...r.newsStatus, ...r.marketStatus]) })),
     failed,
+    ...(market ? { market } : {}),
   }, null, 1)}\n`);
   return { results, failed, universeStatus: universe.status, selected };
 }

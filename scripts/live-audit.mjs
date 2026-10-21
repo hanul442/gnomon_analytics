@@ -75,6 +75,9 @@ async function pass(label, pages, widths, session) {
     const text = document.body.innerText;
     const words = [/상승 구조|하락 구조|상승 시나리오|하락 시나리오/, /\b(BULLISH|BEARISH|NEUTRAL|WITHHELD|ACCUMULATION_LIKE|DISTRIBUTION_LIKE|UNKNOWN)\b/, /\bNaN\b|undefined|\[object|\bnull\b|Infinity/].flatMap((re) => { const m = text.match(re); return m ? [m[0]] : []; });
     if (words.length) out.wording = words;
+    // G-278: a failed AI committee, or any raw validation/JSON error text, must never pass the check unnoticed.
+    const aiFail = text.match(/AI 요약을 만들지 못했어요|생성에 실패했습니다|"(origin|code)":\s*"|too_small|too_big|Too (small|big):|ZodError/);
+    if (aiFail) out.aiFailed = aiFail[0];
     const nones = [...document.querySelectorAll('b, td, span, dd, strong')].filter((e) => vis(e) && !e.children.length && /^(없음|-|—|N\/A)$/.test(e.textContent.trim())).length;
     if (nones > 6) out.manyNone = nones;
     const screens = Math.round(document.documentElement.scrollHeight / innerHeight);

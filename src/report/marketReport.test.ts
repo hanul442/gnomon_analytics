@@ -17,9 +17,9 @@ test('stale data and missing baseline never become current returns',()=>{
  assert.equal(periodAsset('K','K',bars.slice(0,1),'2026-10-07','2026-10-07','daily')?.returnPct,null);
  assert.equal(periodAsset('K','K',bars.slice(1),'2026-10-07','2026-10-05','weekly')?.returnPct,null);
 });
-test('market report labels failures, partial week, and escapes AI errors',()=>{
+test('market report labels failures and partial week, and never prints the AI error',()=>{
  const r:MarketReport={schema:'curia.market-report.v2',date:'2026-10-07',from:'2026-10-05',generatedAt:'2026-10-07T09:30:00Z',period:'weekly',groups:[],ai:{status:'FAILED',error:'<script>bad</script>'}};
- const html=renderMarketReport(r);assert.ok(html.includes('주중 누적 집계'));assert.ok(html.includes('생성에 실패'));assert.ok(html.includes('&lt;script&gt;bad'));assert.ok(!html.includes('<script>bad'));
+ const html=renderMarketReport(r);assert.ok(html.includes('주중 누적 집계'));assert.ok(html.includes('AI 요약을 만들지 못했어요'));assert.ok(!html.includes('bad'));
 });
 test('market committee preserves actual experts, reply targets, stances and references',async()=>{
  const {ANALYSTS}=await import('../analysis/analysts.js');const {validCouncil,renderMarketDeep}=await import('./marketReport.js');
