@@ -1,6 +1,7 @@
 import { partButtons } from './ui.js';
 import { marketsOf, worldPanels, WORLD_CSS, WORLD_JS } from './renderWorld.js';
-import { ISSUES_CSS, ISSUES_FILTER, issuesList, mergeIssues } from './issuesAll.js';
+import { ISSUES_CSS, ISSUES_FILTER, issuesList, mergeIssues, type MergedIssue } from './issuesAll.js';
+import type { NewsDigest } from '../analysis/newsDigest.js';
 import { scenarioZone } from './scenarioChart.js';
 import { kmStatArea } from './kit/market.js';
 import type { NewsIssueBoard } from '../analysis/newsIssues.js';
@@ -45,6 +46,15 @@ export interface HomeData {
   /** G-277: Korean stock news issues and world issues, merged into one ranking on home. */
   krIssues?: NewsIssueBoard | null;
   worldIssues?: WorldIssueBoard | null;
+  /** G-280: AI summaries and preview pictures by issue key, and closes by symbol for the stock rows. */
+  digests?: ReadonlyMap<string, NewsDigest>;
+  closes?: ReadonlyMap<string, number | null>;
+}
+
+/** G-280: the merged issue ranking home shows; daily writes one in-app page per row from the same list. */
+export function homeIssues(data: Pick<HomeData, 'world' | 'krIssues' | 'worldIssues' | 'digests' | 'closes'>): MergedIssue[] {
+  const mk = data.world ? marketsOf(data.world) : null;
+  return mergeIssues(data.krIssues, data.worldIssues, (k) => { const x = mk?.get(k); return x ? { name: x.name, move: x.move, tone: x.tone } : null; }, { ...(data.digests ? { digests: data.digests } : {}), ...(data.closes ? { closes: data.closes } : {}) });
 }
 
 export interface UsTemp { pulse: MarketPulse | null; date: string; up: number; down: number; flat: number }
@@ -182,8 +192,7 @@ export function renderHome(data: HomeData): string {
   const day = data.pulse?.date ?? data.indices[0]?.date ?? today;
   const banner = bannerHtml([...wrapupBanners(today), ...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(today)), ...ALPHA_BANNERS]);
   const wp = data.world && (data.world.indices.length || data.world.macro.length) ? worldPanels({ markets: data.world, news: data.worldIssues ?? { from: null, to: null, articles: 0, issues: [] } }) : null;
-  const mk = data.world ? marketsOf(data.world) : null;
-  const issues = mergeIssues(data.krIssues, data.worldIssues, (k) => { const x = mk?.get(k); return x ? { name: x.name, move: x.move, tone: x.tone } : null; });
+  const issues = homeIssues(data);
   const calls = committeeToday(data.entries);
   const key = wp ? `<div class="hm-h"><h2>꼭 볼 숫자</h2><span class="muted small">눌러서 크게 보기</span></div><div class="km-stats wd-stats hm-stats">${wp.key6}</div>` : fallbackNumbers(data.indices);
   const comBlock = calls.length ? `<div class="hm-h"><h2>위원회 오늘</h2><button type="button" class="wd-link" data-wd-go="com">${calls.length}개 전체 ›</button></div><section class="card hm-card">${calls.slice(0, 3).map(callRow).join('')}</section>` : '';

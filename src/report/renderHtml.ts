@@ -566,7 +566,17 @@ export function coinNewsFragments(report: DailyReport): { news: string; homeNews
 }
 /** G-256: the 뉴스 tab's part (the 공시 tab holds the rest). */
 export function newsOnly(report: DailyReport): string {
-  return `<div data-slot="news">${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}</div>`;
+  return `${issueSlot(report.symbol)}<div data-slot="news">${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}</div>`;
+}
+/**
+ * G-280: today's ranked news issues that name this stock, as cards at the top of 소식 (tap = the in-app issue page).
+ * Read from issue-index.json in the browser, so a stock page built before the ranking still shows today's issues.
+ */
+export function issueSlot(symbol: string): string {
+  const s = JSON.stringify(symbol).replace(/</g, '\\u003c');
+  return `<div class="iss-slot" data-issue-slot hidden></div><style>.iss-slot{display:flex;flex-direction:column;gap:10px;margin:0 0 12px}.iss-c{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:22px;background:var(--surface-solid,var(--surface));color:inherit;text-decoration:none}.iss-k{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:var(--muted)}.iss-k b{font-size:11px;padding:1px 7px;border-radius:6px;background:var(--fg);color:var(--surface-solid,#fff)}.iss-t{font-size:17px;font-weight:700;line-height:1.4;word-break:keep-all}.iss-l{font-size:14px;line-height:1.55;color:var(--fg2);word-break:keep-all}</style><script>(function(){var el=document.currentScript.previousElementSibling.previousElementSibling,sym=${s},b=document.body.getAttribute('data-base')||'';var e=function(t){return String(t).replace(/[&<>"']/g,function(c){return '&#'+c.charCodeAt(0)+';';});};
+fetch(b+'issue-index.json').then(function(r){if(!r.ok)throw r;return r.json();}).then(function(list){var mine=list.filter(function(i){return i.s.indexOf(sym)>=0;}).slice(0,3);if(!mine.length)return;
+el.innerHTML=mine.map(function(i){return '<a class="iss-c" href="'+b+'issue/'+e(i.k)+'.html"><span class="iss-k"><b>오늘 이슈 '+i.r+'위</b>매체 '+i.o+'곳</span><span class="iss-t">'+e(i.t)+'</span>'+(i.l?'<span class="iss-l">'+e(i.l)+'</span>':'')+'</a>';}).join('');el.hidden=false;}).catch(function(){});})();</script>`;
 }
 /** G-256: the 공시 tab — filings, their mix and the event calendar. */
 export function filingsBody(report: DailyReport): string {
