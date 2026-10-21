@@ -111,6 +111,10 @@ export function heroChart(report: DailyReport): string {
   return `<a class="hero-chart" href="#tab-chart" data-c="${esc(JSON.stringify(series))}" data-d="${esc(JSON.stringify(src.map((b) => b.date)))}" title="눌러서 전체 화면 차트 열기"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><defs>${fadeGrad('hc-g', color)}</defs><path class="hc-a" d="${smoothD(line)}L${w},${h}L0,${h}Z" fill="url(#hc-g)"/><path class="hc-l" d="${smoothD(line)}" fill="none" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="hc-meta"><span>3개월 <b class="${chg > 0 ? 'up' : chg < 0 ? 'down' : ''}">${chg > 0 ? '▲ +' : chg < 0 ? '▼ ' : ''}${chg.toFixed(1)}%</b> · 최고 ${esc(won(hi))} · 최저 ${esc(won(lo))}</span><span class="hc-go">차트 자세히 보기 ›</span></span></a>`;
 }
 
+/**
+ * G-277 (한서님 10/21 '종목 탭도 와...진짜 너무 길더라'): the hero is the name, the price and one line of key numbers.
+ * The 3-month mini chart and its period chips are gone (the 차트 part is one tap away in the bottom bar).
+ */
 export function hero(report: DailyReport, options: { live: boolean; asOf: string }): string {
   const p = report.price, m = report.market;
   const points = [
@@ -122,9 +126,9 @@ export function hero(report: DailyReport, options: { live: boolean; asOf: string
 <div class="hero-main"><div class="eyebrow"><span>${esc(report.kind === 'coin' ? report.symbol.replace('KRW-', '') : report.symbol)}</span>${marketChip(report)}<span>${options.live ? `${esc(options.asOf)} 기준` : `${esc(report.date)} 리포트`}</span>${freshnessBadge(freshness(report))}</div>
 <div class="h1-row"><h1>${esc(report.name)}</h1>${starButton(report.symbol, report.name)}</div>
 ${p ? `<div class="hero-price"><b data-live="${esc(report.symbol)}" data-live-f="price">${esc(won(p.close))}</b><span class="live-tag" data-live="${esc(report.symbol)}" data-live-f="tag" hidden></span>${p.changePct === null ? '' : `<span class="${tone(p.changePct)}" data-live="${esc(report.symbol)}" data-live-f="full">${p.change! > 0 ? '▲' : p.change! < 0 ? '▼' : ''} ${esc(currency() === 'USD' ? won(Math.abs(p.change!)) : num(Math.abs(p.change!)))} (${esc(pct(p.changePct))})</span>`}</div>
-<div class="hero-sub">${esc(p.sessionDate ?? report.date)} ${report.kind === 'coin' ? '일봉 (09:00 KST 기준)' : '종가'}</div>${heroChart(report)}` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
+<div class="hero-sub">${esc(p.sessionDate ?? report.date)} ${report.kind === 'coin' ? '일봉 (09:00 KST 기준)' : '종가'}</div>` : '<p class="empty">아직 가격 기록이 없어요.</p>'}
 <p class="hero-line">${esc(report.headline)}</p></div>
-${points.length ? `<div class="key-points"><div class="kp-title">핵심 포인트</div><ul>${points.map(([k, v, t]) => `<li><span>${esc(k!)}</span><b class="${t}">${esc(v!)}</b></li>`).join('')}</ul></div>` : ''}
+${points.length ? `<p class="kp-line">${points.map(([k, v]) => `${esc(k!)} <b>${esc(v!)}</b>`).join(' · ')}</p>` : ''}
 </section>`;
 }
 

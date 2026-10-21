@@ -251,6 +251,17 @@ export const COMMAND_BAR_JS = `
  * phone's bottom bar, and the white pill slides from tab to tab on a spring instead of jumping.
  */
 export const REPORT_TABS_CSS = `
+/* G-277 (한서님 10/21 '종목 탭도 와...진짜 너무 길더라'): the shorter 위원회 part. */
+.kp-line{margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.5}.kp-line b{color:var(--fg2);font-weight:700}
+.vf .card{padding:18px 18px 6px}.vf-h{margin:0;font-size:16px}.vf-bar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:12px 0 6px}.vf-bar i{background:var(--line-strong)}.vf-bar i.up{background:var(--up)}.vf-bar i.down{background:var(--down)}
+.vf-l{display:flex;justify-content:space-between;font-size:13px;font-weight:700}.vf-l .up{color:var(--up)}.vf-l .down{color:var(--down)}
+.ai-fold,.cal-fold{margin-top:10px;border-top:1px solid var(--line)}.ai-fold>summary,.cal-fold>summary{display:flex;align-items:center;justify-content:space-between;min-height:52px;font-size:15px;font-weight:600;cursor:pointer;list-style:none}
+.ai-fold>summary::-webkit-details-marker,.cal-fold>summary::-webkit-details-marker{display:none}.ai-fold>summary::after,.cal-fold>summary::after{content:"⌄";color:var(--muted);transition:transform .2s}.ai-fold[open]>summary::after,.cal-fold[open]>summary::after{transform:rotate(180deg)}
+.ai-fold[open]>summary{border-bottom:1px solid var(--line);margin-bottom:8px}.ai-in{margin:0 -4px}
+.cal-fold{margin:16px 0;padding:0 18px;border:0;border-radius:24px;background:var(--surface)}
+#tab-ai .ai-nav{position:static!important}.ai-in #conclusion{display:none}
+.lv-foot{border:0!important;padding:0!important;margin:12px 0!important}.lv-foot>p,.lv-foot>.lv-pick{display:none!important}
+.cfs-sig{flex:none;display:inline-flex;align-items:center;height:34px;padding:0 13px;border-radius:17px;background:var(--soft);color:var(--fg);font-size:13px;font-weight:700;text-decoration:none}
 .chips [role=tab][hidden]{display:none!important}
 .topbar>.chips:not(.analysis-tabs){position:relative;width:max-content;max-width:calc(100% - 24px);margin:2px auto 10px;padding:5px;gap:2px;
   border:1px solid rgba(255,255,255,.07);border-radius:999px;background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92));

@@ -378,7 +378,9 @@ try{
  for (const width of [375,1280]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+'/s/999999.html?tour=1');await page.locator('.tr-tip').waitFor();
   for (const key of ['technical','fundamentals','ai','news']) {
-   for (let step=0;await page.locator('#t-'+key).getAttribute('aria-selected') !== 'true' && step<8;step++) await page.locator('.tr-tip [data-t=n]').click();
+   // G-277: the debate is a fold inside 위원회, so its step opens 위원회 with the fold open.
+   const there=async()=>key==='ai'?await page.locator('#tab-ai').isVisible():await page.locator('#t-'+key).getAttribute('aria-selected')==='true';
+   for (let step=0;!(await there()) && step<8;step++) await page.locator('.tr-tip [data-t=n]').click();
    assert.equal(await page.locator('#tab-'+key).isVisible(),true);
    assert.equal(await page.locator('.tr-tip').evaluate(el=>el.getBoundingClientRect().right<=innerWidth),true);
   }
@@ -412,11 +414,12 @@ try{
  // G-220: 화면 수준 — 전문가 from settings; on a stock page 초보자 hides the heavy cards behind the tab's foot button.
  await page.locator('#pf-form label',{hasText:'전문가'}).click();
  assert.equal(await page.evaluate(()=>[document.documentElement.getAttribute('data-level'),JSON.parse(localStorage.getItem('gnm-prefs')||'{}').level].join()),'pro,전문가');
- for(const width of [375,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/005930/index.html');await page.locator('#tab-home .lv-foot').waitFor();
+ for(const width of [375,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/005930/index.html');await page.locator('#tab-home .lv-foot').waitFor({state:'attached'});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'level foot fits '+width);
   assert.equal(await page.locator('#tab-home .pc-trader').isVisible()&&await page.locator('#tab-home .pc-long').isVisible(),true,'전문가 sees both number cards');
   assert.equal(await page.locator('#tab-home .lv-guide').isVisible(),false);}
- await page.goto(origin+'/005930/index.html#tab-technical');await page.locator('#tab-technical [data-level-pick=easy]').click();
+ await page.goto(origin+'/005930/index.html#tab-technical');// G-277: the level picker lives in 나 › 설정; the foot keeps only its 더 보기 button.
+ await page.locator('#tab-technical .lv-foot').waitFor({state:'attached'});assert.equal(await page.locator('#tab-technical .lv-pick').isVisible(),false);await page.evaluate(()=>document.querySelector('#tab-technical [data-level-pick=easy]').click());
  assert.equal(await page.locator('#tab-technical .lv-guide').isVisible(),true,'초보자 gets the plain line');assert.equal(await page.locator('#tab-strategy').isVisible(),false,'backtests wait');
  assert.match(await page.locator('#tab-technical .lv-more').innerText(),/자세한 분석 \d+개 더 보기/);await page.locator('#tab-technical .lv-more').click();
  assert.equal(await page.locator('#tab-strategy').isVisible(),true,'더 보기 opens them');assert.equal(await page.locator('#tab-technical .lv-more').isVisible(),false);

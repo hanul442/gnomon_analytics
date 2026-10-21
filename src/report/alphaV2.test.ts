@@ -64,7 +64,7 @@ test('지금 판단 shows the committee odds as three columns, 약세 left to �
  const report=buildDailyReport({symbol:'000660',name:'테스트',date:'2026-10-06',generatedAt:new Date(),bars:Array.from({length:30},(_,i)=>({symbol:'000660',source:'test',retrievedAt:'2026-10-06T00:00:00Z',date:'2026-09-'+String(i+1).padStart(2,'0'),open:100,high:105,low:95,close:100+i,volume:1000})),disclosures:[],sources:[]});
  const sc=(kind:string,probability?:number)=>({kind,narrative:{text:kind},catalysts:[],invalidation:[],...(probability==null?{}:{probability})});
  report.commentary={status:'OK',scenarios:[sc('BULL',35),sc('BASE',40),sc('BEAR',25)]} as any;
- const html=conclusionCard(report);assert.match(html,/시나리오 확률/);assert.deepEqual([...html.matchAll(/<div class="pm-cell (bear|base|bull)( top)?"><span>[^<]+<\/span><b>([0-9]+)%/g)].map(m=>m[1]!+m[3]!),['bear25','base40','bull35']);assert.match(html,/pm-cell base top/);assert.match(html,/10월 6일 마감 기준/);
+ const html=conclusionCard(report);assert.match(html,/시나리오 확률/);assert.deepEqual([...html.matchAll(/<button type="button" class="pm-cell (bear|base|bull)( top)?" data-pm="[A-Z]+" aria-pressed="false"><span>[^<]+<\/span><b>([0-9]+)%/g)].map(m=>m[1]!+m[3]!),['bear25','base40','bull35']);assert.match(html,/pm-cell base top/);assert.match(html,/10월 6일 마감 기준/);
  report.commentary={status:'OK',scenarios:[sc('BULL'),sc('BASE'),sc('BEAR')]} as any;
  assert.doesNotMatch(conclusionCard(report),/pm-odds|시나리오 확률/);
 });

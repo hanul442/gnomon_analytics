@@ -92,7 +92,7 @@ function oddsGrid(report: DailyReport): string {
   const pr = ks.map((k) => c?.scenarios?.find((s) => s.kind === k)?.probability);
   if (!pr.some((v) => typeof v === 'number')) return '';
   const top = Math.max(...pr.map((v) => v ?? 0));
-  return `<div class="pm-odds"><div class="pm-odds-k">시나리오 확률</div><div class="pm-grid">${ks.map((k, i) => { const z = scenarioZone(report, k); const v = pr[i]; return `<div class="pm-cell ${k.toLowerCase()}${v === top ? ' top' : ''}"><span>${name[k]}</span><b>${typeof v === 'number' ? `${v}%` : '—'}</b><small>${z ? zone(z.zone) : ''}</small></div>`; }).join('')}</div></div>`;
+  return `<div class="pm-odds"><div class="pm-odds-k">시나리오 확률 <small>칸을 누르면 근거와 틀릴 조건이 펼쳐져요</small></div><div class="pm-grid">${ks.map((k, i) => { const z = scenarioZone(report, k); const v = pr[i]; return `<button type="button" class="pm-cell ${k.toLowerCase()}${v === top ? ' top' : ''}" data-pm="${k}" aria-pressed="false"><span>${name[k]}</span><b>${typeof v === 'number' ? `${v}%` : '—'}</b><small>${z ? zone(z.zone) : ''}</small></button>`; }).join('')}</div></div>`;
 }
 
 export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string } = {}): string {
@@ -143,9 +143,11 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
     row('cl-down', bear, '약세', px('BEAR'), checks.BEAR ? checkLine(checks.BEAR, '약세') : '성립 근거와 무효화 조건 함께 확인', '▼'),
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
+  // G-277: with odds, the three rows wait under the 확률 cells; a tap on a cell opens its row.
+  const grid = oddsGrid(report);
   const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : `조건 가격 도달만으로 전개가 확정되지는 않아요. 예상 범위와 조건 가격은 다릅니다. 분석 기준은 ${esc(report.date)} 종가 ${won(p.close)}이며, 현재 가격과 차이가 날 수 있어요`;
-  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>${scenarioRail(report)}${oddsGrid(report)}
-${verdict}<div class="cl-ladder">${rows}</div>
+  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>${scenarioRail(report)}${grid}
+${verdict}<div class="cl-ladder"${grid ? ' hidden' : ''}>${rows}</div>
 ${[bull, base, bear].some((x) => x?.narrative.text === LOCKED_TEXT) ? `<div class="cl-deep"><span>🔒 시나리오 전개·무효화 조건·최악의 경우·위원회 토론은 심층 리포트에 있어요.</span><button type="button" class="btn-primary" data-deep-go>심층 리포트 열기 <small>${CREDIT_COST.unlock}크레딧</small></button></div>` : ''}
 <p class="fine">${bull || bear || base ? '줄을 누르면 시나리오가 펼쳐져요. ' : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
 }
@@ -162,7 +164,7 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .pm-ext{font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}.pm-ext.up{fill:var(--up)}.pm-ext.down{fill:var(--down)}
 .pm-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pm-chips span{display:inline-flex;gap:5px;align-items:baseline;padding:6px 12px;border-radius:999px;background:var(--soft);font-size:12.5px;color:var(--fg2)}.pm-chips b{color:var(--fg);font-variant-numeric:tabular-nums}.pm-chips small{color:var(--muted)}
 .pm-odds{margin:4px 0 16px}.pm-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:8px}.pm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.pm-cell{padding:12px 12px 10px;border-radius:16px;background:var(--soft);min-width:0}.pm-cell span{display:block;font-size:12.5px;font-weight:700;color:var(--fg2)}.pm-cell b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}
+.pm-cell{padding:12px 12px 10px;border:0;border-radius:16px;background:var(--soft);min-width:0;font:inherit;color:inherit;text-align:left;cursor:pointer;transition:transform .15s}.pm-cell:active{transform:scale(.97)}.pm-cell[aria-pressed=true]{background:var(--surface-solid);box-shadow:inset 0 0 0 2px var(--fg)}.pm-odds-k small{font-weight:500;color:var(--muted);margin-left:4px}.cl-ladder[hidden],.cl-item[hidden]{display:none!important}.pm-cell span{display:block;font-size:12.5px;font-weight:700;color:var(--fg2)}.pm-cell b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}
 .pm-cell small{display:block;font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-cell.bear b{color:var(--down)}.pm-cell.bull b{color:var(--up)}.pm-cell.top{box-shadow:inset 0 0 0 1.5px var(--fg)}
 .cl-check{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:var(--soft);font-size:14px}.cl-check b{font-weight:800}.cl-check p{margin:4px 0 0;line-height:1.55;color:var(--fg2)}.cl-check p b{color:var(--fg)}
 .cl-deep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:var(--accent-soft);font-size:13.5px;color:var(--fg2)}.cl-deep .btn-primary{margin:0;padding:10px 16px;font-size:14px}.cl-deep small{font-weight:600;opacity:.85;margin-left:4px}.dl-go{margin-top:6px}
@@ -189,6 +191,15 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 
 /** Opens a conclusion row's scenario. */
 export const CONCLUSION_JS = `
+  // G-277: a 확률 cell opens its scenario row (the rows stay folded until then).
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest && e.target.closest('.pm-cell[data-pm]'); if (!c) return;
+    var card = c.closest('.cl-card'), lad = card && card.querySelector('.cl-ladder'); if (!lad) return;
+    var cls = { BULL: 'cl-up', BASE: 'cl-now', BEAR: 'cl-down' }[c.getAttribute('data-pm')], on = c.getAttribute('aria-pressed') !== 'true';
+    card.querySelectorAll('.pm-cell').forEach(function (x) { x.setAttribute('aria-pressed', String(x === c && on)); });
+    lad.hidden = !on;
+    lad.querySelectorAll('.cl-item').forEach(function (it) { var r = it.querySelector('.cl-row'), mine = r && r.classList.contains(cls); it.hidden = !mine; if (r && mine && r.getAttribute('aria-expanded') === 'false') r.click(); });
+  });
   // G-172: every "심층 리포트 열기" on 요약 goes to the unlock card at the top of the AI tab.
   document.addEventListener('click', function (e) {
     var g = e.target.closest && e.target.closest('[data-deep-go]'); if (!g) return; e.preventDefault();

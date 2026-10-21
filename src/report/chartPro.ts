@@ -209,7 +209,7 @@ export const CHART_PRO_JS = `
   // ---- full-screen page: header with a back button, opened instead of a tab ----
   var title = (document.querySelector('.hero h1') || {}).textContent || document.title.split('|')[0];
   var head = document.createElement('div'); head.className = 'cfs-head';
-  head.innerHTML = '<button type="button" class="cfs-back" aria-label="차트 닫기">' + P.back + '</button><div class="cfs-t"><b></b><span class="cfs-px"><span data-live-f="price"></span><small data-live-f="arrowpct"></small></span></div><span class="cfs-hint">Esc로 닫기</span><button type="button" class="cfs-ic" data-land>' + P.land + '</button><button type="button" class="cfs-ic" data-cfs-set aria-label="차트 설정" title="차트 설정 (지표·보기)">' + P.gear + '</button>';
+  head.innerHTML = '<button type="button" class="cfs-back" aria-label="차트 닫기">' + P.back + '</button><div class="cfs-t"><b></b><span class="cfs-px"><span data-live-f="price"></span><small data-live-f="arrowpct"></small></span></div><span class="cfs-hint">Esc로 닫기</span>' + (document.getElementById('tab-technical') ? '<a class="cfs-sig" href="#tab-technical">신호</a>' : '') + '<button type="button" class="cfs-ic" data-land>' + P.land + '</button><button type="button" class="cfs-ic" data-cfs-set aria-label="차트 설정" title="차트 설정 (지표·보기)">' + P.gear + '</button>';
   head.querySelector('b').textContent = String(title).trim();
   panel.insertBefore(head, panel.firstChild);
   // G-156: one bar at the bottom like Toss — 봉 단위 (moved in below), 차트 모양, 그리기 (phones).
