@@ -1,3 +1,4 @@
+import { partButtons } from './ui.js';
 import { marketsOf, worldPanels, WORLD_CSS, WORLD_JS } from './renderWorld.js';
 import { ISSUES_CSS, ISSUES_FILTER, issuesList, mergeIssues } from './issuesAll.js';
 import { scenarioZone } from './scenarioChart.js';
@@ -198,7 +199,8 @@ export function renderHome(data: HomeData): string {
   const nav = `<nav class="mode-tabs" role="tablist" aria-label="홈 보기">${tabs.map(([k, l], i) => `<button type="button" role="tab" data-wd="${k}" aria-selected="${i === 0}">${l}</button>`).join('')}</nav>`;
   const body = `${HOME_STYLE}${WORLD_CSS}${ISSUES_CSS}${tabs.map(([k, , html], i) => `<div class="wd-p hm-p" data-wd-p="${k}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
 <footer id="sources" class="hm-foot"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS, 해외 뉴스 RSS.${wp ? ` 세계 숫자는 ${esc(wp.asof)} 기준이에요.` : ''} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
-  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘', tabs: nav }, scripts: WORLD_JS + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
+  // G-277 (한서님 10/21 '위의 바 두기싫다니까'): on phones the parts switch from the bottom bar; the row above is for wide screens.
+  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘', tabs: nav }, parts: partButtons(tabs.map(([k, l]) => [k, l] as const)), scripts: WORLD_JS + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
 }
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];

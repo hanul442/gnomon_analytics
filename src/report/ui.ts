@@ -263,6 +263,7 @@ const DOCK_ICONS: Record<string, string> = {
   'market-reports.html': '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   'inbox.html': '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   'myreports.html': '<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/><path d="M12 8v4l3 2"/>',
+  'mydebates.html': '<path d="M4 6.5h11v7H9l-3 3v-3H4z"/><path d="M15 10h5v6.5h-2v2.5l-3-2.5h-4.5v-3"/>',
   'settings.html': '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',
 };
 const FILTER_ICON = '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>';
@@ -280,19 +281,52 @@ function dockOf(page: string): 'find' | 'committee' | 'me' | undefined {
  * G-258: the phone bar is one glass pill. Icons only, the current one named in a small bubble. With `ask` (stock and
  * report pages) or a `page` that has its own bar, the right side turns into that screen's bar after the page opens.
  */
-export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page?: string): string {
+/** G-277: `parts` — a screen's own part buttons (home's 요약·위원회·…) that take the bar's right side, so the screen needs no tab row at the top on phones. */
+export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page?: string, parts?: string): string {
   const links = TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('');
   if (where === 'top') return `<nav class="top-tabs" aria-label="주 메뉴">${links}</nav>`;
   const chat = 'data-open-chat aria-haspopup="dialog" aria-controls="chat"';
-  const dock = ask ? 'ask' : page ? dockOf(page) : undefined;
+  const dock = parts ? 'parts' : ask ? 'ask' : page ? dockOf(page) : undefined;
   const seg = (rows: readonly (readonly [string, string, boolean, string?])[]) => `<div class="nav-seg">${rows.map(([l, h, on, extra]) => `<a href="${base}${h}" aria-label="${escM(l)}"${on ? ' aria-current="page"' : ''}>${svgI(DOCK_ICONS[h] ?? '')}<span>${escM(l)}</span>${extra ?? ''}</a>`).join('')}</div>`;
   let ctx = '';
-  if (dock === 'ask') ctx = `<button type="button" class="nav-ask" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(ASK_ICON)}<span>물어보기</span><i aria-hidden="true">${svgI('<path d="M12 19V5M6 11l6-6 6 6"/>')}</i></button>`;
-  else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목·ETF·코인</span></button><button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
+  // G-277 (한서님 10/21 '밑에 하단바에서 모든걸… 위에 바가 생기지 말고'): a stock switches its three parts here —
+  // 위원회 · 차트 · 소식 — and the ✦ on the right asks about it. The tab row at the top goes on phones.
+  if (dock === 'parts') ctx = `<div class="nav-seg nav-parts">${parts}</div>`;
+  else if (dock === 'ask') ctx = `<div class="nav-seg nav-parts">${STOCK_PARTS.map(([l, k, also, d]) => `<a href="#tab-${k}" data-nav="${k}" data-nav-also="${also}" aria-label="${l}">${svgI(d)}<span>${l}</span></a>`).join('')}</div><button type="button" class="nav-round nav-ask-r" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(SPARK_ICON)}</button>`;
+  else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목·ETF·코인</span></button>${findModes(base, page)}<button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
   else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
-  else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 기록', 'myreports.html', page === 'myreports.html' || page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);
+  // G-277: 내 리포트 and 내 토론 each get their icon, so the 알림함·내 리포트·내 토론 row at the top can go on phones.
+  else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 리포트', 'myreports.html', page === 'myreports.html'], ['내 토론', 'mydebates.html', page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);
   const back = dock ? `<button type="button" class="nav-back" aria-label="탭 4개 보기">${svgI(GRID_ICON)}</button>` : '';
   return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button><div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}</nav>`;
+}
+/** G-277: a stock's three parts in the bottom bar: label, panel key, the panels that light it too, icon. */
+const STOCK_PARTS: readonly (readonly [string, string, string, string])[] = [
+  ['위원회', 'home', 'ai', '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>'],
+  ['차트', 'chart', 'technical strategy', '<path d="M7 4v16M17 4v16"/><rect x="5" y="8" width="4" height="7" rx="1"/><rect x="15" y="6" width="4" height="9" rx="1"/><path d="M12 3v18"/><rect x="10" y="10" width="4" height="5" rx="1"/>'],
+  ['소식', 'news', 'filings', '<rect x="4" y="4.5" width="16" height="15" rx="2.5"/><path d="M8 9h8M8 12.5h8M8 16h5"/>'],
+];
+/** G-277: home's parts in the bottom bar (buttons with data-wd; WORLD_JS switches them and sets aria-selected). */
+const PART_ICONS: Record<string, string> = {
+  sum: '<path d="M4 11l8-6.5 8 6.5"/><path d="M6.5 9.5V19h11V9.5"/>',
+  com: '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>',
+  stocks: '<path d="M4 19h16"/><path d="M5 15l4.5-4.5 3.5 3L19 7"/><path d="M15 7h4v4"/>',
+  rates: '<path d="M18 6L6 18"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>',
+  commod: '<path d="M12 3.5c3.4 4.3 5.5 7.6 5.5 10.2a5.5 5.5 0 0 1-11 0c0-2.6 2.1-5.9 5.5-10.2z"/>',
+  news: '<rect x="4" y="4.5" width="16" height="15" rx="2.5"/><path d="M8 9h8M8 12.5h8M8 16h5"/>',
+};
+export function partButtons(rows: readonly (readonly [string, string])[]): string {
+  return rows.map(([k, l], i) => `<button type="button" data-wd="${k}" aria-selected="${i === 0}" aria-label="${escM(l)}">${svgI(PART_ICONS[k] ?? PART_ICONS.sum!)}<span>${escM(l)}</span></button>`).join('');
+}
+/**
+ * G-277 (한서님 10/21 '위의 바 두기싫다니까'): 찾기's six kinds (주식·미국 주식·ETF·코인·테마·공시) open from a small pill in
+ * the bottom bar instead of a row at the top. On screener.html the first four switch in place (COMMAND_BAR_JS).
+ */
+function findModes(base: string, page?: string): string {
+  const modes = MODE_GROUPS.find((g) => g.key === 'find')!.modes;
+  const cur = modes.find(([, h]) => h === page && h !== 'screener.html')?.[0] ?? '주식';
+  const items = modes.map(([l, h]) => `<a href="${base}${h}"${h.startsWith('screener.html') ? ` data-find-go="${h.split('#')[1] ?? 'stock'}"` : ''}${l === cur ? ' aria-current="page"' : ''}>${escM(l)}</a>`).join('');
+  return `<button type="button" class="nav-kind" data-dock-kind aria-haspopup="true" aria-expanded="false" aria-label="종류 고르기"><b>${escM(cur)}</b>${svgI('<path d="M7 10l5 5 5-5"/>')}</button><div class="nav-menu" role="menu" hidden>${items}</div>`;
 }
 const ASK_ICON = '<path d="M5 5h14v10h-8l-4 4v-4H5z"/>';
 /**
@@ -570,11 +604,11 @@ export const TOUR_JS = `
         ['#tab-technical', '지표 선택', '피보나치·RSI 등 지표 본문에서 차트 연결을 누르면 해당 지표만 켜져요. 기술로 돌아가기로 보던 위치에 복귀해요.', 'technical'],
         ['#tab-fundamentals', '기업 체력', '성장·수익성·안정성·수급·가치를 한눈에 보고, 재무제표와 수급을 이어서 확인해요.', 'fundamentals'],
         ['#tab-ai', '토론과 질문', '전체 토론은 2초 생각 → 발언 → 2초 쉼으로 재생돼요. 바로 아래 입력창에서 질문하고 +로 답변자나 내 전문가를 고르세요. 전송 전 작은 크레딧 안내를 확인하세요.', 'ai'],
-        ['#tab-news', '뉴스·공시', '제목으로 원문을 확인하고 더 보기로 나머지를 펼쳐요. 기업 이벤트와 테마 확장은 준비 중이에요.', 'news'],
+        ['#tab-news', '소식', '뉴스와 공시를 한 칸에 모았어요. 제목으로 원문을 확인하고 더 보기로 나머지를 펼쳐요. 기업 이벤트와 테마 확장은 준비 중이에요.', 'news'],
       ],
       find: [
         ['#search|.bottom-nav .nav-field', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
-        ['.mode-tabs', '모드 선택', '주식·ETF·코인·테마·공시를 바꿔 가며 보세요. 시장별로 지원되는 조건이 달라요.'],
+        ['.mode-tabs|.bottom-nav [data-dock-kind]', '종류 고르기', '주식·미국 주식·ETF·코인·테마·공시를 바꿔 가며 보세요. 시장별로 지원되는 조건이 달라요.'],
         ['#sc-filter-open|.bottom-nav [data-dock-filter]', '필터 · AI 조건', '필터를 누르면 AI 조건(원하는 특징을 문장으로)과 직접 조건을 정하는 화면이 열려요. 결과 보기로 돌아와요.'],
         // G-271 (Bklit funnel, 한서님 10/20 "퍼널차트 가로로된거 스크리너 설명할때"): the funnel gets its own step (skipped while hidden).
         ['#sc-funnel', '조건별로 남은 종목', '조건을 위에서부터 하나씩 걸 때마다 몇 종목이 남는지 가로 깔때기로 보여요. 갑자기 확 줄어드는 줄이 가장 까다로운 조건이에요. 결과가 너무 적으면 그 조건부터 풀어 보세요.'],
