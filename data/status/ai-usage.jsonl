@@ -134,3 +134,6 @@
 {"at":"2026-10-21T11:28:07.937Z","month":"2026-10","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":24524,"outputTokens":6411,"usd":0.22632}
 {"at":"2026-10-21T11:28:07.937Z","month":"2026-10","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":31060,"outputTokens":5639,"usd":0.23702}
 {"at":"2026-10-21T11:28:07.937Z","month":"2026-10","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":30295,"outputTokens":5587,"usd":0.23292}
+{"at":"2026-10-21T12:01:04.903Z","month":"2026-10","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":24593,"outputTokens":5019,"usd":0.19875}
+{"at":"2026-10-21T12:01:04.903Z","month":"2026-10","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":29735,"outputTokens":4705,"usd":0.21304}
+{"at":"2026-10-21T12:01:04.903Z","month":"2026-10","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":29487,"outputTokens":4492,"usd":0.20779}
