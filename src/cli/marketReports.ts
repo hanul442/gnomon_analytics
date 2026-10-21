@@ -74,18 +74,23 @@ export function shapeIssue(error:unknown):string{
  if(!Array.isArray(issues))return error instanceof Error?error.message.slice(0,120):'형식 오류';
  return issues.slice(0,3).map(i=>`${i.path.map(String).join('.')||'답'} ${i.code==='too_small'?`개수 부족(필요 ${String(i.minimum)})`:i.code==='too_big'?`개수 초과(최대 ${String(i.maximum)})`:i.code}`).join(', ');
 }
-export async function writeMarketReports(root:string, now:Date, universe:readonly UniverseRow[], apiKey?:string, injectedClient?:Anthropic, sharedBudget?:AiBudget, regenerate=process.env.MARKET_REGEN==='1', newsFetch?:typeof fetch):Promise<{date:string;status:string;error?:string}|undefined>{
+export async function writeMarketReports(root:string, now:Date, universe:readonly UniverseRow[], apiKey?:string, injectedClient?:Anthropic, sharedBudget?:AiBudget, regenerate=process.env.MARKET_REGEN==='1', newsFetch?:typeof fetch, pastDate=process.env.MARKET_DATE||''):Promise<{date:string;status:string;error?:string}|undefined>{
  let outcome:{date:string;status:string;error?:string}|undefined;
- const date=runDay(now).date, dir=join(root,'reports','market');await mkdir(dir,{recursive:true});
+ // G-278: MARKET_DATE (manual run) asks a past day's committee again from that day's stored numbers and headlines.
+ if(pastDate&&!/^\d{4}-\d{2}-\d{2}$/.test(pastDate))throw new Error(`MARKET_DATE must be YYYY-MM-DD: ${pastDate}`);
+ if(pastDate)regenerate=true;
+ const date=pastDate||runDay(now).date, dir=join(root,'reports','market');await mkdir(dir,{recursive:true});
  const budget=sharedBudget??await AiBudget.load(root,now);
  for(const period of ['daily'] as const){
   const file=join(dir,`${period}-${date}.json`); const old=await json(file) as MarketReport|null;
   // A finished report is kept; MARKET_REGEN=1 (manual run) asks for a fresh committee, keeping the old one if that fails.
   const done=old?.schema==='curia.market-report.v4'&&old.ai.status==='OK'&&!!(old.ai.council||old.ai.sealed);
-  const world=await worldSnapshot(root,now);
+  if(pastDate&&!old){console.log(`market ${period}: no stored report for ${pastDate}`);continue;}
+  const fromStore=!!pastDate;
+  const world=fromStore?{}:await worldSnapshot(root,now);
   if(done&&!regenerate){await savePrivateMarketReport(file,old!.world?old!:{...old!,...world});continue;}
-  const news=await collectMarketNews(date,newsFetch?{fetch:newsFetch}:{});
-  const report:MarketReport={schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),...await macroCards(root,date),...world,...(news.length?{news}:{}),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
+  const news=fromStore?old!.news??[]:await collectMarketNews(date,newsFetch?{fetch:newsFetch}:{});
+  const report:MarketReport=fromStore?{...old!,schema:'curia.market-report.v4',ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}}:{schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),...await macroCards(root,date),...world,...(news.length?{news}:{}),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
   // The committee's structure is checked strictly, so a regeneration gets up to three tries; each failure is logged (no secrets in it).
   const hasToday=report.groups.some(g=>g.assets.some(a=>a.date===date));
   // G-278: when an answer had the wrong shape (e.g. 10 of 11 experts), the next try shows the model its own answer and what to fix.

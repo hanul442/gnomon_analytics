@@ -105,3 +105,19 @@ test('a committee with a missing expert is sent back once with what to fix, and 
   const html=renderMarketReport(report);assert.ok(html.includes('AI 요약을 만들지 못했어요'));assert.ok(!/too_small|origin|형식 검사/.test(html));
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('a past day\'s failed committee can be asked again from that day\'s stored numbers',async()=>{
+ const root=await tempDir('gnomon-past-');
+ try{
+  await mkdir(join(root,'reports','market'),{recursive:true});
+  const file=join(root,'reports','market','daily-2026-10-20.json');
+  const group={id:'M1',name:'코스피',source:'naver',universe:900,snapshotDate:'2026-10-20',breadth:{up:1,down:2,flat:0},assets:[{symbol:'KOSPI',name:'코스피',date:'2026-10-20',close:100,returnPct:-1.5,baseline:'2026-10-19',value:null}]};
+  await writeFile(file,JSON.stringify({schema:'curia.market-report.v4',date:'2026-10-20',from:'2026-10-20',generatedAt:'2026-10-20T18:43:00Z',period:'daily',groups:[group],news:[{id:'N1',title:'저장된 헤드라인',publisher:'p',publishedAt:'',url:'u'}],ai:{status:'FAILED',error:'old'}}));
+  const inputs:string[]=[];
+  const client={beta:{messages:{stream:(params:{messages:{content:string}[]})=>{inputs.push(params.messages[0]!.content);return {finalMessage:async()=>({model:'m',stop_reason:'max_tokens',usage:{input_tokens:1,output_tokens:1},content:[{type:'text',text:'{'}]})};}}}} as unknown as Anthropic;
+  const out=await writeMarketReports(root,new Date('2026-10-21T11:30:00Z'),[],undefined,client,new AiBudget(root,'2026-10',25,0),false,noNews,'2026-10-20');
+  assert.equal(inputs.length,3);assert.match(inputs[0]!,/저장된 헤드라인/);assert.match(inputs[0]!,/"returnPct":-1.5/);
+  assert.equal(out?.date,'2026-10-20');assert.equal(out?.status,'FAILED');
+  const saved=JSON.parse(await readFile(file,'utf8'));assert.equal(saved.groups[0].assets[0].close,100);assert.equal(saved.generatedAt,'2026-10-20T18:43:00Z');
+ }finally{await rm(root,{recursive:true,force:true});}
+});
