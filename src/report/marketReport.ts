@@ -45,6 +45,7 @@ export function parseMarketCouncil(text:string):MarketCouncil {
  const firstBy=(list:unknown,key:string)=>Array.isArray(list)?list.filter((x,i)=>!x||typeof x!=='object'||list.findIndex(y=>!!y&&typeof y==='object'&&(y as Record<string,unknown>)[key]===(x as Record<string,unknown>)[key])===i):list;
  if(Array.isArray(raw?.experts))raw.experts=firstBy(raw.experts,'speaker');
  if(Array.isArray(raw?.scenarios))raw.scenarios=firstBy(raw.scenarios,'name');
+ if(Array.isArray(raw?.desks))raw.desks=firstBy(raw.desks,'name');
  // G-278: the debate keeps each expert's first turn and the last red-team turn, spoken with that expert's stance;
  // a reply whose target was dropped (or points forward, or at the same speaker) becomes a fresh remark.
  if(Array.isArray(raw?.experts)&&Array.isArray(raw?.debate)){
@@ -104,12 +105,43 @@ export function marketNumberIssues(council:MarketCouncil, groups:readonly Market
  }
  return issues;
 }
-export function validCouncil(council: MarketCouncil, groups: readonly MarketGroup[], news: readonly MarketNews[] = []): boolean {
+/** G-278: what is wrong with a council, in words for the run log and the repair prompt (empty means publishable). */
+export function councilProblems(council: MarketCouncil, groups: readonly MarketGroup[], news: readonly MarketNews[] = []): string[] {
  const refs=new Set([...groups.map(g=>g.id),...news.map(n=>n.id)]);
- const claims=councilClaims(council);
- const spoken=(council.debate??[]).filter(t=>t.speaker!=='RED_TEAM'),reds=(council.debate??[]).filter(t=>t.speaker==='RED_TEAM');
- const members=council.experts?council.experts.length>=MARKET_MIN_MEMBERS&&new Set(council.experts.map(e=>e.speaker)).size===council.experts.length&&spoken.length>=MARKET_MIN_MEMBERS&&new Set(spoken.map(t=>t.speaker)).size===spoken.length&&reds.length<=1&&(!reds.length||council.debate!.at(-1)?.speaker==='RED_TEAM')&&spoken.every(t=>{const e=council.experts!.find(x=>x.speaker===t.speaker);return !!e&&t.stance===(e.stance==='INSUFFICIENT_DATA'?'NEUTRAL':e.stance);})&&(council.debate??[]).every((t,i)=>t.replyTo===-1||(Number.isInteger(t.replyTo)&&t.replyTo>=0&&t.replyTo<i&&council.debate![t.replyTo]?.speaker!==t.speaker)):true;
- return members && new Set(council.desks.map(d=>d.name)).size===council.desks.length && new Set(council.scenarios.map(s=>s.name)).size===3 && claims.every(c=>c.refs.length>0&&c.refs.every(r=>refs.has(r)));
+ const out:string[]=[];
+ if(council.experts){
+  const debate=council.debate??[];
+  const spoken=debate.filter(t=>t.speaker!=='RED_TEAM'),reds=debate.filter(t=>t.speaker==='RED_TEAM');
+  if(council.experts.length<MARKET_MIN_MEMBERS||new Set(council.experts.map(e=>e.speaker)).size!==council.experts.length)out.push(`experts ${council.experts.length}명(중복 없이 ${MARKET_MIN_MEMBERS}명 이상 필요)`);
+  if(spoken.length<MARKET_MIN_MEMBERS||new Set(spoken.map(t=>t.speaker)).size!==spoken.length)out.push(`debate 전문가 발언 ${spoken.length}차례(각 1번, ${MARKET_MIN_MEMBERS}명 이상 필요)`);
+  if(reds.length>1||(reds.length&&debate.at(-1)?.speaker!=='RED_TEAM'))out.push('RED_TEAM은 마지막에 한 번만');
+  const off=spoken.filter(t=>{const e=council.experts!.find(x=>x.speaker===t.speaker);return !e||t.stance!==(e.stance==='INSUFFICIENT_DATA'?'NEUTRAL':e.stance);});
+  if(off.length)out.push(`debate stance가 experts 판단과 다름: ${off.map(t=>t.speaker).slice(0,3).join(',')}`);
+  const badReply=debate.filter((t,i)=>!(t.replyTo===-1||(Number.isInteger(t.replyTo)&&t.replyTo>=0&&t.replyTo<i&&debate[t.replyTo]?.speaker!==t.speaker)));
+  if(badReply.length)out.push(`replyTo 오류 ${badReply.length}건`);
+ }
+ if(new Set(council.desks.map(d=>d.name)).size!==council.desks.length)out.push('desks 이름 중복');
+ if(new Set(council.scenarios.map(s=>s.name)).size!==3)out.push('시나리오는 강세·기본·약세 각 1개');
+ const unknown=[...new Set(councilClaims(council).flatMap(c=>c.refs.filter(r=>!refs.has(r))))];
+ if(unknown.length)out.push(`없는 근거 번호: ${unknown.slice(0,5).join(',')} (쓸 수 있는 번호: ${[...refs].join(',')})`);
+ const bare=councilClaims(council).filter(c=>!c.refs.length).length;
+ if(bare)out.push(`근거 번호가 없는 문장 ${bare}개`);
+ return out;
+}
+export function validCouncil(council: MarketCouncil, groups: readonly MarketGroup[], news: readonly MarketNews[] = []): boolean { return councilProblems(council,groups,news).length===0; }
+/**
+ * G-278: refs written as "M1, N3" or "M1~M5" are split into ids, ids that were never given are dropped, and a list
+ * item left with no valid ref is dropped from its list. A single claim (summary, scenario, expert, debate turn) left
+ * with none stays as it is, so the check still rejects it.
+ */
+export function tidyCouncilRefs(council: MarketCouncil, groups: readonly MarketGroup[], news: readonly MarketNews[] = []): MarketCouncil {
+ const known=new Set([...groups.map(g=>g.id),...news.map(n=>n.id)]);
+ const ids=(r:string)=>r.split(/[\s,/·]+/).filter(Boolean).flatMap(x=>{const m=x.match(/^([MN])(\d+)[~\-–]([MN])?(\d+)$/);if(!m)return [x];const out:string[]=[];for(let i=+m[2]!;i<=+m[4]!&&out.length<20;i++)out.push(m[1]!+i);return out;});
+ const fix=<T extends {refs:string[]}>(c:T):T=>{const refs=[...new Set(c.refs.flatMap(ids))].filter(r=>known.has(r));return {...c,refs:refs.length?refs:c.refs};};
+ const list=<T extends {refs:string[]}>(cs:T[]):T[]=>cs.map(fix).filter(c=>c.refs.every(r=>known.has(r))&&c.refs.length>0);
+ return {...council,summary:fix(council.summary),desks:council.desks.map(d=>({...d,claims:list(d.claims)})),consensus:list(council.consensus),disagreements:list(council.disagreements),
+  scenarios:council.scenarios.map(x=>({...x,trigger:fix(x.trigger),outlook:fix(x.outlook),invalidation:fix(x.invalidation)})),redTeam:list(council.redTeam),watch:list(council.watch),
+  ...(council.experts?{experts:council.experts.map(e=>({...e,claim:fix(e.claim)}))}:{}),...(council.debate?{debate:council.debate.map(t=>({...t,claim:fix(t.claim)}))}:{})};
 }
 const pct=(n:number|null)=>n===null?'확인 필요':`${n>0?'+':''}${n.toFixed(2)}%`;
 /** This source contains individual coins, never an aggregate cryptocurrency index. */

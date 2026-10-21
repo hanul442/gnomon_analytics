@@ -9,7 +9,7 @@ import { AiBudget } from './aiBudget.js';
 import { runDay } from './kst.js';
 /** The market committee runs on the small model (one call a day over every group's numbers). */
 const MARKET_MODEL = 'claude-haiku-4-5';
-import { marketWorld, MarketCouncilSchema, MarketCouncilGenerationSchema, parseMarketCouncil, periodAsset, weekStart, validCouncil, marketNumberIssues, marketSymbol, renderMarketDeep, renderMarketReport, renderMarketReportIndex, type MarketReport, type MarketGroup, type Period } from '../report/marketReport.js';
+import { marketWorld, MarketCouncilSchema, MarketCouncilGenerationSchema, parseMarketCouncil, periodAsset, weekStart, councilProblems, tidyCouncilRefs, marketNumberIssues, marketSymbol, renderMarketDeep, renderMarketReport, renderMarketReportIndex, type MarketReport, type MarketGroup, type Period } from '../report/marketReport.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { PriceBar } from '../types.js';
 import { readLog } from '../store/jsonlLog.js';
@@ -105,11 +105,11 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
     if(response.stop_reason==='max_tokens')throw new Error('AI 출력 길이 제한 도달 · 재생성 필요');
     const text=response.content.filter(b=>b.type==='text').map(b=>b.text).join('');lastText=text;lastIssue='';
     const parsed=MarketCouncilGenerationSchema.safeParse((()=>{try{return parseMarketCouncil(text);}catch(e){lastIssue=shapeIssue(e);throw new Error(`형식 검사 실패: ${lastIssue}`);}})());
-    if(!parsed.success){lastIssue=shapeIssue(parsed.error);throw new Error(`형식 검사 실패: ${lastIssue}`);}const council=parsed.data;
-    if(!validCouncil(council,report.groups,report.news??[])){lastIssue='전문가 11명이 한 번씩, 토론 첫 11차례에 각 1번, 마지막 RED_TEAM, replyTo는 앞 차례 번호, 근거는 M1~M5·N 번호만';throw new Error('위원회 구조 또는 근거 검증 실패');}
+    if(!parsed.success){lastIssue=shapeIssue(parsed.error);throw new Error(`형식 검사 실패: ${lastIssue}`);}const council=tidyCouncilRefs(parsed.data,report.groups,report.news??[]);
+    const problems=councilProblems(council,report.groups,report.news??[]);if(problems.length){lastIssue=problems.join(' / ');throw new Error(`구조·근거 검사 실패: ${lastIssue}`.slice(0,300));}
     const numberIssues=marketNumberIssues(council,report.groups);if(numberIssues.length){lastIssue=`제공한 returnPct와 다른 숫자: ${numberIssues.slice(0,3).join(' / ')}`;throw new Error(`숫자 검증 실패 ${numberIssues.length}건: ${numberIssues[0]}`);}
     report.ai={status:'OK',model:response.model,council};
-   }catch(error){report.ai={status:'FAILED',error:error instanceof Error?error.message.slice(0,180):'생성 오류'};}finally{if(!accounted)budget.spent-=0.03;}
+   }catch(error){report.ai={status:'FAILED',error:error instanceof Error?error.message.slice(0,300):'생성 오류'};}finally{if(!accounted)budget.spent-=0.03;}
    if(report.ai.status!=='OK')console.log(`market ${period} AI attempt ${attempt} failed: ${report.ai.error}`);
   }
   if(!hasToday)report.ai.error='당일 데이터가 없어 위원회 생성을 보류합니다';

@@ -67,3 +67,16 @@ test('a debate with a repeated, missing or off-stance turn is tidied instead of 
  assert.equal(validCouncil(council,groups),true);
  assert.throws(()=>MarketCouncilGenerationSchema.parse(parseMarketCouncil(JSON.stringify({...base,experts:speakers.slice(0,8).map(speaker=>({speaker,stance:'NEUTRAL',claim})),debate}))));
 });
+
+test('refs like "M1, N2" or "M1~M3" are split, unknown ones dropped, and the check names what is still wrong (G-278)',async()=>{
+ const {tidyCouncilRefs,councilProblems}=await import('./marketReport.js');
+ const c=(refs:string[])=>({text:'문장',kind:'FACT' as const,refs});
+ const council={summary:c(['M1, N2']),desks:[{name:'코스피' as const,view:'중립' as const,claims:[c(['M1~M2']),c(['M9'])]}],consensus:[c(['N13'])],disagreements:[],scenarios:(['강세','기본','약세'] as const).map(name=>({name,trigger:c(['M1']),outlook:c(['M1']),invalidation:c(['M1'])})),redTeam:[],watch:[],dataGaps:[]};
+ const groups=[{id:'M1',name:'코스피',source:'s',universe:2,assets:[],snapshotDate:'2026-10-20',breadth:{up:1,down:1,flat:0}},{id:'M2',name:'코스닥',source:'s',universe:2,assets:[],snapshotDate:'2026-10-20',breadth:{up:1,down:1,flat:0}}];
+ const news=[{id:'N2',title:'t',publisher:'p',publishedAt:'',url:'u'}];
+ assert.match(councilProblems(council,groups,news).join(' '),/없는 근거 번호: M1, N2/);
+ const tidy=tidyCouncilRefs(council,groups,news);
+ assert.deepEqual(tidy.summary.refs,['M1','N2']);assert.deepEqual(tidy.desks[0]!.claims.map(x=>x.refs),[['M1','M2']]);assert.equal(tidy.consensus.length,0);
+ assert.deepEqual(councilProblems(tidy,groups,news),[]);
+ assert.match(councilProblems({...tidy,summary:c(['M7'])},groups,news).join(' '),/없는 근거 번호: M7/);
+});
