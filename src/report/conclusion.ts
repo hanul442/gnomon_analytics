@@ -11,6 +11,8 @@ import { CREDIT_COST } from './plans.js';
 import { reportButton } from './generateButton.js';
 
 const gap = (to: number, from: number) => { const g = (to / from - 1) * 100; return `${g > 0 ? '+' : ''}${g.toFixed(1)}%`; };
+/** 2026-10-05 → 10월 5일: the committee's line is dated so an older report never reads as today's (G-277). */
+const dayOf = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일`;
 const zone = (z?: [number, number]) => (z ? `${won(z[0])} ~ ${won(z[1])}` : '');
 
 /** Legacy reports can state explicit upper/lower exits of the base scenario without a trigger field.
@@ -41,21 +43,56 @@ export function conclusionMini(report: DailyReport): string {
 }
 
 /**
- * G-249 (한서님 10/19 '위원회 시나리오 띠'): the three scenario ranges on one ruled strip, with today's price marked.
- * Empty when no range is known. The ranges come from scenarioZone (committee, analysts' targets, or volatility).
+ * G-277 (한서님 10/21, Uniswap-style price map; was G-249's ruled strip): the last 50 closes as a line that draws in, then
+ * to the right of today the three 20-session ranges as vertical bars, 약세 · 기본 · 강세 from left to right. The high and low of
+ * the window carry arrows with how today compares to them and the date; the nearest support and resistance sit below as chips.
+ * Empty when there is no price or no range.
  */
 export function scenarioRail(report: DailyReport): string {
   const p = report.price; if (!p) return '';
   const z = { BEAR: scenarioZone(report, 'BEAR'), BASE: scenarioZone(report, 'BASE'), BULL: scenarioZone(report, 'BULL') };
-  const all = (Object.values(z).filter(Boolean) as { zone: [number, number] }[]).flatMap((x) => x.zone);
-  if (!all.length) return '';
-  let lo = Math.min(...all, p.close), hi = Math.max(...all, p.close);
-  const pad = (hi - lo) * 0.06 || p.close * 0.02; lo -= pad; hi += pad;
-  const at = (v: number) => ((v - lo) / (hi - lo)) * 100;
-  const seg = (k: 'BEAR' | 'BASE' | 'BULL', cls: string) => { const r = z[k]; return r ? `<span class="${cls}" style="left:${at(r.zone[0]).toFixed(1)}%;width:${Math.max(1.5, at(r.zone[1]) - at(r.zone[0])).toFixed(1)}%"></span>` : ''; };
-  const now = at(p.close);
-  const label = (['BEAR', 'BASE', 'BULL'] as const).filter((k) => z[k]).map((k) => `${({ BEAR: '약세', BASE: '기본', BULL: '강세' })[k]} ${zone(z[k]!.zone)}`).join(', ');
-  return `<div class="cl-rail" role="img" aria-label="시나리오 범위: ${esc(label)}. 지금 ${won(p.close)}"><div class="cl-rail-t">${seg('BEAR', 'r-bear')}${seg('BASE', 'r-base')}${seg('BULL', 'r-bull')}<i class="cl-rail-now" style="left:${now.toFixed(1)}%"><b>지금</b></i></div><div class="cl-rail-l"><span>${won(Math.round(lo))}</span><span>${won(Math.round(hi))}</span></div><div class="cl-rail-k"><span class="down">● 약세</span><span>● 기본</span><span class="up">● 강세</span></div></div>`;
+  const ks = (['BEAR', 'BASE', 'BULL'] as const).filter((k) => z[k]);
+  if (!ks.length) return '';
+  const hist = (report.recentCloses ?? []).slice(-50);
+  const closes = hist.length ? hist : [{ date: p.sessionDate ?? report.date, close: p.close }];
+  const all = [...closes.map((c) => c.close), ...ks.flatMap((k) => z[k]!.zone), p.close];
+  let lo = Math.min(...all), hi = Math.max(...all);
+  const pad = (hi - lo) * 0.08 || p.close * 0.03; lo -= pad; hi += pad;
+  const W = 340, H = 210, top = 22, bot = 22, xEnd = 200, y = (v: number) => top + (1 - (v - lo) / (hi - lo)) * (H - top - bot);
+  const x = (i: number) => (closes.length < 2 ? xEnd : 8 + (i / (closes.length - 1)) * (xEnd - 8));
+  const f1 = (v: number) => v.toFixed(1);
+  const d = closes.map((c, i) => `${i ? 'L' : 'M'}${f1(x(i))},${f1(y(c.close))}`).join('');
+  const area = closes.length > 1 ? `<path class="pm-area" d="${d}L${f1(x(closes.length - 1))},${H - bot}L${f1(x(0))},${H - bot}Z"/>` : '';
+  const md = (s: string) => `${Number(s.slice(5, 7))}.${s.slice(8, 10)}`;
+  const iHi = closes.reduce((m, c, i) => (c.close > closes[m]!.close ? i : m), 0), iLo = closes.reduce((m, c, i) => (c.close < closes[m]!.close ? i : m), 0);
+  const pct = (v: number) => { const g = (p.close / v - 1) * 100; return `${g > 0 ? '+' : ''}${g.toFixed(1)}%`; };
+  const mark = (i: number, up: boolean) => {
+    const c = closes[i]!, cx = x(i), cy = y(c.close), ty = up ? cy - 9 : cy + 15, anchor = cx < 60 ? 'start' : cx > xEnd - 60 ? 'end' : 'middle';
+    return `<path class="pm-arw" d="M${f1(cx)},${f1(up ? cy - 3 : cy + 3)}l-3,${up ? -4 : 4}h6z"/><text class="pm-ext ${up ? 'up' : 'down'}" x="${f1(cx)}" y="${f1(ty)}" text-anchor="${anchor}">${up ? '최고' : '최저'} ${won(c.close)} (${pct(c.close)}, ${md(c.date)})</text>`;
+  };
+  const marks = closes.length > 4 && iHi !== iLo ? mark(iHi, true) + mark(iLo, false) : '';
+  const name = { BEAR: '약세', BASE: '기본', BULL: '강세' } as const, cls = { BEAR: 'r-bear', BASE: 'r-base', BULL: 'r-bull' } as const;
+  const bars = ks.map((k, i) => {
+    const r = z[k]!.zone, bx = 230 + i * 38, y1 = y(r[1]), h = Math.max(8, y(r[0]) - y1);
+    return `<rect class="${cls[k]}" x="${bx}" y="${f1(y1)}" width="24" height="${f1(h)}" rx="6"/><text class="pm-k" x="${bx + 12}" y="${H - 6}" text-anchor="middle">${name[k]}</text>`;
+  }).join('');
+  const ny = y(p.close);
+  const label = ks.map((k) => `${name[k]} ${zone(z[k]!.zone)}`).join(', ');
+  const lv = report.market?.structure?.levels ?? [];
+  const sup = lv.filter((l) => l.kind === 'SUPPORT' && l.price < p.close).sort((a, b) => b.price - a.price)[0];
+  const res = lv.filter((l) => l.kind === 'RESISTANCE' && l.price > p.close).sort((a, b) => a.price - b.price)[0];
+  const chips = `<div class="pm-chips"><span class="pm-nowc">지금 <b>${won(p.close)}</b></span>${res ? `<span>저항 <b>${won(Math.round(res.price))}</b> <small>${pct(res.price)}</small></span>` : ''}${sup ? `<span>지지 <b>${won(Math.round(sup.price))}</b> <small>${pct(sup.price)}</small></span>` : ''}</div>`;
+  return `<div class="cl-rail pm km-anim"><div class="pm-h"><b>앞으로 20거래일, 가격은 어디쯤</b><small>왼쪽은 지난 ${closes.length}거래일, 오른쪽 막대는 시나리오별 범위예요</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시나리오 범위: ${esc(label)}. 지금 ${won(p.close)}">${area}<path class="pm-line" pathLength="1" d="${d}"/>${marks}<line class="cl-rail-now" x1="0" x2="${W}" y1="${f1(ny)}" y2="${f1(ny)}"/><circle class="pm-dot" cx="${f1(x(closes.length - 1))}" cy="${f1(y(closes.at(-1)!.close))}" r="3.5"/>${bars}</svg>${chips}</div>`;
+}
+
+/** G-277: the odds as three columns, 약세 · 기본 · 강세 left to right, each with its range under it. */
+function oddsGrid(report: DailyReport): string {
+  const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
+  const ks = ['BEAR', 'BASE', 'BULL'] as const, name = { BEAR: '약세', BASE: '기본', BULL: '강세' } as const;
+  const pr = ks.map((k) => c?.scenarios?.find((s) => s.kind === k)?.probability);
+  if (!pr.some((v) => typeof v === 'number')) return '';
+  const top = Math.max(...pr.map((v) => v ?? 0));
+  return `<div class="pm-odds"><div class="pm-odds-k">시나리오 확률</div><div class="pm-grid">${ks.map((k, i) => { const z = scenarioZone(report, k); const v = pr[i]; return `<div class="pm-cell ${k.toLowerCase()}${v === top ? ' top' : ''}"><span>${name[k]}</span><b>${typeof v === 'number' ? `${v}%` : '—'}</b><small>${z ? zone(z.zone) : ''}</small></div>`; }).join('')}</div></div>`;
 }
 
 export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string } = {}): string {
@@ -106,18 +143,27 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
     row('cl-down', bear, '약세', px('BEAR'), checks.BEAR ? checkLine(checks.BEAR, '약세') : '성립 근거와 무효화 조건 함께 확인', '▼'),
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
-  const oddsBar = oddsBarOf(c);
   const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : `조건 가격 도달만으로 전개가 확정되지는 않아요. 예상 범위와 조건 가격은 다릅니다. 분석 기준은 ${esc(report.date)} 종가 ${won(p.close)}이며, 현재 가격과 차이가 날 수 있어요`;
-  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')}</div><h2 class="cl-line">${esc(line)}</h2>${scenarioRail(report)}${oddsBar}
+  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>${scenarioRail(report)}${oddsGrid(report)}
 ${verdict}<div class="cl-ladder">${rows}</div>
 ${[bull, base, bear].some((x) => x?.narrative.text === LOCKED_TEXT) ? `<div class="cl-deep"><span>🔒 시나리오 전개·무효화 조건·최악의 경우·위원회 토론은 심층 리포트에 있어요.</span><button type="button" class="btn-primary" data-deep-go>심층 리포트 열기 <small>${CREDIT_COST.unlock}크레딧</small></button></div>` : ''}
 <p class="fine">${bull || bear || base ? '줄을 누르면 시나리오가 펼쳐져요. ' : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
 }
 
-export const CONCLUSION_CSS = `.cl-rail{margin:6px 0 16px}.cl-rail-t{position:relative;height:46px;border-radius:12px;background:repeating-linear-gradient(90deg,var(--line-strong) 0 1px,transparent 1px 10px) 0 60%/100% 14px no-repeat}
-.cl-rail-t>span{position:absolute;top:10px;height:26px;border-radius:8px;opacity:.9}.cl-rail-t .r-bear{background:var(--down-soft);box-shadow:inset 0 0 0 1.5px var(--down)}.cl-rail-t .r-base{background:var(--soft);box-shadow:inset 0 0 0 1.5px var(--line-strong)}.cl-rail-t .r-bull{background:var(--up-soft);box-shadow:inset 0 0 0 1.5px var(--up)}
-.cl-rail-now{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--fg);border-radius:1px}.cl-rail-now b{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:11px;font-style:normal;white-space:nowrap;padding:1px 7px;border-radius:999px;background:var(--fg);color:var(--page)}
-.cl-rail-l,.cl-rail-k{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:4px}.cl-rail-k{justify-content:flex-start;gap:12px;font-weight:700}.cl-rail{padding-top:16px}
+export const CONCLUSION_CSS = `.pm{margin:10px 0 16px}.pm-h b{display:block;font-size:16px;font-weight:700}.pm-h small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.pm svg{display:block;width:100%;height:auto;margin-top:8px;overflow:visible}
+.pm-line{fill:none;stroke:var(--fg);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0}
+html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{transition:stroke-dashoffset 1.1s cubic-bezier(.3,.7,.2,1)}
+.pm-area{fill:var(--fg);opacity:.05}
+.pm rect{transform-box:fill-box;transform-origin:50% 50%}html.mo .pm:not(.km-in) rect{transform:scaleY(.05);opacity:0}html.mo .pm.km-in rect{transition:transform .6s cubic-bezier(.34,1.3,.64,1) .7s,opacity .3s .7s}
+.pm .r-bear{fill:var(--down)}.pm .r-base{fill:var(--fg2);opacity:.45}.pm-dot{fill:var(--fg);stroke:var(--surface-solid);stroke-width:2}.pm-chips .pm-nowc{background:var(--fg);color:var(--page)}.pm-chips .pm-nowc b{color:var(--page)}.pm .r-bull{fill:var(--up)}
+.pm .cl-rail-now{stroke:var(--fg2);stroke-width:1;stroke-dasharray:3 3}.pm-now{font-size:10.5px;font-weight:700;fill:var(--fg2)}
+.pm-k{font-size:11px;font-weight:700;fill:var(--muted)}.pm-arw{fill:var(--muted)}
+.pm-ext{font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}.pm-ext.up{fill:var(--up)}.pm-ext.down{fill:var(--down)}
+.pm-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pm-chips span{display:inline-flex;gap:5px;align-items:baseline;padding:6px 12px;border-radius:999px;background:var(--soft);font-size:12.5px;color:var(--fg2)}.pm-chips b{color:var(--fg);font-variant-numeric:tabular-nums}.pm-chips small{color:var(--muted)}
+.pm-odds{margin:4px 0 16px}.pm-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:8px}.pm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.pm-cell{padding:12px 12px 10px;border-radius:16px;background:var(--soft);min-width:0}.pm-cell span{display:block;font-size:12.5px;font-weight:700;color:var(--fg2)}.pm-cell b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}
+.pm-cell small{display:block;font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-cell.bear b{color:var(--down)}.pm-cell.bull b{color:var(--up)}.pm-cell.top{box-shadow:inset 0 0 0 1.5px var(--fg)}
 .cl-check{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:var(--soft);font-size:14px}.cl-check b{font-weight:800}.cl-check p{margin:4px 0 0;line-height:1.55;color:var(--fg2)}.cl-check p b{color:var(--fg)}
 .cl-deep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:var(--accent-soft);font-size:13.5px;color:var(--fg2)}.cl-deep .btn-primary{margin:0;padding:10px 16px;font-size:14px}.cl-deep small{font-weight:600;opacity:.85;margin-left:4px}.dl-go{margin-top:6px}
 .cl-mini p{margin:4px 0 8px;line-height:1.55}.cl-go{display:inline-block;font-size:13px;font-weight:700;padding:6px 0;color:var(--accent-strong);text-decoration:none}.cl-odds{margin:10px 0 14px}.cl-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.cl-odds .sc-prob{height:10px;margin:0;border-radius:5px;gap:2px;font-size:0}.cl-odds .sc-prob span{min-width:6px}.cl-odds-l{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.cl-odds-l span:nth-child(2){color:var(--fg2)}
