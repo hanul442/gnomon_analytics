@@ -398,3 +398,6 @@
 {"series":"DFF","date":"2026-10-14","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-17T10:14:12.213Z"}
 {"series":"DFF","date":"2026-10-15","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-17T10:14:12.213Z"}
 {"series":"DFF","date":"2026-10-16","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-20T00:46:07.241Z"}
+{"series":"DFF","date":"2026-10-17","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-21T11:20:14.008Z"}
+{"series":"DFF","date":"2026-10-18","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-21T11:20:14.008Z"}
+{"series":"DFF","date":"2026-10-19","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-21T11:20:14.008Z"}

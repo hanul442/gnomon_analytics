@@ -272,3 +272,4 @@
 {"series":"DGS10","date":"2026-10-14","value":5.19,"source":"fred:csv","retrievedAt":"2026-10-17T10:14:12.213Z"}
 {"series":"DGS10","date":"2026-10-15","value":5.1,"source":"fred:csv","retrievedAt":"2026-10-17T10:14:12.213Z"}
 {"series":"DGS10","date":"2026-10-16","value":5.09,"source":"fred:csv","retrievedAt":"2026-10-20T00:46:07.241Z"}
+{"series":"DGS10","date":"2026-10-19","value":5.15,"source":"fred:csv","retrievedAt":"2026-10-21T11:20:14.008Z"}
