@@ -240,9 +240,9 @@ test('alpha wrap-up notice (G-241): from 10/24 10:00 KST, once per tester, 🔔 
   assert.deepEqual(await runWrapupNotify(at('2026-10-24T00:50:00Z'), env), { sent: 0, mailed: 0 }, '09:50 KST: not yet');
   assert.deepEqual(await runWrapupNotify(at('2026-10-24T01:00:00Z'), env), { sent: 1, mailed: 1 }, 'u1 only: u2 answered, u3 is off');
   const n = await db.prepare("SELECT kind, title, link FROM notifications WHERE user_id = 'u1'").first<{ kind: string; title: string; link: string }>();
-  assert.deepEqual({ ...n }, { kind: 'notice', title: '알파 마무리 설문 · 클로즈드 베타 신청', link: 'survey.html?k=wrapup' }, 'a service notice ignores the per-kind switches');
+  assert.deepEqual({ ...n }, { kind: 'notice', title: '알파가 10월 31일에 끝나요', link: 'survey.html?k=wrapup' }, 'a service notice ignores the per-kind switches');
   assert.equal(sent[0]!.to, 'a@example.com');
-  assert.match(sent[0]!.subject, /\[그노몬\] 알파 마무리 설문/);
+  assert.match(sent[0]!.subject, /\[그노몬\] 알파, 함께해 주셔서 고마워요/);
   assert.match(sent[0]!.html, /survey\.html\?k=wrapup/);
   assert.match(sent[0]!.html, /계정이 바뀌지는 않아요/);
   assert.deepEqual(await runWrapupNotify(at('2026-10-24T01:10:00Z'), env), { sent: 0, mailed: 0 }, 'once');
