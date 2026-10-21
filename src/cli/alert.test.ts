@@ -25,3 +25,9 @@ test('credentials never reach the issue', () => {
   assert.equal(scrub('bad crtfc_key=abc123 here'), 'bad crtfc_key=*** here');
   assert.ok(!alertFor({ ...base, failed: [{ symbol: '1', error: 'token=SECRET1' }] }).body.includes('SECRET1'));
 });
+
+test('a failed market daily AI committee raises the run alert', () => {
+  const r = alertFor({ ...base, market: { date: '2026-10-20', status: 'FAILED', error: '형식 검사 실패: experts 개수 부족(필요 11)' } });
+  assert.equal(r.alert, true); assert.match(r.body, /시장 데일리 AI 위원회 실패 \(2026-10-20\)/);
+  assert.equal(alertFor({ ...base, market: { date: '2026-10-20', status: 'OK' } }).alert, false);
+});

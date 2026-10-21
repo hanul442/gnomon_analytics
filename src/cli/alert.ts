@@ -2,7 +2,7 @@
 // says whether the run needs a person. The workflow opens or updates one GitHub
 // issue labelled "run-alert" when it does, and closes it once a run is healthy.
 //
-// Alerts on: a stock that failed outright, the stock list or the all-stock
+// Alerts on: a failed market daily AI committee (G-278), a stock that failed outright, the stock list or the all-stock
 // chart pages failing, or a stock's own daily prices failing. News and other
 // best-effort sources are listed but do not alert on their own.
 
@@ -15,6 +15,8 @@ export interface LastRun {
   universe: { source: string; ok: boolean; count: number; error?: string }[];
   stocks: { symbol: string; report: string; failedSources: { source: string; error: string }[] }[];
   failed: { symbol: string; error: string }[];
+  /** G-278: today's market daily AI committee (FAILED means readers see no AI summary). */
+  market?: { date: string; status: string; error?: string };
 }
 
 /** Drops anything that looks like a credential from an error message. */
@@ -32,6 +34,7 @@ export function alertFor(run: LastRun): { alert: boolean; title: string; body: s
   for (const s of run.stocks) for (const f of s.failedSources) {
     (CRITICAL.test(f.source) ? lines : notes).push(`- \`${s.symbol}\` \`${f.source}\`: ${scrub(f.error)}`);
   }
+  if (run.market?.status === 'FAILED') lines.push(`- 시장 데일리 AI 위원회 실패 (${run.market.date}): ${scrub(run.market.error ?? '')}`);
   const alert = lines.length > 0;
   const title = alert ? `실행 경보: ${run.at.slice(0, 16).replace('T', ' ')} UTC 실행에서 ${lines.length}건 실패` : '실행 정상';
   const body = [

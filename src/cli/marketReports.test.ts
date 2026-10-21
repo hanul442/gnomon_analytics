@@ -10,7 +10,7 @@ import { unseal } from '../report/seal.js';
 import { tempDir } from '../testTmp.js';
 const noNews=(async()=>new Response('',{status:404})) as unknown as typeof fetch;
 
-test('truncated market analysis records billed tokens of both tries and leaves a retryable failure', async()=>{
+test('truncated market analysis records billed tokens of every try and leaves a retryable failure', async()=>{
  const root=await tempDir('gnomon-market-');
  try {
   await mkdir(join(root,'data','prices'),{recursive:true});
@@ -27,8 +27,8 @@ test('truncated market analysis records billed tokens of both tries and leaves a
    assert.equal(report.ai.status,'FAILED');assert.match(report.ai.error,/출력 길이 제한/);
   }
   const ledger=(await readFile(AiBudget.path(root),'utf8')).trim().split('\n').map(x=>JSON.parse(x));
-  assert.equal(ledger.length,2);assert.equal(ledger[0].outputTokens,12000);
-  assert.ok(Math.abs(budget.spent-0.1202)<1e-8);
+  assert.equal(ledger.length,3);assert.equal(ledger[0].outputTokens,12000);
+  assert.ok(Math.abs(budget.spent-0.1803)<1e-8);
  } finally {await rm(root,{recursive:true,force:true});}
 });
 
@@ -85,4 +85,23 @@ test('market news: today\'s headlines only, one per story, numbered N1…',async
  const fake=(async()=>new Response(body,{status:200,headers:{'content-type':'application/rss+xml; charset=utf-8'}})) as unknown as typeof fetch;
  const news=await collectMarketNews('2026-10-07',{fetch:fake});
  assert.equal(news.length,1);assert.equal(news[0]!.id,'N1');assert.equal(news[0]!.title,'코스피 2% 하락 마감');
+});
+
+test('a committee with a missing expert is sent back once with what to fix, and readers never see the raw error',async()=>{
+ const root=await tempDir('gnomon-repair-');
+ try{
+  await mkdir(join(root,'data','prices'),{recursive:true});
+  await writeFile(join(root,'data','prices','KOSPI.jsonl'),'{"date":"2026-10-06","close":100}\n{"date":"2026-10-07","close":110}\n');
+  const c={text:'시장이 올랐어요.',kind:'FACT',refs:['M1']};
+  const ids=['trend_momentum','mean_reversion','wave_structure','volume_flow','fundamental','event_catalyst','MARKET','TECHNICAL','FLOW','FUNDAMENTAL'];
+  const ten={summary:c,desks:['코스피','코스닥','코인','ETF'].map(name=>({name,view:'중립',claims:[c]})),consensus:[],disagreements:[],scenarios:['강세','기본','약세'].map(name=>({name,trigger:c,outlook:c,invalidation:c})),redTeam:[],watch:[],dataGaps:[],experts:ids.map(speaker=>({speaker,stance:'NEUTRAL',claim:c})),debate:[]};
+  const seen:{role:string;content:string}[][]=[];
+  const client={beta:{messages:{stream:(params:{messages:{role:string;content:string}[]})=>{seen.push(params.messages);return {finalMessage:async()=>({model:'m',stop_reason:'end_turn',usage:{input_tokens:1,output_tokens:1},content:[{type:'text',text:JSON.stringify(ten)}]})};}}}} as unknown as Anthropic;
+  await writeMarketReports(root,new Date('2026-10-07T09:30:00Z'),[],undefined,client,new AiBudget(root,'2026-10',25,0),false,noNews);
+  assert.equal(seen.length,3);assert.equal(seen[0]!.length,1);
+  assert.equal(seen[1]!.length,3);assert.equal(seen[1]![1]!.role,'assistant');assert.match(seen[1]![2]!.content,/experts 개수 부족\(필요 11\)/);
+  const report=JSON.parse(await readFile(join(root,'reports','market','daily-2026-10-07.json'),'utf8'));
+  assert.equal(report.ai.status,'FAILED');assert.match(report.ai.error,/형식 검사 실패: experts/);
+  const html=renderMarketReport(report);assert.ok(html.includes('AI 요약을 만들지 못했어요'));assert.ok(!/too_small|origin|형식 검사/.test(html));
+ }finally{await rm(root,{recursive:true,force:true});}
 });
