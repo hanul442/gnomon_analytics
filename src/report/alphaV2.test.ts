@@ -115,7 +115,7 @@ test('G-244: no release card on any page; the ad strip goes after the page every
  assert.doesNotMatch(renderStockPage(),/class="version-banner"/);
  assert.doesNotMatch(renderGuide(),/class="version-banner"/);
  const home=renderHome({entries:[],selection:null,universe:null,pulse:null,indices:[]});
- assert.ok(home.indexOf('class="ad-strip"')>home.indexOf('id="news-issues"'),'the ad strip comes after the page');
+ assert.ok(home.indexOf('class="ad-strip"')>home.indexOf('data-wd-p="news"'),'the ad strip comes after the page');
  assert.ok(renderStockPage().indexOf('class="ad-strip"')>renderStockPage().indexOf('id="tab-news"'),'on every page');
 });
 

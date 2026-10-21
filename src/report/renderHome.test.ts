@@ -37,16 +37,17 @@ test('G-231: a live page rebuilt today is not a report made today; lists, pills 
   assert.deepEqual([info.OLD!.d, info.NEW!.d, info.NONE!.d], ['2026-10-05', '2026-10-16', '']);
 });
 
-test('G-266: home is the date with the market in one line, my stocks, three issues and the scorecard line', async () => {
+test('G-277: home is 세계 + 위원회 — tabs, the date, the big banner, key numbers, committee, mine, one merged issue list', async () => {
   const { marketPulse } = await import('../analysis/quickCalc.js');
   const calcs = [['BEARISH', 20], ['BULLISH', 80], ['NEUTRAL', 50]].map(([level, score]) => ({ date: '2026-10-16', signal: { level, score: Number(score) / 100 }, moves: [{ days: 20, pct: 0 }] }));
   const html = renderHome({ entries: [entry('AAA', 9), entry('BBB', 1)], selection: null, universe: null, pulse: marketPulse(calcs as never), indices: [{ symbol: 'KOSPI', name: '코스피', date: '2026-10-16', close: 5668.05, changePct: 2.05, closes: [] }] });
-  assert.match(html, /<h1 class="hh-d">10월 16일<\/h1>/);
-  assert.match(html, /<small>코스피<\/small><b>5,668\.05<\/b><span class="up">/);
-  assert.ok(!html.includes('class="hh-s"'), 'no world snapshot, no sentence');
-  for (const gone of ['class="mh-v"', 'class="mh-bar"', 'class="mh-go"', 'class="ml-row"']) assert.ok(!html.includes(gone), gone);
-  assert.ok(html.indexOf('id="mkt-hero"') < html.indexOf('id="banner"') && html.indexOf('id="banner"') < html.indexOf('id="watch-slot"') && html.indexOf('id="watch-slot"') < html.indexOf('id="watch"') && html.indexOf('id="watch"') < html.indexOf('id="news-issues"'), 'date, the notice line, mine, then issues');
+  assert.deepEqual([...html.matchAll(/role="tab" data-wd="([a-z]+)"/g)].map((m) => m[1]), ['sum', 'com', 'news'], 'no world snapshot: no market tabs');
+  assert.match(html, /<p class="hm-d">10월 16일 [월화수목금토일]요일<\/p>/);
+  assert.match(html, /<p class="hm-s">오늘 시장을 한눈에 모았어요\.<\/p>/, 'no world snapshot: a plain line');
+  const at = (k: string) => html.indexOf(k);
+  assert.ok(at('id="mkt-hero"') < at('class="hm-bn"') && at('class="hm-bn"') < at('id="watch-slot"') && at('id="watch-slot"') < at('id="watch"'), 'date, the big banner, then mine');
   assert.ok(html.includes('<h2>내 종목 오늘</h2>') && html.includes('wl-rail'));
+  assert.ok(html.includes('data-wd-p="news"') && html.includes('data-wd-tag="세계"'), 'one issue list with a 한국/세계 filter');
 });
 
 test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab', async () => {
@@ -92,12 +93,12 @@ test('G-271 miniArea draws a small area line only with 5+ closes, in the neutral
   assert.match(svg, /currentColor/);
 });
 
-test('G-276: with the world snapshot, home is the date, one sentence and 코스피 · S&P 500 · 원/달러', () => {
+test('G-277: with the world snapshot, home leads with one sentence and six tappable key numbers', () => {
   const q = (key: string, name: string, value: number, changePct: number) => ({ key, name, country: '미국', iso: 'US', region: '미국', value, change: null, changePct, at: null, open: false, series: [['2026-10-19', value], ['2026-10-20', value]] });
   const world = { generatedAt: '2026-10-20T11:00:00Z', status: [], indices: [q('.INX', 'S&P 500', 7690.73, -1.2), { ...q('.N225', '니케이 225', 1, -1.3), iso: 'JP', region: '아시아' }], macro: [{ ...q('USDKRW', '원/달러', 1452.3, 0.4), group: 'fx', unit: '원' }] };
   const html = renderHome({ entries: [], selection: null, universe: null, pulse: null, world: world as never, indices: [{ symbol: 'KOSPI', name: '코스피', date: '2026-10-20', close: 5668.05, changePct: 2.05, closes: [] }] });
-  assert.match(html, /<p class="hh-s">[^<]*증시[^<]*<\/p>/);
-  assert.deepEqual([...html.matchAll(/<span class="hh-ix"><small>([^<]+)/g)].map((m) => m[1]), ['코스피', 'S&amp;P 500', '원/달러']);
-  assert.match(html, /1,452\.3<\/b>/);
-  assert.match(html, /href="world\.html"/);
+  assert.match(html, /<p class="hm-s">[^<]*증시[^<]*<\/p>/);
+  assert.match(html, /1,452\.3/);
+  assert.match(html, /data-sheet=/, 'cards open the big chart sheet');
+  assert.deepEqual([...html.matchAll(/role="tab" data-wd="([a-z]+)"/g)].map((m) => m[1]), ['sum', 'com', 'stocks', 'rates', 'commod', 'news']);
 });

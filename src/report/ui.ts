@@ -558,7 +558,7 @@ export const TOUR_JS = `
     var STEPS = {
       // G-244: three stops, not seven: the market line, the reader's own stocks and the menu.
       home: [
-        ['#mkt-hero', '오늘 시장', '날짜 아래에 오늘 세계 시장을 한 문장과 숫자 세 개로 보여줘요. 숫자를 누르면 시장 리포트가 열려요.'],
+        ['#mkt-hero', '오늘', '맨 위 칸에서 요약·위원회·증시·금리·환율·원자재·이슈를 바꿔 봐요. 숫자 카드를 누르면 차트가 크게 열려요.'],
         ['#watch', '내 종목', '어디서든 ☆를 누른 종목과 설문에서 고른 종목이 여기 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
         ['.bottom-nav', '아래 탭', '다섯 탭이 전부예요. 찾기에서 주식·ETF·코인·테마·공시를 바꿔 가며 보고, 위원회에서 AI 리포트와 성적표를 봐요.'],
         ['.top-tabs', '위쪽 탭', '찾기에서 종목·ETF·코인을 검색하고 조건으로 골라요. 테마와 공시 레이더도 찾기에 있어요.'],
@@ -684,7 +684,7 @@ export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);bac
 .pg-title{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 24px 4px}.pg-title h1{margin:0;font-size:32px;font-weight:300;letter-spacing:-.035em;line-height:1.15}
 .pg-ask{display:none;width:46px;height:46px;border:1px solid var(--glass-line);border-radius:50%;background:var(--surface);color:var(--fg);cursor:pointer;align-items:center;justify-content:center;box-shadow:var(--shadow);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}.pg-ask svg{width:22px;height:22px}
 /* G-248: the mode row is a segmented track with the chewy white pill (G-189) instead of underlined text. */
-.mode-tabs{position:sticky;top:8px;z-index:20;display:flex;gap:2px;width:max-content;max-width:calc(100% - 48px);margin:10px 24px 14px;padding:4px;overflow-x:auto;scrollbar-width:none;border-radius:999px;background:var(--track);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}.mode-tabs::-webkit-scrollbar{display:none}
+.mode-tabs{position:sticky;top:8px;z-index:20;display:flex;gap:2px;width:max-content;max-width:calc(100% - 48px);margin:10px 24px 14px;padding:4px;overflow-x:auto;scrollbar-width:none;border-radius:999px;background:linear-gradient(var(--track),var(--track)),var(--page);box-shadow:0 0 0 100vmax var(--page);clip-path:inset(-8px -100vmax -10px -100vmax)}.mode-tabs::-webkit-scrollbar{display:none}
 @media (min-width:1228px){.mode-tabs{margin-left:calc(50% - 566px)}}
 .mode-tabs>a,.mode-tabs>button{flex:none;display:inline-flex;align-items:center;gap:4px;min-height:38px;padding:0 15px;border:0;border-radius:999px;background:none!important;font:inherit;font-size:14.5px;font-weight:600;color:var(--muted);text-decoration:none;cursor:pointer;white-space:nowrap;transition:color .2s}
 .mode-tabs>[aria-current=page],.mode-tabs>[aria-selected=true]{color:var(--fg)}.mode-tabs .muted{display:none}

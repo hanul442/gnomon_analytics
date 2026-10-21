@@ -167,7 +167,7 @@ export function renderMarketReport(r:MarketReport, base='', nav:{prev?:string|un
  const kospi=r.groups.find(g=>g.id==='M1')?.assets.find(a=>a.symbol==='KOSPI'),spy=r.groups.find(g=>g.id==='M5')?.assets.find(a=>a.symbol==='SPY');
  const mapRows:MapEntry[]=[...(kospi?[{iso:'KR' as const,country:'한국',index:'코스피',change:kospi.returnPct,date:kospi.date}]:[]),...(spy?[{iso:'US' as const,country:'미국',index:'S&P 500',change:spy.returnPct,date:spy.date}]:[])];
  const w=r.world,wx=w?.indices.length?worldMapRows(w.indices.map(q=>({...q,series:[]}))):[];
- const more=`<a class="mk-more" href="${base}world.html">세계 화면에서 더 보기 ›</a>`;
+ const more=`<a class="mk-more" href="${base}index.html#stocks">홈에서 세계 시장 더 보기 ›</a>`;
  const world=wx.length?`<style>${KIT_WORLD_CSS}.mk-more{display:block;margin-top:8px;font-size:13px;font-weight:600;color:var(--fg);text-decoration:none}</style><section class="card block"><div class="block-head" style="margin:0 0 6px"><h2>세계 증시 지도</h2><span class="muted small">하루 등락 · ${wx.filter(x=>x.iso!=='EU').length}곳</span></div>${kmWorldMapAll(wx,'나라를 누르면 지수와 등락이 떠요. 빨강은 오름, 파랑은 내림, 진할수록 많이 움직였어요.')}${more}</section>`
   :mapRows.length?`<section class="card block"><div class="block-head" style="margin:0 0 6px"><h2>세계 증시 지도</h2><span class="muted small">${r.period==='weekly'?'이번 주 누적':'일간'} 등락</span></div>${kmWorldMap(mapRows,'GNOMON은 한국(코스피)과 미국(S&P 500을 따라가는 SPY ETF) 자료만 모아서 두 나라만 색칠했어요. 회색은 자료가 없는 나라예요.')}</section>`:'';
  const wq=(k:string)=>w?.macro.find(q=>q.key===k)??null;
