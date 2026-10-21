@@ -1,5 +1,5 @@
 {
- "at": "2026-10-21T12:01:04.903Z",
+ "at": "2026-10-21T12:08:28.280Z",
  "selected": null,
  "universe": [
   {
@@ -25,7 +25,8 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 297
+   "count": 297,
+   "error": "1 failed "
   },
   {
    "source": "naver:global",
@@ -35,7 +36,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 44
+   "count": 42
   },
   {
    "source": "google:topic-business-ko",
@@ -50,7 +51,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 70
+   "count": 69
   },
   {
    "source": "rss:bbc-business",
@@ -332,7 +333,7 @@
  ],
  "failed": [],
  "market": {
-  "date": "2026-10-21",
+  "date": "2026-10-20",
   "status": "FAILED",
   "error": "위원회 구조 또는 근거 검증 실패"
  }

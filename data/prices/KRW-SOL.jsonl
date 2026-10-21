@@ -1000,3 +1000,4 @@
 {"symbol":"KRW-SOL","date":"2026-10-20","open":141200,"high":144400,"low":138700,"close":141100,"volume":118829.55519205,"source":"upbit:candles:days","retrievedAt":"2026-10-21T11:20:14.008Z"}
 {"symbol":"KRW-SOL","date":"2026-10-20","open":141200,"high":144400,"low":138700,"close":141500,"volume":134927.03927151,"source":"upbit:candles:days","retrievedAt":"2026-10-21T11:28:07.937Z"}
 {"symbol":"KRW-SOL","date":"2026-10-21","open":141500,"high":142700,"low":140600,"close":142300,"volume":54950.83200746,"source":"upbit:candles:days","retrievedAt":"2026-10-21T11:28:07.937Z"}
+{"symbol":"KRW-SOL","date":"2026-10-21","open":141500,"high":142700,"low":140600,"close":142600,"volume":57807.70802938,"source":"upbit:candles:days","retrievedAt":"2026-10-21T12:08:28.280Z"}
