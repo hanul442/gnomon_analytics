@@ -209,12 +209,12 @@ export const CHART_PRO_JS = `
   // ---- full-screen page: header with a back button, opened instead of a tab ----
   var title = (document.querySelector('.hero h1') || {}).textContent || document.title.split('|')[0];
   var head = document.createElement('div'); head.className = 'cfs-head';
-  head.innerHTML = '<button type="button" class="cfs-back" aria-label="차트 닫기">' + P.back + '</button><div class="cfs-t"><b></b><span class="cfs-px"><span data-live-f="price"></span><small data-live-f="arrowpct"></small></span></div><span class="cfs-hint">Esc로 닫기</span>' + (document.getElementById('tab-technical') ? '<a class="cfs-sig" href="#tab-technical">신호</a>' : '') + '<button type="button" class="cfs-ic" data-land>' + P.land + '</button><button type="button" class="cfs-ic" data-cfs-set aria-label="차트 설정" title="차트 설정 (지표·보기)">' + P.gear + '</button>';
+  head.innerHTML = '<button type="button" class="cfs-back" aria-label="차트 닫기">' + P.back + '</button><div class="cfs-t"><b></b><span class="cfs-px"><span data-live-f="price"></span><small data-live-f="arrowpct"></small></span></div><span class="cfs-hint">Esc로 닫기</span><button type="button" class="cfs-ic" data-land>' + P.land + '</button><button type="button" class="cfs-ic" data-cfs-set aria-label="차트 설정" title="차트 설정 (지표·보기)">' + P.gear + '</button>';
   head.querySelector('b').textContent = String(title).trim();
   panel.insertBefore(head, panel.firstChild);
-  // G-156: one bar at the bottom like Toss — 봉 단위 (moved in below), 차트 모양, 그리기 (phones).
+  // G-156: one bar at the bottom like Toss — 봉 단위 (moved in below), 차트 모양, 그리기 (phones). G-277: 신호 opens 타이밍·전략.
   var foot = document.createElement('div'); foot.className = 'cfs-foot';
-  foot.innerHTML = '<button type="button" class="cfs-fb" data-ct-open aria-label="차트 모양" title="차트 모양" aria-haspopup="dialog">' + svg(ICON_CT[pref.ct]) + '</button><button type="button" class="cfs-fb" data-draw-open aria-label="그리기" title="그리기">' + P.pen + '</button>';
+  foot.innerHTML = '<button type="button" class="cfs-fb" data-ct-open aria-label="차트 모양" title="차트 모양" aria-haspopup="dialog">' + svg(ICON_CT[pref.ct]) + '</button><button type="button" class="cfs-fb" data-draw-open aria-label="그리기" title="그리기">' + P.pen + '</button>' + (document.getElementById('tab-technical') ? '<a class="cfs-fb cfs-sig" href="#tab-technical" title="타이밍 신호·전략">신호</a>' : '');
   panel.appendChild(foot);
   var ctPop = document.createElement('div'); ctPop.className = 'ct-pop'; ctPop.hidden = true;
   ctPop.innerHTML = '<div class="ct-body" role="dialog" aria-modal="true" aria-label="차트 모양"><div class="ct-grab" aria-hidden="true"></div><h3>차트 모양</h3><div class="ct-grid">' + P.types.map(function (t) { return '<button type="button" data-ct="' + t[0] + '" aria-pressed="' + (t[0] === pref.ct) + '">' + svg(ICON_CT[t[0]]) + t[1] + '</button>'; }).join('') + '</div></div>';

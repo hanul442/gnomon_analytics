@@ -260,7 +260,9 @@ window.addEventListener('DOMContentLoaded', function () {
   var removeSeries=chart.removeSeries.bind(chart);chart.removeSeries=function(s){allSeries=allSeries.filter(function(x){return x!==s;});return removeSeries(s);};
   var t = function (i) { return bars[i].date; };
   var C = bars.map(function (b) { return b.close; }), H = bars.map(function (b) { return b.high; }), Lo = bars.map(function (b) { return b.low; }), V = bars.map(function (b) { return b.volume; });
+  // G-277 (Bklit candles, 한서님 10/21): thin bodies with air between them, dotted horizontal grid only, a quiet crosshair (theme.chart).
   var candle = chart.addSeries(L.CandlestickSeries, { upColor: UP, downColor: DOWN, borderVisible: false, wickUpColor: UP, wickDownColor: DOWN });
+  chart.applyOptions({ timeScale: { barSpacing: mobile ? 7 : 9, minBarSpacing: 2 } });
   candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
   // G-219: candles fill the price pane like TradingView (the default keeps a fifth of it empty at the top; 0.16 still clears the high mark and the legend).
   candle.priceScale().applyOptions({ scaleMargins: { top: 0.16, bottom: 0.1 } });

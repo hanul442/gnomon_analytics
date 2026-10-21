@@ -261,7 +261,7 @@ export const REPORT_TABS_CSS = `
 .cal-fold{margin:16px 0;padding:0 18px;border:0;border-radius:24px;background:var(--surface)}
 #tab-ai .ai-nav{position:static!important}.ai-in #conclusion{display:none}
 .lv-foot{border:0!important;padding:0!important;margin:12px 0!important}.lv-foot>p,.lv-foot>.lv-pick{display:none!important}
-.cfs-sig{flex:none;display:inline-flex;align-items:center;height:34px;padding:0 13px;border-radius:17px;background:var(--soft);color:var(--fg);font-size:13px;font-weight:700;text-decoration:none}
+.cfs-foot .cfs-sig{width:auto!important;padding:0 12px!important;font-size:13.5px;font-weight:700;color:var(--fg);text-decoration:none;display:inline-flex;align-items:center}
 .chips [role=tab][hidden]{display:none!important}
 .topbar>.chips:not(.analysis-tabs){position:relative;width:max-content;max-width:calc(100% - 24px);margin:2px auto 10px;padding:5px;gap:2px;
   border:1px solid rgba(255,255,255,.07);border-radius:999px;background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92));
