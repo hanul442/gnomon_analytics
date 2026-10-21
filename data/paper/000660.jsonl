@@ -22,3 +22,5 @@
 {"symbol":"000660","date":"2026-10-19","close":1304000,"method":"gnm-paper-v1","recordedAt":"2026-10-19T16:41:51.332Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"MACD 교차"}
 {"symbol":"000660","date":"2026-10-20","close":1190000,"method":"gnm-paper-v1","recordedAt":"2026-10-20T14:27:14.519Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
 {"symbol":"000660","date":"2026-10-20","close":1190000,"method":"gnm-paper-v1","recordedAt":"2026-10-20T14:27:14.519Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"MACD 교차"}
+{"symbol":"000660","date":"2026-10-21","close":1288000,"method":"gnm-paper-v1","recordedAt":"2026-10-21T11:28:07.937Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
+{"symbol":"000660","date":"2026-10-21","close":1288000,"method":"gnm-paper-v1","recordedAt":"2026-10-21T11:28:07.937Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"MACD 교차"}

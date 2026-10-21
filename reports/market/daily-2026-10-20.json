@@ -22207,6 +22207,6 @@
   ],
   "ai": {
     "status": "FAILED",
-    "error": "[\n  {\n    \"origin\": \"array\",\n    \"code\": \"too_small\",\n    \"minimum\": 11,\n    \"inclusive\": true,\n    \"exact\": true,\n    \"path\": [\n      \"experts\"\n    ],\n    \"message\": \"Too small: e"
+    "error": "형식 검사 실패: debate 개수 부족(필요 12)"
   }
 }
