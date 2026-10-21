@@ -52,3 +52,18 @@ test('market points read the published numbers: breadth, the index move and the 
   assert.match(p[1]!, /^코스피 지수 ▼ -1\.98%, 오른 종목 비중 30% · 표본 중 가장 강한 KB금융 ▲ \+0\.36%, 가장 약한 삼성전자 ▼ -1\.80%\.$/);
   assert.match(p[2]!, /^ETF는 KODEX 200 ▼ -1\.98%/);
 });
+
+test('a debate with a repeated, missing or off-stance turn is tidied instead of failing the whole committee (G-278)',async()=>{
+ const {ANALYSTS}=await import('../analysis/analysts.js');const {validCouncil,MarketCouncilGenerationSchema}=await import('./marketReport.js');
+ const speakers=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'];const claim={text:'발언',kind:'FACT' as const,refs:['M1']};
+ const base={summary:claim,desks:['코스피','코스닥','코인','ETF'].map(name=>({name,view:'중립',claims:[claim]})),consensus:[],disagreements:[],scenarios:['강세','기본','약세'].map(name=>({name,trigger:claim,outlook:claim,invalidation:claim})),redTeam:[],watch:[],dataGaps:[]};
+ // EVENT never speaks, MARKET speaks twice, FLOW speaks off its stance, and a reply points at the dropped repeat.
+ const order=[...speakers.slice(0,7),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','RED_TEAM'];
+ const debate=order.map((speaker,i)=>({speaker,stance:speaker==='FLOW'?'BULLISH':'NEUTRAL',replyTo:speaker==='TECHNICAL'?7:i===0?-1:i-1,claim}));
+ const council=MarketCouncilGenerationSchema.parse(parseMarketCouncil(JSON.stringify({...base,experts:speakers.map(speaker=>({speaker,stance:'NEUTRAL',claim})),debate})));
+ const groups=[{id:'M1',name:'코스피',source:'s',universe:2,assets:[],snapshotDate:'2026-10-20',breadth:{up:1,down:1,flat:0}}];
+ assert.equal(council.debate!.length,11);assert.equal(council.debate!.at(-1)!.speaker,'RED_TEAM');
+ assert.equal(council.debate!.find(t=>t.speaker==='FLOW')!.stance,'NEUTRAL');assert.equal(council.debate!.find(t=>t.speaker==='TECHNICAL')!.replyTo,-1);
+ assert.equal(validCouncil(council,groups),true);
+ assert.throws(()=>MarketCouncilGenerationSchema.parse(parseMarketCouncil(JSON.stringify({...base,experts:speakers.slice(0,8).map(speaker=>({speaker,stance:'NEUTRAL',claim})),debate}))));
+});
