@@ -356,9 +356,11 @@ export const TABS: readonly TabDef[] = [
   { key: 'chart', label: '차트', also: 'tab-technical' },
   // G-277 (한서님 10/21 '6개 → 3개, 하단바에서 전환'): 뉴스 + 공시 = 소식 (one panel shows both); 기업 and 내 기록 open
   // from the rows at the end of 위원회, so their chips go (the panels stay for links).
+  // G-281 (한서님 10/22 '기업정보 왜숨겨'): 기업 is a part again, between 차트 and 소식.
+  { key: 'fundamentals', label: '기업' },
   { key: 'news', label: '소식', also: 'tab-filings' },
   { key: 'filings', label: '공시', ghost: true },
-  { key: 'fundamentals', label: '기업', ghost: true },
+
   { key: 'mine', label: '내 기록', ghost: true },
   { key: 'ai', label: 'AI 위원회 토론', ghost: true },
   { key: 'technical', label: '타이밍·전략', ghost: true },
@@ -392,12 +394,12 @@ export function shell(base: string, title: string, body: string, options: { lead
 <header class="topbar"><div class="topbar-in"><a class="brand" href="${rootHref}"><span class="gnomon-mark"><img src="${base}assets/gnomon-mark.png" alt=""></span><div><b>GNOMON</b><small>AI COMMITTEE</small></div></a>
 ${menu.button}<nav class="top-links" aria-label="사이트"><button type="button" class="install-btn" data-install hidden aria-label="그노몬 앱 설치"><svg viewBox="0 0 24 24" aria-hidden="true" class="ins-ic" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M12 8v6M9.5 11.5L12 14l2.5-2.5"/></svg>앱 설치</button><a href="${base}pricing.html" class="acct" aria-label="요금제와 크레딧"><span data-plan-name>무료</span><i><span data-credits>0</span> 크레딧</i></a></nav></div>
 ${tabs.length ? reportNav(tabs) : ''}</header>${menu.drawer}
-<main id="main" tabindex="-1">${options.mode || options.head ? pageHead(base, { ...(options.mode ? { page: options.mode } : {}), ...options.head }) : ''}${options.lead ?? ''}${body}${options.ads === false ? '' : adStrip(base)}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관</a><a href="${base}privacy.html"><b>개인정보처리방침</b></a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base, options.ask, options.dock ?? options.mode, options.parts)}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
+<main id="main" tabindex="-1">${options.mode || options.head ? pageHead(base, { ...(options.mode ? { page: options.mode } : {}), ...options.head }) : ''}${options.lead ?? ''}${body}${options.ads === false ? '' : adStrip(base)}<nav class="site-links" aria-label="안내"><a href="${base}faq.html">FAQ·문의</a><a href="${base}terms.html">이용약관</a><a href="${base}privacy.html"><b>개인정보처리방침</b></a><span>투자 권유가 아니에요</span></nav></main>${options.bottomNav === false ? '' : bottomNav(base, options.ask, options.dock ?? options.mode, options.parts, tabs.some((t) => t.key === 'fundamentals' && t.label === '체력'))}${options.chat === false ? '' : CHAT_HTML}<script src="${base}assets/app.${ASSET_VERSION}.js"></script>${options.scripts ?? ''}<script src="${base}assets/ui.${ASSET_VERSION}.js"></script></body></html>`;
 }
 
 /** Phone-only tab bar on the site's own pages (home, pricing). */
-function bottomNav(base: string, ask?: string, page?: string, parts?: string): string {
-  return tabBar(base, 'bottom', ask, page, parts);
+function bottomNav(base: string, ask?: string, page?: string, parts?: string, coin = false): string {
+  return tabBar(base, 'bottom', ask, page, parts, coin);
 }
 
 const GAUGE_COLORS = ['#1d4fa3', '#3b7be0', '#8fb3ec', '#c4cbc9', '#f0a0a3', '#e5484d', '#a8262b'];
@@ -810,7 +812,8 @@ function aiFoldOf(report: DailyReport | null, inner: string, aiDate: string): st
   const bar = total ? `<div class="vf-bar" role="img" aria-label="강세 ${n.BULLISH} 중립 ${n.NEUTRAL} 약세 ${n.BEARISH}">${n.BULLISH ? `<i class="up" style="flex:${n.BULLISH}"></i>` : ''}${n.NEUTRAL ? `<i style="flex:${n.NEUTRAL}"></i>` : ''}${n.BEARISH ? `<i class="down" style="flex:${n.BEARISH}"></i>` : ''}</div><div class="vf-l"><span class="up">강세 ${n.BULLISH}</span><span>중립 ${n.NEUTRAL}</span><span class="down">약세 ${n.BEARISH}</span></div>` : '';
   return `<section class="block vf"><div class="card"><h2 class="vf-h">${total ? `위원 ${total}명 표결` : '위원회 토론'}</h2>${bar}<details class="ai-fold"><summary>토론 펼쳐 보기</summary><section class="ai-in" id="tab-ai" data-ai-date="${escape(aiDate)}">${inner}</section></details></div></section>`;
 }
-const moreLinks = (coin = false) => `<nav class="pn-more" aria-label="더 보기"><a href="#tab-fundamentals"><b>${coin ? '코인 체력' : '기업 정보'}</b><small>${coin ? '체력 한눈에, 수급' : '실적·재무제표, 동종 기업, 수급'}</small><i aria-hidden="true">›</i></a><a href="#tab-mine"><b>내 기록</b><small>이 종목 가격 알림, 내가 한 질문</small><i aria-hidden="true">›</i></a></nav><style>.pn-more{display:grid;gap:0;margin:18px 0 6px;border-radius:24px;background:var(--surface);overflow:hidden}.pn-more a{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;padding:14px 18px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}.pn-more a:first-child{border-top:0}.pn-more b{font-size:15px}.pn-more small{grid-column:1;color:var(--muted);font-size:12.5px}.pn-more i{grid-row:1/3;grid-column:2;font-style:normal;color:var(--muted)}</style>`;
+// G-281: 기업 has its own part in the bar again, so only 내 기록 opens from here.
+const moreLinks = (_coin = false) => `<nav class="pn-more" aria-label="더 보기"><a href="#tab-mine"><b>내 기록</b><small>이 종목 가격 알림, 내가 한 질문</small><i aria-hidden="true">›</i></a></nav><style>.pn-more{display:grid;gap:0;margin:18px 0 6px;border-radius:24px;background:var(--surface);overflow:hidden}.pn-more a{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;padding:14px 18px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}.pn-more a:first-child{border-top:0}.pn-more b{font-size:15px}.pn-more small{grid-column:1;color:var(--muted);font-size:12.5px}.pn-more i{grid-row:1/3;grid-column:2;font-style:normal;color:var(--muted)}</style>`;
 export function mineTab(base: string, symbol: string): string {
   return `<div class="mi" data-mine="${escape(symbol)}" data-base="${escape(base)}"><section class="block"><div class="card mi-card"><div class="mi-h"><h2>이 종목 알림</h2></div><p class="muted small">정한 가격에 닿으면 🔔과 휴대폰으로 알려 드려요. 강세·약세 가격대에 들어올 때로도 정할 수 있어요.</p><button type="button" class="btn-primary mi-pa">가격 알림 정하기</button></div></section>
 <section class="block"><div class="card mi-card"><div class="mi-h"><h2>내가 한 질문</h2><a href="${base}mydebates.html">전체 ›</a></div><div class="mi-q"><p class="muted small">이 칸을 열면 불러와요.</p></div></div></section></div>`;

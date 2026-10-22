@@ -201,10 +201,10 @@ test('G-277: the price map puts 약세 · 기본 · 강세 bars left to right af
  report.price=undefined as any;assert.equal(scenarioRail(report),'');
 });
 
-test('G-277: one stock in three parts (위원회·차트·소식), the other panels kept for links', async () => {
+test('G-277, G-281: one stock in four parts (위원회·차트·기업·소식), the other panels kept for links', async () => {
   const { TABS, mineTab } = await import('./renderHtml.js');
-  assert.deepEqual(TABS.filter((t) => !t.ghost).map((t) => t.label), ['위원회', '차트', '소식']);
-  assert.deepEqual(TABS.filter((t) => t.ghost).map((t) => t.key), ['filings', 'fundamentals', 'mine', 'ai', 'technical']);
+  assert.deepEqual(TABS.filter((t) => !t.ghost).map((t) => t.label), ['위원회', '차트', '기업', '소식']);
+  assert.deepEqual(TABS.filter((t) => t.ghost).map((t) => t.key), ['filings', 'mine', 'ai', 'technical']);
   const mine = mineTab('../', '005930');
   assert.ok(mine.includes('data-mine="005930"') && mine.includes('class="btn-primary mi-pa"') && mine.includes('href="../mydebates.html"'));
 });

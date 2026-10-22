@@ -282,7 +282,7 @@ function dockOf(page: string): 'find' | 'committee' | 'me' | undefined {
  * report pages) or a `page` that has its own bar, the right side turns into that screen's bar after the page opens.
  */
 /** G-277: `parts` — a screen's own part buttons (home's 요약·위원회·…) that take the bar's right side, so the screen needs no tab row at the top on phones. */
-export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page?: string, parts?: string): string {
+export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page?: string, parts?: string, coin = false): string {
   const links = TABS.map(([l, h, d]) => `<a href="${base}${h}" aria-label="${l}" data-tab-link="${h.split('#')[1] ?? h}">${svgI(d)}<span>${l}</span></a>`).join('');
   if (where === 'top') return `<nav class="top-tabs" aria-label="주 메뉴">${links}</nav>`;
   const chat = 'data-open-chat aria-haspopup="dialog" aria-controls="chat"';
@@ -292,7 +292,7 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   // G-277 (한서님 10/21 '밑에 하단바에서 모든걸… 위에 바가 생기지 말고'): a stock switches its three parts here —
   // 위원회 · 차트 · 소식 — and the ✦ on the right asks about it. The tab row at the top goes on phones.
   if (dock === 'parts') ctx = `<div class="nav-seg nav-parts">${parts}</div>`;
-  else if (dock === 'ask') ctx = `<div class="nav-seg nav-parts">${STOCK_PARTS.map(([l, k, also, d]) => `<a href="#tab-${k}" data-nav="${k}" data-nav-also="${also}" aria-label="${l}">${svgI(d)}<span>${l}</span></a>`).join('')}</div><button type="button" class="nav-round nav-ask-r" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(SPARK_ICON)}</button>`;
+  else if (dock === 'ask') ctx = `<div class="nav-seg nav-parts">${STOCK_PARTS.map(([l0, k, also, d]) => [coin && k === 'fundamentals' ? '체력' : l0, k, also, d] as const).map(([l, k, also, d]) => `<a href="#tab-${k}" data-nav="${k}" data-nav-also="${also}" aria-label="${l}">${svgI(d)}<span>${l}</span></a>`).join('')}</div><button type="button" class="nav-round nav-ask-r" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(SPARK_ICON)}</button>`;
   else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목·ETF·코인</span></button>${findModes(base, page)}<button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
   else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
   // G-277: 내 리포트 and 내 토론 each get their icon, so the 알림함·내 리포트·내 토론 row at the top can go on phones.
@@ -300,10 +300,12 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   const back = dock ? `<button type="button" class="nav-back" aria-label="탭 4개 보기">${svgI(GRID_ICON)}</button>` : '';
   return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button><div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}</nav>`;
 }
-/** G-277: a stock's three parts in the bottom bar: label, panel key, the panels that light it too, icon. */
+/** G-277: a stock's four parts in the bottom bar: label, panel key, the panels that light it too, icon. */
 const STOCK_PARTS: readonly (readonly [string, string, string, string])[] = [
   ['위원회', 'home', 'ai', '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>'],
   ['차트', 'chart', 'technical strategy', '<path d="M7 4v16M17 4v16"/><rect x="5" y="8" width="4" height="7" rx="1"/><rect x="15" y="6" width="4" height="9" rx="1"/><path d="M12 3v18"/><rect x="10" y="10" width="4" height="5" rx="1"/>'],
+  // G-281 (한서님 10/22 '기업정보 왜숨겨 제일 중요한건데'): 기업 is its own part again (체력 on a coin), not a row at the end of 위원회.
+  ['기업', 'fundamentals', 'flows', '<rect x="4" y="9" width="6" height="11" rx="1"/><rect x="10" y="4" width="10" height="16" rx="1"/><path d="M13 8h4M13 11.5h4M13 15h4M6.5 13h1M6.5 16h1"/>'],
   ['소식', 'news', 'filings', '<rect x="4" y="4.5" width="16" height="15" rx="2.5"/><path d="M8 9h8M8 12.5h8M8 16h5"/>'],
 ];
 /** G-277: home's parts in the bottom bar (buttons with data-wd; WORLD_JS switches them and sets aria-selected). */
