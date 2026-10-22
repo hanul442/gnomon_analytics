@@ -435,7 +435,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
     }
   }
   if (today.hour >= SETTLED_HOUR_KST) await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget);
-  // G-280: news summaries use the same monthly AI budget; pictures are looked up with the run's fetch.
+  // G-284: news summaries use the same monthly AI budget; pictures are looked up with the run's fetch.
   const newsClient = options.anthropic ?? (options.anthropicApiKey ? new Anthropic({ apiKey: options.anthropicApiKey, timeout: 60000, maxRetries: 1 }) : null);
   await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp, now, news: { client: newsClient, budget, ...fetchOpt } });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
@@ -746,7 +746,7 @@ export async function configureSite(root: string): Promise<void> {
   SITE_CONFIG.apiUrl = process.env.GNM_API_URL ?? config.apiUrl ?? '';
 }
 
-/** G-280: what the run gives the in-app news pages: an AI client for summaries, the budget, and fetch for pictures. */
+/** G-284: what the run gives the in-app news pages: an AI client for summaries, the budget, and fetch for pictures. */
 export interface NewsAi { client: Anthropic | null; budget?: AiBudget; fetch?: typeof fetch }
 
 export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[]; us?: UsTemp | null; now?: Date; news?: NewsAi } = {}): Promise<void> {
@@ -920,7 +920,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'news-issues.json'), JSON.stringify(krIssues));
   // G-277: home carries the world screen and one issue ranking (Korean stock news and world news together).
   const worldIssues = rankWorldIssues(await readLog<NewsItem>(join(root, 'data', 'world-news.jsonl')).catch(() => [] as NewsItem[]), extras.now ?? new Date());
-  // G-280: in-app news. Each ranked issue gets a page (issue/<key>.html) with an AI summary of its headlines and the
+  // G-284: in-app news. Each ranked issue gets a page (issue/<key>.html) with an AI summary of its headlines and the
   // publisher's preview picture; only a run that brings `news` makes new ones (tests and rebuilds reuse what is kept).
   const sources: DigestSource[] = [...krIssues.issues.slice(0, 25).map((i) => ({ url: i.url, title: i.title, publisher: i.publisher, lang: 'ko' as const, headlines: i.headlines })),
     ...worldIssues.issues.slice(0, 15).map((i) => ({ url: i.url, title: i.title, publisher: i.publisher, lang: i.lang, headlines: i.headlines }))];

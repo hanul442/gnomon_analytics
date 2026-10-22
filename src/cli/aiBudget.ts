@@ -17,7 +17,7 @@ export const PRICE_PER_MTOK: Record<string, readonly [number, number]> = {
  * Typical cost of one call, USD (measured medians plus a margin), used to decide before calling:
  * a committee report measured $0.18 median (10/5–10/9, about 11K in / 6.6K out on Opus).
  */
-// G-280: one news issue summary on Haiku 5.5 is about 600 in / 200 out tokens, well under a tenth of a cent.
+// G-284: one news issue summary on Haiku 5.5 is about 600 in / 200 out tokens, well under a tenth of a cent.
 export type BudgetTier = 'deep' | 'market' | 'news';
 // G-221: the longer debate (prompt v9) adds about 2.5K output tokens, about $0.05.
 // G-228: six independent analyst calls on Haiku 5.5 add well under a cent; 0.29 keeps a margin.

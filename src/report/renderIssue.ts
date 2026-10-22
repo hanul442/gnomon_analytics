@@ -1,4 +1,4 @@
-// G-280 (한서님 10/21): one news issue inside the app — its headline, the publisher's preview picture with credit,
+// G-284 (한서님 10/21): one news issue inside the app — its headline, the publisher's preview picture with credit,
 // the AI three-line summary written from the headlines, the stocks it names (price, today's move, tap = the stock's
 // committee) and the other outlets' headlines. The article itself stays on the publisher's site: the bottom bar's
 // big button opens it. No article text is copied and no picture is stored.

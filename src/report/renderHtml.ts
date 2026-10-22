@@ -569,7 +569,7 @@ export function newsOnly(report: DailyReport): string {
   return `${issueSlot(report.symbol)}<div data-slot="news">${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}</div>`;
 }
 /**
- * G-280: today's ranked news issues that name this stock, as cards at the top of 소식 (tap = the in-app issue page).
+ * G-284: today's ranked news issues that name this stock, as cards at the top of 소식 (tap = the in-app issue page).
  * Read from issue-index.json in the browser, so a stock page built before the ranking still shows today's issues.
  */
 export function issueSlot(symbol: string): string {

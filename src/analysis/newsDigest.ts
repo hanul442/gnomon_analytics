@@ -1,4 +1,4 @@
-// G-280 (한서님 10/21 "뉴스도 … 자체 사이트에서 보여주는거"): an in-app page per news issue, copyright-safe.
+// G-284 (한서님 10/21 "뉴스도 … 자체 사이트에서 보여주는거"): an in-app page per news issue, copyright-safe.
 // We keep no article text and store no photo. Each issue gets:
 // - a three-line summary that AI writes from the issue's headlines only (many outlets' titles of one story),
 //   facts only, no outlook or advice; a line with a number the headlines do not carry is dropped;

@@ -11,9 +11,9 @@ import { issueKey, type DigestImage, type NewsDigest } from '../analysis/newsDig
 
 export interface MergedIssue {
   rank: number;
-  /** G-280: the in-app page is issue/<key>.html. */
+  /** G-284: the in-app page is issue/<key>.html. */
   key: string;
-  /** G-280: the AI summary (three lines from the headlines), empty when not written yet. */
+  /** G-284: the AI summary (three lines from the headlines), empty when not written yet. */
   lines: string[];
   /** A Korean title for an English issue (AI). */
   ko?: string;
@@ -68,7 +68,7 @@ export function mergeIssues(kr: NewsIssueBoard | null | undefined, world: WorldI
 
 const chipHtml = (c: Chip) => (c.href ? `<a class="ia-chip" href="${esc(c.href)}">${esc(c.name)}${c.move ? ` <b class="${c.tone}">${esc(c.move)}</b>` : ''}</a>` : `<span class="ia-chip">${esc(c.name)}${c.move ? ` <b class="${c.tone}">${esc(c.move)}</b>` : ''}</span>`);
 
-/** G-280: the publisher's own preview picture, loaded from their server (never stored), with its credit. */
+/** G-284: the publisher's own preview picture, loaded from their server (never stored), with its credit. */
 export const issueImage = (img: DigestImage | null, cls: string) => (img
   ? `<figure class="${cls}"><img src="${esc(img.src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><figcaption>사진 · ${esc(img.credit)}</figcaption></figure>`
   : '');

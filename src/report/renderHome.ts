@@ -46,12 +46,12 @@ export interface HomeData {
   /** G-277: Korean stock news issues and world issues, merged into one ranking on home. */
   krIssues?: NewsIssueBoard | null;
   worldIssues?: WorldIssueBoard | null;
-  /** G-280: AI summaries and preview pictures by issue key, and closes by symbol for the stock rows. */
+  /** G-284: AI summaries and preview pictures by issue key, and closes by symbol for the stock rows. */
   digests?: ReadonlyMap<string, NewsDigest>;
   closes?: ReadonlyMap<string, number | null>;
 }
 
-/** G-280: the merged issue ranking home shows; daily writes one in-app page per row from the same list. */
+/** G-284: the merged issue ranking home shows; daily writes one in-app page per row from the same list. */
 export function homeIssues(data: Pick<HomeData, 'world' | 'krIssues' | 'worldIssues' | 'digests' | 'closes'>): MergedIssue[] {
   const mk = data.world ? marketsOf(data.world) : null;
   return mergeIssues(data.krIssues, data.worldIssues, (k) => { const x = mk?.get(k); return x ? { name: x.name, move: x.move, tone: x.tone } : null; }, { ...(data.digests ? { digests: data.digests } : {}), ...(data.closes ? { closes: data.closes } : {}) });
