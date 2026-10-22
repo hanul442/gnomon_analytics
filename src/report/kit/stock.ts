@@ -306,6 +306,8 @@ export const KIT_STOCK_JS = `
     watch(host);
   };
 
+  // G-282 (Bklit live line · Momentum Colors): the colour follows the last ~10 points (rising red, falling blue), not the
+  // whole window, so a turn shows as it happens.
   // ---- live line: a coin's price as it trades (G-271: and a Korean stock's day, 1-minute closes then live quotes),
   // scrolling left, the last point pulsing ----
   var OK = /^(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})$/;
@@ -325,7 +327,7 @@ export const KIT_STOCK_JS = `
       if (vis.length < 2) vis = pts.slice(-2);
       var lo = Math.min.apply(null, vis.map(function (p) { return p.v; })), hi = Math.max.apply(null, vis.map(function (p) { return p.v; })), sp = hi - lo || Math.abs(hi) * 0.001 || 1, padR = 64;
       var X = function (t) { return (t - start) / SPAN * (W - padR) + shift; }, Y = function (v) { return 12 + (1 - (v - lo) / sp) * (H - 24); };
-      var line = smoothD(vis.map(function (p) { return r1(X(p.t)) + ',' + r1(Y(p.v)); }).join(' ')), lp = vis[vis.length - 1], up = lp.v >= pts[0].v, col = up ? UP : DOWN, lx = r1(X(lp.t)), ly = r1(Y(lp.v));
+      var line = smoothD(vis.map(function (p) { return r1(X(p.t)) + ',' + r1(Y(p.v)); }).join(' ')), lp = vis[vis.length - 1], mo = vis[Math.max(0, vis.length - 11)], up = lp.v === mo.v ? lp.v >= pts[0].v : lp.v > mo.v, col = up ? UP : DOWN, lx = r1(X(lp.t)), ly = r1(Y(lp.v));
       var grid = [0.25, 0.5, 0.75].map(function (k) { return '<line class="kv-g" x1="0" x2="' + W + '" y1="' + r1(12 + k * (H - 24)) + '" y2="' + r1(12 + k * (H - 24)) + '"/>'; }).join('');
       plot.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs><linearGradient id="kv-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".2"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>' + grid + '<path d="' + line + 'L' + lx + ',' + H + 'L' + r1(X(vis[0].t)) + ',' + H + 'Z" fill="url(#kv-g)"/><path class="kv-l" d="' + line + '" style="stroke:' + col + '"/><circle class="kv-pulse" cx="' + lx + '" cy="' + ly + '" r="5" fill="' + col + '"/><circle cx="' + lx + '" cy="' + ly + '" r="4" fill="' + col + '" stroke="var(--surface-solid,#fff)" stroke-width="1.5"/></svg><span class="kv-val" style="top:' + ly + 'px;background:' + col + '">' + esc(won(lp.v)) + '</span>';
       var f = sec.querySelector('[data-kv-from]'); if (f) { var d = new Date((start + 9 * 3600) * 1000); f.textContent = d.toISOString().slice(11, 19); }

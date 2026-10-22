@@ -102,7 +102,7 @@ export const marketSymbol=(period:Period)=>`MARKET-${period.toUpperCase()}`;
 export function macroStat(m: MacroCard): string {
   const c = m.chg20, tone = c == null || c === 0 ? '' : c > 0 ? 'up' : 'down';
   const text = c == null ? '—' : `${c > 0 ? '▲' : c < 0 ? '▼' : ''} ${m.unit === '%' ? `${Math.abs(c * 100).toFixed(0)}bp` : m.unit === '원' ? `${Math.abs(c).toFixed(1)}원` : Math.abs(c).toFixed(1)}`;
-  return kmStatArea({ title: m.label, value: m.value, change: null, badge: { text, tone }, series: m.spark, digits: m.unit === '%' ? 2 : 1, line: true, label: m.unit === '%' ? `% · ${m.date.slice(5).replace('-', '/')}` : m.unit === '원' ? `원 · ${m.date.slice(5).replace('-', '/')}` : m.date.slice(5).replace('-', '/'), unit: '일' });
+  return kmStatArea({ title: m.label, value: m.value, change: null, badge: { text, tone }, series: m.spark, digits: m.unit === '%' ? 2 : 1, line: true, step: m.id === 'DFF', label: m.unit === '%' ? `% · ${m.date.slice(5).replace('-', '/')}` : m.unit === '원' ? `원 · ${m.date.slice(5).replace('-', '/')}` : m.date.slice(5).replace('-', '/'), unit: '일' });
 }
 export function renderMarketDeep(r:MarketReport):string {
  const groupHtml=r.groups.map(g=>{

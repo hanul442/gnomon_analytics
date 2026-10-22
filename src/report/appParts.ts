@@ -179,7 +179,7 @@ const PANES: [string, string, boolean][] = [
 const DESC: Record<string, string> = {
   ma5: '최근 5거래일 평균 가격', ma20: '한 달 평균 가격, 단기 추세', ma60: '석 달 평균 가격, 중기 추세', ma120: '반년 평균 가격, 장기 추세',
   ema12: '최근 가격에 무게를 둔 평균 두 개', bb: '20일 평균 ± 표준편차 2배, 변동 범위', ichimoku: '구름대로 보는 추세와 지지', env: '20일 평균 ±5% 띠', vwap: '최근 20거래일 거래량으로 가중한 평균 가격(거래가 많이 된 값의 중심)', psar: '추세를 따라오는 점. 가격 아래면 오름세, 위면 내림세이고 점이 뒤집히면 추세 전환 신호',
-  levels: '자주 막히거나 받친 가격대', fib: '최근 120거래일 최고·최저를 잇는 흐름의 되돌림 비율과, 그 흐름이 이어질 때의 확장 127.2·161.8%', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위. 옅은 띠 80%(10~90%) · 진한 띠 50%(25~75%) · 점선 중앙',
+  levels: '자주 막히거나 받친 가격대', fib: '최근 120거래일 최고·최저를 잇는 흐름의 되돌림 비율과, 그 흐름이 이어질 때의 확장 127.2·161.8%', fair: '거래가 몰린 가격 중심과 범위', forecast: '60거래일 예측 범위. 옅은 띠 80%(10~90%) · 진한 띠 50%(25~75%) · 점선 세로줄은 20거래일 범위를 채점하는 날',
   volume: '하루 거래된 주식 수', rsi: '과열(70 이상)·과매도(30 이하)', macd: '단기·장기 평균의 차이로 보는 추세 전환', stoch: '최근 범위 안에서 지금 가격의 위치',
   spikes: '20일 평균의 3배 넘게 거래된 날을 캔들 아래에 표시(▲ 오른 날 · ▼ 내린 날)', value: '하루 거래대금(종가 × 거래량, 억 원). 진하게 칠한 날은 20일 평균의 3배 이상', ad: '거래가 많은 날 종가가 하루 범위의 위쪽(매집 쪽)·아래쪽(분산 쪽)에서 끝났는지 누적한 선',
   cci: '평균에서 얼마나 벗어났는지', wr: '최근 고점 대비 위치(과열·과매도)', obv: '오른 날·내린 날 거래량 누적', mfi: '거래량을 함께 본 RSI. 80 이상 과열 · 20 이하 과매도', atr: '하루 평균 움직임 폭',
@@ -262,6 +262,60 @@ window.addEventListener('DOMContentLoaded', function () {
   var C = bars.map(function (b) { return b.close; }), H = bars.map(function (b) { return b.high; }), Lo = bars.map(function (b) { return b.low; }), V = bars.map(function (b) { return b.volume; });
   // G-277 (Bklit candles, 한서님 10/21): thin bodies with air between them, dotted horizontal grid only, a quiet crosshair (theme.chart).
   var candle = chart.addSeries(L.CandlestickSeries, { upColor: UP, downColor: DOWN, borderVisible: false, wickUpColor: UP, wickDownColor: DOWN });
+  // G-282 (Bklit candlestick, 한서님 10/22 "차트 기능도 bklit 차트로"): the candles are drawn by a primitive: rounded
+  // bodies with a soft top-to-bottom gradient, hairline wicks, and every other candle fading while one is touched. The
+  // library's own candles stay as the anchor (scale, crosshair, chart types, drawings) in a near-invisible colour (BK0).
+  // A colour set through applyOptions is kept for the primitive; chartPro's fully transparent T means another chart type.
+  var BK0 = 'rgba(0,0,0,0.001)', BK = { on: true, up: UP, down: DOWN, hover: null, req: null }, nativeApply = candle.applyOptions.bind(candle);
+  var bkPaint = function (o) {
+    o = Object.assign({}, o || {});
+    if ('upColor' in o || 'downColor' in o) {
+      var u = o.upColor, off = u === 'rgba(0,0,0,0)';
+      if (off) BK.on = false; else { BK.on = true; if (u && u !== BK0) BK.up = u; if (o.downColor && o.downColor !== BK0) BK.down = o.downColor; }
+      if (!off) { o.upColor = o.downColor = o.wickUpColor = o.wickDownColor = o.borderUpColor = o.borderDownColor = BK0; o.borderVisible = false; }
+    }
+    // The library would colour the last-price label with BK0; ours (bkLast) carries the real colour instead.
+    if (BK.on && 'lastValueVisible' in o) o.lastValueVisible = false;
+    if (BK.on && 'priceLineVisible' in o) o.priceLineVisible = false;
+    nativeApply(o); bkLast(); if (BK.req) BK.req();
+  };
+  var bkLine = null, bkLast = function () {
+    var d = candle.data(), k = d[d.length - 1];
+    if (!BK.on || !k || k.close == null) { if (bkLine) { candle.removePriceLine(bkLine); bkLine = null; } return; }
+    var po = { price: k.close, color: k.close >= k.open ? BK.up : BK.down, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: '' };
+    if (bkLine) bkLine.applyOptions(po); else bkLine = candle.createPriceLine(po);
+  };
+  var bkSet = candle.setData.bind(candle), bkUpd = candle.update.bind(candle);
+  candle.setData = function (x) { bkSet(x); bkLast(); };
+  candle.update = function (x) { bkUpd(x); bkLast(); };
+  candle.applyOptions = bkPaint;
+  bkPaint({ upColor: UP, downColor: DOWN, lastValueVisible: false, priceLineVisible: false });
+  var bkRgba = function (c, a) { var m = /^#([0-9a-f]{6})$/i.exec(String(c).trim()); if (!m) return c; var n = parseInt(m[1], 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; };
+  candle.attachPrimitive({
+    attached: function (p) { BK.req = p.requestUpdate; }, detached: function () { BK.req = null; }, updateAllViews: function () {},
+    paneViews: function () { return [{ zOrder: function () { return 'normal'; }, renderer: function () { return { draw: function (target) {
+      if (!BK.on || candle.options().visible === false) return;
+      var ts = chart.timeScale(), r = ts.getVisibleLogicalRange(), d = candle.data(); if (!r || !d.length) return;
+      var a = Math.max(0, Math.floor(r.from) - 1), b = Math.min(d.length - 1, Math.ceil(r.to) + 1), sp = ts.options().barSpacing;
+      target.useBitmapCoordinateSpace(function (sc) {
+        var cx = sc.context, hr = sc.horizontalPixelRatio, vr = sc.verticalPixelRatio, w = Math.max(1, Math.round(sp * 0.62 * hr)), wick = Math.max(1, Math.round(hr));
+        for (var i = a; i <= b; i++) {
+          var k = d[i]; if (!k || k.open == null) continue;
+          var x = ts.timeToCoordinate(k.time); if (x == null) continue;
+          var yo = candle.priceToCoordinate(k.open), yc = candle.priceToCoordinate(k.close), yh = candle.priceToCoordinate(k.high), yl = candle.priceToCoordinate(k.low); if (yo == null || yc == null || yh == null || yl == null) continue;
+          var up = k.close >= k.open, col = up ? BK.up : BK.down, fade = BK.hover != null && BK.hover !== k.time ? 0.3 : 1;
+          var px = Math.round(x * hr), top = Math.round(Math.min(yo, yc) * vr), bot = Math.round(Math.max(yo, yc) * vr), h = Math.max(1, bot - top);
+          cx.globalAlpha = fade; cx.fillStyle = col;
+          cx.fillRect(px - Math.floor(wick / 2), Math.round(yh * vr), wick, Math.max(1, Math.round(yl * vr) - Math.round(yh * vr)));
+          var g = cx.createLinearGradient(0, top, 0, top + h); g.addColorStop(0, bkRgba(col, 1)); g.addColorStop(1, bkRgba(col, 0.72)); cx.fillStyle = g;
+          var x0 = px - Math.floor(w / 2), rad = Math.min(w / 2, h / 2, 2.5 * hr);
+          cx.beginPath(); if (cx.roundRect) cx.roundRect(x0, top, w, h, rad); else cx.rect(x0, top, w, h); cx.fill();
+        }
+        cx.globalAlpha = 1;
+      });
+    } }; } }]; }
+  });
+  chart.subscribeCrosshairMove(function (p) { var t = p && p.point && p.time != null ? p.time : null; if (JSON.stringify(t) !== JSON.stringify(BK.hover)) { BK.hover = t; if (BK.req) BK.req(); } });
   chart.applyOptions({ timeScale: { barSpacing: mobile ? 7 : 9, minBarSpacing: 2 } });
   candle.setData(bars.map(function (b) { return { time: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; }));
   // G-219: candles fill the price pane like TradingView (the default keeps a fifth of it empty at the top; 0.16 still clears the high mark and the legend).
@@ -340,7 +394,10 @@ window.addEventListener('DOMContentLoaded', function () {
       s.setData(pts.map(function (p) { return { time: p.time, value: p[q] }; })); return s;
     };
     var hi = edge('p90', UP, '상단 90%'), lo = edge('p10', DOWN, '하단 10%');
-    var mid = chart.addSeries(L.LineSeries, { color: INK, lineWidth: 2, lineStyle: 2, priceLineVisible: false, lastValueVisible: true, title: '중앙', crosshairMarkerVisible: false });
+    // G-282 (Bklit reference band + deadline): the middle path is not drawn (a range, not a price path, G-265); the
+    // series stays as the band's anchor. A dashed line marks the day the 20-session range is scored.
+    var mid = chart.addSeries(L.LineSeries, { color: INK, lineVisible: false, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+    var due = pts[Math.min(20, pts.length - 1)].time, ink = function (a) { var c = (window.GNMTheme && GNMTheme.v('--fg', '#141416')) || '#141416', m = /^#([0-9a-f]{6})$/i.exec(c.trim()); if (!m) return 'rgba(20,20,22,' + a + ')'; var n = parseInt(m[1], 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; };
     mid.setData(pts.map(function (p) { return { time: p.time, value: p.p50 }; }));
     var band = function (ctx, a, b, fill) {
       var ts = chart.timeScale(), top = [], bot = [];
@@ -355,7 +412,13 @@ window.addEventListener('DOMContentLoaded', function () {
       attached: function () {}, detached: function () {}, updateAllViews: function () {},
       paneViews: function () { return [{ zOrder: function () { return 'bottom'; }, renderer: function () { return { draw: function (target) {
         if (mid.options().visible === false) return;
-        target.useMediaCoordinateSpace(function (sc) { band(sc.context, 'p10', 'p90', 'rgba(111,134,168,.16)'); band(sc.context, 'p25', 'p75', 'rgba(111,134,168,.26)'); });
+        target.useMediaCoordinateSpace(function (sc) {
+          var cx = sc.context; band(cx, 'p10', 'p90', ink(0.07)); band(cx, 'p25', 'p75', ink(0.12));
+          var x = chart.timeScale().timeToCoordinate(due), H = sc.mediaSize.height; if (x == null) return;
+          var g = cx.createLinearGradient(x, 0, x + 44, 0); g.addColorStop(0, ink(0.06)); g.addColorStop(1, ink(0)); cx.fillStyle = g; cx.fillRect(x, 0, 44, H);
+          cx.save(); cx.strokeStyle = ink(0.55); cx.lineWidth = 1; cx.setLineDash([4, 4]); cx.beginPath(); cx.moveTo(Math.round(x) + 0.5, 0); cx.lineTo(Math.round(x) + 0.5, H); cx.stroke(); cx.restore();
+          cx.font = '600 11px Pretendard, system-ui, sans-serif'; cx.fillStyle = ink(0.7); cx.textBaseline = 'top'; cx.fillText('채점 ' + Number(due.slice(5, 7)) + '/' + Number(due.slice(8, 10)), x + 5, 6);
+        });
       } }; } }]; }
     });
     return [hi, lo, mid];
