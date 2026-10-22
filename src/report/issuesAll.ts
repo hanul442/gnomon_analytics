@@ -16,6 +16,8 @@ export interface MergedIssue {
   publisher: string;
   outlets: number;
   articles: number;
+  /** G-282: outlets against the top of its own board (0–1), drawn as a thin horizontal bar (Bklit bar chart · Horizontal). */
+  share?: number;
   isNew: boolean;
   /** Places moved up (+) or down (−) since the day before inside its own board; null when new or unknown. */
   moved: number | null;
@@ -47,14 +49,14 @@ export function mergeIssues(kr: NewsIssueBoard | null | undefined, world: WorldI
   // Same share: the higher place in its own board first, then Korean first (it is the app's home market).
   return [...k.map(fromK), ...w.map(fromW)]
     .sort((a, b) => b.share - a.share || a.order - b.order || (a.item.from === '한국' ? -1 : 1))
-    .map((x, n) => ({ rank: n + 1, ...x.item }));
+    .map((x, n) => ({ rank: n + 1, ...x.item, share: Math.round(x.share * 1000) / 1000 }));
 }
 
 function row(i: MergedIssue, full: boolean): string {
   const move = i.isNew ? '<span class="ia-new">NEW</span>' : i.moved ? `<span class="ia-mv ${i.moved > 0 ? 'up' : 'down'}">${i.moved > 0 ? '▲' : '▼'}${Math.abs(i.moved)}</span>` : '';
   const chips = i.chips.map((c) => (c.href ? `<a class="ia-chip" href="${esc(c.href)}">${esc(c.name)}${c.move ? ` <b class="${c.tone}">${esc(c.move)}</b>` : ''}</a>` : `<span class="ia-chip">${esc(c.name)}${c.move ? ` <b class="${c.tone}">${esc(c.move)}</b>` : ''}</span>`)).join('');
   const more = full && i.headlines.length > 1 ? `<details class="ia-more"><summary>같은 이슈 제목 ${i.headlines.length}개</summary><ul>${i.headlines.map((h) => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <small>${esc(h.publisher)}</small></li>`).join('')}</ul></details>` : '';
-  return `<li class="ia-row" data-tag="${i.from}"><b class="ia-rk">${i.rank}</b><div class="ia-b"><div class="ia-h"><span class="ia-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>${move}</div><a class="ia-t" href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a><small class="ia-m">${i.lang === 'en' ? '영문 · ' : ''}매체 ${i.outlets}곳 · 기사 ${i.articles}건 · ${esc(i.publisher)}</small>${chips ? `<div class="ia-chips">${chips}</div>` : ''}${more}</div></li>`;
+  return `<li class="ia-row" data-tag="${i.from}"><b class="ia-rk">${i.rank}</b><div class="ia-b"><div class="ia-h"><span class="ia-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>${move}</div><a class="ia-t" href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a><small class="ia-m">${i.lang === 'en' ? '영문 · ' : ''}매체 ${i.outlets}곳 · 기사 ${i.articles}건 · ${esc(i.publisher)}</small>${i.share != null ? `<i class="ia-bar" aria-hidden="true"><i style="width:${Math.max(4, Math.round(i.share * 100))}%"></i></i>` : ''}${chips ? `<div class="ia-chips">${chips}</div>` : ''}${more}</div></li>`;
 }
 
 /** The list (top `limit`), or a short note when nothing was collected. */
@@ -73,6 +75,7 @@ export const ISSUES_CSS = `<style>
 .ia-new,.ia-mv{font-size:11px;font-weight:800}.ia-new{color:var(--fg)}
 .ia-t{display:block;font-size:15.5px;font-weight:600;line-height:1.45;color:inherit;text-decoration:none;word-break:keep-all}.ia-t:hover{text-decoration:underline}
 .ia-m{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+.ia-bar{display:block;height:4px;margin-top:6px;border-radius:2px;background:var(--soft);overflow:hidden}.ia-bar>i{display:block;height:100%;border-radius:2px;background:var(--fg);opacity:.55;transform-origin:left;transition:transform .7s var(--ease-out,ease)}
 .ia-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.ia-chip{display:inline-flex;gap:4px;align-items:center;min-height:28px;padding:2px 10px;border-radius:999px;background:var(--soft);font-size:12.5px;font-weight:600;color:var(--fg2);text-decoration:none}
 .ia-more summary{cursor:pointer;font-size:12.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center;margin-top:4px}.ia-more ul{margin:2px 0;padding-left:16px}.ia-more li{font-size:13px;line-height:1.5;margin:3px 0}.ia-more a{color:inherit}.ia-more small{color:var(--muted)}
 .ia-empty{margin:4px 0}

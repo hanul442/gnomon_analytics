@@ -150,7 +150,7 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
     { label: '예측 범위 적중', value: fcHit === null ? null : fcHit / 100, color: 'var(--accent)', text: hitText(fcHit) },
     { label: '위원 방향 적중', value: aiHit === null ? null : aiHit / 100, color: 'var(--fg2)', text: hitText(aiHit) },
     { label: '챔피언이 보유보다 나은 종목', value: beat / live.length, color: 'var(--muted)', text: `${beat}/${live.length}` },
-  ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: '', cls: 'sc-ring' }) : '';
+  ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: '', cls: 'sc-ring', half: true }) : '';
   const hero = `<section class="block sc-hero" id="top"><div class="sc-k">예측 범위 적중률 · 리포트 종목 ${live.length}개</div><h1 class="sc-hv"><b>${fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`}</b><small>목표 80% 안팎</small></h1>
 ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 ${Math.round(fcHit)}%, 목표 80%"><i style="width:${Math.max(0, Math.min(100, fcHit)).toFixed(0)}%"></i><em style="left:80%"></em></div>`}
 ${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
