@@ -84,3 +84,10 @@ test('G-271 hitSteps counts closed trades +1 up / −1 otherwise; hitLine is neu
   assert.doesNotMatch(svg, /#f04452|#3182f6/);
   assert.equal(hitLine([0], 'x'), '');
 });
+
+test('G-282: half ring and gradient calendar legend', () => {
+  assert.match(ringChart([{ label: '맞음', value: 0.6, color: 'var(--fg)', text: '60%' }], { label: '맞힌 비율', big: '60%', half: true }), /kr-half/);
+  const bars = Array.from({ length: 60 }, (_, k) => ({ date: new Date(Date.UTC(2026, 6, 1) + k * 864e5).toISOString().slice(0, 10), close: 100 + (k % 5) }));
+  const cal = dailyCalendar(bars);
+  assert.match(cal, /kc-gr/); assert.match(cal, />\+4%</);
+});

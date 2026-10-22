@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { heatStyle, kmDonut, kmGauge, kmHeatmap, kmNotchArc, kmSectorMap, kmStatArea, kmSunburst, kmWorldMap, KIT_MARKET_CSS, KIT_MARKET_JS } from './market.js';
+import { heatStyle, kmDonut, kmDualLine, kmGauge, kmHeatmap, kmNotchArc, kmSectorMap, kmStatArea, kmSunburst, kmWorldMap, KIT_MARKET_CSS, KIT_MARKET_JS } from './market.js';
 import { marketTemperature } from '../marketTemperature.js';
 import { miniGauge } from '../renderMarket.js';
 
@@ -104,4 +104,20 @@ test('kit styles and script: motion only under html.mo, Korean up/down colours',
   assert.match(KIT_MARKET_CSS, /#f04452/);
   assert.match(KIT_MARKET_CSS, /#3182f6/);
   assert.doesNotThrow(() => new Function(KIT_MARKET_JS));
+});
+
+test('G-282: two-axis line keeps only shared dates and labels both sides', () => {
+  const d = (k: number) => `2026-10-${String(k + 1).padStart(2, '0')}`;
+  const a = Array.from({ length: 8 }, (_, k) => [d(k), 1400 + k] as const), b = Array.from({ length: 8 }, (_, k) => [d(k + 1), 4 + k / 100] as const);
+  const html = kmDualLine({ name: '원/달러', series: a, digits: 0, unit: '원' }, { name: '미국 10년 금리', series: b, digits: 2, unit: '%' });
+  assert.match(html, /왼쪽 축/); assert.match(html, /오른쪽 축/);
+  assert.match(html, />10\/2</); assert.match(html, />10\/8</);
+  assert.equal(kmDualLine({ name: 'a', series: a.slice(0, 3) }, { name: 'b', series: a.slice(0, 3) }), '');
+});
+
+test('G-282: step and open-tail stat areas', () => {
+  const s = Array.from({ length: 6 }, (_, k) => [`2026-10-0${k + 1}`, 3 + (k > 2 ? 0.25 : 0)] as const);
+  assert.match(kmStatArea({ title: '기준금리', value: 3.25, change: 0, series: s, step: true }), /H[\d.]+V[\d.]+/);
+  assert.match(kmStatArea({ title: '코스피', value: 1, change: 1, series: s, openTail: true }), /km-sa-tail/);
+  assert.doesNotMatch(kmStatArea({ title: '코스피', value: 1, change: 1, series: s }), /km-sa-tail/);
 });

@@ -11,7 +11,7 @@ import { scenarioCheck, scenarioLayer } from './scenarioChart.js';
 import type { DailyReport } from './dailyReport.js';
 import { esc } from './html.js';
 import { fadeGrad, gradId, smoothD } from './chartLook.js';
-import { dailyCalendar } from './kit/stock.js';
+import { dailyCalendar, SWEEP_HTML } from './kit/stock.js';
 import { currency, won, tone, pct as fmtPct } from './format.js';
 const pct = (v: number | null, digits = 2) => fmtPct(v, digits, '없음');
 
@@ -215,7 +215,7 @@ ${strategies.length ? `<div class="sheet" id="strat-sheet" hidden><div class="sh
 ${strategies.map((st) => `<button type="button" class="opt" data-strategy="${esc(st.key)}" aria-pressed="false"><span class="opt-t"><b>${st.rank}위 ${esc(st.name)}</b><small><span class="${st.position ? 'up' : 'muted'}">${st.position ? '지금 보유 신호' : '지금 관망'}</span> · 검증 수익 <span class="${tone(st.oos)}">${(st.oos * 100).toFixed(1)}%</span> · 매매 ${st.trades.length}번</small></span><i class="radio" aria-hidden="true"></i></button>`).join('')}</div></div>
 ` : ''}
 <div class="chart-context" id="chart-context" hidden aria-live="polite"><p></p><button type="button" class="chip-toggle">기술로 돌아가기</button></div><div class="legend-line" id="legend"></div>
-<div class="chart-wrap"><div class="ev-strip" id="ev-strip" role="group" aria-label="공시·뉴스"></div><div class="chart-body"><div id="chart" style="height:520px">${bars.length < 2 ? '<p class="empty">차트를 그릴 가격 기록이 부족해요.</p>' : ''}</div><div class="vlines" id="vlines" aria-hidden="true"></div><div class="sc-boxes" id="sc-boxes" aria-hidden="true"></div></div>
+<div class="chart-wrap"><div class="ev-strip" id="ev-strip" role="group" aria-label="공시·뉴스"></div><div class="chart-body"><div id="chart" style="height:520px">${bars.length < 2 ? '<p class="empty">차트를 그릴 가격 기록이 부족해요.</p>' : SWEEP_HTML}</div><div class="vlines" id="vlines" aria-hidden="true"></div><div class="sc-boxes" id="sc-boxes" aria-hidden="true"></div></div>
 <div class="mark-pop" id="mark-pop" role="dialog" aria-label="공시·뉴스 내용" hidden></div></div>
 ${strategies.length ? '<div class="strat-info" id="strat-info" aria-live="polite" hidden></div>' : ''}
 <p class="fine">차트 위 아이콘을 누르면 그날의 공시(금색)·뉴스(청록, 중요도 보통 이상) 내용이 뜨고, 거기서 원문으로 갈 수 있어요. 점선은 날짜 위치 표시예요. 전략 매매 시점의 ▲매수·▼매도는 그 전략 규칙이 과거 일봉에서 신호를 낸 날의 종가예요(백테스트, 투자 권유 아님).</p></section>`;
@@ -246,6 +246,7 @@ window.addEventListener('DOMContentLoaded', function () {
   var mobile = window.matchMedia('(max-width: 820px)').matches;
   // G-222: a US report (html[data-ccy=USD]) prices in dollars.
   var won = document.documentElement.getAttribute('data-ccy') === 'USD' ? function (v) { return '$' + v.toFixed(2); } : function (v) { return Math.round(v).toLocaleString('ko-KR') + '원'; };
+  var sweep = el.querySelector('.kit-sweep'); if (sweep) sweep.remove(); // G-282: the loading sweep gives way to the chart
   var chart = L.createChart(el, {
     autoSize: true,
     layout: { background: { color: 'transparent' }, textColor: '#7b7f87', fontFamily: 'inherit', panes: { separatorColor: '#d6dfeb' } },
@@ -291,6 +292,9 @@ window.addEventListener('DOMContentLoaded', function () {
   candle.applyOptions = bkPaint;
   bkPaint({ upColor: UP, downColor: DOWN, lastValueVisible: false, priceLineVisible: false });
   var bkRgba = function (c, a) { var m = /^#([0-9a-f]{6})$/i.exec(String(c).trim()); if (!m) return c; var n = parseInt(m[1], 16); return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; };
+  // G-282 (Bklit line colours, one accent G-267): indicator lines are shades of the text colour instead of orange,
+  // purple and teal, read once per page from the theme.
+  var inkA = function (al) { var c = (window.GNMTheme && GNMTheme.v('--fg', '#141416')) || '#141416'; return bkRgba(c.charAt(0) === '#' && c.length === 4 ? '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3] : c, al); };
   candle.attachPrimitive({
     attached: function (p) { BK.req = p.requestUpdate; }, detached: function () { BK.req = null; }, updateAllViews: function () {},
     paneViews: function () { return [{ zOrder: function () { return 'normal'; }, renderer: function () { return { draw: function (target) {
@@ -342,12 +346,33 @@ window.addEventListener('DOMContentLoaded', function () {
   // ---- overlays (on the price pane) ----
   var built = {}, priceLines = {}, relegend = null, placeLatest = null;
   var overlayMakers = {
-    ma5: function () { return [line(sma(C, ip('ma5').n), '#6b6f78')]; },
-    ma20: function () { return [line(sma(C, ip('ma20').n), '#d97706')]; },
-    ma60: function () { return [line(sma(C, ip('ma60').n), '#7a4fb3')]; },
-    ma120: function () { return [line(sma(C, ip('ma120').n), '#00968a')]; },
-    ema12: function () { var q = ip('ema12'); return [line(ema(C, q.f), '#c2410c', 0, { lineStyle: 2 }), line(ema(C, q.s), '#4338ca', 0, { lineStyle: 2 })]; },
-    bb: function () { var q = ip('bb'), m = sma(C, q.n), s = std(C, q.n, m); return [line(m, '#8a96a3', 0, { lineStyle: 2 }), line(m.map(function (x, i) { return x == null ? null : x + q.k * s[i]; }), '#8a96a3'), line(m.map(function (x, i) { return x == null ? null : x - q.k * s[i]; }), '#8a96a3')]; },
+    ma5: function () { return [line(sma(C, ip('ma5').n), inkA(0.35))]; },
+    ma20: function () { return [line(sma(C, ip('ma20').n), inkA(0.85))]; },
+    ma60: function () { return [line(sma(C, ip('ma60').n), inkA(0.55))]; },
+    ma120: function () { return [line(sma(C, ip('ma120').n), inkA(0.3))]; },
+    ema12: function () { var q = ip('ema12'); return [line(ema(C, q.f), inkA(0.8), 0, { lineStyle: 2 }), line(ema(C, q.s), inkA(0.4), 0, { lineStyle: 2 })]; },
+    // G-282: Bklit "band" — the 볼린저 range is a light filled band between the two lines, not three grey lines.
+    bb: function () {
+      var q = ip('bb'), m = sma(C, q.n), s = std(C, q.n, m);
+      var up = m.map(function (x, i) { return x == null ? null : x + q.k * s[i]; }), dn = m.map(function (x, i) { return x == null ? null : x - q.k * s[i]; });
+      var mid = line(m, inkA(0.45), 0, { lineStyle: 2, lineWidth: 1 }), hi = line(up, inkA(0.3), 0, { lineWidth: 1 }), lo = line(dn, inkA(0.3), 0, { lineWidth: 1 });
+      mid.attachPrimitive({
+        attached: function () {}, detached: function () {}, updateAllViews: function () {},
+        paneViews: function () { return [{ zOrder: function () { return 'bottom'; }, renderer: function () { return { draw: function (target) {
+          if (mid.options().visible === false) return;
+          target.useMediaCoordinateSpace(function (sc) {
+            var ts = chart.timeScale(), top = [], bot = [], cx = sc.context;
+            for (var i = 0; i < m.length; i++) { if (up[i] == null || !isFinite(up[i])) continue; var x = ts.timeToCoordinate(t(i)), y1 = mid.priceToCoordinate(up[i]), y0 = mid.priceToCoordinate(dn[i]); if (x == null || y1 == null || y0 == null) continue; top.push([x, y1]); bot.push([x, y0]); }
+            if (top.length < 2) return;
+            cx.beginPath(); cx.moveTo(top[0][0], top[0][1]);
+            for (var a = 1; a < top.length; a++) cx.lineTo(top[a][0], top[a][1]);
+            for (var b = bot.length - 1; b >= 0; b--) cx.lineTo(bot[b][0], bot[b][1]);
+            cx.closePath(); cx.fillStyle = inkA(0.06); cx.fill();
+          });
+        } }; } }]; }
+      });
+      return [mid, hi, lo];
+    },
     // G-186: rolling VWAP — the volume-weighted average of the typical price over n sessions.
     vwap: function () { var n = ip('vwap').n, pv = 0, vv = 0, tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }); return [line(bars.map(function (b, i) { pv += tp[i] * b.volume; vv += b.volume; if (i >= n) { pv -= tp[i - n] * bars[i - n].volume; vv -= bars[i - n].volume; } return i < n - 1 || vv <= 0 ? null : pv / vv; }), '#e879f9', 0, { lineWidth: 2, title: 'VWAP ' + n })]; },
     // G-186: Parabolic SAR (Wilder): dots under a rising trend, above a falling one; the step grows at each new extreme up to max.
@@ -548,13 +573,13 @@ window.addEventListener('DOMContentLoaded', function () {
   // ---- panes (below the price) ----
   var paneMakers = {
     volume: function (p) { var s = chart.addSeries(L.HistogramSeries, { priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false }, p); s.setData(bars.map(function (b, i) { return { time: b.date, value: b.volume, color: i && b.close < bars[i - 1].close ? 'rgba(49,130,246,.45)' : 'rgba(240,68,82,.45)' }; })); return [s]; },
-    rsi: function (p) { var q = ip('rsi'), s = line(rsi(q.n), '#7a4fb3', p, { lastValueVisible: true, title: 'RSI ' + q.n }); s.createPriceLine({ price: q.hi, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: q.lo, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
+    rsi: function (p) { var q = ip('rsi'), s = line(rsi(q.n), inkA(0.8), p, { lastValueVisible: true, title: 'RSI ' + q.n }); s.createPriceLine({ price: q.hi, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); s.createPriceLine({ price: q.lo, color: '#a5b6ce', lineStyle: 2, lineWidth: 1, axisLabelVisible: false }); return [s]; },
     macd: function (p) {
       var q = ip('macd'), f = ema(C, q.f), s = ema(C, q.s), m = C.map(function (_, i) { return i < q.s - 1 ? null : f[i] - s[i]; });
       var sig = ema(m, q.sig).map(function (x, i) { return i < q.s + q.sig - 2 ? null : x; });
       var hist = chart.addSeries(L.HistogramSeries, { priceLineVisible: false, lastValueVisible: false }, p);
       hist.setData(m.map(function (x, i) { return x == null || sig[i] == null ? null : { time: t(i), value: x - sig[i], color: x - sig[i] >= 0 ? 'rgba(240,68,82,.5)' : 'rgba(49,130,246,.5)' }; }).filter(Boolean));
-      return [hist, line(m, INK, p, { title: 'MACD' }), line(sig, '#d97706', p, { title: '시그널' })];
+      return [hist, line(m, INK, p, { title: 'MACD' }), line(sig, inkA(0.45), p, { title: '시그널' })];
     },
     stoch: function (p) { var q = ip('stoch'), k = C.map(function (c, i) { if (i < q.n - 1) return null; var h = hh(q.n, i), l = ll(q.n, i); return h === l ? 50 : (c - l) / (h - l) * 100; }); var ks = sma(k.map(function (x) { return x == null ? 0 : x; }), q.k).map(function (x, i) { return i < q.n + q.k - 2 ? null : x; }); var ds = sma(ks.map(function (x) { return x == null ? 0 : x; }), q.d).map(function (x, i) { return i < q.n + q.k + q.d - 3 ? null : x; }); return [line(ks, '#00968a', p, { title: '%K' }), line(ds, '#d97706', p, { title: '%D' })]; },
     cci: function (p) { var n = ip('cci').n, tp = bars.map(function (b) { return (b.high + b.low + b.close) / 3; }), m = sma(tp, n); return [line(tp.map(function (x, i) { if (m[i] == null) return null; var md = 0; for (var j = i - n + 1; j <= i; j++) md += Math.abs(tp[j] - m[i]); md /= n; return md === 0 ? 0 : (x - m[i]) / (0.015 * md); }), '#0e7490', p, { title: 'CCI ' + n })]; },

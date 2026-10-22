@@ -3,7 +3,7 @@
 import { KIT_FINANCE_CSS, KIT_FINANCE_JS } from './finance.js';
 import { KIT_MARKET_CSS, KIT_MARKET_JS } from './market.js';
 import { KIT_SHEET_CSS, KIT_SHEET_JS } from './sheet.js';
-import { KIT_STOCK_CSS, KIT_STOCK_JS, KIT_SUN_CSS } from './stock.js';
+import { KIT_STOCK_CSS, KIT_STOCK_JS, KIT_SUN_CSS, KIT_SWEEP_CSS } from './stock.js';
 
-export const KIT_CSS = KIT_FINANCE_CSS + KIT_MARKET_CSS + KIT_STOCK_CSS + KIT_SUN_CSS + KIT_SHEET_CSS;
+export const KIT_CSS = KIT_FINANCE_CSS + KIT_MARKET_CSS + KIT_STOCK_CSS + KIT_SUN_CSS + KIT_SWEEP_CSS + KIT_SHEET_CSS;
 export const KIT_JS = [KIT_FINANCE_JS, KIT_MARKET_JS, KIT_STOCK_JS, KIT_SHEET_JS].filter(Boolean).join(';\n');

@@ -7,7 +7,7 @@
 import { shell } from './renderHtml.js';
 import { esc } from './html.js';
 import { smoothD } from './chartLook.js';
-import { kmStatArea } from './kit/market.js';
+import { kmDualLine, kmStatArea } from './kit/market.js';
 import { contentMore, CONTENT_MORE_CSS } from './contentMore.js';
 import { kmWorldMapAll, KIT_WORLD_CSS, type WorldMapEntry } from './kit/worldMap.js';
 import type { WorldIndexQuote, WorldMacroQuote, WorldMarkets, WorldRegion } from '../sources/naverGlobal.js';
@@ -105,7 +105,7 @@ export function worldPanels(p: WorldPage): WorldPanels {
   const main = mainOf(m.indices);
   const mapRows = worldMapRows(m.indices);
   const bandHtml = `<div class="wd-bands">${bands(m.indices).map((b) => `<div class="wd-band${b.open ? ' on' : ''}"><small>${esc(b.name)} · ${b.open ? '거래 중' : '마감'}</small><b class="${tone(b.change)}">${pct(b.change, 1)}</b><small>${b.total}곳 중 ${b.down}곳 내림</small></div>`).join('')}</div>`;
-  const statIx = (x: WorldIndexQuote | null) => (x ? kmStatArea({ title: x.name, value: x.value, change: x.changePct, series: x.series, digits: 2, label: x.open ? '거래 중' : '종가', unit: '일' }) : '');
+  const statIx = (x: WorldIndexQuote | null) => (x ? kmStatArea({ title: x.name, value: x.value, change: x.changePct, series: x.series, digits: 2, label: x.open ? '거래 중' : '종가', unit: '일', openTail: !!x.open }) : '');
   const statMacro = worldMacroStat;
   const key6 = [statIx(ix('KOSPI')), statIx(ix('.INX')), statMacro(q('USDKRW')), statMacro(q('WTI')), statMacro(q('GOLD')), statMacro(q('US10Y'), true)].join('');
   const issues = p.news.issues;
@@ -126,9 +126,13 @@ ${regions.map((r) => { const xs = m.indices.filter((x) => x.region === r); if (!
   // 금리·환율
   const policy = m.macro.filter((x) => x.group === 'policy');
   const maxRate = Math.max(1, ...policy.map((x) => x.value));
+  // G-282: 원/달러 and 미국 10년 금리 on one chart, each on its own axis (Bklit two-axis line).
+  const usd = q('USDKRW'), us10 = q('US10Y');
+  const dualFig = usd && us10 ? kmDualLine({ name: '원/달러', series: usd.series, digits: 0, unit: '원' }, { name: '미국 10년 금리', series: us10.series, digits: 2, unit: '%' }, '두 선은 축이 달라요. 높이가 겹쳐도 같은 값이 아니에요.') : '';
+  const dual = dualFig ? `<section class="card wd-card"><div class="wd-h"><h2>환율과 금리 같이 보기</h2><span class="muted small">최근 ${usd!.series?.length ?? 0}일</span></div>${dualFig}</section>` : '';
   const rates = `${policy.length ? `<section class="card wd-card"><div class="wd-h"><h2>나라별 기준금리</h2><span class="muted small">중앙은행 발표 값</span></div><div class="wd-bars">${policy.map((x) => `<div><span>${esc(x.name)}</span><i><i style="width:${((x.value / maxRate) * 100).toFixed(0)}%"></i></i><b>${fmt(x.value, 2)}%</b></div>`).join('')}</div></section>` : ''}
 <div class="km-stats wd-stats">${[statMacro(q('US10Y'), true), statMacro(q('USDKRW'), true), statMacro(q('DXY'), true), statMacro(q('VIX'), true)].join('')}</div>
-<section class="card wd-card"><div class="wd-h"><h2>10년 국채 금리</h2><span class="muted small">전날 대비</span></div>${m.macro.filter((x) => x.group === 'bond').map((x) => row(x.name, '', valueText(x), moveText(x), moveTone(x))).join('')}</section>
+${dual}<section class="card wd-card"><div class="wd-h"><h2>10년 국채 금리</h2><span class="muted small">전날 대비</span></div>${m.macro.filter((x) => x.group === 'bond').map((x) => row(x.name, '', valueText(x), moveText(x), moveTone(x))).join('')}</section>
 <section class="card wd-card"><div class="wd-h"><h2>환율</h2><span class="muted small">원화는 하나은행 고시</span></div>${m.macro.filter((x) => x.group === 'fx').map((x) => row(x.name, x.hint ?? '', valueText(x), moveText(x), moveTone(x), spark(x.series), sheetOf(x.name, x.series, digitsOf(x)))).join('')}</section>`;
 
   // 원자재
