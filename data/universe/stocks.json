@@ -4620,11 +4620,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "038680",
-  "name": "에스넷",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "038870",
   "name": "에코심플렉스",
   "market": "KOSDAQ"
@@ -6178,6 +6173,11 @@
   "symbol": "066970",
   "name": "엘앤에프",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "066980",
+  "name": "한성크린텍",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "067000",
@@ -9885,11 +9885,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "222040",
-  "name": "코스맥스엔비티",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "222080",
   "name": "SFA넥셀",
   "market": "KOSDAQ"
@@ -9912,6 +9907,11 @@
  {
   "symbol": "222980",
   "name": "한국맥널티",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "223250",
+  "name": "드림씨아이에스",
   "market": "KOSDAQ"
  },
  {
@@ -11470,11 +11470,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "322780",
-  "name": "코퍼스코리아",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "323280",
   "name": "태성",
   "market": "KOSDAQ"
@@ -12082,6 +12077,11 @@
  {
   "symbol": "367000",
   "name": "플래티어",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "368600",
+  "name": "아이씨에이치",
   "market": "KOSDAQ"
  },
  {

@@ -1,5 +1,5 @@
 {
- "at": "2026-10-22T12:09:35.435Z",
+ "at": "2026-10-22T14:43:04.918Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 51
+   "count": 46
   },
   {
    "source": "google:topic-business-ko",
@@ -50,7 +50,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 56
+   "count": 66
   },
   {
    "source": "rss:bbc-business",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 629
+   "count": 637
   }
  ],
  "stocks": [
@@ -345,9 +345,5 @@
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-10-22",
-  "status": "OK"
- }
+ "failed": []
 }
