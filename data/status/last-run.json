@@ -1,11 +1,11 @@
 {
- "at": "2026-10-22T03:15:02.615Z",
+ "at": "2026-10-22T09:25:51.036Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2764
+   "count": 2765
   },
   {
    "source": "naver:m-stock:etf",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2666
+   "count": 2667
   },
   {
    "source": "naver:fchart:day:etf",
@@ -25,8 +25,7 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 297,
-   "error": "1 failed "
+   "count": 298
   },
   {
    "source": "naver:global",
@@ -36,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 38
+   "count": 50
   },
   {
    "source": "google:topic-business-ko",
@@ -51,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 70
+   "count": 56
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 54
+   "count": 56
   },
   {
    "source": "naver:world:day:all",
@@ -66,265 +65,289 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 618
+   "count": 629
   }
  ],
  "stocks": [
   {
    "symbol": "000660",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "005930",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "402340",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "373220",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "009150",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "068270",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "003490",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "034730",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "010120",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "207940",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "329180",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "096770",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "247540",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "009540",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "298040",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "089030",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "272210",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "086520",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "000720",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "036930",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "042700",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "001440",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "043260",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "006400",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "034020",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "000150",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "066570",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "012750",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "440110",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "006260",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "047040",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "011070",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "222800",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "267260",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "278470",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "028260",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "353200",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "007660",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "196170",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "055550",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "452190",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "439090",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "009830",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "232140",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "327260",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "403870",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "490470",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "KRW-BTC",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "KRW-ETH",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "KRW-WLD",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "069500",
-   "report": "NOT_SETTLED",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "037710",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-HBAR",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "293490",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "NVDA.O",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
- "failed": []
+ "failed": [],
+ "market": {
+  "date": "2026-10-14",
+  "status": "OK"
+ }
 }

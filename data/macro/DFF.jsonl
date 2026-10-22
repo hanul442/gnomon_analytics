@@ -401,3 +401,4 @@
 {"series":"DFF","date":"2026-10-17","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-21T11:20:14.008Z"}
 {"series":"DFF","date":"2026-10-18","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-21T11:20:14.008Z"}
 {"series":"DFF","date":"2026-10-19","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-21T11:20:14.008Z"}
+{"series":"DFF","date":"2026-10-20","value":3.88,"source":"fred:csv","retrievedAt":"2026-10-22T09:25:51.036Z"}

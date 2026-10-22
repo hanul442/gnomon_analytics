@@ -480,6 +480,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "0013Y0",
+  "name": "엠에스바이오",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "001420",
   "name": "태원물산",
   "market": "KOSPI"
