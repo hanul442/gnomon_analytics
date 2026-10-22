@@ -93,12 +93,16 @@ test('G-271 miniArea draws a small area line only with 5+ closes, in the neutral
   assert.match(svg, /currentColor/);
 });
 
-test('G-277: with the world snapshot, home leads with one sentence and six tappable key numbers', () => {
+test('G-281: with the world snapshot, home is 요약·시장·위원회·이슈; four key numbers, one per kind, each number once in 시장', () => {
   const q = (key: string, name: string, value: number, changePct: number) => ({ key, name, country: '미국', iso: 'US', region: '미국', value, change: null, changePct, at: null, open: false, series: [['2026-10-19', value], ['2026-10-20', value]] });
   const world = { generatedAt: '2026-10-20T11:00:00Z', status: [], indices: [q('.INX', 'S&P 500', 7690.73, -1.2), { ...q('.N225', '니케이 225', 1, -1.3), iso: 'JP', region: '아시아' }], macro: [{ ...q('USDKRW', '원/달러', 1452.3, 0.4), group: 'fx', unit: '원' }] };
   const html = renderHome({ entries: [], selection: null, universe: null, pulse: null, world: world as never, indices: [{ symbol: 'KOSPI', name: '코스피', date: '2026-10-20', close: 5668.05, changePct: 2.05, closes: [] }] });
   assert.match(html, /<p class="hm-s">[^<]*증시[^<]*<\/p>/);
   assert.match(html, /1,452\.3/);
   assert.match(html, /data-sheet=/, 'cards open the big chart sheet');
-  assert.deepEqual([...html.matchAll(/role="tab" data-wd="([a-z]+)"/g)].map((m) => m[1]), ['sum', 'com', 'stocks', 'rates', 'commod', 'news']);
+  assert.deepEqual([...html.matchAll(/role="tab" data-wd="([a-z]+)"/g)].map((m) => m[1]), ['sum', 'market', 'com', 'news']);
+  assert.deepEqual([...html.matchAll(/class="mk-tile" data-wd-go="market" data-mk="([a-z]+)"/g)].map((m) => m[1]), ['stocks', 'fx'], 'tiles exist only for the numbers we have');
+  const market = html.slice(html.indexOf('data-wd-p="market"'), html.indexOf('data-wd-p="com"'));
+  assert.equal(market.split('<b>원/달러</b>').length - 1, 1, '원/달러 shows once in 시장');
+  assert.ok(market.indexOf('id="mk-stocks"') < market.indexOf('id="mk-fx"'));
 });
