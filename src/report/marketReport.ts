@@ -21,7 +21,9 @@ const EXPERT_IDS=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMEN
 const expert=z.object({speaker:z.enum(EXPERT_IDS),stance:z.enum(['BULLISH','NEUTRAL','BEARISH','INSUFFICIENT_DATA']),claim});
 const marketTurn=z.object({speaker:z.enum([...EXPERT_IDS,'RED_TEAM'] as [string,...string[]]),stance:z.enum(['BULLISH','NEUTRAL','BEARISH']),replyTo:z.number(),claim});
 export const MarketCouncilSchema = z.object({ summary: claim, desks: z.array(z.object({ name: z.enum(['코스피','코스닥','코인','ETF','미국']), view: z.enum(['강세','중립','약세','판단보류']), claims: z.array(claim) })).min(4).max(5), consensus: z.array(claim), disagreements: z.array(claim), scenarios: z.array(z.object({ name: z.enum(['강세','기본','약세']), trigger: claim, outlook: claim, invalidation: claim })).length(3), redTeam: z.array(claim), watch: z.array(claim), dataGaps: z.array(z.string()), experts:z.array(expert).optional(),debate:z.array(marketTurn).optional() });
-export const MarketCouncilGenerationSchema=MarketCouncilSchema.extend({experts:z.array(expert).length(11),debate:z.array(marketTurn).length(12)});
+/** The model is asked for all 11 experts and 12 turns; G-278: a council missing up to two members is still published. */
+export const MARKET_MIN_MEMBERS=9;
+export const MarketCouncilGenerationSchema=MarketCouncilSchema.extend({experts:z.array(expert).min(MARKET_MIN_MEMBERS).max(11),debate:z.array(marketTurn).min(MARKET_MIN_MEMBERS).max(12)});
 /** Extra, unsupported scenario names are dropped; the three required cases still validate strictly. */
 /** What readers see when the committee could not be made. The technical reason stays in the run log only. */
 export const MARKET_AI_FAILED='오늘 AI 요약을 만들지 못했어요. 위 숫자 정리를 먼저 봐 주세요. 다음 갱신 때 다시 만들어요.';
@@ -43,6 +45,18 @@ export function parseMarketCouncil(text:string):MarketCouncil {
  const firstBy=(list:unknown,key:string)=>Array.isArray(list)?list.filter((x,i)=>!x||typeof x!=='object'||list.findIndex(y=>!!y&&typeof y==='object'&&(y as Record<string,unknown>)[key]===(x as Record<string,unknown>)[key])===i):list;
  if(Array.isArray(raw?.experts))raw.experts=firstBy(raw.experts,'speaker');
  if(Array.isArray(raw?.scenarios))raw.scenarios=firstBy(raw.scenarios,'name');
+ if(Array.isArray(raw?.desks))raw.desks=firstBy(raw.desks,'name');
+ // G-278: the debate keeps each expert's first turn and the last red-team turn, spoken with that expert's stance;
+ // a reply whose target was dropped (or points forward, or at the same speaker) becomes a fresh remark.
+ if(Array.isArray(raw?.experts)&&Array.isArray(raw?.debate)){
+  const stanceOf=new Map<string,string>();for(const e of raw.experts)if(e&&typeof e==='object'&&typeof e.speaker==='string')stanceOf.set(e.speaker,e.stance==='INSUFFICIENT_DATA'?'NEUTRAL':String(e.stance));
+  const turns=raw.debate.map((t:unknown,i:number)=>({t:t as Record<string,unknown>,i})).filter(({t}:{t:Record<string,unknown>})=>!!t&&typeof t==='object');
+  const seen=new Set<string>(),keep:{t:Record<string,unknown>,i:number}[]=[];
+  for(const x of turns){const sp=String(x.t.speaker);if(sp==='RED_TEAM'||seen.has(sp)||!stanceOf.has(sp))continue;seen.add(sp);keep.push({t:{...x.t,stance:stanceOf.get(sp)},i:x.i});}
+  const red=[...turns].reverse().find(({t}:{t:Record<string,unknown>})=>t.speaker==='RED_TEAM');if(red)keep.push({t:{...red.t},i:red.i});
+  const at=new Map(keep.map((x,j)=>[x.i,j]));
+  raw.debate=keep.map(({t},j)=>{const r=at.get(Number(t.replyTo));return {...t,replyTo:r!==undefined&&r<j&&keep[r]!.t.speaker!==t.speaker?r:-1};});
+ }
  if(Array.isArray(raw?.scenarios)){const keep=raw.scenarios.filter((s:unknown)=>!!s&&typeof s==='object'&&['강세','기본','약세'].includes(String((s as {name?:unknown}).name)));if(keep.length!==raw.scenarios.length){raw.scenarios=keep;if(Array.isArray(raw.dataGaps))raw.dataGaps.push('지원 범위를 벗어난 추가 시나리오는 제외했습니다.');}}
  return MarketCouncilSchema.parse(raw);
 }
@@ -91,11 +105,43 @@ export function marketNumberIssues(council:MarketCouncil, groups:readonly Market
  }
  return issues;
 }
-export function validCouncil(council: MarketCouncil, groups: readonly MarketGroup[], news: readonly MarketNews[] = []): boolean {
+/** G-278: what is wrong with a council, in words for the run log and the repair prompt (empty means publishable). */
+export function councilProblems(council: MarketCouncil, groups: readonly MarketGroup[], news: readonly MarketNews[] = []): string[] {
  const refs=new Set([...groups.map(g=>g.id),...news.map(n=>n.id)]);
- const claims=councilClaims(council);
- const members=council.experts?new Set(council.experts.map(e=>e.speaker)).size===11&&council.debate?.length===12&&new Set(council.debate.slice(0,11).map(t=>t.speaker)).size===11&&council.debate.at(-1)?.speaker==='RED_TEAM'&&council.experts.every(e=>council.debate!.find(t=>t.speaker===e.speaker)?.stance===(e.stance==='INSUFFICIENT_DATA'?'NEUTRAL':e.stance))&&council.debate.every((t,i)=>t.replyTo===-1||(Number.isInteger(t.replyTo)&&t.replyTo>=0&&t.replyTo<i&&council.debate![t.replyTo]?.speaker!==t.speaker)):true;
- return members && new Set(council.desks.map(d=>d.name)).size===council.desks.length && new Set(council.scenarios.map(s=>s.name)).size===3 && claims.every(c=>c.refs.length>0&&c.refs.every(r=>refs.has(r)));
+ const out:string[]=[];
+ if(council.experts){
+  const debate=council.debate??[];
+  const spoken=debate.filter(t=>t.speaker!=='RED_TEAM'),reds=debate.filter(t=>t.speaker==='RED_TEAM');
+  if(council.experts.length<MARKET_MIN_MEMBERS||new Set(council.experts.map(e=>e.speaker)).size!==council.experts.length)out.push(`experts ${council.experts.length}명(중복 없이 ${MARKET_MIN_MEMBERS}명 이상 필요)`);
+  if(spoken.length<MARKET_MIN_MEMBERS||new Set(spoken.map(t=>t.speaker)).size!==spoken.length)out.push(`debate 전문가 발언 ${spoken.length}차례(각 1번, ${MARKET_MIN_MEMBERS}명 이상 필요)`);
+  if(reds.length>1||(reds.length&&debate.at(-1)?.speaker!=='RED_TEAM'))out.push('RED_TEAM은 마지막에 한 번만');
+  const off=spoken.filter(t=>{const e=council.experts!.find(x=>x.speaker===t.speaker);return !e||t.stance!==(e.stance==='INSUFFICIENT_DATA'?'NEUTRAL':e.stance);});
+  if(off.length)out.push(`debate stance가 experts 판단과 다름: ${off.map(t=>t.speaker).slice(0,3).join(',')}`);
+  const badReply=debate.filter((t,i)=>!(t.replyTo===-1||(Number.isInteger(t.replyTo)&&t.replyTo>=0&&t.replyTo<i&&debate[t.replyTo]?.speaker!==t.speaker)));
+  if(badReply.length)out.push(`replyTo 오류 ${badReply.length}건`);
+ }
+ if(new Set(council.desks.map(d=>d.name)).size!==council.desks.length)out.push('desks 이름 중복');
+ if(new Set(council.scenarios.map(s=>s.name)).size!==3)out.push('시나리오는 강세·기본·약세 각 1개');
+ const unknown=[...new Set(councilClaims(council).flatMap(c=>c.refs.filter(r=>!refs.has(r))))];
+ if(unknown.length)out.push(`없는 근거 번호: ${unknown.slice(0,5).join(',')} (쓸 수 있는 번호: ${[...refs].join(',')})`);
+ const bare=councilClaims(council).filter(c=>!c.refs.length).length;
+ if(bare)out.push(`근거 번호가 없는 문장 ${bare}개`);
+ return out;
+}
+export function validCouncil(council: MarketCouncil, groups: readonly MarketGroup[], news: readonly MarketNews[] = []): boolean { return councilProblems(council,groups,news).length===0; }
+/**
+ * G-278: refs written as "M1, N3" or "M1~M5" are split into ids, ids that were never given are dropped, and a list
+ * item left with no valid ref is dropped from its list. A single claim (summary, scenario, expert, debate turn) left
+ * with none stays as it is, so the check still rejects it.
+ */
+export function tidyCouncilRefs(council: MarketCouncil, groups: readonly MarketGroup[], news: readonly MarketNews[] = []): MarketCouncil {
+ const known=new Set([...groups.map(g=>g.id),...news.map(n=>n.id)]);
+ const ids=(r:string)=>r.split(/[\s,/·]+/).filter(Boolean).flatMap(x=>{const m=x.match(/^([MN])(\d+)[~\-–]([MN])?(\d+)$/);if(!m)return [x];const out:string[]=[];for(let i=+m[2]!;i<=+m[4]!&&out.length<20;i++)out.push(m[1]!+i);return out;});
+ const fix=<T extends {refs:string[]}>(c:T):T=>{const refs=[...new Set(c.refs.flatMap(ids))].filter(r=>known.has(r));return {...c,refs:refs.length?refs:c.refs};};
+ const list=<T extends {refs:string[]}>(cs:T[]):T[]=>cs.map(fix).filter(c=>c.refs.every(r=>known.has(r))&&c.refs.length>0);
+ return {...council,summary:fix(council.summary),desks:council.desks.map(d=>({...d,claims:list(d.claims)})),consensus:list(council.consensus),disagreements:list(council.disagreements),
+  scenarios:council.scenarios.map(x=>({...x,trigger:fix(x.trigger),outlook:fix(x.outlook),invalidation:fix(x.invalidation)})),redTeam:list(council.redTeam),watch:list(council.watch),
+  ...(council.experts?{experts:council.experts.map(e=>({...e,claim:fix(e.claim)}))}:{}),...(council.debate?{debate:council.debate.map(t=>({...t,claim:fix(t.claim)}))}:{})};
 }
 const pct=(n:number|null)=>n===null?'확인 필요':`${n>0?'+':''}${n.toFixed(2)}%`;
 /** This source contains individual coins, never an aggregate cryptocurrency index. */
@@ -117,7 +163,7 @@ export function renderMarketDeep(r:MarketReport):string {
   return `<section class="card block" id="${g.id}"><h2>${esc(g.name)}</h2><p class="muted">근거 ${g.id} · ${esc(g.source)} · 수집 ${g.assets.length}/${g.universe} · 기간 수익률 계산 가능 ${available.length}</p><p>현재 스냅샷(${esc(g.snapshotDate??'확인 필요')}) 상승 ${g.breadth.up} · 하락 ${g.breadth.down} · 보합 ${g.breadth.flat}개. ${r.period==='weekly'?'이 숫자는 주간 상승·하락 종목 수가 아닙니다.':''}</p>${g.assets.length?table(g.assets.slice(0,g.assets.length<=2?2:8)):'<p>수집된 데이터가 없습니다.</p>'}${g.assets.length>2?`<details><summary>기간 상승·하락 상위 각 5개</summary><h3>상승 상위</h3>${table(sort.slice(0,5))}<h3>하락 상위</h3>${table(sort.slice(-5).reverse())}</details>`:''}</section>`;
  }).join('');
  const c=r.ai.council;
- const ai=c?`${c.experts?.length?`<details class="card block"><summary>전문가별 판단 · 11명</summary><div class="desk-grid" style="margin-top:12px">${c.experts.map(e=>`<article class="card"><h3>${esc(SPEAKER[e.speaker]??e.speaker)}</h3><b class="${e.stance==='BULLISH'?'up':e.stance==='BEARISH'?'down':'muted'}">${e.stance==='BULLISH'?'▲ 강세':e.stance==='BEARISH'?'▼ 약세':e.stance==='INSUFFICIENT_DATA'?'근거 부족':'● 중립'}</b>${claims([e.claim])}</article>`).join('')}</div></details>`:''}${aiSummaryCard(marketClaimText(c.summary.text),'위원회 판단',r.date)}<section class="block"><div class="block-head"><h2>조건별 시나리오</h2><span class="muted small">조건이 달라지면 판단도 바뀝니다</span></div><div class="market-scenarios">${c.scenarios.map(s=>`<section class="card market-scenario ${s.name==='강세'?'bull':s.name==='약세'?'bear':'base'}"><h3>${s.name==='강세'?'▲':s.name==='약세'?'▼':'●'} ${esc(s.name)}</h3><h4>성립 조건</h4>${claims([s.trigger])}<h4>전망</h4>${claims([s.outlook])}<h4>무효화 조건</h4>${claims([s.invalidation])}</section>`).join('')}</div></section>${c.debate?.length?renderCommitteeDebate({status:'OK',evidence:[...r.groups.map(g=>({id:g.id,kind:'MARKET' as const,label:g.name+' · '+g.source+' · 기준 '+(g.snapshotDate??'확인 필요'),detail:'',url:'#'+g.id})),...(r.news??[]).map(n=>({id:n.id,kind:'NEWS' as const,label:n.title,detail:n.publisher,url:n.url}))],debate:c.debate.map(t=>({...t,speaker:t.speaker as import('../analysis/commentary.js').Speaker,replyTo:t.replyTo,claim:{text:marketClaimText(t.claim.text),kind:t.claim.kind,evidenceIds:t.claim.refs}}))}):`<section class="block" id="debate"><h2>이전 형식의 시장 관점</h2><div class="card debate">${c.desks.map(d=>`<div class="db-turn db-mid" data-speaker="${esc(d.name)}"><div class="db-who"><b>${esc(d.name)}</b> · ${esc(d.view)}</div><div class="db-bubble">${claims(d.claims)}</div></div>`).join('')}</div><p class="fine">이 기록은 전문가 토론 형식 도입 전 리포트입니다.</p></section>`}<section class="block grid-eq"><div class="card"><h2>합의된 판단</h2>${claims(c.consensus)}</div><div class="card"><h2>남은 쟁점</h2>${claims(c.disagreements)}</div></section><section class="card block"><h2>다음 관찰 항목</h2>${claims(c.watch)}${c.dataGaps.length?`<details><summary>자료 공백 ${c.dataGaps.length}개</summary><ul>${c.dataGaps.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>`:''}</section>`:`<section class="card block"><p>${r.ai.status==='FAILED'?MARKET_AI_FAILED:'AI 위원회 해설은 아직 만들어지지 않았어요.'}</p></section>`;
+ const ai=c?`${c.experts?.length?`<details class="card block"><summary>전문가별 판단 · ${c.experts.length}명</summary><div class="desk-grid" style="margin-top:12px">${c.experts.map(e=>`<article class="card"><h3>${esc(SPEAKER[e.speaker]??e.speaker)}</h3><b class="${e.stance==='BULLISH'?'up':e.stance==='BEARISH'?'down':'muted'}">${e.stance==='BULLISH'?'▲ 강세':e.stance==='BEARISH'?'▼ 약세':e.stance==='INSUFFICIENT_DATA'?'근거 부족':'● 중립'}</b>${claims([e.claim])}</article>`).join('')}</div></details>`:''}${aiSummaryCard(marketClaimText(c.summary.text),'위원회 판단',r.date)}<section class="block"><div class="block-head"><h2>조건별 시나리오</h2><span class="muted small">조건이 달라지면 판단도 바뀝니다</span></div><div class="market-scenarios">${c.scenarios.map(s=>`<section class="card market-scenario ${s.name==='강세'?'bull':s.name==='약세'?'bear':'base'}"><h3>${s.name==='강세'?'▲':s.name==='약세'?'▼':'●'} ${esc(s.name)}</h3><h4>성립 조건</h4>${claims([s.trigger])}<h4>전망</h4>${claims([s.outlook])}<h4>무효화 조건</h4>${claims([s.invalidation])}</section>`).join('')}</div></section>${c.debate?.length?renderCommitteeDebate({status:'OK',evidence:[...r.groups.map(g=>({id:g.id,kind:'MARKET' as const,label:g.name+' · '+g.source+' · 기준 '+(g.snapshotDate??'확인 필요'),detail:'',url:'#'+g.id})),...(r.news??[]).map(n=>({id:n.id,kind:'NEWS' as const,label:n.title,detail:n.publisher,url:n.url}))],debate:c.debate.map(t=>({...t,speaker:t.speaker as import('../analysis/commentary.js').Speaker,replyTo:t.replyTo,claim:{text:marketClaimText(t.claim.text),kind:t.claim.kind,evidenceIds:t.claim.refs}}))}):`<section class="block" id="debate"><h2>이전 형식의 시장 관점</h2><div class="card debate">${c.desks.map(d=>`<div class="db-turn db-mid" data-speaker="${esc(d.name)}"><div class="db-who"><b>${esc(d.name)}</b> · ${esc(d.view)}</div><div class="db-bubble">${claims(d.claims)}</div></div>`).join('')}</div><p class="fine">이 기록은 전문가 토론 형식 도입 전 리포트입니다.</p></section>`}<section class="block grid-eq"><div class="card"><h2>합의된 판단</h2>${claims(c.consensus)}</div><div class="card"><h2>남은 쟁점</h2>${claims(c.disagreements)}</div></section><section class="card block"><h2>다음 관찰 항목</h2>${claims(c.watch)}${c.dataGaps.length?`<details><summary>자료 공백 ${c.dataGaps.length}개</summary><ul>${c.dataGaps.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>`:''}</section>`:`<section class="card block"><p>${r.ai.status==='FAILED'?MARKET_AI_FAILED:'AI 위원회 해설은 아직 만들어지지 않았어요.'}</p></section>`;
  return `<section class="block" id="council">${ai}</section><details class="card block market-evidence"><summary>판단 근거 · 코스피·코스닥·코인·ETF 데이터</summary>${groupHtml}</details>`;
 
 }

@@ -1,5 +1,5 @@
 {
- "at": "2026-10-21T11:28:07.937Z",
+ "at": "2026-10-21T18:54:43.153Z",
  "selected": null,
  "universe": [
   {
@@ -25,7 +25,8 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 297
+   "count": 285,
+   "error": "13 failed KRW-SPK:The operation was aborted due to timeout KRW-SOPH:The operation was aborted due to timeout KRW-SPX:The operation was aborted due to timeout"
   },
   {
    "source": "naver:global",
@@ -35,7 +36,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 44
+   "count": 38
   },
   {
    "source": "google:topic-business-ko",
@@ -55,7 +56,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 53
+   "count": 54
   },
   {
    "source": "naver:world:day:all",
@@ -330,10 +331,5 @@
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-10-20",
-  "status": "FAILED",
-  "error": "형식 검사 실패: debate 개수 부족(필요 12)"
- }
+ "failed": []
 }

@@ -1000,3 +1000,8 @@
 {"symbol":"KRW-SOL","date":"2026-10-20","open":141200,"high":144400,"low":138700,"close":141100,"volume":118829.55519205,"source":"upbit:candles:days","retrievedAt":"2026-10-21T11:20:14.008Z"}
 {"symbol":"KRW-SOL","date":"2026-10-20","open":141200,"high":144400,"low":138700,"close":141500,"volume":134927.03927151,"source":"upbit:candles:days","retrievedAt":"2026-10-21T11:28:07.937Z"}
 {"symbol":"KRW-SOL","date":"2026-10-21","open":141500,"high":142700,"low":140600,"close":142300,"volume":54950.83200746,"source":"upbit:candles:days","retrievedAt":"2026-10-21T11:28:07.937Z"}
+{"symbol":"KRW-SOL","date":"2026-10-21","open":141500,"high":142700,"low":140600,"close":142600,"volume":57807.70802938,"source":"upbit:candles:days","retrievedAt":"2026-10-21T12:08:28.280Z"}
+{"symbol":"KRW-SOL","date":"2026-10-21","open":141500,"high":142700,"low":140600,"close":142400,"volume":61504.80789607,"source":"upbit:candles:days","retrievedAt":"2026-10-21T12:51:04.654Z"}
+{"symbol":"KRW-SOL","date":"2026-10-21","open":141500,"high":143300,"low":140600,"close":143000,"volume":93339.94335459,"source":"upbit:candles:days","retrievedAt":"2026-10-21T14:35:52.645Z"}
+{"symbol":"KRW-SOL","date":"2026-10-21","open":141500,"high":144900,"low":140600,"close":143800,"volume":143282.64228643,"source":"upbit:candles:days","retrievedAt":"2026-10-21T17:07:11.260Z"}
+{"symbol":"KRW-SOL","date":"2026-10-21","open":141500,"high":144900,"low":140600,"close":143500,"volume":149961.84349461,"source":"upbit:candles:days","retrievedAt":"2026-10-21T18:54:43.153Z"}
