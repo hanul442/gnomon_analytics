@@ -973,6 +973,15 @@ route('POST', '/screens', async ({ req, env, now }) => {
 
 route('POST', '/screens/(\\d+)', async ({ req, env, now, params }) => {
   const u = await authed(req, env, now), b = await body(req), id = Number(params[0]);
+  // G-279: overwrite a saved screen's conditions (and name) from the condition sheet; alerts restart from today's matches.
+  if (b.screen !== undefined) {
+    if (!allows(u.plan, 'screenSave')) fail(403, 'PLAN_REQUIRED', `조건 저장은 ${needText('screenSave')} 쓸 수 있어요.`);
+    const screen = cleanScreen(b.screen), name = str(b.name, 40);
+    if (!screen || !screen.rules.length || !name) fail(400, 'BAD_SCREEN', '조건과 이름을 확인해 주세요.');
+    const r = await env.DB.prepare('UPDATE screens SET name = ?, screen = ?, last_symbols = NULL WHERE id = ? AND user_id = ?').bind(name, JSON.stringify(screen), id, u.id).run();
+    if ((r.meta?.changes ?? 0) !== 1) fail(404, 'NO_SCREEN', '없는 조건이에요.');
+    return { ok: true };
+  }
   if (b.alert === true) {
     const on = await env.DB.prepare('SELECT COUNT(*) AS n FROM screens WHERE user_id = ? AND alert = 1 AND id != ?').bind(u.id, id).first<{ n: number }>();
     const limit = notifyLimit(u.plan).screenAlerts;

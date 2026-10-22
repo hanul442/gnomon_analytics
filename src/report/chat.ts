@@ -42,13 +42,30 @@ export const CHAT_CSS = `
 @media (max-width:820px){.chat-fab{bottom:78px;right:14px;padding:12px}.chat-fab span{display:none}.chat{right:0;left:0;top:auto;bottom:0;width:100vw;height:78dvh;border-radius:20px 20px 0 0;border:0;box-shadow:0 -12px 40px rgba(15,27,45,.3)}.chat.kb{border-radius:0}.chat-scrim{position:fixed;inset:0;z-index:74;background:rgba(10,20,35,.45)}.chat-in textarea{font-size:16px}.chat-head{padding:10px 12px}
 .chat.kb .chat-note,.chat.kb .chat-sugg{display:none}.chat.kb .tiers button{flex-direction:row;gap:4px;justify-content:center;padding:5px 4px}.chat.kb .tiers button small{display:none}.chat.kb .chat-foot{padding:8px 10px;gap:6px}}
 html.chat-open,html.chat-open body{overflow:hidden}
+/* G-277 (한서님 10/21 'AI 답변도 현재 ui랑 방향이 맞게'): light glass tone — no dark top bar, neutral bubbles, a segmented
+   빠른·표준·깊은 switch, outline thumbs. */
+html body .chat-head{background:var(--surface-solid);color:var(--fg);border-bottom:1px solid var(--line)}html body .chat-head .chat-x{color:var(--fg)!important}
+html body .chat-head .bal{background:var(--soft);color:var(--fg2);font-weight:600}
+html body .chat-log{background:var(--page)}
+html body .msg.me{background:var(--fg);color:var(--page);border-radius:18px 18px 6px 18px}
+html body .msg.ai{background:var(--surface-solid);border:0;border-radius:18px 18px 18px 6px;box-shadow:0 6px 18px -12px rgba(10,22,38,.35)}
+html body .msg-meta{border-top:1px solid var(--line)}
+html body .msg-meta .rate button{display:inline-grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--muted)}html body .msg-meta .rate svg{width:17px;height:17px}
+html body .msg-meta .rate button[aria-pressed=true]{background:var(--soft);color:var(--fg)}
+html body .tiers{gap:2px;padding:3px;border-radius:14px;background:var(--soft)}
+html body .tiers button{border:0;background:transparent;border-radius:11px;padding:6px 4px;color:var(--fg2)}
+html body .tiers button[aria-pressed=true]{background:var(--surface-solid);color:var(--fg);box-shadow:0 3px 10px -5px rgba(10,22,38,.4)}html body .tiers button[aria-pressed=true] small{color:var(--muted)}
+html body .chat-in textarea{border-radius:22px;background:var(--soft);border-color:transparent}
+html body .chat-send{border-radius:50%;background:var(--fg);color:var(--page)}
+html body .chat-foot{background:var(--surface-solid)}
+html body .msg.sys{background:var(--surface-solid);border:1px solid var(--line);color:var(--fg);border-radius:18px}html body .need .plans a{background:var(--soft);border-color:transparent;border-radius:14px}
 @media print{.chat-fab,.chat{display:none!important}}
 `;
 
 export const CHAT_HTML = `<button type="button" class="chat-fab" data-open-chat aria-haspopup="dialog" aria-controls="chat" aria-label="AI에게 질문하기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8 9.5h8M8 12.5h5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><span>AI 질문</span></button>
 <section class="chat" id="chat" role="dialog" aria-label="AI 질문" hidden><div class="chat-head"><b>AI 질문</b><span class="ctx" id="chat-ctx"></span><span class="bal"><span data-credits>0</span> 크레딧</span><button type="button" class="chat-x" aria-label="닫기">×</button></div>
 <div class="chat-log" id="chat-log" aria-live="polite"></div>
-<form class="chat-foot" id="chat-form"><div class="tiers" role="group" aria-label="모델">${TIERS.map((t, i) => `<button type="button" data-tier="${t.key}" aria-pressed="${i === 0}"><b>${t.label}</b><small>${MODEL_NAME[t.model]} · ${t.cost}크레딧</small></button>`).join('')}</div>
+<form class="chat-foot" id="chat-form"><div class="tiers" role="group" aria-label="모델">${TIERS.map((t, i) => `<button type="button" data-tier="${t.key}" aria-pressed="${i === 0}" title="${MODEL_NAME[t.model]}"><b>${t.label}</b><small>${t.cost}크레딧</small></button>`).join('')}</div>
 <div class="chat-in"><textarea id="chat-q" rows="1" maxlength="1000" placeholder="궁금한 것을 물어보세요" aria-label="질문"></textarea><button type="submit" class="chat-send" id="chat-send" aria-label="질문 전송" title="전송">➤</button></div>
 <div class="chat-note">근거를 설명할 뿐 투자 권유가 아니에요 · 답이 틀릴 수 있어요</div></form></section>`;
 
@@ -86,8 +103,10 @@ export const CHAT_SCRIPT = `<script>
   var label = function () { send.textContent = '➤';send.title='전송 · '+cost()+'크레딧';send.setAttribute('aria-label','질문 전송 · '+cost()+'크레딧'); };
   var add = function (cls, html) { var d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; };
   var meta = function (m) {
-    return '<div class="msg-meta"><span>' + esc(MODEL[m.model] || m.model) + '</span><span>' + m.credits + '크레딧 사용</span>' + (m.balance !== undefined ? '<span>남은 ' + m.balance + '</span>' : '') +
-      (m.id ? '<span class="rate"><button type="button" data-rate="1" aria-label="도움이 됐어요" aria-pressed="false">👍</button><button type="button" data-rate="-1" aria-label="아쉬워요" aria-pressed="false">👎</button></span>' : '') + '</div>';
+    // G-277: the answer says which kind it was (빠른 답 · 4크레딧), not the raw model id; the model name stays in the title.
+    var tk = TIERS.filter(function (t) { return t.model === m.model; })[0];
+    return '<div class="msg-meta"><span title="' + esc(MODEL[m.model] || m.model || '') + '">' + esc(tk ? tk.label + ' 답' : 'AI 답') + '</span><span>' + m.credits + '크레딧 사용</span>' + (m.balance !== undefined ? '<span>남은 ' + m.balance + '</span>' : '') +
+      (m.id ? '<span class="rate"><button type="button" data-rate="1" aria-label="도움이 됐어요" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v10H4V10zM7 10l4-7a2 2 0 0 1 3 2l-1 4h5.5a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17 20H7"/></svg></button><button type="button" data-rate="-1" aria-label="아쉬워요" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="transform:scaleY(-1)"><path d="M7 10v10H4V10zM7 10l4-7a2 2 0 0 1 3 2l-1 4h5.5a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17 20H7"/></svg></button></span>' : '') + '</div>';
   };
   var render = function () {
     log.innerHTML = '';

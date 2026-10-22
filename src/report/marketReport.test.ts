@@ -22,7 +22,7 @@ test('market report labels failures and partial week, and never prints the AI er
  const html=renderMarketReport(r);assert.ok(html.includes('주중 누적 집계'));assert.ok(html.includes('AI 요약을 만들지 못했어요'));assert.ok(!html.includes('bad'));
 });
 test('market committee preserves actual experts, reply targets, stances and references',async()=>{
- const {ANALYSTS}=await import('../analysis/analysts.js');const {validCouncil,renderMarketDeep}=await import('./marketReport.js');
+ const {CORE_ANALYSTS:ANALYSTS}=await import('../analysis/analysts.js');const {validCouncil,renderMarketDeep}=await import('./marketReport.js');
  const speakers=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'];const claim={text:'전문가 검증 발언',kind:'FACT' as const,refs:['M1']};
  const council=parseMarketCouncil(JSON.stringify({summary:claim,desks:['코스피','코스닥','코인','ETF'].map(name=>({name,view:'중립',claims:[claim]})),consensus:[],disagreements:[],scenarios:['강세','기본','약세'].map(name=>({name,trigger:claim,outlook:claim,invalidation:claim})),redTeam:[],watch:[],dataGaps:[],experts:speakers.map(speaker=>({speaker,stance:'NEUTRAL',claim})),debate:[...speakers,'RED_TEAM'].map((speaker,i)=>({speaker,stance:'NEUTRAL',replyTo:i===0||i===11?-1:i-1,claim}))}));
  const groups=[{id:'M1',name:'코스피',source:'검증 데이터',universe:2,assets:[],snapshotDate:'2026-10-07',breadth:{up:1,down:1,flat:0}}];
@@ -54,7 +54,7 @@ test('market points read the published numbers: breadth, the index move and the 
 });
 
 test('a debate with a repeated, missing or off-stance turn is tidied instead of failing the whole committee (G-278)',async()=>{
- const {ANALYSTS}=await import('../analysis/analysts.js');const {validCouncil,MarketCouncilGenerationSchema}=await import('./marketReport.js');
+ const {CORE_ANALYSTS:ANALYSTS}=await import('../analysis/analysts.js');const {validCouncil,MarketCouncilGenerationSchema}=await import('./marketReport.js');
  const speakers=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'];const claim={text:'발언',kind:'FACT' as const,refs:['M1']};
  const base={summary:claim,desks:['코스피','코스닥','코인','ETF'].map(name=>({name,view:'중립',claims:[claim]})),consensus:[],disagreements:[],scenarios:['강세','기본','약세'].map(name=>({name,trigger:claim,outlook:claim,invalidation:claim})),redTeam:[],watch:[],dataGaps:[]};
  // EVENT never speaks, MARKET speaks twice, FLOW speaks off its stance, and a reply points at the dropped repeat.

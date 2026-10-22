@@ -77,6 +77,27 @@ html[data-theme=dark]{--glass-bg:linear-gradient(180deg,rgba(40,48,60,.82),rgba(
 body:has(.bottom-nav[data-dock=find]) .find-head{display:none}
 /* G-263: 위원회 switches its pages from the bar, so the row of text tabs at the top goes on phones. */
 body:has(.bottom-nav[data-dock=committee]) .mode-tabs{display:none}
+/* G-277: a stock switches 위원회 · 차트 · 소식 from the bar, so its tab row at the top goes on phones. */
+body:has(.bottom-nav[data-dock=ask]) .topbar>.chips:not(.analysis-tabs){display:none}
+body:has(.bottom-nav[data-dock=parts]) .mode-tabs{display:none}
+body:has(.bottom-nav:is([data-dock=find],[data-dock=me])) .mode-tabs{display:none}
+.bottom-nav .nav-kind{flex:none;flex-direction:row;height:50px;display:flex;align-items:center;gap:2px;padding:0 8px 0 13px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--fg);font-size:13.5px;cursor:pointer}
+.nav-kind b{white-space:nowrap}.nav-kind svg{width:16px!important;height:16px!important;transition:transform .2s}.nav-kind[aria-expanded=true] svg{transform:rotate(180deg)}
+.nav-menu{position:absolute;right:8px;bottom:72px;z-index:3;display:grid;min-width:168px;padding:6px;border:1px solid var(--glass-edge);border-radius:22px;background:var(--surface-solid);box-shadow:0 22px 44px -18px rgba(10,22,38,.5);animation:nav-up .22s var(--ease-out)}
+.nav-menu[hidden]{display:none}
+.bottom-nav .nav-menu a{display:flex;justify-content:flex-start;align-items:center;width:auto;height:auto;min-height:44px;padding:0 14px;border-radius:16px;color:var(--fg);font-size:15px;font-weight:600;text-decoration:none}
+.nav-menu a[aria-current=page]{background:var(--soft)}
+.nav-menu a:active{transform:scale(.97)}
+.nav-parts button{position:relative;flex:1;min-width:0;height:50px;display:grid;place-items:center;padding:0;border:0;border-radius:25px;color:var(--muted);background:none;cursor:pointer;transition:color .2s,transform .2s}
+.nav-parts button svg{position:relative;z-index:1}
+.nav-parts button[aria-selected=true]{color:var(--fg)}
+.nav-parts button[aria-selected=true]::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:46px;margin:-23px 0 0 -24px;border-radius:23px;background:var(--glass-pill);box-shadow:0 6px 16px -8px rgba(10,22,38,.45),inset 0 -1px 0 rgba(0,0,0,.06);animation:nav-pill .38s cubic-bezier(.34,1.4,.64,1)}
+.nav-parts button span{position:absolute;z-index:2;bottom:47px;left:50%;transform:translateX(-50%);display:none;padding:3px 8px;border-radius:9px;font-size:11.5px;font-weight:700;line-height:1.3;white-space:nowrap;color:#fff;background:rgba(10,22,38,.84);pointer-events:none}
+.nav-parts button[aria-selected=true] span{display:block;animation:nav-tip .32s var(--ease-out)}
+.bottom-nav.mini .nav-parts button span{display:none}
+.nav-parts button:active{transform:scale(.9);transition-duration:.08s}
+.nav-parts a[aria-current=page]::before{width:52px;margin-left:-26px}
+.bottom-nav .nav-ask-r{color:var(--page);background:var(--fg);border:0;box-shadow:0 8px 18px -8px rgba(10,22,38,.55)}
 body.dock-searching .find-head{display:block!important;position:fixed;z-index:45;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));margin:0;animation:nav-up .3s var(--ease-out)}
 body.dock-searching .find-head .search-results{max-height:calc(100dvh - 180px);overflow:auto}
 body.dock-searching .find-head .search-box,body.dock-searching .find-head .search-results{background:var(--surface-solid,#fff)}
@@ -134,6 +155,17 @@ export const COMMAND_BAR_JS = `
     q.addEventListener('blur', function () { setTimeout(function () { if (!q.value && document.activeElement !== q) document.body.classList.remove('dock-searching'); }, 200); });
     q.addEventListener('keydown', function (e) { if (e.key === 'Escape') { q.value = ''; q.dispatchEvent(new Event('input', { bubbles: true })); q.blur(); document.body.classList.remove('dock-searching'); } });
     if (location.hash === '#search') setTimeout(search, 300);
+  }
+  // G-277: 찾기's kind menu in the bar. On screener.html the four markets switch in place through the (hidden) row.
+  var kind = nav.querySelector('[data-dock-kind]'), menu = nav.querySelector('.nav-menu');
+  if (kind && menu) {
+    var shut = function () { menu.hidden = true; kind.setAttribute('aria-expanded', 'false'); };
+    kind.addEventListener('click', function (e) { e.stopPropagation(); var open = menu.hidden; menu.hidden = !open; kind.setAttribute('aria-expanded', String(open)); });
+    document.addEventListener('click', function (e) { if (!menu.hidden && !menu.contains(e.target)) shut(); });
+    var label = function (k) { var a = menu.querySelector('[data-find-go="' + k + '"]'); if (!a) return; kind.querySelector('b').textContent = a.textContent; menu.querySelectorAll('a').forEach(function (x) { if (x === a) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current'); }); };
+    menu.querySelectorAll('[data-find-go]').forEach(function (a) { a.addEventListener('click', function (e) { var k = a.getAttribute('data-find-go'), t = document.querySelector('.mode-tabs [data-find="' + k + '"]'); if (!t) return; e.preventDefault(); t.click(); label(k); shut(); window.scrollTo({ top: 0, behavior: 'smooth' }); }); });
+    var on = document.querySelector('.mode-tabs [data-find][aria-selected=true]'); if (on) label(on.getAttribute('data-find'));
+    if (window.MutationObserver) document.querySelectorAll('.mode-tabs [data-find]').forEach(function (t) { new MutationObserver(function () { if (t.getAttribute('aria-selected') === 'true') label(t.getAttribute('data-find')); }).observe(t, { attributes: true, attributeFilter: ['aria-selected'] }); });
   }
   var flt = nav.querySelector('[data-dock-filter]'), open = document.getElementById('sc-filter-open');
   // G-260: the filter count rides on the bar's filter button.
@@ -219,6 +251,17 @@ export const COMMAND_BAR_JS = `
  * phone's bottom bar, and the white pill slides from tab to tab on a spring instead of jumping.
  */
 export const REPORT_TABS_CSS = `
+/* G-277 (한서님 10/21 '종목 탭도 와...진짜 너무 길더라'): the shorter 위원회 part. */
+.kp-line{margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.5}.kp-line b{color:var(--fg2);font-weight:700}
+.vf .card{padding:18px 18px 6px}.vf-h{margin:0;font-size:16px}.vf-bar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:12px 0 6px}.vf-bar i{background:var(--line-strong)}.vf-bar i.up{background:var(--up)}.vf-bar i.down{background:var(--down)}
+.vf-l{display:flex;justify-content:space-between;font-size:13px;font-weight:700}.vf-l .up{color:var(--up)}.vf-l .down{color:var(--down)}
+.ai-fold,.cal-fold{margin-top:10px;border-top:1px solid var(--line)}.ai-fold>summary,.cal-fold>summary{display:flex;align-items:center;justify-content:space-between;min-height:52px;font-size:15px;font-weight:600;cursor:pointer;list-style:none}
+.ai-fold>summary::-webkit-details-marker,.cal-fold>summary::-webkit-details-marker{display:none}.ai-fold>summary::after,.cal-fold>summary::after{content:"⌄";color:var(--muted);transition:transform .2s}.ai-fold[open]>summary::after,.cal-fold[open]>summary::after{transform:rotate(180deg)}
+.ai-fold[open]>summary{border-bottom:1px solid var(--line);margin-bottom:8px}.ai-in{margin:0 -4px}
+.cal-fold{margin:16px 0;padding:0 18px;border:0;border-radius:24px;background:var(--surface)}
+#tab-ai .ai-nav{position:static!important}.ai-in #conclusion{display:none}
+.lv-foot{border:0!important;padding:0!important;margin:12px 0!important}.lv-foot>p,.lv-foot>.lv-pick{display:none!important}
+.cfs-foot .cfs-sig{width:auto!important;padding:0 12px!important;font-size:13.5px;font-weight:700;color:var(--fg);text-decoration:none;display:inline-flex;align-items:center}
 .chips [role=tab][hidden]{display:none!important}
 .topbar>.chips:not(.analysis-tabs){position:relative;width:max-content;max-width:calc(100% - 24px);margin:2px auto 10px;padding:5px;gap:2px;
   border:1px solid rgba(255,255,255,.07);border-radius:999px;background:linear-gradient(180deg,rgba(19,34,58,.92),rgba(6,16,28,.92));

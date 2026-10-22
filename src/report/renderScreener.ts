@@ -13,7 +13,7 @@ import { FIELD_INDEX, FIELDS, matches, PRESETS, cleanScreen } from '../analysis/
 import { SEARCH_SCRIPT, shell } from './renderHtml.js';
 
 /** Result orderings (G-119): every one sorts both ways with the direction button or by its column header. */
-const SORTS: readonly [string, string][] = [['score', '기술 신호 점수'], ['chg', '오늘 등락률'], ['r20', '20거래일 등락률'], ['vol1', '거래량 급증'], ['spike10', '최근 10일 거래량 폭발'], ['tv', '거래대금'], ['tvr', '거래대금 급증'], ['ad', '매집 강도(A/D)'], ['gap', '적정가 대비'], ['cap', '시가총액'], ['price', '종가'], ['name', '이름']];
+const SORTS: readonly [string, string][] = [['score', '기술 점수'], ['chg', '오늘 등락률'], ['r20', '20거래일 등락률'], ['vol1', '거래량 급증'], ['spike10', '최근 10일 거래량 폭발'], ['tv', '거래대금'], ['tvr', '거래대금 급증'], ['ad', '매집 강도(A/D)'], ['gap', '적정가 대비'], ['cap', '시가총액'], ['price', '종가'], ['name', '이름']];
 
 /**
  * One row per stock: [code, name, market, cap(억), close, change%, level, score×100, r5, r20, r120, fairGap%, position, covered,
@@ -43,7 +43,7 @@ export function screenerRows(universe: readonly UniverseRow[], calcs: ReadonlyMa
  * the builder and the presets and stay editable there. `kinds` limits one to the markets that have its column.
  */
 const QUICK: readonly { key: string; label: string; rule?: { f: string; op: '>=' | '<=' | '='; v: number | string }; kinds?: string; not?: string }[] = [
-  { key: 'bull', label: '강세 신호', rule: { f: 'level', op: '=', v: 'BULL' } },
+  { key: 'bull', label: '기술 점수 높음', rule: { f: 'level', op: '=', v: 'BULL' } },
   { key: 'up', label: '오늘 오름', rule: { f: 'chg', op: '>=', v: 0.01 }, not: 'down' },
   { key: 'down', label: '오늘 내림', rule: { f: 'chg', op: '<=', v: -0.01 }, not: 'up' },
   { key: 'vol2', label: '거래량 2배↑', rule: { f: 'vol1', op: '>=', v: 2 } },
@@ -59,6 +59,27 @@ const QUICK: readonly { key: string; label: string; rule?: { f: string; op: '>='
   { key: 'watch', label: '☆ 관심 종목만' },
 ];
 
+/**
+ * G-279 (한서 10/21 '조건 수정 편리하게'): the condition sheet. Conditions are added from these groups on the same
+ * sheet, start at a sensible value, and are changed in place with −/＋, the common values below, or by typing.
+ */
+const ADD_GROUPS: readonly [string, readonly string[]][] = [
+  ['자주 쓰는', ['level', 'vol1', 'chg', 'tv', 'cap', 'hi52', 'lo52', 'pos']],
+  ['가격·등락', ['close', 'r5', 'r20', 'r120', 'vwap']],
+  ['거래·수급', ['vol5', 'tvr', 'spike10', 'flow', 'obv', 'ad']],
+  ['가치·신호·위험', ['fairGap', 'score', 'risk']],
+];
+const RULE_DEFAULTS: Record<string, [string, number | string]> = {
+  level: ['=', 'BULL'], pos: ['=', 'B'], flow: ['=', 'A'], market: ['=', 'P'], chg: ['>=', 1], r5: ['>=', 5], r20: ['>=', 10], r120: ['>=', 20], close: ['>=', 5000],
+  hi52: ['>=', -5], lo52: ['<=', 10], vol1: ['>=', 3], vol5: ['>=', 1.5], tv: ['>=', 100], tvr: ['>=', 3], spike10: ['>=', 3], obv: ['>=', 20], ad: ['>=', 20],
+  vwap: ['>=', 0], cap: ['>=', 3000], fairGap: ['<=', -10], score: ['>=', 30], risk: ['<=', 1],
+};
+const QUICK_VALUES: Record<string, number[]> = {
+  cap: [1000, 3000, 10000, 50000], close: [1000, 5000, 10000, 50000], chg: [-3, 0, 1, 3, 5], score: [0, 20, 40, 60], r5: [-10, -5, 5, 10], r20: [-20, -10, 10, 20],
+  r120: [-30, 0, 30, 50], fairGap: [-20, -10, 0, 10, 20], vol1: [1.5, 2, 3, 5, 10], vol5: [1.2, 1.5, 2, 3], tvr: [2, 3, 5, 10], spike10: [2, 3, 5, 10], vwap: [-5, 0, 5],
+  obv: [-20, 0, 20, 40], ad: [-20, 0, 20, 40], tv: [10, 50, 100, 500, 1000], hi52: [-20, -10, -5, -3], lo52: [5, 10, 20, 30], risk: [0, 1, 2],
+};
+
 const FIND_TABS = `<nav class="mode-tabs" role="tablist" aria-label="시장"><button type="button" role="tab" data-find="stock" aria-selected="true">주식<span class="muted sc-count"></span></button><button type="button" role="tab" data-find="us" aria-selected="false">미국 주식<span class="muted sc-count"></span></button><button type="button" role="tab" data-find="etf" aria-selected="false">ETF<span class="muted sc-count"></span></button><button type="button" role="tab" data-find="coin" aria-selected="false">코인<span class="muted sc-count"></span></button><a href="themes.html">테마</a><a href="signals.html">공시</a></nav>`;
 
 export function renderScreener(): string {
@@ -67,21 +88,28 @@ export function renderScreener(): string {
   const body = `<section class="find-head" id="top"><div class="search-block" id="search"><label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="q" type="search" placeholder="종목·ETF·코인 이름이나 코드 (예: 삼성, ㅅㅅㅈㅈ, BTC)" autocomplete="off" aria-label="검색" aria-controls="search-results"></label>
 <div id="search-results" class="card list search-results" role="region" aria-live="polite" hidden></div></div>
 </section>
-<div id="find-stock"><div class="pl-chips sc-mkt" id="sc-mkt" role="group" aria-label="거래소"><button type="button" class="chip-toggle" data-mkt="" aria-pressed="true">전체</button><button type="button" class="chip-toggle" data-mkt="P" aria-pressed="false">코스피</button><button type="button" class="chip-toggle" data-mkt="Q" aria-pressed="false">코스닥</button></div>
+<div id="find-stock">
 <section class="block sc-bar"><div class="sc-line" role="group" aria-label="조건 만들기와 내 조건"><button type="button" class="chip-toggle sc-filter-btn" id="sc-filter-open" aria-haspopup="dialog" aria-controls="sc-sheet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>필터<b id="sc-filter-n"></b></button><button type="button" class="chip-toggle sc-mk" id="sc-make-rule" title="지표·수급·재무를 골라 조합해요">＋ 조건 만들기</button><button type="button" class="chip-toggle sc-mk sc-mk-ai" id="sc-make-ai" title="원하는 종목을 문장으로 적어요">✦ AI로 만들기</button><span class="sc-mine" id="sc-mine" hidden></span></div>
 <div class="sc-line sc-quick" id="sc-quick" role="group" aria-label="빠른 조건"><span class="sc-presets">${PRESETS.map((p, i) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${i === 0}" title="${p.hint}">${p.label}${i ? ' <span class="lockmark">플러스</span>' : ''}</button>`).join('')}</span><i class="sc-sep" aria-hidden="true"></i>${QUICK.map((q) => `<button type="button" class="sc-q" data-q="${q.key}"${q.kinds ? ` data-kinds="${q.kinds}"` : ''} aria-pressed="false">${q.label}</button>`).join('')}</div></section>
-<div class="sc-sheet" id="sc-sheet" role="dialog" aria-label="필터"><div class="sc-sheet-head"><button type="button" class="sc-sheet-x" aria-label="필터 닫기">‹</button><b>필터</b></div>
-<section class="block" id="ai-build"><div class="card"><div class="compact-heading"><b>AI 조건</b><small class="muted">제안 확인 후 적용</small></div><textarea id="ai-screen-q" class="ai-q" maxlength="600" rows="2" aria-label="원하는 종목 조건" placeholder="예: 거래량이 터졌는데 아직 많이 안 오른 코스닥 종목"></textarea><div class="ai-go">${genButton('조건 만들기', 'id="ai-screen-send"', `${CREDIT_COST.question}크레딧`)}</div><div id="ai-screen-out" aria-live="polite"></div></div></section>
+<div class="sc-sheet" id="sc-sheet" role="dialog" aria-label="조건"><div class="sc-sheet-head"><button type="button" class="sc-sheet-x" aria-label="조건 닫기">‹</button><b>조건</b><span class="sc-sheet-n" id="sc-sheet-n"></span></div>
 <section class="block" id="build"><div class="card sc-form" id="sc-form">
-<div class="sc-top"><b>조건</b><label class="sc-inline">조건을<select name="match"><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></label>
-<label class="sc-inline"><input type="checkbox" name="norisk" checked> 공시 위험 2단계 이상 빼기</label>
-</div>
-<div class="rules" id="rules"></div>
-<div class="sc-actions"><button type="button" class="chip-toggle" id="add-rule">+ 조건</button><button type="button" class="chip-toggle" id="save-screen">저장</button><span class="muted small" id="sc-desc"></span></div><p class="muted small" id="sc-kind-note" hidden style="margin:8px 0 0">이 시장엔 시가총액·외국인 수급·공시 정보가 없어서 그 조건은 빼고 걸러요. 코인의 '유의 종목'은 공시 위험 2단계로 쳐요.</p>
+<div class="pl-chips sc-mkt" id="sc-mkt" role="group" aria-label="거래소"><span class="sc-sec-k">시장</span><button type="button" class="chip-toggle" data-mkt="" aria-pressed="true">전체</button><button type="button" class="chip-toggle" data-mkt="P" aria-pressed="false">코스피</button><button type="button" class="chip-toggle" data-mkt="Q" aria-pressed="false">코스닥</button></div>
+<div class="sc-mine2" id="sc-mine2" role="group" aria-label="내 조건" hidden></div>
+<div class="sc-presets2" role="group" aria-label="추천 조건"><span class="sc-sec-k">추천 조건</span>${PRESETS.map((p) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${p.key === 'top'}" title="${p.hint}">${p.label}</button>`).join('')}</div>
+<div class="sc-top"><b>걸린 조건</b><span class="sc-seg" role="group" aria-label="조건 묶기"><button type="button" data-match="all" aria-pressed="true">모두 맞으면</button><button type="button" data-match="any" aria-pressed="false">하나라도</button></span><select name="match" hidden><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></div>
+<div class="rules" id="rules"></div><p class="muted small sc-none" id="sc-none">아래에서 조건을 골라 더해 보세요.</p>
+<div class="sc-funnel" id="sc-funnel" hidden></div>
+<label class="sc-risk"><span><b>공시 위험 종목 빼기</b><small>2단계 이상 (전환사채·유상증자·관리종목 같은 공시)</small></span><input type="checkbox" name="norisk" class="sc-switch" checked></label>
+<div class="sc-sortsheet"><div class="sc-top"><b>정렬</b><span class="sc-seg" role="group" aria-label="정렬 방향"><button type="button" data-dir2="desc" aria-pressed="true">높은 순</button><button type="button" data-dir2="asc" aria-pressed="false">낮은 순</button></span></div><select id="sc-sort2" aria-label="정렬 기준">${SORTS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>
+<div class="sc-add" id="build-add"><div class="sc-top"><b>조건 더하기</b></div><input type="search" id="sc-add-q" class="sc-add-q" placeholder="조건 이름으로 찾기 (예: 시가총액)" aria-label="조건 찾기" autocomplete="off">${ADD_GROUPS.map(([g, keys]) => `<div class="sc-add-g"><small>${g}</small><div class="sc-add-l">${keys.map((k) => `<button type="button" data-add="${k}" aria-pressed="false">${FIELDS.find((f) => f.key === k)!.label}</button>`).join('')}</div></div>`).join('')}<p class="muted small" id="sc-add-none" hidden>그 이름의 조건이 없어요. 아래 '문장으로 만들기'에 적어 보세요.</p></div>
+<p class="muted small" id="sc-kind-note" hidden style="margin:8px 0 0">이 시장엔 시가총액·외국인 수급·공시 정보가 없어서 그 조건은 빼고 걸러요. 코인의 '유의 종목'은 공시 위험 2단계로 쳐요.</p>
+<div class="sc-share2"><button type="button" data-tool="sc-share">조건 링크 복사</button><button type="button" data-tool="sc-csv">결과 CSV 받기</button></div>
+<div class="sc-savebox" id="sc-savebox" hidden><label for="sc-save-name">이름</label><input id="sc-save-name" maxlength="40" autocomplete="off"><div class="sc-savebox-b"><button type="button" class="sc-btn2" id="sc-save-cancel">취소</button><button type="button" class="sc-btn2" id="sc-save-over" hidden></button><button type="button" class="sc-btn1" id="sc-save-new">새로 저장</button></div><small class="muted">저장한 조건은 찾기 맨 위 '내 조건'에 생겨요.</small></div>
 <div class="saved" id="saved" hidden><div class="pl-k">저장한 조건</div><div id="saved-list" class="saved-list"></div><p class="muted small" id="alert-note" hidden>🔔를 켜면 매일 장 마감 뒤 새로 걸린 종목을 알림으로 보내 드려요. 플러스는 3개, 프로·알파는 20개까지예요.</p></div>
 <p class="muted small only-free" style="margin:8px 0 0">무료는 '기술 점수 상위'와 결과 5개까지예요. 조건 빌더, 저장, 알림, 전체 결과는 ${needText('screenTools')}예요.</p></div></section>
-<div class="sc-sheet-foot"><button type="button" class="sc-sheet-go" id="sc-sheet-go">결과 보기</button></div></div>
-<section class="block sc-results"><div class="card list"><div class="sc-active" id="sc-active" hidden></div><div class="sc-stats" id="sc-stats" hidden></div><div class="sc-funnel" id="sc-funnel" hidden></div><div class="sc-sortbar"><span class="muted small" id="sc-n"></span><label class="sc-inline"><span class="sc-sort-k">정렬</span><select id="sc-sort" aria-label="정렬 기준">${SORTS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label><button type="button" class="chip-toggle" id="sc-dir" title="정렬 방향 바꾸기">높은 순 ↓</button><details class="sc-tools"><summary class="chip-toggle" aria-label="더보기: 링크 복사·CSV" title="링크 복사·CSV">⋯</summary><div class="sc-tools-pop"><button type="button" id="sc-share">조건 링크 복사</button><button type="button" id="sc-csv">결과 CSV 받기</button></div></details></div><div class="table-wrap"><table class="compact sc-table"><thead><tr><th data-sk="name" aria-sort="none"><button type="button" class="th-sort">종목<i aria-hidden="true"></i></button></th><th class="num" data-sk="price" aria-sort="none"><button type="button" class="th-sort">종가<i aria-hidden="true"></i></button></th><th class="num" data-sk="chg" aria-sort="none"><button type="button" class="th-sort">오늘<i aria-hidden="true"></i></button></th><th class="num" data-sk="vol1" aria-sort="none"><button type="button" class="th-sort">거래량·거래대금<i aria-hidden="true"></i></button></th><th class="num" data-sk="r20" aria-sort="none"><button type="button" class="th-sort">20거래일<i aria-hidden="true"></i></button></th><th class="num" data-sk="gap" aria-sort="none"><button type="button" class="th-sort">적정가 대비<i aria-hidden="true"></i></button></th><th class="num" data-sk="cap" aria-sort="none"><button type="button" class="th-sort">시가총액<i aria-hidden="true"></i></button></th></tr></thead><tbody id="sc-body"><tr><td colspan="7"><div class="orbs-load">${ORBS}<span>종목 조회 중</span></div></td></tr></tbody></table></div>
+<section class="block" id="ai-build"><div class="card"><div class="compact-heading"><b>문장으로 만들기</b><small class="muted">AI가 조건으로 바꿔 위에 넣어요</small></div><textarea id="ai-screen-q" class="ai-q" maxlength="600" rows="2" aria-label="원하는 종목 조건" placeholder="예: 거래량이 터졌는데 아직 많이 안 오른 코스닥 종목"></textarea><div class="ai-go">${genButton('조건 만들기', 'id="ai-screen-send"', `${CREDIT_COST.question}크레딧`)}</div><div id="ai-screen-out" aria-live="polite"></div></div></section>
+<div class="sc-sheet-foot"><button type="button" class="sc-sheet-save" id="save-screen">☆ 저장</button><button type="button" class="sc-sheet-go" id="sc-sheet-go">결과 보기</button></div></div>
+<section class="block sc-results"><button type="button" class="sc-sum" id="sc-sum" aria-haspopup="dialog" aria-controls="sc-sheet"><span id="sc-sum-t">주식</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="10" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><div class="card list"><div class="sc-active" id="sc-active" hidden></div><div class="sc-stats" id="sc-stats" hidden></div><div class="sc-sortbar"><span class="muted small" id="sc-n"></span><label class="sc-inline"><span class="sc-sort-k">정렬</span><select id="sc-sort" aria-label="정렬 기준">${SORTS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label><button type="button" class="chip-toggle" id="sc-dir" title="정렬 방향 바꾸기">높은 순 ↓</button><details class="sc-tools"><summary class="chip-toggle" aria-label="더보기: 링크 복사·CSV" title="링크 복사·CSV">⋯</summary><div class="sc-tools-pop"><button type="button" id="sc-share">조건 링크 복사</button><button type="button" id="sc-csv">결과 CSV 받기</button></div></details></div><div class="table-wrap"><table class="compact sc-table"><thead><tr><th data-sk="name" aria-sort="none"><button type="button" class="th-sort">종목<i aria-hidden="true"></i></button></th><th class="num" data-sk="price" aria-sort="none"><button type="button" class="th-sort">종가<i aria-hidden="true"></i></button></th><th class="num" data-sk="chg" aria-sort="none"><button type="button" class="th-sort">오늘<i aria-hidden="true"></i></button></th><th class="num" data-sk="vol1" aria-sort="none"><button type="button" class="th-sort">거래량·거래대금<i aria-hidden="true"></i></button></th><th class="num" data-sk="r20" aria-sort="none"><button type="button" class="th-sort">20거래일<i aria-hidden="true"></i></button></th><th class="num" data-sk="gap" aria-sort="none"><button type="button" class="th-sort">적정가 대비<i aria-hidden="true"></i></button></th><th class="num" data-sk="cap" aria-sort="none"><button type="button" class="th-sort">시가총액<i aria-hidden="true"></i></button></th></tr></thead><tbody id="sc-body"><tr><td colspan="7"><div class="orbs-load">${ORBS}<span>종목 조회 중</span></div></td></tr></tbody></table></div>
 <div class="sc-more only-free" id="sc-more" hidden><p>결과가 <b id="sc-total"></b>개 더 있어요. 전체 결과와 직접 조건은 ${needText('screenTools')} 볼 수 있어요.</p><a class="btn-primary" href="pricing.html">요금제 보기</a></div></div></section>
 <style>/* G-185: the AI condition box: a full-width question, the same generate button as reports, busy inside the button. */
 .ai-q{display:block;width:100%;font:inherit;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--soft);color:var(--fg);resize:vertical;min-height:56px}.ai-q:focus{outline:none;border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}.ai-go{display:flex;justify-content:flex-end;margin-top:10px}#ai-screen-out:not(:empty){margin-top:16px}#ai-screen-out:not(:empty):not(:has(.ai-res)){padding:12px 14px;border-radius:14px;background:var(--soft);font-size:14px;color:var(--fg2)}.ai-res{border:1px solid var(--line);border-radius:18px;padding:16px 18px;background:var(--soft);animation:mt-open var(--dur-slow) var(--ease-out)}.ai-res-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:12px}.ai-res-head b{font-size:17px;line-height:1.35}.ai-res-n{font-size:12.5px;font-weight:700;color:var(--muted)}.ai-res-rules{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-wrap:wrap;gap:8px}.ai-res-rules li{padding:7px 12px;border-radius:999px;background:var(--surface-solid);border:1px solid var(--line);font-size:13.5px;font-weight:700;line-height:1.3}.ai-res-why{margin:0 0 16px;font-size:14px;line-height:1.7;color:var(--fg2)}.ai-res-go{display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--line)}.ai-res-go .btn-primary{width:100%;min-height:48px;font-size:15px}.ai-res-go small{text-align:center}@media (max-width:560px){.ai-go .gen-wrap,.ai-go .gen-btn{width:100%}}
@@ -104,10 +132,40 @@ export function renderScreener(): string {
 .sc-table td:nth-child(1){grid-area:n}.sc-table td:nth-child(1) b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}.sc-table td:nth-child(2){grid-area:p;font-weight:800;font-size:15px}.sc-table td:nth-child(3){grid-area:c;font-size:13.5px;display:block!important;text-align:right}.sc-table td:nth-child(2){text-align:right}.sc-table td:nth-child(4){grid-area:v;font-size:12.5px;color:var(--fg2)}.sc-table td:nth-child(4) .sub-sh{display:none}.sc-table td:nth-child(n+5){display:none}.sc-table td.empty{grid-column:1/-1}.sc-table tr.sc-more-row{display:block;border:0;padding:4px 0}.sc-table tr.sc-more-row td{display:block!important}}
 .sc-top{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}.sc-top b{font-size:15px}.sc-inline{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--fg2)}
 .sc-form select,.sc-form input:not([type=checkbox]){font:inherit;font-size:14px;color:var(--fg);border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:var(--surface);min-width:0}
-.rules{display:flex;flex-direction:column;gap:8px;margin:12px 0}.rule{display:grid;grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr) 32px;gap:6px;align-items:center}.rule>*{min-width:0}.rule select,.rule input{width:100%;box-sizing:border-box}.rule .x{border:0;background:none;font-size:18px;color:var(--muted);cursor:pointer;min-width:36px;min-height:36px}.rule small{grid-column:1/-1;color:var(--muted);margin-top:-4px}
+/* G-279: the condition sheet. Each rule is one row (name · value in words · ×); tapping it opens −/＋, 이상/이하 and common values in place. */
+.rules{display:flex;flex-direction:column;margin:10px 0 0;border-radius:16px;background:var(--surface-solid);border:1px solid var(--line);overflow:hidden}.rules:empty{display:none}.sc-none{margin:10px 2px 0}
+.rule{border-top:1px solid var(--line)}.rule:first-child{border-top:0}.rule-h{display:flex;align-items:center;gap:10px;min-height:52px;padding:4px 6px 4px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent}.rule-h:focus-visible{outline:2px solid var(--fg);outline-offset:-2px}
+.rule-h b{flex:1;min-width:0;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rule-v{flex:none;font-size:14px;font-weight:700;color:var(--fg2);font-variant-numeric:tabular-nums}.rule.open .rule-v{color:var(--fg)}.rule.empty .rule-v{color:var(--up-strong)}
+.rule .x{flex:none;width:40px;height:40px;border:0;border-radius:50%;background:none;font-size:19px;color:var(--muted);cursor:pointer}.rule .x:hover{color:var(--fg);background:var(--soft)}
+.rule-b{display:none;flex-direction:column;gap:10px;padding:2px 14px 14px}.rule.open .rule-b{display:flex}.rule-b small{color:var(--muted);font-size:12px;line-height:1.5}
+.sc-seg{display:inline-flex;align-self:flex-start;background:var(--soft);border-radius:10px;padding:2px;gap:2px}.sc-seg button{border:0;background:none;color:var(--fg2);font:inherit;font-size:12.5px;font-weight:700;padding:6px 11px;border-radius:8px;cursor:pointer}.sc-seg [aria-pressed=true]{background:var(--surface-solid);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.rule-step{display:flex;align-items:center;gap:8px}.rule-step>button{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line-strong);background:var(--soft);color:var(--fg);font:inherit;font-size:20px;cursor:pointer}.rule-step>button:active{transform:scale(.94)}
+.rule-in{flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:2px}.sc-form .rule-in input{width:100%;min-width:0;max-width:9ch;border:0;background:none;padding:4px 0;text-align:right;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--fg);-moz-appearance:textfield}.rule-in input::-webkit-inner-spin-button,.rule-in input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}.rule-u{font-size:15px;font-weight:700;color:var(--fg2)}
+.rule-q{display:flex;flex-wrap:wrap;gap:6px}.rule-q button{border:1px solid var(--line-strong);background:none;color:var(--fg2);border-radius:999px;padding:6px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums}.rule-q [aria-pressed=true]{background:var(--fg);color:var(--page);border-color:transparent}
+.sc-risk{display:flex;align-items:center;gap:12px;margin:10px 0 0;padding:12px 14px;border-radius:16px;background:var(--surface-solid);border:1px solid var(--line);cursor:pointer}.sc-risk span{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.sc-risk b{font-size:14.5px}.sc-risk small{font-size:12px;color:var(--muted)}
+.sc-switch{appearance:none;-webkit-appearance:none;flex:none;width:46px;height:28px;border-radius:14px;background:var(--line-strong);position:relative;cursor:pointer;transition:background .2s;margin:0}.sc-switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}.sc-switch:checked{background:var(--fg)}.sc-switch:checked::after{transform:translateX(18px);background:var(--page)}
+.sc-add{margin-top:18px}.sc-form .sc-add-q{width:100%;box-sizing:border-box;margin:8px 0 2px;padding:11px 12px;border-radius:12px;font-size:14.5px}.sc-add-g{margin-top:10px}.sc-add-g small{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:0 0 6px 2px}.sc-add-l{display:flex;flex-wrap:wrap;gap:6px}
+.sc-add-l button{border:1px solid var(--line-strong);background:var(--surface-solid);color:var(--fg);border-radius:999px;padding:7px 12px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}.sc-add-l button[aria-pressed=true]{background:var(--soft);color:var(--muted);border-color:transparent}.sc-add-l button[aria-pressed=true]::before{content:"✓ "}
+.sc-mine2{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center;margin:0 -2px 12px;padding:2px}.sc-mine2::-webkit-scrollbar{display:none}.sc-mine2>*{flex:none;white-space:nowrap}.sc-mine2 .sc-mine-k{border-left:0;padding-left:0;margin-left:0}
+.sc-savebox{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:14px;border-radius:16px;background:var(--surface-solid);border:1px solid var(--line-strong)}.sc-savebox label{font-size:12px;font-weight:800;color:var(--muted)}.sc-form .sc-savebox input{font-size:16px;font-weight:700;padding:11px 12px;border-radius:12px}.sc-savebox-b{display:flex;gap:6px;flex-wrap:wrap}.sc-savebox-b button{flex:1 1 auto;min-height:44px;border-radius:12px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;padding:0 12px}
+.sc-savebox[hidden],.sc-mine2[hidden],.sc-add-g[hidden],.sc-add-l button[hidden],.sc-none[hidden]{display:none}
+/* G-283 (한서 10/22 구조 정리): the sheet holds 시장 · 내 조건 · 추천 조건 · 걸린 조건 · 정렬 · 저장. On a phone nothing sits above the results but one summary line. */
+.sc-sec-k{flex:none;font-size:12px;font-weight:800;color:var(--muted);margin-right:2px}.sc-sheet .sc-mkt{display:flex;align-items:center;gap:6px;margin:0 0 12px}.sc-sheet .sc-mkt[hidden]{display:none}
+.sc-presets2{display:none;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center;margin:0 -2px 12px;padding:2px}.sc-presets2::-webkit-scrollbar{display:none}.sc-presets2>*{flex:none;white-space:nowrap}
+.sc-sortsheet{display:none;flex-direction:column;gap:8px;margin-top:18px}.sc-form #sc-sort2{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:12px;font-size:14.5px}.sc-sortsheet .sc-top{justify-content:space-between}
+.sc-share2{display:none;gap:16px;margin-top:16px}.sc-share2 button{border:0;background:none;padding:6px 2px;font:inherit;font-size:13px;font-weight:700;color:var(--fg2);text-decoration:underline;cursor:pointer}
+.sc-sheet .sc-funnel{margin-top:10px}
+.sc-sum{display:none;width:100%;align-items:center;gap:10px;border:0;background:none;padding:2px 4px 12px;font:inherit;font-size:14px;color:var(--fg2);text-align:left;cursor:pointer}.sc-sum span{flex:1;min-width:0;line-height:1.45}.sc-sum b{color:var(--fg)}.sc-sum svg{flex:none;width:20px;height:20px;color:var(--fg)}
+@media (max-width:600px){#find-stock>.sc-bar,#sc-active,#sc-stats,.sc-sortbar{display:none!important}.sc-sum{display:flex}.sc-presets2{display:flex}.sc-sortsheet{display:flex}.sc-share2{display:flex}}
+.sc-btn2{border:1px solid var(--line-strong);background:var(--soft);color:var(--fg)}.sc-btn1{border:0;background:var(--fg);color:var(--page)}
+.sc-sheet-n{margin-left:auto;padding-right:6px;font-size:13.5px;color:var(--fg2);font-variant-numeric:tabular-nums}
+.sc-sheet-foot{gap:8px}.sc-sheet.open .sc-sheet-foot{display:flex}.sc-sheet-save{flex:none;min-height:52px;padding:0 16px;border-radius:14px;border:1px solid var(--line-strong);background:var(--surface-solid);color:var(--fg);font:inherit;font-size:15px;font-weight:800;cursor:pointer}.sc-sheet-foot .sc-sheet-go{flex:1;background:var(--fg);color:var(--page)}
+@media (min-width:601px){.sc-sheet-foot{display:flex;position:static;padding:10px 0 0;background:none;border:0}.sc-sheet-foot .sc-sheet-go{display:none}}
+.sc-chip{padding:0;gap:0;overflow:hidden}.sc-chip button{border:0;background:none;color:inherit;font:inherit;cursor:pointer}.sc-chip-e{display:inline-flex;align-items:center;gap:4px;padding:6px 4px 6px 12px}.sc-chip-e svg{width:13px;height:13px;opacity:.55}.sc-chip-x{padding:6px 10px 6px 6px;font-size:15px!important;line-height:1;color:var(--fg2)!important}.sc-chip-x:hover{color:var(--up-strong)!important}
+.sc-add-chip{border:1px dashed var(--line-strong);background:none;color:var(--fg2);border-radius:999px;padding:6px 11px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
 .sc-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.saved{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}.saved-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .saved-list span{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line-strong);border-radius:999px;padding:2px 4px 2px 10px;background:var(--surface);font-size:13px}.saved-list button{border:0;background:none;cursor:pointer;font:inherit;padding:3px 5px}.saved-list .bell[aria-pressed=true]{color:var(--accent)}.saved-list .bell[aria-pressed=false]{opacity:.45}
-html[data-plan=free] .rules,html[data-plan=free] .sc-actions,html[data-plan=free] .sc-top label{opacity:.5;pointer-events:none}.lockmark{font-size:10px;font-weight:700;background:var(--soft);color:var(--muted);border-radius:999px;padding:0 6px;margin-left:4px}html:not([data-plan=free]) .lockmark{display:none}
+html[data-plan=free] .rules,html[data-plan=free] .sc-add,html[data-plan=free] .sc-risk,html[data-plan=free] .sc-top .sc-seg{opacity:.5;pointer-events:none}.lockmark{font-size:10px;font-weight:700;background:var(--soft);color:var(--muted);border-radius:999px;padding:0 6px;margin-left:4px}html:not([data-plan=free]) .lockmark{display:none}
 html[data-plan=free] .sc-table th:nth-child(6),html[data-plan=free] .sc-table td:nth-child(6){display:none}.sc-table td a{text-decoration:none}.sc-more{text-align:center;padding:14px 0 6px;border-top:1px solid var(--line)}.sc-more .btn-primary{display:inline-flex}
 .sc-sortbar{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;padding:2px 0 10px;border-bottom:1px solid var(--line);margin-bottom:4px}.sc-sortbar #sc-n{margin-right:auto;flex:none;white-space:nowrap}.sc-sortbar label{min-width:0}.sc-sortbar #sc-dir{white-space:nowrap;flex:none}@media (max-width:520px){.sc-sortbar label{flex:1 1 0}.sc-sort-k{display:none}.sc-sortbar label select{flex:1 1 0;min-width:0;width:100%;padding:7px 6px;text-overflow:ellipsis}.sc-sortbar #sc-dir{padding-inline:10px}}.sc-sortbar select{font:inherit;font-size:14px;color:var(--fg);border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:var(--surface)}.th-sort{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:3px;white-space:nowrap}.th-sort:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}.th-sort i{font-style:normal;font-size:10px;color:var(--muted);min-width:8px}th[aria-sort=descending] .th-sort i::after{content:"▼";color:var(--accent-strong)}th[aria-sort=ascending] .th-sort i::after{content:"▲";color:var(--accent-strong)}th[aria-sort=descending] .th-sort,th[aria-sort=ascending] .th-sort{color:var(--fg)}
 .risk{display:inline-block;margin-left:4px;font-size:11px;font-weight:700;border-radius:6px;padding:0 5px;background:var(--warn-soft);color:var(--warn-strong)}.risk.r3{background:var(--up-soft);color:var(--up-strong)}.risk.r1{background:var(--soft);color:var(--fg2)}.fl-a{color:var(--good-strong);font-size:11px;font-weight:700}.fl-d{color:var(--up-strong);font-size:11px;font-weight:700}
@@ -159,29 +217,69 @@ const SCREENER_SCRIPT = `<script>
   try { var ss = JSON.parse(localStorage.getItem('gnm-sc-sort') || 'null'); if (ss && SORT_COL[ss.k] != null) { sortKey = ss.k; sortAsc = !!ss.asc; } } catch (e) {}
   var setSort = function (k, asc) { if (k === 'r20a') { k = 'r20'; asc = true; } if (SORT_COL[k] == null) return; sortKey = k; sortAsc = asc == null ? !!ASC_FIRST[k] : asc; try { localStorage.setItem('gnm-sc-sort', JSON.stringify({ k: sortKey, asc: sortAsc })); } catch (e) {} };
   var paintSort = function () {
-    var sel = $('sc-sort'); if (sel) sel.value = sortKey;
+    var sel = $('sc-sort'); if (sel) sel.value = sortKey; var sel2 = $('sc-sort2'); if (sel2) sel2.value = sortKey;
+    document.querySelectorAll('[data-dir2]').forEach(function (b) { b.setAttribute('aria-pressed', String((b.getAttribute('data-dir2') === 'asc') === sortAsc)); b.textContent = sortKey === 'name' ? (b.getAttribute('data-dir2') === 'asc' ? '가나다 순' : '가나다 역순') : b.getAttribute('data-dir2') === 'asc' ? '낮은 순' : '높은 순'; });
     var dir = $('sc-dir'); if (dir) dir.textContent = sortKey === 'name' ? (sortAsc ? '가나다 ↑' : '가나다 역순 ↓') : sortAsc ? '낮은 순 ↑' : '높은 순 ↓';
     document.querySelectorAll('.sc-table th[data-sk]').forEach(function (th) { th.setAttribute('aria-sort', th.getAttribute('data-sk') === sortKey ? (sortAsc ? 'ascending' : 'descending') : 'none'); });
   };
   var free = function () { return (document.documentElement.getAttribute('data-plan') || 'free') === 'free'; };
   var field = function (k) { return FIELDS.filter(function (f) { return f.key === k; })[0]; };
-  // The builder: one row per rule.
-  var ruleRow = function (r) {
+  // G-279: one row per rule. The row shows the rule in words; tapping it opens −/＋, 이상/이하 and common values right there.
+  // The field is fixed once added (pick another from 조건 더하기); the hidden selects keep current() and the saved format unchanged.
+  var QV = ${JSON.stringify(QUICK_VALUES)}, DEF = ${JSON.stringify(RULE_DEFAULTS)};
+  var unitOf = function (f) { return f.unit && f.unit.charAt(0) !== '(' ? f.unit.replace(' 원', '') : ''; };
+  var numText = function (f, v) { var n = Number(v); return (f.unit === '%' && n > 0 ? '+' : '') + n.toLocaleString('ko-KR') + unitOf(f); };
+  var ruleVal = function (x) { var f = field(x.f); if (!f) return ''; if (x.v === '' || x.v == null) return '값을 넣어 주세요'; if (f.kind === 'cat') { var o = (f.options || []).filter(function (p) { return String(p[0]) === String(x.v); })[0]; return (o ? o[1] : x.v) + (x.op === '!=' ? ' 아님' : ''); } return numText(f, x.v) + ' ' + (x.op === '<=' ? '이하' : '이상'); };
+  var stepOf = function (f, v) { var a = Math.abs(Number(v) || 0); if (f.unit === '배') return a < 2 ? 0.1 : 0.5; if (f.unit === '%') return 1; if (f.unit === '(0~3)') return 1; if (f.unit === '(−100~100)') return 5; if (f.unit === '억 원') return a < 100 ? 10 : a < 1000 ? 100 : a < 10000 ? 500 : 5000; if (f.unit === '원') return a < 1000 ? 50 : a < 10000 ? 500 : a < 100000 ? 5000 : 50000; return 1; };
+  var rowRule = function (d) { var f = d.querySelector('[data-k=f]').value, v = d.querySelector('[data-k=v]').value; return { f: f, op: d.querySelector('[data-k=op]').value, v: field(f).kind === 'num' ? (v === '' ? '' : Number(v)) : v }; };
+  var openRow = function (d, on) { document.querySelectorAll('.rule.open').forEach(function (x) { if (x !== d) { x.classList.remove('open'); x.querySelector('.rule-h').setAttribute('aria-expanded', 'false'); } }); d.classList.toggle('open', on); d.querySelector('.rule-h').setAttribute('aria-expanded', String(on)); };
+  var paintRow = function (d) {
+    var r = rowRule(d), f = field(r.f); d.querySelector('.rule-v').textContent = ruleVal(r); d.classList.toggle('empty', r.v === '');
+    d.querySelectorAll('[data-op]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-op') === r.op)); });
+    d.querySelectorAll('[data-qv]').forEach(function (b) { b.setAttribute('aria-pressed', String(String(r.v) === b.getAttribute('data-qv'))); });
+    var u = d.querySelector('.rule-u'); if (u) u.textContent = unitOf(f);
+  };
+  var paintRules = function () {
+    var list = [].slice.call(document.querySelectorAll('.rule')); list.forEach(paintRow);
+    $('sc-none').hidden = list.length > 0;
+    var m = el('match').value; document.querySelectorAll('[data-match]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-match') === m)); });
+    var have = {}; list.forEach(function (d) { have[d.querySelector('[data-k=f]').value] = 1; });
+    document.querySelectorAll('[data-add]').forEach(function (b) { b.setAttribute('aria-pressed', String(!!have[b.getAttribute('data-add')])); });
+  };
+  var ruleRow = function (r, open) {
+    var f = field(r.f); if (!f) return null;
     var d = document.createElement('div'); d.className = 'rule';
-    d.innerHTML = '<select data-k="f" aria-label="항목">' + FIELDS.map(function (f) { return '<option value="' + f.key + '">' + f.label + '</option>'; }).join('') + '</select><select data-k="op" aria-label="비교"></select><span data-k="vbox"></span><button type="button" class="x" aria-label="조건 빼기">×</button><small></small>';
-    var fs = d.querySelector('[data-k=f]'), ops = d.querySelector('[data-k=op]'), vbox = d.querySelector('[data-k=vbox]');
-    var setField = function (k, op, v) {
-      var f = field(k); fs.value = k;
-      ops.innerHTML = f.kind === 'cat' ? '<option value="=">이면</option><option value="!=">아니면</option>' : '<option value=">=">이상</option><option value="<=">이하</option>';
-      if (op) ops.value = op;
-      vbox.innerHTML = f.kind === 'cat' ? '<select data-k="v" aria-label="값">' + f.options.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('') + '</select>' : '<input data-k="v" type="number" step="any" aria-label="값 (' + (f.unit || '') + ')" placeholder="' + (f.unit || '') + '">';
-      if (v !== undefined) vbox.firstChild.value = v;
-      d.querySelector('small').textContent = f.hint ? f.hint + (f.unit ? ' · 단위 ' + f.unit : '') : f.unit ? '단위 ' + f.unit : '';
-    };
-    setField(r.f, r.op, r.v);
-    fs.addEventListener('change', function () { setField(fs.value); changed(); });
+    var opts = f.kind === 'cat' ? [['=', '맞음'], ['!=', '아님']] : [['>=', '이상'], ['<=', '이하']];
+    var body = f.kind === 'cat'
+      ? '<div class="rule-q">' + f.options.map(function (o) { return '<button type="button" data-qv="' + esc(o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</div><select data-k="v" hidden>' + f.options.map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('') + '</select>'
+      : '<div class="rule-step"><button type="button" data-step="-1" aria-label="' + esc(f.label) + ' 줄이기">−</button><label class="rule-in"><input data-k="v" type="number" step="any" inputmode="decimal" aria-label="' + esc(f.label) + ' 값"><span class="rule-u"></span></label><button type="button" data-step="1" aria-label="' + esc(f.label) + ' 늘리기">＋</button></div>'
+        + (QV[f.key] ? '<div class="rule-q">' + QV[f.key].map(function (v) { return '<button type="button" data-qv="' + v + '">' + numText(f, v) + '</button>'; }).join('') + '</div>' : '');
+    d.innerHTML = '<div class="rule-h" role="button" tabindex="0" aria-expanded="false"><b>' + esc(f.label.replace(/[(].*[)]/, '')) + '</b><span class="rule-v"></span><button type="button" class="x" aria-label="' + esc(f.label) + ' 조건 빼기">×</button></div>'
+      + '<div class="rule-b"><span class="sc-seg" role="group" aria-label="비교">' + opts.map(function (o) { return '<button type="button" data-op="' + o[0] + '">' + o[1] + '</button>'; }).join('') + '</span>' + body
+      + (f.hint ? '<small>' + esc(f.hint) + '</small>' : '') + '<select data-k="f" hidden><option value="' + f.key + '">' + esc(f.label) + '</option></select><select data-k="op" hidden>' + opts.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('') + '</select></div>';
+    var ops = d.querySelector('[data-k=op]'), vin = d.querySelector('[data-k=v]');
+    ops.value = r.op && opts.some(function (o) { return o[0] === r.op; }) ? r.op : opts[0][0];
+    vin.value = r.v == null ? '' : String(r.v);
+    var head = d.querySelector('.rule-h');
+    head.addEventListener('click', function (e) { if (e.target.closest('.x')) return; openRow(d, !d.classList.contains('open')); });
+    head.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === head) { e.preventDefault(); head.click(); } });
     d.querySelector('.x').addEventListener('click', function () { d.remove(); changed(); });
-    $('rules').appendChild(d);
+    d.querySelector('.rule-b').addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      if (b.hasAttribute('data-op')) ops.value = b.getAttribute('data-op');
+      else if (b.hasAttribute('data-qv')) vin.value = b.getAttribute('data-qv');
+      else if (b.hasAttribute('data-step')) { var cur = Number(vin.value || 0), st = stepOf(f, cur), nx = Math.round((cur + Number(b.getAttribute('data-step')) * st) / st) * st; vin.value = String(Math.round(nx * 100) / 100); }
+      else return;
+      changed();
+    });
+    $('rules').appendChild(d); paintRow(d); if (open) openRow(d, true);
+    return d;
+  };
+  // 조건 더하기: a tap adds the condition at its usual value and opens it; one already there just opens.
+  var addField = function (k) {
+    var have = [].slice.call(document.querySelectorAll('.rule')).filter(function (d) { return d.querySelector('[data-k=f]').value === k; })[0];
+    if (have) openRow(have, true); else { var df = DEF[k] || ['>=', '']; have = ruleRow({ f: k, op: df[0], v: df[1] }, true); changed(); }
+    if (have && have.scrollIntoView) have.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
   var current = function () {
     var rules = [].map.call(document.querySelectorAll('.rule'), function (d) {
@@ -191,12 +289,13 @@ const SCREENER_SCRIPT = `<script>
     return { match: el('match').value, rules: rules, maxRisk: el('norisk').checked ? 2 : 0 };
   };
   var load = function (sc) {
-    $('rules').innerHTML = ''; (sc.rules || []).forEach(ruleRow);
+    loadedMine = null; if ($('sc-savebox')) $('sc-savebox').hidden = true;
+    $('rules').innerHTML = ''; (sc.rules || []).forEach(function (r) { ruleRow(r); });
     el('match').value = sc.match || 'all'; el('norisk').checked = !!sc.maxRisk; draw();
   };
   // G-191: quick filters, the active conditions as removable chips, and a summary of what is left.
   // G-199: saved screens (내 조건) as chips on the top line; the one matching the current conditions is pressed.
-  var lastSc = null, lastOut = null, savedList = [], screenKey = function (x) { return JSON.stringify([x.match || 'all', x.maxRisk ? 2 : 0, (x.rules || []).map(function (r) { return [r.f, r.op, String(r.v)]; })]); };
+  var lastSc = null, lastOut = null, savedList = [], loadedMine = null, screenKey = function (x) { return JSON.stringify([x.match || 'all', x.maxRisk ? 2 : 0, (x.rules || []).map(function (r) { return [r.f, r.op, String(r.v)]; })]); };
   var mineOf = function (sc) { var k = screenKey(sc); return savedList.filter(function (x) { return x.screen && screenKey(x.screen) === k; })[0] || null; };
   var paintMine = function (sc) { var k = screenKey(sc || current()); document.querySelectorAll('.sc-mine-b').forEach(function (b) { var x = savedList[Number(b.getAttribute('data-mine'))]; b.setAttribute('aria-pressed', String(!!x && !!x.screen && screenKey(x.screen) === k)); }); };
   var sameRule = function (a, b) { return a.f === b.f && a.op === b.op && String(a.v) === String(b.v); };
@@ -206,10 +305,11 @@ const SCREENER_SCRIPT = `<script>
       b.hidden = !!kinds && kinds.split(',').indexOf(currentMarket) < 0;
       b.setAttribute('aria-pressed', String(!free() && (q.key === 'watch' ? onlyWatch : q.key === 'norisk' ? !!sc.maxRisk : sc.rules.some(function (r) { return sameRule(r, q.rule); }))));
     });
-    var act = $('sc-active'), chips = sc.rules.map(function (r, i) { return '<button type="button" class="sc-chip" data-rm="' + i + '" aria-label="' + esc(ruleText(r)) + ' 조건 빼기">' + esc(ruleText(r)) + ' <i aria-hidden="true">×</i></button>'; });
-    if (onlyWatch) chips.push('<button type="button" class="sc-chip" data-rm="watch" aria-label="관심 종목만 보기 끄기">관심 종목만 <i aria-hidden="true">×</i></button>');
-    act.hidden = free() || !chips.length;
-    act.innerHTML = '<span class="sc-act-k">' + (sc.match === 'any' && sc.rules.length > 1 ? '하나라도 맞으면' : '모두 맞으면') + '</span>' + chips.join('') + (sc.rules.length && !mineOf(sc) ? '<button type="button" class="sc-save" data-save>☆ 내 조건으로 저장</button>' : '') + (chips.length > 1 ? '<button type="button" class="sc-clear" data-rm="all">모두 지우기</button>' : '');
+    var act = $('sc-active'), chips = sc.rules.map(function (r, i) { return '<span class="sc-chip"><button type="button" class="sc-chip-e" data-edit="' + i + '" aria-label="' + esc(ruleText(r)) + ' 고치기">' + esc(ruleText(r)) + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button><button type="button" class="sc-chip-x" data-rm="' + i + '" aria-label="' + esc(ruleText(r)) + ' 조건 빼기">×</button></span>'; });
+    if (sc.maxRisk) chips.push('<span class="sc-chip"><button type="button" class="sc-chip-e" data-edit="risk" aria-label="공시 위험 빼기 고치기">공시 위험 빼기</button><button type="button" class="sc-chip-x" data-rm="risk" aria-label="공시 위험 빼기 끄기">×</button></span>');
+    if (onlyWatch) chips.push('<span class="sc-chip"><button type="button" class="sc-chip-e" data-rm="watch">관심 종목만</button><button type="button" class="sc-chip-x" data-rm="watch" aria-label="관심 종목만 보기 끄기">×</button></span>');
+    act.hidden = free() || !chips.length && !sc.rules.length;
+    act.innerHTML = '<span class="sc-act-k">' + (sc.match === 'any' && sc.rules.length > 1 ? '하나라도 맞으면' : '모두 맞으면') + '</span>' + chips.join('') + '<button type="button" class="sc-add-chip" data-addopen>＋ 조건</button>' + (sc.rules.length && !mineOf(sc) ? '<button type="button" class="sc-save" data-save>☆ 내 조건으로 저장</button>' : '') + (sc.rules.length > 1 ? '<button type="button" class="sc-clear" data-rm="all">모두 지우기</button>' : '');
     paintMine(sc);
     var st = $('sc-stats'), n = out.length; st.hidden = !n;
     if (!n) return;
@@ -233,11 +333,21 @@ const SCREENER_SCRIPT = `<script>
     changed();
   });
   $('sc-active').addEventListener('click', function (e) {
-    if (e.target.closest('[data-save]')) { $('save-screen').click(); return; }
+    if (e.target.closest('[data-save]')) { openSheet(); $('save-screen').click(); return; }
+    if (e.target.closest('[data-addopen]')) { openAt('build-add', function () { var q = $('sc-add-q'); if (q) q.focus({ preventScroll: true }); }); return; }
+    var ed = e.target.closest('[data-edit]');
+    if (ed) {
+      var ek = ed.getAttribute('data-edit');
+      if (ek === 'risk') { openAt('build', null); var rk = document.querySelector('.sc-risk'); if (rk) setTimeout(function () { rk.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 80); return; }
+      var target = [].slice.call(document.querySelectorAll('.rule')).filter(function (d) { return d.querySelector('[data-k=v]').value !== ''; })[Number(ek)];
+      if (target) { openRow(target, true); openSheet(); setTimeout(function () { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60); }
+      return;
+    }
     var b = e.target.closest('[data-rm]'); if (!b) return; var k = b.getAttribute('data-rm');
     if (k === 'watch') { onlyWatch = false; draw(); return; }
+    if (k === 'risk') { el('norisk').checked = false; changed(); return; }
     var rowsEl = [].slice.call(document.querySelectorAll('.rule')).filter(function (d) { return d.querySelector('[data-k=v]').value !== ''; });
-    if (k === 'all') { document.querySelectorAll('.rule').forEach(function (d) { d.remove(); }); onlyWatch = false; } else if (rowsEl[Number(k)]) rowsEl[Number(k)].remove();
+    if (k === 'all') { document.querySelectorAll('.rule').forEach(function (d) { d.remove(); }); onlyWatch = false; el('norisk').checked = false; } else if (rowsEl[Number(k)]) rowsEl[Number(k)].remove();
     changed();
   });
   // A link to these conditions (the page already opens ?screen=…), and the results as a CSV file.
@@ -291,8 +401,9 @@ const SCREENER_SCRIPT = `<script>
     var shown = out.slice(0, Math.min(200, scShown));
     $('sc-n').textContent = shown.length < total ? total.toLocaleString('ko-KR') + '개 중 ' + shown.length + '개' : '결과 ' + total.toLocaleString('ko-KR') + '개';
     document.querySelectorAll('[data-find] .sc-count').forEach(function (c) { c.textContent = c.parentNode.getAttribute('data-find') === currentMarket ? ' ' + rows.length.toLocaleString('ko-KR') + '종목 중 ' + total.toLocaleString('ko-KR') + '개' : ''; });
-    $('sc-desc').textContent = sc.rules.length + '개 조건' + (sc.maxRisk ? ' · 공시 위험 제외' : '');
-    $('sc-filter-n').textContent = sc.rules.length ? String(sc.rules.length) : ''; $('sc-sheet-go').textContent = '결과 ' + total.toLocaleString('ko-KR') + '개 보기';
+    $('sc-filter-n').textContent = sc.rules.length ? String(sc.rules.length) : ''; $('sc-sheet-go').textContent = '결과 ' + total.toLocaleString('ko-KR') + '개 보기'; $('sc-sheet-n').textContent = '남은 종목 ' + total.toLocaleString('ko-KR') + '개'; paintRules();
+    var nCond = sc.rules.length + (sc.maxRisk ? 1 : 0) + (onlyWatch ? 1 : 0), sortName = ($('sc-sort').selectedOptions[0] || {}).textContent || '';
+    $('sc-sum-t').innerHTML = esc([{ stock: '주식', us: '미국 주식', etf: 'ETF', coin: '코인' }[currentMarket] || '주식'].concat(currentMarket === 'stock' ? [mkt === 'P' ? '코스피' : mkt === 'Q' ? '코스닥' : '코스피+코스닥'] : []).concat(nCond ? ['조건 ' + nCond + '개'] : [], [sortName + (sortKey === 'name' ? '' : sortAsc ? ' 낮은 순' : ' 높은 순')]).join(' · ')) + ' · <b>' + total.toLocaleString('ko-KR') + '개</b>';
     // G-191: the columns the conditions (and the sort) looked at, shown in every row unless the row already has them.
     var SHOWN = { level: 1, score: 1, flow: 1, market: 1, chg: 1, close: 1, vol1: 1 }, hitKeys = [];
     sc.rules.concat([{ f: { price: 'close', chg: 'chg', score: 'score', r20: 'r20', gap: 'fairGap', cap: 'cap', vol1: 'vol1', tv: 'tv', tvr: 'tvr', ad: 'ad', spike10: 'spike10' }[sortKey] || '' }]).forEach(function (x) { if (x.f && !SHOWN[x.f] && IDX[x.f] != null && hitKeys.indexOf(x.f) < 0 && hitKeys.length < 3) hitKeys.push(x.f); });
@@ -307,7 +418,7 @@ const SCREENER_SCRIPT = `<script>
   };
   document.querySelectorAll('[data-preset]').forEach(function (b, i) {
     b.addEventListener('click', function () {
-      if (free() && i > 0) { if (window.GNM) window.GNM.toast('다른 빠른 조건은 ${needText('screenTools')} 쓸 수 있어요.'); return; }
+      if (free() && b.getAttribute('data-preset') !== 'top') { if (window.GNM) window.GNM.toast('다른 빠른 조건은 ${needText('screenTools')} 쓸 수 있어요.'); return; }
       document.querySelectorAll('[data-preset]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
       preset = b.getAttribute('data-preset'); load(PRESETS[preset]); preset = b.getAttribute('data-preset');
       var SORT_FOR = { bottomvol: 'spike10', volsurge: 'vol1', accum: 'ad' };
@@ -322,15 +433,27 @@ const SCREENER_SCRIPT = `<script>
   $('sc-filter-open').addEventListener('click', openSheet);
   sheet.querySelector('.sc-sheet-x').addEventListener('click', closeSheet); $('sc-sheet-go').addEventListener('click', closeSheet);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
-  $('add-rule').addEventListener('click', function () { ruleRow({ f: 'vol1', op: '>=', v: '' }); });
+  // G-279: 모두/하나라도, 조건 더하기 (with a name search), all on the same sheet.
+  document.querySelectorAll('[data-match]').forEach(function (b) { b.addEventListener('click', function () { el('match').value = b.getAttribute('data-match'); changed(); }); });
+  $('build-add').addEventListener('click', function (e) { var b = e.target.closest('[data-add]'); if (!b) return; if (free()) { if (window.GNM) GNM.toast('직접 조건은 ${needText('screenTools')} 쓸 수 있어요.'); return; } addField(b.getAttribute('data-add')); });
+  $('sc-add-q').addEventListener('input', function () {
+    var q = this.value.replace(/\\s/g, ''), any = false;
+    document.querySelectorAll('.sc-add-g').forEach(function (g) { var n = 0; g.querySelectorAll('[data-add]').forEach(function (b) { var hit = !q || b.textContent.replace(/\\s/g, '').indexOf(q) >= 0; b.hidden = !hit; if (hit) n++; }); g.hidden = !n; if (n) any = true; });
+    $('sc-add-none').hidden = any;
+  });
   // G-197: the builder lives in the filter sheet; these two buttons open it at the right place.
   var openAt = function (id, then) { openSheet(); setTimeout(function () { var el = $(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); if (then) then(); }, 60); };
-  $('sc-make-rule').addEventListener('click', function () { openAt('build', function () { if (!document.querySelector('#rules > *')) $('add-rule').click(); var f = document.querySelector('#rules select, #rules input'); if (f) f.focus({ preventScroll: true }); }); });
+  $('sc-make-rule').addEventListener('click', function () { openAt('build-add', function () { var q = $('sc-add-q'); if (q) q.focus({ preventScroll: true }); }); });
   $('sc-make-ai').addEventListener('click', function () { openAt('ai-build', function () { var t = $('ai-screen-q'); if (t) t.focus({ preventScroll: true }); }); });
   // From the menu (조건 만들기): screener.html?make=rule or ?make=ai opens the builder straight away.
   var make = new URLSearchParams(location.search).get('make'); if (make === 'rule' || make === 'ai') setTimeout(function () { $(make === 'ai' ? 'sc-make-ai' : 'sc-make-rule').click(); }, 300);
-  form.addEventListener('input', function (e) { if (e.target.closest('.rule') || e.target.name === 'match' || e.target.name === 'norisk') changed(); else draw(); });
+  form.addEventListener('input', function (e) { if (e.target.id === 'sc-add-q' || e.target.id === 'sc-save-name' || e.target.id === 'sc-sort2') return; if (e.target.closest('.rule') || e.target.name === 'match' || e.target.name === 'norisk') changed(); else draw(); });
   $('sc-sort').addEventListener('change', function (e) { setSort(e.target.value); draw(); });
+  // G-283: on a phone the sort, market and saving live in the sheet; the results start with one summary line that opens it.
+  $('sc-sort2').addEventListener('change', function (e) { setSort(e.target.value); draw(); });
+  document.querySelectorAll('[data-dir2]').forEach(function (b) { b.addEventListener('click', function () { setSort(sortKey, b.getAttribute('data-dir2') === 'asc'); draw(); }); });
+  document.querySelectorAll('[data-tool]').forEach(function (b) { b.addEventListener('click', function () { $(b.getAttribute('data-tool')).click(); }); });
+  $('sc-sum').addEventListener('click', function () { openSheet(); });
   $('sc-dir').addEventListener('click', function () { setSort(sortKey, !sortAsc); draw(); });
   document.querySelectorAll('.sc-table th[data-sk]').forEach(function (th) { th.querySelector('button').addEventListener('click', function () { var k = th.getAttribute('data-sk'); setSort(k, k === sortKey ? !sortAsc : undefined); draw(); }); });
   // Saved screens: on the server with the alpha API (and alerts), otherwise in this browser.
@@ -340,12 +463,15 @@ const SCREENER_SCRIPT = `<script>
   var drawSaved = function (list) {
     $('saved').hidden = !list.length; $('alert-note').hidden = !api();
     savedList = list; var mine = $('sc-mine'); mine.hidden = !list.length;
-    mine.innerHTML = list.length ? '<span class="sc-mine-k">내 조건</span>' + list.map(function (x, i) { return '<button type="button" class="chip-toggle sc-mine-b" data-mine="' + i + '" aria-pressed="false">' + esc(x.name) + '</button>'; }).join('') : '';
+    var mineBtns = list.map(function (x, i) { return '<button type="button" class="chip-toggle sc-mine-b" data-mine="' + i + '" aria-pressed="false">' + esc(x.name) + '</button>'; }).join('');
+    mine.innerHTML = list.length ? '<span class="sc-mine-k">내 조건</span>' + mineBtns : '';
+    $('sc-mine2').hidden = !list.length; $('sc-mine2').innerHTML = list.length ? '<span class="sc-mine-k">내 조건</span>' + mineBtns : '';
+    if (loadedMine) loadedMine = list.filter(function (x) { return loadedMine.id != null ? x.id === loadedMine.id : x.name === loadedMine.name; })[0] || null;
     if (lastOut) paintFilters(lastSc, lastOut); else paintMine();
     $('saved-list').innerHTML = list.map(function (x, i) { return '<span data-i="' + i + '"><button type="button" class="ld">' + esc(x.name) + '</button>' + (api() ? '<button type="button" class="bell" aria-pressed="' + !!x.alert + '" aria-label="알림">🔔</button>' : '') + '<button type="button" class="del" aria-label="삭제">×</button></span>'; }).join('');
     $('saved-list').querySelectorAll('[data-i]').forEach(function (el) {
       var x = list[Number(el.getAttribute('data-i'))];
-      el.querySelector('.ld').addEventListener('click', function () { load(x.screen); notify('저장한 조건을 적용했어요.'); });
+      el.querySelector('.ld').addEventListener('click', function () { load(x.screen); loadedMine = x; notify('저장한 조건을 적용했어요.'); });
       el.querySelector('.del').addEventListener('click', function () {
         if (!confirm("'" + x.name + "' 조건을 지울까요?")) return;
         var button=this;button.disabled=true;
@@ -357,12 +483,13 @@ const SCREENER_SCRIPT = `<script>
       if (bell) bell.addEventListener('click', function () { GNM.call('POST', '/screens/' + x.id, { alert: !x.alert }).then(function (r) { if (r.error) GNM.toast(r.message); else GNM.toast(!x.alert ? '매일 장 마감 뒤 새로 걸린 종목을 알려 드릴게요.' : '알림을 껐어요.', 'success'); refreshSaved(); }); });
     });
   };
-  $('sc-mine').addEventListener('click', function (e) {
+  var pickMine = function (e) {
     var b = e.target.closest('[data-mine]'); if (!b) return; var x = savedList[Number(b.getAttribute('data-mine'))]; if (!x || !x.screen) return;
     if (free()) { if (window.GNM) GNM.toast('내 조건 적용은 ${needText('screenTools')} 쓸 수 있어요.'); return; }
     preset = ''; document.querySelectorAll('[data-preset]').forEach(function (p) { p.setAttribute('aria-pressed', 'false'); });
-    load(x.screen); notify("'" + x.name + "' 조건을 적용했어요.");
-  });
+    load(x.screen); loadedMine = x; notify("'" + x.name + "' 조건을 적용했어요.");
+  };
+  $('sc-mine').addEventListener('click', pickMine); $('sc-mine2').addEventListener('click', pickMine);
   // ⋯ holds 링크 복사 and CSV; it closes after a pick or a tap elsewhere.
   var tools = document.querySelector('.sc-tools');
   tools.querySelector('.sc-tools-pop').addEventListener('click', function () { tools.open = false; });
@@ -371,14 +498,34 @@ const SCREENER_SCRIPT = `<script>
     if (api()) GNM.call('GET', '/screens').then(function (r) { if(r.error){notify(r.message,'error');return;}drawSaved(r.screens || []); }).catch(function(){notify('저장한 조건을 불러오지 못했어요.','error');});
     else drawSaved(local());
   };
+  // G-279: saving asks for a name inside the sheet (no pop-up). A 내 조건 that was loaded and then changed can be overwritten.
+  var saveBox = $('sc-savebox'), saveName = $('sc-save-name'), saveOver = $('sc-save-over');
   $('save-screen').addEventListener('click', function () {
+    if (free()) { if (window.GNM) GNM.toast('조건 저장은 ${needText('screenTools')} 쓸 수 있어요.'); return; }
     var sc = current(); if (!sc.rules.length) { if (window.GNM) GNM.toast('조건을 하나 이상 넣어 주세요.'); return; }
-    var name = prompt('조건 이름', preset ? document.querySelector('[data-preset="' + preset + '"]').textContent.replace('플러스', '').trim() : '내 조건'); if (!name) return;
-    var button=this;button.disabled=true;var busy=window.GNM_loading?GNM_loading.begin(form,'조건 저장 중','working'):null;
-    var end=function(){button.disabled=false;if(busy)busy.end();};
-    if(api())GNM.call('POST','/screens',{name:name,screen:sc}).then(function(r){if(r.error){notify(r.message,'error');return;}notify('조건을 저장했어요.');refreshSaved();}).catch(function(){notify('저장하지 못했어요. 다시 시도해 주세요.','error');}).finally(end);
-    else{var l=local();l.push({name:name.slice(0,40),screen:sc});try{localStorage.setItem(SKEY,JSON.stringify(l.slice(-20)));notify('이 브라우저에 조건을 저장했어요.');refreshSaved();}catch(e){notify('브라우저에 저장하지 못했어요.','error');}end();}
+    var same = mineOf(sc); if (same) { notify("'" + same.name + "'으로 이미 저장돼 있어요."); return; }
+    saveName.value = loadedMine ? loadedMine.name : preset && document.querySelector('[data-preset="' + preset + '"]') ? document.querySelector('[data-preset="' + preset + '"]').textContent.replace('플러스', '').trim() : '내 조건';
+    saveOver.hidden = !loadedMine; if (loadedMine) saveOver.textContent = "'" + loadedMine.name + "' 덮어쓰기";
+    saveBox.hidden = false; if (saveBox.scrollIntoView) saveBox.scrollIntoView({ behavior: 'smooth', block: 'center' }); saveName.focus({ preventScroll: true }); saveName.select();
   });
+  $('sc-save-cancel').addEventListener('click', function () { saveBox.hidden = true; });
+  saveName.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('sc-save-new').click(); } });
+  var saveScreen = function (over, button) {
+    var sc = current(), name = saveName.value.trim().slice(0, 40); if (!name) { saveName.focus(); return; }
+    if (!sc.rules.length) { notify('조건을 하나 이상 넣어 주세요.', 'error'); return; }
+    button.disabled = true; var busy = window.GNM_loading ? GNM_loading.begin(form, '조건 저장 중', 'working') : null;
+    var end = function () { button.disabled = false; if (busy) busy.end(); };
+    var ok = function (msg) { saveBox.hidden = true; notify(msg); refreshSaved(); };
+    if (api()) GNM.call('POST', over ? '/screens/' + over.id : '/screens', { name: name, screen: sc }).then(function (r) { if (r.error) { notify(r.message, 'error'); return; } loadedMine = over ? { id: over.id, name: name } : null; ok(over ? "'" + name + "'을 고쳐 저장했어요." : '조건을 저장했어요.'); }).catch(function () { notify('저장하지 못했어요. 다시 시도해 주세요.', 'error'); }).finally(end);
+    else {
+      var l = local(), at = over ? l.map(function (x) { return x.name; }).indexOf(over.name) : -1;
+      if (at >= 0) l[at] = { name: name, screen: sc }; else l.push({ name: name, screen: sc });
+      try { localStorage.setItem(SKEY, JSON.stringify(l.slice(-20))); loadedMine = at >= 0 ? { name: name } : null; ok(at >= 0 ? "'" + name + "'을 고쳐 저장했어요." : '이 브라우저에 조건을 저장했어요.'); } catch (e) { notify('브라우저에 저장하지 못했어요.', 'error'); }
+      end();
+    }
+  };
+  $('sc-save-new').addEventListener('click', function () { saveScreen(null, this); });
+  saveOver.addEventListener('click', function () { if (loadedMine) saveScreen(loadedMine, this); });
   $('ai-screen-send').addEventListener('click',function(){
     var q=$('ai-screen-q').value.trim(), out=$('ai-screen-out'), button=this;
     if(q.length<2){$('ai-screen-q').focus();return;}

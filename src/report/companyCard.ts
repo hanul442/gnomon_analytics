@@ -1,6 +1,6 @@
 // G-200: 회사 정보 card for Korean stocks (Toss's 종목정보 → 회사 정보): logo, name and market, what the company
 // does (WiseReport 기업개요; first sentence, the rest behind 자세히 보기), its rank by market value in its Naver
-// industry with the industry's top three, and the 주요제품 매출구성 as a donut. Filled in the browser from the API's
+// industry with the industry's top three, and the 주요제품 매출구성 as one stacked bar. Filled in the browser from the API's
 // /company (kept a day). No API, or nothing to show, hides the card.
 
 import { esc } from './html.js';
@@ -15,17 +15,18 @@ export const COMPANY_CSS = `.co-card .card{padding-bottom:18px}.co-head{display:
 .co-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0 0}.co-tile{display:flex;flex-direction:column;gap:4px;min-width:0;padding:14px;border-radius:16px;background:var(--soft);border:1px solid var(--line);color:inherit;text-decoration:none}.co-tile span{font-size:12px;color:var(--muted)}.co-tile b{font-size:16px;line-height:1.35;overflow-wrap:anywhere}.co-tile em{font-style:normal;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent-strong)}.co-tile em small{font-size:13px;font-weight:700;color:var(--muted);margin-left:4px}
 .co-top{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:13px}.co-top li{display:flex;gap:6px;min-width:0}.co-top i{font-style:normal;color:var(--muted);flex:none;width:14px}.co-top a{color:var(--fg);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.co-top li.me a{font-weight:800;color:var(--accent-strong)}
 .co-mix{margin:18px 0 0;padding-top:16px;border-top:1px solid var(--line)}.co-mix-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.co-mix-h b{font-size:16px}.co-mix-h small{color:var(--muted);font-size:12px}
-.co-mix-row{display:grid;grid-template-columns:132px minmax(0,1fr);gap:18px;align-items:center;margin-top:12px}.co-donut{position:relative;width:132px;height:132px}.co-donut svg{width:100%;height:100%;transform:rotate(-90deg)}.co-donut circle{fill:none;stroke-width:16;transition:stroke-dasharray .9s var(--ease-out,cubic-bezier(.2,.8,.2,1))}.co-donut div{position:absolute;inset:0;display:grid;place-content:center;text-align:center}.co-donut div b{font-size:19px;font-variant-numeric:tabular-nums}.co-donut div small{font-size:10.5px;color:var(--muted);max-width:64px;margin:0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-mix-row{display:flex;flex-direction:column;gap:14px;margin-top:12px}.co-bar{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden;background:var(--soft)}.co-bar i{display:block;width:0;min-width:0;transition:width .9s var(--ease-out,cubic-bezier(.2,.8,.2,1))}.co-bar i:first-child{border-radius:7px 0 0 7px}
 .co-legend{list-style:none;margin:0;padding:0;max-width:440px;display:flex;flex-direction:column;gap:8px;min-width:0}.co-legend li{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13.5px}.co-legend i{width:10px;height:10px;border-radius:3px}.co-legend span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.co-legend b{font-variant-numeric:tabular-nums}.co-note{margin:10px 0 0;font-size:12px;color:var(--muted)}
-@media (max-width:420px){.co-mix-row{grid-template-columns:108px minmax(0,1fr);gap:14px}.co-donut{width:108px;height:108px}.co-tile{padding:12px}.co-tile em{font-size:21px}}
-@media (prefers-reduced-motion:reduce){.co-donut circle{transition:none}}`;
+@media (max-width:420px){.co-tile{padding:12px}.co-tile em{font-size:21px}}
+@media (prefers-reduced-motion:reduce){.co-bar i{transition:none}}`;
 
 export const COMPANY_JS = `
 (function () {
   var boxes = document.querySelectorAll('[data-company]'); if (!boxes.length) return;
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var base = document.body.getAttribute('data-base') || '';
-  var COLORS = ['#00A6FB', '#86E3B5', '#FFB86B', '#C79BFF', '#FF7A7A', '#5CBBFF', '#E8D27A', '#9AA7B4'];
+  // G-282: one ink in fading shades (Bklit Bar Stacked), not a rainbow; the biggest part is the darkest.
+  var COLORS = [.9, .62, .42, .28, .18, .12, .08, .05].map(function (a) { return 'color-mix(in srgb,var(--fg) ' + Math.round(a * 100) + '%,transparent)'; });
   var paint = function (box, c) {
     var parts = [];
     if (!c.summary.length && !c.mix && !(c.industry && c.industry.rank)) { box.hidden = true; return; }
@@ -38,10 +39,9 @@ export const COMPANY_JS = `
     else if (c.sector) tiles.push('<div class="co-tile"><span>업종(WICS)</span><b>' + esc(c.sector) + '</b></div>');
     if (tiles.length) parts.push('<div class="co-tiles">' + tiles.join('') + '</div>');
     if (c.mix && c.mix.items.length) {
-      var items = c.mix.items, sum = items.reduce(function (a, x) { return a + x[1]; }, 0), R = 42, L = 2 * Math.PI * R, off = 0;
-      var arcs = items.map(function (x, i) { var len = x[1] / Math.max(sum, 100) * L, gap = items.length > 1 ? Math.min(2, len / 3) : 0, s = '<circle r="' + R + '" cx="60" cy="60" stroke="' + COLORS[i % COLORS.length] + '" stroke-dasharray="0 ' + L.toFixed(2) + '" data-len="' + Math.max(0, len - gap).toFixed(2) + '" stroke-dashoffset="' + (-off).toFixed(2) + '"/>'; off += len; return s; }).join('');
-      var asOf = c.mix.asOf ? c.mix.asOf.replace('-', '.') + ' 기준 · ' : '';
-      parts.push('<div class="co-mix"><div class="co-mix-h"><b>매출 구성</b><small>' + asOf + '출처: FnGuide(WiseReport)</small></div><div class="co-mix-row"><div class="co-donut"><svg viewBox="0 0 120 120" aria-hidden="true"><circle r="' + R + '" cx="60" cy="60" stroke="var(--soft)"/>' + arcs + '</svg><div><b>' + items[0][1].toFixed(0) + '%</b><small>' + esc(items[0][0]) + '</small></div></div><ul class="co-legend">' + items.map(function (x, i) { return '<li><i style="background:' + COLORS[i % COLORS.length] + '"></i><span title="' + esc(x[0]) + '">' + esc(x[0]) + '</span><b>' + x[1].toFixed(1) + '%</b></li>'; }).join('') + '</ul></div>' + (sum > 100.5 ? '<p class="co-note">부문 사이 내부 거래가 겹쳐 합이 100%를 넘어요(회사가 공시한 비율 그대로예요).</p>' : '') + '</div>');
+      var items = c.mix.items, sum = items.reduce(function (a, x) { return a + x[1]; }, 0), tot = Math.max(sum, 100);
+      var segs = items.map(function (x, i) { return '<i style="background:' + COLORS[i % COLORS.length] + '" data-w="' + (x[1] / tot * 100).toFixed(2) + '" title="' + esc(x[0]) + ' ' + x[1].toFixed(1) + '%"></i>'; }).join('');
+      parts.push('<div class="co-mix"><div class="co-mix-h"><b>매출 구성</b><small>' + asOf + '출처: FnGuide(WiseReport)</small></div><div class="co-mix-row"><div class="co-bar" aria-hidden="true">' + segs + '</div><ul class="co-legend">' + items.map(function (x, i) { return '<li><i style="background:' + COLORS[i % COLORS.length] + '"></i><span title="' + esc(x[0]) + '">' + esc(x[0]) + '</span><b>' + x[1].toFixed(1) + '%</b></li>'; }).join('') + '</ul></div>' + (sum > 100.5 ? '<p class="co-note">부문 사이 내부 거래가 겹쳐 합이 100%를 넘어요(회사가 공시한 비율 그대로예요).</p>' : '') + '</div>');
     }
     box.querySelector('.co-body').innerHTML = parts.join('');
     box.hidden = false;
@@ -51,9 +51,9 @@ export const COMPANY_JS = `
       more.setAttribute('aria-expanded', String(open)); more.textContent = open ? '접기' : '자세히 보기';
       sumEl.innerHTML = open ? '<ul>' + c.summary.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>' + (c.summaryAsOf ? '<small>' + esc(c.summaryAsOf.replace(/-/g, '.')) + ' 기준 · 출처: FnGuide(WiseReport)</small>' : '') : '<p style="margin:0">' + esc(c.summary[0]) + '</p>';
     });
-    // The donut fills when it scrolls into view.
-    var grow = function () { box.querySelectorAll('.co-donut circle[data-len]').forEach(function (k) { k.setAttribute('stroke-dasharray', k.getAttribute('data-len') + ' ' + (2 * Math.PI * 42).toFixed(2)); }); };
-    var d = box.querySelector('.co-donut');
+    // The stacked bar grows when it scrolls into view.
+    var grow = function () { box.querySelectorAll('.co-bar i[data-w]').forEach(function (k) { k.style.width = k.getAttribute('data-w') + '%'; }); };
+    var d = box.querySelector('.co-bar');
     if (d && 'IntersectionObserver' in window) { var io = new IntersectionObserver(function (es) { if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); requestAnimationFrame(grow); } }); io.observe(d); } else grow();
   };
   var go = function () { boxes.forEach(function (box) {

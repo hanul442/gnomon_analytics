@@ -1,4 +1,4 @@
-import { ANALYSTS } from '../analysis/analysts.js';
+import { CORE_ANALYSTS } from '../analysis/analysts.js';
 import type { MarketPulse } from '../analysis/quickCalc.js';
 import { marketTemperature } from './marketTemperature.js';
 import { renderCommitteeDebate, SPEAKER } from './renderReportExtras.js';
@@ -17,7 +17,7 @@ export type Period = 'daily' | 'weekly';
 export interface MarketAsset { symbol: string; name: string; date: string; close: number; returnPct: number | null; baseline: string | null; value: number | null; spark?: [string, number][] }
 export interface MarketGroup { id: string; name: string; source: string; universe: number; assets: MarketAsset[]; snapshotDate: string | null; temperature?: MarketPulse | null; breadth: { up: number; down: number; flat: number } }
 const claim = z.object({ text: z.string(), kind: z.enum(['FACT','INFERENCE','ASSUMPTION']), refs: z.array(z.string()).min(1) });
-const EXPERT_IDS=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'] as unknown as [string,...string[]];
+const EXPERT_IDS=[...CORE_ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'] as unknown as [string,...string[]];
 const expert=z.object({speaker:z.enum(EXPERT_IDS),stance:z.enum(['BULLISH','NEUTRAL','BEARISH','INSUFFICIENT_DATA']),claim});
 const marketTurn=z.object({speaker:z.enum([...EXPERT_IDS,'RED_TEAM'] as [string,...string[]]),stance:z.enum(['BULLISH','NEUTRAL','BEARISH']),replyTo:z.number(),claim});
 export const MarketCouncilSchema = z.object({ summary: claim, desks: z.array(z.object({ name: z.enum(['코스피','코스닥','코인','ETF','미국']), view: z.enum(['강세','중립','약세','판단보류']), claims: z.array(claim) })).min(4).max(5), consensus: z.array(claim), disagreements: z.array(claim), scenarios: z.array(z.object({ name: z.enum(['강세','기본','약세']), trigger: claim, outlook: claim, invalidation: claim })).length(3), redTeam: z.array(claim), watch: z.array(claim), dataGaps: z.array(z.string()), experts:z.array(expert).optional(),debate:z.array(marketTurn).optional() });
@@ -154,7 +154,7 @@ export const marketSymbol=(period:Period)=>`MARKET-${period.toUpperCase()}`;
 export function macroStat(m: MacroCard): string {
   const c = m.chg20, tone = c == null || c === 0 ? '' : c > 0 ? 'up' : 'down';
   const text = c == null ? '—' : `${c > 0 ? '▲' : c < 0 ? '▼' : ''} ${m.unit === '%' ? `${Math.abs(c * 100).toFixed(0)}bp` : m.unit === '원' ? `${Math.abs(c).toFixed(1)}원` : Math.abs(c).toFixed(1)}`;
-  return kmStatArea({ title: m.label, value: m.value, change: null, badge: { text, tone }, series: m.spark, digits: m.unit === '%' ? 2 : 1, line: true, label: m.unit === '%' ? `% · ${m.date.slice(5).replace('-', '/')}` : m.unit === '원' ? `원 · ${m.date.slice(5).replace('-', '/')}` : m.date.slice(5).replace('-', '/'), unit: '일' });
+  return kmStatArea({ title: m.label, value: m.value, change: null, badge: { text, tone }, series: m.spark, digits: m.unit === '%' ? 2 : 1, line: true, step: m.id === 'DFF', label: m.unit === '%' ? `% · ${m.date.slice(5).replace('-', '/')}` : m.unit === '원' ? `원 · ${m.date.slice(5).replace('-', '/')}` : m.date.slice(5).replace('-', '/'), unit: '일' });
 }
 export function renderMarketDeep(r:MarketReport):string {
  const groupHtml=r.groups.map(g=>{
@@ -219,7 +219,7 @@ export function renderMarketReport(r:MarketReport, base='', nav:{prev?:string|un
  const kospi=r.groups.find(g=>g.id==='M1')?.assets.find(a=>a.symbol==='KOSPI'),spy=r.groups.find(g=>g.id==='M5')?.assets.find(a=>a.symbol==='SPY');
  const mapRows:MapEntry[]=[...(kospi?[{iso:'KR' as const,country:'한국',index:'코스피',change:kospi.returnPct,date:kospi.date}]:[]),...(spy?[{iso:'US' as const,country:'미국',index:'S&P 500',change:spy.returnPct,date:spy.date}]:[])];
  const w=r.world,wx=w?.indices.length?worldMapRows(w.indices.map(q=>({...q,series:[]}))):[];
- const more=`<a class="mk-more" href="${base}world.html">세계 화면에서 더 보기 ›</a>`;
+ const more=`<a class="mk-more" href="${base}index.html#stocks">홈에서 세계 시장 더 보기 ›</a>`;
  const world=wx.length?`<style>${KIT_WORLD_CSS}.mk-more{display:block;margin-top:8px;font-size:13px;font-weight:600;color:var(--fg);text-decoration:none}</style><section class="card block"><div class="block-head" style="margin:0 0 6px"><h2>세계 증시 지도</h2><span class="muted small">하루 등락 · ${wx.filter(x=>x.iso!=='EU').length}곳</span></div>${kmWorldMapAll(wx,'나라를 누르면 지수와 등락이 떠요. 빨강은 오름, 파랑은 내림, 진할수록 많이 움직였어요.')}${more}</section>`
   :mapRows.length?`<section class="card block"><div class="block-head" style="margin:0 0 6px"><h2>세계 증시 지도</h2><span class="muted small">${r.period==='weekly'?'이번 주 누적':'일간'} 등락</span></div>${kmWorldMap(mapRows,'GNOMON은 한국(코스피)과 미국(S&P 500을 따라가는 SPY ETF) 자료만 모아서 두 나라만 색칠했어요. 회색은 자료가 없는 나라예요.')}</section>`:'';
  const wq=(k:string)=>w?.macro.find(q=>q.key===k)??null;

@@ -45,7 +45,7 @@ export async function reportInput(site:string,symbol:string,deps:ReportDeps):Pro
  // A Korean stock keeps its research context's fundamentals; a US report already carries its own (G-179).
  if(research&&research.symbol===symbol&&!us){
   if(research.market&&fresh.market)fresh.market={...fresh.market,flows:research.market.flows,footprint:research.market.footprint,snapshot:research.market.snapshot,quarters:research.market.quarters,years:research.market.years,research:research.market.research,benchmarks:research.market.benchmarks};
-  for(const k of ['filings','recentFilings','news','edge','statements','exchange'] as const)if(research[k]!==undefined)(fresh as unknown as Record<string,unknown>)[k]=research[k];
+  for(const k of ['filings','recentFilings','news','edge','statements','exchange','company'] as const)if(research[k]!==undefined)(fresh as unknown as Record<string,unknown>)[k]=research[k];
   fresh.notes=fresh.notes.filter(n=>!/공개 가격 기록 기준/.test(n));
   fresh.notes.push(`가격은 ${fresh.price?.sessionDate??''} 종가까지 반영했어요. 수급·실적·뉴스는 ${research.price?.sessionDate??research.date} 리포트 기준이에요.`);
  }

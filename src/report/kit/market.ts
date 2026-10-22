@@ -115,6 +115,10 @@ export interface StatAreaInput {
   series?: readonly (readonly [string, number])[];
   /** Fraction digits of the big number. */
   digits?: number;
+  /** G-282 (Bklit area chart · Step): draw the line as steps, for numbers that jump and hold (a policy rate). */
+  step?: boolean;
+  /** G-282 (Bklit line chart · Dashed Tail): the last point is still trading, so its segment is dashed. */
+  openTail?: boolean;
   /** HTML under the area (already escaped). */
   foot?: string;
   href?: string;
@@ -142,9 +146,11 @@ export function kmStatArea(i: StatAreaInput): string {
     const lo = Math.min(...s.map((p) => p[1])), hi = Math.max(...s.map((p) => p[1])), sp = hi - lo || 1, W = 200, H = 56;
     const pts = s.map((p, k) => [r1((k / (s.length - 1)) * W), r1(4 + (1 - (p[1] - lo) / sp) * (H - 8))] as const);
     const trend = (s.at(-1)![1] / s[0]![1] - 1) * 100, color = i.badge ? (i.badge.tone === 'up' ? UP : i.badge.tone === 'down' ? DOWN : 'var(--muted)') : trend > 0 ? UP : trend < 0 ? DOWN : 'var(--muted)', id = gradId('kma');
-    const line = smoothD(pts.map((p) => p.join(',')).join(' '));
+    const tail = !!i.openTail && pts.length >= 3, body = tail ? pts.slice(0, -1) : pts;
+    const line = i.step ? body.map((p, k) => (k ? `H${p[0]}V${p[1]}` : `M${p[0]},${p[1]}`)).join('') : smoothD(body.map((p) => p.join(',')).join(' '));
+    const tailD = tail ? `M${pts.at(-2)!.join(',')}L${pts.at(-1)!.join(',')}` : '';
     const data = s.map((p, k) => [p[0], p[1], pts[k]![0], pts[k]![1]]);
-    area = `${i.line ? '<div class="km-sa-wrap">' : ''}<svg class="km-sa" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(`${i.title} 최근 ${s.length}거래일 ${signed(trend, 1)}%`)}" tabindex="0" data-km-spark="${esc(JSON.stringify(data))}" data-km-digits="${digits}"><defs>${fadeGrad(id, trend > 0 ? UP : trend < 0 ? DOWN : '#8b95a1', 0.32)}</defs>${i.line ? '' : `<path class="km-sa-f" d="${line}L${W} ${H}L0 ${H}Z" fill="url(#${id})"/>`}<path class="km-sa-l" d="${line}" fill="none" stroke="${color}" stroke-width="${i.line ? 1.6 : 2}" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>${i.line ? `<i class="km-ld" style="left:${(pts.at(-1)![0] / W * 100).toFixed(1)}%;top:${(pts.at(-1)![1] / H * 100).toFixed(1)}%;color:${color}" aria-hidden="true"></i></div>` : ''}<small class="km-sa-n">최근 ${s.length}${esc(i.unit ?? '거래일')} <span class="${toneOf(trend)}">${signed(trend, 1)}%</span></small>`;
+    area = `${i.line ? '<div class="km-sa-wrap">' : ''}<svg class="km-sa" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(`${i.title} 최근 ${s.length}거래일 ${signed(trend, 1)}%`)}" tabindex="0" data-km-spark="${esc(JSON.stringify(data))}" data-km-digits="${digits}"><defs>${fadeGrad(id, trend > 0 ? UP : trend < 0 ? DOWN : '#8b95a1', 0.32)}</defs>${i.line ? '' : `<path class="km-sa-f" d="${line}${tail ? `L${pts.at(-1)!.join(',')}` : ''}L${W} ${H}L0 ${H}Z" fill="url(#${id})"/>`}<path class="km-sa-l" d="${line}" fill="none" stroke="${color}" stroke-width="${i.line ? 1.6 : 2}" vector-effect="non-scaling-stroke" stroke-linecap="round"/>${tailD ? `<path class="km-sa-tail" d="${tailD}" fill="none" stroke="${color}" stroke-width="${i.line ? 1.6 : 2}" stroke-dasharray="3 3" vector-effect="non-scaling-stroke" stroke-linecap="round"/>` : ''}</svg>${i.line ? `<i class="km-ld" style="left:${(pts.at(-1)![0] / W * 100).toFixed(1)}%;top:${(pts.at(-1)![1] / H * 100).toFixed(1)}%;color:${color}" aria-hidden="true"></i></div>` : ''}<small class="km-sa-n">최근 ${s.length}${esc(i.unit ?? '거래일')} <span class="${toneOf(trend)}">${signed(trend, 1)}%</span></small>`;
   }
   const tag = i.href ? 'a' : 'div';
   return `<${tag} class="card km-stat${i.line ? ' km-stat-line' : ''} km-anim"${i.href ? ` href="${esc(i.href)}"` : ''}><div class="km-st-h"><span class="km-st-t">${esc(i.title)}${i.sub ? ` <small>${esc(i.sub)}</small>` : ''}</span>${badge}</div><div class="km-st-v"><b class="km-sv" data-v0="${i.value == null ? '—' : esc(fmtNum(i.value, digits))}">${i.value == null ? '—' : esc(fmtNum(i.value, digits))}</b><small class="km-sl" data-l0="${lbl}">${lbl}</small></div>${area}${i.foot ?? ''}</${tag}>`;
@@ -262,7 +268,31 @@ export function kmSunburst(rows: readonly SectorRow[]): string {
 
 // ---------------------------------------------------------------- styles and the page script
 
-export const KIT_MARKET_CSS = `
+/** G-282 (Bklit line · left and right Y axes): two numbers with different units on one chart, each read off its own side. */
+export interface DualSide { name: string; series?: readonly (readonly [string, number])[]; digits?: number; unit?: string }
+export function kmDualLine(a: DualSide, b: DualSide, note = ''): string {
+  const mb = new Map((b.series ?? []).filter((p) => Number.isFinite(p[1])).map((p) => [p[0], p[1]] as const));
+  const rows = (a.series ?? []).filter((p) => Number.isFinite(p[1]) && mb.has(p[0])).map((p) => [p[0], p[1], mb.get(p[0])!] as const);
+  if (rows.length < 5) return '';
+  const W = 320, H = 132, L = 44, R = 44, T = 8, B = 20, w = W - L - R, h = H - T - B;
+  const side = (k: 1 | 2) => { const v = rows.map((r) => r[k]), lo = Math.min(...v), hi = Math.max(...v), pad = (hi - lo || Math.abs(hi) * 0.01 || 1) * 0.08; return { lo: lo - pad, hi: hi + pad }; };
+  const sa = side(1), sb = side(2);
+  const X = (k: number) => r1(L + (k / (rows.length - 1)) * w), Y = (v: number, s: { lo: number; hi: number }) => r1(T + (1 - (v - s.lo) / (s.hi - s.lo)) * h);
+  const da = smoothD(rows.map((r, k) => `${X(k)},${Y(r[1], sa)}`).join(' ')), db = smoothD(rows.map((r, k) => `${X(k)},${Y(r[2], sb)}`).join(' '));
+  const f = (v: number, d = 2) => v.toLocaleString('ko-KR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const ticks = [0, 0.5, 1].map((q) => { const y = r1(T + q * h), va = sa.hi - q * (sa.hi - sa.lo), vb = sb.hi - q * (sb.hi - sb.lo);
+    return `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" class="kd-g"/><text x="${L - 6}" y="${y + 3.5}" text-anchor="end" class="kd-t">${esc(f(va, a.digits ?? 2))}</text><text x="${W - R + 6}" y="${y + 3.5}" class="kd-t kd-tb">${esc(f(vb, b.digits ?? 2))}</text>`; }).join('');
+  const md = (d: string) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
+  const dates = `<text x="${L}" y="${H - 4}" class="kd-t">${esc(md(rows[0]![0]))}</text><text x="${W - R}" y="${H - 4}" text-anchor="end" class="kd-t">${esc(md(rows.at(-1)![0]))}</text>`;
+  const last = rows.at(-1)!;
+  const aria = `${a.name} ${f(last[1], a.digits ?? 2)}${a.unit ?? ''}, ${b.name} ${f(last[2], b.digits ?? 2)}${b.unit ?? ''}`;
+  return `<figure class="kit-dual"><figcaption class="kd-leg"><span><i class="kd-a"></i>${esc(a.name)} <small>왼쪽 축${a.unit ? ` · ${esc(a.unit)}` : ''}</small></span><span><i class="kd-b"></i>${esc(b.name)} <small>오른쪽 축${b.unit ? ` · ${esc(b.unit)}` : ''}</small></span></figcaption>`
+    + `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(aria)}">${ticks}${dates}<path d="${db}" class="kd-lb"/><path d="${da}" class="kd-la"/></svg>${note ? `<p class="fine">${esc(note)}</p>` : ''}</figure>`;
+}
+
+export const KIT_MARKET_CSS = `.kit-dual{margin:0}.kit-dual svg{display:block;width:100%;height:auto}.kd-g{stroke:var(--line);stroke-width:1}.kd-t{font-size:9.5px;fill:var(--muted);font-variant-numeric:tabular-nums}.kd-la{fill:none;stroke:var(--fg);stroke-width:1.8;stroke-linecap:round}.kd-lb{fill:none;stroke:var(--fg);stroke-opacity:.4;stroke-width:1.6;stroke-dasharray:4 3;stroke-linecap:round}.kd-leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;margin:0 0 6px}.kd-leg small{color:var(--muted)}.kd-leg i{display:inline-block;width:14px;height:0;border-top:2px solid var(--fg);vertical-align:middle;margin-right:6px}.kd-leg i.kd-b{border-top:2px dashed color-mix(in srgb,var(--fg) 40%,transparent)}
+.km-seg-sel{position:absolute;pointer-events:none;background:var(--fg);opacity:.08;border-left:1px solid var(--line-strong);border-right:1px solid var(--line-strong)}.km-seg-sel[hidden]{display:none}.km-sl b{font-weight:600}
+
 .km-chart{position:relative}.km-chart [data-km-tip]{transition:opacity .15s}.km-chart[data-hi] [data-km-tip]:not(.hi){opacity:.42}.km-chart [data-km-tip].hi{opacity:1}
 .km-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;text-align:center;pointer-events:none;max-width:62%}
 .km-cv{font-size:19px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;color:var(--fg);white-space:nowrap}.km-cl{font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
@@ -304,7 +334,8 @@ export const KIT_MARKET_JS = `
   var root = document.documentElement;
   var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   // ---- charts play once they are on screen (only under html.mo; otherwise they are drawn finished) ----
-  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('km-in'); io.unobserve(e.target); } }); }, { threshold: 0.3 }) : null;
+  // G-277 (한서님 10/21 '볼때마다 촥 그려지면서'): a chart plays again each time it comes back on screen (a tab switch, a scroll).
+  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.intersectionRatio >= 0.3) e.target.classList.add('km-in'); else if (!e.isIntersecting) e.target.classList.remove('km-in'); }); }, { threshold: [0, 0.3] }) : null;
   var scan = function () { document.querySelectorAll('.km-anim:not([data-km-seen])').forEach(function (el) { el.setAttribute('data-km-seen', ''); if (io && root.classList.contains('mo')) io.observe(el); else el.classList.add('km-in'); }); };
   var queued = false;
   new MutationObserver(function () { if (queued) return; queued = true; setTimeout(function () { queued = false; scan(); }, 100); }).observe(root, { childList: true, subtree: true });
@@ -343,22 +374,30 @@ export const KIT_MARKET_JS = `
   var parts = function (svg) {
     var card = svg.closest('.km-stat'); if (!card) return null; var dot = card.querySelector('.mo-hdot'), ln = card.querySelector('.mo-hline');
     if (!dot) { if (getComputedStyle(card).position === 'static') card.style.position = 'relative'; ln = document.createElement('i'); ln.className = 'mo-hline'; dot = document.createElement('i'); dot.className = 'mo-hdot'; ln.hidden = dot.hidden = true; card.appendChild(ln); card.appendChild(dot); }
-    return { card: card, dot: dot, ln: ln, v: card.querySelector('.km-sv'), l: card.querySelector('.km-sl') };
+    var seg = card.querySelector('.km-seg-sel'); if (!seg) { seg = document.createElement('i'); seg.className = 'km-seg-sel'; seg.hidden = true; card.appendChild(seg); }
+    return { card: card, dot: dot, ln: ln, seg: seg, v: card.querySelector('.km-sv'), l: card.querySelector('.km-sl') };
   };
-  var scrub = function (svg, cx) {
+  // G-282 (Bklit segment selection): dragging from one day to another shades that stretch and shows its change.
+  var scrub = function (svg, cx, a0) {
     var D = []; try { D = JSON.parse(svg.getAttribute('data-km-spark') || '[]'); } catch (x) {} if (D.length < 2) return; var p = parts(svg); if (!p) return;
     var r = svg.getBoundingClientRect(), cr = p.card.getBoundingClientRect(), i = Math.max(0, Math.min(D.length - 1, Math.round((cx - r.left) / r.width * (D.length - 1)))), q = D[i];
     var x = r.left - cr.left + q[2] / 200 * r.width, y = r.top - cr.top + q[3] / 56 * r.height;
     p.dot.style.color = D[D.length - 1][1] >= D[0][1] ? '#f04452' : '#3182f6'; p.dot.hidden = p.ln.hidden = false; p.dot.style.left = x + 'px'; p.dot.style.top = y + 'px'; p.ln.style.left = x + 'px'; p.ln.style.top = (r.top - cr.top) + 'px'; p.ln.style.height = r.height + 'px';
     if (p.v) p.v.textContent = fmt(q[1], Number(svg.getAttribute('data-km-digits') || 2)); if (p.l) p.l.textContent = day(q[0]) + (p.l.getAttribute('data-l0') === '종가' ? ' 종가' : '');
+    if (a0 != null && a0 !== i && D[a0]) {
+      var lo = Math.min(a0, i), hi = Math.max(a0, i), xa = r.left - cr.left + D[lo][2] / 200 * r.width, xb = r.left - cr.left + D[hi][2] / 200 * r.width, ch = (D[hi][1] / D[lo][1] - 1) * 100;
+      p.seg.hidden = false; p.seg.style.left = xa + 'px'; p.seg.style.width = Math.max(1, xb - xa) + 'px'; p.seg.style.top = (r.top - cr.top) + 'px'; p.seg.style.height = r.height + 'px';
+      if (p.l) { p.l.textContent = day(D[lo][0]) + ' → ' + day(D[hi][0]) + ' '; var b = document.createElement('b'); b.className = ch > 0 ? 'up' : ch < 0 ? 'down' : ''; b.textContent = (ch > 0 ? '+' : '') + ch.toFixed(2) + '%'; p.l.appendChild(b); }
+    } else if (p.seg) p.seg.hidden = true;
     stat.svg = svg; stat.i = i;
   };
-  var unscrub = function (svg) { var p = svg && parts(svg); if (!p) return; p.dot.hidden = p.ln.hidden = true; if (p.v) p.v.textContent = p.v.getAttribute('data-v0'); if (p.l) p.l.textContent = p.l.getAttribute('data-l0'); stat.svg = null; stat.i = -1; };
+  var unscrub = function (svg) { var p = svg && parts(svg); if (!p) return; p.dot.hidden = p.ln.hidden = p.seg.hidden = true; if (p.v) p.v.textContent = p.v.getAttribute('data-v0'); if (p.l) p.l.textContent = p.l.getAttribute('data-l0'); stat.svg = null; stat.i = -1; };
   var sa = function (e) { return e.target && e.target.closest ? e.target.closest('.km-sa') : null; };
-  var scrubT = null;
-  document.addEventListener('pointermove', function (e) { var s = sa(e); if (s) scrub(s, e.clientX); });
-  document.addEventListener('pointerdown', function (e) { var s = sa(e); if (s) { scrub(s, e.clientX); clearTimeout(scrubT); } else if (stat.svg) unscrub(stat.svg); });
-  document.addEventListener('pointerup', function (e) { var s = sa(e); if (s && e.pointerType !== 'mouse') { clearTimeout(scrubT); scrubT = setTimeout(function () { unscrub(s); }, 1800); } });
+  var scrubT = null, drag = null;
+  document.addEventListener('pointermove', function (e) { var s = sa(e) || (drag && drag.svg); if (s) scrub(s, e.clientX, drag && drag.svg === s ? drag.i0 : null); });
+  document.addEventListener('pointerdown', function (e) { var s = sa(e); if (s) { scrub(s, e.clientX); drag = { svg: s, i0: stat.i }; clearTimeout(scrubT); } else if (stat.svg) unscrub(stat.svg); });
+  document.addEventListener('pointerup', function (e) { var s = sa(e) || (drag && drag.svg), sel = drag && s && drag.i0 !== stat.i; drag = null; if (s && (e.pointerType !== 'mouse' || sel)) { clearTimeout(scrubT); scrubT = setTimeout(function () { unscrub(s); }, sel ? 3500 : 1800); } });
+  document.addEventListener('pointercancel', function () { drag = null; });
   document.addEventListener('pointerout', function (e) { var s = sa(e); if (s && e.pointerType === 'mouse' && !(e.relatedTarget && s.contains(e.relatedTarget))) unscrub(s); });
   document.addEventListener('click', function (e) { if (sa(e) && e.target.closest('a')) e.preventDefault(); }, true);
   document.addEventListener('keydown', function (e) { var s = e.target && e.target.classList && e.target.classList.contains('km-sa') ? e.target : null; if (!s) return; var D = []; try { D = JSON.parse(s.getAttribute('data-km-spark') || '[]'); } catch (x) {} if (!D.length) return;

@@ -163,35 +163,37 @@ ${levelLadder(s.levels, s.close)}
 }
 
 /** Cumulative net buying lines (one axis, shares) with a hover title per day. */
+/**
+ * G-282 (Bklit bar chart · Positive & Negative): each investor's net buying day by day as bars above (bought, red) and
+ * below (sold, blue) a zero line, one row each on a shared scale, replacing the three cumulative lines (and their
+ * teal/purple/orange colours, against the one-accent rule G-267). The row's right side sums the shown days.
+ */
 function flowChart(flow: FlowSection): string {
-  const days = flow.days;
+  const days = flow.days.slice(-30);
   if (days.length < 2) return '';
   // In KRW when every day has a close (net shares × close), else in shares.
   const money = days.every((d) => d.foreignValue != null || d.foreignNet == null);
   const keys = money
-    ? ([['foreign', 'foreignValue', '외국인'], ['institution', 'institutionValue', '기관'], ['individual', 'individualValue', '개인']] as const)
-    : ([['foreign', 'foreignNet', '외국인'], ['institution', 'institutionNet', '기관'], ['individual', 'individualNet', '개인']] as const);
-  const cum = keys.map(([key, field, label]) => {
-    let acc = 0;
-    return { key, label, values: days.map((d) => (acc += (d[field] as number | null | undefined) ?? 0)) };
-  });
-  const all = cum.flatMap((c) => c.values).concat(0);
-  const lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
-  // G-176: phone-width units so the line labels and dates read at about 11px on a phone.
-  const W = 380, H = 170, padL = 4, padR = 46, padT = 10, padB = 22;
-  const x = (i: number) => padL + (i * (W - padL - padR)) / (days.length - 1);
-  const y = (v: number) => padT + ((hi - v) / span) * (H - padT - padB);
-  const labelY = cum.map((c) => y(c.values.at(-1)!) + 4);
-  const order = cum.map((_, i) => i).sort((a, b) => labelY[a]! - labelY[b]!);
-  order.forEach((idx, k) => { if (k && labelY[idx]! - labelY[order[k - 1]!]! < 14) labelY[idx] = labelY[order[k - 1]!]! + 14; });
-  const lines = cum.map((c, ci) => `<polyline fill="none" stroke="${FLOW_COLORS[c.key]}" stroke-width="2" points="${c.values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}"/>
-<text x="${(x(days.length - 1) + 6).toFixed(1)}" y="${labelY[ci]!.toFixed(1)}" class="flow-label">${c.label}</text>`).join('');
-  const hits = days.map((d, i) => `<rect x="${(x(i) - (W - padL - padR) / days.length / 2).toFixed(1)}" y="${padT}" width="${((W - padL - padR) / days.length).toFixed(1)}" height="${H - padT - padB}" class="hit"><title>${esc(d.date)}  외국인 ${krw(d.foreignValue)} (${shares(d.foreignNet)}), 기관 ${krw(d.institutionValue)} (${shares(d.institutionNet)}), 개인 ${krw(d.individualValue)} (${shares(d.individualNet)})${d.foreignHoldRatio !== null ? `, 외국인 보유율 ${d.foreignHoldRatio.toFixed(2)}%` : ''}</title></rect>`).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" class="flow-chart" role="img" aria-label="최근 ${days.length}거래일 투자자별 누적 순매수">
-<line x1="${padL}" x2="${W - padR}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" class="zero"/>
-${lines}
-<text x="${padL}" y="${H - 6}" class="axis-label">${esc(days[0]!.date)}</text><text x="${W - padR}" y="${H - 6}" class="axis-label" text-anchor="end">${esc(days.at(-1)!.date)}</text>
-${hits}</svg>`;
+    ? ([['foreignValue', '외국인'], ['institutionValue', '기관'], ['individualValue', '개인']] as const)
+    : ([['foreignNet', '외국인'], ['institutionNet', '기관'], ['individualNet', '개인']] as const);
+  const rows = keys.map(([field, label]) => ({ label, values: days.map((d) => (d[field] as number | null | undefined) ?? null) }));
+  const max = Math.max(1, ...rows.flatMap((r) => r.values.map((v) => Math.abs(v ?? 0))));
+  const W = 380, RH = 46, labW = 44, sumW = 70, gap = 10, plotW = W - labW - sumW, bw = plotW / days.length;
+  const fmt = (v: number) => (money ? krw(v) : shares(v));
+  const body = rows.map((r, k) => {
+    const y0 = k * (RH + gap), mid = y0 + RH / 2, half = RH / 2 - 2;
+    const bars = r.values.map((v, i) => {
+      if (v == null || v === 0) return '';
+      const h = Math.max(1, (Math.abs(v) / max) * half);
+      return `<rect x="${(labW + i * bw + bw * 0.15).toFixed(1)}" y="${(v > 0 ? mid - h : mid).toFixed(1)}" width="${(bw * 0.7).toFixed(1)}" height="${h.toFixed(1)}" rx="1.5" class="${v > 0 ? 'fb-up' : 'fb-dn'}"><title>${esc(days[i]!.date)} ${r.label} ${esc(fmt(v))}</title></rect>`;
+    }).join('');
+    const sum = r.values.reduce<number>((a, v) => a + (v ?? 0), 0);
+    return `<text x="0" y="${(mid + 4).toFixed(1)}" class="flow-label">${r.label}</text><line x1="${labW}" x2="${labW + plotW}" y1="${mid}" y2="${mid}" class="zero"/>${bars}<text x="${W}" y="${(mid + 4).toFixed(1)}" text-anchor="end" class="flow-sum ${sum > 0 ? 'up' : sum < 0 ? 'down' : ''}">${esc(fmt(sum))}</text>`;
+  }).join('');
+  const H = rows.length * (RH + gap) + 12;
+  return `<svg viewBox="0 0 ${W} ${H}" class="flow-chart flow-bars" role="img" aria-label="최근 ${days.length}거래일 투자자별 날마다 순매수">${body}
+<text x="${labW}" y="${H - 1}" class="axis-label">${esc(days[0]!.date.slice(5))}</text><text x="${labW + plotW}" y="${H - 1}" class="axis-label" text-anchor="end">${esc(days.at(-1)!.date.slice(5))}</text></svg>
+<style>.flow-bars .fb-up{fill:var(--up,#f04452)}.flow-bars .fb-dn{fill:var(--down,#3182f6)}.flow-bars .flow-sum{font-size:11.5px;font-weight:700;fill:var(--fg2)}.flow-bars .flow-sum.up{fill:var(--up,#f04452)}.flow-bars .flow-sum.down{fill:var(--down,#3182f6)}</style>`;
 }
 
 const FOOTPRINT = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' } as const;
@@ -213,11 +215,10 @@ function investorTrend(f: FlowSection): string {
 /** `lockFootprint` wraps our footprint reading (Plus); the investor flows themselves are public data and stay free. */
 export function flowsPanel(flow: FlowSection | null, fp: Footprint, lockFootprint: (html: string) => string = (h) => h): string {
   if (!flow) return `<div class="card"><div class="head"><h2>투자자 동향</h2></div><div class="v2-mask" aria-label="수급 자료 없음"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>아직 수급 자료를 받지 못했어요.</p></div></div>`;
-  const legend = (['foreign', 'institution', 'individual'] as const).map((k) => `<span><i style="background:${FLOW_COLORS[k]}"></i>${{ foreign: '외국인', institution: '기관', individual: '개인' }[k]}</span>`).join('');
   const recent = [...flow.days].reverse().slice(0, 10).map((d) => `<tr><td class="nowrap">${esc(d.date.slice(5))}</td><td class="num ${tone(d.foreignNet)}">${both(d.foreignValue, d.foreignNet)}</td><td class="num ${tone(d.institutionNet)}">${both(d.institutionValue, d.institutionNet)}</td><td class="num ${tone(d.individualNet)}">${both(d.individualValue, d.individualNet)}</td></tr>`).join('');
   const fpTone = fp.state === 'ACCUMULATION_LIKE' ? 'up' : fp.state === 'DISTRIBUTION_LIKE' ? 'down' : '';
   return `<div class="grid2 tight">${investorTrend(flow)}
-<div class="card"><div class="head"><h2>누적 순매수</h2><div class="legend-inline">${legend}</div></div>${flowChart(flow)}
+<div class="card"><div class="head"><h2>날마다 순매수</h2><span class="sub">0선 위는 산 날, 아래는 판 날 · 오른쪽은 합계</span></div>${flowChart(flow)}
 <details class="more"><summary>최근 10거래일 보기</summary><div class="table-wrap"><table class="compact"><thead><tr><th>날짜</th><th class="num">외국인</th><th class="num">기관</th><th class="num">개인</th></tr></thead><tbody>${recent}</tbody></table></div><p class="fine">출처: 네이버 증권 투자자별 매매동향. 기타법인 등은 빠져 있어 세 줄의 합이 0이 아닐 수 있어요.</p></details></div>
 ${lockFootprint(`<div class="card"><div class="head"><h2>수급 흔적</h2></div>
 <div class="signal-label ${fpTone}" style="text-align:left">${FOOTPRINT[fp.state]}</div><div class="tally">점수 ${fp.score > 0 ? '+' : ''}${fp.score} (−100 분산 ~ +100 매집)</div>

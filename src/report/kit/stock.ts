@@ -84,15 +84,18 @@ export interface Ring { label: string; value: number | null; color: string; text
  * Concentric progress rings (outermost first), a big number in the middle and a legend beside. `value` is 0–1;
  * a null value draws only the track. `cls` is added to the figure (callers keep their own hooks).
  */
-export function ringChart(rings: readonly Ring[], opts: { label: string; big: string; small?: string; cls?: string }): string {
+export function ringChart(rings: readonly Ring[], opts: { label: string; big: string; small?: string; cls?: string; half?: boolean }): string {
   const rs = rings.slice(0, 4), S = 120, c = S / 2, sw = rs.length > 3 ? 6 : rs.length > 2 ? 7 : 9, gap = sw + 3; // G-274: thinner when stacked so the middle text clears the inner ring
+  // G-282 (Bklit ring chart · Half Circle): `half` draws each ring as the top half (left → right), the number under the arch.
+  const span = opts.half ? 50 : 100, turn = opts.half ? 180 : -90;
   const arcs = rs.map((r, i) => {
     const rad = c - sw / 2 - 2 - i * gap, v = r.value == null ? 0 : Math.max(0, Math.min(1, r.value));
-    return `<circle class="kr-t" cx="${c}" cy="${c}" r="${rad}" stroke-width="${sw}"/>`
-      + (v > 0 ? `<circle class="kr-arc" cx="${c}" cy="${c}" r="${rad}" stroke-width="${sw}" pathLength="100" stroke-dasharray="${r1(v * 100)} 100" transform="rotate(-90 ${c} ${c})" style="stroke:${r.color};--i:${i}"/>` : '');
+    return `<circle class="kr-t" cx="${c}" cy="${c}" r="${rad}" stroke-width="${sw}"${opts.half ? ` pathLength="100" stroke-dasharray="50 100" transform="rotate(180 ${c} ${c})" stroke-linecap="round"` : ''}/>`
+      + (v > 0 ? `<circle class="kr-arc" cx="${c}" cy="${c}" r="${rad}" stroke-width="${sw}" pathLength="100" stroke-dasharray="${r1(v * span)} 100" transform="rotate(${turn} ${c} ${c})" style="stroke:${r.color};--i:${i}"/>` : '');
   }).join('');
   const legend = rs.map((r) => `<li><i style="background:${r.color}"></i><span>${esc(r.label)}</span><b>${esc(r.text)}</b></li>`).join('');
-  return `<figure class="kit-ring${opts.cls ? ` ${opts.cls}` : ''}"><div class="kr-fig"><svg viewBox="0 0 ${S} ${S}" role="img" aria-label="${esc(opts.label)}">${arcs}</svg><div class="kr-c"><b>${esc(opts.big)}</b>${opts.small ? `<small>${esc(opts.small)}</small>` : ''}</div></div><ul class="kr-leg">${legend}</ul></figure>`;
+  const vb = opts.half ? `0 0 ${S} ${c + 4}` : `0 0 ${S} ${S}`;
+  return `<figure class="kit-ring${opts.half ? ' kr-half' : ''}${opts.cls ? ` ${opts.cls}` : ''}"><div class="kr-fig"><svg viewBox="${vb}" role="img" aria-label="${esc(opts.label)}">${arcs}</svg>${opts.big ? `<div class="kr-c"><b>${esc(opts.big)}</b>${opts.small ? `<small>${esc(opts.small)}</small>` : ''}</div>` : ''}</div><ul class="kr-leg">${legend}</ul></figure>`;
 }
 
 // ---------------------------------------------------------------- calendar heatmap
@@ -137,10 +140,10 @@ export function dailyCalendar(bars: readonly { date: string; close: number }[], 
   const md = (s: string) => `${Number(s.slice(5, 7))}월 ${Number(s.slice(8, 10))}일`;
   const sg = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(1)}%`;
   const data = days.map((d) => [d.date, r2(d.pct), d.close]);
-  const swatch = (c: string) => `<i class="kc-sw ${c}"></i>`;
   return `<section class="block kit-cal-sec"><div class="block-head"><h2>${esc(opts.title ?? '지난 1년 하루 등락')}</h2><span class="muted small">${esc(days[0]!.date.slice(2).replace(/-/g, '.'))} ~ ${esc(days.at(-1)!.date.slice(2).replace(/-/g, '.'))} · ${days.length}거래일</span></div><div class="card">`
     + `<figure class="kit-cal" data-cal="${esc(JSON.stringify(data))}"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(`하루 등락 달력: 오른 날 ${up}일, 내린 날 ${down}일`)}">${months}${wlab}${cells}</svg>`
-    + `<figcaption class="kc-leg"><span>내림</span>${['d4', 'd3', 'd2', 'd1', 'z', 'u1', 'u2', 'u3', 'u4'].map(swatch).join('')}<span>오름</span></figcaption></figure>`
+    // G-282: Bklit heatmap legend: one gradient bar from -4% to +4% with its ticks, instead of nine loose squares.
+    + `<figcaption class="kc-leg"><span>내림</span><span class="kc-gr"><i></i><em style="left:0">-4%</em><em style="left:50%">0</em><em style="left:100%">+4%</em></span><span>오름</span></figcaption></figure>`
     + `<p class="kc-sum">오른 날 <b class="up">${up}일</b> · 내린 날 <b class="down">${down}일</b> · 가장 크게 오른 날 ${esc(md(best.date))} <b class="up">${sg(best.pct)}</b> · 가장 크게 내린 날 ${esc(md(worst.date))} <b class="down">${sg(worst.pct)}</b></p>`
     + `<p class="fine">칸 하나가 하루예요. 전날 종가 대비 등락이 클수록 진해요(1%·2%·4% 기준). 빈 칸은 장이 쉰 날이에요. 칸을 누르면 그날 등락이 나와요.</p></div></section>`;
 }
@@ -162,6 +165,7 @@ html.mo .kit-lc:not(.kit-in) .kl-l{clip-path:inset(0 100% 0 0)}html.mo .kit-lc.k
 .kit-ring{display:flex;align-items:center;gap:16px;margin:0;min-width:0}.kr-fig{position:relative;flex:none;width:112px;height:112px}.kr-fig svg{width:100%;height:100%;display:block}
 .kr-t{fill:none;stroke:var(--soft);stroke:color-mix(in srgb,var(--muted) 16%,transparent)}.kr-arc{fill:none;stroke-linecap:round;transition:stroke-dasharray 1.1s var(--ease-out) calc(var(--i,0) * 140ms)}
 html.mo .kit-ring:not(.kit-in) .kr-arc{stroke-dasharray:0 100}
+.kr-half .kr-fig{width:132px;height:72px}.kr-half .kr-c{justify-content:flex-end;padding-bottom:0}.kr-half .kr-c b{font-size:24px}
 .kr-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}.kr-c b{font-size:22px;line-height:1.1;font-weight:800;color:var(--fg);font-variant-numeric:tabular-nums}.kr-c small{font-size:11px;color:var(--muted);margin-top:2px}
 .kr-leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;min-width:0;flex:1}.kr-leg li{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px;color:var(--fg2)}.kr-leg i{width:10px;height:10px;border-radius:50%}.kr-leg span{min-width:0;overflow-wrap:anywhere}.kr-leg b{color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
 .kit-cal{margin:0;position:relative}.kit-cal svg{display:block;width:100%;max-width:560px;height:auto;touch-action:pan-y}
@@ -169,7 +173,7 @@ html.mo .kit-ring:not(.kit-in) .kr-arc{stroke-dasharray:0 100}
 .kc.u1{fill:${UP};fill-opacity:.28}.kc.u2{fill:${UP};fill-opacity:.5}.kc.u3{fill:${UP};fill-opacity:.75}.kc.u4{fill:${UP}}
 .kc.d1{fill:${DOWN};fill-opacity:.28}.kc.d2{fill:${DOWN};fill-opacity:.5}.kc.d3{fill:${DOWN};fill-opacity:.75}.kc.d4{fill:${DOWN}}
 .kc[data-i]{cursor:pointer}.kc.hi{stroke:var(--fg);stroke-width:1.5}.kc-m{font-size:8px;fill:var(--muted)}
-.kc-leg{display:flex;align-items:center;gap:3px;margin-top:8px;font-size:11.5px;color:var(--muted)}.kc-leg span{margin:0 4px}.kc-sw{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--line)}
+.kc-leg{display:flex;align-items:center;gap:3px;margin-top:8px;font-size:11.5px;color:var(--muted)}.kc-leg>span{margin:0 4px;white-space:nowrap}.kc-gr{position:relative;flex:0 1 180px;height:22px;margin:0 16px}.kc-gr i{position:absolute;left:0;right:0;top:0;height:8px;border-radius:4px;background:linear-gradient(90deg,${DOWN},${DOWN}80,color-mix(in srgb,var(--muted) 30%,transparent),${UP}80,${UP})}.kc-gr em{position:absolute;top:10px;white-space:nowrap;transform:translateX(-50%);font-style:normal;font-size:10.5px;font-variant-numeric:tabular-nums}.kc-sw{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--line)}
 .kc-sw.z{background:color-mix(in srgb,var(--muted) 30%,transparent)}.kc-sw.u1{background:${UP}47}.kc-sw.u2{background:${UP}80}.kc-sw.u3{background:${UP}bf}.kc-sw.u4{background:${UP}}.kc-sw.d1{background:${DOWN}47}.kc-sw.d2{background:${DOWN}80}.kc-sw.d3{background:${DOWN}bf}.kc-sw.d4{background:${DOWN}}
 .kc-sum{margin:10px 0 0;font-size:13.5px;line-height:1.7;color:var(--fg2)}
 html.mo .kit-cal:not(.kit-in) .kc{opacity:0}html.mo .kit-cal.kit-in .kc{opacity:1;transition:opacity .5s}
@@ -192,13 +196,15 @@ html.mo .kv-val{transition:top .45s var(--ease-out),background .3s}
 .kv-pulse{transform-box:fill-box;transform-origin:center;opacity:0}html.mo .kv-pulse{animation:kv-pulse 1.8s ease-out infinite}
 @keyframes kv-pulse{0%{transform:scale(.6);opacity:.8}100%{transform:scale(2.6);opacity:0}}
 .kv-foot{display:flex;justify-content:space-between;margin-top:6px;font-size:11.5px;color:var(--muted)}
-@media (max-width:600px){.kl-plot{height:180px}.kr-fig{width:100px;height:100px}.kit-ring{gap:12px}.kr-leg li{font-size:12.5px}}
+@media (max-width:600px){.kl-plot{height:180px}.kr-fig{width:100px;height:100px}.kr-half .kr-fig{width:120px;height:66px}.kit-ring{gap:12px}.kr-leg li{font-size:12.5px}}
 `;
 
 // ---------------------------------------------------------------- page script
 
+export const SWEEP_HTML = '<div class="kit-sweep" aria-hidden="true"><svg viewBox="0 0 300 100" preserveAspectRatio="none"><path d="M0,70 C30,62 45,40 75,46 S120,72 150,58 S205,22 235,30 S280,50 300,38 L300,100 L0,100Z"/><path class="ks-l" d="M0,70 C30,62 45,40 75,46 S120,72 150,58 S205,22 235,30 S280,50 300,38"/></svg><span>불러오는 중</span></div>';
 export const KIT_STOCK_JS = `
 (function () {
+  var SWEEP = ${JSON.stringify(SWEEP_HTML)};
   ${SMOOTH_JS}
   var root = document.documentElement, NS = 'http://www.w3.org/2000/svg', UP = '${UP}', DOWN = '${DOWN}';
   var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
@@ -306,6 +312,8 @@ export const KIT_STOCK_JS = `
     watch(host);
   };
 
+  // G-282 (Bklit live line · Momentum Colors): the colour follows the last ~10 points (rising red, falling blue), not the
+  // whole window, so a turn shows as it happens.
   // ---- live line: a coin's price as it trades (G-271: and a Korean stock's day, 1-minute closes then live quotes),
   // scrolling left, the last point pulsing ----
   var OK = /^(KRW-[A-Z0-9]{1,15}|[0-9][0-9A-Z]{5})$/;
@@ -325,7 +333,7 @@ export const KIT_STOCK_JS = `
       if (vis.length < 2) vis = pts.slice(-2);
       var lo = Math.min.apply(null, vis.map(function (p) { return p.v; })), hi = Math.max.apply(null, vis.map(function (p) { return p.v; })), sp = hi - lo || Math.abs(hi) * 0.001 || 1, padR = 64;
       var X = function (t) { return (t - start) / SPAN * (W - padR) + shift; }, Y = function (v) { return 12 + (1 - (v - lo) / sp) * (H - 24); };
-      var line = smoothD(vis.map(function (p) { return r1(X(p.t)) + ',' + r1(Y(p.v)); }).join(' ')), lp = vis[vis.length - 1], up = lp.v >= pts[0].v, col = up ? UP : DOWN, lx = r1(X(lp.t)), ly = r1(Y(lp.v));
+      var line = smoothD(vis.map(function (p) { return r1(X(p.t)) + ',' + r1(Y(p.v)); }).join(' ')), lp = vis[vis.length - 1], mo = vis[Math.max(0, vis.length - 11)], up = lp.v === mo.v ? lp.v >= pts[0].v : lp.v > mo.v, col = up ? UP : DOWN, lx = r1(X(lp.t)), ly = r1(Y(lp.v));
       var grid = [0.25, 0.5, 0.75].map(function (k) { return '<line class="kv-g" x1="0" x2="' + W + '" y1="' + r1(12 + k * (H - 24)) + '" y2="' + r1(12 + k * (H - 24)) + '"/>'; }).join('');
       plot.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs><linearGradient id="kv-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".2"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>' + grid + '<path d="' + line + 'L' + lx + ',' + H + 'L' + r1(X(vis[0].t)) + ',' + H + 'Z" fill="url(#kv-g)"/><path class="kv-l" d="' + line + '" style="stroke:' + col + '"/><circle class="kv-pulse" cx="' + lx + '" cy="' + ly + '" r="5" fill="' + col + '"/><circle cx="' + lx + '" cy="' + ly + '" r="4" fill="' + col + '" stroke="var(--surface-solid,#fff)" stroke-width="1.5"/></svg><span class="kv-val" style="top:' + ly + 'px;background:' + col + '">' + esc(won(lp.v)) + '</span>';
       var f = sec.querySelector('[data-kv-from]'); if (f) { var d = new Date((start + 9 * 3600) * 1000); f.textContent = d.toISOString().slice(11, 19); }
@@ -343,6 +351,8 @@ export const KIT_STOCK_JS = `
       var W = plot.clientWidth || 320; slide((t - prevT) / SPAN * (W - 64));
     };
     var api = window.GNM && GNM.api;
+    // G-282: the loading sweep stands in until the first points arrive; a failed fetch hides the section again.
+    if (api) { sec.hidden = false; plot.innerHTML = SWEEP; }
     if (api) fetch(api + '/ticks/' + sym).then(function (r) { return r.json(); }).then(function (r) {
       var ps = (r && r.points) || []; if (!ps.length) return; var end = ps[ps.length - 1].time, off = (pts.length ? pts[0].t - 1 : Date.now() / 1000) - end;
       // Recent trades keep their spacing and end where the live feed starts.
@@ -354,8 +364,8 @@ export const KIT_STOCK_JS = `
       note.textContent = '업비트 체결가 · 최근 ' + Math.round(SPAN / 60) + '분'; if (r.kind && r.kind !== 'trades') note.textContent = '최근 1분 종가 · 이후 실시간';
       // G-271: a stock shows its whole session (up to 6.5 hours of 1-minute closes), named by its day when that is not today.
       if (!coin) { SPAN = Math.max(180, Math.min(23400, Math.round(last - pts[0].t))); var kd = new Date((end + 9 * 3600) * 1000).toISOString().slice(0, 10), td = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); note.textContent = (kd === td ? '오늘' : Number(kd.slice(5, 7)) + '/' + Number(kd.slice(8, 10))) + ' 1분 종가 · 장중 실시간'; }
-      shift = 0; draw();
-    }).catch(function () {});
+      shift = 0; if (pts.length < 2) { sec.hidden = true; plot.innerHTML = ''; } draw();
+    }).catch(function () { if (pts.length < 2) { sec.hidden = true; plot.innerHTML = ''; } });
     window.addEventListener('gnm-quote', function (e) { var d = e.detail; if (!d || d.symbol !== sym || !(d.quote && d.quote.price > 0)) return; add(Date.now() / 1000, d.quote.price); });
     var rw = 0; window.addEventListener('resize', function () { clearTimeout(rw); rw = setTimeout(function () { shift = 0; draw(); }, 150); });
     window.GNM_kitLive = { add: add, points: pts };
@@ -441,3 +451,14 @@ export function hitLine(values: readonly number[], label: string, opts: { w?: nu
   const end = values.at(-1)!;
   return `<svg viewBox="0 0 ${w} ${h}" class="spark kit-hit" role="img" aria-label="${esc(`${label}: 맞음−빗나감 ${end > 0 ? '+' : ''}${end}`)}"><line class="kp-base" x1="0" x2="${w}" y1="${r1(y(0))}" y2="${r1(y(0))}"/><path class="spark-l" d="${pts}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${w}" cy="${r1(y(end))}" r="2.4" fill="currentColor"/></svg>`;
 }
+
+// ---------------------------------------------------------------- loading sweep (G-282)
+
+/**
+ * G-282 (Bklit area/line chart · Loading (Sweep)): a quiet chart-shaped placeholder with a light band sweeping across,
+ * shown while a chart's data or library loads. Static under reduced motion. The caller removes it when the chart draws.
+ */
+export const KIT_SWEEP_CSS = `.kit-sweep{position:relative;height:100%;min-height:120px;overflow:hidden;border-radius:12px}.kit-sweep svg{position:absolute;inset:18% 0 0;width:100%;height:82%}.kit-sweep path{fill:var(--fg);opacity:.05}.kit-sweep .ks-l{fill:none;stroke:var(--fg);stroke-width:1.5;opacity:.18;vector-effect:non-scaling-stroke}
+.kit-sweep span{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-size:12.5px;color:var(--muted)}
+.kit-sweep::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surface-solid,#fff) 70%,transparent),transparent);transform:translateX(-100%)}
+@media (prefers-reduced-motion:no-preference){.kit-sweep::after{animation:ks-sweep 1.4s ease-in-out infinite}@keyframes ks-sweep{to{transform:translateX(100%)}}}`;

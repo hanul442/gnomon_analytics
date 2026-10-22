@@ -30,7 +30,9 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   const page = await readFile(join(root, 'site', '000660', 'reports', '2026-10-02.html'), 'utf8');
   // G-71: four tabs; the old tab names live on as parts of them.
   // G-129: 타이밍 (기술 + 전략) and 기업 체력 (수급 + 종목정보); the old ids live on as sections inside them.
-  for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-ai', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
+  for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
+  // G-277: the debate folds open under the vote in 위원회 (it keeps id="tab-ai" for links and generated fragments).
+  assert.match(page, /<details class="ai-fold"><summary>토론 펼쳐 보기<\/summary><section class="ai-in" id="tab-ai"/);
   for (const id of ['tab-strategy', 'tab-flows']) assert.match(page, new RegExp(`class="sub-sec" id="${id}"`));
   for (const text of ['기업 체력 한눈에', '재무제표']) assert.ok(page.includes(text), text);
   // G-151: 타이밍 opens on 기술적 신호; a separate 한눈에 card only repeated the vote, the locked gauges and the champion.
@@ -41,7 +43,7 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   assert.ok((page.match(/class="mini-gauge"/g) ?? []).length >= 5);
   assert.ok(page.includes('class="race-stance') && !page.includes('전략별 현재 신호'));
   assert.ok(page.includes('전략 대결') && page.includes('챔피언 레이스'));
-  for (const text of ['기술적 적정가', '예측 범위', '누적 순매수', '수급 흔적', '투자 지표', '평균 목표가', '가격 구조', '시장 대비 수익률']) assert.ok(page.includes(text), text);
+  for (const text of ['기술적 적정가', '예측 범위', '날마다 순매수', '수급 흔적', '투자 지표', '평균 목표가', '가격 구조', '시장 대비 수익률']) assert.ok(page.includes(text), text);
   assert.ok(page.includes('data-ov="forecast"'));
   for (const key of ['rsi', 'macd', 'stoch', 'volume']) assert.ok(page.includes(`data-pane="${key}"`), key);
   // G-186: VWAP and Parabolic SAR on the price, MFI as a pane.
