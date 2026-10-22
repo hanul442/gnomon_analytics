@@ -149,7 +149,7 @@ export function renderScreener(): string {
 .sc-mine2{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center;margin:0 -2px 12px;padding:2px}.sc-mine2::-webkit-scrollbar{display:none}.sc-mine2>*{flex:none;white-space:nowrap}.sc-mine2 .sc-mine-k{border-left:0;padding-left:0;margin-left:0}
 .sc-savebox{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding:14px;border-radius:16px;background:var(--surface-solid);border:1px solid var(--line-strong)}.sc-savebox label{font-size:12px;font-weight:800;color:var(--muted)}.sc-form .sc-savebox input{font-size:16px;font-weight:700;padding:11px 12px;border-radius:12px}.sc-savebox-b{display:flex;gap:6px;flex-wrap:wrap}.sc-savebox-b button{flex:1 1 auto;min-height:44px;border-radius:12px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;padding:0 12px}
 .sc-savebox[hidden],.sc-mine2[hidden],.sc-add-g[hidden],.sc-add-l button[hidden],.sc-none[hidden]{display:none}
-/* G-282 (한서 10/22 구조 정리): the sheet holds 시장 · 내 조건 · 추천 조건 · 걸린 조건 · 정렬 · 저장. On a phone nothing sits above the results but one summary line. */
+/* G-283 (한서 10/22 구조 정리): the sheet holds 시장 · 내 조건 · 추천 조건 · 걸린 조건 · 정렬 · 저장. On a phone nothing sits above the results but one summary line. */
 .sc-sec-k{flex:none;font-size:12px;font-weight:800;color:var(--muted);margin-right:2px}.sc-sheet .sc-mkt{display:flex;align-items:center;gap:6px;margin:0 0 12px}.sc-sheet .sc-mkt[hidden]{display:none}
 .sc-presets2{display:none;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center;margin:0 -2px 12px;padding:2px}.sc-presets2::-webkit-scrollbar{display:none}.sc-presets2>*{flex:none;white-space:nowrap}
 .sc-sortsheet{display:none;flex-direction:column;gap:8px;margin-top:18px}.sc-form #sc-sort2{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:12px;font-size:14.5px}.sc-sortsheet .sc-top{justify-content:space-between}
@@ -449,7 +449,7 @@ const SCREENER_SCRIPT = `<script>
   var make = new URLSearchParams(location.search).get('make'); if (make === 'rule' || make === 'ai') setTimeout(function () { $(make === 'ai' ? 'sc-make-ai' : 'sc-make-rule').click(); }, 300);
   form.addEventListener('input', function (e) { if (e.target.id === 'sc-add-q' || e.target.id === 'sc-save-name' || e.target.id === 'sc-sort2') return; if (e.target.closest('.rule') || e.target.name === 'match' || e.target.name === 'norisk') changed(); else draw(); });
   $('sc-sort').addEventListener('change', function (e) { setSort(e.target.value); draw(); });
-  // G-282: on a phone the sort, market and saving live in the sheet; the results start with one summary line that opens it.
+  // G-283: on a phone the sort, market and saving live in the sheet; the results start with one summary line that opens it.
   $('sc-sort2').addEventListener('change', function (e) { setSort(e.target.value); draw(); });
   document.querySelectorAll('[data-dir2]').forEach(function (b) { b.addEventListener('click', function () { setSort(sortKey, b.getAttribute('data-dir2') === 'asc'); draw(); }); });
   document.querySelectorAll('[data-tool]').forEach(function (b) { b.addEventListener('click', function () { $(b.getAttribute('data-tool')).click(); }); });
