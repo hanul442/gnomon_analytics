@@ -1,4 +1,5 @@
 import {ORBS} from './ui.js';
+import { WRAPUP, WRAPUP_LINK } from './wrapup.js';
 // Closed alpha in the browser (docs/DESIGN.md §5.13, G-44): sign-in state, the account badge, credit
 // spending through the API, usage events, in-place feedback and the weekly pulse survey.
 // Only active when the site is built with an API address (gnm.config.json or GNM_API_URL);
@@ -22,6 +23,9 @@ export const ALPHA_CSS = `
 .wk-pulse textarea{width:100%;margin-top:8px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;min-height:54px}.wk-pulse .row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 .wk-pulse .row button{border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer}.wk-pulse .row .later{background:var(--soft);color:var(--fg2)}.wk-pulse .row .go{background:var(--navy);color:var(--on-accent)}
 @media (max-width:820px){.wk-pulse{left:14px;bottom:78px}}
+.wrap-sheet p{margin:0;font-size:13.5px;line-height:1.5;color:var(--fg2)}.wrap-sheet .row a.go{border-radius:10px;padding:8px 14px;font-weight:700;text-decoration:none;background:var(--navy);color:var(--on-accent)}
+.wrap-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 16px;padding:16px 18px;border-radius:16px;background:var(--surface);color:var(--fg);text-decoration:none;box-shadow:0 1px 2px rgba(0,0,0,.05)}.wrap-row b{display:block;font-size:15.5px}.wrap-row small{display:block;margin-top:2px;font-size:12.5px;color:var(--muted)}
+[data-tab-link].has-dot{position:relative}[data-tab-link].has-dot svg{overflow:visible}[data-tab-link].has-dot::after{content:'';position:absolute;top:6px;left:calc(50% + 8px);width:7px;height:7px;border-radius:50%;background:var(--fg,#0b0b0c)}
 .bell-btn{position:relative;border:1px solid rgba(255,255,255,.28);background:none;color:#fff;border-radius:999px;width:32px;height:30px;cursor:pointer;font-size:14px}.bell-btn i{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:var(--up);color:#fff;font:700 10px/16px inherit;font-style:normal;padding:0 4px}
 .bell-btn.push-on::after{content:'';position:absolute;left:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid var(--navy)}.bell-push{margin:2px 0 8px;padding:10px;border-radius:12px;background:var(--soft);font-size:13px;display:flex;flex-direction:column;gap:6px}.bell-push.on{flex-direction:row;justify-content:space-between;align-items:center;background:var(--good-soft);color:var(--good-strong);font-weight:700}.bell-push button{font:inherit;font-weight:800;border-radius:10px;cursor:pointer}.bell-allow{border:0;background:var(--navy);color:var(--on-accent);padding:11px;font-size:14.5px}.bell-push.on button{border:1px solid #86efac;background:var(--surface);padding:5px 10px;font-size:12.5px;color:var(--good-strong)}.bell-push small{color:var(--muted)}.home-alerts{display:block;margin:-4px 0 10px;padding:9px 12px;border-radius:12px;background:var(--warn-soft);border:1px solid #f4dca6;font-size:13.5px;text-decoration:none;color:var(--fg)}.home-alerts.on{background:var(--good-soft);border-color:#bbf7d0}
 .bell-pop{position:fixed;right:12px;top:60px;z-index:190;width:min(380px,calc(100vw - 24px));max-height:min(70vh,560px);overflow:auto;background:var(--surface-solid);color:var(--fg);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(15,27,45,.22);padding:8px}
@@ -330,12 +334,26 @@ export const ALPHA_SCRIPT = `<script>
   var nudges = function () {
     var m = G.me, path = location.pathname;
     if (!m || /(login|onboarding|admin)\\.html$/.test(path)) return;
-    // G-241: the last week of the alpha asks for the wrap-up survey (and the beta application) first, on every page.
-    if (m.survey.wrapupDue && !/survey\\.html$/.test(path) && !document.querySelector('.alpha-bar') && sessionStorage.getItem('gnm-nudge-wrap') !== '1') {
-      var wb = document.createElement('div'); wb.className = 'alpha-bar';
-      wb.innerHTML = '<span>알파가 곧 끝나요. 3분 마무리 설문에 답하고 클로즈드 베타도 신청해 주세요.</span><a href="' + base + 'survey.html?k=wrapup">설문하기</a><button type="button" aria-label="닫기">×</button>';
-      document.body.insertBefore(wb, document.body.firstChild);
-      wb.querySelector('button').addEventListener('click', function () { wb.remove(); try { sessionStorage.setItem('gnm-nudge-wrap', '1'); } catch (e) {} });
+    // G-241, G-280: the last week of the alpha asks for the wrap-up survey (and the beta application) from the BOTTOM:
+    // a sheet once a day (나중에 hides it until tomorrow, KST), a dot on the 나 tab and a row at the top of 나 until answered.
+    // Nothing is put at the top of the screen (no top bars).
+    if (m.survey.wrapupDue && !/survey\\.html$/.test(path)) {
+      var kday = function (t) { return Math.floor((t + 9 * 3600000) / 86400000); }, today = kday(Date.now());
+      var left = Math.max(0, kday(Date.parse('${WRAPUP.until}') - 1) - today);
+      document.querySelectorAll('[data-tab-link="settings.html"]').forEach(function (a) { a.classList.add('has-dot'); });
+      if (/settings\\.html$/.test(path) && !document.querySelector('.wrap-row')) {
+        var main = document.getElementById('main') || document.body, row = document.createElement('a');
+        row.className = 'wrap-row'; row.href = base + '${WRAPUP_LINK}';
+        row.innerHTML = '<span><b>알파 마무리 설문</b><small>3분 · 끝에서 클로즈드 베타 신청</small></span><span aria-hidden="true">›</span>';
+        var head = main.querySelector('.pg-title'); if (head) head.after(row); else main.insertBefore(row, main.firstChild);
+      }
+      var later = null; try { later = localStorage.getItem('gnm-wrap-later'); } catch (e) {}
+      if (String(today) !== later && !document.querySelector('.wrap-sheet')) {
+        var ws = document.createElement('section'); ws.className = 'wk-pulse wrap-sheet'; ws.setAttribute('aria-label', '알파 마무리 설문');
+        ws.innerHTML = '<h3>' + (left ? '알파가 ' + left + '일 남았어요' : '알파가 오늘 끝나요') + '</h3><p>써 보신 소감을 3분만 들려주세요. 끝에서 클로즈드 베타도 신청할 수 있어요.</p><div class="row"><button type="button" class="later">나중에</button><a class="go" href="' + base + '${WRAPUP_LINK}">설문하기</a></div>';
+        document.body.appendChild(ws);
+        ws.querySelector('.later').addEventListener('click', function () { ws.remove(); try { localStorage.setItem('gnm-wrap-later', String(today)); } catch (e) {} });
+      }
     }
     if (!m.survey.onboarding && !document.querySelector('.alpha-bar') && sessionStorage.getItem('gnm-nudge') !== '1') {
       var bar = document.createElement('div'); bar.className = 'alpha-bar';

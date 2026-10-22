@@ -31,7 +31,8 @@ export const ALPHA_BANNERS: readonly Banner[] = [
 
 /** G-241: the wrap-up survey leads the banner from 10/24 (KST date of the build) to the alpha's last day. */
 export const wrapupBanners = (today: string): Banner[] => today >= '2026-10-24' && today <= '2026-10-31'
-  ? [{ kind: 'survey', title: '알파 마무리 설문 · 베타 신청', text: `알파가 ${WRAPUP.end}에 끝나요. 3분 설문 끝에서 클로즈드 베타도 신청할 수 있어요.`, href: WRAPUP_LINK, cta: '설문하기', tone: 'rose' }]
+  // G-280: a big picture banner like the 4.0.0 one (neutral glass, the button is drawn in the picture).
+  ? [{ kind: 'survey', title: '알파, 고마웠어요', text: '3분 마무리 설문 · 클로즈드 베타 신청 · 10.31까지', href: WRAPUP_LINK, cta: '설문하고 신청하기', image: { wide: 'assets/banners/wrapup-wide.jpg', narrow: 'assets/banners/wrapup-narrow.jpg' } }]
   : [];
 /** Credit events become banners with a 받기 button (G-73). */
 export const eventBanners = (events: readonly CreditEvent[]): Banner[] => events.map((e) => ({ kind: 'event', title: `${e.title} · ${e.credits}크레딧`, text: e.text, cta: '받기', tone: 'amber', event: e.id, credits: e.credits }));
@@ -185,14 +186,18 @@ export const SURVEYS: Record<'midterm' | 'weekly' | 'wrapup', { title: string; l
   },
   // G-241: the last alpha survey, with the closed-beta application at the end (wrapup.ts).
   wrapup: {
-    title: '알파 마무리 설문', lead: `알파 테스트가 ${WRAPUP.end}에 끝나요. 3분이면 돼요. 끝에서 클로즈드 베타도 신청할 수 있어요.`,
+    title: '알파 마무리 설문', lead: `알파가 ${WRAPUP.end}에 끝나요. 3분이면 돼요. 답을 보고 베타에 무엇을 남기고 뺄지 정해요.`,
     questions: [
       { key: 'nps', title: '알파를 써 보니, 투자하는 친구에게 그노몬을 추천할 만한가요?', type: 'nps' },
-      { key: 'used', title: '알파 기간에 써 본 것', type: 'many', note: '여러 개 골라도 돼요', options: ['홈 화면', '종목 검색', '종목 리포트', 'AI 위원회', '매일 AI 리포트', '차트', '스크리너', 'ETF·코인', 'AI 질문', '관심 종목·알림', '성적표·모의투자', '공시 레이더'] },
-      { key: 'keep', title: '정식 버전에도 꼭 남겨야 할 것 하나와 이유', type: 'text' },
+      // G-280: the 4.0.0 screen, why people came back, and trust in the committee's odds (beta goals: 20% return).
+      { key: 'screen', title: '새 화면(4.0.0)은 어땠어요?', type: 'one', options: ['훨씬 좋아요', '좋아요', '비슷해요', '예전이 나아요', '아직 못 봤어요'] },
+      { key: 'used', title: '알파 기간에 써 본 것', type: 'many', note: '여러 개 골라도 돼요', options: ['홈', '찾기(검색)', '위원회', '종목 차트', '종목 소식', '매일 AI 리포트', 'AI 질문', '관심 종목·알림', '성적표', '공시 레이더'] },
+      { key: 'return', title: '그노몬을 다시 열게 된 이유, 또는 안 열게 된 이유', type: 'text' },
+      { key: 'trust', title: '위원회의 확률과 시나리오, 얼마나 믿을 만했어요?', type: 'one', options: ['전혀', '조금', '보통', '꽤', '매우'] },
+      { key: 'keep', title: '베타에도 꼭 남겨야 할 것 하나와 이유', type: 'text' },
       { key: 'cut', title: '빼거나 줄여도 될 것', type: 'text' },
       { key: 'hard', title: '끝까지 헷갈렸던 화면이나 용어', type: 'text' },
-      { key: 'beta', section: '클로즈드 베타 신청', title: '다음 테스트(클로즈드 베타)에 참여할래요?', type: 'one', note: '일정이 정해지면 신청하신 분께 이메일로 먼저 알려 드려요. 신청만으로 계정이 바뀌지는 않아요.', options: [BETA_YES, '이번엔 괜찮아요'] },
+      { key: 'beta', section: '클로즈드 베타 신청', title: '11월 20일부터 모집하는 클로즈드 베타에 참여할래요?', type: 'one', note: '알파에 참여하신 분은 모집 때 먼저 초대해요. 신청만으로 계정이 바뀌지는 않아요.', options: [BETA_YES, '이번엔 괜찮아요'] },
       { key: 'contact', title: '가입 이메일 말고 연락받을 곳 (선택)', type: 'text', note: '비워 두면 가입 이메일로 연락드려요.' },
       { key: 'consent', title: '베타 안내 연락을 위해 이메일과 적어 주신 연락처를 베타 모집이 끝날 때까지 보관하는 데 동의해요', type: 'consent', note: '베타를 신청할 때만 필요해요. 계정을 지우면 함께 지워져요.' },
     ],
@@ -232,7 +237,7 @@ export function renderSurvey(): string {
     GNM.call('POST', '/survey', { kind: k, answers: a }).then(function (r) {
       if (r.error) { out.innerHTML = '<div class="msg-err"></div>'; out.firstChild.textContent = r.message; return; }
       if (k === 'wrapup') { try { localStorage.setItem('gnm-pop-wrap', '9e15'); } catch (e) {} }
-      form.hidden = true; out.innerHTML = k === 'wrapup' ? '<div class="msg-ok">고마워요! 알파에 함께해 주셔서 정말 고마워요.' + (a.beta === ${JSON.stringify(BETA_YES)} ? ' 베타 신청도 받았어요. 일정이 정해지면 이메일로 먼저 알려 드릴게요.' : '') + ' <a href="index.html">홈으로</a></div>' : '<div class="msg-ok">고마워요! 보내 주신 내용은 다음 개선에 반영하고, 바뀐 점은 공지로 알려 드릴게요. <a href="index.html">홈으로</a></div>';
+      form.hidden = true; out.innerHTML = k === 'wrapup' ? '<div class="msg-ok">고마워요! 알파에 함께해 주셔서 정말 고마워요.' + (a.beta === ${JSON.stringify(BETA_YES)} ? ' 베타 신청도 받았어요. 11월 20일 모집을 열 때 이메일로 먼저 알려 드릴게요.' : '') + ' <a href="index.html">홈으로</a></div>' : '<div class="msg-ok">고마워요! 보내 주신 내용은 다음 개선에 반영하고, 바뀐 점은 공지로 알려 드릴게요. <a href="index.html">홈으로</a></div>';
     });
   });
 })();

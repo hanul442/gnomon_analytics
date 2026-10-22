@@ -256,13 +256,13 @@ export async function runWrapupNotify(ctx: Ctx, env: MailEnv): Promise<{ sent: n
     AND NOT EXISTS (SELECT 1 FROM notify_log l WHERE l.key = 'wrapup:' || u.id)
     AND NOT EXISTS (SELECT 1 FROM surveys s WHERE s.user_id = u.id AND s.kind = 'wrapup')`).all<{ id: string; email: string }>()).results;
   const n = WRAPUP_NOTICE;
-  const html = mailLayout(site, n.title, `${n.mail.map((x) => `<p style="margin:0 0 10px;line-height:1.7">${esc(x)}</p>`).join('')}<p style="margin:18px 0 0">${mailButton(link, n.cta)}</p>`, { preheader: n.body, settings: false });
+  const html = mailLayout(site, n.subject, `${n.mail.map((x) => `<p style="margin:0 0 10px;line-height:1.7">${esc(x)}</p>`).join('')}<p style="margin:18px 0 0">${mailButton(link, n.cta)}</p>`, { preheader: n.body, settings: false });
   let sent = 0, mailed = 0;
   for (const u of users) {
     try {
       if (!(await once(ctx.db, `wrapup:${u.id}`, ctx.now))) continue;
       if (await notifyUser(ctx, u.id, 'notice', { title: n.title, body: n.body, link: WRAPUP_LINK })) sent += 1;
-      if (u.email && await sendMail(env, ctx.db, ctx.fetch, ctx.now, { kind: 'notice', userId: u.id, to: u.email, subject: `[그노몬] ${n.title}`, html, text: `${n.title}\n\n${n.mail.join('\n\n')}\n\n${link}` })) mailed += 1;
+      if (u.email && await sendMail(env, ctx.db, ctx.fetch, ctx.now, { kind: 'notice', userId: u.id, to: u.email, subject: `[그노몬] ${n.subject}`, html, text: `${n.subject}\n\n${n.mail.join('\n\n')}\n\n${link}` })) mailed += 1;
     } catch { /* one user's bad row must not stop the rest */ }
   }
   return { sent, mailed };
