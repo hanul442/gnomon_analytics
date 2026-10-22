@@ -92,7 +92,7 @@ export function ringChart(rings: readonly Ring[], opts: { label: string; big: st
       + (v > 0 ? `<circle class="kr-arc" cx="${c}" cy="${c}" r="${rad}" stroke-width="${sw}" pathLength="100" stroke-dasharray="${r1(v * 100)} 100" transform="rotate(-90 ${c} ${c})" style="stroke:${r.color};--i:${i}"/>` : '');
   }).join('');
   const legend = rs.map((r) => `<li><i style="background:${r.color}"></i><span>${esc(r.label)}</span><b>${esc(r.text)}</b></li>`).join('');
-  return `<figure class="kit-ring${opts.cls ? ` ${opts.cls}` : ''}"><div class="kr-fig"><svg viewBox="0 0 ${S} ${S}" role="img" aria-label="${esc(opts.label)}">${arcs}</svg><div class="kr-c"><b>${esc(opts.big)}</b>${opts.small ? `<small>${esc(opts.small)}</small>` : ''}</div></div><ul class="kr-leg">${legend}</ul></figure>`;
+  return `<figure class="kit-ring${opts.cls ? ` ${opts.cls}` : ''}"><div class="kr-fig"><svg viewBox="0 0 ${S} ${S}" role="img" aria-label="${esc(opts.label)}">${arcs}</svg>${opts.big ? `<div class="kr-c"><b>${esc(opts.big)}</b>${opts.small ? `<small>${esc(opts.small)}</small>` : ''}</div>` : ''}</div><ul class="kr-leg">${legend}</ul></figure>`;
 }
 
 // ---------------------------------------------------------------- calendar heatmap
