@@ -1,5 +1,5 @@
 {
- "at": "2026-10-22T09:25:51.036Z",
+ "at": "2026-10-22T09:41:29.698Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2667
+   "count": 2665
   },
   {
    "source": "naver:fchart:day:etf",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 50
+   "count": 51
   },
   {
    "source": "google:topic-business-ko",
@@ -325,29 +325,29 @@
    "failedSources": []
   },
   {
-   "symbol": "037710",
-   "report": "WRITTEN",
+   "symbol": "NVDA.O",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "KRW-HBAR",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "037710",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "293490",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "NVDA.O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
-  "date": "2026-10-14",
+  "date": "2026-10-15",
   "status": "OK"
  }
 }
