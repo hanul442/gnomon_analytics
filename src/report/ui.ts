@@ -311,6 +311,7 @@ const PART_ICONS: Record<string, string> = {
   sum: '<path d="M4 11l8-6.5 8 6.5"/><path d="M6.5 9.5V19h11V9.5"/>',
   com: '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>',
   stocks: '<path d="M4 19h16"/><path d="M5 15l4.5-4.5 3.5 3L19 7"/><path d="M15 7h4v4"/>',
+  market: '<path d="M4 19h16"/><path d="M5 15l4.5-4.5 3.5 3L19 7"/><path d="M15 7h4v4"/>',
   rates: '<path d="M18 6L6 18"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/>',
   commod: '<path d="M12 3.5c3.4 4.3 5.5 7.6 5.5 10.2a5.5 5.5 0 0 1-11 0c0-2.6 2.1-5.9 5.5-10.2z"/>',
   news: '<rect x="4" y="4.5" width="16" height="15" rx="2.5"/><path d="M8 9h8M8 12.5h8M8 16h5"/>',

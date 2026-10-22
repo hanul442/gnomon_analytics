@@ -8,6 +8,7 @@ import { shell } from './renderHtml.js';
 import { esc } from './html.js';
 import { smoothD } from './chartLook.js';
 import { kmStatArea } from './kit/market.js';
+import { contentMore, CONTENT_MORE_CSS } from './contentMore.js';
 import { kmWorldMapAll, KIT_WORLD_CSS, type WorldMapEntry } from './kit/worldMap.js';
 import type { WorldIndexQuote, WorldMacroQuote, WorldMarkets, WorldRegion } from '../sources/naverGlobal.js';
 import type { WorldIssue, WorldIssueBoard, WorldTag } from '../analysis/worldNews.js';
@@ -94,7 +95,7 @@ const sheetOf = (name: string, series: readonly (readonly [string, number])[] | 
 const row = (name: string, sub: string, value: string, move: string, t: string, sp = '', sheet = '') => `<div class="wd-row"${sheet}><span class="wd-n"><b>${esc(name)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>${sp}<span class="wd-v">${esc(value)}</span><b class="wd-c ${t}">${esc(move)}</b></div>`;
 
 /** G-277: the world screen's panels, shared by home (요약·증시·금리·환율·원자재) and world.html. */
-export interface WorldPanels { sum: string; stocks: string; rates: string; commod: string; news: string; key6: string; sentence: string; asof: string }
+export interface WorldPanels { sum: string; stocks: string; rates: string; commod: string; news: string; key6: string; market: string; key4: string; sentence: string; asof: string }
 export function worldPanels(p: WorldPage): WorldPanels {
   const m = p.markets, mk = marketsOf(m);
   const q = (key: string) => m.macro.find((x) => x.key === key) ?? null;
@@ -142,7 +143,39 @@ ${regions.map((r) => { const xs = m.indices.filter((x) => x.region === r); if (!
 <p class="fine wd-fine">국내 세계·경제 뉴스와 영어 경제 뉴스 제목을 모아 같은 사건끼리 묶고, 다룬 매체가 많은 순으로 세웠어요${p.news.from && p.news.to ? ` (${esc(kstHm(p.news.from))} ~ ${esc(kstHm(p.news.to))})` : ''}. 옆의 시장 숫자는 같은 날 함께 움직인 값이고, 원인이라는 뜻이 아니에요. 기사는 제목·매체·링크만 보여 줘요.</p>`
     : '<section class="card wd-card"><p class="muted">세계 뉴스를 아직 모으지 못했어요.</p></section>';
 
-  return { sum, stocks, rates, commod, news, key6, sentence: worldSentence(m), asof: kstHm(m.generatedAt) };
+  // G-281 (한서님 10/22 "분류가 각 종류에 맞게"): home's 시장 — every number once, in four kinds, one row shape.
+  // 증시 (indices + VIX, the stock market's fear gauge) → 금리 (policy + 10-year) → 환율 → 원자재 (with shipping).
+  const mrow = (x: WorldMacroQuote) => row(x.group === 'bond' ? `${x.name} 10년` : x.name, x.hint ?? '', valueText(x), moveText(x), moveTone(x), spark(x.series), sheetOf(x.group === 'bond' ? `${x.name} 10년 금리` : x.name, x.series, digitsOf(x)));
+  const irow = (x: WorldIndexQuote) => row(x.name, x.country, fmt(x.value, 2), pct(x.changePct), tone(x.changePct), spark(x.series), sheetOf(x.name, x.series, 2));
+  const sec = (id: string, title: string, side: string, rows: string[], label: string, limit: number) => (rows.length ? `<section class="card wd-card mk-sec" id="mk-${id}"><div class="wd-h"><h2>${title}</h2><span class="muted small">${side}</span></div>${contentMore(rows, label, (h) => h, limit)}</section>` : '');
+  const FIRST = ['KOSPI', 'KOSDAQ', '.INX', '.IXIC', '.N225'];
+  const ixOrdered = [...FIRST.map(ix).filter((x): x is WorldIndexQuote => !!x), ...m.indices.filter((x) => !FIRST.includes(x.key))];
+  const vix = q('VIX');
+  const ixRows = ixOrdered.map(irow);
+  ixRows.splice(Math.min(5, ixRows.length), 0, ...(vix ? [mrow(vix)] : []));
+  const of = (...g: string[]) => m.macro.filter((x) => g.includes(x.group));
+  // 금리: 미국·한국 first (기준금리, then 10년), the rest under 더 보기.
+  const rateFirst = ['FED', 'BOK', 'US10Y', 'KR10Y'];
+  const rateRow = (x: WorldMacroQuote) => (x.group === 'policy' ? row(x.name, '기준금리', valueText(x), '', '') : mrow(x));
+  const rates0 = of('policy', 'bond');
+  const rateRows = [...rateFirst.map((k) => rates0.find((x) => x.key === k)).filter((x): x is WorldMacroQuote => !!x), ...rates0.filter((x) => !rateFirst.includes(x.key))].map(rateRow);
+  const market = [
+    sec('stocks', '증시', `${m.indices.length}개 중 <span class="up">▲${up}</span> <span class="down">▼${down}</span>`, ixRows, '지수', 6),
+    sec('rates', '금리', '기준금리 · 10년 국채', rateRows, '금리', 4),
+    sec('fx', '환율', '원화는 하나은행 고시', of('fx').map(mrow), '환율', 4),
+    sec('commod', '원자재', '선물 · 달러, 운임', [...of('energy', 'metals'), ...of('ship')].map(mrow), '원자재', 5),
+  ].join('') + `<p class="fine wd-fine">장이 열린 곳은 15분 안팎 늦은 값이에요. 선은 최근 30거래일 종가예요. 줄을 누르면 크게 볼 수 있어요.</p>`;
+  // 요약's four numbers: one per kind, each named with its kind and opening its own section in 시장.
+  const tile = (kind: string, sec: string, name: string, value: string, move: string, t: string) => `<button type="button" class="mk-tile" data-wd-go="market" data-mk="${sec}"><small>${esc(kind)} · ${esc(name)}</small><b>${esc(value)}</b><span class="${t}">${esc(move)}</span></button>`;
+  const kx = ix('KOSPI') ?? ix('.INX'), k10 = q('US10Y'), kfx = q('USDKRW'), koil = q('WTI');
+  const key4 = [
+    kx ? tile('증시', 'stocks', kx.name, fmt(kx.value, 2), pct(kx.changePct), tone(kx.changePct)) : '',
+    k10 ? tile('금리', 'rates', '미국 10년', valueText(k10), moveText(k10), moveTone(k10)) : '',
+    kfx ? tile('환율', 'fx', kfx.name, valueText(kfx), moveText(kfx), moveTone(kfx)) : '',
+    koil ? tile('원자재', 'commod', 'WTI', valueText(koil), moveText(koil), moveTone(koil)) : '',
+  ].join('');
+
+  return { sum, stocks, rates, commod, news, key6, market, key4, sentence: worldSentence(m), asof: kstHm(m.generatedAt) };
 }
 
 /**
@@ -151,7 +184,7 @@ ${regions.map((r) => { const xs = m.indices.filter((x) => x.region === r); if (!
  */
 export function movedToHome(tab: string): string {
   const t = JSON.stringify(tab);
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GNOMON | 오늘</title><meta http-equiv="refresh" content="0;url=index.html#${esc(tab)}"><script>location.replace('index.html#' + (/^#(sum|com|stocks|rates|commod|news)$/.test(location.hash) ? location.hash.slice(1) : ${t}));</script></head><body><p><a href="index.html#${esc(tab)}">홈으로 옮겼어요. 여기를 눌러 주세요.</a></p></body></html>`;
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GNOMON | 오늘</title><meta http-equiv="refresh" content="0;url=index.html#${esc(tab)}"><script>location.replace('index.html#' + (/^#(sum|com|market|stocks|rates|commod|fx|news)$/.test(location.hash) ? location.hash.slice(1) : ${t}));</script></head><body><p><a href="index.html#${esc(tab)}">홈으로 옮겼어요. 여기를 눌러 주세요.</a></p></body></html>`;
 }
 
 export function renderWorldPage(p: WorldPage | null): string {
@@ -195,6 +228,8 @@ export const WORLD_CSS = `<style>${KIT_WORLD_CSS}
 .wd-more summary{cursor:pointer;font-size:12.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center;margin-top:4px}.wd-more ul{margin:2px 0;padding-left:16px}.wd-more li{font-size:13px;line-height:1.5;margin:3px 0}.wd-more a{color:inherit}.wd-more small{color:var(--muted)}
 .wd-filter{display:flex;gap:6px;flex-wrap:wrap}.wd-filter button{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font:inherit;font-size:13px;font-weight:600;color:var(--fg2);cursor:pointer}.wd-filter button[aria-pressed=true]{background:var(--fg);border-color:var(--fg);color:var(--surface-solid)}
 .wd-fine{margin:0 4px}.up{color:#f04452}.down{color:#3182f6}
+${CONTENT_MORE_CSS}.mk-sec .content-more>summary{display:flex;justify-content:center;align-items:center;min-height:44px;border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);list-style:none}.mk-sec .content-more>summary::-webkit-details-marker{display:none}.mk-sec{scroll-margin-top:16px}
+.mk-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mk-tile{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px;border:0;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm,0 1px 2px rgba(0,0,0,.04));font:inherit;color:var(--fg);text-align:left;cursor:pointer;min-height:44px}.mk-tile small{font-size:12px;font-weight:600;color:var(--muted)}.mk-tile b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}.mk-tile span{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 </style>`;
 
 export const WORLD_JS = `<script>
@@ -208,12 +243,15 @@ export const WORLD_JS = `<script>
   // G-277 (한서님 10/21): switching a tab goes back to the top of the page.
   tabs.forEach(function (t) { t.addEventListener('click', function () { pick(t.getAttribute('data-wd'), true); window.scrollTo({ top: 0, behavior: 'smooth' }); }); });
   document.addEventListener('click', function (e) {
-    var g = e.target.closest && e.target.closest('[data-wd-go]'); if (g) { pick(g.getAttribute('data-wd-go'), true); window.scrollTo(0, 0); return; }
+    var g = e.target.closest && e.target.closest('[data-wd-go]'); if (g) { pick(g.getAttribute('data-wd-go'), true); var sec = g.getAttribute('data-mk') && document.getElementById('mk-' + g.getAttribute('data-mk')); if (sec) sec.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0); return; }
     var f = e.target.closest && e.target.closest('[data-wd-tag]'); if (!f) return;
     var tag = f.getAttribute('data-wd-tag');
     document.querySelectorAll('[data-wd-tag]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
     document.querySelectorAll('[data-wd-p="news"] [data-tag]').forEach(function (li) { li.hidden = !!tag && li.getAttribute('data-tag') !== tag; });
   });
-  var h = location.hash.slice(1); if (['com', 'stocks', 'rates', 'commod', 'news'].indexOf(h) >= 0) pick(h, false);
+  // G-281: the old 증시·금리·환율·원자재 links land on their section in 시장.
+  var h = location.hash.slice(1), old = { stocks: 'stocks', rates: 'rates', commod: 'commod', fx: 'fx' };
+  if (old[h] && document.querySelector('[data-wd-p="market"]')) { pick('market', false); var s0 = document.getElementById('mk-' + old[h]); if (s0) s0.scrollIntoView({ block: 'start' }); }
+  else if (['com', 'market', 'stocks', 'rates', 'commod', 'news'].indexOf(h) >= 0) pick(h, false);
 })();
 </script>`;
