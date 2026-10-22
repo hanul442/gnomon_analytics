@@ -1000,3 +1000,4 @@
 {"symbol":"NVDA.O","date":"2026-10-21","open":220.96,"high":222.19,"low":217.66,"close":221.97,"volume":87085733,"source":"naver:world:day","retrievedAt":"2026-10-22T09:25:51.036Z"}
 {"symbol":"NVDA.O","date":"2026-10-22","open":217.22,"high":218.88,"low":213.17,"close":213.54,"volume":31070882,"source":"naver:world:day","retrievedAt":"2026-10-22T14:43:04.918Z"}
 {"symbol":"NVDA.O","date":"2026-10-22","open":217.22,"high":218.88,"low":212.25,"close":212.47,"volume":62004343,"source":"naver:world:day","retrievedAt":"2026-10-22T17:06:56.468Z"}
+{"symbol":"NVDA.O","date":"2026-10-22","open":217.22,"high":218.88,"low":212,"close":212.22,"volume":77420431,"source":"naver:world:day","retrievedAt":"2026-10-22T18:47:59.773Z"}

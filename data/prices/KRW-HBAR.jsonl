@@ -1001,3 +1001,4 @@
 {"symbol":"KRW-HBAR","date":"2026-10-22","open":112,"high":113,"low":107,"close":108,"volume":34680232.18975563,"source":"upbit:candles:days","retrievedAt":"2026-10-22T09:41:29.698Z"}
 {"symbol":"KRW-HBAR","date":"2026-10-22","open":112,"high":113,"low":107,"close":108,"volume":44859933.37727637,"source":"upbit:candles:days","retrievedAt":"2026-10-22T14:43:04.918Z"}
 {"symbol":"KRW-HBAR","date":"2026-10-22","open":112,"high":113,"low":105,"close":107,"volume":49059377.1868711,"source":"upbit:candles:days","retrievedAt":"2026-10-22T17:06:56.468Z"}
+{"symbol":"KRW-HBAR","date":"2026-10-22","open":112,"high":113,"low":105,"close":107,"volume":50174351.10864864,"source":"upbit:candles:days","retrievedAt":"2026-10-22T18:47:59.773Z"}
