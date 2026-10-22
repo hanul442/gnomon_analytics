@@ -952,3 +952,18 @@ test('coinnews (G-270): a coin without a report gets its news from Google News, 
   assert.doesNotMatch(r.body.homeNews, /비트코인 숨 고르기/);
   assert.match(r.body.news, /리플 급등/);
 });
+
+test('G-279: a saved screen can be overwritten from the condition sheet', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const u = await t.login('w2@example.com', (await t.call('POST', '/admin/invites', {}, boss.session)).body.code);
+  await t.call('POST', '/screens', { name: '급증', screen: { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 3 }] } }, u.session);
+  const id = (await t.call('GET', '/screens', undefined, u.session)).body.screens[0].id;
+  assert.equal((await t.call('POST', `/screens/${id}`, { name: '급증 5배', screen: { match: 'all', rules: [{ f: 'bad', op: '>=', v: 1 }] } }, u.session)).body.error, 'BAD_SCREEN');
+  assert.equal((await t.call('POST', `/screens/${id}`, { name: '급증 5배', screen: { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 5 }] } }, u.session)).status, 200);
+  const got = (await t.call('GET', '/screens', undefined, u.session)).body.screens;
+  assert.equal(got.length, 1);
+  assert.equal(got[0].name, '급증 5배');
+  assert.deepEqual(got[0].screen.rules, [{ f: 'vol1', op: '>=', v: 5 }]);
+  assert.equal((await t.call('POST', `/screens/99999`, { name: 'x', screen: { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 5 }] } }, u.session)).body.error, 'NO_SCREEN');
+});
