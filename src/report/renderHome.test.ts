@@ -65,6 +65,8 @@ test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab
   assert.ok(!me.includes('id="side-menu"'));
   // G-255: four tabs; 내 종목's pages are rows under 나 › 내 기록, and 관심 종목 lights up 홈.
   assert.ok(me.includes('class="card st-rows me-rec"') && ['watch.html', 'inbox.html', 'myreports.html', 'mydebates.html'].every((h) => me.includes(`href="${h}"`)));
+  // G-281: no jump row; 내 투자 방식 and 내 위원회 are one line each; 내 기록 shows only where the bottom bar is not (wide screens).
+  assert.ok(!me.includes('class="st-nav"') && me.includes('<details class="card st-fold" id="profile">') && me.includes('<details class="card st-fold" id="committee">'));
   assert.ok(modeBar('', 'inbox.html').includes('href="mydebates.html"') && !modeBar('', 'inbox.html').includes('watch.html'));
   assert.ok(!bar.includes('href="watch.html"'));
 });

@@ -300,11 +300,11 @@ try{
  await page.setViewportSize({width:390,height:844});
  // G-133: 관심 opens its own page with just the watched names.
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/settings.html');await page.evaluate(()=>localStorage.setItem('gnm-watch',JSON.stringify(['999999'])));
- await page.locator('.me-rec a[href$="watch.html"]').click();await page.waitForURL(/watch\.html/);await page.locator('#wp-list .wp-row').first().waitFor();
+ await page.locator('.me-fit a[href$="watch.html"]').click();await page.waitForURL(/watch\.html/);await page.locator('#wp-list .wp-row').first().waitFor();
  assert.equal(await page.locator('#wp-list .wp-row').count(),1);assert.equal(await page.locator('#wp-n').innerText(),'1');assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  await page.screenshot({path:'test-artifacts/watch-390.png'});
  // G-213, G-244: 위원별 탭의 판단 narrows to the watchlist on one tap, at phone and desktop widths.
- for(const width of [375,1280]){await page.setViewportSize({width,height:900});await page.goto(origin+'/scorecard-fixture.html');assert.equal(await page.locator('#scg-analysts').isVisible(),false,'G-244: one group at a time');await page.locator('[data-sc-tab=analysts]').click();await page.locator('.mb-bar:not([hidden])').waitFor();
+ for(const width of [375,1280]){await page.setViewportSize({width,height:900});await page.goto(origin+'/scorecard-fixture.html');assert.equal(await page.locator('[data-sc-tab]').count(),0,'G-281: no tab row in the scorecard');await page.locator('#scg-analysts').scrollIntoViewIfNeeded();await page.locator('.mb-bar:not([hidden])').waitFor();
   assert.equal(await page.locator('.mb-card').count(),6);assert.equal(await page.locator('#m-trend_momentum .mb-row:visible').count(),4,'four calls show before 모두 보기');assert.ok(await page.locator('.mb-row[data-sym="000660"]').first().isVisible());
   await page.locator('.mb-watch').click();assert.equal(await page.locator('.mb-row[data-sym="000660"]:visible').count(),0);assert.equal(await page.locator('.mb-row[data-sym="999999"]:visible').count(),18,'every watched call shows, the 4-row cut aside');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('#analysts').screenshot({path:'test-artifacts/scorecard-members-'+width+'.png'});}
@@ -333,7 +333,7 @@ try{
  assert.ok(await page.locator('.mode-tabs').isHidden());await page.locator('[data-dock-kind]').click();await page.locator('.nav-menu a[href$="themes.html"]').click();await page.waitForURL(/themes\.html/);
  assert.equal(await page.locator('.bottom-nav .nav-tabs [aria-current=page]').getAttribute('aria-label'),'찾기');assert.equal(await page.locator('[data-dock-kind] b').textContent(),'테마');
  // G-258: 찾기 pages get the search bar; the grid button brings the four tabs back.
- await page.locator('.bottom-nav.ctx .nav-field').waitFor();await page.locator('.bottom-nav .nav-back').click();await page.locator('.bottom-nav:not(.ctx) .nav-tabs a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),7);await page.locator('.me-rec a[href$="inbox.html"]').click();await page.waitForURL(/inbox\.html/);assert.equal(await page.locator('.bottom-nav .nav-tabs [aria-current=page]').getAttribute('aria-label'),'나','G-255: 알림함 lights up 나');assert.equal(await page.locator('.bottom-nav.ctx .nav-seg [aria-current=page]').getAttribute('aria-label'),'알림함','G-258: 나 bar marks 알림함');await page.screenshot({path:'test-artifacts/me-390.png'});
+ await page.locator('.bottom-nav.ctx .nav-field').waitFor();await page.locator('.bottom-nav .nav-back').click();await page.locator('.bottom-nav:not(.ctx) .nav-tabs a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),7);assert.equal(await page.locator('.me-rec').isVisible(),false,'G-281: on phones 내 기록 lives in the bar only');await page.locator('.bottom-nav .nav-seg a[href$="inbox.html"]').click();await page.waitForURL(/inbox\.html/);assert.equal(await page.locator('.bottom-nav .nav-tabs [aria-current=page]').getAttribute('aria-label'),'나','G-255: 알림함 lights up 나');assert.equal(await page.locator('.bottom-nav.ctx .nav-seg [aria-current=page]').getAttribute('aria-label'),'알림함','G-258: 나 bar marks 알림함');await page.screenshot({path:'test-artifacts/me-390.png'});
  await page.goto(here);await page.waitForLoadState('load');
  // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.
  // G-252: phones have no top bar, so there the button is the one in the 나 tab.
@@ -406,7 +406,9 @@ try{
   assert.match(await page.locator('#md-list .md-gh a[href="market/daily-2026-10-07.html#join"]').innerText(),/시장 데일리 · 10월 7일/);}
  // G-207/G-210: 설정 (내 투자 방식) saves each pick at once: the view to gnm-persona, the rest to gnm-prefs and the account's answers.
  await page.goto(origin+'/profile.html');await page.waitForURL(/\/settings\.html#profile$/);
- for(const width of [375,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/settings.html');await page.locator('#pf-form').waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'profile fits '+width);}
+ for(const width of [375,1280]){await page.setViewportSize({width,height:850});await page.goto(origin+'/settings.html');await page.locator('#pf-form').waitFor({state:'attached'});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'profile fits '+width);}
+ // G-281: 내 투자 방식 is one line that opens.
+ assert.equal(await page.locator('#pf-form').isVisible(),false,'folded');await page.locator('#profile > summary').click();
  await page.locator('#pf-form label',{hasText:'아주 쉬운 말로'}).click();await page.locator('#pf-form label',{hasText:'반도체'}).click();await page.locator('#pf-form label',{hasText:'장기'}).click();
  await page.waitForFunction(()=>/저장했어요/.test(document.getElementById('pf-state').textContent));
  {const st=await page.evaluate(()=>({p:JSON.parse(localStorage.getItem('gnm-prefs')||'{}'),v:localStorage.getItem('gnm-persona'),h:document.documentElement.getAttribute('data-persona')}));assert.equal(st.p.explain,'아주 쉬운 말로');assert.deepEqual(st.p.sectors,['반도체']);assert.equal(st.v,'long');assert.equal(st.h,'long');}
@@ -425,15 +427,16 @@ try{
  assert.equal(await page.locator('#tab-strategy').isVisible(),true,'더 보기 opens them');assert.equal(await page.locator('#tab-technical .lv-more').isVisible(),false);
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('gnm-prefs')||'{}').level),'초보자');
  await page.evaluate(()=>{const a=JSON.parse(localStorage.getItem('gnm-prefs')||'{}');delete a.level;localStorage.setItem('gnm-prefs',JSON.stringify(a));});
- await page.setViewportSize({width:1280,height:850});await page.goto(origin+'/settings.html');await page.locator('#pf-form').waitFor();
+ await page.setViewportSize({width:1280,height:850});await page.goto(origin+'/settings.html');await page.locator('#pf-form').waitFor({state:'attached'});
  // G-210: the same page holds 화면, 알림 (alerts.html now lands here) and 계정.
- {for(const id of ['profile','committee','screen','alerts','account'])assert.equal(await page.locator('.st-nav a[href="#'+id+'"]').count(),1);assert.equal(await page.locator('#al-body').count(),1);assert.equal(await page.locator('#screen ~ section .theme-bar [data-theme-pick]').count()>=3,true);}
+ {assert.equal(await page.locator('.st-nav').count(),0,'G-281: no jump row');for(const id of ['profile','committee','screen','alerts','account'])assert.equal(await page.locator('#'+id).count(),1);assert.equal(await page.locator('#al-body').count(),1);assert.equal(await page.locator('#screen ~ section .theme-bar [data-theme-pick]').count()>=3,true);}
+ await page.locator('#committee > summary').click();
  // G-212: 내 위원회 — add, reorder, then the question box offers them as one-tap answerers.
  await page.locator('#cm-add button',{hasText:'반도체 전문가'}).click();await page.locator('#cm-add button',{hasText:'가치투자 전문가'}).click();
  await page.locator('#cm-list [data-down="0"]').click();
  assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('gnm-committee')).map(x=>x.k)),['value','semis']);
  assert.equal(await page.locator('#cm-add button[data-add="semis"]').count(),0);
- await page.reload();await page.locator('#pf-form').waitFor();assert.equal(await page.locator('#pf-form input[value="아주 쉬운 말로"]').isChecked(),true);assert.equal(await page.locator('#pf-form input[name=persona][value="장기"]').isChecked(),true);
+ await page.reload();await page.locator('#pf-form').waitFor({state:'attached'});assert.equal(await page.locator('#pf-form input[value="아주 쉬운 말로"]').isChecked(),true);assert.equal(await page.locator('#pf-form input[name=persona][value="장기"]').isChecked(),true);
  await page.goto(origin+'/market-fixture.html');await page.locator('#debate [data-room-open]').click();await page.locator('#debate .jn-mine').waitFor();
  assert.deepEqual(await page.locator('#debate .jn-mine [data-mine]').evaluateAll(b=>b.map(x=>x.textContent)),['위원회 전체','가치투자 전문가','반도체 전문가']);
  await page.locator('#debate .jn-mine [data-mine="semis"]').click();assert.match(await page.locator('#debate [data-selected-expert]').innerText(),/반도체 전문가/);assert.equal(await page.locator('#debate .jn-mine [data-mine="semis"]').getAttribute('aria-pressed'),'true');
