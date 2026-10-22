@@ -17,7 +17,7 @@ test('each analyst reads only its own lens plus the price, the range and its rec
 function client(answer: (persona: string) => string | Error, seen: Record<string, unknown>[] = []): Anthropic {
   return { messages: { create: async (params: Record<string, unknown>) => {
     seen.push(params);
-    const persona = String((params.messages as { content: string }[])[0]!.content).match(/당신은 (.+?)예요/)![1]!;
+    const persona = String((params.messages as { content: string }[])[0]!.content).match(/당신은 (.+?)(?:예요|이에요)/)![1]!;
     const a = answer(persona);
     if (a instanceof Error) throw a;
     return { stop_reason: 'end_turn', content: [{ type: 'text', text: a }], usage: { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 500 } };
@@ -40,6 +40,21 @@ test('calls are locked in parallel; bad, uncited or failed ones are left to the 
   // The call that threw billed nothing.
   assert.equal(out.usage?.inputTokens, 1000 * (seen.length - 1));
   assert.equal(out.usage?.cacheReadTokens, 500 * (seen.length - 1));
+});
+
+test('G-242: the industry seat locks a call only when the industry is known, under its specialty', async () => {
+  const withZ = [...evidence, ev('Z1')];
+  assert.deepEqual(lensOf('sector_expert', withZ).map((e) => e.id), ['P1', 'R1', 'D1', 'N1', 'E1', 'K1', 'Z1']);
+  const answer = '{"stance":"BULLISH","confidence":60,"target":110,"rationale":{"text":"메모리 가격 근거는 없지만 실적이 늘어요.","evidenceIds":["D1","Z1"]}}';
+  const seen: Record<string, unknown>[] = [];
+  const expert = { key: 'semis', name: '반도체 전문위원', focus: '메모리 가격', kpis: ['D램 가격'] };
+  const out = await lockAnalysts({ name: '가', close: 100, extraRule: '', evidence: withZ, expert }, client((p) => (p.startsWith('반도체') ? answer : 'not json'), seen));
+  assert.deepEqual(out.calls.map((c) => [c.analyst, c.rationale.evidenceIds]), [['sector_expert', ['D1', 'Z1']]]);
+  assert.equal(seen.length, 7);
+  assert.match(String((seen.find((p) => /반도체 전문위원/.test(String((p.messages as { content: string }[])[0]!.content)))!.messages as { content: string }[])[0]!.content), /D램 가격/);
+  const none: Record<string, unknown>[] = [];
+  await lockAnalysts({ name: '가', close: 100, extraRule: '', evidence: withZ }, client(() => 'not json', none));
+  assert.equal(none.length, 6, 'no industry, no seat');
 });
 
 test('a client without messages.create locks nothing', async () => {

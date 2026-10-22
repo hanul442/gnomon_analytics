@@ -5,7 +5,7 @@
 // voted that way; chips highlight one faction. Pure rendering from the report.
 
 import type { DailyReport } from './dailyReport.js';
-import { ANALYSTS } from '../analysis/analysts.js';
+import { analystName } from '../analysis/analysts.js';
 import { basePosition, committeeOdds, reportBase } from '../analysis/baseOdds.js';
 import { esc } from './html.js';
 import { won } from './format.js';
@@ -32,10 +32,9 @@ export function seatsFor(report: DailyReport): Seat[] {
   const seats: Seat[] = [];
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
   for (const a of c?.analysts ?? []) {
-    const who = ANALYSTS.find((x) => x.id === a.analyst);
     const score = report.market?.analystBoard?.find((b) => b.analyst === a.analyst);
     const record = score && score.scored ? `지난 성적: 채점 ${score.scored}건, 방향 적중 ${Math.round(score.hitRate! * 100)}%${score.rank ? `, ${score.rank}위` : ''}` : '지난 성적: 아직 채점 전이에요(20거래일 뒤 채점).';
-    seats.push({ id: `ai:${a.analyst}`, faction: 'ai', name: who?.name ?? a.analyst, stance: fromVote(a.stance), lines: [`확신도 ${a.confidence}% · 20거래일 뒤 예상 ${won(a.target)}${a.invalidation ? ` · 종가 ${won(a.invalidation)}에 닿으면 틀렸다고 봐요` : ''}`, a.rationale.text, record, ...(c?.lockedAnalysts?.includes(a.analyst) ? ['위원회가 모이기 전에 다른 위원 의견을 모른 채 혼자 판단했고, 위원회는 이 판단을 바꾸지 않았어요.'] : [])] });
+    seats.push({ id: `ai:${a.analyst}`, faction: 'ai', name: analystName(a.analyst, c?.sectorExpert), stance: fromVote(a.stance), lines: [`확신도 ${a.confidence}% · 20거래일 뒤 예상 ${won(a.target)}${a.invalidation ? ` · 종가 ${won(a.invalidation)}에 닿으면 틀렸다고 봐요` : ''}`, a.rationale.text, record, ...(c?.lockedAnalysts?.includes(a.analyst) ? ['위원회가 모이기 전에 다른 위원 의견을 모른 채 혼자 판단했고, 위원회는 이 판단을 바꾸지 않았어요.'] : [])] });
   }
   for (const d of c?.desks ?? []) {
     seats.push({ id: `desk:${d.desk}`, faction: 'desk', name: `${DESK_WORD[d.desk]} 데스크`, stance: d.stance === 'INSUFFICIENT_DATA' ? 'abstain' : fromVote(d.stance), lines: [d.view.text] });

@@ -1,4 +1,4 @@
-// Independent analyst calls (G-228). Before the committee meets, each of the six analysts judges alone, in its
+// Independent analyst calls (G-228). Before the committee meets, each analyst (the six lenses and, G-242, the industry specialist) judges alone, in its
 // own small call on a smaller model, from only the evidence of its own lens. Its stance, confidence and
 // 20-session price are then locked: the committee debates them but cannot change them. The papers behind it
 // say most of what a committee gains comes from independent first answers (Du et al. 2023; Smit et al. 2024)
@@ -9,6 +9,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { ANALYSTS, ANALYST_HORIZON, invalidationOf, type AnalystId } from './analysts.js';
 import type { Claim, EvidenceItem } from './commentary.js';
+import { expertBrief, type SectorExpert } from './sectorExpert.js';
 
 export const LOCK_MODEL = 'claude-haiku-5-5';
 
@@ -20,6 +21,8 @@ export const LENS: Record<AnalystId, readonly string[]> = {
   volume_flow: ['Q1', 'M1'],
   fundamental: ['D1', 'M1', 'E', 'X1'],
   event_catalyst: ['E', 'F', 'N', 'B1'],
+  // G-242: the company's business (Z1) read with its numbers, market, macro and news; filing originals stay with event_catalyst.
+  sector_expert: ['Z1', 'D1', 'M1', 'X1', 'E', 'N', 'B1'],
 };
 const SHARED = ['P1', 'R1', 'R2', 'K1'];
 /** A lens entry without a digit ('E', 'F', 'N') takes every item of that letter. */
@@ -60,17 +63,19 @@ const jsonIn = (text: string): unknown => { const a = text.indexOf('{'), b = tex
  * and the tokens spent. Never throws: a client without `messages.create`, an API error or a bad reply just
  * leaves that analyst out.
  */
-export async function lockAnalysts(input: { name: string; close: number; extraRule: string; evidence: readonly EvidenceItem[] }, client: Anthropic): Promise<{ calls: LockedCall[]; usage: LockUsage | null }> {
+export async function lockAnalysts(input: { name: string; close: number; extraRule: string; evidence: readonly EvidenceItem[]; expert?: SectorExpert | null }, client: Anthropic): Promise<{ calls: LockedCall[]; usage: LockUsage | null }> {
   if (typeof client.messages?.create !== 'function') return { calls: [], usage: null };
   const usage: LockUsage = { model: LOCK_MODEL, inputTokens: 0, outputTokens: 0 };
   const one = async (a: (typeof ANALYSTS)[number]): Promise<LockedCall | null> => {
+    // G-242: the industry seat sits only when the stock's industry is known.
+    if (a.id === 'sector_expert' && !input.expert) return null;
     const lens = lensOf(a.id, input.evidence);
     if (lens.length <= SHARED.filter((s) => input.evidence.some((e) => e.id === s)).length) return null; // nothing of its own to read
     try {
       const response = await client.messages.create({
         model: LOCK_MODEL, max_tokens: 4000, output_config: { effort: 'low' },
         system: [{ type: 'text', text: LOCK_SYSTEM, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content: `당신은 ${a.name}예요. 보는 것: ${a.focus}.${input.extraRule ? `\n이 종목 추가 규칙:\n${input.extraRule}` : ''}\n\n${JSON.stringify({ 종목: input.name, 기준_종가: input.close, 근거_목록: lens.map(({ id, label, detail }) => ({ id, 제목: label, 내용: detail })) })}` }],
+        messages: [{ role: 'user', content: `${a.id === 'sector_expert' && input.expert ? `당신은 ${expertBrief(input.expert)}` : `당신은 ${a.name}예요. 보는 것: ${a.focus}.`}${input.extraRule ? `\n이 종목 추가 규칙:\n${input.extraRule}` : ''}\n\n${JSON.stringify({ 종목: input.name, 기준_종가: input.close, 근거_목록: lens.map(({ id, label, detail }) => ({ id, 제목: label, 내용: detail })) })}` }],
       });
       usage.inputTokens += response.usage.input_tokens; usage.outputTokens += response.usage.output_tokens;
       if (response.usage.cache_read_input_tokens) usage.cacheReadTokens = (usage.cacheReadTokens ?? 0) + response.usage.cache_read_input_tokens;

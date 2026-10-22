@@ -136,7 +136,7 @@ test('the committee keeps desk views, the red team and three scenarios, each cit
   // The uncited BEAR scenario drops out; the kept ones are rescaled to 100 (G-60).
   assert.deepEqual(c.scenarios?.map((s) => s.probability), [53, 47]);
   assert.equal(c.dropped, 4);
-  assert.equal(c.promptVersion, 'gnm-committee-v16');
+  assert.equal(c.promptVersion, 'gnm-committee-v17');
   // Confidence is clamped to 0–100; a non-positive target drops the analyst.
   assert.deepEqual(c.analysts?.map((a) => [a.analyst, a.confidence, a.target]), [['trend_momentum', 100, 330000]]);
 });
@@ -332,4 +332,27 @@ test('G-230: the macro line (X1) and filing base rates (B1) reach the committee'
   assert.match(ev.find((e) => e.id === 'X1')!.detail, /미국 10년 국채 금리 4\.50%/);
   assert.match(ev.find((e) => e.id === 'B1')!.detail, /25건 중 시장보다 오른 비율 60%/);
   assert.equal(buildEvidence(report).some((e) => e.id === 'X1' || e.id === 'B1'), false);
+});
+
+test('G-242: the industry seat joins only when the industry is known, and speaks under its specialty', async () => {
+  const parsed = {
+    summary: { text: '요약', evidenceIds: ['P1'] }, desks: [], redTeam: { counterargument: { text: '반론', evidenceIds: ['P1'] }, unresolved: [] }, scenarios: [],
+    analysts: [{ analyst: 'sector_expert', stance: 'BULLISH', confidence: 60, target: 330000, invalidation: 0, rationale: { text: '메모리 업황', evidenceIds: ['P1'] } }],
+    debate: [{ speaker: 'sector_expert', stance: 'BULLISH', claim: { text: '업종 이야기', evidenceIds: ['P1'] } }, { speaker: 'RED_TEAM', stance: 'NEUTRAL', claim: { text: '정리', evidenceIds: ['P1'] } }],
+    worstCase: { narrative: { text: '급락', evidenceIds: ['P1'] }, checks: [] }, insights: {}, bullish: [], bearish: [], uncertain: [], watch: [], dataGaps: [],
+  };
+  const reply = { stop_reason: 'end_turn', model: COMMENTARY_MODEL, parsed_output: parsed };
+  const bare = await writeCommentary(report, { client: fakeClient(reply), now: () => new Date(AT) });
+  assert.equal(bare.sectorExpert, undefined);
+  assert.deepEqual(bare.analysts, []);
+  assert.deepEqual(bare.debate?.map((t) => t.speaker), ['RED_TEAM']);
+  const chip = { ...report, company: { sector: '반도체와반도체장비', summary: ['메모리 반도체를 만들어요.'], at: AT } };
+  const seen: unknown[] = [];
+  const c = await writeCommentary(chip, { client: fakeClient(reply, seen), now: () => new Date(AT) });
+  assert.deepEqual(c.sectorExpert, { key: 'semis', name: '반도체 전문위원', focus: '메모리 가격, 재고, 고객사 설비투자, HBM' });
+  assert.deepEqual(c.analysts?.map((a) => a.analyst), ['sector_expert']);
+  assert.ok(c.evidence.some((e) => e.id === 'Z1'));
+  assert.match(JSON.stringify((seen[0] as { messages: unknown }).messages), /종목_전문위원.*반도체 전문위원이에요/);
+  const page = renderReport({ ...chip, commentary: c }, { index: '../index.html' });
+  assert.ok(page.includes('<b>반도체 전문위원</b>'), 'debate speaker');
 });

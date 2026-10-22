@@ -12,9 +12,15 @@ export const ANALYSTS = [
   { id: 'volume_flow', name: '거래량·수급 분석가', focus: '거래량, 외국인·기관 순매수, 수급 흔적' },
   { id: 'fundamental', name: '실적·밸류에이션 분석가', focus: '분기 실적, PER·PBR, 증권가 평균' },
   { id: 'event_catalyst', name: '이벤트·뉴스 분석가', focus: '공시, 뉴스, 일정' },
+  // G-242: the seat whose specialty follows the stock's industry (src/analysis/sectorExpert.ts); the report names it ('반도체 전문위원').
+  { id: 'sector_expert', name: '업종 전문위원', focus: '종목 업종의 핵심 지표와 업황 (반도체·바이오·은행처럼 종목마다 그 업종 전문가)' },
 ] as const;
 
 export type AnalystId = typeof ANALYSTS[number]['id'];
+/** G-242: the six lenses every stock gets; the market-wide report has no single industry, so it keeps only these. */
+export const CORE_ANALYSTS = ANALYSTS.filter((a) => a.id !== 'sector_expert');
+/** A member's name on one report: the industry seat takes the specialty that report gave it. */
+export const analystName = (id: string, expert?: { name: string } | null) => (id === 'sector_expert' && expert?.name) || ANALYSTS.find((a) => a.id === id)?.name || id;
 
 export interface AnalystCall {
   symbol: string;

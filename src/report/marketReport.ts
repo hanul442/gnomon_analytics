@@ -1,4 +1,4 @@
-import { ANALYSTS } from '../analysis/analysts.js';
+import { CORE_ANALYSTS } from '../analysis/analysts.js';
 import type { MarketPulse } from '../analysis/quickCalc.js';
 import { marketTemperature } from './marketTemperature.js';
 import { renderCommitteeDebate, SPEAKER } from './renderReportExtras.js';
@@ -17,7 +17,7 @@ export type Period = 'daily' | 'weekly';
 export interface MarketAsset { symbol: string; name: string; date: string; close: number; returnPct: number | null; baseline: string | null; value: number | null; spark?: [string, number][] }
 export interface MarketGroup { id: string; name: string; source: string; universe: number; assets: MarketAsset[]; snapshotDate: string | null; temperature?: MarketPulse | null; breadth: { up: number; down: number; flat: number } }
 const claim = z.object({ text: z.string(), kind: z.enum(['FACT','INFERENCE','ASSUMPTION']), refs: z.array(z.string()).min(1) });
-const EXPERT_IDS=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'] as unknown as [string,...string[]];
+const EXPERT_IDS=[...CORE_ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'] as unknown as [string,...string[]];
 const expert=z.object({speaker:z.enum(EXPERT_IDS),stance:z.enum(['BULLISH','NEUTRAL','BEARISH','INSUFFICIENT_DATA']),claim});
 const marketTurn=z.object({speaker:z.enum([...EXPERT_IDS,'RED_TEAM'] as [string,...string[]]),stance:z.enum(['BULLISH','NEUTRAL','BEARISH']),replyTo:z.number(),claim});
 export const MarketCouncilSchema = z.object({ summary: claim, desks: z.array(z.object({ name: z.enum(['코스피','코스닥','코인','ETF','미국']), view: z.enum(['강세','중립','약세','판단보류']), claims: z.array(claim) })).min(4).max(5), consensus: z.array(claim), disagreements: z.array(claim), scenarios: z.array(z.object({ name: z.enum(['강세','기본','약세']), trigger: claim, outlook: claim, invalidation: claim })).length(3), redTeam: z.array(claim), watch: z.array(claim), dataGaps: z.array(z.string()), experts:z.array(expert).optional(),debate:z.array(marketTurn).optional() });
