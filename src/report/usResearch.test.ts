@@ -117,3 +117,14 @@ test('US 기업 체력: no investor-flow axis (it does not apply), and a report 
   assert.match(stale, /data-usinfo="MRNA\.O"/);
   assert.match(stale, /\/usinfo\//);
 });
+
+test('a US stock with research panels shows 기업 and 뉴스 once: /usinfo wins, panels are only the fallback', () => {
+  const page = renderStockPage('us');
+  // Panels for fundamentals/news are skipped once /usinfo filled them, and removed when /usinfo lands later.
+  assert.match(page, /if\(US&&US_LIVE\[key\]&&parts\[key\]\)\{if\(usOk\)return;/);
+  // A panel that lands after /usinfo failed clears the error card under it.
+  assert.match(page, /var us=usFailed&&document\.querySelector\('\[data-slot="us-'\+key\+'"\]'\);if\(us\)us\.innerHTML='';/);
+  assert.match(page, /usOk = true; document\.querySelectorAll\('\[data-public="fundamentals"\],\[data-public="news"\]'\)\.forEach\(function \(el\) \{ el\.remove\(\); \}\);/);
+  // When /usinfo fails, a panel already on the page stays and the error card is not added under it.
+  assert.match(page, /put\(k, document\.querySelector\('\[data-public="' \+ k \+ '"\]'\) \? '' : empty\(t\)\)/);
+});
