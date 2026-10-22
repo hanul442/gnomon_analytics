@@ -3,7 +3,6 @@ import { renderWatchPage } from '../report/renderWatch.js';
 import { writeMarketReports, publishMarketReports } from './marketReports.js';
 import { publicPanels } from '../report/publicPanels.js';
 import { diffBasis } from '../report/renderReportExtras.js';
-import { renderNewsIssuesPage } from '../report/newsIssues.js';
 import { rankNewsIssues, type TaggedArticle } from '../analysis/newsIssues.js';
 // One daily run: for every stock in tickers.json collect, append, write
 // today's report once; then render the site.
@@ -18,6 +17,8 @@ import { collectRiskFilings } from './riskCollect.js';
 import { etfRows, writeCoinPages, type CoinRow } from './coins.js';
 import { writeUsPages } from './usStocks.js';
 import { collectWorld, writeWorldPage } from './world.js';
+import { rankWorldIssues } from '../analysis/worldNews.js';
+import { movedToHome } from '../report/renderWorld.js';
 import type { WorldMarkets } from '../sources/naverGlobal.js';
 import type { SignalLevel } from '../analysis/technicals.js';
 import { fetchWorldBars, usTicker } from '../sources/naverWorld.js';
@@ -873,7 +874,6 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     entries: home, universe, indices, pulse: extras.pulse ?? null, us: extras.us ?? null, ...(extras.calcs ? { calcs: extras.calcs } : {}),
     selection: selection ? { date: selection.date, eligible: selection.eligible, universe: selection.universe } : null,
   };
-  await writeFile(join(siteDir, 'index.html'), renderHome(homeData));
   // The watchlist's status line (G-85): test prices and what is new, per covered stock.
   await writeFile(join(siteDir, 'watchinfo.json'), JSON.stringify(watchInfo(home)));
   await writeFile(join(siteDir, 'reports.html'), renderReportsPage(homeData));
@@ -910,8 +910,13 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   }
   const issueNames = new Map<string, string>([...lite.map((r) => [r.symbol, r.name] as const), ...home.map((e) => [e.symbol, e.name] as const)]);
   const issueChanges = new Map<string, number | null>([...home.map((e) => [e.symbol, e.report?.price?.changePct ?? null] as const), ...lite.filter((r) => r.changePct != null).map((r) => [r.symbol, r.changePct] as const)]);
-  await writeFile(join(siteDir, 'news-issues.json'), JSON.stringify(rankNewsIssues(newsArticles, { now: new Date(), names: issueNames, changes: issueChanges })));
-  await writeFile(join(siteDir, 'issues.html'), renderNewsIssuesPage());
+  const krIssues = rankNewsIssues(newsArticles, { now: new Date(), names: issueNames, changes: issueChanges });
+  await writeFile(join(siteDir, 'news-issues.json'), JSON.stringify(krIssues));
+  // G-277: home carries the world screen and one issue ranking (Korean stock news and world news together).
+  const worldIssues = rankWorldIssues(await readLog<NewsItem>(join(root, 'data', 'world-news.jsonl')).catch(() => [] as NewsItem[]), extras.now ?? new Date());
+  await writeFile(join(siteDir, 'index.html'), renderHome({ ...homeData, krIssues, worldIssues, today: kstParts(extras.now ?? new Date()).date }));
+  // G-277: one issue ranking lives in home's 이슈 tab.
+  await writeFile(join(siteDir, 'issues.html'), movedToHome('news'));
   await writeWorldPage(root, siteDir, extras.now ?? new Date());
   await writeFile(join(siteDir, 'signals.html'), renderSignalsPage());
   // The chart library is served from the site itself, not a CDN.

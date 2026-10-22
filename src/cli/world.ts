@@ -8,7 +8,7 @@ import { appendUnseen, readLog } from '../store/jsonlLog.js';
 import { fetchRss } from '../sources/news.js';
 import { fetchWorldMarkets, type WorldMarkets } from '../sources/naverGlobal.js';
 import { rankWorldIssues, WORLD_FEEDS } from '../analysis/worldNews.js';
-import { renderWorldPage } from '../report/renderWorld.js';
+import { movedToHome } from '../report/renderWorld.js';
 import type { NewsItem } from '../types.js';
 
 const marketsFile = (root: string) => join(root, 'data', 'world', 'markets.json');
@@ -49,6 +49,7 @@ export async function writeWorldPage(root: string, siteDir: string, now: Date): 
   const markets = JSON.parse(await readFile(marketsFile(root), 'utf8').catch(() => 'null')) as WorldMarkets | null;
   const news = rankWorldIssues(await readLog<NewsItem>(newsFile(root)).catch(() => [] as NewsItem[]), now);
   const page = markets ? { markets, news } : null;
-  await writeFile(join(siteDir, 'world.html'), renderWorldPage(page));
+  // G-277: the world screen lives in home now; world.html sends old links there.
+  await writeFile(join(siteDir, 'world.html'), movedToHome('sum'));
   await writeFile(join(siteDir, 'world.json'), JSON.stringify(page ? { generatedAt: markets!.generatedAt, indices: markets!.indices.map(({ series: _s, ...q }) => q), macro: markets!.macro.map(({ series: _s, ...q }) => q), news: news.issues.slice(0, 5) } : null));
 }

@@ -8,6 +8,7 @@ import { shell } from './renderHtml.js';
 import { esc } from './html.js';
 import { smoothD } from './chartLook.js';
 import { kmStatArea } from './kit/market.js';
+import { contentMore, CONTENT_MORE_CSS } from './contentMore.js';
 import { kmWorldMapAll, KIT_WORLD_CSS, type WorldMapEntry } from './kit/worldMap.js';
 import type { WorldIndexQuote, WorldMacroQuote, WorldMarkets, WorldRegion } from '../sources/naverGlobal.js';
 import type { WorldIssue, WorldIssueBoard, WorldTag } from '../analysis/worldNews.js';
@@ -75,26 +76,27 @@ const spark = (series: readonly (readonly [string, number])[], w = 64, h = 22) =
   return `<svg class="wd-sp ${t}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${smoothD(pts)}"/></svg>`;
 };
 
-function marketsOf(m: WorldMarkets): Map<string, { name: string; move: string; tone: string }> {
+export function marketsOf(m: WorldMarkets): Map<string, { name: string; move: string; tone: string }> {
   const out = new Map<string, { name: string; move: string; tone: string }>();
   for (const q of m.indices) out.set(q.key, { name: q.name, move: pct(q.changePct), tone: tone(q.changePct) });
   for (const q of m.macro) out.set(q.key, { name: q.group === 'bond' ? `${q.name} 10년 금리` : q.name, move: moveText(q), tone: moveTone(q) });
   return out;
 }
 
-function issueRow(i: WorldIssue, mk: ReturnType<typeof marketsOf>, full: boolean): string {
+export function issueRow(i: WorldIssue, mk: ReturnType<typeof marketsOf>, full: boolean): string {
   const chips = i.markets.map((k) => mk.get(k)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => `<span class="wd-chip">${esc(x.name)} <b class="${x.tone}">${esc(x.move)}</b></span>`).join('');
   const more = full && i.headlines.length > 1 ? `<details class="wd-more"><summary>같은 이슈 제목 ${i.headlines.length}개</summary><ul>${i.headlines.map((h) => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <small>${esc(h.publisher)}</small></li>`).join('')}</ul></details>` : '';
   const move = i.isNew ? '<span class="wd-new">NEW</span>' : i.prevRank && i.prevRank !== i.rank ? `<span class="wd-mv ${i.prevRank > i.rank ? 'up' : 'down'}">${i.prevRank > i.rank ? '▲' : '▼'}${Math.abs(i.prevRank - i.rank)}</span>` : '';
   return `<li class="wd-is" data-tag="${esc(i.tag ?? '')}"><b class="wd-rk">${i.rank}</b><div><div class="wd-ih"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a>${move}</div><small class="wd-im">${i.lang === 'en' ? '영문 · ' : ''}매체 ${i.outlets}곳 · ${esc(i.publisher)}</small><div class="wd-chips">${i.tag ? `<span class="wd-chip tag">${esc(i.tag)}</span>` : ''}${chips}</div>${more}</div></li>`;
 }
 
-const row = (name: string, sub: string, value: string, move: string, t: string, sp = '') => `<div class="wd-row"><span class="wd-n"><b>${esc(name)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>${sp}<span class="wd-v">${esc(value)}</span><b class="wd-c ${t}">${esc(move)}</b></div>`;
+/** G-277: a row with a series opens it big (kit/sheet.ts reads data-sheet). */
+const sheetOf = (name: string, series: readonly (readonly [string, number])[] | undefined, digits: number, unit = '') => (series && series.length >= 2 ? ` data-sheet="${esc(JSON.stringify(series.map((p) => [p[0], p[1]])))}" data-sheet-title="${esc(name)}" data-sheet-digits="${digits}"${unit ? ` data-sheet-unit="${esc(unit)}"` : ''} tabindex="0" role="button"` : '');
+const row = (name: string, sub: string, value: string, move: string, t: string, sp = '', sheet = '') => `<div class="wd-row"${sheet}><span class="wd-n"><b>${esc(name)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span>${sp}<span class="wd-v">${esc(value)}</span><b class="wd-c ${t}">${esc(move)}</b></div>`;
 
-export function renderWorldPage(p: WorldPage | null): string {
-  if (!p || (!p.markets.indices.length && !p.markets.macro.length)) {
-    return shell('', '세계 | GNOMON', `${CSS}<section class="card wd-card"><p class="muted">세계 시장 자료를 아직 받지 못했어요. 다음 업데이트 때 다시 채워져요.</p></section>`, { active: 'home', head: { title: '세계' } });
-  }
+/** G-277: the world screen's panels, shared by home (요약·증시·금리·환율·원자재) and world.html. */
+export interface WorldPanels { sum: string; stocks: string; rates: string; commod: string; news: string; key6: string; market: string; key4: string; sentence: string; asof: string }
+export function worldPanels(p: WorldPage): WorldPanels {
   const m = p.markets, mk = marketsOf(m);
   const q = (key: string) => m.macro.find((x) => x.key === key) ?? null;
   const ix = (key: string) => m.indices.find((x) => x.key === key) ?? null;
@@ -118,7 +120,7 @@ export function renderWorldPage(p: WorldPage | null): string {
   const heat = `<div class="wd-heat">${main.map((x) => `<span style="${heatBg(x.changePct)}"><small>${esc(x.country)}</small><b>${pct(x.changePct, 1)}</b></span>`).join('')}</div>`;
   const stocks = `<section class="card wd-card"><div class="wd-h"><h2>지수 ${m.indices.length}개</h2><span class="muted small"><span class="up">▲${up}</span> · <span class="down">▼${down}</span></span></div>${heat}</section>
 ${regions.map((r) => { const xs = m.indices.filter((x) => x.region === r); if (!xs.length) return ''; const open = xs.some((x) => x.open);
-    return `<section class="card wd-card"><div class="wd-h"><h2>${r}</h2><span class="wd-st${open ? ' on' : ''}">${open ? '지금 거래 중' : '마감'}</span></div>${xs.map((x) => row(x.name, x.country, fmt(x.value, 2), pct(x.changePct), tone(x.changePct), spark(x.series))).join('')}</section>`; }).join('')}
+    return `<section class="card wd-card"><div class="wd-h"><h2>${r}</h2><span class="wd-st${open ? ' on' : ''}">${open ? '지금 거래 중' : '마감'}</span></div>${xs.map((x) => row(x.name, x.country, fmt(x.value, 2), pct(x.changePct), tone(x.changePct), spark(x.series), sheetOf(x.name, x.series, 2))).join('')}</section>`; }).join('')}
 <p class="fine wd-fine">장이 열린 곳은 15분 안팎 늦은 값이에요. 선은 최근 30거래일 종가예요.</p>`;
 
   // 금리·환율
@@ -127,11 +129,11 @@ ${regions.map((r) => { const xs = m.indices.filter((x) => x.region === r); if (!
   const rates = `${policy.length ? `<section class="card wd-card"><div class="wd-h"><h2>나라별 기준금리</h2><span class="muted small">중앙은행 발표 값</span></div><div class="wd-bars">${policy.map((x) => `<div><span>${esc(x.name)}</span><i><i style="width:${((x.value / maxRate) * 100).toFixed(0)}%"></i></i><b>${fmt(x.value, 2)}%</b></div>`).join('')}</div></section>` : ''}
 <div class="km-stats wd-stats">${[statMacro(q('US10Y'), true), statMacro(q('USDKRW'), true), statMacro(q('DXY'), true), statMacro(q('VIX'), true)].join('')}</div>
 <section class="card wd-card"><div class="wd-h"><h2>10년 국채 금리</h2><span class="muted small">전날 대비</span></div>${m.macro.filter((x) => x.group === 'bond').map((x) => row(x.name, '', valueText(x), moveText(x), moveTone(x))).join('')}</section>
-<section class="card wd-card"><div class="wd-h"><h2>환율</h2><span class="muted small">원화는 하나은행 고시</span></div>${m.macro.filter((x) => x.group === 'fx').map((x) => row(x.name, x.hint ?? '', valueText(x), moveText(x), moveTone(x), spark(x.series))).join('')}</section>`;
+<section class="card wd-card"><div class="wd-h"><h2>환율</h2><span class="muted small">원화는 하나은행 고시</span></div>${m.macro.filter((x) => x.group === 'fx').map((x) => row(x.name, x.hint ?? '', valueText(x), moveText(x), moveTone(x), spark(x.series), sheetOf(x.name, x.series, digitsOf(x)))).join('')}</section>`;
 
   // 원자재
   const commod = `<div class="km-stats wd-stats">${[statMacro(q('WTI')), statMacro(q('GOLD'))].join('')}</div>
-<section class="card wd-card"><div class="wd-h"><h2>원자재</h2><span class="muted small">선물 · 달러</span></div>${m.macro.filter((x) => x.group === 'energy' || x.group === 'metals').map((x) => row(x.name, '', valueText(x), moveText(x), moveTone(x))).join('')}</section>
+<section class="card wd-card"><div class="wd-h"><h2>원자재</h2><span class="muted small">선물 · 달러</span></div>${m.macro.filter((x) => x.group === 'energy' || x.group === 'metals').map((x) => row(x.name, '', valueText(x), moveText(x), moveTone(x), spark(x.series), sheetOf(x.name, x.series, digitsOf(x)))).join('')}</section>
 <section class="card wd-card"><div class="wd-h"><h2>바닷길 운임</h2><span class="muted small">수출입 물동량의 온도</span></div>${m.macro.filter((x) => x.group === 'ship').map((x) => row(x.name, x.hint ?? '', valueText(x), moveText(x), moveTone(x))).join('')}</section>`;
 
   // 뉴스
@@ -141,12 +143,61 @@ ${regions.map((r) => { const xs = m.indices.filter((x) => x.region === r); if (!
 <p class="fine wd-fine">국내 세계·경제 뉴스와 영어 경제 뉴스 제목을 모아 같은 사건끼리 묶고, 다룬 매체가 많은 순으로 세웠어요${p.news.from && p.news.to ? ` (${esc(kstHm(p.news.from))} ~ ${esc(kstHm(p.news.to))})` : ''}. 옆의 시장 숫자는 같은 날 함께 움직인 값이고, 원인이라는 뜻이 아니에요. 기사는 제목·매체·링크만 보여 줘요.</p>`
     : '<section class="card wd-card"><p class="muted">세계 뉴스를 아직 모으지 못했어요.</p></section>';
 
+  // G-281 (한서님 10/22 "분류가 각 종류에 맞게"): home's 시장 — every number once, in four kinds, one row shape.
+  // 증시 (indices + VIX, the stock market's fear gauge) → 금리 (policy + 10-year) → 환율 → 원자재 (with shipping).
+  const mrow = (x: WorldMacroQuote) => row(x.group === 'bond' ? `${x.name} 10년` : x.name, x.hint ?? '', valueText(x), moveText(x), moveTone(x), spark(x.series), sheetOf(x.group === 'bond' ? `${x.name} 10년 금리` : x.name, x.series, digitsOf(x)));
+  const irow = (x: WorldIndexQuote) => row(x.name, x.country, fmt(x.value, 2), pct(x.changePct), tone(x.changePct), spark(x.series), sheetOf(x.name, x.series, 2));
+  const sec = (id: string, title: string, side: string, rows: string[], label: string, limit: number) => (rows.length ? `<section class="card wd-card mk-sec" id="mk-${id}"><div class="wd-h"><h2>${title}</h2><span class="muted small">${side}</span></div>${contentMore(rows, label, (h) => h, limit)}</section>` : '');
+  const FIRST = ['KOSPI', 'KOSDAQ', '.INX', '.IXIC', '.N225'];
+  const ixOrdered = [...FIRST.map(ix).filter((x): x is WorldIndexQuote => !!x), ...m.indices.filter((x) => !FIRST.includes(x.key))];
+  const vix = q('VIX');
+  const ixRows = ixOrdered.map(irow);
+  ixRows.splice(Math.min(5, ixRows.length), 0, ...(vix ? [mrow(vix)] : []));
+  const of = (...g: string[]) => m.macro.filter((x) => g.includes(x.group));
+  // 금리: 미국·한국 first (기준금리, then 10년), the rest under 더 보기.
+  const rateFirst = ['FED', 'BOK', 'US10Y', 'KR10Y'];
+  const rateRow = (x: WorldMacroQuote) => (x.group === 'policy' ? row(x.name, '기준금리', valueText(x), '', '') : mrow(x));
+  const rates0 = of('policy', 'bond');
+  const rateRows = [...rateFirst.map((k) => rates0.find((x) => x.key === k)).filter((x): x is WorldMacroQuote => !!x), ...rates0.filter((x) => !rateFirst.includes(x.key))].map(rateRow);
+  const market = [
+    sec('stocks', '증시', `${m.indices.length}개 중 <span class="up">▲${up}</span> <span class="down">▼${down}</span>`, ixRows, '지수', 6),
+    sec('rates', '금리', '기준금리 · 10년 국채', rateRows, '금리', 4),
+    sec('fx', '환율', '원화는 하나은행 고시', of('fx').map(mrow), '환율', 4),
+    sec('commod', '원자재', '선물 · 달러, 운임', [...of('energy', 'metals'), ...of('ship')].map(mrow), '원자재', 5),
+  ].join('') + `<p class="fine wd-fine">장이 열린 곳은 15분 안팎 늦은 값이에요. 선은 최근 30거래일 종가예요. 줄을 누르면 크게 볼 수 있어요.</p>`;
+  // 요약's four numbers: one per kind, each named with its kind and opening its own section in 시장.
+  const tile = (kind: string, sec: string, name: string, value: string, move: string, t: string) => `<button type="button" class="mk-tile" data-wd-go="market" data-mk="${sec}"><small>${esc(kind)} · ${esc(name)}</small><b>${esc(value)}</b><span class="${t}">${esc(move)}</span></button>`;
+  const kx = ix('KOSPI') ?? ix('.INX'), k10 = q('US10Y'), kfx = q('USDKRW'), koil = q('WTI');
+  const key4 = [
+    kx ? tile('증시', 'stocks', kx.name, fmt(kx.value, 2), pct(kx.changePct), tone(kx.changePct)) : '',
+    k10 ? tile('금리', 'rates', '미국 10년', valueText(k10), moveText(k10), moveTone(k10)) : '',
+    kfx ? tile('환율', 'fx', kfx.name, valueText(kfx), moveText(kfx), moveTone(kfx)) : '',
+    koil ? tile('원자재', 'commod', 'WTI', valueText(koil), moveText(koil), moveTone(koil)) : '',
+  ].join('');
+
+  return { sum, stocks, rates, commod, news, key6, market, key4, sentence: worldSentence(m), asof: kstHm(m.generatedAt) };
+}
+
+/**
+ * G-277: world.html and issues.html moved into home (index.html). Old links land on the same tab there.
+ * `tab` is the default tab; a world.html#rates link keeps its tab.
+ */
+export function movedToHome(tab: string): string {
+  const t = JSON.stringify(tab);
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GNOMON | 오늘</title><meta http-equiv="refresh" content="0;url=index.html#${esc(tab)}"><script>location.replace('index.html#' + (/^#(sum|com|market|stocks|rates|commod|fx|news)$/.test(location.hash) ? location.hash.slice(1) : ${t}));</script></head><body><p><a href="index.html#${esc(tab)}">홈으로 옮겼어요. 여기를 눌러 주세요.</a></p></body></html>`;
+}
+
+export function renderWorldPage(p: WorldPage | null): string {
+  if (!p || (!p.markets.indices.length && !p.markets.macro.length)) {
+    return shell('', '세계 | GNOMON', `${WORLD_CSS}<section class="card wd-card"><p class="muted">세계 시장 자료를 아직 받지 못했어요. 다음 업데이트 때 다시 채워져요.</p></section>`, { active: 'home', head: { title: '세계' } });
+  }
+  const m = p.markets, { sum, stocks, rates, commod, news } = worldPanels(p);
   const tabs = [['sum', '요약'], ['stocks', '증시'], ['rates', '금리·환율'], ['commod', '원자재'], ['news', '뉴스']] as const;
   const nav = `<nav class="mode-tabs" role="tablist" aria-label="세계 보기">${tabs.map(([k, l], i) => `<button type="button" role="tab" data-wd="${k}" aria-selected="${i === 0}">${l}</button>`).join('')}</nav>`;
   const panels = { sum, stocks, rates, commod, news } as Record<string, string>;
-  const body = `${CSS}<p class="wd-asof">${esc(kstHm(m.generatedAt))} 기준</p>${tabs.map(([k], i) => `<div class="wd-p" data-wd-p="${k}"${i ? ' hidden' : ''}>${panels[k]}</div>`).join('')}
+  const body = `${WORLD_CSS}<p class="wd-asof">${esc(kstHm(m.generatedAt))} 기준</p>${tabs.map(([k], i) => `<div class="wd-p" data-wd-p="${k}"${i ? ' hidden' : ''}>${panels[k]}</div>`).join('')}
 <p class="fine wd-fine">지수·환율·금리·원자재는 네이버 증권, 지도는 Natural Earth예요. 시장 정보를 보여 줄 뿐 사고팔라는 뜻이 아니에요.</p>`;
-  return shell('', '세계 | GNOMON', body, { active: 'home', head: { title: '세계', tabs: nav }, scripts: SCRIPT });
+  return shell('', '세계 | GNOMON', body, { active: 'home', head: { title: '세계', tabs: nav }, scripts: WORLD_JS });
 }
 
 function heatBg(v: number | null): string {
@@ -155,7 +206,7 @@ function heatBg(v: number | null): string {
   return `background:${v >= 0 ? `rgba(240,68,82,${a.toFixed(2)})` : `rgba(49,130,246,${a.toFixed(2)})`}${a > 0.5 ? ';color:#fff' : ''}`;
 }
 
-const CSS = `<style>${KIT_WORLD_CSS}
+export const WORLD_CSS = `<style>${KIT_WORLD_CSS}
 .wd-p{max-width:820px;margin:0 auto;padding:0 16px;display:flex;flex-direction:column;gap:12px}.wd-p[hidden],.wd-is[hidden]{display:none}.wd-asof{max-width:820px;margin:-6px auto 6px;padding:0 20px;font-size:12px;color:var(--muted)}
 .wd-card{padding:16px 18px;margin:0}.wd-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}.wd-h h2{margin:0;font-size:16.5px}.wd-out{margin:6px 4px -2px}
 .wd-link{border:0;background:none;padding:6px 0;min-height:32px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
@@ -177,9 +228,11 @@ const CSS = `<style>${KIT_WORLD_CSS}
 .wd-more summary{cursor:pointer;font-size:12.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center;margin-top:4px}.wd-more ul{margin:2px 0;padding-left:16px}.wd-more li{font-size:13px;line-height:1.5;margin:3px 0}.wd-more a{color:inherit}.wd-more small{color:var(--muted)}
 .wd-filter{display:flex;gap:6px;flex-wrap:wrap}.wd-filter button{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font:inherit;font-size:13px;font-weight:600;color:var(--fg2);cursor:pointer}.wd-filter button[aria-pressed=true]{background:var(--fg);border-color:var(--fg);color:var(--surface-solid)}
 .wd-fine{margin:0 4px}.up{color:#f04452}.down{color:#3182f6}
+${CONTENT_MORE_CSS}.mk-sec .content-more>summary{display:flex;justify-content:center;align-items:center;min-height:44px;border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);list-style:none}.mk-sec .content-more>summary::-webkit-details-marker{display:none}.mk-sec{scroll-margin-top:16px}
+.mk-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mk-tile{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px;border:0;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm,0 1px 2px rgba(0,0,0,.04));font:inherit;color:var(--fg);text-align:left;cursor:pointer;min-height:44px}.mk-tile small{font-size:12px;font-weight:600;color:var(--muted)}.mk-tile b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}.mk-tile span{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
 </style>`;
 
-const SCRIPT = `<script>
+export const WORLD_JS = `<script>
 (function () {
   var tabs = [].slice.call(document.querySelectorAll('[data-wd]'));
   var pick = function (k, push) {
@@ -187,14 +240,18 @@ const SCRIPT = `<script>
     document.querySelectorAll('[data-wd-p]').forEach(function (p) { p.hidden = p.getAttribute('data-wd-p') !== k; });
     if (push) history.replaceState(null, '', k === 'sum' ? location.pathname : '#' + k);
   };
-  tabs.forEach(function (t) { t.addEventListener('click', function () { pick(t.getAttribute('data-wd'), true); }); });
+  // G-277 (한서님 10/21): switching a tab goes back to the top of the page.
+  tabs.forEach(function (t) { t.addEventListener('click', function () { pick(t.getAttribute('data-wd'), true); window.scrollTo({ top: 0, behavior: 'smooth' }); }); });
   document.addEventListener('click', function (e) {
-    var g = e.target.closest && e.target.closest('[data-wd-go]'); if (g) { pick(g.getAttribute('data-wd-go'), true); window.scrollTo(0, 0); return; }
+    var g = e.target.closest && e.target.closest('[data-wd-go]'); if (g) { pick(g.getAttribute('data-wd-go'), true); var sec = g.getAttribute('data-mk') && document.getElementById('mk-' + g.getAttribute('data-mk')); if (sec) sec.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0); return; }
     var f = e.target.closest && e.target.closest('[data-wd-tag]'); if (!f) return;
     var tag = f.getAttribute('data-wd-tag');
     document.querySelectorAll('[data-wd-tag]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
-    document.querySelectorAll('[data-wd-p="news"] .wd-is').forEach(function (li) { li.hidden = !!tag && li.getAttribute('data-tag') !== tag; });
+    document.querySelectorAll('[data-wd-p="news"] [data-tag]').forEach(function (li) { li.hidden = !!tag && li.getAttribute('data-tag') !== tag; });
   });
-  var h = location.hash.slice(1); if (['stocks', 'rates', 'commod', 'news'].indexOf(h) >= 0) pick(h, false);
+  // G-281: the old 증시·금리·환율·원자재 links land on their section in 시장.
+  var h = location.hash.slice(1), old = { stocks: 'stocks', rates: 'rates', commod: 'commod', fx: 'fx' };
+  if (old[h] && document.querySelector('[data-wd-p="market"]')) { pick('market', false); var s0 = document.getElementById('mk-' + old[h]); if (s0) s0.scrollIntoView({ block: 'start' }); }
+  else if (['com', 'market', 'stocks', 'rates', 'commod', 'news'].indexOf(h) >= 0) pick(h, false);
 })();
 </script>`;

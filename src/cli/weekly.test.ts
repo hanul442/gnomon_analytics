@@ -49,7 +49,9 @@ test('the first settled run picks the week: core and the largest company get the
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
   // The report lists live on reports.html (G-64); the front page shows a few picks.
   const list = await readFile(join(root, 'site', 'reports.html'), 'utf8');
-  assert.ok(list.includes('추적 종목 3개') && list.includes('href="222220/index.html"') && list.includes('data-kind="data"') && list.includes('data-kind="core"'));
+  // G-281: one stream — the newest day, then older reports; each stock once.
+  assert.ok(list.includes('href="222220/index.html"') && list.includes('id="today"'));
+  assert.equal(list.split('href="222220/index.html"').length - 1, 1);
   assert.ok(!home.includes('id="today"') && !home.includes('id="reports"'));
   // The market dashboard: index quotes, temperature from every stock's computation, movers; pricing pages exist.
   assert.ok(home.includes('id="mkt-hero"') && home.includes('id="watch"'));
@@ -150,7 +152,7 @@ test('daily picks (G-56): drawn once a day from the screener, reported once, sho
   assert.equal(calls.length, picks.length);
   const home = await readFile(join(root, 'site', 'index.html'), 'utf8');
   const reports = await readFile(join(root, 'site', 'reports.html'), 'utf8');
-  assert.ok(home.includes('<title>') && reports.includes('id="daily"') && reports.includes(`href="${picks[0]!.symbol}/index.html"`), 'G-266: daily picks live in the report list');
+  assert.ok(home.includes('<title>') && (reports.includes('id="today"') || reports.includes('id="past"')) && reports.includes(`href="${picks[0]!.symbol}/index.html"`), 'G-266: daily picks live in the report list');
   // A re-run the same day draws nothing new and calls no model.
   calls.length = 0;
   await runDaily({ ...opts, now: new Date('2026-10-05T11:00:00Z') });

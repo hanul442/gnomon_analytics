@@ -304,7 +304,8 @@ export const KIT_MARKET_JS = `
   var root = document.documentElement;
   var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   // ---- charts play once they are on screen (only under html.mo; otherwise they are drawn finished) ----
-  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('km-in'); io.unobserve(e.target); } }); }, { threshold: 0.3 }) : null;
+  // G-277 (한서님 10/21 '볼때마다 촥 그려지면서'): a chart plays again each time it comes back on screen (a tab switch, a scroll).
+  var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.intersectionRatio >= 0.3) e.target.classList.add('km-in'); else if (!e.isIntersecting) e.target.classList.remove('km-in'); }); }, { threshold: [0, 0.3] }) : null;
   var scan = function () { document.querySelectorAll('.km-anim:not([data-km-seen])').forEach(function (el) { el.setAttribute('data-km-seen', ''); if (io && root.classList.contains('mo')) io.observe(el); else el.classList.add('km-in'); }); };
   var queued = false;
   new MutationObserver(function () { if (queued) return; queued = true; setTimeout(function () { queued = false; scan(); }, 100); }).observe(root, { childList: true, subtree: true });

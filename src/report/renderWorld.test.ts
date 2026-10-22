@@ -75,7 +75,7 @@ test('G-276: the market daily uses the world snapshot for its 13-country map and
   assert.match(html, /wm-map/);
   assert.match(html, /하루 등락 · 5곳/);
   assert.match(html, /<h2>금리·환율·원자재<\/h2>/);
-  assert.match(html, /href="\.\.\/world\.html"/);
+  assert.match(html, /href="\.\.\/index\.html#stocks"/);
   const old = renderMarketReport({ ...base, macro: [{ id: 'DGS10', label: '미국 10년', unit: '%', date: '2026-10-17', value: 4.1, chg20: 0.1, spark: [] }] }, '../');
   assert.ok(!old.includes('wm-map') && old.includes('금리·환율·변동성'));
 });
