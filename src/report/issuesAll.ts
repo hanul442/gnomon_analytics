@@ -7,9 +7,19 @@
 import { esc } from './html.js';
 import type { NewsIssue, NewsIssueBoard } from '../analysis/newsIssues.js';
 import type { WorldIssue, WorldIssueBoard } from '../analysis/worldNews.js';
+import { issueKey, type DigestImage, type NewsDigest } from '../analysis/newsDigest.js';
 
 export interface MergedIssue {
   rank: number;
+  /** G-284: the in-app page is issue/<key>.html. */
+  key: string;
+  /** G-284: the AI summary (three lines from the headlines), empty when not written yet. */
+  lines: string[];
+  /** A Korean title for an English issue (AI). */
+  ko?: string;
+  image: DigestImage | null;
+  /** The stocks the story names (Korean issues), for the stock page's 소식 part. */
+  symbols: string[];
   from: '한국' | '세계';
   title: string;
   url: string;
@@ -23,7 +33,7 @@ export interface MergedIssue {
   moved: number | null;
   lang: 'ko' | 'en';
   /** Stocks the story names (Korean issues) or markets that moved the same day (world issues), already worded. */
-  chips: { name: string; move: string; tone: string; href?: string }[];
+  chips: { name: string; move: string; tone: string; href?: string; price?: string }[];
   headlines: { title: string; url: string; publisher: string }[];
 }
 
@@ -31,16 +41,22 @@ type Chip = MergedIssue['chips'][number];
 const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 const stockHref = (s: string) => (/^KRW-/.test(s) ? `coin.html?m=${encodeURIComponent(s)}` : /^[0-9][0-9A-Z]{5}$/.test(s) ? `stock.html?c=${encodeURIComponent(s)}` : `us.html?s=${encodeURIComponent(s)}`);
 
-export function mergeIssues(kr: NewsIssueBoard | null | undefined, world: WorldIssueBoard | null | undefined, marketChip: (key: string) => Chip | null = () => null): MergedIssue[] {
+export interface MergeExtras { digests?: ReadonlyMap<string, NewsDigest>; closes?: ReadonlyMap<string, number | null> }
+
+export function mergeIssues(kr: NewsIssueBoard | null | undefined, world: WorldIssueBoard | null | undefined, marketChip: (key: string) => Chip | null = () => null, extras: MergeExtras = {}): MergedIssue[] {
   const k = kr?.issues ?? [], w = world?.issues ?? [];
+  const dig = (url: string) => { const key = issueKey(url), d = extras.digests?.get(key); return { key, lines: d?.lines ?? [], ...(d?.ko ? { ko: d.ko } : {}), image: d?.image ?? null }; };
+  const price = (s: string) => { const c = extras.closes?.get(s); return c == null ? undefined : `${Math.round(c).toLocaleString('ko-KR')}원`; };
   const topK = Math.max(1, ...k.map((i) => i.outlets)), topW = Math.max(1, ...w.map((i) => i.outlets));
   const fromK = (i: NewsIssue) => ({ share: i.outlets / topK, order: i.rank, item: {
+    ...dig(i.url), symbols: i.stocks.map((s) => s.symbol),
     from: '한국' as const, title: i.title, url: i.url, publisher: i.publisher, outlets: i.outlets, articles: i.articles, isNew: !i.prev,
     moved: i.prev ? i.prev.rank - i.rank : null, lang: 'ko' as const,
-    chips: i.stocks.slice(0, 3).map((s) => ({ name: s.name, move: s.changePct == null ? '' : `${s.changePct > 0 ? '+' : ''}${s.changePct.toFixed(1)}%`, tone: tone(s.changePct), href: stockHref(s.symbol) })),
+    chips: i.stocks.slice(0, 3).map((s) => ({ name: s.name, move: s.changePct == null ? '' : `${s.changePct > 0 ? '+' : ''}${s.changePct.toFixed(1)}%`, tone: tone(s.changePct), href: stockHref(s.symbol), ...(price(s.symbol) ? { price: price(s.symbol)! } : {}) })),
     headlines: i.headlines.map((h) => ({ title: h.title, url: h.url, publisher: h.publisher })),
   } });
   const fromW = (i: WorldIssue) => ({ share: i.outlets / topW, order: i.rank, item: {
+    ...dig(i.url), symbols: [] as string[],
     from: '세계' as const, title: i.title, url: i.url, publisher: i.publisher, outlets: i.outlets, articles: i.articles, isNew: i.isNew,
     moved: i.prevRank ? i.prevRank - i.rank : null, lang: i.lang,
     chips: i.markets.map(marketChip).filter((c): c is Chip => !!c),
@@ -52,17 +68,29 @@ export function mergeIssues(kr: NewsIssueBoard | null | undefined, world: WorldI
     .map((x, n) => ({ rank: n + 1, ...x.item, share: Math.round(x.share * 1000) / 1000 }));
 }
 
-function row(i: MergedIssue, full: boolean): string {
+const chipHtml = (c: Chip) => (c.href ? `<a class="ia-chip" href="${esc(c.href)}">${esc(c.name)}${c.move ? ` <b class="${c.tone}">${esc(c.move)}</b>` : ''}</a>` : `<span class="ia-chip">${esc(c.name)}${c.move ? ` <b class="${c.tone}">${esc(c.move)}</b>` : ''}</span>`);
+
+/** G-284: the publisher's own preview picture, loaded from their server (never stored), with its credit. */
+export const issueImage = (img: DigestImage | null, cls: string) => (img
+  ? `<figure class="${cls}"><img src="${esc(img.src)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"><figcaption>사진 · ${esc(img.credit)}</figcaption></figure>`
+  : '');
+
+/** One row; `lead` is the big first card of the full list (picture, summary line). */
+function row(i: MergedIssue, full: boolean, base: string, lead = false): string {
   const move = i.isNew ? '<span class="ia-new">NEW</span>' : i.moved ? `<span class="ia-mv ${i.moved > 0 ? 'up' : 'down'}">${i.moved > 0 ? '▲' : '▼'}${Math.abs(i.moved)}</span>` : '';
-  const chips = i.chips.map((c) => (c.href ? `<a class="ia-chip" href="${esc(c.href)}">${esc(c.name)}${c.move ? ` <b class="${c.tone}">${esc(c.move)}</b>` : ''}</a>` : `<span class="ia-chip">${esc(c.name)}${c.move ? ` <b class="${c.tone}">${esc(c.move)}</b>` : ''}</span>`)).join('');
-  const more = full && i.headlines.length > 1 ? `<details class="ia-more"><summary>같은 이슈 제목 ${i.headlines.length}개</summary><ul>${i.headlines.map((h) => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <small>${esc(h.publisher)}</small></li>`).join('')}</ul></details>` : '';
-  return `<li class="ia-row" data-tag="${i.from}"><b class="ia-rk">${i.rank}</b><div class="ia-b"><div class="ia-h"><span class="ia-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>${move}</div><a class="ia-t" href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a><small class="ia-m">${i.lang === 'en' ? '영문 · ' : ''}매체 ${i.outlets}곳 · 기사 ${i.articles}건 · ${esc(i.publisher)}</small>${i.share != null ? `<i class="ia-bar" aria-hidden="true"><i style="width:${Math.max(4, Math.round(i.share * 100))}%"></i></i>` : ''}${chips ? `<div class="ia-chips">${chips}</div>` : ''}${more}</div></li>`;
+  const chips = i.chips.map(chipHtml).join('');
+  const href = `${base}issue/${i.key}.html`;
+  const line = full && i.lines[0] ? `<p class="ia-s">${esc(i.lines[0])}</p>` : '';
+  const title = i.ko ?? i.title;
+  const meta = `${i.lang === 'en' ? '영문 · ' : ''}매체 ${i.outlets}곳 · ${esc(i.publisher)}`;
+  if (lead) return `<li class="ia-row ia-lead" data-tag="${i.from}"><a class="ia-lead-a" href="${esc(href)}">${issueImage(i.image, 'ia-fig')}<div class="ia-h"><b class="ia-rk1">${i.rank}</b><span class="ia-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>${move}<small class="ia-m">${meta}</small></div><span class="ia-t ia-t1">${esc(title)}</span>${line}</a>${chips ? `<div class="ia-chips">${chips}</div>` : ''}</li>`;
+  return `<li class="ia-row" data-tag="${i.from}"><b class="ia-rk">${i.rank}</b><div class="ia-b"><div class="ia-h"><span class="ia-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>${move}</div><a class="ia-t" href="${esc(href)}">${esc(title)}</a>${line}<small class="ia-m">${meta}</small>${i.share != null ? `<i class="ia-bar" aria-hidden="true"><i style="width:${Math.max(4, Math.round(i.share * 100))}%"></i></i>` : ''}${chips ? `<div class="ia-chips">${chips}</div>` : ''}</div></li>`;
 }
 
 /** The list (top `limit`), or a short note when nothing was collected. */
-export function issuesList(list: readonly MergedIssue[], limit: number, full: boolean): string {
+export function issuesList(list: readonly MergedIssue[], limit: number, full: boolean, base = ''): string {
   if (!list.length) return '<p class="muted ia-empty">아직 모은 뉴스가 없어요. 다음 업데이트 뒤 다시 확인해 주세요.</p>';
-  return `<ol class="ia-list">${list.slice(0, limit).map((i) => row(i, full)).join('')}</ol>`;
+  return `<ol class="ia-list">${list.slice(0, limit).map((i, n) => row(i, full, base, full && n === 0)).join('')}</ol>`;
 }
 
 /** 전체 · 한국 · 세계 filter for the full list (the page script hides rows by data-tag). */
@@ -82,4 +110,10 @@ export const ISSUES_CSS = `<style>
 .ia-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 4px}.ia-head h2{margin:0;font-size:17px}
 .ia-filter{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--soft)}.ia-filter button{min-height:32px;padding:0 11px;border:0;border-radius:999px;background:none;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}.ia-filter button[aria-pressed=true]{background:var(--surface-solid);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .ia-rest>summary{display:flex;justify-content:center;align-items:center;min-height:48px;border-top:1px solid var(--line);font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer;list-style:none}.ia-rest>summary::-webkit-details-marker{display:none}.ia-rest .more-open{display:none}.ia-rest[open] .more-open{display:inline}.ia-rest[open] .more-closed{display:none}.ia-rest .ia-row:first-child{border-top:1px solid var(--line);padding-top:14px}
+.ia-s{margin:4px 0 0;font-size:14px;line-height:1.55;color:var(--fg2);word-break:keep-all}
+.ia-lead{display:block;padding:0 0 16px}.ia-lead-a{display:block;color:inherit;text-decoration:none}.ia-lead .ia-h{margin-top:12px}.ia-lead .ia-m{margin:0 0 0 2px}
+.ia-rk1{font-size:15px;font-weight:800;margin-right:2px}.ia-t1{font-size:19px;font-weight:700;letter-spacing:-.3px;margin-top:2px}
+.ia-fig{position:relative;margin:0;border-radius:16px;overflow:hidden;background:var(--soft);aspect-ratio:16/9}.ia-fig img{display:block;width:100%;height:100%;object-fit:cover}
+.ia-fig figcaption{position:absolute;left:10px;bottom:10px;font-size:11px;font-weight:600;color:#fff;background:rgba(23,24,26,.62);padding:3px 8px;border-radius:6px}
+.ia-lead[hidden]{display:none}
 </style>`;

@@ -17,10 +17,11 @@ export const PRICE_PER_MTOK: Record<string, readonly [number, number]> = {
  * Typical cost of one call, USD (measured medians plus a margin), used to decide before calling:
  * a committee report measured $0.18 median (10/5–10/9, about 11K in / 6.6K out on Opus).
  */
-export type BudgetTier = 'deep' | 'market';
+// G-284: one news issue summary on Haiku 5.5 is about 600 in / 200 out tokens, well under a tenth of a cent.
+export type BudgetTier = 'deep' | 'market' | 'news';
 // G-221: the longer debate (prompt v9) adds about 2.5K output tokens, about $0.05.
 // G-228: six independent analyst calls on Haiku 5.5 add well under a cent; 0.29 keeps a margin.
-export const ESTIMATE_USD: Record<BudgetTier, number> = { deep: 0.29, market: 0.03 };
+export const ESTIMATE_USD: Record<BudgetTier, number> = { deep: 0.29, market: 0.03, news: 0.002 };
 export const DEFAULT_BUDGET_USD = 25;
 
 export interface UsageLine { at: string; month: string; symbol: string; model: string; /** 'brief' on lines written before v3.5.0. */
