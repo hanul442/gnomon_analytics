@@ -54,7 +54,7 @@ test('market points read the published numbers: breadth, the index move and the 
 });
 
 test('a debate with a repeated, missing or off-stance turn is tidied instead of failing the whole committee (G-278)',async()=>{
- const {ANALYSTS}=await import('../analysis/analysts.js');const {validCouncil,MarketCouncilGenerationSchema}=await import('./marketReport.js');
+ const {CORE_ANALYSTS:ANALYSTS}=await import('../analysis/analysts.js');const {validCouncil,MarketCouncilGenerationSchema}=await import('./marketReport.js');
  const speakers=[...ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'];const claim={text:'발언',kind:'FACT' as const,refs:['M1']};
  const base={summary:claim,desks:['코스피','코스닥','코인','ETF'].map(name=>({name,view:'중립',claims:[claim]})),consensus:[],disagreements:[],scenarios:['강세','기본','약세'].map(name=>({name,trigger:claim,outlook:claim,invalidation:claim})),redTeam:[],watch:[],dataGaps:[]};
  // EVENT never speaks, MARKET speaks twice, FLOW speaks off its stance, and a reply points at the dropped repeat.
