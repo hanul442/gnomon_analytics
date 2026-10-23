@@ -135,7 +135,7 @@ body:has(.bottom-nav){padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 .bottom-nav .nav-back,.bottom-nav .nav-return{flex-direction:column;gap:2px;height:56px;border-radius:25px;border:0;background:none;color:var(--muted);font-size:10.5px;font-weight:600}
 .bottom-nav .nav-back svg,.bottom-nav .nav-return svg{width:20px;height:20px}
 .bottom-nav.ctx .nav-back{display:flex}
-.bottom-nav[data-dock]:not(.ctx) .nav-return{display:flex;animation:nav-pop .4s cubic-bezier(.34,1.5,.64,1)}
+.bottom-nav[data-dock]:not(.ctx) .nav-return{display:flex;animation:nav-pop .4s var(--spring-bouncy)}
 .bottom-nav.ctx .nav-spark{display:grid}
 .bottom-nav.ctx[data-dock=ask] .nav-spark{display:none}
 .nav-parts a[data-nav]{height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
