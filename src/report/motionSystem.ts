@@ -4,8 +4,8 @@
 //
 // Motion
 //  - Bottom bar: the chosen icon's pill slides to the next one and stretches on the way (segThumb.ts drives it, the
-//    same chewy pill as every segmented control); the icon pops; its name bubble springs up, then steps aside after a
-//    moment so it never sits on the page's own buttons.
+//    same chewy pill as every segmented control) and the icon pops. The pill takes the button's own height, so it fits
+//    both the icon-only bar and the bar with names under the icons.
 //  - Parts and tabs: the part that opens comes in from the side it lives on (right of the old one → from the right).
 //  - Sheets: the chart sheet rises from the bottom on a spring, leaves downward, and can be dragged down to close;
 //    dialogs and sheets on phones rise in on the same spring.
@@ -30,14 +30,11 @@ html.chart-fs .cfs-foot>.seg>.seg-thumb,.bn-dots>.seg-thumb{box-shadow:none}
 /* ---- bottom bar: the pill is the sliding thumb; the old per-icon pills step aside ---- */
 @media (max-width:820px){
 :root body .bottom-nav .has-thumb>a::before,:root body .bottom-nav .has-thumb>button::before{display:none}
-:root body .bottom-nav .has-thumb>.seg-thumb{background:var(--glass-pill);box-shadow:0 6px 16px -8px rgba(10,22,38,.45),inset 0 -1px 0 rgba(0,0,0,.06);border-radius:25px;margin:2px 3px;height:46px!important;top:2px!important}
+:root body .bottom-nav .has-thumb>.seg-thumb{background:var(--glass-pill);box-shadow:0 6px 16px -8px rgba(10,22,38,.45),inset 0 -1px 0 rgba(0,0,0,.06);border-radius:25px;margin:0 3px}
 :root body .bottom-nav .has-thumb>.seg-thumb.squish{animation:ms-bar-squish var(--d-snappy) var(--spring-snappy)}
 @keyframes ms-bar-squish{0%{transform:scaleY(1)}40%{transform:scaleY(.9)}100%{transform:none}}
 .bottom-nav .ms-pop svg{animation:ms-pop var(--d-bouncy) var(--spring-bouncy)}
 @keyframes ms-pop{from{transform:scale(.72)}to{transform:none}}
-:root body .bottom-nav .nav-tabs a[aria-current=page] span,:root body .bottom-nav .nav-seg a[aria-current=page] span,:root body .bottom-nav .nav-parts button[aria-selected=true] span{animation:ms-tip var(--d-bouncy) var(--spring-bouncy);transition:opacity .25s var(--ease-out),transform .25s var(--ease-out)}
-@keyframes ms-tip{from{opacity:0;transform:translate(-50%,8px) scale(.7)}}
-:root body .bottom-nav.ms-tip-off span{opacity:0!important;transform:translate(-50%,4px) scale(.9)!important;animation:none!important}
 }
 /* ---- parts and tabs come in from their side ---- */
 html.ms .ms-in{animation:ms-in-r var(--d-soft) var(--spring-soft) both!important}
@@ -140,11 +137,9 @@ export const MOTION_SYSTEM_JS = `
   };
   document.querySelectorAll(PANELS).forEach(function (p) { if (!p.hidden && last && p.parentNode) last.set(p.parentNode, sibs(p).indexOf(p)); });
 
-  // ---- bottom bar: the new icon pops; its name bubble steps aside after a moment ----
-  var nav = document.querySelector('.bottom-nav'), tipT = null;
-  var tipLater = function () { if (!nav) return; nav.classList.remove('ms-tip-off'); clearTimeout(tipT); tipT = setTimeout(function () { nav.classList.add('ms-tip-off'); }, 2200); };
+  // ---- bottom bar: the new icon pops (names under the icons are the bar's own, G-289) ----
+  var nav = document.querySelector('.bottom-nav');
   var pop = function (el) { if (reduce()) return; el.classList.remove('ms-pop'); void el.offsetWidth; el.classList.add('ms-pop'); setTimeout(function () { el.classList.remove('ms-pop'); }, 800); };
-  if (nav) { tipLater(); nav.addEventListener('pointerdown', tipLater); }
 
   // ---- home: the title names the open part ----
   var homeTitle = function (label) {
@@ -159,7 +154,7 @@ export const MOTION_SYSTEM_JS = `
     ms.forEach(function (m) {
       var el = m.target; if (m.type !== 'attributes' || el.nodeType !== 1) return;
       if (m.attributeName === 'hidden' && !el.hidden && el.matches(PANELS)) opened(el);
-      else if ((m.attributeName === 'aria-selected' || m.attributeName === 'aria-current') && nav && nav.contains(el) && (el.getAttribute(m.attributeName) === 'true' || el.getAttribute(m.attributeName) === 'page')) { pop(el); tipLater(); if (el.hasAttribute('data-wd')) homeSync(); }
+      else if ((m.attributeName === 'aria-selected' || m.attributeName === 'aria-current') && nav && nav.contains(el) && (el.getAttribute(m.attributeName) === 'true' || el.getAttribute(m.attributeName) === 'page')) { pop(el); if (el.hasAttribute('data-wd')) homeSync(); }
       else if (m.attributeName === 'aria-selected' && el.hasAttribute('data-wd') && el.getAttribute('aria-selected') === 'true') homeSync();
     });
   }).observe(document.body || root, { subtree: true, attributes: true, attributeFilter: ['hidden', 'aria-selected', 'aria-current'] });
