@@ -77,7 +77,7 @@ export const issueImage = (img: DigestImage | null, cls: string) => (img
 
 /** One row; `lead` is the big first card of the full list (picture, summary line). */
 function row(i: MergedIssue, full: boolean, base: string, lead = false): string {
-  const move = i.isNew ? '<span class="ia-new">NEW</span>' : i.moved ? `<span class="ia-mv ${i.moved > 0 ? 'up' : 'down'}">${i.moved > 0 ? '▲' : '▼'}${Math.abs(i.moved)}</span>` : '';
+  const move = i.isNew ? '<span class="ia-new">새</span>' : i.moved ? `<span class="ia-mv ${i.moved > 0 ? 'up' : 'down'}">${i.moved > 0 ? '▲' : '▼'}${Math.abs(i.moved)}</span>` : '';
   const chips = i.chips.map(chipHtml).join('');
   const href = `${base}issue/${i.key}.html`;
   const line = full && i.lines[0] ? `<p class="ia-s">${esc(i.lines[0])}</p>` : '';

@@ -255,7 +255,10 @@ const TAB_OF: Record<string, string> = Object.fromEntries([
 ]);
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const SPARK_ICON = '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>';
-const GRID_ICON = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>';
+/** G-289: the bar's left-end buttons and the shorter names that fit under an icon (the full name stays the aria-label). */
+const MENU_ICON = '<path d="M14.5 5.5L8 12l6.5 6.5"/>';
+const RETURN_ICON = '<path d="M9.5 5.5L16 12l-6.5 6.5"/>';
+const BAR_SHORT: Record<string, string> = { 'AI 리포트': '리포트', '시장 데일리': '데일리' };
 const DOCK_ICONS: Record<string, string> = {
   'reports.html': '<path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z"/><path d="M14 3.5V8h4M10 12h5M10 15.5h5"/>',
   'scorecard.html': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
@@ -287,7 +290,7 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   if (where === 'top') return `<nav class="top-tabs" aria-label="주 메뉴">${links}</nav>`;
   const chat = 'data-open-chat aria-haspopup="dialog" aria-controls="chat"';
   const dock = parts ? 'parts' : ask ? 'ask' : page ? dockOf(page) : undefined;
-  const seg = (rows: readonly (readonly [string, string, boolean, string?])[]) => `<div class="nav-seg">${rows.map(([l, h, on, extra]) => `<a href="${base}${h}" aria-label="${escM(l)}"${on ? ' aria-current="page"' : ''}>${svgI(DOCK_ICONS[h] ?? '')}<span>${escM(l)}</span>${extra ?? ''}</a>`).join('')}</div>`;
+  const seg = (rows: readonly (readonly [string, string, boolean, string?])[]) => `<div class="nav-seg">${rows.map(([l, h, on, extra]) => `<a href="${base}${h}" aria-label="${escM(l)}"${on ? ' aria-current="page"' : ''}>${svgI(DOCK_ICONS[h] ?? '')}<span>${escM(BAR_SHORT[l] ?? l)}</span>${extra ?? ''}</a>`).join('')}</div>`;
   let ctx = '';
   // G-277 (한서님 10/21 '밑에 하단바에서 모든걸… 위에 바가 생기지 말고'): a stock switches its three parts here —
   // 위원회 · 차트 · 소식 — and the ✦ on the right asks about it. The tab row at the top goes on phones.
@@ -297,8 +300,11 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
   // G-277: 내 리포트 and 내 토론 each get their icon, so the 알림함·내 리포트·내 토론 row at the top can go on phones.
   else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 리포트', 'myreports.html', page === 'myreports.html'], ['내 토론', 'mydebates.html', page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);
-  const back = dock ? `<button type="button" class="nav-back" aria-label="탭 4개 보기">${svgI(GRID_ICON)}</button>` : '';
-  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button><div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}</nav>`;
+  // G-289 (한서님 10/23 B안): one order on every screen — left end switches between this screen's bar ('메뉴') and the
+  // four tabs ('종목' / '이 화면'), the middle holds named icons, and the ✦ always sits at the right end.
+  const here = dock === 'ask' ? '종목' : '이 화면';
+  const back = dock ? `<button type="button" class="nav-back" aria-label="홈·찾기·위원회·나 보기">${svgI(MENU_ICON)}<span>메뉴</span></button><button type="button" class="nav-return" aria-label="${here} 칸으로 돌아가기">${svgI(RETURN_ICON)}<span>${here}</span></button>` : '';
+  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button></nav>`;
 }
 /** G-277: a stock's four parts in the bottom bar: label, panel key, the panels that light it too, icon. */
 const STOCK_PARTS: readonly (readonly [string, string, string, string])[] = [
@@ -310,7 +316,8 @@ const STOCK_PARTS: readonly (readonly [string, string, string, string])[] = [
 ];
 /** G-277: home's parts in the bottom bar (buttons with data-wd; WORLD_JS switches them and sets aria-selected). */
 const PART_ICONS: Record<string, string> = {
-  sum: '<path d="M4 11l8-6.5 8 6.5"/><path d="M6.5 9.5V19h11V9.5"/>',
+  // G-289: 요약 is a list, so it never looks like the 홈 tab's house.
+  sum: '<path d="M5 7h14M5 12h14M5 17h9"/>',
   com: '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>',
   stocks: '<path d="M4 19h16"/><path d="M5 15l4.5-4.5 3.5 3L19 7"/><path d="M15 7h4v4"/>',
   market: '<path d="M4 19h16"/><path d="M5 15l4.5-4.5 3.5 3L19 7"/><path d="M15 7h4v4"/>',
@@ -525,7 +532,7 @@ export const LIVE_JS = `
         var hm = q.at ? String(q.at).replace(/^.*T(\\d\\d:\\d\\d(:\\d\\d)?).*$/, '$1') : '';
         if (f === 'tag') { el.hidden = false; el.textContent = q.open ? (q.session === 'pre' ? (isUs(sym) ? '● 프리마켓' : '● NXT 프리마켓') : q.session === 'after' ? (isUs(sym) ? '● 애프터마켓' : '● NXT 애프터마켓') : '● 실시간') + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); return; }
         // G-185: numbers on screen roll to the new value (up or down with the tick); off screen they are just set.
-        var dir = prev ? (q.price > prev.price ? 1 : q.price < prev.price ? -1 : 0) : 1, put = function (t) { if (window.gnmRoll && shown[idx] && nowMs - (el.__rlAt || 0) > 1500) { el.__rlAt = nowMs; gnmRoll(el, t, dir || 1); } else if (el.getAttribute('data-rv') !== t || el.textContent !== t) { el.textContent = t; el.setAttribute('data-rv', t); } };
+        var dir = prev ? (q.price > prev.price ? 1 : q.price < prev.price ? -1 : 0) : 1, put = function (t) { if (window.gnmRoll && shown[idx] && !el.closest('[data-no-roll]') && nowMs - (el.__rlAt || 0) > 1500) { el.__rlAt = nowMs; gnmRoll(el, t, dir || 1); } else if (el.getAttribute('data-rv') !== t || el.textContent !== t) { el.textContent = t; el.setAttribute('data-rv', t); } };
         if (f === 'price') put(won(q.price, sym));
         else if (f === 'pct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
         else if (f === 'arrowpct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
@@ -711,7 +718,7 @@ export const ORBS_CSS = `.rj .rj-orb{min-height:0;padding:26px 8px 6px;gap:14px}
 :where(a.btn-ghost,a.btn-primary,button.btn-ghost,button.btn-primary){min-height:40px}:where(a.btn-ghost,a.btn-primary){display:inline-flex;align-items:center;justify-content:center;text-decoration:none}.rj-actions button{min-height:44px;justify-content:center;display:inline-flex;align-items:center;gap:6px}.rj-actions canvas{width:18px;height:18px}.rj .job-eta{margin-top:6px}.job-steps{list-style:none;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:0;margin:4px 0 10px}.job-steps li{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--muted);opacity:.45;text-align:center}.job-steps li canvas{width:20px;height:20px}.job-steps li.done{opacity:.75}.job-steps li.on{opacity:1;color:var(--navy);font-weight:800}.orbs-load canvas{width:64px;height:64px}`;
 export const ORBS = '<span class="orbs" aria-hidden="true"><canvas data-orb="working" width="40" height="40"></canvas></span>';
 
-export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:var(--good-strong);border-color:#bfe3cb;background:var(--good-soft)}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}@keyframes live-up{0%{background:rgba(240,68,82,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(49,130,246,.22)}100%{background:transparent}}`;
+export const LIVE_CSS = `.live-tag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;align-self:center}.live-tag.on{color:var(--good-strong);border-color:#bfe3cb;background:var(--good-soft)}.live-up{animation:live-up 1.2s ease-out}.live-down{animation:live-down 1.2s ease-out}[data-no-roll] .live-up,[data-no-roll] .live-down{animation:live-tx .8s ease-out}@keyframes live-tx{0%{opacity:.35}100%{opacity:1}}@keyframes live-up{0%{background:rgba(240,68,82,.22)}100%{background:transparent}}@keyframes live-down{0%{background:rgba(49,130,246,.22)}100%{background:transparent}}`;
 
 export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:13px;font-weight:700;border-radius:999px;padding:6px 11px;cursor:pointer;white-space:nowrap}.install-btn:hover{background:rgba(255,255,255,.18)}.sm-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin-top:8px;border:1px solid var(--line-strong);background:var(--soft);border-radius:12px;padding:10px 12px;font:inherit;text-align:left;cursor:pointer;color:var(--fg)}.sm-install small{color:var(--muted);font-size:12px}.ins-pop{position:fixed;inset:0;z-index:90;background:rgba(10,20,40,.45);display:flex;align-items:flex-end;justify-content:center}.ins-pop .ins-card{background:var(--surface-solid);border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));max-width:480px;width:100%}.ins-pop ol{margin:10px 0 14px;padding-left:20px;line-height:1.7}.ins-pop .btn-primary{width:100%;justify-content:center}\n.top-tabs{display:flex;align-items:center;gap:2px;margin-right:6px}.top-tabs a,.top-tabs button{display:flex;align-items:center;gap:6px;border:0;background:none;color:#dbe4f3;font:inherit;font-size:14px;font-weight:700;padding:8px 11px;border-radius:10px;text-decoration:none;cursor:pointer}.top-tabs svg{width:18px;height:18px}.top-tabs a:hover,.top-tabs button:hover,.top-tabs [aria-current=page]{background:rgba(255,255,255,.12);color:#fff}@media(max-width:820px){.top-tabs{display:none}}
 /* G-245: the 나 tab's head (account, install, ops) and the mode rows (sibling pages as one screen, G-189 pill). */

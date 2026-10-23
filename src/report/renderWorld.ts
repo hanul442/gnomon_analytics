@@ -86,7 +86,7 @@ export function marketsOf(m: WorldMarkets): Map<string, { name: string; move: st
 export function issueRow(i: WorldIssue, mk: ReturnType<typeof marketsOf>, full: boolean): string {
   const chips = i.markets.map((k) => mk.get(k)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => `<span class="wd-chip">${esc(x.name)} <b class="${x.tone}">${esc(x.move)}</b></span>`).join('');
   const more = full && i.headlines.length > 1 ? `<details class="wd-more"><summary>같은 이슈 제목 ${i.headlines.length}개</summary><ul>${i.headlines.map((h) => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <small>${esc(h.publisher)}</small></li>`).join('')}</ul></details>` : '';
-  const move = i.isNew ? '<span class="wd-new">NEW</span>' : i.prevRank && i.prevRank !== i.rank ? `<span class="wd-mv ${i.prevRank > i.rank ? 'up' : 'down'}">${i.prevRank > i.rank ? '▲' : '▼'}${Math.abs(i.prevRank - i.rank)}</span>` : '';
+  const move = i.isNew ? '<span class="wd-new">새</span>' : i.prevRank && i.prevRank !== i.rank ? `<span class="wd-mv ${i.prevRank > i.rank ? 'up' : 'down'}">${i.prevRank > i.rank ? '▲' : '▼'}${Math.abs(i.prevRank - i.rank)}</span>` : '';
   return `<li class="wd-is" data-tag="${esc(i.tag ?? '')}"><b class="wd-rk">${i.rank}</b><div><div class="wd-ih"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a>${move}</div><small class="wd-im">${i.lang === 'en' ? '영문 · ' : ''}매체 ${i.outlets}곳 · ${esc(i.publisher)}</small><div class="wd-chips">${i.tag ? `<span class="wd-chip tag">${esc(i.tag)}</span>` : ''}${chips}</div>${more}</div></li>`;
 }
 
@@ -163,8 +163,15 @@ ${dual}<section class="card wd-card"><div class="wd-h"><h2>10년 국채 금리</
   const rateRow = (x: WorldMacroQuote) => (x.group === 'policy' ? row(x.name, '기준금리', valueText(x), '', '') : mrow(x));
   const rates0 = of('policy', 'bond');
   const rateRows = [...rateFirst.map((k) => rates0.find((x) => x.key === k)).filter((x): x is WorldMacroQuote => !!x), ...rates0.filter((x) => !rateFirst.includes(x.key))].map(rateRow);
+  // G-287 (한서님 10/23 '해외 보여주는건 이전에 보여주던 방식으로 … 지수말한거임'): 증시 is the old world 증시 view again —
+  // every index's move in one grid, then one card per region (한국·미국·아시아·유럽·남미) with whether it is trading.
+  // VIX, the US market's fear gauge, sits in 미국.
+  const regionCards = regions.map((r) => { const xs = m.indices.filter((x) => x.region === r); if (!xs.length) return ''; const open = xs.some((x) => x.open);
+    return `<section class="card wd-card"><div class="wd-h"><h2>${r}</h2><span class="wd-st${open ? ' on' : ''}">${open ? '지금 거래 중' : '마감'}</span></div>${xs.map(irow).join('')}${r === '미국' && vix ? mrow(vix) : ''}</section>`; }).join('');
+  const stocksOld = `<section class="card wd-card mk-sec" id="mk-stocks"><div class="wd-h"><h2>증시</h2><span class="muted small">지수 ${m.indices.length}개 · <span class="up">▲${up}</span> <span class="down">▼${down}</span></span></div>${heat}</section>${regionCards}`;
+  void ixRows;
   const market = [
-    sec('stocks', '증시', `${m.indices.length}개 중 <span class="up">▲${up}</span> <span class="down">▼${down}</span>`, ixRows, '지수', 6),
+    stocksOld,
     sec('rates', '금리', '기준금리 · 10년 국채', rateRows, '금리', 4),
     sec('fx', '환율', '원화는 하나은행 고시', of('fx').map(mrow), '환율', 4),
     sec('commod', '원자재', '선물 · 달러, 운임', [...of('energy', 'metals'), ...of('ship')].map(mrow), '원자재', 5),
@@ -248,10 +255,13 @@ export const WORLD_JS = `<script>
   tabs.forEach(function (t) { t.addEventListener('click', function () { pick(t.getAttribute('data-wd'), true); window.scrollTo({ top: 0, behavior: 'smooth' }); }); });
   document.addEventListener('click', function (e) {
     var g = e.target.closest && e.target.closest('[data-wd-go]'); if (g) { pick(g.getAttribute('data-wd-go'), true); var sec = g.getAttribute('data-mk') && document.getElementById('mk-' + g.getAttribute('data-mk')); if (sec) sec.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0); return; }
+    // G-287: 한국 · 세계 on home's 이슈 switch which list shows.
+    var ig = e.target.closest && e.target.closest('[data-iss-go]');
+    if (ig) { var w = ig.getAttribute('data-iss-go'); document.querySelectorAll('[data-iss-go]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === ig)); }); document.querySelectorAll('[data-iss]').forEach(function (d) { d.hidden = d.getAttribute('data-iss') !== w; }); return; }
     var f = e.target.closest && e.target.closest('[data-wd-tag]'); if (!f) return;
-    var tag = f.getAttribute('data-wd-tag');
-    document.querySelectorAll('[data-wd-tag]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
-    document.querySelectorAll('[data-wd-p="news"] [data-tag]').forEach(function (li) { li.hidden = !!tag && li.getAttribute('data-tag') !== tag; });
+    var tag = f.getAttribute('data-wd-tag'), scope = f.closest('[data-iss]') || document.querySelector('[data-wd-p="news"]') || document;
+    scope.querySelectorAll('[data-wd-tag]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
+    scope.querySelectorAll('[data-tag]').forEach(function (li) { li.hidden = !!tag && li.getAttribute('data-tag') !== tag; });
   });
   // G-281: the old 증시·금리·환율·원자재 links land on their section in 시장.
   var h = location.hash.slice(1), old = { stocks: 'stocks', rates: 'rates', commod: 'commod', fx: 'fx' };
