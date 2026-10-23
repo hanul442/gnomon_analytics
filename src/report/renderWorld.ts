@@ -172,7 +172,12 @@ ${dual}<section class="card wd-card"><div class="wd-h"><h2>10년 국채 금리</
   void ixRows;
   const market = [
     stocksOld,
-    sec('rates', '금리', '기준금리 · 10년 국채', rateRows, '금리', 4),
+    // G-291 (한서님 10/23 '금리차트는 안보여주나 시장에서?'): 금리 shows its charts again — each central bank's rate as a
+    // bar, and 원/달러 with 미국 10년 on one two-axis chart — then the rows.
+    policy.length ? `<section class="card wd-card"><div class="wd-h"><h2>나라별 기준금리</h2><span class="muted small">중앙은행 발표 값</span></div><div class="wd-bars">${policy.map((x) => `<div><span>${esc(x.name)}</span><i><i style="width:${((x.value / maxRate) * 100).toFixed(0)}%"></i></i><b>${fmt(x.value, 2)}%</b></div>`).join('')}</div></section>` : '',
+    dual,
+    // With the bars above, the rows keep only what the bars don't show (10년 국채), so each rate is shown once.
+    sec('rates', policy.length ? '10년 국채 금리' : '금리', policy.length ? '전날 대비' : '기준금리 · 10년 국채', policy.length ? [...rateFirst.map((k) => rates0.find((x) => x.key === k)).filter((x): x is WorldMacroQuote => !!x && x.group === 'bond'), ...rates0.filter((x) => x.group === 'bond' && !rateFirst.includes(x.key))].map(mrow) : rateRows, '금리', 4),
     sec('fx', '환율', '원화는 하나은행 고시', of('fx').map(mrow), '환율', 4),
     sec('commod', '원자재', '선물 · 달러, 운임', [...of('energy', 'metals'), ...of('ship')].map(mrow), '원자재', 5),
   ].join('') + `<p class="fine wd-fine">장이 열린 곳은 15분 안팎 늦은 값이에요. 선은 최근 30거래일 종가예요. 줄을 누르면 크게 볼 수 있어요.</p>`;

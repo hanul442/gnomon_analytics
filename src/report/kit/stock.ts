@@ -321,6 +321,9 @@ export const KIT_STOCK_JS = `
     var q = new URLSearchParams(location.search), sym = q.get('m') || ((document.querySelector('[data-symbol]') || {}).dataset || {}).symbol || '';
     if (!OK.test(sym)) { var lv = document.querySelector('.hero [data-live]'); sym = lv ? lv.getAttribute('data-live') : ''; }
     if (!OK.test(sym) || document.querySelector('.kit-live')) return;
+    // G-291 (한서님 10/23 '이거 왜있지 뺐던거같은데'): where the committee's price map is on the page it already carries the
+    // live price (G-287), so no second 실시간 가격 card. Coins and stocks without a map keep it.
+    if (document.querySelector('.pm[data-pm-sym]')) return;
     var coin = sym.indexOf('KRW-') === 0;
     var hero = document.querySelector('#tab-home .hero') || document.querySelector('.hero'); if (!hero) return;
     var sec = document.createElement('section'); sec.className = 'block kit-live'; sec.hidden = true;

@@ -188,7 +188,7 @@ export function renderHome(data: HomeData): string {
   const calls = committeeToday(data.entries);
   // G-281 (한서님 10/22 "구조화시켜서 분류가 각 종류에 맞게"): four parts, one kind each, every number in one place.
   // 요약 = a taste of each kind (내 종목, four numbers, the committee, issues); 시장 = numbers; 위원회 = calls; 이슈 = news.
-  const key = wp ? `<div class="hm-h"><h2>시장</h2><button type="button" class="wd-link" data-wd-go="market">시장 전체 ›</button></div><div class="mk-tiles">${wp.key4}</div>` : fallbackNumbers(data.indices);
+  const key = wp ? `<div class="hm-h"><h2>시장</h2><button type="button" class="wd-link" data-wd-go="market">시장 전체 ›</button></div><div class="km-stats wd-stats">${wp.key6}</div>` : fallbackNumbers(data.indices);
   const comBlock = calls.length ? `<div class="hm-h"><h2>위원회 오늘</h2><button type="button" class="wd-link" data-wd-go="com">${calls.length}개 전체 ›</button></div><section class="card hm-card">${calls.slice(0, 3).map(callRow).join('')}</section>` : '';
   const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${issuesList(issues, 3, false)}</section>`;
   const sum = `<section class="hm-hero" id="mkt-hero"><p class="hm-d">${esc(dayLong(day))}</p><p class="hm-s">${esc(wp?.sentence ?? '오늘 시장을 한눈에 모았어요.')}</p></section>
