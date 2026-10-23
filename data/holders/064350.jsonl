@@ -1,0 +1,4 @@
+{"symbol":"064350","receiptNo":"20260331004896","date":"2026-03-31","reporter":"현대자동차","shares":36854144,"delta":-2492,"ratio":33.77,"ratioDelta":0,"reason":"특별관계자 변동","retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"064350","receiptNo":"20260421000396","date":"2026-04-21","reporter":"BlackRockFundAdvisors","shares":5457602,"delta":9896,"ratio":5,"ratioDelta":0.01,"reason":"- 단순투자목적으로 장내에서 발행회사의 주식 매수","retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"064350","receiptNo":"20260612000626","date":"2026-06-12","reporter":"현대자동차","shares":36855744,"delta":1600,"ratio":33.77,"ratioDelta":0,"reason":"장내매매 및 특별관계자의 변동","retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"064350","receiptNo":"20260803000433","date":"2026-08-03","reporter":"국민연금공단","shares":7720460,"delta":-1103422,"ratio":7.07,"ratioDelta":-1.01,"reason":"단순추가취득/처분","retrievedAt":"2026-10-23T09:23:18.074Z"}

@@ -1,6 +1,6 @@
 {
- "at": "2026-10-22T18:47:59.773Z",
- "selected": null,
+ "at": "2026-10-23T09:23:18.074Z",
+ "selected": "2026-10-23",
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 637
+   "count": 956
   }
  ],
  "stocks": [
@@ -95,27 +95,12 @@
    "failedSources": []
   },
   {
-   "symbol": "068270",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "003490",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "034730",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "010120",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "207940",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "028050",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -125,12 +110,32 @@
    "failedSources": []
   },
   {
-   "symbol": "096770",
+   "symbol": "012450",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "247540",
+   "symbol": "086790",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "064350",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "010120",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "079550",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "316140",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -140,72 +145,7 @@
    "failedSources": []
   },
   {
-   "symbol": "298040",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "089030",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "272210",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "086520",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "000720",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "036930",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "042700",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "001440",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "043260",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "006400",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "034020",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "000150",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "066570",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "012750",
+   "symbol": "010950",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -215,32 +155,37 @@
    "failedSources": []
   },
   {
-   "symbol": "006260",
+   "symbol": "055550",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "047040",
+   "symbol": "000500",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "011070",
+   "symbol": "247540",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "222800",
+   "symbol": "403870",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "267260",
+   "symbol": "042660",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "278470",
+   "symbol": "068270",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "006400",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -250,12 +195,22 @@
    "failedSources": []
   },
   {
-   "symbol": "353200",
+   "symbol": "267250",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "007660",
+   "symbol": "272210",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "096770",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "036930",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -265,12 +220,62 @@
    "failedSources": []
   },
   {
-   "symbol": "055550",
+   "symbol": "042700",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "229640",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "034020",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "005380",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "066570",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "105560",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "051910",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "278470",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "012330",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "000150",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
    "symbol": "452190",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "003490",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -285,6 +290,11 @@
    "failedSources": []
   },
   {
+   "symbol": "043260",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
    "symbol": "232140",
    "report": "SKIPPED",
    "failedSources": []
@@ -295,7 +305,7 @@
    "failedSources": []
   },
   {
-   "symbol": "403870",
+   "symbol": "353200",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -325,25 +335,29 @@
    "failedSources": []
   },
   {
-   "symbol": "NVDA.O",
-   "report": "EXISTS",
+   "symbol": "232080",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "KRW-HBAR",
-   "report": "EXISTS",
+   "symbol": "077500",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "037710",
-   "report": "EXISTS",
+   "symbol": "181710",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "293490",
-   "report": "EXISTS",
+   "symbol": "NBIS.O",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
- "failed": []
+ "failed": [],
+ "market": {
+  "date": "2026-10-23",
+  "status": "OK"
+ }
 }

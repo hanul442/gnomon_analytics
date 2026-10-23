@@ -16,3 +16,4 @@
 {"symbol":"105560","receiptNo":"20260601000584","date":"2026-06-01","reporter":"박선현","position":"담당","isExec":true,"isMajor":false,"shares":1293,"delta":300,"ratio":0,"retrievedAt":"2026-10-09T09:41:01.762Z"}
 {"symbol":"105560","receiptNo":"20260610000235","date":"2026-06-10","reporter":"오상원","position":"IT본부장","isExec":true,"isMajor":false,"shares":150,"delta":-316,"ratio":0,"retrievedAt":"2026-10-09T09:41:01.762Z"}
 {"symbol":"105560","receiptNo":"20260611000242","date":"2026-06-11","reporter":"주동욱","position":"상무","isExec":true,"isMajor":false,"shares":500,"delta":500,"ratio":0,"retrievedAt":"2026-10-09T09:41:01.762Z"}
+{"symbol":"105560","receiptNo":"20261019000211","date":"2026-10-19","reporter":"김성현","position":"부문장","isExec":true,"isMajor":false,"shares":25000,"delta":1532,"ratio":0.007,"retrievedAt":"2026-10-23T09:23:18.074Z"}

@@ -1,0 +1,7 @@
+{"symbol":"079550","receiptNo":"20260106000496","date":"2026-01-06","reporter":"김도경","position":"경영임원","isExec":true,"isMajor":false,"shares":100,"delta":100,"ratio":0,"retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"079550","receiptNo":"20260306000266","date":"2026-03-06","reporter":"김미정","position":"경영임원","isExec":true,"isMajor":false,"shares":647,"delta":-220,"ratio":0,"retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"079550","receiptNo":"20260601001472","date":"2026-06-01","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":2212945,"delta":2212945,"ratio":10.06,"retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"079550","receiptNo":"20260702000284","date":"2026-07-02","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":2268475,"delta":55530,"ratio":10.31,"retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"079550","receiptNo":"20260901000244","date":"2026-09-01","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":2194643,"delta":-73832,"ratio":9.98,"retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"079550","receiptNo":"20260930000458","date":"2026-09-30","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":2202317,"delta":2202317,"ratio":10.01,"retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"079550","receiptNo":"20260930000466","date":"2026-09-30","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":2183543,"delta":-18774,"ratio":9.93,"retrievedAt":"2026-10-23T09:23:18.074Z"}
