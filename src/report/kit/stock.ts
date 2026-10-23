@@ -331,7 +331,9 @@ export const KIT_STOCK_JS = `
       if (pts.length < 2) return; sec.hidden = false;
       var W = plot.clientWidth || 320, H = plot.clientHeight || 150, now = pts[pts.length - 1].t, start = now - SPAN, vis = pts.filter(function (p) { return p.t >= start - 10; });
       if (vis.length < 2) vis = pts.slice(-2);
-      var lo = Math.min.apply(null, vis.map(function (p) { return p.v; })), hi = Math.max.apply(null, vis.map(function (p) { return p.v; })), sp = hi - lo || Math.abs(hi) * 0.001 || 1, padR = 64;
+      var lo = Math.min.apply(null, vis.map(function (p) { return p.v; })), hi = Math.max.apply(null, vis.map(function (p) { return p.v; })), sp0 = hi - lo, fl = Math.abs(hi) * 0.003, padR = 64;
+      // G-286: a few won between trades on a 100-million-won coin is not a crash; keep at least 0.3% of the price on the axis.
+      if (sp0 < fl) { var mid = (hi + lo) / 2; lo = mid - fl / 2; hi = mid + fl / 2; } var sp = hi - lo || 1;
       var X = function (t) { return (t - start) / SPAN * (W - padR) + shift; }, Y = function (v) { return 12 + (1 - (v - lo) / sp) * (H - 24); };
       var line = smoothD(vis.map(function (p) { return r1(X(p.t)) + ',' + r1(Y(p.v)); }).join(' ')), lp = vis[vis.length - 1], mo = vis[Math.max(0, vis.length - 11)], up = lp.v === mo.v ? lp.v >= pts[0].v : lp.v > mo.v, col = up ? UP : DOWN, lx = r1(X(lp.t)), ly = r1(Y(lp.v));
       var grid = [0.25, 0.5, 0.75].map(function (k) { return '<line class="kv-g" x1="0" x2="' + W + '" y1="' + r1(12 + k * (H - 24)) + '" y2="' + r1(12 + k * (H - 24)) + '"/>'; }).join('');
