@@ -74,18 +74,18 @@ export function scenarioRail(report: DailyReport): string {
   const name = { BEAR: '약세', BASE: '기본', BULL: '강세' } as const, cls = { BEAR: 'r-bear', BASE: 'r-base', BULL: 'r-bull' } as const;
   const bars = ks.map((k, i) => {
     const r = z[k]!.zone, bx = 230 + i * 38, y1 = y(r[1]), h = Math.max(8, y(r[0]) - y1);
-    return `<rect class="${cls[k]}" x="${bx}" y="${f1(y1)}" width="24" height="${f1(h)}" rx="6"/><text class="pm-k" x="${bx + 12}" y="${H - 6}" text-anchor="middle">${name[k]}</text>`;
+    return `<rect class="${cls[k]}" x="${bx}" y="${f1(y1)}" width="24" height="${f1(h)}" rx="6" data-pm-k="${k}" data-pm-z="${esc(zone(r))}"/><text class="pm-k" x="${bx + 12}" y="${H - 6}" text-anchor="middle">${name[k]}</text>`;
   }).join('');
   const ny = y(p.close);
   const label = ks.map((k) => `${name[k]} ${zone(z[k]!.zone)}`).join(', ');
   const lv = report.market?.structure?.levels ?? [];
   const sup = lv.filter((l) => l.kind === 'SUPPORT' && l.price < p.close).sort((a, b) => b.price - a.price)[0];
   const res = lv.filter((l) => l.kind === 'RESISTANCE' && l.price > p.close).sort((a, b) => a.price - b.price)[0];
-  // G-282 (한서님 10/23 '실시간 가격을 저기다가 합쳐'): 지금 is the live price; the chips' gaps follow it (CONCLUSION_JS).
+  // G-285 (한서님 10/23 '실시간 가격을 저기다가 합쳐'): 지금 is the live price; the chips' gaps follow it (CONCLUSION_JS).
   const live = `data-live="${esc(report.symbol)}" data-live-f="price"`;
   const chips = `<div class="pm-chips" data-no-roll><span class="pm-nowc">지금 <b ${live}>${won(p.close)}</b></span>${res ? `<span>저항 <b>${won(Math.round(res.price))}</b> <small data-pm-at="${Math.round(res.price)}">${pct(res.price)}</small></span>` : ''}${sup ? `<span>지지 <b>${won(Math.round(sup.price))}</b> <small data-pm-at="${Math.round(sup.price)}">${pct(sup.price)}</small></span>` : ''}</div>`;
   const lx = f1(x(closes.length - 1)), ly = f1(y(closes.at(-1)!.close));
-  return `<div class="cl-rail pm km-anim" data-pm-sym="${esc(report.symbol)}" data-pm-y="${f1(lo)},${f1(hi)},${top},${H - bot}"><div class="pm-h"><b>앞으로 20거래일, 가격은 어디쯤</b><small>왼쪽은 지난 ${closes.length}거래일, 오른쪽 막대는 시나리오별 범위예요</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시나리오 범위: ${esc(label)}. 지금 ${won(p.close)}">${area}<path class="pm-line" pathLength="1" d="${d}"/>${marks}<line class="cl-rail-now" x1="0" x2="${W}" y1="${f1(ny)}" y2="${f1(ny)}"/><line class="pm-live-seg" x1="${lx}" y1="${ly}" x2="${lx}" y2="${ly}" hidden/><circle class="pm-dot" cx="${lx}" cy="${ly}" r="3.5"/><circle class="pm-live" cx="214" cy="${f1(ny)}" r="4.5" hidden/>${bars}</svg>${chips}</div>`;
+  return `<div class="cl-rail pm km-anim" data-pm-sym="${esc(report.symbol)}" data-pm-y="${f1(lo)},${f1(hi)},${top},${H - bot}"><div class="pm-h"><b>앞으로 20거래일, 가격은 어디쯤</b><small>왼쪽은 지난 ${closes.length}거래일, 오른쪽 막대는 시나리오별 범위예요</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시나리오 범위: ${esc(label)}. 지금 ${won(p.close)}">${area}<path class="pm-line" pathLength="1" d="${d}"/>${marks}<line class="cl-rail-now" x1="0" x2="${W}" y1="${f1(ny)}" y2="${f1(ny)}"/><line class="pm-live-seg" x1="${lx}" y1="${ly}" x2="${lx}" y2="${ly}" hidden/><circle class="pm-dot" cx="${lx}" cy="${ly}" r="3.5"/><circle class="pm-live" cx="214" cy="${f1(ny)}" r="4.5" hidden/><rect class="pm-band" x="0" y="0" width="0" height="0" hidden/><text class="pm-band-t" x="6" y="0" hidden></text>${bars}</svg>${chips}</div>`;
 }
 
 /** G-277: the odds as three columns, 약세 · 기본 · 강세 left to right, each with its range under it. */
@@ -143,7 +143,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const baseZone = scenarioZone(report, 'BASE');
   const rows = [
     row('cl-up', bull, '강세', px('BULL'), checks.BULL ? checkLine(checks.BULL, '강세') : '성립 근거와 무효화 조건 함께 확인', '▲'),
-    // G-282: the live price lives in the map above; the 기본 row shows its range like the other two.
+    // G-285: the live price lives in the map above; the 기본 row shows its range like the other two.
     row('cl-now', base, '기본', baseZone ? `<div class="cl-px"><b>${zone(baseZone.zone)}</b><small>20거래일 예상 범위</small></div>` : '', checks.BASE ? checkLine(checks.BASE, '기본') : '현재 근거에서 가장 그럴듯한 전개', '●'),
     row('cl-down', bear, '약세', px('BEAR'), checks.BEAR ? checkLine(checks.BEAR, '약세') : '성립 근거와 무효화 조건 함께 확인', '▼'),
   ].join('');
@@ -164,7 +164,7 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .pm-area{fill:var(--fg);opacity:.05}
 .pm rect{transform-box:fill-box;transform-origin:50% 50%}html.mo .pm:not(.km-in) rect{transform:scaleY(.05);opacity:0}html.mo .pm.km-in rect{transition:transform .6s cubic-bezier(.34,1.3,.64,1) .7s,opacity .3s .7s}
 .pm .r-bear{fill:var(--down)}.pm .r-base{fill:var(--fg2);opacity:.45}.pm-dot{fill:var(--fg);stroke:var(--surface-solid);stroke-width:2}.pm-chips .pm-nowc{background:var(--fg);color:var(--page)}.pm-chips .pm-nowc b{color:var(--page)}.pm .r-bull{fill:var(--up)}
-.pm .cl-rail-now{stroke:var(--fg2);stroke-width:1;stroke-dasharray:3 3}.pm-live{fill:var(--fg);stroke:var(--surface-solid);stroke-width:2}.pm-live-seg{stroke:var(--fg);stroke-width:1.5;stroke-dasharray:2 3}.pm-now{font-size:10.5px;font-weight:700;fill:var(--fg2)}
+.pm .cl-rail-now{stroke:var(--fg2);stroke-width:1;stroke-dasharray:3 3}.pm .pm-band{opacity:.13}.pm.pm-picked .pm-ext,.pm.pm-picked .pm-arw{opacity:0}.pm .pm-ext,.pm .pm-arw{transition:opacity .2s}.pm-band.r-base{fill:var(--fg2)}.pm-band.r-bear{fill:var(--down)}.pm-band.r-bull{fill:var(--up)}.pm-band-t{font-size:11px;font-weight:700;fill:var(--fg)}.pm.pm-picked rect[data-pm-k]:not(.on){opacity:.25}.pm rect[data-pm-k]{transition:opacity .25s}.pm-live{fill:var(--fg);stroke:var(--surface-solid);stroke-width:2}.pm-live-seg{stroke:var(--fg);stroke-width:1.5;stroke-dasharray:2 3}.pm-now{font-size:10.5px;font-weight:700;fill:var(--fg2)}
 .pm-k{font-size:11px;font-weight:700;fill:var(--muted)}.pm-arw{fill:var(--muted)}
 .pm-ext{font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}.pm-ext.up{fill:var(--up)}.pm-ext.down{fill:var(--down)}
 .pm-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pm-chips span{display:inline-flex;gap:5px;align-items:baseline;padding:6px 12px;border-radius:999px;background:var(--soft);font-size:12.5px;color:var(--fg2)}.pm-chips b{color:var(--fg);font-variant-numeric:tabular-nums}.pm-chips small{color:var(--muted)}
@@ -196,7 +196,7 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 
 /** Opens a conclusion row's scenario. */
 export const CONCLUSION_JS = `
-  // G-282: the price map follows the live price: a dot right of the last close, the dashed line at it, the chips' gaps.
+  // G-285: the price map follows the live price: a dot right of the last close, the dashed line at it, the chips' gaps.
   window.addEventListener('gnm-quote', function (e) {
     var d = e.detail || {}, q = d.quote || {}; if (!q.price) return;
     document.querySelectorAll('.pm[data-pm-sym="' + d.symbol + '"]').forEach(function (m) {
@@ -210,10 +210,25 @@ export const CONCLUSION_JS = `
     });
   });
   // G-277: a 확률 cell opens its scenario row (the rows stay folded until then).
+  // G-285 (한서님 10/23 '기본 시나리오를 켜면 위 차트에서 보고 설명이 나오게'): the map above shows the picked scenario —
+  // its bar lit, the others dimmed, and its range as a band across the chart with the prices on it.
+  var pmPick = function (card, k) {
+    var m = card.querySelector('.pm'); if (!m) return;
+    var band = m.querySelector('.pm-band'), bt = m.querySelector('.pm-band-t'), r = k && m.querySelector('rect[data-pm-k="' + k + '"]');
+    m.classList.toggle('pm-picked', !!r);
+    m.querySelectorAll('rect[data-pm-k]').forEach(function (x) { x.classList.toggle('on', x === r); });
+    if (!band || !bt) return;
+    if (!r) { band.setAttribute('hidden', ''); bt.setAttribute('hidden', ''); return; }
+    var y = Number(r.getAttribute('y')), h = Number(r.getAttribute('height')), x2 = Number(r.getAttribute('x')) + Number(r.getAttribute('width'));
+    band.setAttribute('class', 'pm-band ' + r.getAttribute('class').split(' ')[0]); band.setAttribute('x', '0'); band.setAttribute('y', String(y)); band.setAttribute('width', String(x2)); band.setAttribute('height', String(h)); band.removeAttribute('hidden');
+    bt.textContent = ({ BULL: '강세', BASE: '기본', BEAR: '약세' })[k] + ' ' + r.getAttribute('data-pm-z'); bt.setAttribute('y', String(Math.max(12, y - 5))); bt.removeAttribute('hidden');
+  };
   document.addEventListener('click', function (e) {
     var c = e.target.closest && e.target.closest('.pm-cell[data-pm]'); if (!c) return;
     var card = c.closest('.cl-card'), lad = card && card.querySelector('.cl-ladder'); if (!lad) return;
     var cls = { BULL: 'cl-up', BASE: 'cl-now', BEAR: 'cl-down' }[c.getAttribute('data-pm')], on = c.getAttribute('aria-pressed') !== 'true';
+    pmPick(card, on ? c.getAttribute('data-pm') : '');
+    if (on) { var mp = card.querySelector('.pm'); if (mp && mp.getBoundingClientRect().top < 60) mp.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
     card.querySelectorAll('.pm-cell').forEach(function (x) { x.setAttribute('aria-pressed', String(x === c && on)); });
     lad.hidden = !on;
     lad.querySelectorAll('.cl-item').forEach(function (it) { var r = it.querySelector('.cl-row'), mine = r && r.classList.contains(cls); it.hidden = !mine; if (r && mine && r.getAttribute('aria-expanded') === 'false') r.click(); });

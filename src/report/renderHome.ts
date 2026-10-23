@@ -288,7 +288,7 @@ const FEED_SCRIPT = `<script>
   if (note && bits.length) { document.getElementById('pz-text').innerHTML = '<b>내 설문에 맞춘 화면이에요.</b> ' + bits.map(function (b) { return String(b).replace(/[&<>"]/g, ''); }).join(' · ') + ' 기준으로 추천을 바꿨어요.'; note.hidden = false; }
   // A screener preset that fits how long they hold.
   var h = prefs.horizon || '', preset = /며칠/.test(h) ? ['hot', '거래 급증·급등'] : /몇 주/.test(h) ? ['rebound', '반등 후보'] : /몇 달/.test(h) ? ['value', '적정가 아래'] : /1년/.test(h) ? ['large', '대형주 강세'] : null;
-  // G-282 (한서님 10/23 '넘 구림'): one plain list instead of wrapping chips — each 관심 업종 on its own row (name, its
+  // G-285 (한서님 10/23 '넘 구림'): one plain list instead of wrapping chips — each 관심 업종 on its own row (name, its
   // strongest theme under it, the move on the right), then the holding-period preset as the last row. 바꾸기 sits in the head.
   var sectors = (prefs.sectors || []).slice(0, 4), rows = [];
   // G-201: a sector row opens its strongest theme today (themes-home.json, built each day); no theme, 테마 전체.
