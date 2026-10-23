@@ -35,7 +35,7 @@ const CSS = `<style>
 .is-hl span{font-size:14.5px;line-height:1.45;word-break:keep-all}.is-hl small{font-size:12px;color:var(--muted)}
 .bottom-nav .nav-ctx a.nav-read{display:flex;flex:1;min-width:0;height:46px;margin:0 2px;padding:0 14px;border-radius:23px;flex-direction:row;align-items:center;justify-content:center;gap:6px;background:var(--fg);color:var(--page,#fff);font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bottom-nav .nav-ctx a.nav-read svg{flex:none;width:16px;height:16px}
-.bottom-nav .nav-ctx a.nav-bk{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:23px;color:var(--fg)}.bottom-nav .nav-ctx a.nav-bk svg{width:20px;height:20px}
+.bottom-nav .nav-ctx a.nav-bk{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex:none;width:46px;height:56px;border-radius:23px;color:var(--fg);font-size:10.5px;font-weight:600;text-decoration:none}.bottom-nav .nav-ctx a.nav-bk svg{width:20px;height:20px}
 </style>`;
 
 const timeKst = (iso: string | null | undefined) => {
@@ -64,6 +64,6 @@ export function renderIssuePage(i: MergedIssue, opts: { firstAt?: string | null 
     ? `<section class="is-sec"><h2 class="is-t">같은 이슈, 다른 기사</h2>${others.map((h) => `<a class="is-hl" href="${esc(h.url)}" target="_blank" rel="noopener"><span>${esc(h.title)}</span><small>${esc(h.publisher)} · 원문 열기 ↗</small></a>`).join('')}</section>`
     : '';
   const body = `${CSS}<div class="is-wrap">${head}${summary}${stocks}${more}</div>`;
-  const parts = `<a class="nav-bk" href="${base}index.html#news" aria-label="이슈 목록으로">${BACK}</a><a class="nav-read" href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.publisher)}에서 기사 보기${OUT}</a>`;
+  const parts = `<a class="nav-bk" href="${base}index.html#news" aria-label="이슈 목록으로">${BACK}<span>목록</span></a><a class="nav-read" href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.publisher)}에서 기사 보기${OUT}</a>`;
   return shell(base, `${title} | GNOMON`, body, { active: 'home', parts, ads: false });
 }
