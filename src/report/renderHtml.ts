@@ -1103,7 +1103,10 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
   var fail = function () { pageReady(); var ld = document.getElementById('sp-loading'); if (ld) ld.remove(); $('sp-empty').hidden = false; $('sp-name').textContent = code ? code : '종목을 찾지 못했어요'; document.querySelectorAll('.skel').forEach(function (x) { x.classList.remove('skel'); }); };
   if (!(COIN ? /^KRW-[A-Z0-9]{1,15}$/ : US ? /^(?!KRW-)[A-Z][A-Z0-9-]{0,9}(\\.[A-Z])?$/ : /^[0-9A-Z]{6}$/).test(code)) { fail(); return; }
   // Public panels exist only for symbols with research (G-118); others never ask for them (no 404 per visit).
-  var loadPanels = function () { fetch('research/'+code+'.panels.json').then(function(r){if(!r.ok)return {};return r.json();}).then(function(parts){Object.keys(parts).forEach(function(key){var panel=document.getElementById('tab-'+key);if(panel&&parts[key]){panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});var section=document.createElement('section');section.setAttribute('data-public',key);section.innerHTML=parts[key];panel.prepend(section);}});}).catch(function(){}); };
+  // A US stock's 기업 and 뉴스 come from /usinfo; its research panels for those two are only a fallback
+  // when /usinfo fails, so the page never shows both (they were stacked twice on NVDA.O).
+  var usOk = false, usFailed = false, US_LIVE = { fundamentals: 1, news: 1 };
+  var loadPanels = function () { fetch('research/'+code+'.panels.json').then(function(r){if(!r.ok)return {};return r.json();}).then(function(parts){Object.keys(parts).forEach(function(key){if(US&&US_LIVE[key]&&parts[key]){if(usOk)return;var us=usFailed&&document.querySelector('[data-slot="us-'+key+'"]');if(us)us.innerHTML='';}var panel=document.getElementById('tab-'+key);if(panel&&parts[key]){panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});var section=document.createElement('section');section.setAttribute('data-public',key);section.innerHTML=parts[key];panel.prepend(section);}});}).catch(function(){}); };
   // Stocks with an AI report have their own page and no s/<code>.json: go there instead.
   var toReport = function () { if(new URLSearchParams(location.search).get('job')) return Promise.resolve(false);return fetch(code + '/index.html', { method: 'HEAD' }).then(function (r) { if (r.ok) { location.replace(code + '/index.html'); return true; } return false; }, function () { return false; }); };
   // G-188: a US stock outside the daily set: the API builds its page on demand; the name comes from the directory list.
@@ -1112,10 +1115,11 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
     var meta = document.querySelector('meta[name=gnm-api]'), api = meta && meta.content;
     var put = function (key, html) { var el = document.querySelector('[data-slot="us-' + key + '"]'); if (el) el.innerHTML = html; };
     var empty = function (t) { return '<section class="block"><div class="card"><p class="empty">' + t + '</p></div></section>'; };
-    var fail = function (t) { put('fundamentals', empty(t)); put('news', empty(t)); };
+    var fail = function (t) { usFailed = true; ['fundamentals', 'news'].forEach(function (k) { put(k, document.querySelector('[data-public="' + k + '"]') ? '' : empty(t)); }); };
     if (!api) { fail('이 화면에서는 기업 정보를 불러올 수 없어요.'); return; }
     var q = '?name=' + encodeURIComponent(d.english || '') + (d.cik ? '&cik=' + encodeURIComponent(d.cik) : '') + (d.kind === 'etf' ? '&kind=etf' : '');
     fetch(api.replace(/[/]$/, '') + '/usinfo/' + encodeURIComponent(code) + q).then(function (r) { return r.json().then(function (x) { if (!r.ok) throw x; return x; }); }).then(function (x) {
+      usOk = true; document.querySelectorAll('[data-public="fundamentals"],[data-public="news"]').forEach(function (el) { el.remove(); });
       put('fundamentals', x.fundamentals || empty('SEC에 올라온 재무 자료가 없어요.' + (d.kind === 'etf' ? ' ETF는 재무제표가 없어요.' : '')));
       put('news', x.news || empty('최근 공시와 뉴스가 없어요.'));
       put('latest', x.latest || ''); put('edge', x.edge || '');
