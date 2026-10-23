@@ -729,11 +729,12 @@ export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);bac
 @media (max-width:820px){body:has(.pg-title) .topbar{display:none}.pg-title{padding:18px 20px 0}.pg-ask{display:inline-flex}.mode-tabs{margin:12px 16px 14px;max-width:calc(100% - 32px)}body:has(.bottom-nav) .chat-fab{display:none!important}}`;
 
 export const MENU_JS = `
-  // G-245: the five tabs light up by page (sibling pages light their group's tab), and a mode row moves its pill
+  // G-245: the five tabs light up by page (sibling pages light their group's tab). G-285: a stock or coin report lives
+  // in its own folder (KRW-HBAR/index.html), so its 'index.html' is not home and no tab lights there., and a mode row moves its pill
   // to the tapped mode before the next page opens, so switching modes feels like one screen.
   (function () {
-    var here = location.pathname.split('/').pop() || 'index.html', TAB_OF = ${JSON.stringify(TAB_OF)};
-    var mark = function () { var h = location.hash.slice(1); document.querySelectorAll('[data-tab-link]').forEach(function (a) { var k = a.getAttribute('data-tab-link'), on = here === 'index.html' ? k === 'top' : (k === here || TAB_OF[here] === k); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); };
+    var here = location.pathname.split('/').pop() || 'index.html', inFolder = !!document.body.getAttribute('data-base'), TAB_OF = ${JSON.stringify(TAB_OF)};
+    var mark = function () { var h = location.hash.slice(1); document.querySelectorAll('[data-tab-link]').forEach(function (a) { var k = a.getAttribute('data-tab-link'), on = inFolder ? false : here === 'index.html' ? k === 'top' : (k === here || TAB_OF[here] === k); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }); };
     mark(); window.addEventListener('hashchange', mark);
     var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     document.querySelectorAll('.mode-tabs').forEach(function (bar) { var a = bar.querySelector('[aria-current=page]'); if (a) bar.scrollLeft += a.getBoundingClientRect().left - bar.getBoundingClientRect().left - (bar.clientWidth - a.offsetWidth) / 2; });

@@ -135,7 +135,7 @@ body:has(.bottom-nav){padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 export const COMMAND_BAR_JS = `
 (function () {
   // G-258: each screen's own bar (.nav-ctx) slides in shortly after the page opens; the grid button shows the four
-  // tabs and tapping the current tab goes back. Reading down shrinks the bar, scrolling up grows it.
+  // tabs and tapping the current tab goes back (G-285: only when that tab is this very page; otherwise it opens it). Reading down shrinks the bar, scrolling up grows it.
   var nav = document.querySelector('.bottom-nav'); if (!nav) return;
   var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   var set = function (on) { nav.classList.toggle('ctx', on); nav.classList.remove('morph'); void nav.offsetWidth; if (!still) nav.classList.add('morph'); };
@@ -145,7 +145,7 @@ export const COMMAND_BAR_JS = `
   if (!nav.hasAttribute('data-dock')) return;
   var t = setTimeout(function () { set(true); }, still ? 0 : 600);
   var back = nav.querySelector('.nav-back'); if (back) back.addEventListener('click', function () { clearTimeout(t); set(false); });
-  nav.querySelectorAll('.nav-tabs a').forEach(function (a) { a.addEventListener('click', function (e) { if (a.getAttribute('aria-current') === 'page' && !nav.classList.contains('ctx')) { e.preventDefault(); set(true); } }); });
+  nav.querySelectorAll('.nav-tabs a').forEach(function (a) { a.addEventListener('click', function (e) { if (a.getAttribute('aria-current') === 'page' && !nav.classList.contains('ctx') && a.pathname === location.pathname) { e.preventDefault(); set(true); } }); });
   var field = nav.querySelector('[data-dock-search]');
   // G-260: on phones 찾기's own search box hides; the bar's field opens it at the top of the screen.
   var q = document.getElementById('q'), head = document.querySelector('.find-head');
