@@ -86,7 +86,7 @@ export function marketsOf(m: WorldMarkets): Map<string, { name: string; move: st
 export function issueRow(i: WorldIssue, mk: ReturnType<typeof marketsOf>, full: boolean): string {
   const chips = i.markets.map((k) => mk.get(k)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => `<span class="wd-chip">${esc(x.name)} <b class="${x.tone}">${esc(x.move)}</b></span>`).join('');
   const more = full && i.headlines.length > 1 ? `<details class="wd-more"><summary>같은 이슈 제목 ${i.headlines.length}개</summary><ul>${i.headlines.map((h) => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <small>${esc(h.publisher)}</small></li>`).join('')}</ul></details>` : '';
-  const move = i.isNew ? '<span class="wd-new">NEW</span>' : i.prevRank && i.prevRank !== i.rank ? `<span class="wd-mv ${i.prevRank > i.rank ? 'up' : 'down'}">${i.prevRank > i.rank ? '▲' : '▼'}${Math.abs(i.prevRank - i.rank)}</span>` : '';
+  const move = i.isNew ? '<span class="wd-new">새</span>' : i.prevRank && i.prevRank !== i.rank ? `<span class="wd-mv ${i.prevRank > i.rank ? 'up' : 'down'}">${i.prevRank > i.rank ? '▲' : '▼'}${Math.abs(i.prevRank - i.rank)}</span>` : '';
   return `<li class="wd-is" data-tag="${esc(i.tag ?? '')}"><b class="wd-rk">${i.rank}</b><div><div class="wd-ih"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a>${move}</div><small class="wd-im">${i.lang === 'en' ? '영문 · ' : ''}매체 ${i.outlets}곳 · ${esc(i.publisher)}</small><div class="wd-chips">${i.tag ? `<span class="wd-chip tag">${esc(i.tag)}</span>` : ''}${chips}</div>${more}</div></li>`;
 }
 

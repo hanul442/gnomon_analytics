@@ -29,7 +29,7 @@ export const COMMAND_BAR_CSS = `
 .top-tabs a:focus-visible,.top-tabs button:focus-visible{box-shadow:0 0 0 2px #00A6FB}
 .top-links{gap:6px;align-items:center}
 .top-links .acct{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;border-radius:999px;color:#0A1626;background:linear-gradient(180deg,#ffffff,#d8e2ee);font-weight:700;
-  box-shadow:0 10px 26px -14px rgba(0,166,251,.95),inset 0 -1px rgba(0,0,0,.16);transition:transform .18s cubic-bezier(.22,1,.36,1),box-shadow .18s}
+  box-shadow:0 10px 26px -14px rgba(0,166,251,.95),inset 0 -1px rgba(0,0,0,.16);transition:transform .18s var(--ease-out),box-shadow .18s}
 .top-links .acct:hover{color:#0A1626;background:linear-gradient(180deg,#ffffff,#d8e2ee);transform:translateY(-1px);box-shadow:0 16px 32px -14px rgba(0,166,251,1),inset 0 -1px rgba(0,0,0,.16)}
 .top-links .acct i{font-style:normal;color:#3A4A5C;font-weight:600}
 .top-links .bell-btn,.top-links .install-btn{height:38px;border:0;border-radius:999px;color:#C3CDD6;background:transparent;transition:color .16s,background .16s}
@@ -44,13 +44,13 @@ export const COMMAND_BAR_CSS = `
 .bottom-nav,html[data-theme] body .bottom-nav{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;gap:4px;
   width:auto;max-width:520px;margin:0 auto;height:64px;padding:0 7px;border:1px solid var(--glass-edge);border-radius:32px;background:var(--glass-bg);
   box-shadow:0 18px 40px -16px rgba(10,22,38,.38),inset 0 1px 0 var(--glass-hi),inset 0 -1px 0 rgba(255,255,255,.18);backdrop-filter:blur(24px) saturate(190%);-webkit-backdrop-filter:blur(24px) saturate(190%);
-  transform-origin:50% 100%;transition:transform .38s cubic-bezier(.34,1.3,.64,1),opacity .3s}
+  transform-origin:50% 100%;transition:transform .38s var(--spring-snappy),opacity .3s}
 .bottom-nav::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 90% at 20% -30%,var(--glass-hi),transparent 55%);opacity:.6;pointer-events:none}
 html{--glass-bg:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,255,255,.68));--glass-edge:rgba(255,255,255,.75);--glass-hi:rgba(255,255,255,.9);--glass-pill:rgba(255,255,255,.95);--glass-soft:rgba(255,255,255,.7)}
 html[data-theme=dark]{--glass-bg:linear-gradient(180deg,rgba(40,48,60,.82),rgba(18,22,30,.74));--glass-edge:rgba(255,255,255,.12);--glass-hi:rgba(255,255,255,.14);--glass-pill:rgba(255,255,255,.16);--glass-soft:rgba(255,255,255,.08)}
 .bottom-nav.mini{transform:scale(.86) translateY(4px)}
 .bottom-nav button{font:inherit}
-.bottom-nav .nav-spark,.bottom-nav .nav-back,.bottom-nav .nav-round{position:relative;flex:0 0 50px;width:50px;height:50px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.5,.64,1)}
+.bottom-nav .nav-spark,.bottom-nav .nav-back,.bottom-nav .nav-round{position:relative;flex:0 0 50px;width:50px;height:50px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;cursor:pointer;transition:transform .2s var(--spring-bouncy)}
 /* 한서님 10/19: no blue/orange glow; the ✦ is a plain dark glass button. */
 .bottom-nav .nav-spark{color:var(--page);background:var(--fg);box-shadow:0 8px 18px -8px rgba(10,22,38,.55),inset 0 1px 0 rgba(255,255,255,.18)}
 .bottom-nav .nav-back,.bottom-nav .nav-round{display:none;color:var(--fg);background:var(--glass-soft);border:1px solid var(--glass-edge)}
@@ -63,7 +63,7 @@ html[data-theme=dark]{--glass-bg:linear-gradient(180deg,rgba(40,48,60,.82),rgba(
   transition:color .2s,transform .2s}
 .nav-tabs a svg,.nav-seg a svg{position:relative;z-index:1}
 .nav-tabs a[aria-current=page]::before,.nav-seg a[aria-current=page]::before{content:"";position:absolute;left:50%;top:50%;width:58px;height:46px;margin:-23px 0 0 -29px;border-radius:23px;background:var(--glass-pill);
-  box-shadow:0 6px 16px -8px rgba(10,22,38,.45),inset 0 -1px 0 rgba(0,0,0,.06);animation:nav-pill .38s cubic-bezier(.34,1.4,.64,1)}
+  box-shadow:0 6px 16px -8px rgba(10,22,38,.45),inset 0 -1px 0 rgba(0,0,0,.06);animation:nav-pill .38s var(--spring-bouncy)}
 .nav-tabs a[aria-current=page],.nav-seg a[aria-current=page],html[data-theme] .bottom-nav .nav-tabs a[aria-current=page]{color:var(--fg);background:none;box-shadow:none}
 .nav-tabs a span,.nav-seg a span{position:absolute;z-index:2;bottom:47px;left:50%;transform:translateX(-50%);display:none;padding:3px 8px;border-radius:9px;font-size:11.5px;font-weight:700;line-height:1.3;white-space:nowrap;color:#fff;background:rgba(10,22,38,.84);box-shadow:0 4px 10px -4px rgba(0,0,0,.4);pointer-events:none}
 .nav-tabs a span::after,.nav-seg a span::after{content:"";position:absolute;left:50%;top:100%;margin-left:-4px;border:4px solid transparent;border-top-color:rgba(10,22,38,.84)}
@@ -91,7 +91,7 @@ body:has(.bottom-nav:is([data-dock=find],[data-dock=me])) .mode-tabs{display:non
 .nav-parts button{position:relative;flex:1;min-width:0;height:50px;display:grid;place-items:center;padding:0;border:0;border-radius:25px;color:var(--muted);background:none;cursor:pointer;transition:color .2s,transform .2s}
 .nav-parts button svg{position:relative;z-index:1}
 .nav-parts button[aria-selected=true]{color:var(--fg)}
-.nav-parts button[aria-selected=true]::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:46px;margin:-23px 0 0 -24px;border-radius:23px;background:var(--glass-pill);box-shadow:0 6px 16px -8px rgba(10,22,38,.45),inset 0 -1px 0 rgba(0,0,0,.06);animation:nav-pill .38s cubic-bezier(.34,1.4,.64,1)}
+.nav-parts button[aria-selected=true]::before{content:"";position:absolute;left:50%;top:50%;width:48px;height:46px;margin:-23px 0 0 -24px;border-radius:23px;background:var(--glass-pill);box-shadow:0 6px 16px -8px rgba(10,22,38,.45),inset 0 -1px 0 rgba(0,0,0,.06);animation:nav-pill .38s var(--spring-bouncy)}
 .nav-parts button span{position:absolute;z-index:2;bottom:47px;left:50%;transform:translateX(-50%);display:none;padding:3px 8px;border-radius:9px;font-size:11.5px;font-weight:700;line-height:1.3;white-space:nowrap;color:#fff;background:rgba(10,22,38,.84);pointer-events:none}
 .nav-parts button[aria-selected=true] span{display:block;animation:nav-tip .32s var(--ease-out)}
 .bottom-nav.mini .nav-parts button span{display:none}
@@ -110,7 +110,7 @@ body.dock-searching::before{content:"";position:fixed;inset:0;z-index:44;backgro
 .bottom-nav .nav-chips button{flex:none;flex-direction:row;min-height:0;height:32px;padding:0 12px;border:1px solid var(--glass-edge);border-radius:16px;background:var(--glass-bg);color:var(--fg);font-size:12.5px;font-weight:600;cursor:pointer;
   backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);box-shadow:0 8px 20px -12px rgba(10,22,38,.4)}
 .bottom-nav.ctx .nav-tabs,.bottom-nav.ctx .nav-spark{display:none}
-.bottom-nav.ctx .nav-back{display:grid;animation:nav-pop .4s cubic-bezier(.34,1.5,.64,1)}
+.bottom-nav.ctx .nav-back{display:grid;animation:nav-pop .4s var(--spring-bouncy)}
 .bottom-nav.ctx .nav-ctx{display:flex;animation:nav-in .38s var(--ease-out)}
 /* G-267: the question chips no longer float over the page; the chat opens with its own suggested questions. */
 .bottom-nav:not(.ctx) .nav-tabs{animation:nav-in .38s var(--ease-out)}
@@ -275,7 +275,7 @@ export const REPORT_TABS_CSS = `
 .topbar>.chips:not(.analysis-tabs) a:active{transform:scale(.92);transition-duration:.08s}
 .topbar>.chips:not(.analysis-tabs) a:focus-visible{outline:2px solid #00A6FB;outline-offset:-2px}
 .chips-ind{position:absolute;z-index:0;top:5px;bottom:5px;left:0;width:0;border-radius:999px;pointer-events:none;background:linear-gradient(180deg,#ffffff,#dfe6f0);
-  box-shadow:0 10px 22px -12px rgba(0,166,251,.75),inset 0 -1px rgba(0,0,0,.14);transition:transform .46s cubic-bezier(.34,1.32,.64,1),width .46s cubic-bezier(.34,1.32,.64,1)}
+  box-shadow:0 10px 22px -12px rgba(0,166,251,.75),inset 0 -1px rgba(0,0,0,.14);transition:transform .46s var(--spring-snappy),width .46s var(--spring-snappy)}
 @media (max-width:820px){.topbar>.chips:not(.analysis-tabs){margin:0 auto 8px}.topbar>.chips:not(.analysis-tabs) a{height:36px;padding:0 11px;font-size:13.5px}}
 @media (max-width:360px){.topbar>.chips:not(.analysis-tabs) a{padding:0 9px;font-size:13px}}
 @media (prefers-reduced-motion:reduce){.chips-ind{transition:none}.topbar>.chips:not(.analysis-tabs) a{transition:none}}`;
