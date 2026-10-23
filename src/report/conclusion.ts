@@ -1,4 +1,4 @@
-import {checkLine, scenarioCheck, scenarioPlot, scenarioZone} from './scenarioChart.js';
+import {checkLine, scenarioCheck, scenarioZone} from './scenarioChart.js';
 export { scenarioZone };
 // Scenario assumptions, supporting catalysts and invalidation conditions are distinct.
 // Never infer a scenario trigger from unrelated support/resistance levels.
@@ -81,8 +81,11 @@ export function scenarioRail(report: DailyReport): string {
   const lv = report.market?.structure?.levels ?? [];
   const sup = lv.filter((l) => l.kind === 'SUPPORT' && l.price < p.close).sort((a, b) => b.price - a.price)[0];
   const res = lv.filter((l) => l.kind === 'RESISTANCE' && l.price > p.close).sort((a, b) => a.price - b.price)[0];
-  const chips = `<div class="pm-chips"><span class="pm-nowc">지금 <b>${won(p.close)}</b></span>${res ? `<span>저항 <b>${won(Math.round(res.price))}</b> <small>${pct(res.price)}</small></span>` : ''}${sup ? `<span>지지 <b>${won(Math.round(sup.price))}</b> <small>${pct(sup.price)}</small></span>` : ''}</div>`;
-  return `<div class="cl-rail pm km-anim"><div class="pm-h"><b>앞으로 20거래일, 가격은 어디쯤</b><small>왼쪽은 지난 ${closes.length}거래일, 오른쪽 막대는 시나리오별 범위예요</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시나리오 범위: ${esc(label)}. 지금 ${won(p.close)}">${area}<path class="pm-line" pathLength="1" d="${d}"/>${marks}<line class="cl-rail-now" x1="0" x2="${W}" y1="${f1(ny)}" y2="${f1(ny)}"/><circle class="pm-dot" cx="${f1(x(closes.length - 1))}" cy="${f1(y(closes.at(-1)!.close))}" r="3.5"/>${bars}</svg>${chips}</div>`;
+  // G-282 (한서님 10/23 '실시간 가격을 저기다가 합쳐'): 지금 is the live price; the chips' gaps follow it (CONCLUSION_JS).
+  const live = `data-live="${esc(report.symbol)}" data-live-f="price"`;
+  const chips = `<div class="pm-chips" data-no-roll><span class="pm-nowc">지금 <b ${live}>${won(p.close)}</b></span>${res ? `<span>저항 <b>${won(Math.round(res.price))}</b> <small data-pm-at="${Math.round(res.price)}">${pct(res.price)}</small></span>` : ''}${sup ? `<span>지지 <b>${won(Math.round(sup.price))}</b> <small data-pm-at="${Math.round(sup.price)}">${pct(sup.price)}</small></span>` : ''}</div>`;
+  const lx = f1(x(closes.length - 1)), ly = f1(y(closes.at(-1)!.close));
+  return `<div class="cl-rail pm km-anim" data-pm-sym="${esc(report.symbol)}" data-pm-y="${f1(lo)},${f1(hi)},${top},${H - bot}"><div class="pm-h"><b>앞으로 20거래일, 가격은 어디쯤</b><small>왼쪽은 지난 ${closes.length}거래일, 오른쪽 막대는 시나리오별 범위예요</small></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="시나리오 범위: ${esc(label)}. 지금 ${won(p.close)}">${area}<path class="pm-line" pathLength="1" d="${d}"/>${marks}<line class="cl-rail-now" x1="0" x2="${W}" y1="${f1(ny)}" y2="${f1(ny)}"/><line class="pm-live-seg" x1="${lx}" y1="${ly}" x2="${lx}" y2="${ly}" hidden/><circle class="pm-dot" cx="${lx}" cy="${ly}" r="3.5"/><circle class="pm-live" cx="214" cy="${f1(ny)}" r="4.5" hidden/>${bars}</svg>${chips}</div>`;
 }
 
 /** G-277: the odds as three columns, 약세 · 기본 · 강세 left to right, each with its range under it. */
@@ -92,7 +95,7 @@ function oddsGrid(report: DailyReport): string {
   const pr = ks.map((k) => c?.scenarios?.find((s) => s.kind === k)?.probability);
   if (!pr.some((v) => typeof v === 'number')) return '';
   const top = Math.max(...pr.map((v) => v ?? 0));
-  return `<div class="pm-odds"><div class="pm-odds-k">시나리오 확률 <small>칸을 누르면 근거와 틀릴 조건이 펼쳐져요</small></div><div class="pm-grid">${ks.map((k, i) => { const z = scenarioZone(report, k); const v = pr[i]; return `<button type="button" class="pm-cell ${k.toLowerCase()}${v === top ? ' top' : ''}" data-pm="${k}" aria-pressed="false"><span>${name[k]}</span><b>${typeof v === 'number' ? `${v}%` : '—'}</b><small>${z ? zone(z.zone) : ''}</small></button>`; }).join('')}</div></div>`;
+  return `<div class="pm-odds"><div class="pm-odds-k">시나리오 확률 <small>칸을 누르면 근거와 틀릴 조건이 펼쳐져요</small></div><div class="pm-grid">${ks.map((k, i) => { const z = scenarioZone(report, k); const v = pr[i]; return `<button type="button" class="pm-cell ${k.toLowerCase()}${v === top ? ' top' : ''}" data-pm="${k}" aria-pressed="false"><span>${name[k]}</span><b>${typeof v === 'number' ? `${v}%` : '—'}</b><small>${z ? zone(z.zone).replace('~', '~<wbr>') : ''}</small></button>`; }).join('')}</div></div>`;
 }
 
 export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string } = {}): string {
@@ -111,7 +114,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const detail = (sc: typeof bull, label: string) => {
     if (!sc) return missing?`<div class="cl-sc" hidden><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 ${label} 시나리오가 아직 없어요</b>${reportButton(report.symbol, report.name)}</div></div></div>`:'';
     const locked = sc.narrative.text === LOCKED_TEXT;
-    return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>시나리오 전개·근거·무효화 조건은 심층 리포트에 있어요.</p><button type="button" class="btn-primary dl-go" data-deep-go>심층 리포트 열기</button></div></div>` : `${scenarioPlot(report,sc.kind)}<div class="scenario-evidence"><b>조건·근거</b><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>성립 근거·촉매</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>무효화 조건 · 가정 재검토</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${!locked && sc.zone ? `<p class="cl-sc-k"><b>20거래일 예상 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</div>'}</div>`;
+    return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>시나리오 전개·근거·무효화 조건은 심층 리포트에 있어요.</p><button type="button" class="btn-primary dl-go" data-deep-go>심층 리포트 열기</button></div></div>` : `<div class="scenario-evidence"><b>조건·근거</b><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>성립 근거·촉매</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>무효화 조건 · 가정 재검토</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${!locked && sc.zone ? `<p class="cl-sc-k"><b>20거래일 예상 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</div>'}</div>`;
   };
   const row = (cls: string, sc: typeof bull, label: string, px: string, what: string, arrow: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc||missing ? ' aria-expanded="false"' : ' disabled'}><span class="cl-ic" aria-hidden="true">${arrow}</span><div class="cl-what"><b>${label} 시나리오</b> ${odds(sc)}<small>${what}</small></div>${px}${sc||missing ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
   // A crossing condition and a future range are different facts. Only the stored trigger supplies
@@ -137,9 +140,11 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const playing = (['BULL', 'BASE', 'BEAR'] as const).find((k) => checks[k]?.now === 'in');
   const why = (k: 'BULL' | 'BASE' | 'BEAR') => { const s = sc(k); return s && s.narrative.text !== LOCKED_TEXT && s.catalysts[0] ? ` 위원회가 본 근거: ${esc(s.catalysts[0])}.` : ''; };
   const verdict = anyCheck ? `<div class="cl-check"><b>📅 ${esc(anyCheck.since.slice(5).replace('-', '/'))} 리포트 이후 ${anyCheck.sessions}거래일</b><p>${playing ? `지금 가격은 <b>${({ BULL: '강세', BASE: '기본', BEAR: '약세' })[playing]} 시나리오</b> 범위 안이에요${typeof sc(playing)?.probability === 'number' ? ` — 위원회가 ${sc(playing)!.probability}%로 본 시나리오예요` : ''}.${why(playing)}` : '지금 가격은 세 시나리오 범위 어디에도 있지 않아요. 아래에서 각 범위까지 남은 거리를 볼 수 있어요.'}</p></div>` : '';
+  const baseZone = scenarioZone(report, 'BASE');
   const rows = [
     row('cl-up', bull, '강세', px('BULL'), checks.BULL ? checkLine(checks.BULL, '강세') : '성립 근거와 무효화 조건 함께 확인', '▲'),
-    row('cl-now', base, '기본', `<div class="cl-px"><b data-live="${esc(report.symbol)}" data-live-f="price">${won(p.close)}</b><small data-live="${esc(report.symbol)}" data-live-f="nowlabel">${esc((p.sessionDate ?? report.date).slice(5).replace('-', '/'))} 종가</small></div>`, checks.BASE ? checkLine(checks.BASE, '기본') : '현재 근거에서 가장 그럴듯한 전개', '●'),
+    // G-282: the live price lives in the map above; the 기본 row shows its range like the other two.
+    row('cl-now', base, '기본', baseZone ? `<div class="cl-px"><b>${zone(baseZone.zone)}</b><small>20거래일 예상 범위</small></div>` : '', checks.BASE ? checkLine(checks.BASE, '기본') : '현재 근거에서 가장 그럴듯한 전개', '●'),
     row('cl-down', bear, '약세', px('BEAR'), checks.BEAR ? checkLine(checks.BEAR, '약세') : '성립 근거와 무효화 조건 함께 확인', '▼'),
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
@@ -159,13 +164,13 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .pm-area{fill:var(--fg);opacity:.05}
 .pm rect{transform-box:fill-box;transform-origin:50% 50%}html.mo .pm:not(.km-in) rect{transform:scaleY(.05);opacity:0}html.mo .pm.km-in rect{transition:transform .6s cubic-bezier(.34,1.3,.64,1) .7s,opacity .3s .7s}
 .pm .r-bear{fill:var(--down)}.pm .r-base{fill:var(--fg2);opacity:.45}.pm-dot{fill:var(--fg);stroke:var(--surface-solid);stroke-width:2}.pm-chips .pm-nowc{background:var(--fg);color:var(--page)}.pm-chips .pm-nowc b{color:var(--page)}.pm .r-bull{fill:var(--up)}
-.pm .cl-rail-now{stroke:var(--fg2);stroke-width:1;stroke-dasharray:3 3}.pm-now{font-size:10.5px;font-weight:700;fill:var(--fg2)}
+.pm .cl-rail-now{stroke:var(--fg2);stroke-width:1;stroke-dasharray:3 3}.pm-live{fill:var(--fg);stroke:var(--surface-solid);stroke-width:2}.pm-live-seg{stroke:var(--fg);stroke-width:1.5;stroke-dasharray:2 3}.pm-now{font-size:10.5px;font-weight:700;fill:var(--fg2)}
 .pm-k{font-size:11px;font-weight:700;fill:var(--muted)}.pm-arw{fill:var(--muted)}
 .pm-ext{font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}.pm-ext.up{fill:var(--up)}.pm-ext.down{fill:var(--down)}
 .pm-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pm-chips span{display:inline-flex;gap:5px;align-items:baseline;padding:6px 12px;border-radius:999px;background:var(--soft);font-size:12.5px;color:var(--fg2)}.pm-chips b{color:var(--fg);font-variant-numeric:tabular-nums}.pm-chips small{color:var(--muted)}
 .pm-odds{margin:4px 0 16px}.pm-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:8px}.pm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .pm-cell{padding:12px 12px 10px;border:0;border-radius:16px;background:var(--soft);min-width:0;font:inherit;color:inherit;text-align:left;cursor:pointer;transition:transform .15s}.pm-cell:active{transform:scale(.97)}.pm-cell[aria-pressed=true]{background:var(--surface-solid);box-shadow:inset 0 0 0 2px var(--fg)}.pm-odds-k small{font-weight:500;color:var(--muted);margin-left:4px}.cl-ladder[hidden],.cl-item[hidden]{display:none!important}.pm-cell span{display:block;font-size:12.5px;font-weight:700;color:var(--fg2)}.pm-cell b{display:block;font-size:24px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}
-.pm-cell small{display:block;font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-cell.bear b{color:var(--down)}.pm-cell.bull b{color:var(--up)}.pm-cell.top{box-shadow:inset 0 0 0 1.5px var(--fg)}
+.pm-cell small{display:block;font-size:11px;line-height:1.35;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}.pm-cell.bear b{color:var(--down)}.pm-cell.bull b{color:var(--up)}.pm-cell.top{box-shadow:inset 0 0 0 1.5px var(--fg)}
 .cl-check{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:var(--soft);font-size:14px}.cl-check b{font-weight:800}.cl-check p{margin:4px 0 0;line-height:1.55;color:var(--fg2)}.cl-check p b{color:var(--fg)}
 .cl-deep{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:var(--accent-soft);font-size:13.5px;color:var(--fg2)}.cl-deep .btn-primary{margin:0;padding:10px 16px;font-size:14px}.cl-deep small{font-weight:600;opacity:.85;margin-left:4px}.dl-go{margin-top:6px}
 .cl-mini p{margin:4px 0 8px;line-height:1.55}.cl-go{display:inline-block;font-size:13px;font-weight:700;padding:6px 0;color:var(--accent-strong);text-decoration:none}.cl-odds{margin:10px 0 14px}.cl-odds-k{font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.cl-odds .sc-prob{height:10px;margin:0;border-radius:5px;gap:2px;font-size:0}.cl-odds .sc-prob span{min-width:6px}.cl-odds-l{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.cl-odds-l span:nth-child(2){color:var(--fg2)}
@@ -191,6 +196,19 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 
 /** Opens a conclusion row's scenario. */
 export const CONCLUSION_JS = `
+  // G-282: the price map follows the live price: a dot right of the last close, the dashed line at it, the chips' gaps.
+  window.addEventListener('gnm-quote', function (e) {
+    var d = e.detail || {}, q = d.quote || {}; if (!q.price) return;
+    document.querySelectorAll('.pm[data-pm-sym="' + d.symbol + '"]').forEach(function (m) {
+      var v = (m.getAttribute('data-pm-y') || '').split(',').map(Number), lo = v[0], hi = v[1], t = v[2], b = v[3]; if (!(hi > lo)) return;
+      var y = Math.max(t - 8, Math.min(b + 8, t + (1 - (q.price - lo) / (hi - lo)) * (b - t))).toFixed(1);
+      var dot = m.querySelector('.pm-live'), seg = m.querySelector('.pm-live-seg'), now = m.querySelector('.cl-rail-now');
+      if (dot) { dot.setAttribute('cy', y); dot.removeAttribute('hidden'); }
+      if (seg) { seg.setAttribute('x2', '214'); seg.setAttribute('y2', y); seg.removeAttribute('hidden'); }
+      if (now) { now.setAttribute('y1', y); now.setAttribute('y2', y); }
+      m.querySelectorAll('[data-pm-at]').forEach(function (s) { var g = (q.price / Number(s.getAttribute('data-pm-at')) - 1) * 100; s.textContent = (g > 0 ? '+' : '') + g.toFixed(1) + '%'; });
+    });
+  });
   // G-277: a 확률 cell opens its scenario row (the rows stay folded until then).
   document.addEventListener('click', function (e) {
     var c = e.target.closest && e.target.closest('.pm-cell[data-pm]'); if (!c) return;

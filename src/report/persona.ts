@@ -108,5 +108,9 @@ export function personaCards(report: DailyReport): string {
     + (snap?.per != null ? row('PER', `${snap.per.toFixed(1)}배`) : '') + (snap?.pbr != null ? row('PBR', `${snap.pbr.toFixed(2)}배`) : '')
     + (yoy != null ? row('최근 분기 영업이익', `<span class="${tone(yoy)}">${pct(yoy)}</span>`, '1년 전 같은 분기 대비') : '')
     + (snap?.consensus?.targetPriceMean ? row('증권가 평균 목표가', won(snap.consensus.targetPriceMean), '증권사 의견이에요') : ''));
-  return beginner + trader + swing + long;
+  // G-282 (한서님 10/23 '너무 겹치는거 같아 없애도'): 오늘 움직임 and 가치와 실적 are gone from the page. Each number has
+  // its place already: 지지·저항 in the price map, 거래대금·PER·PBR·수급 in 기업, 목표가 in the head, earnings in 재무제표.
+  // Their 오늘 was the report day's move too, which read against the live price in the header.
+  void trader; void long;
+  return beginner + swing;
 }

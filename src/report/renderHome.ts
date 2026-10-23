@@ -288,19 +288,23 @@ const FEED_SCRIPT = `<script>
   if (note && bits.length) { document.getElementById('pz-text').innerHTML = '<b>내 설문에 맞춘 화면이에요.</b> ' + bits.map(function (b) { return String(b).replace(/[&<>"]/g, ''); }).join(' · ') + ' 기준으로 추천을 바꿨어요.'; note.hidden = false; }
   // A screener preset that fits how long they hold.
   var h = prefs.horizon || '', preset = /며칠/.test(h) ? ['hot', '거래 급증·급등'] : /몇 주/.test(h) ? ['rebound', '반등 후보'] : /몇 달/.test(h) ? ['value', '적정가 아래'] : /1년/.test(h) ? ['large', '대형주 강세'] : null;
-  var chips = [];
-  if (preset) chips.push('<a class="feed-preset" href="screener.html#' + preset[0] + '"><small>보유 기간 ' + esc(h) + '에 맞는 조건</small><b>' + preset[1] + ' 종목 보기 ›</b></a>');
-  // G-201: a sector chip opens its strongest theme today (themes-home.json, built each day); no theme, 테마 전체.
-  var sectors = (prefs.sectors || []).slice(0, 4);
-  sectors.forEach(function (s, i) { chips.push('<a class="chip-link sec-chip" data-sec="' + i + '" href="themes.html"><b>' + esc(s) + '</b></a>'); });
-  chipsEl.innerHTML = chips.join('');
+  // G-282 (한서님 10/23 '넘 구림'): one plain list instead of wrapping chips — each 관심 업종 on its own row (name, its
+  // strongest theme under it, the move on the right), then the holding-period preset as the last row. 바꾸기 sits in the head.
+  var sectors = (prefs.sectors || []).slice(0, 4), rows = [];
+  // G-201: a sector row opens its strongest theme today (themes-home.json, built each day); no theme, 테마 전체.
+  sectors.forEach(function (s, i) { rows.push('<a class="fd-row" data-sec="' + i + '" href="themes.html"><span class="fd-t"><b>' + esc(s) + '</b><small>오늘 강한 테마 보기</small></span><i class="fd-v"></i><span class="fd-go" aria-hidden="true">›</span></a>'); });
+  if (preset) rows.push('<a class="fd-row fd-pre" href="screener.html#' + preset[0] + '"><span class="fd-t"><b>' + preset[1] + ' 종목</b><small>보유 기간 ' + esc(h) + '에 맞는 조건</small></span><i class="fd-v"></i><span class="fd-go" aria-hidden="true">›</span></a>');
+  if (!rows.length) return;
+  chipsEl.innerHTML = '<div class="fd-h"><b>' + (sectors.length ? '관심 업종 오늘' : '내 조건') + '</b><a href="settings.html#profile">투자 방식 바꾸기</a></div>' + rows.join('');
+  if (redo) redo.hidden = true;
   if (sectors.length) (window.gnmThemesHome = window.gnmThemesHome || fetch('themes-home.json').then(function (r) { return r.ok ? r.json() : null; })).then(function (j) {
     var map = (j && j.sectors) || {};
     sectors.forEach(function (s, i) {
       var t = (map[s] || [])[0], a = chipsEl.querySelector('[data-sec="' + i + '"]'); if (!t || !a) return;
       a.href = 'themes.html#' + encodeURIComponent(t[0]);
       a.setAttribute('aria-label', s + ' 관련 테마 ' + t[1] + ' 보기');
-      a.innerHTML = '<b>' + esc(s) + '</b><small>' + esc(t[1]) + (t[2] == null ? '' : ' <i class="' + (t[2] > 0 ? 'up' : t[2] < 0 ? 'down' : '') + '">' + (t[2] > 0 ? '+' : '') + Number(t[2]).toFixed(1) + '%</i>') + '</small>';
+      a.querySelector('small').textContent = t[1];
+      var v = a.querySelector('.fd-v'); if (v && t[2] != null) { v.className = 'fd-v ' + (t[2] > 0 ? 'up' : t[2] < 0 ? 'down' : ''); v.textContent = (t[2] > 0 ? '+' : '') + Number(t[2]).toFixed(1) + '%'; }
     });
   }).catch(function () {});
 })();
@@ -336,7 +340,11 @@ const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;m
 .feed-sum{margin:12px 0 2px;font-size:13.5px;color:var(--fg2)}.feed-sum b{color:var(--fg)}
 /* G-201 */ .my-card{padding-top:6px}.my-card .feed-sum{margin:6px 0 4px}.my-card .feed-redo{display:inline-block;margin-top:12px;font-size:13px;font-weight:700;color:var(--fg2);text-decoration:none}.anchor{display:block;position:relative;top:-80px}
 .sec-chip{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 14px;border-radius:14px;text-decoration:none;line-height:1.3}.sec-chip b{font-size:14px}.sec-chip small{font-size:12px;color:var(--muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sec-chip small i{font-style:normal;font-weight:800}.sec-chip small i.up{color:var(--up-strong)}.sec-chip small i.down{color:var(--down-strong)}
-.feed-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.feed-chips:empty{display:none}
+.feed-chips{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.feed-chips:empty{display:none}.my-card .feed-redo[hidden]{display:none}
+.fd-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 0 2px}.fd-h b{font-size:13px;font-weight:700;color:var(--fg2)}.fd-h a{font-size:12.5px;font-weight:600;color:var(--muted);text-decoration:none}
+.fd-row{display:grid;grid-template-columns:minmax(0,1fr) auto 12px;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--fg)}.fd-h+.fd-row{border-top:0}
+.fd-t{display:flex;flex-direction:column;gap:2px;min-width:0}.fd-t b{font-size:15px;font-weight:600}.fd-t small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fd-v{font-style:normal;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}.fd-v.up{color:var(--up)}.fd-v.down{color:var(--down)}.fd-go{color:var(--muted);font-size:17px}
 .feed-preset{flex:1 1 100%;display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);text-decoration:none;color:var(--fg)}.feed-preset small{font-size:12px;color:var(--muted)}.feed-preset b{font-size:14.5px;color:var(--accent-strong)}.feed-go{width:100%;justify-content:center}
 .chip-link{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:999px;padding:5px 11px;font-size:13px;text-decoration:none;background:var(--surface)}.chip-link.alt{border-color:var(--navy);color:var(--navy);font-weight:700}.muted-chip{color:var(--muted);background:var(--soft)}
 .home-hero{grid-template-columns:minmax(0,1fr)}.home-hero h1{font-size:30px}.home-hero .search-block{margin-top:14px;position:relative}
@@ -439,7 +447,7 @@ const HOME_SCRIPT = `<script>
           var lv = wi.up || wi.dn ? '<span class="wl-lv">' + (wi.dn ? '<span class="down">약세 기준</span> ' + Math.round(wi.dn).toLocaleString('ko-KR') : '') + (wi.up && wi.dn ? ' · ' : '') + (wi.up ? '<span class="up">강세 기준</span> ' + Math.round(wi.up).toLocaleString('ko-KR') : '') + '</span>' : '';
           st = rail + (wi.f ? '<div class="wl-st"><span class="wl-new">새 공시 ' + wi.f + '건</span></div>' : '') + lv;
         }
-        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b>' + (coin || it[2] === 'ETF' ? ' <span class="muted small">' + (coin ? '코인' : 'ETF') + '</span>' : '') + st + '</a><span class="wl-px">' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="' + starred + '" aria-label="' + (starred ? '관심 종목에서 빼기' : '관심 종목에 담기') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
+        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b>' + (coin || it[2] === 'ETF' ? ' <span class="muted small">' + (coin ? '코인' : 'ETF') + '</span>' : '') + st + '</a><span class="wl-px" data-no-roll>' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="' + starred + '" aria-label="' + (starred ? '관심 종목에서 빼기' : '관심 종목에 담기') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
       }).join('');
       if (sum) { sum.innerHTML = '내 종목 <b>' + mineList.length + '</b>개' + (items ? ' · <span class="up">▲ ' + up + '</span> · <span class="down">▼ ' + dn + '</span>' : ''); sum.hidden = false; }
     };
