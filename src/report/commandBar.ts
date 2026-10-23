@@ -122,7 +122,7 @@ body.dock-searching::before{content:"";position:fixed;inset:0;z-index:44;backgro
 @keyframes nav-tip{from{opacity:0;transform:translate(-50%,4px)}}
 @keyframes nav-squish{0%{transform:scaleX(1)}35%{transform:scaleX(.96) scaleY(1.04)}70%{transform:scaleX(1.01)}100%{transform:none}}
 body:has(.bottom-nav){padding-bottom:calc(96px + env(safe-area-inset-bottom))}
-/* G-286 (한서님 10/23 B안, '바 전체 점검'): every icon carries its name underneath, always — not only the current one in a
+/* G-289 (한서님 10/23 B안, '바 전체 점검'): every icon carries its name underneath, always — not only the current one in a
    bubble. Same order on every screen: left end = 메뉴 (this screen's bar → the four tabs) or 종목/이 화면 (back), middle =
    named icons, right end = ✦. The ✦ at the top right of tab screens goes on phones, so AI lives in one place. */
 .nav-tabs a,.nav-seg a,.nav-parts button,html[data-theme] .bottom-nav .nav-tabs a{height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
@@ -164,7 +164,7 @@ export const COMMAND_BAR_JS = `
   if (!nav.hasAttribute('data-dock')) return;
   var t = setTimeout(function () { set(true); }, still ? 0 : 600);
   var back = nav.querySelector('.nav-back'); if (back) back.addEventListener('click', function () { clearTimeout(t); set(false); });
-  // G-286: the left end's '종목' / '이 화면' brings this screen's own bar back.
+  // G-289: the left end's '종목' / '이 화면' brings this screen's own bar back.
   var ret = nav.querySelector('.nav-return'); if (ret) ret.addEventListener('click', function () { clearTimeout(t); set(true); });
   nav.querySelectorAll('.nav-tabs a').forEach(function (a) { a.addEventListener('click', function (e) { if (a.getAttribute('aria-current') === 'page' && !nav.classList.contains('ctx') && a.pathname === location.pathname) { e.preventDefault(); set(true); } }); });
   var field = nav.querySelector('[data-dock-search]');

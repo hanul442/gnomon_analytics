@@ -255,7 +255,7 @@ const TAB_OF: Record<string, string> = Object.fromEntries([
 ]);
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const SPARK_ICON = '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>';
-/** G-286: the bar's left-end buttons and the shorter names that fit under an icon (the full name stays the aria-label). */
+/** G-289: the bar's left-end buttons and the shorter names that fit under an icon (the full name stays the aria-label). */
 const MENU_ICON = '<path d="M14.5 5.5L8 12l6.5 6.5"/>';
 const RETURN_ICON = '<path d="M9.5 5.5L16 12l-6.5 6.5"/>';
 const BAR_SHORT: Record<string, string> = { 'AI 리포트': '리포트', '시장 데일리': '데일리' };
@@ -300,7 +300,7 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
   // G-277: 내 리포트 and 내 토론 each get their icon, so the 알림함·내 리포트·내 토론 row at the top can go on phones.
   else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 리포트', 'myreports.html', page === 'myreports.html'], ['내 토론', 'mydebates.html', page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);
-  // G-286 (한서님 10/23 B안): one order on every screen — left end switches between this screen's bar ('메뉴') and the
+  // G-289 (한서님 10/23 B안): one order on every screen — left end switches between this screen's bar ('메뉴') and the
   // four tabs ('종목' / '이 화면'), the middle holds named icons, and the ✦ always sits at the right end.
   const here = dock === 'ask' ? '종목' : '이 화면';
   const back = dock ? `<button type="button" class="nav-back" aria-label="홈·찾기·위원회·나 보기">${svgI(MENU_ICON)}<span>메뉴</span></button><button type="button" class="nav-return" aria-label="${here} 칸으로 돌아가기">${svgI(RETURN_ICON)}<span>${here}</span></button>` : '';
@@ -316,7 +316,7 @@ const STOCK_PARTS: readonly (readonly [string, string, string, string])[] = [
 ];
 /** G-277: home's parts in the bottom bar (buttons with data-wd; WORLD_JS switches them and sets aria-selected). */
 const PART_ICONS: Record<string, string> = {
-  // G-286: 요약 is a list, so it never looks like the 홈 tab's house.
+  // G-289: 요약 is a list, so it never looks like the 홈 tab's house.
   sum: '<path d="M5 7h14M5 12h14M5 17h9"/>',
   com: '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>',
   stocks: '<path d="M4 19h16"/><path d="M5 15l4.5-4.5 3.5 3L19 7"/><path d="M15 7h4v4"/>',
