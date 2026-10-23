@@ -81,7 +81,7 @@ export function scenarioRail(report: DailyReport): string {
   const lv = report.market?.structure?.levels ?? [];
   const sup = lv.filter((l) => l.kind === 'SUPPORT' && l.price < p.close).sort((a, b) => b.price - a.price)[0];
   const res = lv.filter((l) => l.kind === 'RESISTANCE' && l.price > p.close).sort((a, b) => a.price - b.price)[0];
-  // G-285 (한서님 10/23 '실시간 가격을 저기다가 합쳐'): 지금 is the live price; the chips' gaps follow it (CONCLUSION_JS).
+  // G-287 (한서님 10/23 '실시간 가격을 저기다가 합쳐'): 지금 is the live price; the chips' gaps follow it (CONCLUSION_JS).
   const live = `data-live="${esc(report.symbol)}" data-live-f="price"`;
   const chips = `<div class="pm-chips" data-no-roll><span class="pm-nowc">지금 <b ${live}>${won(p.close)}</b></span>${res ? `<span>저항 <b>${won(Math.round(res.price))}</b> <small data-pm-at="${Math.round(res.price)}">${pct(res.price)}</small></span>` : ''}${sup ? `<span>지지 <b>${won(Math.round(sup.price))}</b> <small data-pm-at="${Math.round(sup.price)}">${pct(sup.price)}</small></span>` : ''}</div>`;
   const lx = f1(x(closes.length - 1)), ly = f1(y(closes.at(-1)!.close));
@@ -143,7 +143,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const baseZone = scenarioZone(report, 'BASE');
   const rows = [
     row('cl-up', bull, '강세', px('BULL'), checks.BULL ? checkLine(checks.BULL, '강세') : '성립 근거와 무효화 조건 함께 확인', '▲'),
-    // G-285: the live price lives in the map above; the 기본 row shows its range like the other two.
+    // G-287: the live price lives in the map above; the 기본 row shows its range like the other two.
     row('cl-now', base, '기본', baseZone ? `<div class="cl-px"><b>${zone(baseZone.zone)}</b><small>20거래일 예상 범위</small></div>` : '', checks.BASE ? checkLine(checks.BASE, '기본') : '현재 근거에서 가장 그럴듯한 전개', '●'),
     row('cl-down', bear, '약세', px('BEAR'), checks.BEAR ? checkLine(checks.BEAR, '약세') : '성립 근거와 무효화 조건 함께 확인', '▼'),
   ].join('');
@@ -196,7 +196,7 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 
 /** Opens a conclusion row's scenario. */
 export const CONCLUSION_JS = `
-  // G-285: the price map follows the live price: a dot right of the last close, the dashed line at it, the chips' gaps.
+  // G-287: the price map follows the live price: a dot right of the last close, the dashed line at it, the chips' gaps.
   window.addEventListener('gnm-quote', function (e) {
     var d = e.detail || {}, q = d.quote || {}; if (!q.price) return;
     document.querySelectorAll('.pm[data-pm-sym="' + d.symbol + '"]').forEach(function (m) {
@@ -210,7 +210,7 @@ export const CONCLUSION_JS = `
     });
   });
   // G-277: a 확률 cell opens its scenario row (the rows stay folded until then).
-  // G-285 (한서님 10/23 '기본 시나리오를 켜면 위 차트에서 보고 설명이 나오게'): the map above shows the picked scenario —
+  // G-287 (한서님 10/23 '기본 시나리오를 켜면 위 차트에서 보고 설명이 나오게'): the map above shows the picked scenario —
   // its bar lit, the others dimmed, and its range as a band across the chart with the prices on it.
   var pmPick = function (card, k) {
     var m = card.querySelector('.pm'); if (!m) return;
