@@ -248,10 +248,13 @@ export const WORLD_JS = `<script>
   tabs.forEach(function (t) { t.addEventListener('click', function () { pick(t.getAttribute('data-wd'), true); window.scrollTo({ top: 0, behavior: 'smooth' }); }); });
   document.addEventListener('click', function (e) {
     var g = e.target.closest && e.target.closest('[data-wd-go]'); if (g) { pick(g.getAttribute('data-wd-go'), true); var sec = g.getAttribute('data-mk') && document.getElementById('mk-' + g.getAttribute('data-mk')); if (sec) sec.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0); return; }
+    // G-287: 한국 · 세계 on home's 이슈 switch which list shows.
+    var ig = e.target.closest && e.target.closest('[data-iss-go]');
+    if (ig) { var w = ig.getAttribute('data-iss-go'); document.querySelectorAll('[data-iss-go]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === ig)); }); document.querySelectorAll('[data-iss]').forEach(function (d) { d.hidden = d.getAttribute('data-iss') !== w; }); return; }
     var f = e.target.closest && e.target.closest('[data-wd-tag]'); if (!f) return;
-    var tag = f.getAttribute('data-wd-tag');
-    document.querySelectorAll('[data-wd-tag]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
-    document.querySelectorAll('[data-wd-p="news"] [data-tag]').forEach(function (li) { li.hidden = !!tag && li.getAttribute('data-tag') !== tag; });
+    var tag = f.getAttribute('data-wd-tag'), scope = f.closest('[data-iss]') || document.querySelector('[data-wd-p="news"]') || document;
+    scope.querySelectorAll('[data-wd-tag]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
+    scope.querySelectorAll('[data-tag]').forEach(function (li) { li.hidden = !!tag && li.getAttribute('data-tag') !== tag; });
   });
   // G-281: the old 증시·금리·환율·원자재 links land on their section in 시장.
   var h = location.hash.slice(1), old = { stocks: 'stocks', rates: 'rates', commod: 'commod', fx: 'fx' };

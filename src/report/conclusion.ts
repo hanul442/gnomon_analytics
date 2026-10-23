@@ -95,7 +95,8 @@ function oddsGrid(report: DailyReport): string {
   const pr = ks.map((k) => c?.scenarios?.find((s) => s.kind === k)?.probability);
   if (!pr.some((v) => typeof v === 'number')) return '';
   const top = Math.max(...pr.map((v) => v ?? 0));
-  return `<div class="pm-odds"><div class="pm-odds-k">시나리오 확률 <small>칸을 누르면 근거와 틀릴 조건이 펼쳐져요</small></div><div class="pm-grid">${ks.map((k, i) => { const z = scenarioZone(report, k); const v = pr[i]; return `<button type="button" class="pm-cell ${k.toLowerCase()}${v === top ? ' top' : ''}" data-pm="${k}" aria-pressed="false"><span>${name[k]}</span><b>${typeof v === 'number' ? `${v}%` : '—'}</b><small>${z ? zone(z.zone).replace('~', '~<wbr>') : ''}</small></button>`; }).join('')}</div></div>`;
+  // G-287 (한서님 10/23 '큰 칸 말고 작은 칸으로'): three small pills under the chart; the range shows on the chart when picked.
+  return `<div class="pm-odds" role="group" aria-label="시나리오 확률, 누르면 차트에 설명이 나와요"><div class="pm-grid">${ks.map((k, i) => { const v = pr[i]; return `<button type="button" class="pm-cell ${k.toLowerCase()}${v === top ? ' top' : ''}" data-pm="${k}" aria-pressed="false"><span>${name[k]}</span><b>${typeof v === 'number' ? `${v}%` : '—'}</b></button>`; }).join('')}</div></div>`;
 }
 
 export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string } = {}): string {
@@ -150,8 +151,22 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
   // G-277: with odds, the three rows wait under the 확률 cells; a tap on a cell opens its row.
   const grid = oddsGrid(report);
+  // G-287 (한서님 10/23 '밑에 설명을 위 차트에서 보여주게 … 저렇게 여는거 말고'): with the 확률 cells, a tap shows the
+  // scenario's explanation inside the price map, right under the chart, instead of opening a row further down.
+  const note = (k: 'BULL' | 'BASE' | 'BEAR') => {
+    const s = sc(k); if (!s) return '';
+    const nm = ({ BULL: '강세', BASE: '기본', BEAR: '약세' } as const)[k]; // 확률 is on the pill, the range on the chart's band
+    const cond = k === 'BASE' ? undefined : scenarioCondition(report, k);
+    const locked = s.narrative.text === LOCKED_TEXT;
+    const body = locked
+      ? `<p class="pm-lock">🔒 전개·근거·무효화 조건은 심층 리포트에 있어요. <button type="button" class="pm-lock-go" data-deep-go>열기</button></p>`
+      : `<p>${esc(s.narrative.text)}</p>${s.catalysts.length ? `<p class="pm-nk"><b>근거</b> ${s.catalysts.map(esc).join(', ')}</p>` : ''}${s.invalidation.length ? `<p class="pm-nk"><b>틀릴 조건</b> ${s.invalidation.map(esc).join(', ')}</p>` : ''}`;
+    return `<div class="pm-note ${k.toLowerCase()}" data-pm-note="${k}" hidden><div class="pm-nh"><b>${nm} 시나리오</b></div>${cond ? `<p class="pm-cond">${k === 'BULL' ? `${won(cond.price)} 위로 올라서면 강세 전개` : `${won(cond.price)} 아래로 내려가면 약세 전개`}</p>` : ''}${checks[k] ? `<p class="pm-nk">${checkLine(checks[k]!, nm)}</p>` : ''}${body}${k === 'BEAR' && worst && !locked ? worst : ''}</div>`;
+  };
+  const notes = grid ? (['BEAR', 'BASE', 'BULL'] as const).map(note).join('') : '';
+  const rail0 = scenarioRail(report), rail = rail0 ? rail0.replace('</svg>', '</svg>' + grid + notes) : grid;
   const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : `조건 가격 도달만으로 전개가 확정되지는 않아요. 예상 범위와 조건 가격은 다릅니다. 분석 기준은 ${esc(report.date)} 종가 ${won(p.close)}이며, 현재 가격과 차이가 날 수 있어요`;
-  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>${scenarioRail(report)}${grid}
+  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card"><div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>${rail}
 ${verdict}<div class="cl-ladder"${grid ? ' hidden' : ''}>${rows}</div>
 ${[bull, base, bear].some((x) => x?.narrative.text === LOCKED_TEXT) ? `<div class="cl-deep"><span>🔒 시나리오 전개·무효화 조건·최악의 경우·위원회 토론은 심층 리포트에 있어요.</span><button type="button" class="btn-primary" data-deep-go>심층 리포트 열기 <small>${CREDIT_COST.unlock}크레딧</small></button></div>` : ''}
 <p class="fine">${bull || bear || base ? '줄을 누르면 시나리오가 펼쳐져요. ' : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
@@ -164,7 +179,8 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .pm-area{fill:var(--fg);opacity:.05}
 .pm rect{transform-box:fill-box;transform-origin:50% 50%}html.mo .pm:not(.km-in) rect{transform:scaleY(.05);opacity:0}html.mo .pm.km-in rect{transition:transform .6s cubic-bezier(.34,1.3,.64,1) .7s,opacity .3s .7s}
 .pm .r-bear{fill:var(--down)}.pm .r-base{fill:var(--fg2);opacity:.45}.pm-dot{fill:var(--fg);stroke:var(--surface-solid);stroke-width:2}.pm-chips .pm-nowc{background:var(--fg);color:var(--page)}.pm-chips .pm-nowc b{color:var(--page)}.pm .r-bull{fill:var(--up)}
-.pm .cl-rail-now{stroke:var(--fg2);stroke-width:1;stroke-dasharray:3 3}.pm .pm-band{opacity:.13}.pm.pm-picked .pm-ext,.pm.pm-picked .pm-arw{opacity:0}.pm .pm-ext,.pm .pm-arw{transition:opacity .2s}.pm-band.r-base{fill:var(--fg2)}.pm-band.r-bear{fill:var(--down)}.pm-band.r-bull{fill:var(--up)}.pm-band-t{font-size:11px;font-weight:700;fill:var(--fg)}.pm.pm-picked rect[data-pm-k]:not(.on){opacity:.25}.pm rect[data-pm-k]{transition:opacity .25s}.pm-live{fill:var(--fg);stroke:var(--surface-solid);stroke-width:2}.pm-live-seg{stroke:var(--fg);stroke-width:1.5;stroke-dasharray:2 3}.pm-now{font-size:10.5px;font-weight:700;fill:var(--fg2)}
+.pm .cl-rail-now{stroke:var(--fg2);stroke-width:1;stroke-dasharray:3 3}.pm-note{margin:10px 0 2px;padding:12px 14px;border-radius:16px;background:var(--soft);font-size:14px;line-height:1.6}.pm-note p{margin:6px 0 0;color:var(--fg2)}.pm-nh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.pm-nh b{font-size:15px}.pm-note.bull .pm-nh b{color:var(--up)}.pm-note.bear .pm-nh b{color:var(--down)}.pm-nh span{font-size:13px;font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums}.pm-cond{font-weight:600;color:var(--fg)!important}.pm-nk{font-size:13px}.pm-nk b{color:var(--fg);margin-right:4px}.pm-lock{font-size:13px}.pm-lock-go{border:0;background:var(--fg);color:var(--page);border-radius:999px;padding:3px 12px;font:inherit;font-weight:700;font-size:12.5px;margin-left:4px;cursor:pointer}
+.pm .pm-band{opacity:.13}.pm.pm-picked .pm-ext,.pm.pm-picked .pm-arw{opacity:0}.pm .pm-ext,.pm .pm-arw{transition:opacity .2s}.pm-band.r-base{fill:var(--fg2)}.pm-band.r-bear{fill:var(--down)}.pm-band.r-bull{fill:var(--up)}.pm-band-t{font-size:11px;font-weight:700;fill:var(--fg)}.pm.pm-picked rect[data-pm-k]:not(.on){opacity:.25}.pm rect[data-pm-k]{transition:opacity .25s}.pm-live{fill:var(--fg);stroke:var(--surface-solid);stroke-width:2}.pm-live-seg{stroke:var(--fg);stroke-width:1.5;stroke-dasharray:2 3}.pm-now{font-size:10.5px;font-weight:700;fill:var(--fg2)}
 .pm-k{font-size:11px;font-weight:700;fill:var(--muted)}.pm-arw{fill:var(--muted)}
 .pm-ext{font-size:10.5px;font-weight:700;font-variant-numeric:tabular-nums}.pm-ext.up{fill:var(--up)}.pm-ext.down{fill:var(--down)}
 .pm-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.pm-chips span{display:inline-flex;gap:5px;align-items:baseline;padding:6px 12px;border-radius:999px;background:var(--soft);font-size:12.5px;color:var(--fg2)}.pm-chips b{color:var(--fg);font-variant-numeric:tabular-nums}.pm-chips small{color:var(--muted)}
@@ -192,7 +208,9 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .cl-row .cl-px small{grid-area:sub;padding:0;font-size:12px;color:var(--muted)}.cl-row .cl-px small.cl-range{grid-area:rng}
 .cl-row .cl-more{grid-area:more}
 :root body .cl-sc{margin:0 0 12px;border:0;border-radius:18px;background:var(--soft);padding:12px 14px 6px}
-:root body .cl-check{border-radius:18px}`;
+:root body .cl-check{border-radius:18px}
+/* G-287: the 확률 cells as small pills under the chart */
+.pm-odds{margin:10px 0 0}.pm .pm-grid{display:flex;gap:6px;flex-wrap:wrap}.pm .pm-cell{display:inline-flex;align-items:baseline;gap:6px;padding:7px 14px;border-radius:999px;background:var(--soft);box-shadow:none}.pm .pm-cell span{display:inline;font-size:13px;color:var(--fg2)}.pm .pm-cell b{display:inline;font-size:15px;margin:0}.pm .pm-cell.top{box-shadow:none}.pm .pm-cell[aria-pressed=true]{background:var(--fg);box-shadow:none}.pm .pm-cell[aria-pressed=true] span,.pm .pm-cell[aria-pressed=true] b{color:var(--page)}`;
 
 /** Opens a conclusion row's scenario. */
 export const CONCLUSION_JS = `
@@ -230,6 +248,8 @@ export const CONCLUSION_JS = `
     pmPick(card, on ? c.getAttribute('data-pm') : '');
     if (on) { var mp = card.querySelector('.pm'); if (mp && mp.getBoundingClientRect().top < 60) mp.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
     card.querySelectorAll('.pm-cell').forEach(function (x) { x.setAttribute('aria-pressed', String(x === c && on)); });
+    var nts = card.querySelectorAll('[data-pm-note]');
+    if (nts.length) { nts.forEach(function (n) { n.hidden = !(on && n.getAttribute('data-pm-note') === c.getAttribute('data-pm')); }); return; }
     lad.hidden = !on;
     lad.querySelectorAll('.cl-item').forEach(function (it) { var r = it.querySelector('.cl-row'), mine = r && r.classList.contains(cls); it.hidden = !mine; if (r && mine && r.getAttribute('aria-expanded') === 'false') r.click(); });
   });
@@ -300,3 +320,4 @@ export function watchInfo(entries: readonly { symbol: string; report: DailyRepor
   }
   return out;
 }
+
