@@ -58,7 +58,7 @@ jobs:
       - name: Monte Carlo luck checks (G-275)
         if: inputs.version == 'luck'
         run: node --max-old-space-size=6000 dist/cli/evalLuck.js | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Kronos price model (G-286)
+      - name: Kronos price model (G-290)
         if: inputs.version == 'kronos'
         run: |
           node --max-old-space-size=6000 dist/cli/evalKronos.js --stage prep --lookback 128

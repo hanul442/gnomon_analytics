@@ -1,4 +1,4 @@
-"""Kronos sample paths for the hidden-future evaluation (G-286).
+"""Kronos sample paths for the hidden-future evaluation (G-290).
 
 Reads the rows written by `node dist/cli/evalKronos.js --stage prep` and, for each row, draws PATHS independent
 20-session paths from Kronos (shiyu-coder/Kronos, MIT). Writes only each path's final close, as a ratio to the

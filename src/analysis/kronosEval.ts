@@ -1,4 +1,4 @@
-// Kronos in the hidden-future panel (G-286). Kronos (shiyu-coder/Kronos, MIT) is a model pre-trained on price
+// Kronos in the hidden-future panel (G-290). Kronos (shiyu-coder/Kronos, MIT) is a model pre-trained on price
 // candles. For each stock on each evaluation day it draws several possible next-20-session paths; from their final
 // closes we read a chance of being higher, a typical move and a range, and score them against what happened, next
 // to the committee's statistical base (baseOdds.ts) and the statistical range (valuation.ts) on the same rows.

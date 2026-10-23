@@ -1,4 +1,4 @@
-// G-286: Kronos (a price-candle foundation model) in the hidden-future panel, next to the committee's statistical
+// G-290: Kronos (a price-candle foundation model) in the hidden-future panel, next to the committee's statistical
 // base. Two stages around a Python step (scripts/kronos/predict.py):
 //
 //   node dist/cli/evalKronos.js --stage prep  [--top 100] [--from 2016-01-01] [--testFrom 2025-10-01] [--lookback 250]
