@@ -163,8 +163,15 @@ ${dual}<section class="card wd-card"><div class="wd-h"><h2>10년 국채 금리</
   const rateRow = (x: WorldMacroQuote) => (x.group === 'policy' ? row(x.name, '기준금리', valueText(x), '', '') : mrow(x));
   const rates0 = of('policy', 'bond');
   const rateRows = [...rateFirst.map((k) => rates0.find((x) => x.key === k)).filter((x): x is WorldMacroQuote => !!x), ...rates0.filter((x) => !rateFirst.includes(x.key))].map(rateRow);
+  // G-287 (한서님 10/23 '해외 보여주는건 이전에 보여주던 방식으로 … 지수말한거임'): 증시 is the old world 증시 view again —
+  // every index's move in one grid, then one card per region (한국·미국·아시아·유럽·남미) with whether it is trading.
+  // VIX, the US market's fear gauge, sits in 미국.
+  const regionCards = regions.map((r) => { const xs = m.indices.filter((x) => x.region === r); if (!xs.length) return ''; const open = xs.some((x) => x.open);
+    return `<section class="card wd-card"><div class="wd-h"><h2>${r}</h2><span class="wd-st${open ? ' on' : ''}">${open ? '지금 거래 중' : '마감'}</span></div>${xs.map(irow).join('')}${r === '미국' && vix ? mrow(vix) : ''}</section>`; }).join('');
+  const stocksOld = `<section class="card wd-card mk-sec" id="mk-stocks"><div class="wd-h"><h2>증시</h2><span class="muted small">지수 ${m.indices.length}개 · <span class="up">▲${up}</span> <span class="down">▼${down}</span></span></div>${heat}</section>${regionCards}`;
+  void ixRows;
   const market = [
-    sec('stocks', '증시', `${m.indices.length}개 중 <span class="up">▲${up}</span> <span class="down">▼${down}</span>`, ixRows, '지수', 6),
+    stocksOld,
     sec('rates', '금리', '기준금리 · 10년 국채', rateRows, '금리', 4),
     sec('fx', '환율', '원화는 하나은행 고시', of('fx').map(mrow), '환율', 4),
     sec('commod', '원자재', '선물 · 달러, 운임', [...of('energy', 'metals'), ...of('ship')].map(mrow), '원자재', 5),

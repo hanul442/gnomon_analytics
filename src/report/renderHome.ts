@@ -198,14 +198,7 @@ export function renderHome(data: HomeData): string {
 <section class="card hm-card">${calls.length ? calls.map(callRow).join('') : '<p class="muted">아직 오늘 나온 위원회 리포트가 없어요.</p>'}</section>
 ${scoreLine(sorted)}<a class="hm-go" href="reports.html">AI 리포트 전체<span aria-hidden="true">›</span></a><a class="hm-go" href="scorecard.html">위원회 성적표<span aria-hidden="true">›</span></a>`;
   const ISSUE_SHOW = 10;
-  // G-287 (한서님 10/23 '분리는 유지하되 해외 보여주는건 이전에 보여주던 방식으로'): 한국 · 세계 stay apart. 한국 is the
-  // ranked list with its in-app pages; 세계 is the world issue ranking as it was before 4.1.0 (분야 filter, the market moves
-  // that went with each issue).
-  const kr = issues.filter((i) => i.from !== '세계').map((i, n) => ({ ...i, rank: n + 1 }));
-  const krList = `<section class="card hm-card">${issuesList(kr, ISSUE_SHOW, true)}${kr.length > ISSUE_SHOW ? `<details class="more content-more ia-rest"><summary><span class="more-closed">${kr.length - ISSUE_SHOW}개 더 보기</span><span class="more-open">접기</span></summary>${issuesList(kr.slice(ISSUE_SHOW), kr.length, true)}</details>` : ''}</section>`;
-  const seg = `<div class="wd-filter ia-filter iss-seg" role="group" aria-label="어디 뉴스"><button type="button" data-iss-go="kr" aria-pressed="true">한국</button><button type="button" data-iss-go="w" aria-pressed="false">세계</button></div>`;
-  const news = wp ? `<div class="hm-h ia-head"><h2>이슈 순위</h2>${seg}</div><style>[data-iss=kr] .ia-from{display:none}</style><div data-iss="kr">${krList}<p class="fine wd-fine">한국 종목 뉴스를 다룬 매체가 많은 순서로 세웠어요.</p></div><div data-iss="w" hidden>${wp.news}</div>`
-    : `<section class="card hm-card"><div class="hm-h ia-head"><h2>이슈 순위</h2>${ISSUES_FILTER}</div>${issuesList(issues, ISSUE_SHOW, true)}${issues.length > ISSUE_SHOW ? `<details class="more content-more ia-rest"><summary><span class="more-closed">${issues.length - ISSUE_SHOW}개 더 보기</span><span class="more-open">접기</span></summary>${issuesList(issues.slice(ISSUE_SHOW), issues.length, true)}</details>` : ''}</section><p class="fine wd-fine">한국 종목 뉴스와 세계 뉴스를 한 순위로 모았어요. 각 목록 안에서 다룬 매체가 많은 순서를 기준으로 섞었어요. 시장 숫자는 같은 날 함께 움직인 값이고, 원인이라는 뜻이 아니에요.</p>`;
+  const news = `<section class="card hm-card"><div class="hm-h ia-head"><h2>이슈 순위</h2>${ISSUES_FILTER}</div>${issuesList(issues, ISSUE_SHOW, true)}${issues.length > ISSUE_SHOW ? `<details class="more content-more ia-rest"><summary><span class="more-closed">${issues.length - ISSUE_SHOW}개 더 보기</span><span class="more-open">접기</span></summary>${issuesList(issues.slice(ISSUE_SHOW), issues.length, true)}</details>` : ''}</section><p class="fine wd-fine">한국 종목 뉴스와 세계 뉴스를 한 순위로 모았어요. 각 목록 안에서 다룬 매체가 많은 순서를 기준으로 섞었어요. 시장 숫자는 같은 날 함께 움직인 값이고, 원인이라는 뜻이 아니에요.</p>`;
   
   const tabs = [['sum', '요약', sum], ...(wp ? [['market', '시장', wp.market]] : []), ['com', '위원회', com], ['news', '이슈', news]] as const;
   const nav = `<nav class="mode-tabs" role="tablist" aria-label="홈 보기">${tabs.map(([k, l], i) => `<button type="button" role="tab" data-wd="${k}" aria-selected="${i === 0}">${l}</button>`).join('')}</nav>`;
