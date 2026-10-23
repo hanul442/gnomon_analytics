@@ -59,7 +59,7 @@ html body .chat-in textarea{border-radius:22px;background:var(--soft);border-col
 html body .chat-send{border-radius:50%;background:var(--fg);color:var(--page)}
 html body .chat-foot{background:var(--surface-solid)}
 html body .msg.sys{background:var(--surface-solid);border:1px solid var(--line);color:var(--fg);border-radius:18px}html body .need .plans a{background:var(--soft);border-color:transparent;border-radius:14px}
-/* G-285 (한서님 10/23 'ai질문 채팅열었을때 좀 인터랙티브했으면'): the chat opens out of the ✦ button, greets the reader about the
+/* G-288 (한서님 10/23 'ai질문 채팅열었을때 좀 인터랙티브했으면'): the chat opens out of the ✦ button, greets the reader about the
    screen they were on with a typed line and four questions for that screen (one tap sends), shows what it is doing in
    three steps, writes the answer as it streams, and ends with the sources it read, copy and three follow-up questions.
    Neutral glass, near-black accent; no bar at the top (just back, a context pill and the credit count). */
@@ -108,7 +108,7 @@ html body .msg-meta .copy{display:inline-grid;place-items:center;width:30px;heig
 .msg-meta .copy+.rate{margin-left:0}.msg-meta .copy{margin-left:auto}
 .chat.closing~.chat-scrim,.chat-scrim.out{opacity:0;transition:opacity .3s}
 @media (prefers-reduced-motion:reduce){.chat.opening,.chat.closing,.chat.opening .chat-log,.chat.opening .chat-foot,[data-open-chat].launch svg,.chat-scrim,.msg.chat-pop,.chat-steps li,.hello.in .hello-sub,.hello.in .hello-chips button,.msg.next button{animation:none!important}.hello .hello-sub,.hello .hello-chips button{opacity:1}.hello-orb,.chat-steps li::before,.hello-t.typing::after,.stream-answer>p:last-child::after,.stream-answer>ul:last-child>li:last-child::after{animation:none}[data-open-chat],.hello-chips button,.next-chips button{transition:none}}
-/* G-285 (한서님 10/23 '질문 인터페이스 자체도 좀 개선'): one glass composer. The question box on top; under it a small pill
+/* G-288 (한서님 10/23 '질문 인터페이스 자체도 좀 개선'): one glass composer. The question box on top; under it a small pill
    with the answer kind and its credits (tap: the three kinds open above), and the send arrow that turns black once there is a question. */
 html body .chat-foot{position:relative;border-top:0;background:transparent;padding:6px 12px 10px;gap:6px}
 html body .chat .composer{display:flex;flex-direction:column;gap:2px;background:var(--surface-solid);border-radius:24px;padding:8px 8px 8px 6px;box-shadow:0 10px 30px -18px rgba(17,20,24,.55),inset 0 0 0 1px var(--line);transition:box-shadow .2s ease}
@@ -167,7 +167,7 @@ export const CHAT_SCRIPT = `<script>
     var hero = document.querySelector('.hero');
     return ((hero ? hero.innerText + '\\n' : '') + (open ? open.innerText : '')).replace(/\\n{3,}/g, '\\n\\n').slice(0, 6000);
   };
-  // G-285: which screen the chat was opened from, so the greeting, the first questions and the follow-ups fit it.
+  // G-288: which screen the chat was opened from, so the greeting, the first questions and the follow-ups fit it.
   var reduce = function () { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); };
   var buzz = function () { try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {} };
   var CTX = {
@@ -214,7 +214,7 @@ export const CHAT_SCRIPT = `<script>
   var history = function () { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } };
   var remember = function (h) { try { localStorage.setItem(HKEY, JSON.stringify(h.slice(-20))); } catch (e) {} };
   var cost = function () { return TIERS.filter(function (t) { return t.key === tier; })[0].cost; };
-  // G-285: one composer card; the answer kind is a small pill inside it that opens the three kinds above it.
+  // G-288: one composer card; the answer kind is a small pill inside it that opens the three kinds above it.
   var pick = document.getElementById('chat-tier'), pop = document.getElementById('chat-tiers'), comp = box.querySelector('.composer'), count = document.getElementById('chat-count');
   var label = function () {
     var t = TIERS.filter(function (x) { return x.key === tier; })[0];
@@ -246,7 +246,7 @@ export const CHAT_SCRIPT = `<script>
     }
     h.forEach(function (m) { add('me', esc(m.q)); bindMsg(add('ai', md(m.a) + srcs(m) + meta(m)), m); });
     if (h.length) { nextChips(); return; }
-    // G-285: a typed greeting about this screen, then its four questions rise in; one tap sends.
+    // G-288: a typed greeting about this screen, then its four questions rise in; one tap sends.
     var d = add('hello', '<div class="hello-orb" aria-hidden="true"></div><p class="hello-t" role="heading" aria-level="2" aria-label="' + esc(c.greet.replace('\\n', ' ')) + '"></p><p class="hello-sub">' + esc(c.sub) + '</p>' + chipRow('hello-chips', c.chips));
     bindChips(d);
     typeIn(d.querySelector('.hello-t'), c.greet, function () { d.classList.add('in'); });
@@ -294,7 +294,7 @@ export const CHAT_SCRIPT = `<script>
     log.querySelectorAll('.msg.hello, .msg.next').forEach(function (x) { x.remove(); });
     var c = ctxInfo();
     add('me chat-pop', esc(text));
-    // G-285: three steps tick by while the answer is prepared, then the answer is written as it streams in.
+    // G-288: three steps tick by while the answer is prepared, then the answer is written as it streams in.
     var wait = add('ai wait chat-pop', '<div class="chat-progress">${ORBS.replace('data-orb=', 'data-size="22" data-orb=')}<ol class="chat-steps">' + c.steps.map(function (x, i) { return '<li' + (i ? ' hidden' : '') + '>' + esc(x) + '</li>'; }).join('') + '</ol></div><div class="stream-answer"></div>');
     wait.setAttribute('aria-busy','true');
     var lis = wait.querySelectorAll('.chat-steps li'), sa = wait.querySelector('.stream-answer'), at = 0, raf = 0, latest = '';
@@ -364,7 +364,7 @@ export const CHAT_SCRIPT = `<script>
   };
   if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
   var scrim = null;
-  // G-285 (한서님 10/23 '키고 끌때도 뭔가 슈루룩'): the sheet grows out of the button that opened it and folds back into it.
+  // G-288 (한서님 10/23 '키고 끌때도 뭔가 슈루룩'): the sheet grows out of the button that opened it and folds back into it.
   var from = null, closing = 0;
   var aim = function () {
     var b = from && from.getBoundingClientRect && from.offsetParent !== null ? from.getBoundingClientRect() : null, r = box.getBoundingClientRect();
