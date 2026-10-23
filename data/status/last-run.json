@@ -1,5 +1,5 @@
 {
- "at": "2026-10-23T14:21:52.770Z",
+ "at": "2026-10-23T17:02:07.059Z",
  "selected": null,
  "universe": [
   {
@@ -50,7 +50,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 70
+   "count": 65
   },
   {
    "source": "rss:bbc-business",
