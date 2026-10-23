@@ -580,6 +580,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "0015M0",
+  "name": "디티에스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "0015N0",
   "name": "아로마티카",
   "market": "KOSDAQ"
@@ -13101,7 +13106,7 @@
  },
  {
   "symbol": "457600",
-  "name": "벡트",
+  "name": "벡트로보틱스",
   "market": "KOSDAQ"
  },
  {

@@ -22,3 +22,5 @@
 {"symbol":"207940","receiptNo":"20251230000553","date":"2025-12-30","reporter":"김동중","position":"부사장","isExec":true,"isMajor":false,"shares":2402,"delta":-210,"ratio":0.01,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"207940","receiptNo":"20260520000330","date":"2026-05-20","reporter":"조성환","position":"상무","isExec":true,"isMajor":false,"shares":50,"delta":50,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"207940","receiptNo":"20260806000473","date":"2026-08-06","reporter":"조성환","position":"상무","isExec":true,"isMajor":false,"shares":0,"delta":-50,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"207940","receiptNo":"20261023000467","date":"2026-10-23","reporter":"삼성전자","position":"-","isExec":false,"isMajor":true,"shares":15017447,"delta":567503,"ratio":32.05,"retrievedAt":"2026-10-23T14:21:52.770Z"}
+{"symbol":"207940","receiptNo":"20261023000481","date":"2026-10-23","reporter":"삼성물산","position":"-","isExec":false,"isMajor":true,"shares":20715168,"delta":782818,"ratio":44.01,"retrievedAt":"2026-10-23T14:21:52.770Z"}

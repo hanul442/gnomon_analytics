@@ -23,3 +23,4 @@
 {"symbol":"247540","receiptNo":"20260930000497","date":"2026-09-30","reporter":"에코프로","shares":48279126,"delta":0,"ratio":47.4,"ratioDelta":0,"reason":"만기연장,신규차입,이자율변경,추가담보설정","retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"247540","receiptNo":"20261008000620","date":"2026-10-08","reporter":"에코프로","shares":48276176,"delta":-2950,"ratio":47.39,"ratioDelta":-0.01,"reason":"만기연장,신규차입,이자율변경,특별관계자의 유상증자 구주주 신주인수권증서 매도","retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"247540","receiptNo":"20261019000321","date":"2026-10-19","reporter":"에코프로","shares":48246622,"delta":-29554,"ratio":47.38,"ratioDelta":-0.01,"reason":"만기연장,이자율변경,담보주식수변경,특별관계자의 유상증자 구주주 신주인수권증서 매도","retrievedAt":"2026-10-19T16:41:51.332Z"}
+{"symbol":"247540","receiptNo":"20261023000294","date":"2026-10-23","reporter":"에코프로","shares":48246622,"delta":0,"ratio":47.38,"ratioDelta":0,"reason":"신규차입","retrievedAt":"2026-10-23T14:21:52.770Z"}

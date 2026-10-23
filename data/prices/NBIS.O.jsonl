@@ -998,3 +998,4 @@
 {"symbol":"NBIS.O","date":"2026-10-20","open":163.995,"high":174.74,"low":160.25,"close":171.45,"volume":22615587,"source":"naver:world:day","retrievedAt":"2026-10-23T09:23:18.074Z"}
 {"symbol":"NBIS.O","date":"2026-10-21","open":176.46,"high":178.85,"low":164,"close":171.57,"volume":19693933,"source":"naver:world:day","retrievedAt":"2026-10-23T09:23:18.074Z"}
 {"symbol":"NBIS.O","date":"2026-10-22","open":164.75,"high":167.5,"low":155.73,"close":159.17,"volume":26221757,"source":"naver:world:day","retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"NBIS.O","date":"2026-10-23","open":158.98,"high":162.78,"low":155.8578,"close":161.395,"volume":5756171,"source":"naver:world:day","retrievedAt":"2026-10-23T14:21:52.770Z"}
