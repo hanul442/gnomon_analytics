@@ -1,6 +1,6 @@
 {
- "at": "2026-10-23T09:23:18.074Z",
- "selected": "2026-10-23",
+ "at": "2026-10-23T12:11:29.206Z",
+ "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2665
+   "count": 2663
   },
   {
    "source": "naver:fchart:day:etf",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 956
+   "count": 656
   }
  ],
  "stocks": [
@@ -335,29 +335,25 @@
    "failedSources": []
   },
   {
-   "symbol": "232080",
-   "report": "WRITTEN",
+   "symbol": "NBIS.O",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "077500",
-   "report": "WRITTEN",
+   "symbol": "232080",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "181710",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "NBIS.O",
-   "report": "WRITTEN",
+   "symbol": "077500",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-10-23",
-  "status": "OK"
- }
+ "failed": []
 }
