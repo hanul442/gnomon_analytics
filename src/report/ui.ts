@@ -255,7 +255,10 @@ const TAB_OF: Record<string, string> = Object.fromEntries([
 ]);
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const SPARK_ICON = '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>';
-const GRID_ICON = '<rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/>';
+/** G-286: the bar's left-end buttons and the shorter names that fit under an icon (the full name stays the aria-label). */
+const MENU_ICON = '<path d="M14.5 5.5L8 12l6.5 6.5"/>';
+const RETURN_ICON = '<path d="M9.5 5.5L16 12l-6.5 6.5"/>';
+const BAR_SHORT: Record<string, string> = { 'AI 리포트': '리포트', '시장 데일리': '데일리' };
 const DOCK_ICONS: Record<string, string> = {
   'reports.html': '<path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z"/><path d="M14 3.5V8h4M10 12h5M10 15.5h5"/>',
   'scorecard.html': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
@@ -287,7 +290,7 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   if (where === 'top') return `<nav class="top-tabs" aria-label="주 메뉴">${links}</nav>`;
   const chat = 'data-open-chat aria-haspopup="dialog" aria-controls="chat"';
   const dock = parts ? 'parts' : ask ? 'ask' : page ? dockOf(page) : undefined;
-  const seg = (rows: readonly (readonly [string, string, boolean, string?])[]) => `<div class="nav-seg">${rows.map(([l, h, on, extra]) => `<a href="${base}${h}" aria-label="${escM(l)}"${on ? ' aria-current="page"' : ''}>${svgI(DOCK_ICONS[h] ?? '')}<span>${escM(l)}</span>${extra ?? ''}</a>`).join('')}</div>`;
+  const seg = (rows: readonly (readonly [string, string, boolean, string?])[]) => `<div class="nav-seg">${rows.map(([l, h, on, extra]) => `<a href="${base}${h}" aria-label="${escM(l)}"${on ? ' aria-current="page"' : ''}>${svgI(DOCK_ICONS[h] ?? '')}<span>${escM(BAR_SHORT[l] ?? l)}</span>${extra ?? ''}</a>`).join('')}</div>`;
   let ctx = '';
   // G-277 (한서님 10/21 '밑에 하단바에서 모든걸… 위에 바가 생기지 말고'): a stock switches its three parts here —
   // 위원회 · 차트 · 소식 — and the ✦ on the right asks about it. The tab row at the top goes on phones.
@@ -297,8 +300,11 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
   // G-277: 내 리포트 and 내 토론 each get their icon, so the 알림함·내 리포트·내 토론 row at the top can go on phones.
   else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 리포트', 'myreports.html', page === 'myreports.html'], ['내 토론', 'mydebates.html', page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);
-  const back = dock ? `<button type="button" class="nav-back" aria-label="탭 4개 보기">${svgI(GRID_ICON)}</button>` : '';
-  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button><div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}</nav>`;
+  // G-286 (한서님 10/23 B안): one order on every screen — left end switches between this screen's bar ('메뉴') and the
+  // four tabs ('종목' / '이 화면'), the middle holds named icons, and the ✦ always sits at the right end.
+  const here = dock === 'ask' ? '종목' : '이 화면';
+  const back = dock ? `<button type="button" class="nav-back" aria-label="홈·찾기·위원회·나 보기">${svgI(MENU_ICON)}<span>메뉴</span></button><button type="button" class="nav-return" aria-label="${here} 칸으로 돌아가기">${svgI(RETURN_ICON)}<span>${here}</span></button>` : '';
+  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button></nav>`;
 }
 /** G-277: a stock's four parts in the bottom bar: label, panel key, the panels that light it too, icon. */
 const STOCK_PARTS: readonly (readonly [string, string, string, string])[] = [
@@ -310,7 +316,8 @@ const STOCK_PARTS: readonly (readonly [string, string, string, string])[] = [
 ];
 /** G-277: home's parts in the bottom bar (buttons with data-wd; WORLD_JS switches them and sets aria-selected). */
 const PART_ICONS: Record<string, string> = {
-  sum: '<path d="M4 11l8-6.5 8 6.5"/><path d="M6.5 9.5V19h11V9.5"/>',
+  // G-286: 요약 is a list, so it never looks like the 홈 tab's house.
+  sum: '<path d="M5 7h14M5 12h14M5 17h9"/>',
   com: '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>',
   stocks: '<path d="M4 19h16"/><path d="M5 15l4.5-4.5 3.5 3L19 7"/><path d="M15 7h4v4"/>',
   market: '<path d="M4 19h16"/><path d="M5 15l4.5-4.5 3.5 3L19 7"/><path d="M15 7h4v4"/>',

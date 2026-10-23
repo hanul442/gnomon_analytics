@@ -230,7 +230,7 @@ try{
  for(const sel of ['#sc-mkt','.sc-bar','#sc-active','.sc-sortbar'])assert.equal(await page.locator(sel).first().isVisible(),false,sel+' stays in the sheet on a phone');
  assert.match(await page.locator('#sc-sum').innerText(),/주식 · 코스피\+코스닥 · 조건 \d+개 · .+ · [\d,]+개/);await page.screenshot({path:'test-artifacts/screener-phone-top.png'});
  await page.locator('#sc-sum').click();await page.locator('#sc-sheet.open').waitFor();await page.locator('#sc-mkt [data-mkt="P"]').click();await page.locator('[data-dir2="asc"]').click();assert.match(await page.locator('#sc-sum').innerText(),/코스피 · .+ 낮은 순/);await page.screenshot({path:'test-artifacts/screener-sheet-top.png'});await page.locator('#sc-mkt [data-mkt=""]').click();await page.locator('[data-dir2="desc"]').click();await page.locator('#sc-sheet-go').click();assert.ok(Number(await page.locator('#sc-filter-n').innerText())>=1,'the 필터 button counts the rules');
- await page.locator('[data-open-chat]').first().click();assert.equal(await page.locator('#chat-send').innerText(),'➤');await page.locator('#chat-q').fill('테스트 질문');await page.locator('#chat-send').click();await page.locator('#chat-log canvas[data-orb]').waitFor();await page.locator('#chat-log .msg.wait .chat-progress').filter({hasText:'생각 중'}).waitFor();assert.ok(await page.locator('#chat-log .msg.wait canvas[data-orb]').isVisible());await page.locator('#chat-log .msg.wait').waitFor({state:'detached'});
+ await page.locator('[data-open-chat]:visible').first().click();assert.equal(await page.locator('#chat-send').innerText(),'➤');await page.locator('#chat-q').fill('테스트 질문');await page.locator('#chat-send').click();await page.locator('#chat-log canvas[data-orb]').waitFor();await page.locator('#chat-log .msg.wait .chat-progress').filter({hasText:'생각 중'}).waitFor();assert.ok(await page.locator('#chat-log .msg.wait canvas[data-orb]').isVisible());await page.locator('#chat-log .msg.wait').waitFor({state:'detached'});
  await page.screenshot({path:'test-artifacts/chat.png'});
  assert.ok(await page.evaluate(async()=>{var start=performance.now();await GNM_loading.min(Promise.resolve('cached'));var b=GNM_loading.begin(document.getElementById('main'));await b.end();return performance.now()-start<250&&!document.querySelector('#main>.gnm-loading');}));
  await page.emulateMedia({reducedMotion:'reduce'});await page.evaluate(()=>{window.fixtureLoading=GNM_loading.begin(document.getElementById('main'),'모션 줄이기 검증','working');});
@@ -334,7 +334,7 @@ try{
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  // G-121: popups open full screen on phones and the back button closes them without leaving the page.
  await page.setViewportSize({width:390,height:844});await page.goto(origin+'/screener.html');await page.waitForLoadState('load');
- const here=page.url();await page.locator('[data-open-chat]').first().click();await page.locator('#chat:not([hidden])').waitFor();
+ const here=page.url();await page.locator('[data-open-chat]:visible').first().click();await page.locator('#chat:not([hidden])').waitFor();
  const box=await page.locator('#chat').boundingBox();assert.ok(box.width>=389&&box.height>=840,'chat fills the phone screen: '+JSON.stringify(box));
  await page.waitForTimeout(100);await page.goBack();await page.locator('#chat').waitFor({state:'hidden'});assert.equal(page.url(),here);
  // G-245, G-255: four tabs and no 전체 sheet; 찾기 lights up on its sibling pages, and a mode tap moves the pill, then opens the page.
@@ -371,7 +371,7 @@ try{
  // Waiting indicators must render pixels on mobile, not merely leave an empty canvas in the DOM.
  for (const width of [375,390]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+'/screener.html');
-  await page.locator('[data-open-chat]').first().click();await page.locator('#chat-q').fill('모바일 로딩 검증');await page.locator('#chat-send').click();
+  await page.locator('[data-open-chat]:visible').first().click();await page.locator('#chat-q').fill('모바일 로딩 검증');await page.locator('#chat-send').click();
   await page.waitForFunction(()=>{const c=document.querySelector('#chat-log .msg.wait canvas');return c&&getComputedStyle(c).visibility==='visible'&&c.getBoundingClientRect().width>=20&&c.getContext('2d').getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0);});
   await page.screenshot({path:'test-artifacts/mobile-chat-orbs-'+width+'.png'});await page.locator('#chat-log .msg.wait').waitFor({state:'detached'});
   await page.emulateMedia({reducedMotion:'no-preference'});
