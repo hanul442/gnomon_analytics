@@ -1,3 +1,4 @@
+import { PC_RAIL_CSS } from './pcRail.js';
 import { COMMAND_BAR_CSS, COMMAND_BAR_JS, REPORT_TABS_CSS, REPORT_TABS_JS } from './commandBar.js';
 import { US_EXCHANGE_LETTER } from '../sources/naverWorld.js';
 import { MODERN_SWITCH_CSS, MODERN_SWITCH_JS } from './modernSwitch.js';
@@ -598,6 +599,8 @@ export const TAB_SCRIPT = `<script>
   function sub(g) { var host = g.parentNode; Array.prototype.forEach.call(host.children, function (c) { if (c.classList.contains('sub-g')) c.hidden = c !== g; }); Array.prototype.forEach.call(host.querySelectorAll('[data-sub]'), function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-sub') === g.id)); }); window.dispatchEvent(new Event('resize')); }
   function openPart(el) { var g = el && el.closest && el.closest('.sub-g'); if (g && g.hidden) sub(g); var d = el && el.closest && el.closest('details'); if (d && !d.open) d.open = true; }
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-sub]'); if (!b) return; var g = document.getElementById(b.getAttribute('data-sub')); if (g) sub(g); });
+  var cur = null, wideQ = window.matchMedia && matchMedia('(min-width:1200px)');
+  if (wideQ && wideQ.addEventListener) wideQ.addEventListener('change', function () { if (cur) show(cur); });
   function show(id, focus) {
     var panel = document.getElementById(id);
     if (panel && panel.getAttribute('role') !== 'tabpanel' && /^tab-/.test(id)) { var host = panel.closest('[role=tabpanel]'), part = panel; if (host && show(host.id, focus)) { openPart(part); setTimeout(function () { part.scrollIntoView({ block: 'start' }); }, 0); return true; } }
@@ -608,6 +611,9 @@ export const TAB_SCRIPT = `<script>
     // G-277: 소식 is the news panel and the filings panel one after the other.
     var pair = id === 'tab-news' || id === 'tab-filings';
     panels.forEach(function (p) { p.hidden = p !== panel && !(pair && (p.id === 'tab-news' || p.id === 'tab-filings')); });
+    // G-294: on a wide screen the 기업 part stays open on the right while 위원회 or 소식 is open.
+    var fund = document.getElementById('tab-fundamentals'), split = !!(fund && window.matchMedia && matchMedia('(min-width:1200px)').matches && (id === 'tab-home' || pair));
+    if (split) fund.hidden = false; document.documentElement.classList.toggle('pc-split', split); cur = id;
     tabs.forEach(function (t) { var own = t.getAttribute('aria-controls') === id, on = own || t.getAttribute('data-also') === id; t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; if (own && focus) t.focus(); });
     document.querySelectorAll('[data-nav]').forEach(function (a) {
       var on = (' ' + a.getAttribute('data-nav') + ' ' + (a.getAttribute('data-nav-also') || '') + ' ').indexOf(' ' + id.replace('tab-', '') + ' ') >= 0;
@@ -1260,7 +1266,7 @@ html.chart-fs #tab-chart::after,.db-room:not([hidden])::after{content:"";positio
 @media(max-width:820px){.moms{grid-template-columns:repeat(2,minmax(0,1fr))}.momentum-axis{font-size:10px;gap:0}.market-scenarios{grid-template-columns:minmax(0,1fr)}.market-thermals{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 0 8px;scrollbar-width:none}.market-thermals::-webkit-scrollbar{display:none}.market-thermals>*{flex:0 0 84%;scroll-snap-align:start}.topbar.scrolled .gnomon-mark{width:28px;height:28px}.topbar.scrolled .price-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 7px;font-size:12px;overflow:visible;line-height:1.5}.price-bar>b{overflow:hidden;text-overflow:ellipsis;grid-column:1;grid-row:1/3}.price-bar .pb-price{grid-column:2;grid-row:1;white-space:nowrap}.price-bar [data-live-f=arrowpct]{grid-column:2;grid-row:2;text-align:right;white-space:nowrap}.price-bar .pb-code,.price-bar .freshness-badge{display:none}.topbar-in{gap:8px}.top-links,.topbar-in>.menu-button{flex:none}.chips button{padding:6px 12px;font-size:13px}.analysis-tabs{padding-top:0}.chips{gap:4px}}
 ${FS_CSS}${THEME_CSS}
 /* G-183: command bar, switch, generate button, and glow CTA are ported from ThreeUI Community (github.com/MengTo/threeui), MIT License, Copyright (c) 2026 Meng To. See docs/third-party/threeui-LICENSE.txt. */
-${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}${SEG_THUMB_CSS}${POLISH_CSS}${MOTION_SYSTEM_CSS}
+${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}${SEG_THUMB_CSS}${POLISH_CSS}${MOTION_SYSTEM_CSS}${PC_RAIL_CSS}
 .page-load{position:fixed;inset:0;z-index:400;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center;background:var(--page);background-image:var(--page-grad);transition:opacity .35s ease,visibility .35s}.page-load.out{opacity:0;visibility:hidden}.page-load canvas{width:72px;height:72px}.page-load b{font-size:15px;color:var(--fg2);font-weight:700}.pl-track{position:relative;display:block;width:160px;height:3px;border-radius:3px;background:var(--line);overflow:hidden}.pl-track i{position:absolute;inset:0 auto 0 0;width:40%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:pl-run 1.1s ease-in-out infinite}@keyframes pl-run{from{transform:translateX(-100%)}to{transform:translateX(260%)}}@media (prefers-reduced-motion:reduce){.pl-track i{animation-duration:3s}}html.embed .page-load{display:none}${MODERN_SWITCH_CSS}${GEN_BUTTON_CSS}${GLOW_CTA_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 // G-169: the loading layer, the version banner and the ad strip used to be inlined in every page (about 19 KB each,
