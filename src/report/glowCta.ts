@@ -14,8 +14,9 @@ const PTS: [string, number, number, number][] = [
   ['75%', 0.5, 1.5, 1.5], ['88%', 0.9, 2.2, 0.2], ['58%', 0.8, 2.25, 0.2], ['98%', 0.6, 2.6, 0.1], ['65%', 1, 2.5, 0.2],
 ];
 
+// 4.3.1: near-black with a soft grey glow (one dark accent; no blue buttons).
 export const GLOW_CTA_CSS = `
-.glow-cta{--gl:0,166,251;--gb:#0582CA;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;width:100%;min-height:48px;padding:12px 18px;
+.glow-cta{--gl:160,170,184;--gb:#16191f;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;width:100%;min-height:48px;padding:12px 18px;
   border:none;border-radius:.75rem;outline:none;text-decoration:none;transition:all .25s ease;
   background:radial-gradient(65.28% 65.28% at 50% 100%,rgba(var(--gl),.8) 0%,rgba(var(--gl),0) 100%),linear-gradient(0deg,var(--gb),var(--gb))}
 .glow-cta::before,.glow-cta::after{content:"";position:absolute;transition:all .5s ease-in-out;z-index:0}
