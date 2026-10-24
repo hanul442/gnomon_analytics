@@ -211,6 +211,8 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .cl-row .cl-px{display:contents}.cl-row .cl-px b{grid-area:px;justify-self:end;font-size:18px;font-weight:500;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .cl-row .cl-px small{grid-area:sub;padding:0;font-size:12px;color:var(--muted)}.cl-row .cl-px small.cl-range{grid-area:rng}
 .cl-row .cl-more{grid-area:more}
+/* A range price ("272,000원 ~ 278,000원") wraps at the tilde instead of squeezing the scenario name to one letter a line. */
+.cl-row .cl-what>b{white-space:nowrap}.cl-row .cl-px b{max-width:9.5em;text-align:right;text-wrap:balance}
 :root body .cl-sc{margin:0 0 12px;border:0;border-radius:18px;background:var(--soft);padding:12px 14px 6px}
 :root body .cl-check{border-radius:18px}
 .cl-head{display:flex;align-items:center;gap:10px;margin:-4px -6px 8px;padding:6px;border-radius:16px;text-decoration:none;color:inherit}.cl-head:active{background:var(--soft)}.cl-head>span{flex:1;min-width:0}.cl-head .cl-k{display:block}.cl-head .cl-line{margin:2px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.cl-head>i{font-style:normal;font-size:22px;color:var(--muted)}
