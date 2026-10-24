@@ -43,10 +43,10 @@ export const PLANS: readonly Plan[] = [
     soon: [] },
   { key: 'pro', name: '프로', price: 39000, tagline: 'AI 위원회 전체 + 전문가 초청', monthlyCredits: 400, topUpBonus: 10, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
     adds: ['AI 위원회 리포트 전체(위원별 근거·예측·레드팀·시나리오)', '시장 데일리 상세 전체 열람', '전문가 AI 초청: 업종·투자 스타일 전문가를 골라 위원회에 앉혀요(크레딧)', '예측 가격 범위(5·20·60·120거래일)와 분석가 예상가', '전략 대결 전체(과거 데이터로 시험한 매매 시점·자산 곡선·몬테카를로·차트 표시)', '모의투자 종목별 장부·매매 내역', '성적표 종목별 상세·빗나간 예측 하나하나', '매달 400크레딧', '충전할 때 크레딧 10% 더', '관심 종목 100개'],
-    soon: ['내 매매 아이디어 검증: 레드팀이 근거로 반박', '스크리너 조건 백테스트(4년)', '공시 이벤트 스터디: 공시 뒤 N일 주가 움직임 분포', '외국인·기관 수급 랭킹', '공시·신호 변화 알림'] },
-  { key: 'max', name: '맥스', price: 99000, tagline: '내 종목 전담 위원회', monthlyCredits: MAX_CREDITS, topUpBonus: 20, weeklyCoverage: 10, includedInvites: 30, standingExperts: 5,
+    soon: ['스크리너 조건 백테스트(4년)', '공시 이벤트 스터디: 공시 뒤 N일 주가 움직임 분포', '외국인·기관 수급 랭킹', '공시·신호 변화 알림'] },
+  { key: 'max', name: '맥스', price: 99000, tagline: '관심 종목 주간 위원회 리포트', monthlyCredits: MAX_CREDITS, topUpBonus: 20, weeklyCoverage: 10, includedInvites: 30, standingExperts: 5,
     adds: ['관심 종목 10개를 매주 AI 위원회 전체로 자동 리포트', '모든 전문가 초청 매달 30회 포함(크레딧 없이)', '전문가 정기 초청: 내 종목 주간 위원회에 고정 전문가 5명', `매달 ${MAX_CREDITS.toLocaleString('ko-KR')}크레딧`, '충전할 때 크레딧 20% 더', '관심 종목 무제한'],
-    soon: ['전략 랩: 내 규칙으로 백테스트·검증 구간·과최적화 경고', '내 가상 포트폴리오와 예측 실패 원인 분석', '포트폴리오 리스크: 상관·집중·변동성·시나리오', '시점 재현: 과거 그날 알았던 것만으로 다시 보기', '데이터 내보내기(CSV)·웹훅'] },
+    soon: ['전략 랩: 내 규칙으로 백테스트·검증 구간·과최적화 경고', '시점 재현: 과거 그날 알았던 것만으로 다시 보기', '데이터 내보내기(CSV)·웹훅'] },
 ];
 
 /**

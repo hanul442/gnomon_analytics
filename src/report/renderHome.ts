@@ -161,7 +161,7 @@ export function renderReportsPage(data: HomeData): string {
   const waiting = all.filter((e) => e.group !== 'past' && e.group !== 'daily' && !(e.report && madeOn(e)));
   const wait = waiting.length ? `<details class="card rp-wait"><summary>리포트를 기다리는 추적 종목 ${waiting.length}개</summary><p class="muted small">${waiting.map((e) => esc(e.name)).join(' · ')}</p></details>` : '';
   const head = `<section class="rp-top"><p class="muted">AI 위원회가 쓴 리포트예요. 관심 종목이 맨 위에 와요.</p></section>`;
-  const how = `<details class="card rp-how"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 추천 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></details>`;
+  const how = `<details class="card rp-how"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 기본 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></details>`;
   return shell('', 'AI 리포트 | GNOMON', `${HOME_STYLE}<style>${CONTENT_MORE_CSS}.rr-mine{background:var(--accent-soft)}.t-mine{background:var(--down-soft);color:var(--accent-strong)}.rp-top p{margin:0 4px 4px;font-size:14px}.rp-how,.rp-wait{margin:12px 0;padding:4px 16px}.rp-how summary,.rp-wait summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:14px;font-weight:600}.rp-how p{font-size:13px;color:var(--muted);line-height:1.55}.rp-rest>summary{display:flex;justify-content:center;align-items:center;min-height:48px;border-top:1px solid var(--line);font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer;list-style:none}.rp-rest>summary::-webkit-details-marker{display:none}</style>${head}${todayRows(data.entries)}${pastRows(all, todaySyms)}${wait}${how}`, { scripts: HOME_SCRIPT + TODAY_LIST_SCRIPT, mode: 'reports.html' });
 }
 
@@ -286,7 +286,7 @@ const FEED_SCRIPT = `<script>
   // Say at the top that this page follows their answers, with a way to change them.
   var bits = [prefs.experience && '경험 ' + prefs.experience, prefs.horizon && '보유 ' + prefs.horizon, (prefs.sectors || []).length && '관심 ' + prefs.sectors.slice(0, 2).join('·') + (prefs.sectors.length > 2 ? ' 외 ' + (prefs.sectors.length - 2) : '')].filter(Boolean);
   var note = document.getElementById('pz-note');
-  if (note && bits.length) { document.getElementById('pz-text').innerHTML = '<b>내 설문에 맞춘 화면이에요.</b> ' + bits.map(function (b) { return String(b).replace(/[&<>"]/g, ''); }).join(' · ') + ' 기준으로 추천을 바꿨어요.'; note.hidden = false; }
+  if (note && bits.length) { document.getElementById('pz-text').innerHTML = '<b>내 설문에 맞춘 화면이에요.</b> ' + bits.map(function (b) { return String(b).replace(/[&<>"]/g, ''); }).join(' · ') + ' 기준으로 보이는 순서를 바꿨어요. 종목 판단은 모두에게 같아요.'; note.hidden = false; }
   // A screener preset that fits how long they hold.
   var h = prefs.horizon || '', preset = /며칠/.test(h) ? ['hot', '거래 급증·급등'] : /몇 주/.test(h) ? ['rebound', '반등 후보'] : /몇 달/.test(h) ? ['value', '적정가 아래'] : /1년/.test(h) ? ['large', '대형주 강세'] : null;
   // G-287 (한서님 10/23 '넘 구림'): one plain list instead of wrapping chips — each 관심 업종 on its own row (name, its
