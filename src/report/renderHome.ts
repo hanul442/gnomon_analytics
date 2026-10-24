@@ -287,16 +287,14 @@ const FEED_SCRIPT = `<script>
   var bits = [prefs.experience && '경험 ' + prefs.experience, prefs.horizon && '보유 ' + prefs.horizon, (prefs.sectors || []).length && '관심 ' + prefs.sectors.slice(0, 2).join('·') + (prefs.sectors.length > 2 ? ' 외 ' + (prefs.sectors.length - 2) : '')].filter(Boolean);
   var note = document.getElementById('pz-note');
   if (note && bits.length) { document.getElementById('pz-text').innerHTML = '<b>내 설문에 맞춘 화면이에요.</b> ' + bits.map(function (b) { return String(b).replace(/[&<>"]/g, ''); }).join(' · ') + ' 기준으로 보이는 순서를 바꿨어요. 종목 판단은 모두에게 같아요.'; note.hidden = false; }
-  // A screener preset that fits how long they hold.
-  var h = prefs.horizon || '', preset = /며칠/.test(h) ? ['hot', '거래 급증·급등'] : /몇 주/.test(h) ? ['rebound', '반등 후보'] : /몇 달/.test(h) ? ['value', '적정가 아래'] : /1년/.test(h) ? ['large', '대형주 강세'] : null;
+  // G-292 (한서 10/24): no screener preset picked from the holding period — answers never choose a stock list.
   // G-287 (한서님 10/23 '넘 구림'): one plain list instead of wrapping chips — each 관심 업종 on its own row (name, its
-  // strongest theme under it, the move on the right), then the holding-period preset as the last row. 바꾸기 sits in the head.
+  // strongest theme under it, the move on the right). 바꾸기 sits in the head.
   var sectors = (prefs.sectors || []).slice(0, 4), rows = [];
   // G-201: a sector row opens its strongest theme today (themes-home.json, built each day); no theme, 테마 전체.
   sectors.forEach(function (s, i) { rows.push('<a class="fd-row" data-sec="' + i + '" href="themes.html"><span class="fd-t"><b>' + esc(s) + '</b><small>오늘 강한 테마 보기</small></span><i class="fd-v"></i><span class="fd-go" aria-hidden="true">›</span></a>'); });
-  if (preset) rows.push('<a class="fd-row fd-pre" href="screener.html#' + preset[0] + '"><span class="fd-t"><b>' + preset[1] + ' 종목</b><small>보유 기간 ' + esc(h) + '에 맞는 조건</small></span><i class="fd-v"></i><span class="fd-go" aria-hidden="true">›</span></a>');
   if (!rows.length) return;
-  chipsEl.innerHTML = '<div class="fd-h"><b>' + (sectors.length ? '관심 업종 오늘' : '내 조건') + '</b><a href="settings.html#profile">투자 방식 바꾸기</a></div>' + rows.join('');
+  chipsEl.innerHTML = '<div class="fd-h"><b>' + '관심 업종 오늘' + '</b><a href="settings.html#profile">투자 방식 바꾸기</a></div>' + rows.join('');
   if (redo) redo.hidden = true;
   if (sectors.length) (window.gnmThemesHome = window.gnmThemesHome || fetch('themes-home.json').then(function (r) { return r.ok ? r.json() : null; })).then(function (j) {
     var map = (j && j.sectors) || {};
