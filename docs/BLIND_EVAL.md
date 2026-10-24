@@ -161,9 +161,9 @@ AI 없이 가격 신호만으로 다섯 가지를 더 봤어요. 코드: `src/an
 
 ## 첫 결과 (2026-10-24, `data/eval/arena-2026-10-24.md`)
 
-모델 8개(Chronos-2, Chronos-Bolt 소·중, TimesFM 2.5, Toto, TiRex, Sundial, Kronos-small), 평가일 10~22개. **통계 기준을 이긴 모델은 없어요.**
+모델 9개(Chronos-2, Chronos-Bolt 소·중, TimesFM 2.5, Toto, TiRex, Sundial, Kronos-small, Kronos-mini), 평가일 10~22개. **통계 기준을 이긴 모델은 없어요.**
 
-- 방향(오를 확률): Toto, TimesFM, Chronos-2, TiRex, Chronos-Bolt는 통계 기준과 거의 같아요(Brier 차이 ±0.007, 모두 우연 범위). Sundial(0.336)과 Kronos-small(0.391)은 50%보다 훨씬 나빠요.
+- 방향(오를 확률): Toto, TimesFM, Chronos-2, TiRex, Chronos-Bolt는 통계 기준과 거의 같아요(Brier 차이 ±0.007, 모두 우연 범위). Sundial(0.336), Kronos-mini(0.349), Kronos-small(0.391)은 50%보다 훨씬 나빠요.
 - 종목 순위: 모든 모델이 통계 기준보다 낮아요(IC 0.01~0.09 vs 0.09~0.12). 통계 기준을 뺀 뒤 더하는 정보는 Chronos-2 +0.05, Toto +0.04로 작고 0과 구별되지 않아요. 지켜볼 후보예요.
 - 변동 폭: 80% 범위 적중은 TiRex 81.6%, Chronos-2·TimesFM 79%로 괜찮지만, 크게 움직일 종목 고르기는 모두 통계 범위(0.26)와 같거나 낮아요.
-- Kronos-mini는 CPU가 느려 따로 돌리는 중이고 다음 결과에 들어가요.
+- Kronos-mini도 Kronos-small처럼 최근 평균으로 되돌아가는 예측이 강해 범위 적중 39.7%, 순위 IC 0.02예요.
