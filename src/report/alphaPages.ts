@@ -246,7 +246,7 @@ export function renderSurvey(): string {
 }
 
 /**
- * G-293 (한서님 10/24): '위원회가 뭐예요?' for readers opening the app for the first time. Who sits on the committee,
+ * G-296 (한서님 10/24): '위원회가 뭐예요?' for readers opening the app for the first time. Who sits on the committee,
  * how it reaches a view, how to read the three odds, where it is scored, and what it does not do (no advice to one
  * person). Linked from the welcome, the stock page's first-visit card, the 위원회 tab and the guide.
  */

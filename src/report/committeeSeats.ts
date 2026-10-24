@@ -1,4 +1,4 @@
-// G-294 (한서님 10/24 "위원회가 메인인데 메인이 아닌 상황"): the committee as the app's lead. Every member gets a face
+// G-297 (한서님 10/24 "위원회가 메인인데 메인이 아닌 상황"): the committee as the app's lead. Every member gets a face
 // (one letter in a tile), the vote is drawn as a half-circle of seats, the lone dissenters are named with the close that
 // would prove them wrong, and a tap on a seat or a face opens that member in a sheet. Pure rendering from reports; the
 // sheet is filled by COMMITTEE_JS from the data on the tapped seat. Shown the same to everyone (no per-user advice).

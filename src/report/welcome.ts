@@ -1,4 +1,4 @@
-// G-293 (한서님 10/24, 처음 쓰는 사람 안내): closed-beta testers open the app for the first time on 11/20.
+// G-296 (한서님 10/24, 처음 쓰는 사람 안내): closed-beta testers open the app for the first time on 11/20.
 // Three pieces, all shown once and remembered under gnm-tour-* keys (so they follow a signed-in account, see SYNC in alpha.ts):
 //   1. Home: a full-screen welcome of four cards (what the app is, the AI committee, scoring, the bottom bar + picking
 //      stocks to follow). Swipe or 다음; 건너뛰기 closes it. Returning readers (a tour already seen) never get it.

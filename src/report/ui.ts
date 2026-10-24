@@ -635,7 +635,7 @@ export const TOUR_JS = `
     var key = 'gnm-tour-v243-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
     try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-' + kind) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
     if (seen && !forced) return;
-    // G-293: new readers get the welcome on home and a short card on stock pages instead, so these two tours start only from
+    // G-296: new readers get the welcome on home and a short card on stock pages instead, so these two tours start only from
     // the guide's buttons (?tour=1). The 찾기 tour still starts on its own.
     if (kind !== 'find' && !forced) return;
     // G-260: a step may name 'page part|bar part'; on phones the part in the bottom bar is used (and the bar shows its own row).

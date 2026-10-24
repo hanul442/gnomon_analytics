@@ -829,7 +829,7 @@ function aiFoldOf(report: DailyReport | null, inner: string, aiDate: string): st
   const n = { BULLISH: st.filter((x) => x === 'BULLISH').length, NEUTRAL: st.filter((x) => x === 'NEUTRAL').length, BEARISH: st.filter((x) => x === 'BEARISH').length };
   const total = n.BULLISH + n.NEUTRAL + n.BEARISH;
   const bar = total ? `<div class="vf-bar" role="img" aria-label="강세 ${n.BULLISH} 중립 ${n.NEUTRAL} 약세 ${n.BEARISH}">${n.BULLISH ? `<i class="up" style="flex:${n.BULLISH}"></i>` : ''}${n.NEUTRAL ? `<i style="flex:${n.NEUTRAL}"></i>` : ''}${n.BEARISH ? `<i class="down" style="flex:${n.BEARISH}"></i>` : ''}</div><div class="vf-l"><span class="up">강세 ${n.BULLISH}</span><span>중립 ${n.NEUTRAL}</span><span class="down">약세 ${n.BEARISH}</span></div>` : '';
-  // G-294: the count moved up to the seats card (cs-hero), so the fold keeps only its title.
+  // G-297: the count moved up to the seats card (cs-hero), so the fold keeps only its title.
   return `<section class="block vf"><div class="card"><h2 class="vf-h">위원회 토론</h2>${total ? '' : bar}<details class="ai-fold"><summary>토론 펼쳐 보기</summary><section class="ai-in" id="tab-ai" data-ai-date="${escape(aiDate)}">${inner}</section></details></div></section>`;
 }
 // G-281: 기업 has its own part in the bar again, so only 내 기록 opens from here.

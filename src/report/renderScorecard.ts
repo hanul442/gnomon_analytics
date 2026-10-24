@@ -157,7 +157,7 @@ ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 
 ${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
 <div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언 규칙대로였다면 (가상)', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
 `;
-  // G-294 (한서님 시안 ⑤): the newest graded member calls, hits and misses alike, right under the headline — the
+  // G-297 (한서님 시안 ⑤): the newest graded member calls, hits and misses alike, right under the headline — the
   // committee is scored in the open. Waiting calls only count until the first grade comes in.
   const graded = [...calls.entries()].flatMap(([id, xs]) => xs.filter((x) => x.c.done).map((x) => ({ id, ...x }))).sort((a, b) => (a.c.reportDate < b.c.reportDate ? 1 : a.c.reportDate > b.c.reportDate ? -1 : 0)).slice(0, 5);
   const waitingN = [...calls.values()].reduce((n, xs) => n + xs.filter((x) => !x.c.done).length, 0);

@@ -163,7 +163,7 @@ export function renderReportsPage(data: HomeData): string {
   const todaySyms = new Set(withDate.filter((e) => madeOn(e) === day).map((e) => e.symbol));
   const waiting = all.filter((e) => e.group !== 'past' && e.group !== 'daily' && !(e.report && madeOn(e)));
   const wait = waiting.length ? `<details class="card rp-wait"><summary>리포트를 기다리는 추적 종목 ${waiting.length}개</summary><p class="muted small">${waiting.map((e) => esc(e.name)).join(' · ')}</p></details>` : '';
-  // G-294 (한서님 시안 ②): the members first, as faces; each opens its record and the day's calls.
+  // G-297 (한서님 시안 ②): the members first, as faces; each opens its record and the day's calls.
   const todays = withDate.filter((e) => madeOn(e) === day && e.report?.commentary?.status === 'OK').map((e) => ({ name: e.name, report: e.report! }));
   const head = `<section class="rp-top"><p class="muted">AI 위원들이 종목마다 따로 판단하고, 20거래일 뒤 채점받아요. 관심 종목이 맨 위에 와요. <a class="rp-what" href="committee-guide.html">위원회가 뭐예요? ›</a></p></section>${rosterCard(todays)}`;
   const how = `<details class="card rp-how"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 기본 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></details>`;
@@ -196,7 +196,7 @@ export function renderHome(data: HomeData): string {
   // G-281 (한서님 10/22 "구조화시켜서 분류가 각 종류에 맞게"): four parts, one kind each, every number in one place.
   // 요약 = a taste of each kind (내 종목, four numbers, the committee, issues); 시장 = numbers; 위원회 = calls; 이슈 = news.
   const key = wp ? `<div class="hm-h"><h2>시장</h2><button type="button" class="wd-link" data-wd-go="market">시장 전체 ›</button></div><div class="km-stats wd-stats">${wp.key6}</div>` : fallbackNumbers(data.indices);
-  // G-294 (한서님 10/24 시안): 요약 runs 배너 → 시장 → 이슈 → 내 종목 → 위원회 → 채점. The committee card shows the day's most
+  // G-297 (한서님 10/24 시안): 요약 runs 배너 → 시장 → 이슈 → 내 종목 → 위원회 → 채점. The committee card shows the day's most
   // split stock as a half circle of seats, the others as split bars and one lone dissent; the range score sits under it.
   const comBlock = calls.length ? `<div class="hm-h"><h2>위원회 오늘</h2></div>${homeCommittee(committeeReports(data.entries), { day: dayShort(data.entries.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK').map(madeOn).sort().at(-1) ?? ''), allHref: '#com' })}` : '';
   const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${im?.mini ?? ''}${issuesList(issues, 3, false)}</section>`;
@@ -232,7 +232,7 @@ function fallbackNumbers(indices: readonly IndexQuote[]): string {
   return `<div class="hm-h"><h2>꼭 볼 숫자</h2></div><div class="km-stats wd-stats hm-stats">${cards}</div>`;
 }
 
-/** The newest report day's committee reports, as committeeToday picks them (G-294 seats). */
+/** The newest report day's committee reports, as committeeToday picks them (G-297 seats). */
 function committeeReports(all: readonly HomeEntry[]): { name: string; href: string; report: DailyReport }[] {
   const withDate = all.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK');
   const last = withDate.map(madeOn).sort().at(-1);
