@@ -941,7 +941,7 @@ route('POST', '/feedback', async ({ req, env, now }) => {
   return { ok: true };
 });
 
-// G-292: anonymous visits. No sign-in: the browser sends a random device id once per KST day and where it came from.
+// G-293: anonymous visits. No sign-in: the browser sends a random device id once per KST day and where it came from.
 export const VISIT_SOURCES = ['', 'search', 'insta', 'share', 'other'] as const;
 route('POST', '/visit', async ({ req, env, now }) => {
   const b = await body(req), vid = typeof b.v === 'string' && /^[a-f0-9]{16,32}$/.test(b.v) ? b.v : '';
@@ -951,7 +951,7 @@ route('POST', '/visit', async ({ req, env, now }) => {
   return { ok: true };
 });
 
-/** G-292: visitors per day (28 days), this week's and last week's devices, how many came back, and sources this week. */
+/** G-293: visitors per day (28 days), this week's and last week's devices, how many came back, and sources this week. */
 export async function visitStats(db: Env['DB'], now: Date) {
   const day = (back: number) => kst(new Date(now.getTime() - back * 86_400_000)).slice(0, 10);
   const q = <T>(sql: string, ...v: unknown[]) => db.prepare(sql).bind(...v).all<T>().then((r) => r.results);
@@ -966,7 +966,7 @@ export async function visitStats(db: Env['DB'], now: Date) {
   return { days, week: week?.n ?? 0, prevWeek: p, returned: r, returnRate: p ? Math.round((r / p) * 1000) / 10 : null, sources };
 }
 
-/** G-292: visit rows are kept 120 days. */
+/** G-293: visit rows are kept 120 days. */
 export async function pruneVisits(db: Env['DB'], now: Date): Promise<number> {
   const r = await db.prepare('DELETE FROM visits WHERE day < ?').bind(kst(new Date(now.getTime() - 120 * 86_400_000)).slice(0, 10)).run();
   return Number(r.meta?.changes ?? 0);

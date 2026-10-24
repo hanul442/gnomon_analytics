@@ -968,7 +968,7 @@ test('G-279: a saved screen can be overwritten from the condition sheet', async 
   assert.equal((await t.call('POST', `/screens/99999`, { name: 'x', screen: { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 5 }] } }, u.session)).body.error, 'NO_SCREEN');
 });
 
-test('G-292: anonymous visits count once per device a day; the console shows weekly return and sources; old rows go', async () => {
+test('G-293: anonymous visits count once per device a day; the console shows weekly return and sources; old rows go', async () => {
   const t = setup();
   const boss = await t.login('boss@example.com');
   const a = 'a'.repeat(24), b = 'b'.repeat(24), c = 'c'.repeat(24);

@@ -62,7 +62,7 @@ export const ALPHA_SCRIPT = `<script>
       });
     }, function () { return { error: 'NETWORK', message: '연결이 끊겼어요. 잠시 뒤 다시 해 주세요.', _status: 0 }; });
   };
-  // G-292: one anonymous visit a day per device (random id, nothing else), with where the first page of the day came from.
+  // G-293: one anonymous visit a day per device (random id, nothing else), with where the first page of the day came from.
   (function () {
     var day = new Date(Date.now() + 324e5).toISOString().slice(0, 10);
     if (get('gnm-vday') === day) return;
