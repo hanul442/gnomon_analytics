@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ALPHA, allows, CREDIT_COST, TESTERS, UNLOCK, type Feature } from '../report/plans.js';
-import { handle, type Deps, type Env } from './api.js';
+import { handle, pruneVisits, type Deps, type Env } from './api.js';
 import { askParams } from './ask.js';
 import { testDb } from './testDb.js';
 import { SAMPLE_XML, zipOf } from '../sources/dartDocument.test.js';
@@ -966,4 +966,22 @@ test('G-279: a saved screen can be overwritten from the condition sheet', async 
   assert.equal(got[0].name, '급증 5배');
   assert.deepEqual(got[0].screen.rules, [{ f: 'vol1', op: '>=', v: 5 }]);
   assert.equal((await t.call('POST', `/screens/99999`, { name: 'x', screen: { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 5 }] } }, u.session)).body.error, 'NO_SCREEN');
+});
+
+test('G-293: anonymous visits count once per device a day; the console shows weekly return and sources; old rows go', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const a = 'a'.repeat(24), b = 'b'.repeat(24), c = 'c'.repeat(24);
+  assert.equal((await t.call('POST', '/visit', { v: 'not-hex!' })).status, 400);
+  for (const v of [a, b]) assert.equal((await t.call('POST', '/visit', { v, src: 'search' })).status, 200);
+  await t.call('POST', '/visit', { v: a, src: 'insta' });
+  t.tick(8 * 86_400_000);
+  await t.call('POST', '/visit', { v: a, src: '' });
+  await t.call('POST', '/visit', { v: c, src: 'weird' });
+  const ov = (await t.call('GET', '/admin/overview', undefined, boss.session)).body.visits;
+  assert.deepEqual([ov.week, ov.prevWeek, ov.returned, ov.returnRate], [2, 2, 1, 50]);
+  assert.deepEqual(ov.days.map((d: any) => d.n), [2, 2]);
+  assert.deepEqual(ov.sources.map((s: any) => s.src).sort(), ['', 'other']);
+  t.tick(130 * 86_400_000);
+  assert.equal(await pruneVisits(t.env.DB, t.deps.now()), 4);
 });

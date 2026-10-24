@@ -1,7 +1,7 @@
 // Cloudflare Worker entry (wrangler.toml). Wires the real clock, fetch and Anthropic client into the API.
 
 import Anthropic from '@anthropic-ai/sdk';
-import { handle, runAlerts, runIntraday, type Env } from './api.js';
+import { handle, pruneVisits, runAlerts, runIntraday, type Env } from './api.js';
 import { writeCommentary } from '../analysis/commentary.js';
 import { runReportJob } from './reports.js';
 import { runDailyNotify, runPriceAlerts, runUpdateNotify, runWeeklySummary, runWrapupNotify } from './notify.js';
@@ -22,7 +22,7 @@ export default {
     // Every 10 minutes: the intraday scan (session only) and price alerts; the evening triggers: screener alerts and the daily report note.
     const job = event.cron.startsWith('*/10')
       ? Promise.all([runIntraday(env, deps), runPriceAlerts(nctx), runUpdateNotify(nctx), runWrapupNotify(nctx, env)])
-      : Promise.all([runAlerts(env, deps), runDailyNotify(nctx), runWeeklySummary(nctx, env)]);
+      : Promise.all([runAlerts(env, deps), runDailyNotify(nctx), runWeeklySummary(nctx, env), pruneVisits(env.DB, nctx.now)]);
     ctx.waitUntil(job.then((r) => console.log(event.cron, JSON.stringify(r))));
   },
 };
