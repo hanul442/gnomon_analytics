@@ -43,7 +43,7 @@ export function seatsFor(report: DailyReport): Seat[] {
     if (r.key === 'hold') continue;
     seats.push({
       id: `strategy:${r.key}`, faction: 'strategy', name: `${r.rank}위 ${r.name}`, stance: r.position ? 'bull' : 'neutral',
-      lines: [r.position ? '지금 보유 신호예요.' : '지금은 현금(관망)이에요.', r.rule, `검증 구간 수익 ${(r.oosReturn * 100).toFixed(1)}%`],
+      lines: [r.position ? '규칙상 지금은 보유 구간이에요.' : '규칙상 지금은 관망 구간이에요.', r.rule, `검증 구간 수익 ${(r.oosReturn * 100).toFixed(1)}%`],
     });
   }
   for (const v of report.technicals?.votes ?? []) {

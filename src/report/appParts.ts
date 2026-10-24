@@ -210,7 +210,7 @@ ${chartToolbar(!!report.market?.benchmarks.some((b) => b.series?.length))}
 <div class="opt-group"><div class="opt-k">아래 창</div>${PANES.map(([k, l, on]) => opt('pane', k, l, on)).join('')}</div>
 <div class="opt-group"><div class="opt-k">차트 위 표시</div>${opt('vl', 'filing', '공시', true, '공시가 나온 날 문서 아이콘과 점선')}${opt('vl', 'news', '뉴스', true, '중요도 보통 이상 뉴스가 나온 날 아이콘')}</div></div></div>
 ${strategies.length ? `<div class="sheet" id="strat-sheet" hidden><div class="sheet-back" data-close></div><div class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="strat-sheet-t"><div class="sheet-head"><b id="strat-sheet-t">전략 매매 시점 보기</b><button type="button" class="sheet-done" data-close>닫기</button></div>
-<p class="muted small" style="margin:0 0 6px">고른 전략의 과거 매수(▲)·매도(▼) 시점을 차트에 표시해요. 순위는 검증 구간 샤프 순이에요.</p>
+<p class="muted small" style="margin:0 0 6px">고른 전략의 과거 규칙상 진입(▲)·정리(▼) 시점을 차트에 표시해요. 지금 사고팔라는 신호가 아니에요. 순위는 검증 구간 샤프 순이에요.</p>
 <button type="button" class="opt" data-strategy="" aria-pressed="true"><span class="opt-t"><b>끄기</b><small>매매 시점을 표시하지 않아요</small></span><i class="radio" aria-hidden="true"></i></button>
 ${strategies.map((st) => `<button type="button" class="opt" data-strategy="${esc(st.key)}" aria-pressed="false"><span class="opt-t"><b>${st.rank}위 ${esc(st.name)}</b><small><span class="${st.position ? 'up' : 'muted'}">${st.position ? '지금 보유 신호' : '지금 관망'}</span> · 검증 수익 <span class="${tone(st.oos)}">${(st.oos * 100).toFixed(1)}%</span> · 매매 ${st.trades.length}번</small></span><i class="radio" aria-hidden="true"></i></button>`).join('')}</div></div>
 ` : ''}
@@ -723,19 +723,19 @@ window.addEventListener('DOMContentLoaded', function () {
     if (!st) { stratMarkers.setMarkers([]); if (info) info.hidden = true; return; }
     var mk = [];
     st.trades.forEach(function (tr) {
-      if (byDate[tr.entry] != null) mk.push({ time: tr.entry, position: 'belowBar', color: UP, shape: 'arrowUp', text: '매수 ' + won(tr.entryPrice) });
-      if (tr.exit && byDate[tr.exit] != null) mk.push({ time: tr.exit, position: 'aboveBar', color: DOWN, shape: 'arrowDown', text: '매도 ' + (tr.ret >= 0 ? '+' : '') + (tr.ret * 100).toFixed(1) + '%' });
+      if (byDate[tr.entry] != null) mk.push({ time: tr.entry, position: 'belowBar', color: UP, shape: 'arrowUp', text: '진입 ' + won(tr.entryPrice) });
+      if (tr.exit && byDate[tr.exit] != null) mk.push({ time: tr.exit, position: 'aboveBar', color: DOWN, shape: 'arrowDown', text: '정리 ' + (tr.ret >= 0 ? '+' : '') + (tr.ret * 100).toFixed(1) + '%' });
     });
     mk.sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; });
     stratMarkers.setMarkers(mk);
     var last = st.trades[st.trades.length - 1];
     var rows = st.trades.slice(-8).reverse().map(function (tr) {
-      return '<tr><td>' + tr.entry + '</td><td class="num">' + won(tr.entryPrice) + '</td><td>' + (tr.exit || '보유 중') + '</td><td class="num">' + (tr.exitPrice ? won(tr.exitPrice) : '') + '</td><td class="num ' + (tr.ret >= 0 ? 'up' : 'down') + '">' + (tr.ret >= 0 ? '+' : '') + (tr.ret * 100).toFixed(1) + '%</td></tr>';
+      return '<tr><td>' + tr.entry + '</td><td class="num">' + won(tr.entryPrice) + '</td><td>' + (tr.exit || '규칙상 보유 중') + '</td><td class="num">' + (tr.exitPrice ? won(tr.exitPrice) : '') + '</td><td class="num ' + (tr.ret >= 0 ? 'up' : 'down') + '">' + (tr.ret >= 0 ? '+' : '') + (tr.ret * 100).toFixed(1) + '%</td></tr>';
     }).join('');
-    info.innerHTML = '<div class="si-head"><b>' + st.rank + '위 ' + st.name + '</b><span class="badge ' + (st.position ? 'v-BULLISH">지금: 보유 신호' : 'b-LOW">지금: 관망') + '</span></div>' +
-      '<p>' + (last ? (last.exit ? '마지막 신호: ' + last.exit + ' 매도 (' + won(last.exitPrice) + ')' : '마지막 신호: ' + last.entry + ' 매수 (' + won(last.entryPrice) + '), 아직 보유 중') : '이 기간에 신호가 없었어요.') + '</p>' +
+    info.innerHTML = '<div class="si-head"><b>' + st.rank + '위 ' + st.name + '</b><span class="badge ' + (st.position ? 'v-BULLISH">규칙상: 보유 구간' : 'b-LOW">규칙상: 관망') + '</span></div>' +
+      '<p>' + (last ? (last.exit ? '마지막 신호: ' + last.exit + ' 정리 (' + won(last.exitPrice) + ')' : '마지막 신호: ' + last.entry + ' 진입 (' + won(last.entryPrice) + '), 규칙상 아직 보유 구간') : '이 기간에 신호가 없었어요.') + '</p>' +
       '<p class="muted small">다음 신호 조건: ' + st.trigger + '</p>' +
-      (rows ? '<div class="table-wrap"><table class="compact"><thead><tr><th>매수일</th><th class="num">매수가</th><th>매도일</th><th class="num">매도가</th><th class="num">수익</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '');
+      (rows ? '<div class="table-wrap"><table class="compact"><thead><tr><th>진입일</th><th class="num">진입가</th><th>정리일</th><th class="num">정리가</th><th class="num">과거 수익</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '');
     info.hidden = false;
   };
   document.querySelectorAll('[data-strategy]').forEach(function (b) { b.addEventListener('click', function () { selectStrategy(b.getAttribute('data-strategy')); }); });
