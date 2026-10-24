@@ -8,6 +8,7 @@ import type { NewsIssueBoard } from '../analysis/newsIssues.js';
 import type { WorldIssueBoard } from '../analysis/worldNews.js';
 import type { WorldMarkets } from '../sources/naverGlobal.js';
 import type { MarketReport } from './marketReport.js';
+import { issueMapParts, ISSUE_MAP_CSS, ISSUE_MAP_JS } from './issueMap.js';
 // Site front page as a market dashboard (docs/DESIGN.md §3.7, G-31). It answers
 // "what should I look at now?" (BOR North Star §2): the indices and breadth,
 // the market's temperature from every stock's free computation, this week's AI
@@ -190,13 +191,15 @@ export function renderHome(data: HomeData): string {
   const wp = data.world && (data.world.indices.length || data.world.macro.length) ? worldPanels({ markets: data.world, news: data.worldIssues ?? { from: null, to: null, articles: 0, issues: [] } }) : null;
   const issues = homeIssues(data);
   const calls = committeeToday(data.entries);
+  // G-295: issue pins on the world map — small on 오늘 이슈, big at the top of 시장, a sheet per region.
+  const im = issueMapParts({ issues, world: data.world, universe: data.universe });
   // G-281 (한서님 10/22 "구조화시켜서 분류가 각 종류에 맞게"): four parts, one kind each, every number in one place.
   // 요약 = a taste of each kind (내 종목, four numbers, the committee, issues); 시장 = numbers; 위원회 = calls; 이슈 = news.
   const key = wp ? `<div class="hm-h"><h2>시장</h2><button type="button" class="wd-link" data-wd-go="market">시장 전체 ›</button></div><div class="km-stats wd-stats">${wp.key6}</div>` : fallbackNumbers(data.indices);
   // G-294 (한서님 10/24 시안): 요약 runs 배너 → 시장 → 이슈 → 내 종목 → 위원회 → 채점. The committee card shows the day's most
   // split stock as a half circle of seats, the others as split bars and one lone dissent; the range score sits under it.
   const comBlock = calls.length ? `<div class="hm-h"><h2>위원회 오늘</h2></div>${homeCommittee(committeeReports(data.entries), { day: dayShort(data.entries.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK').map(madeOn).sort().at(-1) ?? ''), allHref: '#com' })}` : '';
-  const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${issuesList(issues, 3, false)}</section>`;
+  const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${im?.mini ?? ''}${issuesList(issues, 3, false)}</section>`;
   const sum = `<section class="hm-hero" id="mkt-hero"><p class="hm-d">${esc(dayLong(day))}</p><p class="hm-s">${esc(wp?.sentence ?? '오늘 시장을 한눈에 모았어요.')}</p></section>
 <div class="hm-bn">${banner}</div>
 ${key}${issueBlock}<i id="watch-slot" hidden></i>${WATCH}${comBlock}${scoreLine(sorted)}`;
@@ -206,12 +209,12 @@ ${key}${issueBlock}<i id="watch-slot" hidden></i>${WATCH}${comBlock}${scoreLine(
   const ISSUE_SHOW = 10;
   const news = `<section class="card hm-card"><div class="hm-h ia-head"><h2>이슈 순위</h2>${ISSUES_FILTER}</div>${issuesList(issues, ISSUE_SHOW, true)}${issues.length > ISSUE_SHOW ? `<details class="more content-more ia-rest"><summary><span class="more-closed">${issues.length - ISSUE_SHOW}개 더 보기</span><span class="more-open">접기</span></summary>${issuesList(issues.slice(ISSUE_SHOW), issues.length, true)}</details>` : ''}</section><p class="fine wd-fine">한국 종목 뉴스와 세계 뉴스를 한 순위로 모았어요. 각 목록 안에서 다룬 매체가 많은 순서를 기준으로 섞었어요. 시장 숫자는 같은 날 함께 움직인 값이고, 원인이라는 뜻이 아니에요.</p>`;
   
-  const tabs = [['sum', '요약', sum], ...(wp ? [['market', '시장', wp.market]] : []), ['com', '위원회', com], ['news', '이슈', news]] as const;
+  const tabs = [['sum', '요약', sum], ...(wp ? [['market', '시장', `${im?.card ?? ''}${wp.market}`]] : []), ['com', '위원회', com], ['news', '이슈', news]] as const;
   const nav = `<nav class="mode-tabs" role="tablist" aria-label="홈 보기">${tabs.map(([k, l], i) => `<button type="button" role="tab" data-wd="${k}" aria-selected="${i === 0}">${l}</button>`).join('')}</nav>`;
-  const body = `${HOME_STYLE}${WORLD_CSS}${ISSUES_CSS}${tabs.map(([k, , html], i) => `<div class="wd-p hm-p" data-wd-p="${k}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
+  const body = `${HOME_STYLE}${WORLD_CSS}${ISSUES_CSS}${im ? ISSUE_MAP_CSS + im.sheets : ''}${tabs.map(([k, , html], i) => `<div class="wd-p hm-p" data-wd-p="${k}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
 <footer id="sources" class="hm-foot"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS, 해외 뉴스 RSS.${wp ? ` 세계 숫자는 ${esc(wp.asof)} 기준이에요.` : ''} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   // G-277 (한서님 10/21 '위의 바 두기싫다니까'): on phones the parts switch from the bottom bar; the row above is for wide screens.
-  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘', tabs: nav }, parts: partButtons(tabs.map(([k, l]) => [k, l] as const)), scripts: WORLD_JS + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
+  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘', tabs: nav }, parts: partButtons(tabs.map(([k, l]) => [k, l] as const)), scripts: WORLD_JS + (im ? ISSUE_MAP_JS : '') + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
 }
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
