@@ -35,7 +35,7 @@ const COMPARE: readonly [string, Cell, Cell, Cell, Cell][] = [
   ['차트 그리기(추세선·수평선·박스·피보나치·메모)', '저장 안 됨', '10종목 저장', '무제한', '무제한'],
   ['차트 일·주·월봉 전환 · 지수와 겹쳐 보기', true, true, true, true],
   ['아이디어 검증 · 이벤트 스터디 · 수급 랭킹 · 알림 (출시 예정)', false, false, true, true],
-  ['전략 랩 · 포트폴리오 리스크 · 시점 재현 · 내보내기 (출시 예정)', false, false, false, true],
+  ['전략 랩 · 시점 재현 · 내보내기 (출시 예정)', false, false, false, true],
   ['알림: 매일 리포트 · 요청한 리포트 완성 (🔔)', true, true, true, true],
   ['알림: 휴대폰 푸시', false, true, true, true],
   ['알림: 관심 종목 새 리포트', false, true, true, true],

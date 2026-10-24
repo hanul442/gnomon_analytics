@@ -45,7 +45,7 @@ function strategyLines(a: ArenaResult): string {
 }
 
 const CROWN = '<svg viewBox="0 0 24 24" aria-hidden="true" class="crown"><path d="M3 18h18l-1.5-9-4.5 4-3-7-3 7-4.5-4z" fill="currentColor"/></svg>';
-const signalBadge = (r: StrategyResult) => (r.key === 'hold' ? '<span class="badge b-LOW">기준선</span>' : r.position ? '<span class="badge v-BULLISH">보유 신호</span>' : '<span class="badge b-LOW">관망</span>');
+const signalBadge = (r: StrategyResult) => (r.key === 'hold' ? '<span class="badge b-LOW">기준선</span>' : r.position ? '<span class="badge v-BULLISH">규칙상 보유 구간</span>' : '<span class="badge b-LOW">관망</span>');
 
 /** G-91: each strategy's current bull/bear stance, shown in its race row (no separate gauge card). */
 function stancePill(r: StrategyResult): string {
@@ -67,7 +67,7 @@ function championCard(a: ArenaResult): string {
 <div class="champ-grid"><div>${miniGauge(c.score, `${c.name} 현재 신호`)}<div class="hz-label ${sigTone(c.score)}">${c.score === null ? '판단 보류' : c.score >= 0.3 ? '강세' : c.score <= -0.3 ? '약세' : '중립'}</div></div>
 <div><p class="rule">${esc(c.rule)}</p><div class="muted small">출처: ${esc(c.origin)}</div>
 <div class="facts"><div><span class="label">검증 구간 수익률</span><b class="${tone(c.oosReturn)}">${pct(c.oosReturn)}</b></div><div><span class="label">검증 구간 샤프</span><b>${sh(c.oosSharpe)}</b></div><div><span class="label">전체 최대 낙폭</span><b class="down">${pct(c.maxDrawdown)}</b></div>
-${c.position ? `<div><span class="label">전략 목표가</span><b>${c.target === null ? '없음' : won(c.target)}</b></div><div><span class="label">무효화 가격</span><b>${c.invalidation === null ? '없음' : won(c.invalidation)}</b></div>` : ''}
+${c.position ? `<div><span class="label">규칙상 정리 가격</span><b>${c.target === null ? '없음' : won(c.target)}</b></div><div><span class="label">무효화 가격</span><b>${c.invalidation === null ? '없음' : won(c.invalidation)}</b></div>` : ''}
 ${mc ? `<div><span class="label">몬테카를로 손실 확률</span><b>${Math.round(mc.lossProbability * 100)}%</b></div>` : ''}</div>
 <p class="reason">${esc(c.trigger)}</p></div></div></div>`;
 }
@@ -80,7 +80,7 @@ ${hitSpark(r)}
 <div class="race-num rn-total"><b class="${tone(r.totalReturn)}">${pct(r.totalReturn)}</b><span class="muted small">전체</span></div>
 <div class="race-num"><b class="${tone(r.oosReturn)}">${pct(r.oosReturn)}</b><span class="muted small">검증</span></div>
 <div class="race-num rn-sharpe"><b>${sh(r.oosSharpe)}</b><span class="muted small">샤프</span></div>
-<div class="race-sig">${stancePill(r)}${signalBadge(r)}${r.key === 'hold' ? '' : `<a href="#tab-chart" class="see-chart" data-show-strategy="${esc(r.key)}">매매 시점 보기 ›</a>`}</div>${r.key === 'hold' ? '' : `<div class="race-why">${r.position && r.target !== null ? `<b>목표 ${won(r.target)}</b> · ` : ''}${esc(r.trigger)}</div>`}</summary><div class="race-detail">${hitSpark(r, { w: 320, h: 64 }).replace('class="spark kit-hit"', 'class="spark kit-hit race-pnl"')}<p class="muted small">신호가 난 날의 종가 기준 · 최근 순 · ${r.trades}회</p>${r.tradeLog.length?`<div class="table-wrap"><table class="compact"><thead><tr><th>매수일</th><th class="num">매수가</th><th>매도일</th><th class="num">매도가</th><th class="num">수익</th></tr></thead><tbody>${[...r.tradeLog].reverse().map((t) => `<tr><td>${esc(t.entry)}</td><td class="num">${won(t.entryPrice)}</td><td>${t.exit ? esc(t.exit) : '<b>보유 중</b>'}</td><td class="num">${t.exitPrice === null ? '' : won(t.exitPrice)}</td><td class="num ${tone(t.ret)}">${pct(t.ret)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">매매 기록이 없어요.</p>'}</div></details>`);
+<div class="race-sig">${stancePill(r)}${signalBadge(r)}${r.key === 'hold' ? '' : `<a href="#tab-chart" class="see-chart" data-show-strategy="${esc(r.key)}">과거 신호 시점 보기 ›</a>`}</div>${r.key === 'hold' ? '' : `<div class="race-why">${r.position && r.target !== null ? `<b>규칙상 정리 ${won(r.target)}</b> · ` : ''}${esc(r.trigger)}</div>`}</summary><div class="race-detail">${hitSpark(r, { w: 320, h: 64 }).replace('class="spark kit-hit"', 'class="spark kit-hit race-pnl"')}<p class="muted small">신호가 난 날의 종가 기준 · 최근 순 · ${r.trades}회</p>${r.tradeLog.length?`<div class="table-wrap"><table class="compact"><thead><tr><th>진입일</th><th class="num">진입가</th><th>정리일</th><th class="num">정리가</th><th class="num">과거 수익</th></tr></thead><tbody>${[...r.tradeLog].reverse().map((t) => `<tr><td>${esc(t.entry)}</td><td class="num">${won(t.entryPrice)}</td><td>${t.exit ? esc(t.exit) : '<b>규칙상 보유 중</b>'}</td><td class="num">${t.exitPrice === null ? '' : won(t.exitPrice)}</td><td class="num ${tone(t.ret)}">${pct(t.ret)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">매매 기록이 없어요.</p>'}</div></details>`);
   // G-172: the top three stay in view; the rest fold (eight rows made the tab very long on a phone).
   const rows = `${entries.slice(0, 3).join('')}${entries.length > 3 ? `<details class="race-more"><summary>전략 ${entries.length - 3}개 더 보기</summary>${entries.slice(3).join('')}</details>` : ''}`;
   const ledger = a.results.map((r) => `<tr><td class="nowrap">${r.rank}. ${esc(r.name)}</td><td class="num ${tone(r.totalReturn)}">${pct(r.totalReturn)}</td><td class="num">${r.cagr === null ? '없음' : pct(r.cagr)}</td><td class="num">${sh(r.sharpe)}</td><td class="num down">${pct(r.maxDrawdown)}</td>

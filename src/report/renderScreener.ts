@@ -95,7 +95,7 @@ export function renderScreener(): string {
 <section class="block" id="build"><div class="card sc-form" id="sc-form">
 <div class="pl-chips sc-mkt" id="sc-mkt" role="group" aria-label="거래소"><span class="sc-sec-k">시장</span><button type="button" class="chip-toggle" data-mkt="" aria-pressed="true">전체</button><button type="button" class="chip-toggle" data-mkt="P" aria-pressed="false">코스피</button><button type="button" class="chip-toggle" data-mkt="Q" aria-pressed="false">코스닥</button></div>
 <div class="sc-mine2" id="sc-mine2" role="group" aria-label="내 조건" hidden></div>
-<div class="sc-presets2" role="group" aria-label="추천 조건"><span class="sc-sec-k">추천 조건</span>${PRESETS.map((p) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${p.key === 'top'}" title="${p.hint}">${p.label}</button>`).join('')}</div>
+<div class="sc-presets2" role="group" aria-label="기본 조건"><span class="sc-sec-k">기본 조건</span>${PRESETS.map((p) => `<button type="button" class="chip-toggle" data-preset="${p.key}" aria-pressed="${p.key === 'top'}" title="${p.hint}">${p.label}</button>`).join('')}</div>
 <div class="sc-top"><b>걸린 조건</b><span class="sc-seg" role="group" aria-label="조건 묶기"><button type="button" data-match="all" aria-pressed="true">모두 맞으면</button><button type="button" data-match="any" aria-pressed="false">하나라도</button></span><select name="match" hidden><option value="all">모두 만족</option><option value="any">하나라도 만족</option></select></div>
 <div class="rules" id="rules"></div><p class="muted small sc-none" id="sc-none">아래에서 조건을 골라 더해 보세요.</p>
 <div class="sc-funnel" id="sc-funnel" hidden></div>

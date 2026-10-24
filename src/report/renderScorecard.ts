@@ -128,8 +128,8 @@ ${board.length ? `<div class="mb-grid">${board.map(member).join('')}</div>` : '<
   const beat = live.filter((e) => { const a = e.report.market!.arena; const c = a?.results.find((r) => r.key === a.championKey), h = a?.results.find((r) => r.key === 'hold'); return !!c && !!h && c.oosReturn > h.oosReturn; }).length;
   const avg = (sel: (f: string) => boolean) => { const xs = live.flatMap((e) => (e.report.market!.paper ?? []).filter((b) => sel(b.follower)).map((b) => b.totalReturn)); return xs.length ? (xs.reduce((x, v) => x + v, 0) / xs.length) * 100 : null; };
   const tile = (label: string, v: number | null, sub: string) => `<div class="sc-tile"><div class="pl-k">${label}</div><b class="${tone(v)}">${pct(v, 2)}</b><small>${sub}</small></div>`;
-  const followSummary = `<div class="sc-tiles">${tile('전략 챔피언 따라 하기', avg((f) => f === 'champion'), '종목 평균')}${tile('매수 후 보유', avg((f) => f === 'hold'), '비교 기준')}${tile('AI 분석가 따라 하기', avg((f) => f.startsWith('analyst:')), '분석가 평균')}</div>`;
-  const strategyCard = `<section class="block sc-sec" id="paper"><div class="block-head"><h2>따라 했다면 (모의투자)</h2><span class="muted">챔피언이 보유보다 나았던 종목 ${beat}/${live.length}</span></div>${gate(followSummary, { base: '', what: '따라 하기 평균 성과', feature: 'paperAverage' })}
+  const followSummary = `<div class="sc-tiles">${tile('전략 챔피언 규칙(가상)', avg((f) => f === 'champion'), '종목 평균')}${tile('매수 후 보유', avg((f) => f === 'hold'), '비교 기준')}${tile('AI 분석가 판단(가상)', avg((f) => f.startsWith('analyst:')), '분석가 평균')}</div>`;
+  const strategyCard = `<section class="block sc-sec" id="paper"><div class="block-head"><h2>규칙대로였다면 (가상 계좌)</h2><span class="muted">챔피언이 보유보다 나았던 종목 ${beat}/${live.length}</span></div>${gate(followSummary, { base: '', what: '가상 계좌 평균 결과', feature: 'paperAverage' })}
 ${gate(`<div class="card table-wrap"><table class="compact fr-table"><thead><tr><th>종목 · 전략 챔피언</th><th class="num">챔피언 장부</th><th class="num">보유 장부</th><th class="hide-m">최고 AI 분석가</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="empty">아직 기록이 없어요.</td></tr>'}</tbody></table>
 ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.length}종목 보기</button>` : ''}
 <p class="fine">챔피언 장부 수익이 높은 순이에요. 장부는 기록을 시작한 날부터 다음 거래일 수익으로 쌓고, 사고팔 때 비용을 빼요. 종목의 '장부'를 누르면 매매 내역과 수익 곡선이 펼쳐져요.</p></div>`, { base: '', what: '종목별 장부 · 매매 내역 · 수익 곡선', feature: 'paperLedger' })}</section>`;
@@ -154,10 +154,10 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
   const hero = `<section class="block sc-hero" id="top"><div class="sc-k">예측 범위 적중률 · 리포트 종목 ${live.length}개</div><div class="sc-hv" role="heading" aria-level="2"><b>${fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`}</b><small>목표 80% 안팎</small></div>
 ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 ${Math.round(fcHit)}%, 목표 80%"><i style="width:${Math.max(0, Math.min(100, fcHit)).toFixed(0)}%"></i><em style="left:80%"></em></div>`}
 ${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
-<div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언을 따라 했다면', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
+<div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언 규칙대로였다면 (가상)', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
 `;
   // G-281 (한서님 10/22, 앱 전체 구조 — 위에 줄 없음): no tab row in the middle; the four groups follow each other, each with its title.
-  const GROUP_TITLE: Record<string, string> = { forecast: '예측', analysts: '위원별', scenarios: '시나리오', paper: '따라 하기' };
+  const GROUP_TITLE: Record<string, string> = { forecast: '예측', analysts: '위원별', scenarios: '시나리오', paper: '가상 계좌' };
   const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}"><h2 class="sc-gh">${GROUP_TITLE[k]}</h2>${html}</div>`;
   const body = `${hero}
 ${group('forecast', gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">'), { base: '', what: '기간별 예측 적중', feature: 'scoreSummary' }) + gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' }))}

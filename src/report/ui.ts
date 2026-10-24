@@ -688,7 +688,7 @@ export const SURVEY_POP_JS = `
     var now = Date.now(), k = new Date(now + 9 * 3600e3), day = k.getUTCDay();
     var week = k.getUTCFullYear() + '-' + Math.ceil(((k - Date.UTC(k.getUTCFullYear(), 0, 1)) / 864e5 + new Date(Date.UTC(k.getUTCFullYear(), 0, 1)).getUTCDay() + 1) / 7);
     var pick = null;
-    if (!get('gnm-prefs') && Number(get('gnm-pop-onb') || 0) < now) pick = { key: 'gnm-pop-onb', later: now + 3 * 864e5, icon: '📝', title: '7분 맞춤 설문으로 내 화면 만들기', text: '투자 경험과 스타일을 알려 주시면 보기 방식, 오늘 볼 것, 설명 수준이 나에게 맞춰져요.', href: 'onboarding.html', cta: '설문 하기' };
+    if (!get('gnm-prefs') && Number(get('gnm-pop-onb') || 0) < now) pick = { key: 'gnm-pop-onb', later: now + 3 * 864e5, icon: '📝', title: '7분 설문으로 내 화면 설정하기', text: '투자 경험과 스타일을 알려 주시면 보기 방식, 오늘 볼 것, 설명 수준이 나에게 맞춰져요.', href: 'onboarding.html', cta: '설문 하기' };
     else if ((day === 5 || day === 6 || day === 0) && get('gnm-pop-week') !== week && !(now >= ${Date.parse(WRAPUP.from)} && now < ${Date.parse(WRAPUP.until)})) pick = { key: 'gnm-pop-week', later: week, icon: '🗓️', title: '이번 주 설문 (1분)', text: '이번 주에 좋았던 것과 불편했던 것 하나씩만 알려 주세요. 다음 주 개선 순서를 정해요.', href: 'survey.html?k=weekly', cta: '1분 설문 하기' };
     if (!pick) return;
     var base = document.body.getAttribute('data-base') || '';
