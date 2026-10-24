@@ -127,9 +127,11 @@ export const ALPHA_SCRIPT = `<script>
   // Notifications (screener alerts): a bell next to the account badge.
   var bell = function () {
     var nav = document.querySelector('.top-links'), acct = nav && nav.querySelector('.acct');
-    if (!G.me || !acct || document.getElementById('bell')) return;
+    // G-294: on wide screens the top bar is gone; the bell sits on the rail's account row and its window opens beside the rail.
+    var railAcct = document.querySelector('.bottom-nav .nav-acct'), inRail = !!(railAcct && railAcct.offsetParent !== null);
+    if (!G.me || (!acct && !inRail) || document.getElementById('bell')) return;
     var b = document.createElement('button'); b.type = 'button'; b.id = 'bell'; b.className = 'bell-btn'; b.setAttribute('aria-label', '알림'); b.innerHTML = '🔔';
-    nav.insertBefore(b, acct);
+    if (inRail) railAcct.parentNode.insertBefore(b, railAcct.nextSibling); else nav.insertBefore(b, acct);
     // The bell opens a small window under it (the owner's choice, phones too); 알림함 has the full list.
     var ICONS = { watchReport: '⭐', daily: '📰', request: '📄', price: '🔔', screen: '🔎', update: '✨', intraday: '⚡', notice: '📝' };
     var pop = null, close = function () { if (pop) { pop.remove(); pop = null; b.setAttribute('aria-expanded', 'false'); } };
@@ -140,6 +142,7 @@ export const ALPHA_SCRIPT = `<script>
       G.track('bell_open', {});
       pop = document.createElement('div'); pop.className = 'bell-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', '알림');
       var r0 = b.getBoundingClientRect(); pop.style.top = Math.round(r0.bottom + 8) + 'px';
+      if (inRail) { var rr = b.parentNode.getBoundingClientRect(); pop.style.top = 'auto'; pop.style.bottom = '16px'; pop.style.right = 'auto'; pop.style.left = Math.round(rr.right + 12) + 'px'; }
       pop.innerHTML = '<div class="bell-head"><b>알림</b><span class="bell-head-r"><button type="button" class="bell-clear" hidden>모두 지우기</button><a href="' + base + 'settings.html#alerts">설정</a></span></div><div class="bell-list"><p class="muted small" style="padding:10px">불러오는 중이에요…</p></div><a class="bell-all" href="' + base + 'inbox.html">알림함 전체 보기 ›</a>';
       document.body.appendChild(pop); b.setAttribute('aria-expanded', 'true');
       G.call('GET', '/notifications').then(function (r) {
