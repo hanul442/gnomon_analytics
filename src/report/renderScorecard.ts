@@ -3,6 +3,7 @@
 // champions and paper ledgers actually did. The summary is free (trust comes
 // from showing the record); the list of individual misses is Plus.
 
+import { faceOf } from './committeeSeats.js';
 import type { DailyReport } from './dailyReport.js';
 import { gate } from './plans.js';
 import { PRESETS } from '../analysis/screenRules.js';
@@ -156,10 +157,16 @@ ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 
 ${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
 <div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언 규칙대로였다면 (가상)', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
 `;
+  // G-294 (한서님 시안 ⑤): the newest graded member calls, hits and misses alike, right under the headline — the
+  // committee is scored in the open. Waiting calls only count until the first grade comes in.
+  const graded = [...calls.entries()].flatMap(([id, xs]) => xs.filter((x) => x.c.done).map((x) => ({ id, ...x }))).sort((a, b) => (a.c.reportDate < b.c.reportDate ? 1 : a.c.reportDate > b.c.reportDate ? -1 : 0)).slice(0, 5);
+  const waitingN = [...calls.values()].reduce((n, xs) => n + xs.filter((x) => !x.c.done).length, 0);
+  const recent = `<section class="block sc-sec" id="recent"><div class="block-head"><h2>최근 채점</h2><span class="muted">맞은 것도 틀린 것도 그대로</span></div><div class="card">${graded.length ? `<ul class="sc-rec">${graded.map((g) => `<li><span class="cs-face s-${g.c.stance === 'BULLISH' ? 'bull' : g.c.stance === 'BEARISH' ? 'bear' : 'neutral'}" aria-hidden="true">${esc(faceOf(g.id))}</span><span class="sc-rt"><b>${esc(by.get(g.id)?.name ?? g.id)} · ${esc(g.e.name)} ${STANCE[g.c.stance][0]}</b><small>${md(g.c.reportDate)} 판단 · 20거래일 뒤 ${won(g.c.close!)} (${chg(g.c.close!, g.c.baseClose)})${g.c.brokeOn ? ` · 철회 가격에 ${md(g.c.brokeOn)} 닿음` : ''}</small></span><b class="mb-v ${g.c.hit ? 'ok' : 'no'}">${g.c.hit ? '맞음' : '빗나감'}</b></li>`).join('')}</ul>` : `<p class="empty">위원 판단은 20거래일이 지나야 채점해요.${waitingN ? ` 지금 ${waitingN.toLocaleString('ko-KR')}건이 기다리고 있어요.` : ''}</p>`}</div></section>
+<style>.sc-rec{list-style:none;margin:0;padding:0}.sc-rec li{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}.sc-rec li:first-child{border-top:0}.sc-rt{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}.sc-rt b{font-size:14px}.sc-rt small{font-size:12px;color:var(--muted)}</style>`;
   // G-281 (한서님 10/22, 앱 전체 구조 — 위에 줄 없음): no tab row in the middle; the four groups follow each other, each with its title.
   const GROUP_TITLE: Record<string, string> = { forecast: '예측', analysts: '위원별', scenarios: '시나리오', paper: '가상 계좌' };
   const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}"><h2 class="sc-gh">${GROUP_TITLE[k]}</h2>${html}</div>`;
-  const body = `${hero}
+  const body = `${hero}${recent}
 ${group('forecast', gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">'), { base: '', what: '기간별 예측 적중', feature: 'scoreSummary' }) + gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' }))}
 ${group('analysts', (sun ? `<section class="block sc-sec"><div class="block-head"><h2>판단 결과 한눈에</h2><span class="muted">전 위원 합산</span></div><div class="card">${sun}</div></section>` : '') + gate(analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '위원별 판단과 결과', feature: 'scoreSummary' }))}
 ${group('scenarios', scenarioCard || '<section class="block sc-sec" id="scenarios"><div class="card"><p class="empty">아직 채점한 시나리오가 없어요.</p></div></section>')}
