@@ -125,7 +125,7 @@ export function committeeHero(report: DailyReport): string {
   const bull = freeText(c?.bullish[0]?.text), bear = freeText(c?.bearish[0]?.text), dis = dissentLine(seats);
   const side = (cls: string, word: string, n: number, text: string) => (text ? `<div class="cs-side ${cls}"><b>${word} 쪽 ${n}명</b><p>${esc(text)}</p></div>` : '');
   const sides = s.bull && s.bear ? `${side('up', '강세', s.bull, bull)}${side('down', '약세', s.bear, bear)}` : '';
-  return `<section class="block cs-hero" id="cs-hero"><div class="card"><div class="cs-k">위원회 판단 · 20거래일 뒤 채점</div><h2 class="cs-title">위원 ${s.total}명, ${esc(s.word)}</h2>${seatArc(report, { interactive: true, stock: report.name })}<p class="cs-tap">좌석을 누르면 그 위원의 판단과 틀림 기준이 나와요.</p>${sides ? `<div class="cs-sides">${sides}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis)}</span></p>` : ''}</div></section>`;
+  return `<section class="block cs-hero" id="cs-hero"><div class="card"><div class="cs-k">위원회 판단 · 20거래일 뒤 채점</div><h2 class="cs-title">위원 ${s.total}명, ${esc(s.word)}</h2>${seatArc(report, { interactive: true, stock: report.name })}<p class="cs-tap">좌석을 누르면 그 위원의 판단과 틀림 기준이 나와요.</p>${sides ? `<div class="cs-sides">${sides}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis)}</span></p>` : ''}<button type="button" class="cs-share" data-cs-share data-n="${esc(report.name)}" data-d="${esc(report.date)}">이미지로 공유</button></div></section>`;
 }
 
 /** 위원별 틀림 기준: each analyst's own wrong-if close, checked against the report's close. */
@@ -210,6 +210,7 @@ button.cs-seat{cursor:pointer;transition:transform .35s var(--spring-bouncy,cubi
 .cs-rec{margin:16px 0;padding:14px 16px;border-radius:18px;background:var(--soft);font-size:13.5px;line-height:1.5}.cs-rec b{display:block;font-size:13px;margin-bottom:4px}
 .cs-calls{list-style:none;margin:0;padding:0}.cs-calls li{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}.cs-calls li span{flex:1;display:flex;flex-direction:column;gap:2px}.cs-calls li b{font-size:14px}.cs-calls li small{font-size:12px;color:var(--muted)}
 .cs-close{display:block;width:100%;min-height:48px;margin-top:16px;border:0;border-radius:24px;background:var(--fg);color:var(--surface-solid,#fff);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.cs-share{display:block;width:100%;min-height:44px;margin-top:14px;border:1px solid var(--line-strong);border-radius:22px;background:none;color:var(--fg);font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:transform .35s var(--spring-bouncy,cubic-bezier(.34,1.56,.64,1))}.cs-share:active{transform:scale(.97)}.cs-share:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 @keyframes cs-pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.cs-seat,.cs-dots i{animation:none}.cs-panel,.cs-sheet{transition:none}}`;
 
@@ -229,4 +230,60 @@ export const COMMITTEE_JS = `(function () {
     last = btn; sheet.hidden = false; requestAnimationFrame(function () { sheet.classList.add('on'); var b = sheet.querySelector('.cs-close'); if (b) b.focus(); });
   };
   document.addEventListener('click', function (ev) { var b = ev.target.closest && ev.target.closest('[data-cs]'); if (!b) return; ev.preventDefault(); open(b); });
+  // G-299: 이미지로 공유. The committee card as one 1080x1350 picture: seats, the split, the lone dissent, the date.
+  // No price, no return: the same record everyone sees. The link carries utm_source=share so visits count it (G-293).
+  var wrap = function (ctx, text, max) { var out = [], line = ''; String(text).split('').forEach(function (ch) { if (ctx.measureText(line + ch).width > max && line) { out.push(line); line = ch.trim() ? ch : ''; } else line += ch; }); if (line) out.push(line); return out; };
+  var draw = function (card, btn) {
+    var c = document.createElement('canvas'), W = 1080, H = 1350, ctx; c.width = W; c.height = H; ctx = c.getContext('2d'); if (!ctx) return null;
+    var css = getComputedStyle(document.documentElement), v = function (k, d) { return (css.getPropertyValue(k) || '').trim() || d; };
+    var F = '"Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", sans-serif', up = v('--up', '#E5484D'), down = v('--down', '#3E7BFA');
+    ctx.fillStyle = '#ECEDEF'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(60, 60, W - 120, H - 120, 56); else ctx.rect(60, 60, W - 120, H - 120); ctx.fill();
+    ctx.fillStyle = '#5E6168'; ctx.font = '600 34px ' + F; ctx.fillText('GNOMON AI 위원회 · ' + btn.getAttribute('data-d') + ' 판단', 120, 160);
+    ctx.fillStyle = '#141416'; ctx.font = '800 84px ' + F; ctx.fillText(btn.getAttribute('data-n'), 120, 260);
+    var t = card.querySelector('.cs-title'); ctx.font = '700 40px ' + F; ctx.fillStyle = '#3A3C42'; if (t) ctx.fillText(t.textContent, 120, 330);
+    var aw = 640, ax = (W - aw) / 2, ay = 380, ah = aw * 196 / 340;
+    card.querySelectorAll('.cs-seat').forEach(function (s) {
+      var x = ax + parseFloat(s.style.left) / 100 * aw, y = ay + parseFloat(s.style.top) / 100 * ah, k = s.className;
+      ctx.beginPath(); ctx.arc(x, y, 38, 0, Math.PI * 2);
+      if (k.indexOf('s-abstain') >= 0) { ctx.strokeStyle = '#B8BAC0'; ctx.lineWidth = 4; ctx.stroke(); ctx.fillStyle = '#8E9198'; }
+      else { ctx.fillStyle = k.indexOf('s-bull') >= 0 ? up : k.indexOf('s-bear') >= 0 ? down : '#D5D7DC'; ctx.fill(); ctx.fillStyle = k.indexOf('s-neutral') >= 0 ? '#141416' : '#FFFFFF'; }
+      ctx.font = '800 28px ' + F; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s.textContent, x, y); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    });
+    var m = card.querySelector('.cs-mid b'), sm = card.querySelector('.cs-mid small'); ctx.textAlign = 'center';
+    if (m) { var parts = m.textContent.split(':').map(function (x) { return x.trim(); }), cols = [up, '#8E9198', down]; ctx.font = '800 88px ' + F;
+      var seg = parts.map(function (x, i) { return (i ? ' : ' : '') + x; }), tw = seg.reduce(function (a, x) { return a + ctx.measureText(x).width; }, 0), px = W / 2 - tw / 2; ctx.textAlign = 'left';
+      seg.forEach(function (x, i) { ctx.fillStyle = cols[i] || '#141416'; ctx.fillText(x, px, ay + ah - 10); px += ctx.measureText(x).width; }); ctx.textAlign = 'center'; }
+    if (sm) { ctx.fillStyle = '#8E9198'; ctx.font = '600 32px ' + F; ctx.fillText(sm.textContent, W / 2, ay + ah + 44); }
+    ctx.textAlign = 'left';
+    var y = ay + ah + 96, dis = card.querySelector('.cs-dis span'), sides = card.querySelectorAll('.cs-side');
+    if (sides.length === 2 && !dis) { var bw = (W - 240 - 32) / 2; sides.forEach(function (sd, i) { var bx = 120 + i * (bw + 32), hb = sd.querySelector('b'), tp = sd.querySelector('p'), ls;
+      ctx.font = '500 32px ' + F; ls = wrap(ctx, tp ? tp.textContent : '', bw - 64).slice(0, 4); ctx.fillStyle = '#F3F4F6'; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(bx, y, bw, 260, 32); else ctx.rect(bx, y, bw, 260); ctx.fill();
+      ctx.fillStyle = i ? down : up; ctx.font = '800 32px ' + F; ctx.fillText(hb ? hb.textContent : '', bx + 32, y + 56); ctx.fillStyle = '#141416'; ctx.font = '500 32px ' + F; ls.forEach(function (l, j) { ctx.fillText(l, bx + 32, y + 108 + j * 44); }); }); }
+    if (dis) { ctx.fillStyle = '#F3F4F6'; var lines; ctx.font = '500 36px ' + F; lines = wrap(ctx, dis.textContent, W - 320).slice(0, 3);
+      ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(120, y, W - 240, 90 + lines.length * 52, 32); else ctx.rect(120, y, W - 240, 90 + lines.length * 52); ctx.fill();
+      ctx.fillStyle = '#141416'; ctx.font = '700 32px ' + F; ctx.fillText('소수 의견', 160, y + 58); ctx.font = '500 36px ' + F; lines.forEach(function (l, i) { ctx.fillText(l, 160, y + 112 + i * 52); }); }
+    ctx.fillStyle = '#8E9198'; ctx.font = '500 28px ' + F;
+    ctx.fillText('20거래일 뒤 맞았는지 공개로 채점해요.', 120, H - 186);
+    ctx.fillText('모두에게 같은 AI 판단 기록이에요. 투자 권유가 아니에요.', 120, H - 144);
+    ctx.fillStyle = '#141416'; ctx.font = '700 30px ' + F; ctx.fillText(location.hostname, 120, H - 96);
+    return c;
+  };
+  document.addEventListener('click', function (ev) {
+    var btn = ev.target.closest && ev.target.closest('[data-cs-share]'); if (!btn) return; ev.preventDefault();
+    var card = btn.closest('.cs-hero'), link = location.origin + location.pathname + '?utm_source=share';
+    var go = function () {
+      var c = card && draw(card, btn); if (!c || !c.toBlob) return;
+      c.toBlob(function (blob) {
+        if (!blob) return;
+        var name = 'GNOMON_' + btn.getAttribute('data-n') + '_' + btn.getAttribute('data-d') + '.png', file = null;
+        try { file = new File([blob], name, { type: 'image/png' }); } catch (x) {}
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: btn.getAttribute('data-n') + ' · GNOMON AI 위원회', text: link }).catch(function () {}); return; }
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        if (window.GNM && GNM.toast) GNM.toast('이미지를 저장했어요. 링크: ' + link);
+      }, 'image/png');
+    };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(go, go); else go();
+    if (window.GNM && GNM.track) GNM.track('share_image', {});
+  });
 })();`;
