@@ -107,7 +107,7 @@ try{
   // The first-visit tour has its own check below; here it would cover the controls under test.
   await page.setViewportSize({width,height:850});await page.evaluate(()=>{try{localStorage.setItem('gnm-tour-done','1');}catch(e){}}).catch(()=>{});await page.goto(origin+'/stock.html?c=999999');
   await page.locator('h1').filter({hasText:'UI 테스트'}).waitFor();await page.locator('#main[aria-busy]').waitFor({state:'detached'});await page.waitForFunction(()=>document.documentElement.dataset.reportJob==='done');if(width===390){await page.locator('#tab-ai [data-stale-ai] .gen-btn[data-create-report]').waitFor({state:'attached'});}assert.equal(await page.locator('#tab-ai [data-generated=ai]').count(),1);assert.doesNotMatch(await page.locator('#tab-ai').innerText(),/아직 위원회 리포트가 없어요/);
-  assert.deepEqual(await page.locator('[role=tab][aria-controls]:visible').allInnerTexts(),width>820?['위원회','차트','기업','소식']:[],'G-277: four parts of one stock; on phones no tab row at the top');if(width<=820)assert.deepEqual(await page.locator('.bottom-nav .nav-parts a').evaluateAll(n=>n.map(a=>a.getAttribute('aria-label'))),['위원회','차트','기업','소식'],'G-277: the bottom bar switches the parts');
+  assert.deepEqual(await page.locator('[role=tab][aria-controls]:visible').allInnerTexts(),[],'G-277, G-294: four parts of one stock, no tab row at the top (phones: the bottom bar, wide: the left rail)');assert.deepEqual(await page.locator('.bottom-nav .nav-parts a').evaluateAll(n=>n.map(a=>a.getAttribute('aria-label'))),['위원회','차트','기업','소식'],'G-277: the bottom bar switches the parts');
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   const beforeIndicators=await page.locator('#ind-sheet [aria-pressed=true][data-ov],#ind-sheet [aria-pressed=true][data-pane]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-ov')||n.getAttribute('data-pane')));const beforeSaved=await page.evaluate(()=>localStorage.getItem('gnm-ind'));await page.evaluate(()=>document.getElementById('t-technical').click());assert.equal(await page.locator('[aria-label="기술 지표 차트 바로 보기"]').count(),0);await page.locator('[data-chart-indicator=fib]').first().click();assert.equal(await page.locator('[data-ov=fib]').getAttribute('aria-pressed'),'true');assert.ok(await page.evaluate(()=>document.documentElement.classList.contains('chart-fs')&&!document.getElementById('tab-chart').hidden),'indicator link opens the full-screen chart');assert.equal(await page.locator('#ind-sheet [aria-pressed=true][data-ov],#ind-sheet [aria-pressed=true][data-pane]').count(),1);assert.ok(await page.locator('#overlays').evaluate(el=>JSON.parse(el.textContent).fib.length>0));if(width===375)await page.screenshot({path:'test-artifacts/indicator-chart.png'});await page.locator('#chart-context button').click();assert.equal(await page.locator('#t-technical').getAttribute('aria-selected'),'true');assert.deepEqual(await page.locator('#ind-sheet [aria-pressed=true][data-ov],#ind-sheet [aria-pressed=true][data-pane]').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-ov')||n.getAttribute('data-pane'))),beforeIndicators);assert.equal(await page.evaluate(()=>localStorage.getItem('gnm-ind')),beforeSaved);
   await page.evaluate(()=>document.getElementById('t-ai').click());assert.equal(await page.locator('#tab-ai .gnm-loading').count(),0);
@@ -344,8 +344,8 @@ try{
  await page.locator('.bottom-nav.ctx .nav-field').waitFor();await page.locator('.bottom-nav .nav-back').click();await page.locator('.bottom-nav:not(.ctx) .nav-tabs a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),7);assert.equal(await page.locator('.me-rec').isVisible(),false,'G-281: on phones 내 기록 lives in the bar only');await page.locator('.bottom-nav .nav-seg a[href$="inbox.html"]').click();await page.waitForURL(/inbox\.html/);assert.equal(await page.locator('.bottom-nav .nav-tabs [aria-current=page]').getAttribute('aria-label'),'나','G-255: 알림함 lights up 나');assert.equal(await page.locator('.bottom-nav.ctx .nav-seg [aria-current=page]').getAttribute('aria-label'),'알림함','G-258: 나 bar marks 알림함');await page.screenshot({path:'test-artifacts/me-390.png'});
  await page.goto(here);await page.waitForLoadState('load');
  // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.
- // G-252: phones have no top bar, so there the button is the one in the 나 tab.
- for (const [width,url,sel] of [[375,'/settings.html','.me-install[data-install]'],[1280,'/index.html','.topbar [data-install]']]) {
+ // G-252: phones have no top bar, so there the button is the one in the 나 tab. G-294: wide screens have the rail instead of a top bar, so the same.
+ for (const [width,url,sel] of [[375,'/settings.html','.me-install[data-install]'],[1280,'/settings.html','.me-install[data-install]']]) {
   await page.setViewportSize({width,height:850});await page.goto(origin+url);await page.waitForLoadState('load');
   assert.equal(await page.locator(sel).isVisible(),false);
   await page.evaluate(()=>{const e=new Event('beforeinstallprompt',{cancelable:true});e.prompt=()=>{window.__prompted=1;};e.userChoice=Promise.resolve({outcome:'accepted'});window.dispatchEvent(e);});
@@ -353,6 +353,16 @@ try{
   await page.screenshot({path:'test-artifacts/install-'+width+'.png'});
   await page.locator(sel).click();assert.equal(await page.evaluate(()=>window.__prompted),1);
   await page.waitForFunction((q)=>document.querySelector(q).hidden,sel);
+ }
+ // G-294 (한서님 10/24 A안): wide screens get the left rail, not a top bar; the screen's parts sit under its tab.
+ for (const width of [1000,1280,1440]) {
+  await page.setViewportSize({width,height:860});await page.goto(origin+'/index.html');await page.waitForLoadState('load');
+  assert.equal(await page.locator('.topbar').isVisible(),false,'no top bar on wide screens');
+  const rail=await page.locator('.bottom-nav').boundingBox();assert.ok(rail&&rail.x<=20&&rail.height>=600&&rail.width<=240,'the bar is a left rail: '+JSON.stringify(rail));
+  assert.ok(await page.locator('.bottom-nav .nav-brand').isVisible()&&await page.locator('.bottom-nav .nav-ctx [data-wd]').first().isVisible(),'brand and home parts on the rail');
+  const main=await page.locator('main#main').boundingBox();assert.ok(main.x>=rail.x+rail.width,'content starts right of the rail');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await page.screenshot({path:'test-artifacts/pc-rail-'+width+'.png'});
  }
  // G-119: results sort by any column both ways; the choice survives a reload.
  for (const width of [375,1280]) {

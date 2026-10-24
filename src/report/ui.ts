@@ -1,3 +1,4 @@
+import { railExtras } from './pcRail.js';
 import { ALPHA, WATCH_LIMIT } from './plans.js';
 import { WRAPUP } from './wrapup.js';
 // Shared UI layer (docs/DESIGN.md §4.5, G-41): design tokens, a sticky price bar for stock pages,
@@ -304,7 +305,9 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   // four tabs ('종목' / '이 화면'), the middle holds named icons, and the ✦ always sits at the right end.
   const here = dock === 'ask' ? '종목' : '이 화면';
   const back = dock ? `<button type="button" class="nav-back" aria-label="홈·찾기·위원회·나 보기">${svgI(MENU_ICON)}<span>메뉴</span></button><button type="button" class="nav-return" aria-label="${here} 칸으로 돌아가기">${svgI(RETURN_ICON)}<span>${here}</span></button>` : '';
-  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button></nav>`;
+  // G-294: on wide screens this bar is the left rail; the brand and account rows show only there, and a stock's parts sit under its name.
+  const rail = railExtras(base), title = dock === 'ask' ? ` data-title="${escM(ask!)}"` : '';
+  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${rail.brand}${back}<div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx"${title}>${ctx}</div>` : ''}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button>${rail.acct}</nav>`;
 }
 /** G-277: a stock's four parts in the bottom bar: label, panel key, the panels that light it too, icon. */
 const STOCK_PARTS: readonly (readonly [string, string, string, string])[] = [
@@ -604,7 +607,7 @@ export const TOUR_JS = `
       home: [
         ['#mkt-hero', '오늘', '아래 바에서 요약 · 시장 · 위원회 · 이슈를 바꿔 봐요. 숫자 카드를 누르면 차트가 크게 열려요.'],
         ['#watch', '내 종목', '어디서든 ☆를 누른 종목과 설문에서 고른 종목이 여기 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
-        ['.bottom-nav', '아래 탭', '네 탭이 전부예요(홈 · 찾기 · 위원회 · 나). 찾기에서 주식·ETF·코인·테마·공시를 바꿔 가며 보고, 위원회에서 AI 리포트와 성적표를 봐요.'],
+        ['.bottom-nav', '메뉴', '네 탭이 전부예요(홈 · 찾기 · 위원회 · 나). 찾기에서 주식·ETF·코인·테마·공시를 바꿔 가며 보고, 위원회에서 AI 리포트와 성적표를 봐요.'],
         ['.top-tabs', '위쪽 탭', '찾기에서 종목·ETF·코인을 검색하고 조건으로 골라요. 테마와 공시 레이더도 찾기에 있어요.'],
       ],
       report: [
@@ -617,7 +620,7 @@ export const TOUR_JS = `
       ],
       find: [
         ['#search|.bottom-nav .nav-field', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
-        ['.mode-tabs|.bottom-nav [data-dock-kind]', '종류 고르기', '주식·미국 주식·ETF·코인·테마·공시를 바꿔 가며 보세요. 시장별로 지원되는 조건이 달라요.'],
+        ['.mode-tabs|.bottom-nav [data-dock-kind]|.bottom-nav .nav-menu', '종류 고르기', '주식·미국 주식·ETF·코인·테마·공시를 바꿔 가며 보세요. 시장별로 지원되는 조건이 달라요.'],
         ['#sc-filter-open|.bottom-nav [data-dock-filter]', '필터 · AI 조건', '필터를 누르면 AI 조건(원하는 특징을 문장으로)과 직접 조건을 정하는 화면이 열려요. 결과 보기로 돌아와요.'],
         // G-271 (Bklit funnel, 한서님 10/20 "퍼널차트 가로로된거 스크리너 설명할때"): the funnel gets its own step (skipped while hidden).
         ['#sc-funnel', '조건별로 남은 종목', '조건을 위에서부터 하나씩 걸 때마다 몇 종목이 남는지 가로 깔때기로 보여요. 갑자기 확 줄어드는 줄이 가장 까다로운 조건이에요. 결과가 너무 적으면 그 조건부터 풀어 보세요.'],
