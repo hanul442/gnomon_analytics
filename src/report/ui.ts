@@ -252,6 +252,7 @@ const TAB_OF: Record<string, string> = Object.fromEntries([
   ...MODE_GROUPS.flatMap((g) => g.modes.map(([, h]) => [h.split('#')[0], GROUP_TAB[g.key] ?? g.modes[0]![1]] as const)),
   ...ME_PAGES.map((p) => [p, 'settings.html'] as const),
   ['watch.html', 'top'] as const,
+  ['committee-guide.html', 'reports.html'] as const,
 ]);
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const SPARK_ICON = '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>';
@@ -423,6 +424,7 @@ export const FS_JS = `
       ['section.chat:not([hidden])', function (e) { var x = e.querySelector('.chat-x'); if (x) x.click(); }],
       ['.ins-pop', function (e) { e.remove(); }],
       ['.db-room:not([hidden])', function (e) { var x = e.querySelector('[data-room-close]'); if (x) x.click(); }],
+      ['.wc', function (e) { if (window.GNM_welcomeClose) window.GNM_welcomeClose(); else e.remove(); }],
       ['.pop-wrap', function (e) { var x = e.querySelector('[data-p=later]'); if (x) x.click(); else e.remove(); }]
     ];
     var open = function () { var out = []; L.forEach(function (l) { document.querySelectorAll(l[0]).forEach(function (e) { if (e.offsetParent !== null || getComputedStyle(e).position === 'fixed') out.push([e, l[1]]); }); }); return out; };
@@ -605,7 +607,8 @@ export const TOUR_JS = `
         ['#mkt-hero', '오늘', '아래 바에서 요약 · 시장 · 위원회 · 이슈를 바꿔 봐요. 숫자 카드를 누르면 차트가 크게 열려요.'],
         ['#watch', '내 종목', '어디서든 ☆를 누른 종목과 설문에서 고른 종목이 여기 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
         ['.bottom-nav', '아래 탭', '네 탭이 전부예요(홈 · 찾기 · 위원회 · 나). 찾기에서 주식·ETF·코인·테마·공시를 바꿔 가며 보고, 위원회에서 AI 리포트와 성적표를 봐요.'],
-        ['.top-tabs', '위쪽 탭', '찾기에서 종목·ETF·코인을 검색하고 조건으로 골라요. 테마와 공시 레이더도 찾기에 있어요.'],
+        // G-293: this step pointed at the wide-screen menu with 찾기's text; it now says what that menu is.
+        ['.top-tabs', '위쪽 메뉴', '넓은 화면에서는 아래 바 대신 여기서 홈 · 찾기 · 위원회 · 나를 바꿔요.'],
       ],
       report: [
         ['.chips|.bottom-nav .nav-parts', '네 칸', '위원회 · 차트 · 기업 · 소식 네 칸이에요. 휴대폰에서는 아래 바에서 바꿔요. 기업 칸에 종목 정보·기업 체력·재무제표가 있어요.'],
@@ -630,6 +633,9 @@ export const TOUR_JS = `
     var key = 'gnm-tour-v243-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
     try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-' + kind) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
     if (seen && !forced) return;
+    // G-293: new readers get the welcome on home and a short card on stock pages instead, so these two tours start only from
+    // the guide's buttons (?tour=1). The 찾기 tour still starts on its own.
+    if (kind !== 'find' && !forced) return;
     // G-260: a step may name 'page part|bar part'; on phones the part in the bottom bar is used (and the bar shows its own row).
     var pick = function (sel) { var xs = sel.split('|'); for (var k = 0; k < xs.length; k++) { var e = document.querySelector(xs[k]); if (e && /bottom-nav/.test(xs[k])) { var nv = e.closest('.bottom-nav'); if (nv && nv.hasAttribute('data-dock')) nv.classList.add('ctx'); } if (e && e.getClientRects().length) return e; } return document.querySelector(xs[0]); };
     var steps = STEPS[kind].filter(function (s) { var el = pick(s[0]); return el && (s[3] || el.getClientRects().length); });
@@ -693,7 +699,7 @@ export const SURVEY_POP_JS = `
     if (!pick) return;
     var base = document.body.getAttribute('data-base') || '';
     var open = function () {
-      if (document.querySelector('.tr-tip') || document.querySelector('.side-menu:not([hidden])')) return setTimeout(open, 4000);
+      if (document.querySelector('.tr-tip') || document.querySelector('.wc') || document.querySelector('.side-menu:not([hidden])')) return setTimeout(open, 4000);
       var d = document.createElement('aside'); d.className = 'pop-card'; d.setAttribute('aria-label', pick.title);
       d.innerHTML = '<span class="pc-ic" aria-hidden="true">' + pick.icon + '</span><div class="pc-tx"><b>' + pick.title + '</b><p>' + pick.text + '</p><div class="pc-b"><a class="btn-primary" href="' + base + pick.href + '">' + pick.cta + ' ›</a><button type="button" data-p="later">나중에</button></div></div><button type="button" class="pc-x" data-p="later" aria-label="닫기">×</button>';
       var close = function () { set(pick.key, String(pick.later)); d.remove(); };
