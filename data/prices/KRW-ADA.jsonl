@@ -998,3 +998,4 @@
 {"symbol":"KRW-ADA","date":"2026-10-22","open":300,"high":302,"low":282,"close":284,"volume":42516134.10872195,"source":"upbit:candles:days","retrievedAt":"2026-10-24T13:31:48.777Z"}
 {"symbol":"KRW-ADA","date":"2026-10-23","open":284,"high":292,"low":277,"close":283,"volume":29468998.37410845,"source":"upbit:candles:days","retrievedAt":"2026-10-24T13:31:48.777Z"}
 {"symbol":"KRW-ADA","date":"2026-10-24","open":283,"high":285,"low":277,"close":278,"volume":19422832.25709776,"source":"upbit:candles:days","retrievedAt":"2026-10-24T13:31:48.777Z"}
+{"symbol":"KRW-ADA","date":"2026-10-24","open":283,"high":285,"low":270,"close":274,"volume":30090486.63078771,"source":"upbit:candles:days","retrievedAt":"2026-10-24T15:52:35.046Z"}
