@@ -371,7 +371,8 @@ function adminParts(): { body: string; script: string } {
       // G-241: closed-beta applicants, by each person's latest wrap-up answer (D.surveys is newest first). Interest only: no account changes.
       var wseen = {}, beta = D.surveys.filter(function (s) { if (s.kind !== 'wrapup' || wseen[s.user_id || s.email]) return false; wseen[s.user_id || s.email] = 1; return parse(s.answers).beta === ${JSON.stringify(BETA_YES)}; }).length;
       // Each tile opens the tab that holds its detail.
-      return '<div class="kpis">' + [[D.users.length, '가입자', 'users'], [active, '7일 활성', 'users'], [D.creditRequests.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 크레딧 요청', 'credit'], [D.actions.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 리포트 요청', 'action'], [usd(D.spend.today) + ' / ' + usd(D.spend.dailyCap), '오늘 AI 비용 / 한도', 'asks'], [usd(D.spend.month), '30일 AI 비용', 'asks'], [D.surveys.length, '설문 응답 (7일 새로 ' + fresh + ')', 'surveys'], [npsOf(nps), 'NPS (' + nps.length + '명, 평균 ' + avg(nps) + ')', 'surveys'], [beta, '클로즈드 베타 신청', 'surveys'], ['👍 ' + up + ' · 👎 ' + down, '화면 피드백', 'voice']].map(function (k) { return '<button type="button" class="kpi" data-go="' + k[2] + '"><b>' + k[0] + '</b><span>' + k[1] + '</span></button>'; }).join('') + '</div>' +
+      var vs = D.visits || { week: 0, prevWeek: 0, returned: 0, returnRate: null };
+      return '<div class="kpis">' + [[vs.week, '7일 방문 기기', 'usage'], [vs.returnRate === null ? '-' : vs.returnRate + '%', '주간 재방문 (지난주 ' + vs.prevWeek + '대 중 ' + vs.returned + ')', 'usage'], [D.users.length, '가입자', 'users'], [active, '7일 활성', 'users'], [D.creditRequests.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 크레딧 요청', 'credit'], [D.actions.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 리포트 요청', 'action'], [usd(D.spend.today) + ' / ' + usd(D.spend.dailyCap), '오늘 AI 비용 / 한도', 'asks'], [usd(D.spend.month), '30일 AI 비용', 'asks'], [D.surveys.length, '설문 응답 (7일 새로 ' + fresh + ')', 'surveys'], [npsOf(nps), 'NPS (' + nps.length + '명, 평균 ' + avg(nps) + ')', 'surveys'], [beta, '클로즈드 베타 신청', 'surveys'], ['👍 ' + up + ' · 👎 ' + down, '화면 피드백', 'voice']].map(function (k) { return '<button type="button" class="kpi" data-go="' + k[2] + '"><b>' + k[0] + '</b><span>' + k[1] + '</span></button>'; }).join('') + '</div>' +
         '<div class="sv-head"><h3>최근 설문 응답</h3><button type="button" data-go="surveys">전체 보기</button></div>' + (D.surveys.length ? D.surveys.slice(0, 5).map(function (s) { return svItem(s, false); }).join('') : '<p class="muted small">아직 받은 설문 응답이 없어요.</p>');
     },
     credit: function () {
@@ -417,7 +418,12 @@ function adminParts(): { body: string; script: string } {
     },
     usage: function () {
       var max = Math.max.apply(null, D.events.map(function (e) { return e.n; }).concat([1]));
-      return '<p class="muted small">최근 7일, 이벤트 이름별 횟수와 사람 수예요.</p><div class="bars">' + D.events.map(function (e) { return '<div><span>' + esc(e.name) + '</span><i style="width:' + (e.n / max * 100) + '%"></i><span class="num">' + e.n + '·' + e.users + '명</span></div>'; }).join('') + '</div>';
+      var vs = D.visits || { days: [], sources: [] }, SRC = { '': '바로·앱 안', search: '검색', insta: '인스타그램', share: '공유 링크', other: '다른 사이트' };
+      var vmax = Math.max.apply(null, vs.days.map(function (d) { return d.n; }).concat([1])), smax = Math.max.apply(null, vs.sources.map(function (d) { return d.n; }).concat([1]));
+      var visits = '<h3>방문 (로그인 없이 세요)</h3><p class="muted small">기기마다 하루 한 번. 주간 재방문은 지난주(8~14일 전)에 온 기기 중 이번 주(최근 7일)에 다시 온 비율이에요.</p>' +
+        (vs.days.length ? '<div class="bars">' + vs.days.map(function (d) { return '<div><span>' + esc(d.day.slice(5)) + '</span><i style="width:' + (d.n / vmax * 100) + '%"></i><span class="num">' + d.n + '</span></div>'; }).join('') + '</div>' : '<p class="muted small">아직 기록이 없어요.</p>') +
+        '<h3>이번 주 들어온 길</h3><div class="bars">' + vs.sources.map(function (d) { return '<div><span>' + esc(SRC[d.src] || d.src) + '</span><i style="width:' + (d.n / smax * 100) + '%"></i><span class="num">' + d.n + '</span></div>'; }).join('') + '</div><h3>이벤트</h3>';
+      return visits + '<p class="muted small">최근 7일, 이벤트 이름별 횟수와 사람 수예요.</p><div class="bars">' + D.events.map(function (e) { return '<div><span>' + esc(e.name) + '</span><i style="width:' + (e.n / max * 100) + '%"></i><span class="num">' + e.n + '·' + e.users + '명</span></div>'; }).join('') + '</div>';
     },
   };
   var draw = function () {

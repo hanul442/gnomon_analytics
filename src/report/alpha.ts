@@ -62,6 +62,21 @@ export const ALPHA_SCRIPT = `<script>
       });
     }, function () { return { error: 'NETWORK', message: '연결이 끊겼어요. 잠시 뒤 다시 해 주세요.', _status: 0 }; });
   };
+  // G-292: one anonymous visit a day per device (random id, nothing else), with where the first page of the day came from.
+  (function () {
+    var day = new Date(Date.now() + 324e5).toISOString().slice(0, 10);
+    if (get('gnm-vday') === day) return;
+    var v = get('gnm-vid');
+    if (!v && window.crypto && crypto.getRandomValues) { v = Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(12)), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); set('gnm-vid', v); }
+    if (!v || get('gnm-vid') !== v) return;
+    var q = location.search, host = '';
+    try { host = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
+    var has = function (w) { return host.indexOf(w) >= 0; };
+    var src = q.indexOf('utm_source=share') >= 0 ? 'share' : q.indexOf('utm_source=insta') >= 0 || has('instagram') ? 'insta'
+      : has('google') || has('naver') || has('daum') || has('bing') ? 'search' : !host || host === location.hostname ? '' : 'other';
+    fetch(API + '/visit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ v: v, src: src }), keepalive: true })
+      .then(function (r) { if (r.ok) set('gnm-vday', day); }).catch(function () {});
+  })();
   G.askStream = function (body, onText) {
     var session=get(SK), h={'Content-Type':'application/json'};if(session)h.Authorization='Bearer '+session;
     return fetch(API+'/ask/stream',{method:'POST',headers:h,body:JSON.stringify(body)}).then(async function(res){
