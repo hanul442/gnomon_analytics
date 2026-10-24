@@ -7,7 +7,7 @@ name: Hidden-future evaluation
 on:
   workflow_dispatch:
     inputs:
-      version: { description: 'v1, v2, more (extended checks, no AI) base (committee base model and MAX check, no AI) or luck (Monte Carlo luck checks, no AI)', default: 'v2' }
+      version: { description: 'v1, v2, more (extended checks, no AI) base (committee base model and MAX check, no AI) luck (Monte Carlo luck checks, no AI) or arena (open forecasting models vs the base, no AI)', default: 'v2' }
       budget: { description: 'AI budget, USD', default: '5' }
       dates: { description: 'v2: evaluation dates for the AI', default: '100' }
       perDate: { description: 'v2: stocks per date for the AI', default: '10' }
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   eval:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -58,10 +58,17 @@ jobs:
       - name: Monte Carlo luck checks (G-275)
         if: inputs.version == 'luck'
         run: node --max-old-space-size=6000 dist/cli/evalLuck.js | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-python@v5
+        if: inputs.version == 'arena'
+        with:
+          python-version: '3.11'
+      - name: Model arena (G-290)
+        if: inputs.version == 'arena'
+        run: ARENA_PYTHON=python bash scripts/arena/run.sh | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Commit the results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add data/eval
+          git add data/eval data/arena
           git commit -m "data: hidden-future evaluation $(date -u +%F)" || exit 0
           for i in 1 2 3; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break; sleep 5; done
