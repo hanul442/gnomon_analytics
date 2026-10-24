@@ -69,9 +69,10 @@ html body .chat-head .ctx{flex:0 1 auto;margin:0 auto;opacity:1;display:inline-f
 .chat-head .ctx::before{content:"";flex:none;width:7px;height:7px;border-radius:50%;background:var(--fg)}
 html body .chat-head .bal{background:transparent;color:var(--muted);padding:3px 4px}
 /* 한서님 10/23 '키고 끌때도 뭔가 슈루룩': the sheet grows out of the button that opened it as a widening circle and folds back into it. */
+/* Curves from motionTokens.ts (G-286): open on --spring-snappy, close on --ease-exit over --d-out, like the other sheets. */
 .chat{--ox:calc(100% - 40px);--oy:calc(100% - 40px)}
-.chat.opening{animation:chat-in .52s cubic-bezier(.2,.85,.25,1) both;transform-origin:var(--ox) var(--oy)}
-.chat.closing{animation:chat-out .34s cubic-bezier(.5,0,.75,.2) both;transform-origin:var(--ox) var(--oy);pointer-events:none}
+.chat.opening{animation:chat-in 500ms var(--spring-snappy,cubic-bezier(.3,1.25,.5,1)) both;transform-origin:var(--ox) var(--oy)}
+.chat.closing{animation:chat-out var(--d-out,180ms) var(--ease-exit,cubic-bezier(.4,0,1,1)) both;transform-origin:var(--ox) var(--oy);pointer-events:none}
 .chat.opening .chat-log,.chat.opening .chat-foot{animation:chat-rise .42s .12s cubic-bezier(.2,.85,.25,1) both}
 [data-open-chat].launch svg{animation:chat-twirl .5s cubic-bezier(.2,.85,.25,1)}
 .chat-scrim{animation:chat-fade .25s ease both}
@@ -377,7 +378,7 @@ export const CHAT_SCRIPT = `<script>
     clearInterval(typeTimer);
     if (reduce()) { gone(); return; }
     aim(); box.classList.remove('opening'); box.classList.add('closing'); if (scrim) scrim.classList.add('out');
-    closing = setTimeout(gone, 340);
+    closing = setTimeout(gone, 200);
   };
   var open = function (preset, btn) {
     if (closing) gone();
