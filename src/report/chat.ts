@@ -397,6 +397,8 @@ export const CHAT_SCRIPT = `<script>
     if (window.GNM && GNM.track) GNM.track('chat_open', { symbol: symbol(), from: ctxInfo().key });
   };
   box.addEventListener('animationend', function (e) { if (e.target === box && e.animationName === 'chat-in') box.classList.remove('opening'); });
+  // G-296: the bar's ✦ menu (microMotion.ts) offers this screen's first questions and asks one straight away.
+  window.gnmChat = { chips: function () { try { return (ctxInfo().chips || []).slice(); } catch (e) { return []; } }, ask: function (t) { filing = null; open('', null); setTimeout(function () { ask(t); }, 60); } };
   document.querySelectorAll('[data-open-chat]').forEach(function (b) { b.addEventListener('click', function () { filing = null; buzz(); open(b.getAttribute('data-ask') || '', b); }); });
   // Filing buttons can appear later (lists drawn by script), so one listener on the page.
   document.addEventListener('click', function (e) {

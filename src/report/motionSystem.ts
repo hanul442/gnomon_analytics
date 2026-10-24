@@ -93,6 +93,8 @@ export const MOTION_SYSTEM_JS = `
     if (reduce() || el.closest('[data-no-roll],.rl') || el.__msBusy) return;
     var t = el.textContent, m = t.match(/-?[0-9][0-9,]*(\\.[0-9]+)?/); if (!m || (t.match(/[0-9][0-9,.]*/g) || []).length > 1) return;
     var end = Number(m[0].replace(/,/g, '')); if (!isFinite(end) || end === 0) return;
+    // G-296 (숫자 굴러가기): where the odometer is loaded the number rolls into place instead of counting up.
+    if (window.gnmRoll) { el.removeAttribute('data-rv'); gnmRoll(el, t.trim(), 0); return; }
     var dec = m[1] ? m[1].length - 1 : 0, comma = m[0].indexOf(',') >= 0, pre = t.slice(0, m.index), post = t.slice(m.index + m[0].length), t0 = null, shown = null;
     var fmt = function (v) { var s = v.toFixed(dec); if (comma) { var p = s.split('.'); p[0] = Number(p[0]).toLocaleString('en-US'); s = p.join('.'); } return pre + s + post; };
     el.__msBusy = 1;
