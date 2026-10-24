@@ -1,3 +1,4 @@
+import { railExtras } from './pcRail.js';
 import { ALPHA, WATCH_LIMIT } from './plans.js';
 import { WRAPUP } from './wrapup.js';
 // Shared UI layer (docs/DESIGN.md §4.5, G-41): design tokens, a sticky price bar for stock pages,
@@ -252,6 +253,7 @@ const TAB_OF: Record<string, string> = Object.fromEntries([
   ...MODE_GROUPS.flatMap((g) => g.modes.map(([, h]) => [h.split('#')[0], GROUP_TAB[g.key] ?? g.modes[0]![1]] as const)),
   ...ME_PAGES.map((p) => [p, 'settings.html'] as const),
   ['watch.html', 'top'] as const,
+  ['committee-guide.html', 'reports.html'] as const,
 ]);
 const svgI = (d: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const SPARK_ICON = '<path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>';
@@ -304,7 +306,9 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   // four tabs ('종목' / '이 화면'), the middle holds named icons, and the ✦ always sits at the right end.
   const here = dock === 'ask' ? '종목' : '이 화면';
   const back = dock ? `<button type="button" class="nav-back" aria-label="홈·찾기·위원회·나 보기">${svgI(MENU_ICON)}<span>메뉴</span></button><button type="button" class="nav-return" aria-label="${here} 칸으로 돌아가기">${svgI(RETURN_ICON)}<span>${here}</span></button>` : '';
-  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${back}<div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx">${ctx}</div>` : ''}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button></nav>`;
+  // G-294: on wide screens this bar is the left rail; the brand and account rows show only there, and a stock's parts sit under its name.
+  const rail = railExtras(base), title = dock === 'ask' ? ` data-title="${escM(ask!)}"` : '';
+  return `<nav class="bottom-nav" aria-label="빠른 이동"${dock ? ` data-dock="${dock}"` : ''}>${rail.brand}${back}<div class="nav-tabs">${links}</div>${dock ? `<div class="nav-ctx"${title}>${ctx}</div>` : ''}<button type="button" class="nav-spark" ${chat} aria-label="AI에게 묻기">${svgI(SPARK_ICON)}</button>${rail.acct}</nav>`;
 }
 /** G-277: a stock's four parts in the bottom bar: label, panel key, the panels that light it too, icon. */
 const STOCK_PARTS: readonly (readonly [string, string, string, string])[] = [
@@ -423,6 +427,7 @@ export const FS_JS = `
       ['section.chat:not([hidden])', function (e) { var x = e.querySelector('.chat-x'); if (x) x.click(); }],
       ['.ins-pop', function (e) { e.remove(); }],
       ['.db-room:not([hidden])', function (e) { var x = e.querySelector('[data-room-close]'); if (x) x.click(); }],
+      ['.wc', function (e) { if (window.GNM_welcomeClose) window.GNM_welcomeClose(); else e.remove(); }],
       ['.pop-wrap', function (e) { var x = e.querySelector('[data-p=later]'); if (x) x.click(); else e.remove(); }]
     ];
     var open = function () { var out = []; L.forEach(function (l) { document.querySelectorAll(l[0]).forEach(function (e) { if (e.offsetParent !== null || getComputedStyle(e).position === 'fixed') out.push([e, l[1]]); }); }); return out; };
@@ -604,8 +609,8 @@ export const TOUR_JS = `
       home: [
         ['#mkt-hero', '오늘', '아래 바에서 요약 · 시장 · 위원회 · 이슈를 바꿔 봐요. 숫자 카드를 누르면 차트가 크게 열려요.'],
         ['#watch', '내 종목', '어디서든 ☆를 누른 종목과 설문에서 고른 종목이 여기 모여요. 가격은 장중에 실시간으로 바뀌어요.'],
-        ['.bottom-nav', '아래 탭', '네 탭이 전부예요(홈 · 찾기 · 위원회 · 나). 찾기에서 주식·ETF·코인·테마·공시를 바꿔 가며 보고, 위원회에서 AI 리포트와 성적표를 봐요.'],
-        ['.top-tabs', '위쪽 탭', '찾기에서 종목·ETF·코인을 검색하고 조건으로 골라요. 테마와 공시 레이더도 찾기에 있어요.'],
+        ['.bottom-nav', '메뉴', '네 탭이 전부예요(홈 · 찾기 · 위원회 · 나). 찾기에서 주식·ETF·코인·테마·공시를 바꿔 가며 보고, 위원회에서 AI 리포트와 성적표를 봐요.'],
+        // G-294: wide screens use the left rail now, so the old top-menu step is gone.
       ],
       report: [
         ['.chips|.bottom-nav .nav-parts', '네 칸', '위원회 · 차트 · 기업 · 소식 네 칸이에요. 휴대폰에서는 아래 바에서 바꿔요. 기업 칸에 종목 정보·기업 체력·재무제표가 있어요.'],
@@ -617,7 +622,7 @@ export const TOUR_JS = `
       ],
       find: [
         ['#search|.bottom-nav .nav-field', '종목 검색', '이름·코드·초성으로 종목을 찾아요.'],
-        ['.mode-tabs|.bottom-nav [data-dock-kind]', '종류 고르기', '주식·미국 주식·ETF·코인·테마·공시를 바꿔 가며 보세요. 시장별로 지원되는 조건이 달라요.'],
+        ['.mode-tabs|.bottom-nav [data-dock-kind]|.bottom-nav .nav-menu', '종류 고르기', '주식·미국 주식·ETF·코인·테마·공시를 바꿔 가며 보세요. 시장별로 지원되는 조건이 달라요.'],
         ['#sc-filter-open|.bottom-nav [data-dock-filter]', '필터 · AI 조건', '필터를 누르면 AI 조건(원하는 특징을 문장으로)과 직접 조건을 정하는 화면이 열려요. 결과 보기로 돌아와요.'],
         // G-271 (Bklit funnel, 한서님 10/20 "퍼널차트 가로로된거 스크리너 설명할때"): the funnel gets its own step (skipped while hidden).
         ['#sc-funnel', '조건별로 남은 종목', '조건을 위에서부터 하나씩 걸 때마다 몇 종목이 남는지 가로 깔때기로 보여요. 갑자기 확 줄어드는 줄이 가장 까다로운 조건이에요. 결과가 너무 적으면 그 조건부터 풀어 보세요.'],
@@ -630,6 +635,9 @@ export const TOUR_JS = `
     var key = 'gnm-tour-v243-' + kind, forced = /[?&]tour=/.test(location.search), seen = null;
     try { seen = localStorage.getItem(key) || localStorage.getItem('gnm-tour-' + kind) || localStorage.getItem('gnm-tour-done'); } catch (e) {}
     if (seen && !forced) return;
+    // G-296: new readers get the welcome on home and a short card on stock pages instead, so these two tours start only from
+    // the guide's buttons (?tour=1). The 찾기 tour still starts on its own.
+    if (kind !== 'find' && !forced) return;
     // G-260: a step may name 'page part|bar part'; on phones the part in the bottom bar is used (and the bar shows its own row).
     var pick = function (sel) { var xs = sel.split('|'); for (var k = 0; k < xs.length; k++) { var e = document.querySelector(xs[k]); if (e && /bottom-nav/.test(xs[k])) { var nv = e.closest('.bottom-nav'); if (nv && nv.hasAttribute('data-dock')) nv.classList.add('ctx'); } if (e && e.getClientRects().length) return e; } return document.querySelector(xs[0]); };
     var steps = STEPS[kind].filter(function (s) { var el = pick(s[0]); return el && (s[3] || el.getClientRects().length); });
@@ -688,12 +696,12 @@ export const SURVEY_POP_JS = `
     var now = Date.now(), k = new Date(now + 9 * 3600e3), day = k.getUTCDay();
     var week = k.getUTCFullYear() + '-' + Math.ceil(((k - Date.UTC(k.getUTCFullYear(), 0, 1)) / 864e5 + new Date(Date.UTC(k.getUTCFullYear(), 0, 1)).getUTCDay() + 1) / 7);
     var pick = null;
-    if (!get('gnm-prefs') && Number(get('gnm-pop-onb') || 0) < now) pick = { key: 'gnm-pop-onb', later: now + 3 * 864e5, icon: '📝', title: '7분 맞춤 설문으로 내 화면 만들기', text: '투자 경험과 스타일을 알려 주시면 보기 방식, 오늘 볼 것, 설명 수준이 나에게 맞춰져요.', href: 'onboarding.html', cta: '설문 하기' };
+    if (!get('gnm-prefs') && Number(get('gnm-pop-onb') || 0) < now) pick = { key: 'gnm-pop-onb', later: now + 3 * 864e5, icon: '📝', title: '7분 설문으로 내 화면 설정하기', text: '투자 경험과 스타일을 알려 주시면 보기 방식, 오늘 볼 것, 설명 수준이 나에게 맞춰져요.', href: 'onboarding.html', cta: '설문 하기' };
     else if ((day === 5 || day === 6 || day === 0) && get('gnm-pop-week') !== week && !(now >= ${Date.parse(WRAPUP.from)} && now < ${Date.parse(WRAPUP.until)})) pick = { key: 'gnm-pop-week', later: week, icon: '🗓️', title: '이번 주 설문 (1분)', text: '이번 주에 좋았던 것과 불편했던 것 하나씩만 알려 주세요. 다음 주 개선 순서를 정해요.', href: 'survey.html?k=weekly', cta: '1분 설문 하기' };
     if (!pick) return;
     var base = document.body.getAttribute('data-base') || '';
     var open = function () {
-      if (document.querySelector('.tr-tip') || document.querySelector('.side-menu:not([hidden])')) return setTimeout(open, 4000);
+      if (document.querySelector('.tr-tip') || document.querySelector('.wc') || document.querySelector('.side-menu:not([hidden])')) return setTimeout(open, 4000);
       var d = document.createElement('aside'); d.className = 'pop-card'; d.setAttribute('aria-label', pick.title);
       d.innerHTML = '<span class="pc-ic" aria-hidden="true">' + pick.icon + '</span><div class="pc-tx"><b>' + pick.title + '</b><p>' + pick.text + '</p><div class="pc-b"><a class="btn-primary" href="' + base + pick.href + '">' + pick.cta + ' ›</a><button type="button" data-p="later">나중에</button></div></div><button type="button" class="pc-x" data-p="later" aria-label="닫기">×</button>';
       var close = function () { set(pick.key, String(pick.later)); d.remove(); };

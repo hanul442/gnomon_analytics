@@ -8,6 +8,7 @@ import type { NewsIssueBoard } from '../analysis/newsIssues.js';
 import type { WorldIssueBoard } from '../analysis/worldNews.js';
 import type { WorldMarkets } from '../sources/naverGlobal.js';
 import type { MarketReport } from './marketReport.js';
+import { issueMapParts, ISSUE_MAP_CSS, ISSUE_MAP_JS } from './issueMap.js';
 // Site front page as a market dashboard (docs/DESIGN.md §3.7, G-31). It answers
 // "what should I look at now?" (BOR North Star §2): the indices and breadth,
 // the market's temperature from every stock's free computation, this week's AI
@@ -23,6 +24,8 @@ import { esc } from './html.js';
 import { CONTENT_MORE_CSS } from './contentMore.js';
 import { fadeGrad, gradId, smoothD } from './chartLook.js';
 import { won, tone, move as signed } from './format.js';
+import { homeCommittee, rosterCard, seatDots } from './committeeSeats.js';
+import type { DailyReport } from './dailyReport.js';
 
 // G-84: a move always carries its arrow (▲ red up, ▼ blue down) next to the number.
 
@@ -98,7 +101,7 @@ function todayRows(entries: readonly HomeEntry[]): string {
   const list = withDate.filter((e) => madeOn(e) === day && !seen.has(e.symbol) && seen.add(e.symbol));
   const deep = (e: HomeEntry) => aiKind(e) === 'core';
   list.sort((a, b) => Number(deep(b)) - Number(deep(a)) || a.name.localeCompare(b.name, 'ko'));
-  const row = reportRow;
+  const row = (e: HomeEntry) => reportRow(e, true);
   return `<section class="block" id="today"><div class="block-head"><h2>${esc(day.slice(5).replace('-', '/'))} 나온 리포트 ${list.length}개</h2><span class="muted">${esc(day)} 장 마감 기준</span></div>
 <p class="muted small td-note" hidden></p><div class="card list rr-list" id="today-list">${list.map(row).join('')}</div></section>`;
 }
@@ -122,10 +125,10 @@ const TODAY_LIST_SCRIPT = `<script>
 </script>`;
 
 /** One report row: name, kind, the committee's date, its first line, price and the ☆. */
-function reportRow(e: HomeEntry): string {
+function reportRow(e: HomeEntry, seats = false): string {
   const r = e.report!, p = r.price, c = r.commentary?.status === 'OK' ? r.commentary : undefined;
   const line = (c?.summary?.text ?? r.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
-  return `<div class="rr" data-sym="${esc(e.symbol)}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b>${e.kind && e.kind !== 'stock' ? `<span class="tier t-k">${KIND[e.kind]}</span>` : ''}${aiPill(e)}</div><p class="rr-line">${esc(line)}</p></a>
+  return `<div class="rr" data-sym="${esc(e.symbol)}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b>${e.kind && e.kind !== 'stock' ? `<span class="tier t-k">${KIND[e.kind]}</span>` : ''}${aiPill(e)}</div><p class="rr-line">${esc(line)}</p>${seats && c ? `<span class="cs-today">${seatDots(r)}</span>` : ''}</a>
 <div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
 }
 
@@ -160,9 +163,11 @@ export function renderReportsPage(data: HomeData): string {
   const todaySyms = new Set(withDate.filter((e) => madeOn(e) === day).map((e) => e.symbol));
   const waiting = all.filter((e) => e.group !== 'past' && e.group !== 'daily' && !(e.report && madeOn(e)));
   const wait = waiting.length ? `<details class="card rp-wait"><summary>리포트를 기다리는 추적 종목 ${waiting.length}개</summary><p class="muted small">${waiting.map((e) => esc(e.name)).join(' · ')}</p></details>` : '';
-  const head = `<section class="rp-top"><p class="muted">AI 위원회가 쓴 리포트예요. 관심 종목이 맨 위에 와요.</p></section>`;
-  const how = `<details class="card rp-how"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 추천 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></details>`;
-  return shell('', 'AI 리포트 | GNOMON', `${HOME_STYLE}<style>${CONTENT_MORE_CSS}.rr-mine{background:var(--accent-soft)}.t-mine{background:var(--down-soft);color:var(--accent-strong)}.rp-top p{margin:0 4px 4px;font-size:14px}.rp-how,.rp-wait{margin:12px 0;padding:4px 16px}.rp-how summary,.rp-wait summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:14px;font-weight:600}.rp-how p{font-size:13px;color:var(--muted);line-height:1.55}.rp-rest>summary{display:flex;justify-content:center;align-items:center;min-height:48px;border-top:1px solid var(--line);font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer;list-style:none}.rp-rest>summary::-webkit-details-marker{display:none}</style>${head}${todayRows(data.entries)}${pastRows(all, todaySyms)}${wait}${how}`, { scripts: HOME_SCRIPT + TODAY_LIST_SCRIPT, mode: 'reports.html' });
+  // G-297 (한서님 시안 ②): the members first, as faces; each opens its record and the day's calls.
+  const todays = withDate.filter((e) => madeOn(e) === day && e.report?.commentary?.status === 'OK').map((e) => ({ name: e.name, report: e.report! }));
+  const head = `<section class="rp-top"><p class="muted">AI 위원들이 종목마다 따로 판단하고, 20거래일 뒤 채점받아요. 관심 종목이 맨 위에 와요. <a class="rp-what" href="committee-guide.html">위원회가 뭐예요? ›</a></p></section>${rosterCard(todays)}`;
+  const how = `<details class="card rp-how"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 기본 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></details>`;
+  return shell('', 'AI 리포트 | GNOMON', `${HOME_STYLE}<style>${CONTENT_MORE_CSS}.rr-mine{background:var(--accent-soft)}.t-mine{background:var(--down-soft);color:var(--accent-strong)}.rp-top p{margin:0 4px 4px;font-size:14px}.rp-what{display:inline-block;padding:6px 0;font-weight:700;color:var(--fg);text-decoration:none;white-space:nowrap}.cs-today{display:block}.cs-today .cs-sl small{display:block}.rp-how,.rp-wait{margin:12px 0;padding:4px 16px}.rp-how summary,.rp-wait summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:14px;font-weight:600}.rp-how p{font-size:13px;color:var(--muted);line-height:1.55}.rp-rest>summary{display:flex;justify-content:center;align-items:center;min-height:48px;border-top:1px solid var(--line);font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer;list-style:none}.rp-rest>summary::-webkit-details-marker{display:none}</style>${head}${todayRows(data.entries)}${pastRows(all, todaySyms)}${wait}${how}`, { scripts: HOME_SCRIPT + TODAY_LIST_SCRIPT, mode: 'reports.html' });
 }
 
 
@@ -186,26 +191,30 @@ export function renderHome(data: HomeData): string {
   const wp = data.world && (data.world.indices.length || data.world.macro.length) ? worldPanels({ markets: data.world, news: data.worldIssues ?? { from: null, to: null, articles: 0, issues: [] } }) : null;
   const issues = homeIssues(data);
   const calls = committeeToday(data.entries);
+  // G-295: issue pins on the world map — small on 오늘 이슈, big at the top of 시장, a sheet per region.
+  const im = issueMapParts({ issues, world: data.world, universe: data.universe });
   // G-281 (한서님 10/22 "구조화시켜서 분류가 각 종류에 맞게"): four parts, one kind each, every number in one place.
   // 요약 = a taste of each kind (내 종목, four numbers, the committee, issues); 시장 = numbers; 위원회 = calls; 이슈 = news.
   const key = wp ? `<div class="hm-h"><h2>시장</h2><button type="button" class="wd-link" data-wd-go="market">시장 전체 ›</button></div><div class="km-stats wd-stats">${wp.key6}</div>` : fallbackNumbers(data.indices);
-  const comBlock = calls.length ? `<div class="hm-h"><h2>위원회 오늘</h2><button type="button" class="wd-link" data-wd-go="com">${calls.length}개 전체 ›</button></div><section class="card hm-card">${calls.slice(0, 3).map(callRow).join('')}</section>` : '';
-  const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${issuesList(issues, 3, false)}</section>`;
+  // G-297 (한서님 10/24 시안): 요약 runs 배너 → 시장 → 이슈 → 내 종목 → 위원회 → 채점. The committee card shows the day's most
+  // split stock as a half circle of seats, the others as split bars and one lone dissent; the range score sits under it.
+  const comBlock = calls.length ? `<div class="hm-h"><h2>위원회 오늘</h2></div>${homeCommittee(committeeReports(data.entries), { day: dayShort(data.entries.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK').map(madeOn).sort().at(-1) ?? ''), allHref: '#com' })}` : '';
+  const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${im?.mini ?? ''}${issuesList(issues, 3, false)}</section>`;
   const sum = `<section class="hm-hero" id="mkt-hero"><p class="hm-d">${esc(dayLong(day))}</p><p class="hm-s">${esc(wp?.sentence ?? '오늘 시장을 한눈에 모았어요.')}</p></section>
 <div class="hm-bn">${banner}</div>
-<i id="watch-slot" hidden></i>${WATCH}${key}${comBlock}${issueBlock}`;
+${key}${issueBlock}<i id="watch-slot" hidden></i>${WATCH}${comBlock}${scoreLine(sorted)}`;
   const com = `<p class="hm-lead">오늘 위원회가 본 종목이에요. 막대는 앞으로 20거래일 범위(왼쪽부터 약세·기본·강세), 점선은 지금 가격이에요.</p>
 <section class="card hm-card">${calls.length ? calls.map(callRow).join('') : '<p class="muted">아직 오늘 나온 위원회 리포트가 없어요.</p>'}</section>
-${scoreLine(sorted)}<a class="hm-go" href="reports.html">AI 리포트 전체<span aria-hidden="true">›</span></a><a class="hm-go" href="scorecard.html">위원회 성적표<span aria-hidden="true">›</span></a>`;
+<a class="hm-go" href="reports.html">AI 리포트 전체<span aria-hidden="true">›</span></a><a class="hm-go" href="scorecard.html">위원회 성적표<span aria-hidden="true">›</span></a>`;
   const ISSUE_SHOW = 10;
   const news = `<section class="card hm-card"><div class="hm-h ia-head"><h2>이슈 순위</h2>${ISSUES_FILTER}</div>${issuesList(issues, ISSUE_SHOW, true)}${issues.length > ISSUE_SHOW ? `<details class="more content-more ia-rest"><summary><span class="more-closed">${issues.length - ISSUE_SHOW}개 더 보기</span><span class="more-open">접기</span></summary>${issuesList(issues.slice(ISSUE_SHOW), issues.length, true)}</details>` : ''}</section><p class="fine wd-fine">한국 종목 뉴스와 세계 뉴스를 한 순위로 모았어요. 각 목록 안에서 다룬 매체가 많은 순서를 기준으로 섞었어요. 시장 숫자는 같은 날 함께 움직인 값이고, 원인이라는 뜻이 아니에요.</p>`;
   
-  const tabs = [['sum', '요약', sum], ...(wp ? [['market', '시장', wp.market]] : []), ['com', '위원회', com], ['news', '이슈', news]] as const;
+  const tabs = [['sum', '요약', sum], ...(wp ? [['market', '시장', `${im?.card ?? ''}${wp.market}`]] : []), ['com', '위원회', com], ['news', '이슈', news]] as const;
   const nav = `<nav class="mode-tabs" role="tablist" aria-label="홈 보기">${tabs.map(([k, l], i) => `<button type="button" role="tab" data-wd="${k}" aria-selected="${i === 0}">${l}</button>`).join('')}</nav>`;
-  const body = `${HOME_STYLE}${WORLD_CSS}${ISSUES_CSS}${tabs.map(([k, , html], i) => `<div class="wd-p hm-p" data-wd-p="${k}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
+  const body = `${HOME_STYLE}${WORLD_CSS}${ISSUES_CSS}${im ? ISSUE_MAP_CSS + im.sheets : ''}${tabs.map(([k, , html], i) => `<div class="wd-p hm-p" data-wd-p="${k}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
 <footer id="sources" class="hm-foot"><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS, 해외 뉴스 RSS.${wp ? ` 세계 숫자는 ${esc(wp.asof)} 기준이에요.` : ''} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
   // G-277 (한서님 10/21 '위의 바 두기싫다니까'): on phones the parts switch from the bottom bar; the row above is for wide screens.
-  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘', tabs: nav }, parts: partButtons(tabs.map(([k, l]) => [k, l] as const)), scripts: WORLD_JS + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
+  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘', tabs: nav }, parts: partButtons(tabs.map(([k, l]) => [k, l] as const)), scripts: WORLD_JS + (im ? ISSUE_MAP_JS : '') + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
 }
 
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
@@ -222,6 +231,16 @@ function fallbackNumbers(indices: readonly IndexQuote[]): string {
   const cards = indices.slice(0, 2).map((i) => kmStatArea({ title: i.name, value: i.close, change: i.changePct, series: i.closes.slice(-30).map((c, k, a) => [`${a.length - k}일 전`, c] as [string, number]), digits: 2, label: '종가', unit: '일' })).join('');
   return `<div class="hm-h"><h2>꼭 볼 숫자</h2></div><div class="km-stats wd-stats hm-stats">${cards}</div>`;
 }
+
+/** The newest report day's committee reports, as committeeToday picks them (G-297 seats). */
+function committeeReports(all: readonly HomeEntry[]): { name: string; href: string; report: DailyReport }[] {
+  const withDate = all.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK');
+  const last = withDate.map(madeOn).sort().at(-1);
+  if (!last) return [];
+  const seen = new Set<string>();
+  return withDate.filter((e) => madeOn(e) === last && !seen.has(e.symbol) && seen.add(e.symbol)).map((e) => ({ name: e.name, href: e.href, report: e.report! }));
+}
+const dayShort = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일` : d);
 
 interface Call { name: string; href: string; close: number; change: number | null; line: string; zones: ([number, number] | null)[]; deep: boolean }
 /** The committee's reports of the newest report day (the same set as reports.html#today), deep ones first. */
@@ -286,17 +305,15 @@ const FEED_SCRIPT = `<script>
   // Say at the top that this page follows their answers, with a way to change them.
   var bits = [prefs.experience && '경험 ' + prefs.experience, prefs.horizon && '보유 ' + prefs.horizon, (prefs.sectors || []).length && '관심 ' + prefs.sectors.slice(0, 2).join('·') + (prefs.sectors.length > 2 ? ' 외 ' + (prefs.sectors.length - 2) : '')].filter(Boolean);
   var note = document.getElementById('pz-note');
-  if (note && bits.length) { document.getElementById('pz-text').innerHTML = '<b>내 설문에 맞춘 화면이에요.</b> ' + bits.map(function (b) { return String(b).replace(/[&<>"]/g, ''); }).join(' · ') + ' 기준으로 추천을 바꿨어요.'; note.hidden = false; }
-  // A screener preset that fits how long they hold.
-  var h = prefs.horizon || '', preset = /며칠/.test(h) ? ['hot', '거래 급증·급등'] : /몇 주/.test(h) ? ['rebound', '반등 후보'] : /몇 달/.test(h) ? ['value', '적정가 아래'] : /1년/.test(h) ? ['large', '대형주 강세'] : null;
+  if (note && bits.length) { document.getElementById('pz-text').innerHTML = '<b>내 설문에 맞춘 화면이에요.</b> ' + bits.map(function (b) { return String(b).replace(/[&<>"]/g, ''); }).join(' · ') + ' 기준으로 보이는 순서를 바꿨어요. 종목 판단은 모두에게 같아요.'; note.hidden = false; }
+  // G-292 (한서 10/24): no screener preset picked from the holding period — answers never choose a stock list.
   // G-287 (한서님 10/23 '넘 구림'): one plain list instead of wrapping chips — each 관심 업종 on its own row (name, its
-  // strongest theme under it, the move on the right), then the holding-period preset as the last row. 바꾸기 sits in the head.
+  // strongest theme under it, the move on the right). 바꾸기 sits in the head.
   var sectors = (prefs.sectors || []).slice(0, 4), rows = [];
   // G-201: a sector row opens its strongest theme today (themes-home.json, built each day); no theme, 테마 전체.
   sectors.forEach(function (s, i) { rows.push('<a class="fd-row" data-sec="' + i + '" href="themes.html"><span class="fd-t"><b>' + esc(s) + '</b><small>오늘 강한 테마 보기</small></span><i class="fd-v"></i><span class="fd-go" aria-hidden="true">›</span></a>'); });
-  if (preset) rows.push('<a class="fd-row fd-pre" href="screener.html#' + preset[0] + '"><span class="fd-t"><b>' + preset[1] + ' 종목</b><small>보유 기간 ' + esc(h) + '에 맞는 조건</small></span><i class="fd-v"></i><span class="fd-go" aria-hidden="true">›</span></a>');
   if (!rows.length) return;
-  chipsEl.innerHTML = '<div class="fd-h"><b>' + (sectors.length ? '관심 업종 오늘' : '내 조건') + '</b><a href="settings.html#profile">투자 방식 바꾸기</a></div>' + rows.join('');
+  chipsEl.innerHTML = '<div class="fd-h"><b>' + '관심 업종 오늘' + '</b><a href="settings.html#profile">투자 방식 바꾸기</a></div>' + rows.join('');
   if (redo) redo.hidden = true;
   if (sectors.length) (window.gnmThemesHome = window.gnmThemesHome || fetch('themes-home.json').then(function (r) { return r.ok ? r.json() : null; })).then(function (j) {
     var map = (j && j.sectors) || {};

@@ -9,7 +9,7 @@ export const FAQ: readonly { group: string; items: readonly [string, string][] }
   { group: '처음 쓰실 때', items: [
     ['그노몬은 어떤 서비스예요?', '주식·ETF·코인의 가격, 수급, 실적, 공시·뉴스를 한 화면에 모으고, AI 위원회가 강세·기본·약세 시나리오와 근거를 정리해 주는 리서치 서비스예요. 매수·매도를 권하지 않아요.'],
     ['어디서부터 보면 돼요?', '홈 검색창에서 종목을 찾고, 리포트의 맨 위 시나리오 카드부터 보세요. 줄을 누르면 시나리오의 근거와 무효화 조건이 펼쳐져요. 화면 위를 따라가는 사용법은 ☰ 메뉴 → 사용법에 있어요.'],
-    ['홈 화면이 사람마다 달라요?', '맞춤 설문과 전체 메뉴의 \'내 보기 방식\'에 따라 오늘 볼 것의 순서, 차트 기본 지표, AI 위원회에서 먼저 보이는 위원이 바뀌어요.'],
+    ['홈 화면이 사람마다 달라요?', '화면 설정 설문과 전체 메뉴의 \'내 보기 방식\'에 따라 오늘 볼 것의 순서, 차트 기본 지표, AI 위원회에서 먼저 보이는 위원이 바뀌어요.'],
   ] },
   { group: '시나리오와 AI 위원회', items: [
     ['강세·약세 시나리오의 가격은 뭐예요?', '위원회가 앞으로 20거래일 동안 그 시나리오가 맞았을 때 예상하는 가격대예요. "이 가격을 넘으면 오른다"는 신호가 아니라, 그 전개가 펼쳐졌을 때 도달할 수 있는 범위예요. 시나리오가 틀렸다고 볼 조건은 펼친 화면의 \'무효화 조건\'에 따로 적혀 있어요.'],
@@ -42,7 +42,7 @@ export function renderSupport(): string {
 <section class="card sp-hero"><div class="pl-k">고객 지원</div><h1>자주 묻는 질문 · 문의</h1><p>궁금한 걸 먼저 찾아보고, 없으면 아래에서 바로 문의해 주세요. 알파 기간에는 운영자가 직접 읽고 답해요.</p></section>
 <nav class="sp-tabs" aria-label="지원 메뉴"><a href="#faq">FAQ</a><a href="#ask">1:1 문의</a><a href="guide.html">사용법</a></nav>
 <div id="faq"><input class="sp-search" type="search" placeholder="질문 검색 (예: 크레딧, 시나리오)" aria-label="FAQ 검색">${faq}<p class="muted small" id="sp-none" hidden>찾는 질문이 없어요. 아래에서 문의해 주세요.</p></div>
-<form class="card sp-form" id="ask"><h2>1:1 문의 · Q&amp;A</h2><p class="muted small">로그인한 계정으로 접수돼요. 답변은 계정 알림(🔔)으로 드려요.</p>
+<form class="card sp-form" id="ask"><h2>1:1 문의 · Q&amp;A</h2><p class="muted small">로그인한 계정으로 접수돼요. 답변은 계정 알림(🔔)으로 드려요. 서비스 이용 문의만 받고, 특정 종목을 사거나 팔지 같은 투자 판단에는 답하지 않아요.</p>
 <div class="sp-kinds" role="radiogroup" aria-label="문의 종류">${KINDS.map(([k, l], i) => `<label><input type="radio" name="kind" value="${k}"${i === 0 ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>
 <textarea name="text" maxlength="2000" placeholder="어떤 화면에서 무엇이 궁금하거나 불편했는지 적어 주세요." aria-label="문의 내용"></textarea>
 <div class="sp-row"><span class="sp-msg" id="sp-msg">최대 2,000자</span><button type="submit">문의 보내기</button></div></form>

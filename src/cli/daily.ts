@@ -32,7 +32,7 @@ import { fetchUsdtKrw, withOuterHistory } from '../sources/coinHistory.js';
 import { escapeRegex } from './weekly.js';
 import { renderCoinsRedirect } from '../report/renderCoins.js';
 import { watchInfo } from '../report/conclusion.js';
-import { renderGuide, renderUpdates, renderSurvey, validBanners } from '../report/alphaPages.js';
+import { renderCommitteeGuide, renderGuide, renderUpdates, renderSurvey, validBanners } from '../report/alphaPages.js';
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
 import { SITE_CONFIG } from '../report/alpha.js';
@@ -863,6 +863,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   // Picture banners named in banners.json (teasers).
   await cp(new URL('../../assets/banners/', import.meta.url), join(siteDir, 'assets', 'banners'), { recursive: true }).catch(() => undefined);
   await writeFile(join(siteDir, 'guide.html'), renderGuide());
+  await writeFile(join(siteDir, 'committee-guide.html'), renderCommitteeGuide());
   await writeFile(join(siteDir, 'updates.html'), renderUpdates());
   // G-137: what the API's update note reads after each deploy.
   await writeFile(join(siteDir, 'version.json'), JSON.stringify({ version: VERSION, date: RELEASES[0]?.[1] ?? '', note: RELEASES[0]?.[2] ?? '' }));

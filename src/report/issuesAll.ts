@@ -8,6 +8,7 @@ import { esc } from './html.js';
 import type { NewsIssue, NewsIssueBoard } from '../analysis/newsIssues.js';
 import type { WorldIssue, WorldIssueBoard } from '../analysis/worldNews.js';
 import { issueKey, type DigestImage, type NewsDigest } from '../analysis/newsDigest.js';
+import { regionOf, sectorsOf } from '../analysis/issueRegions.js';
 
 export interface MergedIssue {
   rank: number;
@@ -35,6 +36,10 @@ export interface MergedIssue {
   /** Stocks the story names (Korean issues) or markets that moved the same day (world issues), already worded. */
   chips: { name: string; move: string; tone: string; href?: string; price?: string }[];
   headlines: { title: string; url: string; publisher: string }[];
+  /** G-295: world topics (labels), the map region (issueRegions.ts) and the Korean sectors to look at alongside. */
+  topics: string[];
+  region: string | null;
+  sectors: string[];
 }
 
 type Chip = MergedIssue['chips'][number];
@@ -50,6 +55,7 @@ export function mergeIssues(kr: NewsIssueBoard | null | undefined, world: WorldI
   const topK = Math.max(1, ...k.map((i) => i.outlets)), topW = Math.max(1, ...w.map((i) => i.outlets));
   const fromK = (i: NewsIssue) => ({ share: i.outlets / topK, order: i.rank, item: {
     ...dig(i.url), symbols: i.stocks.map((s) => s.symbol),
+    topics: [] as string[], region: 'kr' as string | null, sectors: [] as string[],
     from: '한국' as const, title: i.title, url: i.url, publisher: i.publisher, outlets: i.outlets, articles: i.articles, isNew: !i.prev,
     moved: i.prev ? i.prev.rank - i.rank : null, lang: 'ko' as const,
     chips: i.stocks.slice(0, 3).map((s) => ({ name: s.name, move: s.changePct == null ? '' : `${s.changePct > 0 ? '+' : ''}${s.changePct.toFixed(1)}%`, tone: tone(s.changePct), href: stockHref(s.symbol), ...(price(s.symbol) ? { price: price(s.symbol)! } : {}) })),
@@ -57,6 +63,7 @@ export function mergeIssues(kr: NewsIssueBoard | null | undefined, world: WorldI
   } });
   const fromW = (i: WorldIssue) => ({ share: i.outlets / topW, order: i.rank, item: {
     ...dig(i.url), symbols: [] as string[],
+    topics: i.topics, region: regionOf('세계', i.topics), sectors: sectorsOf(i.topics).map((x) => x.name),
     from: '세계' as const, title: i.title, url: i.url, publisher: i.publisher, outlets: i.outlets, articles: i.articles, isNew: i.isNew,
     moved: i.prevRank ? i.prevRank - i.rank : null, lang: i.lang,
     chips: i.markets.map(marketChip).filter((c): c is Chip => !!c),
@@ -83,8 +90,10 @@ function row(i: MergedIssue, full: boolean, base: string, lead = false): string 
   const line = full && i.lines[0] ? `<p class="ia-s">${esc(i.lines[0])}</p>` : '';
   const title = i.ko ?? i.title;
   const meta = `${i.lang === 'en' ? '영문 · ' : ''}매체 ${i.outlets}곳 · ${esc(i.publisher)}`;
-  if (lead) return `<li class="ia-row ia-lead" data-tag="${i.from}"><a class="ia-lead-a" href="${esc(href)}">${issueImage(i.image, 'ia-fig')}<div class="ia-h"><b class="ia-rk1">${i.rank}</b><span class="ia-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>${move}<small class="ia-m">${meta}</small></div><span class="ia-t ia-t1">${esc(title)}</span>${line}</a>${chips ? `<div class="ia-chips">${chips}</div>` : ''}</li>`;
-  return `<li class="ia-row" data-tag="${i.from}"><b class="ia-rk">${i.rank}</b><div class="ia-b"><div class="ia-h"><span class="ia-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>${move}</div><a class="ia-t" href="${esc(href)}">${esc(title)}</a>${line}<small class="ia-m">${meta}</small>${i.share != null ? `<i class="ia-bar" aria-hidden="true"><i style="width:${Math.max(4, Math.round(i.share * 100))}%"></i></i>` : ''}${chips ? `<div class="ia-chips">${chips}</div>` : ''}</div></li>`;
+  // G-295: a world issue says which Korean sectors people look at alongside it (the region sheet lists their moves).
+  const kr = i.sectors?.length ? `<small class="ia-kr">한국에선 <b>${esc(i.sectors.slice(0, 3).join('·'))}</b></small>` : '';
+  if (lead) return `<li class="ia-row ia-lead" data-tag="${i.from}"><a class="ia-lead-a" href="${esc(href)}">${issueImage(i.image, 'ia-fig')}<div class="ia-h"><b class="ia-rk1">${i.rank}</b><span class="ia-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>${move}<small class="ia-m">${meta}</small></div><span class="ia-t ia-t1">${esc(title)}</span>${line}${kr}</a>${chips ? `<div class="ia-chips">${chips}</div>` : ''}</li>`;
+  return `<li class="ia-row" data-tag="${i.from}"><b class="ia-rk">${i.rank}</b><div class="ia-b"><div class="ia-h"><span class="ia-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>${move}</div><a class="ia-t" href="${esc(href)}">${esc(title)}</a>${line}<small class="ia-m">${meta}</small>${kr}${i.share != null ? `<i class="ia-bar" aria-hidden="true"><i style="width:${Math.max(4, Math.round(i.share * 100))}%"></i></i>` : ''}${chips ? `<div class="ia-chips">${chips}</div>` : ''}</div></li>`;
 }
 
 /** The list (top `limit`), or a short note when nothing was collected. */
@@ -107,6 +116,7 @@ export const ISSUES_CSS = `<style>
 .ia-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.ia-chip{display:inline-flex;gap:4px;align-items:center;min-height:28px;padding:2px 10px;border-radius:999px;background:var(--soft);font-size:12.5px;font-weight:600;color:var(--fg2);text-decoration:none}
 .ia-more summary{cursor:pointer;font-size:12.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center;margin-top:4px}.ia-more ul{margin:2px 0;padding-left:16px}.ia-more li{font-size:13px;line-height:1.5;margin:3px 0}.ia-more a{color:inherit}.ia-more small{color:var(--muted)}
 .ia-empty{margin:4px 0}
+.ia-kr{display:block;font-size:12px;color:var(--muted);margin-top:3px}.ia-kr b{font-weight:700;color:var(--fg2)}
 .ia-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 4px}.ia-head h2{margin:0;font-size:17px}
 .ia-filter{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--soft)}.ia-filter button{min-height:32px;padding:0 11px;border:0;border-radius:999px;background:none;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}.ia-filter button[aria-pressed=true]{background:var(--surface-solid);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .ia-rest>summary{display:flex;justify-content:center;align-items:center;min-height:48px;border-top:1px solid var(--line);font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer;list-style:none}.ia-rest>summary::-webkit-details-marker{display:none}.ia-rest .more-open{display:none}.ia-rest[open] .more-open{display:inline}.ia-rest[open] .more-closed{display:none}.ia-rest .ia-row:first-child{border-top:1px solid var(--line);padding-top:14px}

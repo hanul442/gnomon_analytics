@@ -43,10 +43,10 @@ export const PLANS: readonly Plan[] = [
     soon: [] },
   { key: 'pro', name: '프로', price: 39000, tagline: 'AI 위원회 전체 + 전문가 초청', monthlyCredits: 400, topUpBonus: 10, weeklyCoverage: 0, includedInvites: 0, standingExperts: 0,
     adds: ['AI 위원회 리포트 전체(위원별 근거·예측·레드팀·시나리오)', '시장 데일리 상세 전체 열람', '전문가 AI 초청: 업종·투자 스타일 전문가를 골라 위원회에 앉혀요(크레딧)', '예측 가격 범위(5·20·60·120거래일)와 분석가 예상가', '전략 대결 전체(과거 데이터로 시험한 매매 시점·자산 곡선·몬테카를로·차트 표시)', '모의투자 종목별 장부·매매 내역', '성적표 종목별 상세·빗나간 예측 하나하나', '매달 400크레딧', '충전할 때 크레딧 10% 더', '관심 종목 100개'],
-    soon: ['내 매매 아이디어 검증: 레드팀이 근거로 반박', '스크리너 조건 백테스트(4년)', '공시 이벤트 스터디: 공시 뒤 N일 주가 움직임 분포', '외국인·기관 수급 랭킹', '공시·신호 변화 알림'] },
-  { key: 'max', name: '맥스', price: 99000, tagline: '내 종목 전담 위원회', monthlyCredits: MAX_CREDITS, topUpBonus: 20, weeklyCoverage: 10, includedInvites: 30, standingExperts: 5,
+    soon: ['스크리너 조건 백테스트(4년)', '공시 이벤트 스터디: 공시 뒤 N일 주가 움직임 분포', '외국인·기관 수급 랭킹', '공시·신호 변화 알림'] },
+  { key: 'max', name: '맥스', price: 99000, tagline: '관심 종목 주간 위원회 리포트', monthlyCredits: MAX_CREDITS, topUpBonus: 20, weeklyCoverage: 10, includedInvites: 30, standingExperts: 5,
     adds: ['관심 종목 10개를 매주 AI 위원회 전체로 자동 리포트', '모든 전문가 초청 매달 30회 포함(크레딧 없이)', '전문가 정기 초청: 내 종목 주간 위원회에 고정 전문가 5명', `매달 ${MAX_CREDITS.toLocaleString('ko-KR')}크레딧`, '충전할 때 크레딧 20% 더', '관심 종목 무제한'],
-    soon: ['전략 랩: 내 규칙으로 백테스트·검증 구간·과최적화 경고', '내 가상 포트폴리오와 예측 실패 원인 분석', '포트폴리오 리스크: 상관·집중·변동성·시나리오', '시점 재현: 과거 그날 알았던 것만으로 다시 보기', '데이터 내보내기(CSV)·웹훅'] },
+    soon: ['전략 랩: 내 규칙으로 백테스트·검증 구간·과최적화 경고', '시점 재현: 과거 그날 알았던 것만으로 다시 보기', '데이터 내보내기(CSV)·웹훅'] },
 ];
 
 /**
@@ -214,7 +214,9 @@ html[data-plan=free] .need-plus{display:none}html:not([data-plan=free]) .only-fr
 .credit-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:12px;background:var(--navy);color:var(--on-accent);font:inherit;font-weight:700;padding:11px 16px;cursor:pointer}.credit-btn:hover{background:var(--accent-strong)}.credit-btn small{font-weight:600;opacity:.75}
 .ask{display:flex;flex-direction:column;gap:8px}.ask textarea{width:100%;min-height:76px;border:1px solid var(--line-strong);border-radius:12px;padding:10px 12px;font:inherit;resize:vertical}.ask-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .ask-btns{display:flex;gap:8px;flex-wrap:wrap}.credit-btn.ghost{background:var(--surface);color:var(--navy);border:1px solid var(--navy)}.credit-btn.ghost:hover{background:var(--accent-soft)}
-.ask-out{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;font-size:14px}.ask-out li{margin:6px 0}.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;background:#0f1b2d;color:#fff;border-radius:14px;padding:10px 12px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:toast-in .2s ease-out;cursor:default}.toast.toast-out{opacity:0;transform:translate(-50%,8px);transition:opacity .2s,transform .2s}.toast span{overflow-wrap:anywhere}.toast svg{width:24px;height:24px;flex:none;color:#86efac}.toast-check{stroke-dasharray:24;animation:toast-check .3s ease-out}.toast[data-kind=error]{background:#842029}@keyframes toast-in{from{opacity:0;translate:0 8px}}@keyframes toast-check{from{stroke-dashoffset:24}}@media(prefers-reduced-motion:reduce){.toast,.toast-check{animation:none}}
+.ask-out{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;font-size:14px}.ask-out li{margin:6px 0}.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;background:#0f1b2d;color:#fff;border-radius:14px;padding:10px 12px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:toast-in .2s ease-out;cursor:default}.toast.toast-out{opacity:0;transform:translate(-50%,8px);transition:opacity .2s,transform .2s}.toast span{overflow-wrap:anywhere}.toast svg{width:24px;height:24px;flex:none;color:#86efac}.toast-check{stroke-dasharray:24;animation:toast-check .3s ease-out}.toast[data-kind=error]{background:#842029}@keyframes toast-in{from{opacity:0;translate:0 8px}}@keyframes toast-check{from{stroke-dashoffset:24}}@media(prefers-reduced-motion:reduce){.toast,.toast-check{animation:none}
+.toast{transition:transform var(--d-snappy,500ms) var(--spring-snappy,ease-out),opacity .25s}
+@media (prefers-reduced-motion:reduce){.toast{transition:opacity .15s}}}
 @media (max-width:820px){html[data-plan=free] .gate>.gate-cta,html[data-plan=plus] .gate[data-need=pro]>.gate-cta{flex-wrap:wrap;top:80px}.gate-cta .btn-primary{width:100%}.acct i{display:none}}
 `;
 
@@ -230,15 +232,28 @@ export const ACCOUNT_SCRIPT = `<script>
   };
   var write = function (a) { var o = { plan: a.plan, credits: a.credits, grants: a.grants, claimed: a.claimed, log: a.log.slice(0, 200), requests: a.requests }; try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} paint(); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  // G-298 (알림 쌓기): toasts stack like cards instead of replacing each other (three at most); a tap on the stack
+  // fans them out, a tap on an open one dismisses it. Under reduced motion they still stack, without the spring.
+  var toastLive = function () { return [].slice.call(document.querySelectorAll('.toast:not(.toast-out)')); };
+  var toastLay = function () {
+    var list = toastLive(), open = list.length > 1 && document.documentElement.classList.contains('toast-open'), y = 0;
+    if (list.length < 2) document.documentElement.classList.remove('toast-open');
+    for (var i = list.length - 1, k = 0; i >= 0; i--, k++) {
+      var t = list[i]; t.style.zIndex = String(200 - k);
+      t.style.transform = open ? 'translate(-50%,' + (-y) + 'px)' : 'translate(-50%,' + (-k * 10) + 'px) scale(' + (1 - k * 0.05) + ')';
+      t.style.opacity = open ? '1' : String(1 - k * 0.2); y += t.offsetHeight + 8;
+    }
+  };
   var toast = function (msg, kind) {
-    document.querySelectorAll('.toast').forEach(function(t){t.remove();});
+    var old = toastLive(); while (old.length >= 3) old.shift().remove();
     var t=document.createElement('div');t.className='toast';t.dataset.kind=kind||'info';t.setAttribute('role',kind==='error'?'alert':'status');
     if(kind==='success')t.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor"/><path class="toast-check" d="m6 12 4 4 8-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     var label=document.createElement('span');label.textContent=msg;t.appendChild(label);
     // G-176: no close button; it fades out by itself (hover or touch keeps it a little longer), a tap on it dismisses.
-    var ms=kind==='error'?5000:3200,timer=null,go=function(){t.classList.add('toast-out');setTimeout(function(){t.remove();},220);},arm=function(d){clearTimeout(timer);timer=setTimeout(go,d);};
-    t.addEventListener('mouseenter',function(){clearTimeout(timer);});t.addEventListener('mouseleave',function(){arm(1200);});t.addEventListener('click',go);
-    document.body.appendChild(t);arm(ms);
+    var ms=kind==='error'?5000:3200,timer=null,go=function(){clearTimeout(timer);t.classList.add('toast-out');t.style.opacity='0';t.style.transform+=' translateY(8px)';setTimeout(function(){t.remove();toastLay();},220);toastLay();},arm=function(d){clearTimeout(timer);timer=setTimeout(go,d);};
+    t.addEventListener('mouseenter',function(){clearTimeout(timer);});t.addEventListener('mouseleave',function(){arm(1200);});
+    t.addEventListener('click',function(){if(toastLive().length>1&&!document.documentElement.classList.contains('toast-open')){document.documentElement.classList.add('toast-open');toastLay();arm(ms);return;}go();});
+    t.style.transform='translate(-50%,16px) scale(.92)';t.style.opacity='0';document.body.appendChild(t);void t.offsetWidth;toastLay();arm(ms);
   };
   // With the alpha API, accounts and credits live on the server (alpha.ts takes over from here).
   // G-66: the debate's one box. "위원회 전체" opens the chat with the question (and stops the invite

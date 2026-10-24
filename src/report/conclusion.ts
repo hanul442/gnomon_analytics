@@ -127,12 +127,12 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
     // range on this scenario's side of today's close (a bull target below the close is skipped), else the volatility range.
     const up = k === 'BULL', onSide = (v: number) => (up ? v > p.close : v < p.close);
     const f20 = report.market?.forecasts?.find((f) => f.horizon === 20);
-    const edge = z && onSide(up ? z.zone[1] : z.zone[0]) ? { v: up ? z.zone[1] : z.zone[0], fromZone: true, src: z.source === 'analyst' ? 'AI 분석가 목표가' : z.source === 'calc' ? '변동성 계산' : 'AI 위원회 예상' }
+    const edge = z && onSide(up ? z.zone[1] : z.zone[0]) ? { v: up ? z.zone[1] : z.zone[0], fromZone: true, src: z.source === 'analyst' ? 'AI 분석가 시나리오 가격대' : z.source === 'calc' ? '변동성 계산' : 'AI 위원회 예상' }
       : f20 && onSide(up ? f20.p90 : f20.p10) ? { v: up ? f20.p90 : f20.p10, fromZone: false, src: '변동성 계산' } : null;
     const condition = conditionPrice ? `<b>${won(conditionPrice.price)}</b><small>${up ? '이 가격을 넘으면 강세 전개 검토' : '이 가격 아래로 이탈하면 약세 전개 검토'}${conditionPrice.source === 'base-exit' ? ' · 기본 시나리오 이탈 조건' : ''}</small>`
       : edge ? `<b>${won(edge.v)}</b><small>${up ? '강세면 20거래일 안 상단' : '약세면 20거래일 안 하단'} · ${gap(edge.v, p.close)}${edge.fromZone ? '' : ` · ${edge.src}`}</small>`
       : `<b>${up ? '강세' : '약세'} 조건</b><small>가격 자료가 아직 없어요</small>`;
-    const range = z ? `<small class="cl-range">${z.source === 'analyst' ? 'AI 분석가 목표가 범위' : z.source === 'calc' ? '20거래일 변동성 참고 범위' : '20거래일 예상 범위'} ${zone(z.zone)}${z.source === 'ai' ? ` · 분석 종가 대비 ${gap((z.zone[0]+z.zone[1])/2,p.close)}` : ''}</small>` : '';
+    const range = z ? `<small class="cl-range">${z.source === 'analyst' ? 'AI 분석가 시나리오 가격대' : z.source === 'calc' ? '20거래일 변동성 참고 범위' : '20거래일 예상 범위'} ${zone(z.zone)}${z.source === 'ai' ? ` · 분석 종가 대비 ${gap((z.zone[0]+z.zone[1])/2,p.close)}` : ''}</small>` : '';
     return `<div class="cl-px">${condition}${range}</div>`;
   };
   // G-173: once prices exist after the AI's date, each row says how its range fared and the card says which one played out.
@@ -211,6 +211,8 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .cl-row .cl-px{display:contents}.cl-row .cl-px b{grid-area:px;justify-self:end;font-size:18px;font-weight:500;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
 .cl-row .cl-px small{grid-area:sub;padding:0;font-size:12px;color:var(--muted)}.cl-row .cl-px small.cl-range{grid-area:rng}
 .cl-row .cl-more{grid-area:more}
+/* A range price ("272,000원 ~ 278,000원") wraps at the tilde instead of squeezing the scenario name to one letter a line. */
+.cl-row .cl-what>b{white-space:nowrap}.cl-row .cl-px b{max-width:9.5em;text-align:right;text-wrap:balance}
 :root body .cl-sc{margin:0 0 12px;border:0;border-radius:18px;background:var(--soft);padding:12px 14px 6px}
 :root body .cl-check{border-radius:18px}
 .cl-head{display:flex;align-items:center;gap:10px;margin:-4px -6px 8px;padding:6px;border-radius:16px;text-decoration:none;color:inherit}.cl-head:active{background:var(--soft)}.cl-head>span{flex:1;min-width:0}.cl-head .cl-k{display:block}.cl-head .cl-line{margin:2px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.cl-head>i{font-style:normal;font-size:22px;color:var(--muted)}

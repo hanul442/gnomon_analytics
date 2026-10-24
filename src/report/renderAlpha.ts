@@ -108,17 +108,14 @@ export const ONBOARDING_QUESTIONS = [
   { key: 'horizon', title: '보통 얼마나 들고 가세요?', type: 'one', options: HORIZON },
   { key: 'style', title: '내 투자 스타일에 가까운 것은?', note: '여러 개 골라도 돼요', type: 'many', options: ['저평가 가치주', '성장주', '추세·모멘텀', '배당', '지수·ETF 위주', '테마·이슈', '단타·스캘핑', '아직 정하지 않았어요'] },
   { key: 'assets', title: '투자하는 자산은?', note: '여러 개 골라도 돼요', type: 'many', options: ASSETS },
-  { key: 'size', title: '투자 금액은 어느 정도예요?', note: '답하고 싶지 않으면 마지막을 골라 주세요', type: 'one', options: ['500만 원 미만', '500만~3천만 원', '3천만~1억 원', '1억 원 이상', '답하지 않을게요'] },
   { key: 'freq', title: '얼마나 자주 사고파세요?', type: 'one', options: ['거의 매일', '일주일에 몇 번', '한 달에 몇 번', '몇 달에 한 번', '거의 안 팔고 모아요'] },
   { key: 'when', title: '시장을 주로 보는 때는?', note: '여러 개 골라도 돼요', type: 'many', options: ['장 시작 전', '장중 틈틈이', '점심시간', '장 마감 뒤 저녁', '주말에 몰아서'] },
   { key: 'decide', section: '2. 판단하는 방식', title: '매매 결정은 주로 어떻게 하세요?', type: 'one', options: ['직접 분석해요', '리포트·뉴스를 참고해요', '유튜브·커뮤니티를 참고해요', '지인·전문가 추천을 따라요', '아직 잘 모르겠어요'] },
-  { key: 'risk', title: '한 종목이 얼마나 빠지면 견디기 어려우세요?', type: 'one', options: ['-5%면 불안해요', '-10% 정도', '-20% 정도', '-30% 넘어도 기다려요', '생각해 본 적 없어요'] },
-  { key: 'stop', title: '손절이나 익절 규칙이 있나요?', type: 'one', options: ['정해 두고 지켜요', '정해 두지만 잘 못 지켜요', '그때그때 판단해요', '없어요'] },
   { key: 'hard', title: '투자에서 가장 어려운 것은?', note: '최대 3개', type: 'many', options: ['살 종목 고르기', '사는 타이밍', '파는 타이밍', '뉴스·공시 해석', '재무제표 읽기', '차트 읽기', '감정 조절', '정보가 너무 많아요'] },
   { key: 'sources', title: '정보는 주로 어디서 얻으세요?', note: '여러 개 골라도 돼요', type: 'many', options: ['증권사 앱', '네이버 증권·종목토론', '증권사 리포트', '유튜브', '텔레그램·카카오 리딩방', '경제 뉴스', '지인', 'AI 챗봇'] },
   { key: 'trustAi', title: 'AI가 쓴 투자 해설을 얼마나 믿을 것 같아요?', type: 'one', options: ['거의 안 믿어요', '참고만 해요', '근거가 있으면 믿어요', '꽤 믿어요'] },
   { key: 'sectors', section: '3. 관심사', title: '관심 있는 업종을 골라 주세요', note: '여러 개 골라도 돼요', type: 'many', options: SECTORS },
-  { key: 'tickers', title: '갖고 있거나 지켜보는 종목이 있나요?', note: '최대 10개 · 관심 종목에 바로 담아 드려요', type: 'tickers', options: [] },
+  { key: 'tickers', title: '지켜보는 종목이 있나요?', note: '최대 10개 · 관심 종목에 바로 넣어 드려요. 보유 여부는 묻지 않아요', type: 'tickers', options: [] },
   { key: 'interests', title: '그노몬에서 주로 보고 싶은 것은?', note: '여러 개 골라도 돼요', type: 'many', options: ['AI 해설·위원회', '기술적 신호·차트', '외국인·기관 수급', '실적·밸류에이션', '공시·뉴스', '전략·백테스트', '모의투자·성적표', '조건 검색(스크리너)'] },
   { key: 'alerts', title: '받고 싶은 알림은?', note: '여러 개 골라도 돼요', type: 'many', options: ['관심 종목 급등락', '관심 종목 공시', '강세·약세 전환 가격 돌파·이탈', '조건 검색에 새로 걸린 종목', '매일 아침 요약', '알림은 싫어요'] },
   { key: 'explain', section: '4. 그노몬에 바라는 것', title: '설명은 어느 수준이 좋아요?', type: 'one', options: EXPLAIN },
@@ -137,7 +134,7 @@ export function renderOnboarding(): string {
     if (x.type === 'tickers') return `<div class="q" data-q="${x.key}">${head}<div class="fld"><input id="tk-in" placeholder="종목 이름이나 코드" autocomplete="off"></div><div class="sugg" id="tk-sugg" hidden></div><div class="picked" id="tk-picked"></div></div>`;
     return `<div class="q" data-q="${x.key}">${head}<div class="opts">${x.options.map((o) => `<label><input type="${x.type === 'one' ? 'radio' : 'checkbox'}" name="${x.key}" value="${o}">${o}</label>`).join('')}</div></div>`;
   }).join('');
-  const body = `${PAGE_CSS}<section class="card form-card" style="max-width:720px"><div class="eyebrow"><span>맞춤 설문</span><span>약 7분 · ${ONBOARDING_QUESTIONS.length}문항</span></div><h1>나에게 맞는 그노몬 만들기</h1>
+  const body = `${PAGE_CSS}<section class="card form-card" style="max-width:720px"><div class="eyebrow"><span>화면 설정 설문</span><span>약 7분 · ${ONBOARDING_QUESTIONS.length}문항</span></div><h1>내 화면 설정하기</h1>
 <p class="muted">네 부분(나의 투자 · 판단하는 방식 · 관심사 · 바라는 것)으로 나눠 물어요. 답에 따라 보기 방식, 홈의 '오늘 볼 것', 관심 종목, 설명 수준이 정해져요. 모르는 건 건너뛰어도 되고, 언제든 ☰ 메뉴에서 다시 할 수 있어요. 답은 서비스 개선에만 써요.</p>${NO_API}
 <div class="stepbar" aria-hidden="true" style="position:sticky;top:64px;z-index:3"><i id="prog"></i></div><style>.sv-sec{font-size:18px;margin:26px 0 4px;padding-top:14px;border-top:2px solid var(--navy);color:var(--accent-strong)}</style><form id="survey">${q}<button class="btn-primary" type="submit">완료하고 내 홈 보기</button><div id="out" aria-live="polite"></div></form></section>`;
   const script = `<script>
@@ -371,7 +368,8 @@ function adminParts(): { body: string; script: string } {
       // G-241: closed-beta applicants, by each person's latest wrap-up answer (D.surveys is newest first). Interest only: no account changes.
       var wseen = {}, beta = D.surveys.filter(function (s) { if (s.kind !== 'wrapup' || wseen[s.user_id || s.email]) return false; wseen[s.user_id || s.email] = 1; return parse(s.answers).beta === ${JSON.stringify(BETA_YES)}; }).length;
       // Each tile opens the tab that holds its detail.
-      return '<div class="kpis">' + [[D.users.length, '가입자', 'users'], [active, '7일 활성', 'users'], [D.creditRequests.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 크레딧 요청', 'credit'], [D.actions.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 리포트 요청', 'action'], [usd(D.spend.today) + ' / ' + usd(D.spend.dailyCap), '오늘 AI 비용 / 한도', 'asks'], [usd(D.spend.month), '30일 AI 비용', 'asks'], [D.surveys.length, '설문 응답 (7일 새로 ' + fresh + ')', 'surveys'], [npsOf(nps), 'NPS (' + nps.length + '명, 평균 ' + avg(nps) + ')', 'surveys'], [beta, '클로즈드 베타 신청', 'surveys'], ['👍 ' + up + ' · 👎 ' + down, '화면 피드백', 'voice']].map(function (k) { return '<button type="button" class="kpi" data-go="' + k[2] + '"><b>' + k[0] + '</b><span>' + k[1] + '</span></button>'; }).join('') + '</div>' +
+      var vs = D.visits || { week: 0, prevWeek: 0, returned: 0, returnRate: null };
+      return '<div class="kpis">' + [[vs.week, '7일 방문 기기', 'usage'], [vs.returnRate === null ? '-' : vs.returnRate + '%', '주간 재방문 (지난주 ' + vs.prevWeek + '대 중 ' + vs.returned + ')', 'usage'], [D.users.length, '가입자', 'users'], [active, '7일 활성', 'users'], [D.creditRequests.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 크레딧 요청', 'credit'], [D.actions.filter(function (r) { return r.status === 'pending'; }).length, '대기 중 리포트 요청', 'action'], [usd(D.spend.today) + ' / ' + usd(D.spend.dailyCap), '오늘 AI 비용 / 한도', 'asks'], [usd(D.spend.month), '30일 AI 비용', 'asks'], [D.surveys.length, '설문 응답 (7일 새로 ' + fresh + ')', 'surveys'], [npsOf(nps), 'NPS (' + nps.length + '명, 평균 ' + avg(nps) + ')', 'surveys'], [beta, '클로즈드 베타 신청', 'surveys'], ['👍 ' + up + ' · 👎 ' + down, '화면 피드백', 'voice']].map(function (k) { return '<button type="button" class="kpi" data-go="' + k[2] + '"><b>' + k[0] + '</b><span>' + k[1] + '</span></button>'; }).join('') + '</div>' +
         '<div class="sv-head"><h3>최근 설문 응답</h3><button type="button" data-go="surveys">전체 보기</button></div>' + (D.surveys.length ? D.surveys.slice(0, 5).map(function (s) { return svItem(s, false); }).join('') : '<p class="muted small">아직 받은 설문 응답이 없어요.</p>');
     },
     credit: function () {
@@ -417,7 +415,12 @@ function adminParts(): { body: string; script: string } {
     },
     usage: function () {
       var max = Math.max.apply(null, D.events.map(function (e) { return e.n; }).concat([1]));
-      return '<p class="muted small">최근 7일, 이벤트 이름별 횟수와 사람 수예요.</p><div class="bars">' + D.events.map(function (e) { return '<div><span>' + esc(e.name) + '</span><i style="width:' + (e.n / max * 100) + '%"></i><span class="num">' + e.n + '·' + e.users + '명</span></div>'; }).join('') + '</div>';
+      var vs = D.visits || { days: [], sources: [] }, SRC = { '': '바로·앱 안', search: '검색', insta: '인스타그램', share: '공유 링크', other: '다른 사이트' };
+      var vmax = Math.max.apply(null, vs.days.map(function (d) { return d.n; }).concat([1])), smax = Math.max.apply(null, vs.sources.map(function (d) { return d.n; }).concat([1]));
+      var visits = '<h3>방문 (로그인 없이 세요)</h3><p class="muted small">기기마다 하루 한 번. 주간 재방문은 지난주(8~14일 전)에 온 기기 중 이번 주(최근 7일)에 다시 온 비율이에요.</p>' +
+        (vs.days.length ? '<div class="bars">' + vs.days.map(function (d) { return '<div><span>' + esc(d.day.slice(5)) + '</span><i style="width:' + (d.n / vmax * 100) + '%"></i><span class="num">' + d.n + '</span></div>'; }).join('') + '</div>' : '<p class="muted small">아직 기록이 없어요.</p>') +
+        '<h3>이번 주 들어온 길</h3><div class="bars">' + vs.sources.map(function (d) { return '<div><span>' + esc(SRC[d.src] || d.src) + '</span><i style="width:' + (d.n / smax * 100) + '%"></i><span class="num">' + d.n + '</span></div>'; }).join('') + '</div><h3>이벤트</h3>';
+      return visits + '<p class="muted small">최근 7일, 이벤트 이름별 횟수와 사람 수예요.</p><div class="bars">' + D.events.map(function (e) { return '<div><span>' + esc(e.name) + '</span><i style="width:' + (e.n / max * 100) + '%"></i><span class="num">' + e.n + '·' + e.users + '명</span></div>'; }).join('') + '</div>';
     },
   };
   var draw = function () {

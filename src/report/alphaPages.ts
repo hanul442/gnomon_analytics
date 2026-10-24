@@ -22,9 +22,9 @@ const KIND_TAG: Record<BannerKind, [string, string]> = { notice: ['공지', '�
 export const ALPHA_BANNERS: readonly Banner[] = [
   { kind: 'ad', brand: 'hanul', title: '아이디어를 실험하고, 제품으로 만듭니다.', text: 'AI 리서치부터 일상의 기록까지. HANUL의 프로젝트를 만나보세요.', href: 'hanul.html', cta: '프로젝트 둘러보기', tone: 'navy' },
   { kind: 'guide', title: '처음이면 1분 둘러보기', text: '실제 화면 위에서 결론 카드, 시나리오, 위원회 토론을 차례로 짚어 드려요.', href: 'guide.html', cta: '사용법 보기', tone: 'navy' },
-  { kind: 'survey', title: '맞춤 설문 (약 7분)', text: '투자 경험·스타일·궁금한 것을 알려 주시면 홈과 리포트가 그에 맞게 바뀌어요.', href: 'onboarding.html', cta: '설문 하기', tone: 'teal' },
+  { kind: 'survey', title: '화면 설정 설문 (약 7분)', text: '투자 경험·관심 업종·궁금한 것을 알려 주시면 보이는 순서와 설명 수준이 바뀌어요. 종목 판단은 모두에게 같아요.', href: 'onboarding.html', cta: '설문 하기', tone: 'teal' },
   { kind: 'survey', title: '이번 주 설문 (1분)', text: '이번 주에 가장 좋았던 것과 불편했던 것 하나씩만 알려 주세요.', href: 'survey.html?k=weekly', cta: '주간 설문 하기', tone: 'amber' },
-  { kind: 'ad', title: '프로 요금제 2주 무료 체험', text: '위원회 토론 전체, 남은 쟁점, 전문가 초청까지. 알파 기간 광고 자리 시험용 가상 광고예요.', href: 'pricing.html', cta: '요금제 보기', tone: 'navy' },
+  { kind: 'ad', title: '프로 요금제 (가상 광고)', text: '위원회 토론 전체, 남은 쟁점, 전문가 초청까지. 알파 기간 광고 자리 시험용 가상 광고예요.', href: 'pricing.html', cta: '요금제 보기', tone: 'navy' },
   { kind: 'ad', title: '509OP 육군 부사관 지원', text: '상황간부 · 영상간부 | 상황을 판단하고, 경계를 이어가는 당신의 다음 커리어.', href: '509op.html', cta: '육군 간부 혜택 보기', tone: 'teal' },
   { kind: 'ad', title: '여기에 광고가 들어갈 수 있어요', text: '증권·핀테크 파트너 광고 자리예요. 지금은 시험용 가상 광고이고, 실제 상품이 아니에요.', cta: '광고 문의 (준비 중)', tone: 'rose' },
 ];
@@ -129,7 +129,7 @@ const PAGE = `<style>.gd{max-width:760px;margin:0 auto}.gd h2{margin:26px 0 8px;
 
 /** G-74/G-190: the guide, by what a reader wants to do, matching today's screens (the old alpha screenshots were dropped because they showed screens that no longer exist), with a live tour per page. */
 const GUIDE_STEPS: readonly { id: string; title: string; body: string }[] = [
-  { id: 'start', title: '시작하기', body: `<ol><li><b>가입</b>: 받은 초대 코드로 한 번 가입하면, 다음부터는 이메일과 비밀번호로 로그인해요.</li><li><b>맞춤 설문 (약 7분)</b>: 투자 경험, 스타일, 보유 기간, 관심 업종을 알려 주시면 홈의 '오늘 볼 것'과 종목 화면이 그에 맞게 바뀌어요. 전체 → 맞춤 설문에서 언제든 고쳐요.</li><li><b>보기 방식</b>: 전체 메뉴의 보기 방식에서 초보 · 단타 · 스윙 · 장기 · 전체 중 고르면 바로 바뀌어요.</li><li><b>화면 밝기</b>: 기본은 어두운 화면이에요. 전체 메뉴(☰) 맨 위 <b>화면</b>에서 밝게 또는 기기 설정을 따라가게 바꿔요.</li><li><b>크레딧</b>: 테스트 계정은 매달 기본 크레딧을 받아요(알파 ${TESTERS.alpha.monthlyCredits}, 베타 ${TESTERS.beta.monthlyCredits}). 리포트 만들기 ${CREDIT_COST.report}, AI 질문 ${CREDIT_COST.question}, 심층 리포트 열기 ${CREDIT_COST.unlock}처럼 쓰기 전에 버튼에 필요한 양이 보여요. 작업이 실패하면 자동으로 돌려드려요.</li></ol>` },
+  { id: 'start', title: '시작하기', body: `<ol><li><b>가입</b>: 받은 초대 코드로 한 번 가입하면, 다음부터는 이메일과 비밀번호로 로그인해요.</li><li><b>화면 설정 설문 (약 7분)</b>: 투자 경험, 스타일, 보유 기간, 관심 업종을 알려 주시면 홈의 '오늘 볼 것'과 종목 화면의 보이는 순서와 설명 수준이 바뀌어요. 종목 판단은 모두에게 같아요. 전체 → 화면 설정 설문에서 언제든 고쳐요.</li><li><b>보기 방식</b>: 전체 메뉴의 보기 방식에서 초보 · 단타 · 스윙 · 장기 · 전체 중 고르면 바로 바뀌어요.</li><li><b>화면 밝기</b>: 기본은 어두운 화면이에요. 전체 메뉴(☰) 맨 위 <b>화면</b>에서 밝게 또는 기기 설정을 따라가게 바꿔요.</li><li><b>크레딧</b>: 테스트 계정은 매달 기본 크레딧을 받아요(알파 ${TESTERS.alpha.monthlyCredits}, 베타 ${TESTERS.beta.monthlyCredits}). 리포트 만들기 ${CREDIT_COST.report}, AI 질문 ${CREDIT_COST.question}, 심층 리포트 열기 ${CREDIT_COST.unlock}처럼 쓰기 전에 버튼에 필요한 양이 보여요. 작업이 실패하면 자동으로 돌려드려요.</li></ol>` },
   { id: 'menu', title: '메뉴 길잡이', body: `<ul><li><b>아래 막대</b>(휴대폰): 홈 · 찾기 · 위원회 · 나, 네 탭이 전부예요. 한 화면 안의 칸도 위쪽 줄이 아니라 이 막대에서 바꿔요. 넓은 화면에서는 같은 메뉴가 위쪽에 있어요.</li><li><b>🔔</b>: 가격 알림, 새 리포트, 조건에 걸린 종목, 업데이트 소식이 모여요. 모두 지우기로 한 번에 비워요.</li><li><b>✦ 버튼</b>: 지금 보는 화면에 대해 AI에게 바로 물어요(${CREDIT_COST.question}크레딧).</li><li><b>나</b>: 알림함, 내 리포트, 내 토론, 설정(계정, 화면 밝기, 알림), FAQ·문의, 이 사용법이 있어요.</li></ul>` },
   { id: 'home', title: '홈 화면', body: `<ol><li><b>요약</b>: 오늘 시장 한 줄, 큰 배너(공지·이벤트·설문, 옆으로 밀어 넘겨요), 내 종목 오늘, 시장·위원회·이슈 맛보기.</li><li><b>시장</b>: 증시 → 금리 → 환율 → 원자재 순서로, 숫자마다 한 번씩만 나와요. 카드를 누르면 차트가 크게 열려요.</li><li><b>위원회</b>: 시장 AI 위원회의 오늘 판단이에요.</li><li><b>이슈</b>: 한국·세계 뉴스를 한 순위로 모았어요. 누르면 앱 안에서 AI 3줄 요약과 관련 종목을 보고, 원문으로도 갈 수 있어요.</li><li>네 칸은 휴대폰에서 아래 막대로 바꿔요.</li></ol>` },
   { id: 'report', title: '종목 화면 네 칸', body: `<ul class="gd-tabs"><li><b>위원회</b>: 가격과 등락, 지금 판단, 앞으로 20거래일 가격 지도와 강세·기본·약세 확률, 표결과 토론.</li><li><b>차트</b>: 캔들 차트와 타이밍·전략. 차트를 누르면 크게 열려요.</li><li><b>기업</b>: 종목 정보(오늘 범위·거래대금), 기업 체력 한눈에, 투자 지표, 재무제표, 애널리스트 의견, 수급과 같은 테마.</li><li><b>소식</b>: 뉴스와 공시. 원문으로 바로 가요.</li></ul><p>휴대폰에서는 아래 막대에서 칸을 바꿔요. 리포트가 아직 없는 종목도 같은 칸이 있어요. 계산과 재무·뉴스는 바로 보이고, AI 부분은 리포트를 만들면 채워져요.</p>` },
@@ -150,7 +150,7 @@ export function renderGuide(): string {
   const body = `${PAGE}<section class="hero"><div class="hero-main"><div class="eyebrow"><span>알파 테스트</span><span>5분</span></div><h1>그노몬 사용법</h1><p>그노몬(GNOMON)은 공개 데이터로 계산한 신호와 AI 위원회의 해설을 근거와 함께 보여 주는 리서치 서비스예요. 처음이라면 아래 네 가지만 해 보세요.</p>
 <ol class="gd-quick"><li><b>검색</b>홈 검색창에 관심 있는 종목을 적어요.</li><li><b>요약 읽기</b>종목 화면의 요약 탭에서 가격, 예측 범위, 최신 소식을 봐요.</li><li><b>☆ 관심</b>계속 볼 종목은 ☆로 모아요.</li><li><b>리포트</b>궁금하면 리포트 만들기로 AI 위원회를 불러요.</li></ol>
 <p class="hero-line">직접 눌러 보며 익히려면 둘러보기를 시작하세요.</p>
-<div class="gd-tours"><a class="btn-primary" href="index.html?tour=1">홈 둘러보기 시작 ›</a><a class="btn-ghost" href="000660/index.html?tour=1">종목 리포트 둘러보기 ›</a><a class="btn-ghost" href="screener.html?tour=1">검색 조건 둘러보기 ›</a></div></div></section>
+<div class="gd-tours"><a class="btn-primary" href="index.html?welcome=1">처음 안내 다시 보기 ›</a><a class="btn-ghost" href="committee-guide.html">위원회가 뭐예요? ›</a><a class="btn-ghost" href="index.html?tour=1">홈 둘러보기 시작 ›</a><a class="btn-ghost" href="000660/index.html?tour=1">종목 리포트 둘러보기 ›</a><a class="btn-ghost" href="screener.html?tour=1">검색 조건 둘러보기 ›</a></div></div></section>
 <section class="block gd"><nav class="gd-toc" aria-label="목차">${toc}</nav>${steps}
 <p class="gd-note">그노몬의 모든 내용은 계산 결과와 시나리오 해설이고, 투자 권유가 아니에요. 투자 판단과 결과의 책임은 투자자 본인에게 있어요.</p></section>
 <style>.gd{max-width:980px}.gd-tours{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.gd-tours a{display:inline-flex;text-decoration:none}.gd-toc{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}.gd-toc a{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;text-decoration:none;color:var(--fg)}
@@ -243,6 +243,44 @@ export function renderSurvey(): string {
 })();
 </script>`;
   return shell('', '설문 · 그노몬', body, { scripts: script, noFeedback: true });
+}
+
+/**
+ * G-296 (한서님 10/24): '위원회가 뭐예요?' for readers opening the app for the first time. Who sits on the committee,
+ * how it reaches a view, how to read the three odds, where it is scored, and what it does not do (no advice to one
+ * person). Linked from the welcome, the stock page's first-visit card, the 위원회 tab and the guide.
+ */
+export function renderCommitteeGuide(): string {
+  const step = (n: number, t: string, d: string) => `<li><span class="cg-n">${n}</span><div><b>${t}</b><small>${d}</small></div></li>`;
+  const body = `<article class="cg"><h1>위원회가 뭐예요?</h1><p class="cg-lead">한 종목을 AI 여러 명이 나눠 보고, 의견을 모아 정리하는 회의예요. 한 AI의 말만 듣는 것보다 놓치는 근거가 줄어요.</p>
+<h2>누가 앉아 있나요</h2>
+<div class="cg-who"><div class="cg-box"><p><b>분석가</b><span>6명</span></p><small>추세 · 평균회귀 · 파동 · 거래량·수급 · 실적·밸류 · 이벤트</small></div>
+<div class="cg-box"><p><b>데스크</b><span>5곳</span></p><small>시장 · 기술 · 수급 · 실적 · 공시·뉴스</small></div>
+<div class="cg-two"><div class="cg-box"><p><b>업종 전문위원</b></p><small>반도체처럼 업종을 알 때만 들어와요</small></div><div class="cg-box cg-dark"><p><b>레드팀</b></p><small>다수 의견에 일부러 반대해요</small></div></div></div>
+<h2>어떻게 결론을 내나요</h2>
+<ol class="cg-box cg-steps">${step(1, '각자 혼자 판단', '다른 위원 의견을 모른 채 강세·중립·약세를 정해요')}${step(2, '토론', '근거가 센 위원끼리 서로 반박해요')}${step(3, '정리', '레드팀이 합의한 것과 안 풀린 것을 나눠요')}</ol>
+<h2>확률은 이렇게 읽어요</h2>
+<div class="cg-box cg-odds"><small>앞으로 20거래일 (예시)</small><div class="cg-bar" role="img" aria-label="예시: 강세 30%, 기본 45%, 약세 25%"><span class="b" style="flex:30">30%</span><span class="n" style="flex:45">45%</span><span class="s" style="flex:25">25%</span></div><div class="cg-bar-l"><span style="flex:30">강세</span><span style="flex:45">기본</span><span style="flex:25">약세</span></div>
+<ul><li>출발점은 <b>지난 10년 통계</b>예요. 위원회는 근거에 따라 여기서 조금만 움직여요.</li><li>가장 큰 칸이 꼭 맞는 건 아니에요. 셋 다 일어날 수 있는 길이에요.</li></ul></div>
+<h2>맞았는지 채점해요</h2>
+<a class="cg-box cg-link" href="scorecard.html"><div><b>성적표</b><small>모든 판단이 만든 날 그대로 남고, 20거래일 뒤 실제 가격으로 채점돼요.</small></div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></a>
+<h2>위원회가 하지 않는 것</h2>
+<ul class="cg-box cg-not"><li><span>✕</span>나에게 맞춘 매수·매도 조언</li><li><span>✕</span>수익 보장이나 목표 수익률 약속</li><li><span>✓</span>공개 데이터와 근거를 정리해 공부를 돕는 것</li></ul>
+<p class="cg-foot">그노몬의 모든 내용은 계산 결과와 시나리오 해설이고, 투자 권유가 아니에요. 투자 판단과 결과의 책임은 투자자 본인에게 있어요.</p></article>
+<style>.cg{max-width:560px;margin:0 auto;padding:8px 4px 24px}.cg h1{margin:8px 4px 0;font-size:30px;font-weight:800;letter-spacing:-.02em}.cg-lead{margin:10px 4px 0;font-size:15px;line-height:1.65;color:var(--fg2)}
+.cg h2{margin:28px 4px 10px;font-size:13px;font-weight:700;color:var(--muted)}
+.cg-box{display:block;padding:14px 16px;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--fg);text-decoration:none}
+.cg-box p{display:flex;justify-content:space-between;align-items:baseline;margin:0}.cg-box p b{font-size:15.5px}.cg-box p span{font-size:13px;font-weight:700}.cg-box small{display:block;font-size:13px;color:var(--fg2);margin-top:4px;line-height:1.5}
+.cg-who{display:flex;flex-direction:column;gap:8px}.cg-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cg-dark{background:var(--btn-bg);border-color:var(--btn-bg)}.cg-dark p b{color:var(--btn-fg)}.cg-dark small{color:var(--btn-fg);opacity:.75}
+.cg-steps{margin:0;padding:4px 16px;list-style:none}.cg-steps li{display:flex;gap:12px;padding:10px 0}.cg-steps li+li{border-top:1px solid var(--line)}.cg-steps b{font-size:14.5px}.cg-steps small{margin-top:2px}
+.cg-n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--btn-bg);color:var(--btn-fg);font-size:12px;font-weight:800;display:grid;place-items:center}
+.cg-odds>small{margin:0;color:var(--muted);font-size:12px}.cg-bar{display:flex;gap:3px;height:36px;margin-top:10px;border-radius:12px;overflow:hidden}.cg-bar span{display:grid;place-items:center;font-size:13px;font-weight:800}
+.cg-bar .b{background:var(--btn-bg);color:var(--btn-fg)}.cg-bar .n{background:var(--line-strong)}.cg-bar .s{background:var(--surface-solid);border:1.5px solid var(--fg);border-radius:0 12px 12px 0;box-sizing:border-box}
+.cg-bar-l{display:flex;gap:3px;margin-top:6px;font-size:12px;color:var(--fg2)}.cg-bar-l span{text-align:center}.cg-odds ul{margin:14px 0 0;padding-left:18px;font-size:13px;line-height:1.6;color:var(--fg2)}.cg-odds ul b{color:var(--fg)}
+.cg-link{display:flex;align-items:center;gap:12px}.cg-link>div{flex:1}.cg-link b{font-size:15px}.cg-link svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.cg-not{margin:0;padding:4px 16px;list-style:none}.cg-not li{display:flex;gap:10px;padding:10px 0;font-size:13.5px;line-height:1.5}.cg-not li+li{border-top:1px solid var(--line)}.cg-not span{font-weight:800}
+.cg-foot{margin:20px 4px 0;font-size:12px;line-height:1.6;color:var(--muted)}</style>`;
+  return shell('', '위원회가 뭐예요? · 그노몬', body, {});
 }
 
 export function renderUpdates(): string { return shell('','업데이트 기록 · 그노몬',`<div class="pg-title"><h1>업데이트 기록</h1></div><section class="hero"><p>큰 변화는 첫 자리, 중간 변화는 둘째 자리, 작은 수정은 셋째 자리를 올려요.</p><p class="muted">v0.0.0~v1.4.0은 기존 커밋을 기능별로 묶은 회고 기록입니다. 당시 배포 태그와 일대일 대응하지 않습니다. 현재 버전은 v${VERSION}이며 공개된 이 화면의 릴리스 노트와 사용법을 함께 확인해 주세요.</p></section><section class="card block"><h2>사용 순서</h2><ol><li><b>분석 보기</b>: 리포트가 없는 종목도 동일한 화면 구조로 열립니다. 미생성 AI 분석은 같은 위치에 잠금으로 남고, 차트와 기술 계산은 먼저 볼 수 있어요. 기술의 피보나치·볼린저·RSI·MACD·ATR을 누르면 해당 지표를 켠 차트로 이동하고, 기술로 돌아가기로 복귀할 수 있어요. 코인은 차트에서 일봉 또는 1·5·15·60분봉을 선택하세요. 시나리오를 펼치면 미니 차트를 보고, 차트 탭에서는 강세·기본·약세를 비교할 수 있어요. 수급 탭에서 거래량·OBV·매집/분산을 확인하세요.</li><li><b>리포트 만들기</b>: 생성 버튼을 누르면 바로 작업이 시작됩니다. 기존 심층 리포트는 요금제 또는 개별 열람 권한에 따라 열리며, 미권한 영역은 잠금으로 표시됩니다.</li><li><b>토론 참여</b>: AI 위원회 토론 바로 아래 질문을 적고, 입력창 옆 + 버튼으로 위원회 전체 또는 전문가를 고르세요. 보내기 전에 표시된 크레딧 비용을 확인하세요.</li><li><b>AI 검색 조건</b>: 스크리너에서 원하는 종목의 특징을 문장으로 적으세요. AI가 제안한 조건을 확인·수정한 뒤 적용하고, 다시 사용할 조건은 저장하세요.</li><li><b>진행 상태</b>: 채팅·검색·필터·탭 준비에 실제 대기가 길어질 때 Thinking Orbs가 표시됩니다. 즉시 준비되는 화면은 바로 볼 수 있습니다.</li></ol><p><a href="guide.html">전체 사용법 보기</a></p></section><section class="card block"><h2>준비 중 · 기업 이벤트와 테마</h2><p>실적 발표·배당·임원/주요주주 공시와 거래대금 비교부터 연결합니다. 발표 전 예상치 이력에 기반한 분기 서프라이즈와 근거가 확인된 테마 탐색은 후속 작업입니다. 아직 완료된 릴리스에 포함하지 않습니다.</p></section>${(()=>{const rel=([v,date,text]:readonly [string,string,string])=>`<section class="card block rel"><h2>v${v} <small>${date}</small></h2><ul class="rel-list">${noteItems(text).map((x)=>`<li>${x}</li>`).join('')}</ul></section>`;return RELEASES.slice(0,3).map(rel).join('')+(RELEASES.length>3?`<details class="rel-old"><summary>지난 업데이트 ${RELEASES.length-3}개 보기</summary>${RELEASES.slice(3).map(rel).join('')}</details>`:'');})()}`,{}); }
