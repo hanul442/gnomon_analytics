@@ -335,8 +335,8 @@ async function adminOverview(env: Env, now: Date) {
     q('SELECT x.id, x.symbol, x.tier, x.model, x.question, x.credits, x.usd, x.status, x.rating, x.created_at, u.email FROM questions x JOIN users u ON u.id = x.user_id ORDER BY x.id DESC LIMIT 100'),
     db.prepare('SELECT COALESCE(SUM(CASE WHEN created_at >= ? THEN usd END), 0) AS today, COALESCE(SUM(usd), 0) AS month FROM questions WHERE created_at >= ?').bind(kstDayStart(now), month).first<{ today: number; month: number }>(),
   ]);
-  const pulses = surveys.filter((x) => x.kind !== 'onboarding');
-  return { users, creditRequests, actions, invites, feedback, surveys, pulses, events, questions, spend: { ...spend, dailyCap: Number(env.AI_DAILY_USD ?? 5) } };
+  const pulses = surveys.filter((x) => x.kind !== 'onboarding'), visits = await visitStats(db, now);
+  return { visits, users, creditRequests, actions, invites, feedback, surveys, pulses, events, questions, spend: { ...spend, dailyCap: Number(env.AI_DAILY_USD ?? 5) } };
 }
 
 type Handler = (ctx: { req: Request; env: Env; deps: Deps; now: Date; params: string[] }) => Promise<unknown>;
@@ -940,6 +940,37 @@ route('POST', '/feedback', async ({ req, env, now }) => {
   await env.DB.prepare('INSERT INTO feedback (user_id, page, target, rating, text, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(u.id, str(b.page, 200), target, rating, text, iso(now)).run();
   return { ok: true };
 });
+
+// G-293: anonymous visits. No sign-in: the browser sends a random device id once per KST day and where it came from.
+export const VISIT_SOURCES = ['', 'search', 'insta', 'share', 'other'] as const;
+route('POST', '/visit', async ({ req, env, now }) => {
+  const b = await body(req), vid = typeof b.v === 'string' && /^[a-f0-9]{16,32}$/.test(b.v) ? b.v : '';
+  if (!vid) fail(400, 'BAD_VISIT', '방문 기록이 맞지 않아요.');
+  const src = (VISIT_SOURCES as readonly string[]).includes(String(b.src ?? '')) ? String(b.src ?? '') : 'other';
+  await env.DB.prepare('INSERT OR IGNORE INTO visits (day, vid, src) VALUES (?, ?, ?)').bind(kst(now).slice(0, 10), vid, src).run();
+  return { ok: true };
+});
+
+/** G-293: visitors per day (28 days), this week's and last week's devices, how many came back, and sources this week. */
+export async function visitStats(db: Env['DB'], now: Date) {
+  const day = (back: number) => kst(new Date(now.getTime() - back * 86_400_000)).slice(0, 10);
+  const q = <T>(sql: string, ...v: unknown[]) => db.prepare(sql).bind(...v).all<T>().then((r) => r.results);
+  const [days, week, prev, back, sources] = await Promise.all([
+    q<{ day: string; n: number }>('SELECT day, COUNT(*) AS n FROM visits WHERE day >= ? GROUP BY day ORDER BY day', day(27)),
+    db.prepare('SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE day >= ?').bind(day(6)).first<{ n: number }>(),
+    db.prepare('SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE day >= ? AND day <= ?').bind(day(13), day(7)).first<{ n: number }>(),
+    db.prepare('SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE day >= ? AND vid IN (SELECT vid FROM visits WHERE day >= ? AND day <= ?)').bind(day(6), day(13), day(7)).first<{ n: number }>(),
+    q<{ src: string; n: number }>('SELECT src, COUNT(*) AS n FROM visits WHERE day >= ? GROUP BY src ORDER BY n DESC', day(6)),
+  ]);
+  const p = prev?.n ?? 0, r = back?.n ?? 0;
+  return { days, week: week?.n ?? 0, prevWeek: p, returned: r, returnRate: p ? Math.round((r / p) * 1000) / 10 : null, sources };
+}
+
+/** G-293: visit rows are kept 120 days. */
+export async function pruneVisits(db: Env['DB'], now: Date): Promise<number> {
+  const r = await db.prepare('DELETE FROM visits WHERE day < ?').bind(kst(new Date(now.getTime() - 120 * 86_400_000)).slice(0, 10)).run();
+  return Number(r.meta?.changes ?? 0);
+}
 
 route('POST', '/events', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);
