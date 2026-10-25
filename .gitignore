@@ -6,3 +6,4 @@ site/
 test-artifacts/
 .fetch-cache/
 .cache/
+__pycache__/
