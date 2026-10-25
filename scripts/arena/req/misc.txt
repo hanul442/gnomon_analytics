@@ -1,0 +1,8 @@
+torch==2.8.0
+transformers==4.56.0
+einops==0.8.2
+jaxtyping==0.3.11
+numpy==2.2.6
+pandas==2.2.3
+lightning-utilities==0.15.3
+safetensors==0.8.0

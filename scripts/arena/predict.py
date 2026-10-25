@@ -10,7 +10,7 @@ Every model sees only bars up to the cutoff (the prep stage cuts them) and is pi
 Rows before the model's testFrom are skipped, so nothing is scored that the model could have trained on.
 
     python scripts/arena/predict.py --model chronos-2 [--shard 0/2] [--threads 2] [--limit 0]
-        [--kronos <Kronos checkout, for the kronos adapter>]
+        [--kronos / --kairos / --lagllama <code checkout, for those adapters>]
 """
 
 import argparse
@@ -52,14 +52,16 @@ def chronos_like(m, a):
 
     def run(rows):
         ctx = [torch.tensor(closes(r, m['context']), dtype=torch.float32) for r in rows]
-        q, _ = pipe.predict_quantiles(ctx, prediction_length=20, quantile_levels=LEVELS)
+        # The original T5 Chronos samples paths (20 by default); more samples give steadier quantiles.
+        extra = {'num_samples': 100} if 'chronos-t5' in m['hf'] else {}
+        q, _ = pipe.predict_quantiles(ctx, prediction_length=20, quantile_levels=LEVELS, **extra)
         out = []
         for k, r in enumerate(rows):
             qq = q[k] if isinstance(q, list) else q[k]
             qq = qq.reshape(-1, 20, len(LEVELS))[0, -1] if qq.dim() == 3 else qq[-1]
             out.append({'q': [round(float(v) / closes(r, 1)[-1], 5) for v in qq]})
         return out
-    return run, 64
+    return run, (4 if 'chronos-t5' in m['hf'] else 64)  # T5 samples 100 paths per row, which takes a lot of memory
 
 
 def timesfm(m, a):
@@ -154,7 +156,84 @@ def kronos(m, a):
     return by_length(run, m['context']), max(1, 128 // paths)
 
 
-ADAPTERS = {'chronos': chronos_like, 'chronos2': chronos_like, 'timesfm': timesfm, 'tirex': tirex, 'toto': toto, 'sundial': sundial, 'kronos': kronos}
+def timesfm1(m, a):
+    """TimesFM 2.0 (500M) through the older timesfm 1.x package; the experimental quantile head gives 10%..90%."""
+    import timesfm as tfm
+    from huggingface_hub import snapshot_download
+    path = snapshot_download(m['hf'], revision=m['revision'], allow_patterns=['torch_model.ckpt'])
+    model = tfm.TimesFm(hparams=tfm.TimesFmHparams(backend='cpu', per_core_batch_size=32, horizon_len=128, num_layers=50, use_positional_embedding=False, context_len=m['context']),
+                        checkpoint=tfm.TimesFmCheckpoint(path=os.path.join(path, 'torch_model.ckpt')))
+
+    def run(rows):
+        _, q = model.forecast([closes(r, m['context']) for r in rows], freq=[0] * len(rows))
+        return [{'q': [round(float(v) / closes(r, 1)[-1], 5) for v in q[k, 19, 1:10]]} for k, r in enumerate(rows)]
+    return run, 32
+
+
+def kairos(m, a):
+    sys.path.insert(0, a.kairos)
+    from tsfm.model.kairos import AutoModel  # noqa: E402
+    model = AutoModel.from_pretrained(m['hf'], revision=m['revision'], trust_remote_code=True).eval()
+
+    def run(rows):
+        ctx = torch.tensor(np.stack([closes(r, m['context']) for r in rows]), dtype=torch.float32)
+        q = model.generate(past_target=ctx, prediction_length=20, infer_is_positive=True, force_flip_invariance=True).prediction_outputs  # (batch, 9, 20)
+        return [{'q': [round(float(v) / closes(r, 1)[-1], 5) for v in q[k, :, 19]]} for k, r in enumerate(rows)]
+    return by_length(run, m['context']), 64
+
+
+def flowstate(m, a):
+    from tsfm_public import FlowStateForPrediction
+    model = FlowStateForPrediction.from_pretrained(m['hf'], revision=m['revision']).eval()
+
+    def run(rows):
+        ctx = torch.tensor(np.stack([closes(r, m['context']) for r in rows]), dtype=torch.float32).T.unsqueeze(-1)  # (context, batch, 1)
+        # Daily data without a weekly cycle: the scale the model card recommends.
+        q = model(ctx, scale_factor=0.0656, prediction_length=20, batch_first=False).quantile_outputs  # (batch, 9, 20, 1)
+        return [{'q': [round(float(v) / closes(r, 1)[-1], 5) for v in q[k, :, 19, 0]]} for k, r in enumerate(rows)]
+    return by_length(run, m['context']), 64
+
+
+def yinglong(m, a):
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shims'))  # CPU stand-ins for its GPU-only imports
+    from transformers import AutoModelForCausalLM
+    # Its rotary cache is built in bfloat16, so the whole model runs in bfloat16 as the model card does.
+    model = AutoModelForCausalLM.from_pretrained(m['hf'], revision=m['revision'], trust_remote_code=True, torch_dtype=torch.bfloat16).eval()
+
+    def run(rows):
+        ctx = torch.tensor(np.stack([closes(r, m['context']) for r in rows]), dtype=torch.bfloat16)
+        ctx = ctx[:, -(ctx.shape[1] // 32) * 32:]  # whole patches only
+        out = model.generate(ctx, future_token=20).float()  # (batch, 20, 99): the 1%..99% quantiles
+        return [{'q': [round(float(out[k, 19, int(l * 100) - 1]) / closes(r, 1)[-1], 5) for l in LEVELS]} for k, r in enumerate(rows)]
+    return by_length(run, m['context']), 32
+
+
+def lagllama(m, a):
+    import pandas as pd
+    from gluonts.dataset.common import ListDataset
+    from huggingface_hub import hf_hub_download
+    sys.path.insert(0, a.lagllama)
+    from lag_llama.gluon.estimator import LagLlamaEstimator  # noqa: E402
+    ckpt = hf_hub_download(m['hf'], 'lag-llama.ckpt', revision=m['revision'])
+    os.environ['TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD'] = '1'  # the checkpoint pickles gluonts classes; it is pinned to a revision
+    hp = torch.load(ckpt, map_location='cpu', weights_only=False)['hyper_parameters']['model_kwargs']
+    est = LagLlamaEstimator(ckpt_path=ckpt, prediction_length=20, context_length=m['context'], input_size=hp['input_size'], n_layer=hp['n_layer'],
+                            n_embd_per_head=hp['n_embd_per_head'], n_head=hp['n_head'], scaling=hp['scaling'], time_feat=hp['time_feat'],
+                            batch_size=64, num_parallel_samples=100, device=torch.device('cpu'))
+    predictor = est.create_predictor(est.create_transformation(), est.create_lightning_module(use_kv_cache=True))
+
+    def run(rows):
+        ds = ListDataset([{'start': pd.Period(str(int(r['bars'][-512:][0][0])), freq='B'), 'target': closes(r, 512).astype(np.float32)} for r in rows], freq='B')
+        out = []
+        for r, f in zip(rows, predictor.predict(ds)):
+            qs = np.quantile(f.samples[:, 19], LEVELS)
+            out.append({'q': [round(float(v) / closes(r, 1)[-1], 5) for v in qs]})
+        return out
+    return run, 64
+
+
+ADAPTERS = {'chronos': chronos_like, 'chronos2': chronos_like, 'timesfm': timesfm, 'tirex': tirex, 'toto': toto, 'sundial': sundial, 'kronos': kronos,
+            'timesfm1': timesfm1, 'kairos': kairos, 'flowstate': flowstate, 'yinglong': yinglong, 'lagllama': lagllama}
 
 
 def main() -> None:
@@ -168,6 +247,8 @@ def main() -> None:
     ap.add_argument('--threads', type=int, default=0)
     ap.add_argument('--paths', type=int, default=16, help='kronos: sample paths per row')
     ap.add_argument('--kronos', default='.cache/kronos-src')
+    ap.add_argument('--kairos', default='.cache/kairos-src')
+    ap.add_argument('--lagllama', default='.cache/lagllama-src')
     ap.add_argument('--seed', type=int, default=7)
     ap.add_argument('--redo', action='store_true', help='forecast rows already kept in data/arena/preds too')
     a = ap.parse_args()
