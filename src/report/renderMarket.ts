@@ -10,7 +10,7 @@ import type { FlowSection, MarketSection } from './marketSection.js';
 import type { FullStatements } from '../sources/dartStatements.js';
 import { healthInfographic, quarterBars, statementChart, statementsCard } from './infographics.js';
 import { esc } from './html.js';
-import { kmNotchArc, kmStatArea } from './kit/market.js';
+import { kmNotchArc } from './kit/market.js';
 import { won, tone, pct as fmtPct, bigMoney, currency, financeScale } from './format.js';
 const pct = (v: number | null, digits = 1) => fmtPct(v, digits, '없음');
 
@@ -237,6 +237,7 @@ function rangeBar(label: string, low: number, high: number, now: number, note = 
  * G-176: current price → analyst target on the 52-week scale. The old bar ran from the current price to the
  * target, so its dot always sat at one end; this one fills the gap between them and marks the 52-week range.
  */
+// G-300: 애널리스트 의견 draws 현재가 → 목표가 only; the year's low and high are in 가격 범위 at the top (one source).
 function targetBar(now: number, target: number, low52: number | null, high52: number | null): string {
   const lo = Math.min(now, target, low52 ?? now), hi = Math.max(now, target, high52 ?? now), span = hi - lo || 1;
   const at = (v: number) => (((v - lo) / span) * 100).toFixed(1);
@@ -244,7 +245,7 @@ function targetBar(now: number, target: number, low52: number | null, high52: nu
   const tick = (v: number | null, label: string) => (v == null ? '' : `<em class="tb-tick" style="left:${at(v)}%" title="${label} ${won(v)}"></em>`);
   return `<div class="si-range tb"><div class="si-rk">현재가 → 목표가<small>${up ? '목표가까지' : '목표가보다 위'} ${pct((target / now - 1) * 100)}</small></div>
 <div class="tb-bar">${tick(low52, '52주 최저')}${tick(high52, '52주 최고')}<span class="tb-fill ${up ? 'up' : 'down'}" style="left:${at(a)}%;width:${(((b - a) / span) * 100).toFixed(1)}%"></span><i class="tb-now" style="left:${at(now)}%"></i><b class="tb-tgt" style="left:${at(target)}%"></b></div>
-<div class="si-rv"><span>${lo === low52 ? '52주 최저' : lo === target ? '목표가' : '현재가'} <b>${won(lo)}</b></span><span>${hi === high52 ? '52주 최고' : hi === target ? '목표가' : '현재가'} <b>${won(hi)}</b></span></div>
+${low52 == null && high52 == null ? '' : `<div class="si-rv"><span>${lo === low52 ? '52주 최저' : lo === target ? '목표가' : '현재가'} <b>${won(lo)}</b></span><span>${hi === high52 ? '52주 최고' : hi === target ? '목표가' : '현재가'} <b>${won(hi)}</b></span></div>`}
 <div class="tb-key"><span><i class="tb-now"></i>현재가 ${won(now)}</span><span><b class="tb-tgt"></b>목표가 ${won(target)}</span></div></div>`;
 }
 const cell = (k: string, v: string, _hint = '') => `<div class="si-c"><span>${esc(k)}</span><b>${v}</b></div>`;
@@ -262,21 +263,14 @@ export function quickInfoCard(market: MarketSection | undefined, close: number |
   const hi52 = year.length > 100 ? Math.max(...year.map((b) => b.high)) : s?.high52w ?? null, lo52 = year.length > 100 ? Math.min(...year.map((b) => b.low)) : s?.low52w ?? null;
   const ranges = now ? `${last ? rangeBar('오늘', last.low, last.high, now, last.date.slice(5).replace('-', '/'), ['저가', '고가']) : ''}${hi52 && lo52 ? rangeBar('1년', lo52, hi52, now, `최고가 대비 ${pct((now / hi52 - 1) * 100)}`) : ''}` : '';
   const hold = market.flows?.days.at(-1)?.foreignHoldRatio ?? null;
+  // G-300 (한서님 10/25 '숫자는 한 곳에만'): 시가총액 · PER · PBR · 배당수익률 sit in 투자 지표 right below, so not here too.
   const cells = [
-    s?.marketCap != null ? cell('시가총액', eok(s.marketCap)) : '',
-    s?.per != null ? cell('PER', num(s.per, '배')) : '',
-    s?.pbr != null ? cell('PBR', num(s.pbr, '배')) : '',
-    s?.dividendYield != null ? cell('배당수익률', num(s.dividendYield, '%')) : '',
     hold != null ? cell('외국인 보유', num(hold, '%')) : '',
     last ? cell('거래대금', eok(last.volume * last.close)) : '',
   ].filter(Boolean);
-  const f5 = market.flows?.sums.find((x) => x.days === 5);
-  const who = f5 ? ([['외국인', 'foreign'], ['기관', 'institution'], ['개인', 'individual']] as const).map(([l, k]) => {
-    const v = f5[`${k}Value` as 'foreignValue'] ?? null, n = f5[k] ?? null;
-    return `<span class="qi-who"><small>${l}</small><b class="${tone(v ?? n)}">${v != null ? krw(v) : shares(n)}</b></span>`;
-  }).join('') : '';
-  if (!ranges && !cells.length && !who) return '';
-  return `<section class="card qi-card" id="quick-info"><div class="head"><h2>종목 정보</h2><a class="qi-more" href="#tab-fundamentals">기업 체력 ›</a></div>${ranges}${cells.length ? `<div class="si-grid qi-grid">${cells.join('')}</div>` : ''}${who ? `<div class="qi-flow"><span class="qi-k">최근 5일 순매수</span>${who}</div>` : ''}</section>`;
+  // G-300: who bought over five sessions is 수급's 투자자 동향 (5일), a little further down the same tab.
+  if (!ranges && !cells.length) return '';
+  return `<section class="card qi-card" id="quick-info"><div class="head"><h2>가격 범위</h2></div>${ranges}${cells.length ? `<div class="si-grid qi-grid qi-g2">${cells.join('')}</div>` : ''}</section>`;
 }
 
 /** 재무제표, simple (G-148): one picture per statement under 손익·재무·현금흐름; 자세히 보기 opens every table full screen. */
@@ -346,14 +340,14 @@ export function stockInfoCards(market: MarketSection, close: number | null, _nam
     if (cons?.targetPriceMean && now) {
       const up = (cons.targetPriceMean / now - 1) * 100, rec = cons.recommendationMean;
       const recLabel = rec == null ? '' : rec >= 4.5 ? '강력 매수' : rec >= 3.5 ? '매수' : rec >= 2.5 ? '중립' : rec >= 1.5 ? '매도' : '강력 매도';
-      head = `<div class="si-target"><div><span>평균 목표가</span><b>${won(cons.targetPriceMean)}</b><small class="${tone(up)}">현재가 대비 ${pct(up)}</small></div>${rec != null ? `<div><span>투자의견 평균</span><b>${recLabel}</b><small>${rec.toFixed(2)} / 5</small></div>` : ''}</div>${targetBar(now, cons.targetPriceMean, s?.low52w ?? null, s?.high52w ?? null)}`;
+      head = `<div class="si-target"><div><span>평균 목표가</span><b>${won(cons.targetPriceMean)}</b><small class="${tone(up)}">현재가 대비 ${pct(up)}</small></div>${rec != null ? `<div><span>투자의견 평균</span><b>${recLabel}</b><small>${rec.toFixed(2)} / 5</small></div>` : ''}</div>${targetBar(now, cons.targetPriceMean, null, null)}`;
     }
     card('애널리스트 의견', `${head}${reports}<p class="fine">증권사 컨센서스${cons?.date ? `(${esc(cons.date)})` : ''}와 리포트 제목이에요. 우리 판단이 아니에요.</p>`);
   }
   return out.length ? `<div class="si-wrap">${out.join('')}</div>` : '';
 }
 
-export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:flex;justify-content:space-between;align-items:baseline}.qi-card h2{font-size:17px;margin:0 0 4px}.qi-more{font-size:13.5px;font-weight:800;color:var(--accent-strong);text-decoration:none}.qi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.qi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}.qi-k{color:var(--fg2);font-weight:700;margin-right:auto}.qi-who{display:inline-flex;gap:6px;align-items:baseline}.qi-who small{color:var(--muted)}@media (max-width:520px){.qi-k{width:100%}}
+export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:flex;justify-content:space-between;align-items:baseline}.qi-card h2{font-size:17px;margin:0 0 4px}.qi-more{font-size:13.5px;font-weight:800;color:var(--accent-strong);text-decoration:none}.qi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.qi-grid.qi-g2{grid-template-columns:repeat(2,minmax(0,1fr))}.qi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}.qi-k{color:var(--fg2);font-weight:700;margin-right:auto}.qi-who{display:inline-flex;gap:6px;align-items:baseline}.qi-who small{color:var(--muted)}@media (max-width:520px){.qi-k{width:100%}}
 .si-wrap{columns:2;column-gap:14px;margin-bottom:16px}.si-card{min-width:0;break-inside:avoid;margin:0 0 14px;display:block}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:17px;margin:0 0 10px}
 .si-range{margin:6px 0 14px}.tb-bar{position:relative;height:8px;margin:10px 0 4px;border-radius:99px;background:var(--soft)}.tb-fill{position:absolute;top:0;bottom:0;border-radius:99px;opacity:.85}.tb-fill.up{background:linear-gradient(90deg,#ffd3d7,var(--up))}.tb-fill.down{background:linear-gradient(90deg,var(--down),#d3e3ff)}.tb-tick{position:absolute;top:-3px;width:2px;height:14px;margin-left:-1px;background:#c3c9d2}.tb-now,.tb-tgt{display:inline-block}.tb-bar .tb-now{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--fg);border:2px solid var(--surface-solid);box-shadow:0 1px 4px rgba(0,0,0,.25)}.tb-bar .tb-tgt{position:absolute;top:50%;width:4px;height:18px;margin:-9px 0 0 -2px;border-radius:2px;background:var(--accent)}.tb-key{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--fg2);margin-top:8px}.tb-key span{display:inline-flex;align-items:center;gap:6px}.tb-key .tb-now{width:10px;height:10px;border-radius:50%;background:var(--fg)}.tb-key .tb-tgt{width:4px;height:12px;border-radius:2px;background:var(--accent)}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
 .si-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.si-c{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.si-c span{color:var(--fg2)}.si-c b{font-variant-numeric:tabular-nums;text-align:right}
@@ -432,9 +426,8 @@ export function fundamentalsPanel(market: MarketSection, close: number | null, n
     return `<td class="num"><span class="${tone(r.benchmark)}">${pct(r.benchmark)}</span><br><small class="${tone(diff)}">차이 ${diff === null ? '없음' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%p`}</small></td>`;
   }).join('')}</tr>`).join('');
   const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
-  // G-265: each benchmark as a Bklit stat card (its last close, today's move, the last 60 closes as an area).
-  const stats = market.benchmarks.filter((b) => b.last !== null).map((b) => kmStatArea({ title: b.name, value: b.last, change: b.changePct, series: b.series?.length ? b.series.slice(-60) : b.spark.map((v, i) => [i === b.spark.length - 1 ? '마지막' : `${b.spark.length - 1 - i}거래일 전`, v] as const), digits: /^KOS/.test(b.symbol) || (b.last ?? 0) < 1000 ? 2 : 0 })).join('');
-  const vs = bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div>${stats ? `<div class="km-stats">${stats}</div>` : ''}<div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
+  // G-300: the index cards repeated 홈's numbers; the table alone compares the stock with them.
+  const vs = bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
 <p class="fine">차이는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 값이에요.</p></div>` : '';
   return `${healthInfographic(market, close)}${stockInfoCards(market, close, name, bars, st)}${vs}`;
 }

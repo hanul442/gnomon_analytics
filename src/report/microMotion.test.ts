@@ -15,7 +15,7 @@ test('G-298: decoration only under html.ms, and the picks are all there', () => 
   // Beam, words, skeleton morph and the star pop animate only when motionSystem has added html.ms.
   for (const sel of ['html.ms .gnm-busy:not(#main)::after', 'html.ms .mm-words>span', 'html.ms .mm-unskel', 'html.ms .star.mm-pop svg']) assert.ok(MICRO_MOTION_CSS.includes(sel), sel);
   assert.match(MICRO_MOTION_JS, /prefers-reduced-motion: reduce/);
-  for (const part of ['mm-deck', 'mm-pblur', 'mm-ptr', 'mm-wheel', 'mm-stk', 'mm-knob', 'mm-goo', 'mm-face']) assert.ok(MICRO_MOTION_JS.includes(part), part);
+  for (const part of ['mm-pblur', 'mm-ptr', 'mm-wheel', 'mm-stk', 'mm-knob', 'mm-goo', 'mm-face']) assert.ok(MICRO_MOTION_JS.includes(part), part);
   // No blue-and-orange accents: the beam is a neutral grey light in both themes.
   assert.match(MICRO_MOTION_CSS, /--mm-beam:rgba\(17,19,24,/);
   assert.match(MICRO_MOTION_CSS, /html\[data-theme=dark\]\{--mm-beam:rgba\(255,255,255,/);

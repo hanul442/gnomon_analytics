@@ -74,12 +74,13 @@ main *:has(.db-room:not([hidden])){backdrop-filter:none!important;-webkit-backdr
 @media (min-width:1100px){html{--rail-w:232px}}
 /* Home: the date line and a big banner across, then 내 종목 | 시장 and 위원회 오늘 | 오늘 이슈 side by side. */
 @media (min-width:1100px){
-.hm-p:not([hidden]){display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-areas:"hero hero" "bn bn" "watch mh" "watch mk" "ch ih" "cc ic";column-gap:24px;align-items:start;max-width:none}
+/* G-300 (한서님 10/25): 내 종목 then 위원회 오늘 down the left, 시장 then 오늘 이슈 down the right; every card only as tall
+   as what it holds (an empty 내 종목 no longer stretches to the 시장 column's height). */
+.hm-p:not([hidden]){display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-areas:"hero hero" "bn bn" "left mh" "left mk" "left ih" "left ic";column-gap:24px;align-items:start;max-width:none}
 .hm-p>*{grid-column:1/-1}
 .hm-p>#mkt-hero{grid-area:hero}.hm-p>.hm-bn{grid-area:bn}
-.hm-p>#watch{grid-area:watch;align-self:stretch;display:flex;flex-direction:column;margin-bottom:0}.hm-p>#watch>.card{flex:1}
+.hm-p>.hm-left{grid-area:left;align-self:start}.hm-left>#watch{margin-bottom:0}.hm-left>.hm-com{margin-top:12px}
 .hm-p>.hm-h:has(+.km-stats){grid-area:mh}.hm-p>.km-stats{grid-area:mk}
-.hm-p>.hm-h:has(+.hm-card .hm-call){grid-area:ch}.hm-p>.hm-card:has(.hm-call){grid-area:cc}
 .hm-p>.hm-h:has(+.hm-card .ia-list){grid-area:ih}.hm-p>.hm-card:has(.ia-list){grid-area:ic}
 .hm-p>.hm-bn .bn-slide{min-height:300px;width:100%;box-sizing:border-box}.hm-p>.hm-bn .bn-img{aspect-ratio:4/1;min-height:0}
 .hm-p>#mkt-hero .hm-s{font-size:26px;letter-spacing:-.02em}

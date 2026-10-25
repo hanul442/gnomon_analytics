@@ -1,6 +1,6 @@
 import { PC_RAIL_CSS } from './pcRail.js';
 import { COMMAND_BAR_CSS, COMMAND_BAR_JS, REPORT_TABS_CSS, REPORT_TABS_JS } from './commandBar.js';
-import { committeeHero, killList, COMMITTEE_CSS, COMMITTEE_JS } from './committeeSeats.js';
+import { committeeHero, COMMITTEE_CSS, COMMITTEE_JS } from './committeeSeats.js';
 import { US_EXCHANGE_LETTER } from '../sources/naverWorld.js';
 import { MODERN_SWITCH_CSS, MODERN_SWITCH_JS } from './modernSwitch.js';
 import { GEN_BUTTON_CSS, GEN_BUTTON_JS, genButton, reportButton } from './generateButton.js';
@@ -44,10 +44,10 @@ import { consensusNote, parliament, PARLIAMENT_SCRIPT } from './renderParliament
 import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, THEME_BOOT, PLAN_CSS } from './plans.js';
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
 import { LEVEL_BOOT, LEVEL_CSS, LEVEL_JS, levelGuide } from './level.js';
-import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, conclusionMini, parliamentViewNote, SEATS_JS, VIEW_FOCUS_CSS } from './conclusion.js';
+import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, conclusionMini, parliamentViewNote, SEATS_JS, verdictHead, VIEW_FOCUS_CSS } from './conclusion.js';
 import { WELCOME_CSS, WELCOME_JS } from './welcome.js';
 import { tabBar, BANNER_CSS, FS_CSS, FS_JS, TAP_JS, INSTALL_BOOT, INSTALL_JS, LIVE_CSS, LIVE_JS, ORBS, ORBS_CSS, POP_CSS, SURVEY_POP_JS, TOUR_CSS, TOUR_JS, menuHtml, pageHead, MENU_CSS, MENU_JS, priceBar, starButton, UI_CSS, UI_SCRIPT } from './ui.js';
-import { DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateSection, decisionTrace, easyCard, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, reportDiffCard } from './renderReportExtras.js';
+import { DEBATE_CARD_CSS, DEBATE_FILTER_SCRIPT, DEBATE_PLAY_SCRIPT, debateCard, debateSection, decisionTrace, easyCard, EVIDENCE_SCRIPT, EXTRAS_CSS, insightLine, issuesSection, kindChip, reportDiffCard } from './renderReportExtras.js';
 import { CHART_V6_CSS } from './chartTools.js';
 import { CHART_PRO_CSS, CHART_PRO_JS, HERO_RANGE_JS } from './chartPro.js';
 import { SMOOTH_JS } from './chartLook.js';
@@ -474,6 +474,7 @@ ${groupBars(t)}
 function filingsTable(report: DailyReport): string {
   const recent = report.recentFilings ?? report.filings;
   const fresh = new Set(report.filings.map((f) => f.receiptNo));
+  if (recent.every((f) => fresh.has(f.receiptNo))) fresh.clear(); // G-300: every row 새 공시 says nothing
   if (!recent.length) return '<p class="empty">최근 30일 동안 나온 공시가 없어요.</p>';
   // G-151: the same plain-language note under several filings in a row is said once.
   let prevWhy = '';
@@ -557,13 +558,13 @@ export function newsOnly(report: DailyReport): string {
  */
 export function issueSlot(symbol: string): string {
   const s = JSON.stringify(symbol).replace(/</g, '\\u003c');
-  return `<div class="iss-slot" data-issue-slot hidden></div><style>.iss-slot{display:flex;flex-direction:column;gap:10px;margin:0 0 12px}.iss-c{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:22px;background:var(--surface-solid,var(--surface));color:inherit;text-decoration:none}.iss-k{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:var(--muted)}.iss-k b{font-size:11px;padding:1px 7px;border-radius:6px;background:var(--fg);color:var(--surface-solid,#fff)}.iss-t{font-size:17px;font-weight:700;line-height:1.4;word-break:keep-all}.iss-l{font-size:14px;line-height:1.55;color:var(--fg2);word-break:keep-all}</style><script>(function(){var el=document.currentScript.previousElementSibling.previousElementSibling,sym=${s},b=document.body.getAttribute('data-base')||'';var e=function(t){return String(t).replace(/[&<>"']/g,function(c){return '&#'+c.charCodeAt(0)+';';});};
+  return `<div class="iss-slot" data-issue-slot hidden></div><style>.iss-slot{display:flex;flex-direction:column;gap:10px;margin:0 0 12px}.iss-c{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:22px;background:var(--surface-solid,var(--surface));color:inherit;text-decoration:none}.iss-k{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:var(--muted)}.iss-k b{font-size:11px;padding:1px 7px;border-radius:6px;background:var(--fg);color:var(--surface-solid,#fff)}.iss-t{font-size:14.5px;font-weight:600;line-height:1.45;word-break:keep-all;min-width:0}.iss-h{font-size:15px;margin-bottom:2px}.iss-r{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:8px;align-items:baseline;min-height:44px;padding:8px 0;border-top:1px solid var(--line);color:inherit;text-decoration:none}.iss-n{font-size:13px;font-variant-numeric:tabular-nums}.iss-g{color:var(--muted)}.iss-l{font-size:14px;line-height:1.55;color:var(--fg2);word-break:keep-all}</style><script>(function(){var el=document.currentScript.previousElementSibling.previousElementSibling,sym=${s},b=document.body.getAttribute('data-base')||'';var e=function(t){return String(t).replace(/[&<>"']/g,function(c){return '&#'+c.charCodeAt(0)+';';});};
 fetch(b+'issue-index.json').then(function(r){if(!r.ok)throw r;return r.json();}).then(function(list){var mine=list.filter(function(i){return i.s.indexOf(sym)>=0;}).slice(0,3);if(!mine.length)return;
-el.innerHTML=mine.map(function(i){return '<a class="iss-c" href="'+b+'issue/'+e(i.k)+'.html"><span class="iss-k"><b>오늘 이슈 '+i.r+'위</b>매체 '+i.o+'곳</span><span class="iss-t">'+e(i.t)+'</span>'+(i.l?'<span class="iss-l">'+e(i.l)+'</span>':'')+'</a>';}).join('');el.hidden=false;}).catch(function(){});})();</script>`;
+el.innerHTML='<div class="iss-c"><b class="iss-h">오늘 이슈에 '+mine.length+'번 나왔어요</b>'+mine.map(function(i){return '<a class="iss-r" href="'+b+'issue/'+e(i.k)+'.html"><b class="iss-n">'+i.r+'위</b><span class="iss-t">'+e(i.t)+'</span><span class="iss-g" aria-hidden="true">›</span></a>';}).join('')+'</div>';el.hidden=false;}).catch(function(){});})();</script>`;
 }
 /** G-256: the 공시 part — filings and the event calendar. G-277: three filings first (the rest fold), no 공시 구성 donut. */
 export function filingsBody(report: DailyReport): string {
-  return `<div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 원문이 열려요</span></div><div data-slot="filings">${filingsTable(report)}</div></div></div>${edgeEvents(report)}`;
+  return `<div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 원문이 열려요</span></div><div data-slot="filings">${filingsTable(report)}</div>${edgeEvents(report)}</div></div>`;
 }
 function newsSection(report: DailyReport): string {
   const news = report.news;
@@ -573,9 +574,12 @@ function newsSection(report: DailyReport): string {
   const warn = failed.length
     ? `<p class="warn">일부 제한: ${failed.map((st) => escape(SOURCE_LABEL[st.source] ?? st.source)).join(', ')} 수집에 실패했어요. 이 소스의 기사는 빠져 있을 수 있어요.</p>` : '';
   const fresh = new Set(news.newIds);
+  // G-300 (한서님 10/25): a badge every story carries tells nothing; 중요도 and 새 뉴스 show only where stories differ.
+  const sameImp = news.clusters.every((c) => c.importance === news.clusters[0]?.importance);
+  const allNew = news.clusters.every((c) => fresh.has(c.id));
   const rowsArr = news.clusters.map((c) => {
     const others = c.articles.filter((a) => a.url !== c.url);
-    return `<div class="story"><div><span class="badge b-${c.importance}">${IMPORTANCE_LABEL[c.importance]}</span> <span class="tag">${escape(c.category)}</span>${fresh.has(c.id) ? '<span class="badge b-new">새 뉴스</span>' : ''}</div>
+    return `<div class="story"><div>${sameImp ? '' : `<span class="badge b-${c.importance}">${IMPORTANCE_LABEL[c.importance]}</span> `}<span class="tag">${escape(c.category)}</span>${fresh.has(c.id) && !allNew ? '<span class="badge b-new">새 뉴스</span>' : ''}</div>
 <div class="story-title"><a href="${escape(c.url)}" rel="noopener" target="_blank">${escape(c.title)}</a></div>
 <div class="why">${meta([`${escape(c.publisher)} (${TIER_LABEL[c.tier]})`, escape(kstTime(c.firstAt)), c.articles.length > 1 ? `같은 내용 기사 ${c.articles.length}건` : ''])}</div>
 ${others.length ? `<details class="more"><summary>다른 기사 ${others.length}건</summary><ul class="plain">${others.map((a) => `<li><a href="${escape(a.url)}" rel="noopener" target="_blank">${escape(a.title)}</a> <span class="why">${meta([escape(a.publisher), escape(kstTime(a.publishedAt))])}</span></li>`).join('')}</ul></details>` : ''}</div>`;
@@ -690,10 +694,14 @@ function renderReportIn(report: DailyReport, links: { index: string; base?: stri
   // then the vote with the full debate folded under it. The status strip shows only when the report is out of date (the
   // conclusion already carries its date); the latest news is 소식's and the 1-year calendar moved under 차트 › 신호.
   const status = reportStatusBar(report, ctx.commentaryFrom ?? null);
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale|rs-none/.test(status) ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${committeeHero(report)}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${killList(report)}${edgeCard(report)}
+  // G-300 (한서님 10/25 '위원회 페이지 깔끔하게'): 6 blocks — the committee card (verdict, seats, both sides, every
+  // member's call behind one row), the price map, the debate card, 놓치기 쉬운 정보, then 더 보기. Everything else the old
+  // fold repeated (a second vote, the status strip again, 쉽게 말하면) lives only in 위원회 판단, its own page.
+  const seatsShown = !!committeeHero(report);
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale|rs-none/.test(status) ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${seatsShown ? committeeHero(report, { head: verdictHead(report) }) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !seatsShown })}@@DEBATE@@${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
-@@AI_FOLD@@${moreLinks(report.kind === 'coin')}`;
+@@AI_FOLD@@${moreLinks(report.kind === 'coin', report.commentary?.status === 'OK')}`;
   // G-244 (화면 개편 2단계): 요약 answers "이 종목 지금 어때?" only. 종목 정보 (price ranges, the six numbers, 5-day
   // flows) and the same-theme comparison open 기업 체력; filings live in 뉴스·공시.
   const quickInfo = report.kind === 'coin' ? '' : quickInfoCard(m, report.price?.close ?? null, report.recentBars ?? []);
@@ -717,7 +725,7 @@ ${m ? marketStatusWarning(m) : ''}
   const sealedDeep = !!ctx.deep && report.commentary?.status === 'OK' && report.commentary.tier !== 'brief';
   const record = sealedDeep ? '' : recordSection(report, ctx, base);
   const aiTab = report.commentary?.status === 'OK'
-    ? `${upgrade}${fromNote}${committeeTab(report, { base, from: ctx.commentaryFrom ?? null, ...(ctx.previous !== undefined ? { previous: ctx.previous } : {}), previousHref: ctx.previousHref ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
+    ? `${upgrade}${fromNote}${committeeTab(report, { base, noJoin: true, from: ctx.commentaryFrom ?? null, ...(ctx.previous !== undefined ? { previous: ctx.previous } : {}), previousHref: ctx.previousHref ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
     : `${report.commentary?whySection(report):''}${conclusionMini(report)}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 위원회 토론이 아직 없어요</b>${reportButton(report.symbol, report.name)}</div></div>${joinBox(report)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
   // G-270: a coin has no filings at all, so its 뉴스 tab is news only (no empty 공시 and 공시 구성 cards).
   const noFilings = report.kind === 'coin';
@@ -728,9 +736,13 @@ ${m ? marketStatusWarning(m) : ''}
   const flowsSec = `<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`;
   const fundPanel = report.kind === 'coin' ? `<div data-coin-fit="${base}c/${encodeURIComponent(report.symbol)}.json"></div>${flowsSec}`
     : report.currency === 'USD' ? `${quickInfo}${fundTab}${insiderSection(report)}`
-    : subTabs([['ftg-co', '기업', `${quickInfo}${fundTab}`], ['ftg-flow', '수급', flowsSec], ...(report.kind ? [] : [['ftg-peer', '같은 테마', `${peersSlot(report.symbol)}<p class="empty ft-none">같은 테마로 묶인 종목이 아직 없어요.</p>`] as [string, string, string]])]);
-  const aiFold = aiFoldOf(report, aiTab, report.commentary?.status === 'OK' ? (ctx.commentaryFrom ?? report.date) : '');
-  const body = guided(`${bar}${panel('home', home.replace('@@AI_FOLD@@', aiFold))}
+    // G-300 (한서님 10/25 '위의 바 두기싫다니까'): no 기업 · 수급 · 같은 테마 bar at the top; the three parts follow one another
+    // under their own headings, 기업 first (the most important part, never folded).
+    : `<section class="sub-sec sub-first" id="ftg-co"><h2 class="sub-h">기업</h2>${quickInfo}${fundTab}</section>${flowsSec}${report.kind ? '' : `<section class="sub-sec" id="ftg-peer"><h2 class="sub-h">같은 테마</h2>${peersSlot(report.symbol)}<p class="empty ft-none">같은 테마로 묶인 종목이 아직 없어요.</p></section>`}`;
+  const okAi = report.commentary?.status === 'OK';
+  const aiFold = aiFoldOf(report, aiTab, okAi ? (ctx.commentaryFrom ?? report.date) : '', okAi);
+  const dCard = okAi ? debateCard(report.commentary, { gate: (h) => gate(h, { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요', feature: 'debate' }), join: joinBox(report), sealed: sealedDeep }) : '';
+  const body = guided(`${bar}${panel('home', home.replace('@@DEBATE@@', dCard).replace('@@AI_FOLD@@', aiFold))}
 ${panel('chart', chartTab)}
 ${panel('technical', `${technical}<details class="cal-fold"><summary>지난 1년 하루 등락 달력</summary>${dailyCalendar(report.recentBars ?? [])}</details><section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${strategyTab}</section>`)}
 ${panel('fundamentals', fundPanel)}
@@ -740,7 +752,7 @@ ${panel('mine', mineTab(base, report.symbol))}
 <footer id="sources" style="padding:24px 0 0"><p>${report.currency === 'USD' ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜)과 지표(PER·EPS·PBR·시가총액·52주), SEC EDGAR(공시·XBRL 재무·Form 4 내부자 거래), 구글 뉴스(영문). 투자자별 수급과 증권가 목표가는 없어요. 환율 변동은 반영하지 않아요.' : report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`, report.kind);
   const title = ctx.live ? `${report.name} 리서치 대시보드 | GNOMON` : `${report.name} ${report.date} 일일 리포트 | GNOMON`;
-  return shell(base, title, body, { tabs: tabsFor(report.kind), ask: report.name, scripts: chart.script + (report.kind === 'coin' ? COIN_FIT_SCRIPT : '') + TAB_SCRIPT + MINE_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + AI_FOLD_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : '') + (usRefill ? US_REFILL_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+  return shell(base, title, body, { tabs: tabsFor(report.kind), ask: report.name, scripts: chart.script + (report.kind === 'coin' ? COIN_FIT_SCRIPT : '') + TAB_SCRIPT + MINE_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : '') + (usRefill ? US_REFILL_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
 
 /**
@@ -764,14 +776,14 @@ const US_REFILL_SCRIPT = `<script>
  * G-115: the AI committee tab's body — conclusion, the seat chart, then the debate with its evidence, the
  * reader's turn and what is left open. One renderer for daily pages and for reports generated on request.
  */
-export function committeeTab(report: DailyReport, opts: { base: string; from: string | null; deepDate?: string; /** G-203: the report to compare with; undefined leaves the card out. */ previous?: DailyReport | null; previousHref?: string | null }): string {
+export function committeeTab(report: DailyReport, opts: { base: string; from: string | null; deepDate?: string; /** G-203: the report to compare with; undefined leaves the card out. */ previous?: DailyReport | null; previousHref?: string | null; /** G-300: the question box sits in the 위원회 part's debate card instead. */ noJoin?: boolean }): string {
   const base = opts.base, isBrief = report.commentary?.status === 'OK' && report.commentary.tier === 'brief';
   const aiBody = isBrief
     ? gate(whySection(report), { base, what: '간단 해설(이전 형식): 요약 · 강세와 약세 근거 · 지켜볼 것', feature: 'legacyCommentary' })
     : opts.deepDate
       ? ''
       : report.commentary?.status === 'OK'
-      ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요', feature: 'debate' })}<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', feature: 'debateRest' })}`
+      ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요', feature: 'debate' })}${opts.noJoin ? '' : `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>`}${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', feature: 'debateRest' })}`
       : whySection(report);
   const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: { href: `${base}scorecard.html#analysts`, label: '위원별 지난 판단과 결과 ›' }, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(설정에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`).replace('</div>\n<aside class="pl-detail"', `${consensusNote(report)}</div>\n<aside class="pl-detail"`);
   // G-172: the paid part's unlock card comes right under 결론, not after the seats at the bottom.
@@ -779,7 +791,7 @@ export function committeeTab(report: DailyReport, opts: { base: string; from: st
   // G-203: Plus and up (한서님 10/11); free readers see the card faded with a way in, as other Plus blocks.
   const diff = opts.previous === undefined || report.commentary?.status !== 'OK' ? '' : gate(reportDiffCard(report, opts.previous, { conclusionDate: opts.from, href: opts.previousHref ?? null }), { base, what: '지난 리포트와 달라진 점: 확률·표결·입장 바꾼 위원', feature: 'reportDiff' });
   // After the unlock card (G-172); on a sealed page the deep part swaps in the card with the AI's own retelling.
-  return `${conclusionMini(report)}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}${diff}${easyCard(report.commentary)}${seats || absentBlock('위원회 표결', '이 리포트에는 위원별 표결이 없어요. 새 리포트를 만들면 분석가 6명과 데스크 5곳의 표결이 함께 나와요.')}${aiBody}${opts.deepDate ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
+  return `${conclusionMini(report)}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}${diff}${easyCard(report.commentary)}${seats || absentBlock('위원회 표결', '이 리포트에는 위원별 표결이 없어요. 새 리포트를 만들면 분석가 6명과 데스크 5곳의 표결이 함께 나와요.')}${aiBody}${opts.deepDate && !opts.noJoin ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
 }
 /** A block the report does not have, folded, so pages of different vintages still line up. */
 export function absentBlock(title: string, why: string): string {
@@ -824,17 +836,14 @@ ${c.dataGaps.length ? `<h3 class="why-h">근거가 부족한 부분</h3><ul clas
  * folded right under it. The section keeps id="tab-ai", so links, scripts and generated fragments still find it; the tab
  * script opens the fold when something links there.
  */
-function aiFoldOf(report: DailyReport | null, inner: string, aiDate: string): string {
-  const c = report?.commentary?.status === 'OK' ? report.commentary : undefined;
-  const st = [...(c?.analysts ?? []).map((a) => a.stance), ...(c?.desks ?? []).map((d) => d.stance as string)];
-  const n = { BULLISH: st.filter((x) => x === 'BULLISH').length, NEUTRAL: st.filter((x) => x === 'NEUTRAL').length, BEARISH: st.filter((x) => x === 'BEARISH').length };
-  const total = n.BULLISH + n.NEUTRAL + n.BEARISH;
-  const bar = total ? `<div class="vf-bar" role="img" aria-label="강세 ${n.BULLISH} 중립 ${n.NEUTRAL} 약세 ${n.BEARISH}">${n.BULLISH ? `<i class="up" style="flex:${n.BULLISH}"></i>` : ''}${n.NEUTRAL ? `<i style="flex:${n.NEUTRAL}"></i>` : ''}${n.BEARISH ? `<i class="down" style="flex:${n.BEARISH}"></i>` : ''}</div><div class="vf-l"><span class="up">강세 ${n.BULLISH}</span><span>중립 ${n.NEUTRAL}</span><span class="down">약세 ${n.BEARISH}</span></div>` : '';
-  // G-297: the count moved up to the seats card (cs-hero), so the fold keeps only its title.
-  return `<section class="block vf"><div class="card"><h2 class="vf-h">위원회 토론</h2>${total ? '' : bar}<details class="ai-fold"><summary>토론 펼쳐 보기</summary><section class="ai-in" id="tab-ai" data-ai-date="${escape(aiDate)}">${inner}</section></details></div></section>`;
+function aiFoldOf(_report: DailyReport | null, inner: string, aiDate: string, paged = false): string {
+  // G-300: with a committee report the whole tab is 위원회 판단's (its own page, which moves this section in when it
+  // opens); on the 위원회 part it stays out of sight, so nothing there is said twice (the debate has its own card).
+  // Without one, the locked cards show in place, each with its own title (the fold's second '위원회 토론' is gone).
+  return `<section class="block vf${paged ? ' vf-paged' : ''}"><section class="ai-in" id="tab-ai" data-ai-date="${escape(aiDate)}">${inner}</section></section>`;
 }
 // G-281: 기업 has its own part in the bar again, so only 내 기록 opens from here.
-const moreLinks = (_coin = false) => `<nav class="pn-more" aria-label="더 보기"><a href="#tab-mine"><b>내 기록</b><small>이 종목 가격 알림, 내가 한 질문</small><i aria-hidden="true">›</i></a></nav><style>.pn-more{display:grid;gap:0;margin:18px 0 6px;border-radius:24px;background:var(--surface);overflow:hidden}.pn-more a{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;padding:14px 18px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}.pn-more a:first-child{border-top:0}.pn-more b{font-size:15px}.pn-more small{grid-column:1;color:var(--muted);font-size:12.5px}.pn-more i{grid-row:1/3;grid-column:2;font-style:normal;color:var(--muted)}</style>`;
+const moreLinks = (_coin = false, cm = false) => `<nav class="pn-more" aria-label="더 보기">${cm ? '<a href="#committee" data-cm-open><b>위원회 판단 전체</b><small>지난 리포트와 달라진 점, 표결, 남은 쟁점</small><i aria-hidden="true">›</i></a>' : ''}<a href="#tab-mine"><b>내 기록</b><small>이 종목 가격 알림, 내가 한 질문</small><i aria-hidden="true">›</i></a></nav><style>.pn-more{display:grid;gap:0;margin:18px 0 6px;border-radius:24px;background:var(--surface);overflow:hidden}.pn-more a{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;padding:14px 18px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}.pn-more a:first-child{border-top:0}.pn-more b{font-size:15px}.pn-more small{grid-column:1;color:var(--muted);font-size:12.5px}.pn-more i{grid-row:1/3;grid-column:2;font-style:normal;color:var(--muted)}</style>`;
 export function mineTab(base: string, symbol: string): string {
   return `<div class="mi" data-mine="${escape(symbol)}" data-base="${escape(base)}"><section class="block"><div class="card mi-card"><div class="mi-h"><h2>이 종목 알림</h2></div><p class="muted small">정한 가격에 닿으면 🔔과 휴대폰으로 알려 드려요. 강세·약세 가격대에 들어올 때로도 정할 수 있어요.</p><button type="button" class="btn-primary mi-pa">가격 알림 정하기</button></div></section>
 <section class="block"><div class="card mi-card"><div class="mi-h"><h2>내가 한 질문</h2><a href="${base}mydebates.html">전체 ›</a></div><div class="mi-q"><p class="muted small">이 칸을 열면 불러와요.</p></div></div></section></div>`;
@@ -882,7 +891,7 @@ export const DEEP_SCRIPT = `<script>
   var show = function (html) { if(!slot.isConnected)return;slot.innerHTML = html;
     // The unlocked conclusion and vote (full scenarios and reasons) take the public ones' places.
     var sw = slot.querySelector('.deep-swap'); if (sw) { [].slice.call(sw.children).forEach(function (n) { var old = n.id && document.getElementById(n.id); if (old && old !== n) old.replaceWith(n); }); sw.remove(); }
-    var join=document.querySelector('.join-wrap'), debate=slot.querySelector('#debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}slot.classList.add('deep-open'); if (window.GNM_fold) window.GNM_fold(slot, 1); if (window.GNM_debateFilter) window.GNM_debateFilter(); if (window.GNM_debate) window.GNM_debate(); if (window.GNM_explain) window.GNM_explain(); if (window.GNM_terms) window.GNM_terms(slot); };
+    var join=document.querySelector('.join-wrap'), debate=slot.querySelector('#debate .card.debate');if(join&&debate){debate.appendChild(join.querySelector('.db-join'));join.remove();}slot.classList.add('deep-open'); var room = slot.querySelector('#db-room'), dgo = document.querySelector('.dc [data-deep-go]'); if (room && dgo) { dgo.removeAttribute('data-deep-go'); dgo.setAttribute('data-room-open', ''); dgo.setAttribute('aria-controls', 'db-room'); dgo.firstChild.textContent = '토론방 열기 '; var lk = document.querySelector('.dc .dc-lock'); if (lk) lk.textContent = '심층 리포트를 열었어요. 위원들이 주고받은 토론 전체를 볼 수 있어요.'; } if (window.GNM_fold) window.GNM_fold(slot, 1); if (window.GNM_debateFilter) window.GNM_debateFilter(); if (window.GNM_debate) window.GNM_debate(); if (window.GNM_explain) window.GNM_explain(); if (window.GNM_terms) window.GNM_terms(slot); };
   var say = function (t) { note.textContent = t; };
   // While the paid part is fetched or unlocked: a large Thinking Orb that cycles through its states.
   var loader = null, cycle = null;
@@ -919,27 +928,7 @@ export const DEEP_SCRIPT = `<script>
 })();
 </script>`;
 
-/**
- * The AI committee tab (G-60, revised): no folding; a row of section links at the top so a reader can
- * jump straight to the debate, the scenarios or the evidence. Rebuilt when the deep part arrives.
- */
-const AI_FOLD_SCRIPT = `<script>
-window.GNM_fold = function () {
-  var tab = document.getElementById('tab-ai'); if (!tab) return;
-  var old = tab.querySelector('.ai-nav'); if (old) old.remove();
-  var items = [];
-  tab.querySelectorAll('.card > .head > h2, section.block > .block-head > h2').forEach(function (h, i) {
-    if (h.closest('.gate-cta, .deep-lock')) return;
-    var box = h.closest('.card, section.block'); if (!box.id) box.id = 'ai-sec-' + i;
-    items.push('<a href="#' + box.id + '">' + h.textContent.replace(/\\s+/g, ' ').trim() + '</a>');
-  });
-  if (items.length < 3) return;
-  var nav = document.createElement('nav'); nav.className = 'ai-nav'; nav.setAttribute('aria-label', 'AI 위원회 바로 가기'); nav.innerHTML = items.join('');
-  var title = tab.querySelector('.panel-title'); (title || tab.firstChild).insertAdjacentElement(title ? 'afterend' : 'beforebegin', nav);
-  nav.addEventListener('click', function (e) { var a = e.target.closest('a'); if (!a) return; e.preventDefault(); var el = document.querySelector(a.getAttribute('href')); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-};
-window.GNM_fold();
-</script>`;
+
 
 
 
@@ -1270,7 +1259,7 @@ html.chart-fs #tab-chart::after,.db-room:not([hidden])::after{content:"";positio
 @media(max-width:820px){.moms{grid-template-columns:repeat(2,minmax(0,1fr))}.momentum-axis{font-size:10px;gap:0}.market-scenarios{grid-template-columns:minmax(0,1fr)}.market-thermals{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 0 8px;scrollbar-width:none}.market-thermals::-webkit-scrollbar{display:none}.market-thermals>*{flex:0 0 84%;scroll-snap-align:start}.topbar.scrolled .gnomon-mark{width:28px;height:28px}.topbar.scrolled .price-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 7px;font-size:12px;overflow:visible;line-height:1.5}.price-bar>b{overflow:hidden;text-overflow:ellipsis;grid-column:1;grid-row:1/3}.price-bar .pb-price{grid-column:2;grid-row:1;white-space:nowrap}.price-bar [data-live-f=arrowpct]{grid-column:2;grid-row:2;text-align:right;white-space:nowrap}.price-bar .pb-code,.price-bar .freshness-badge{display:none}.topbar-in{gap:8px}.top-links,.topbar-in>.menu-button{flex:none}.chips button{padding:6px 12px;font-size:13px}.analysis-tabs{padding-top:0}.chips{gap:4px}}
 ${FS_CSS}${THEME_CSS}
 /* G-183: command bar, switch, generate button, and glow CTA are ported from ThreeUI Community (github.com/MengTo/threeui), MIT License, Copyright (c) 2026 Meng To. See docs/third-party/threeui-LICENSE.txt. */
-${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${COMMITTEE_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}${SEG_THUMB_CSS}${POLISH_CSS}${MOTION_SYSTEM_CSS}${MICRO_MOTION_CSS}${PC_RAIL_CSS}
+${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${COMMITTEE_CSS}${DEBATE_CARD_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}${SEG_THUMB_CSS}${POLISH_CSS}${MOTION_SYSTEM_CSS}${MICRO_MOTION_CSS}${PC_RAIL_CSS}
 .page-load{position:fixed;inset:0;z-index:400;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center;background:var(--page);background-image:var(--page-grad);transition:opacity .35s ease,visibility .35s}.page-load.out{opacity:0;visibility:hidden}.page-load canvas{width:72px;height:72px}.page-load b{font-size:15px;color:var(--fg2);font-weight:700}.pl-track{position:relative;display:block;width:160px;height:3px;border-radius:3px;background:var(--line);overflow:hidden}.pl-track i{position:absolute;inset:0 auto 0 0;width:40%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:pl-run 1.1s ease-in-out infinite}@keyframes pl-run{from{transform:translateX(-100%)}to{transform:translateX(260%)}}@media (prefers-reduced-motion:reduce){.pl-track i{animation-duration:3s}}html.embed .page-load{display:none}${MODERN_SWITCH_CSS}${GEN_BUTTON_CSS}${GLOW_CTA_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 // G-169: the loading layer, the version banner and the ad strip used to be inlined in every page (about 19 KB each,

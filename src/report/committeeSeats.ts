@@ -114,32 +114,41 @@ export function seatArc(report: DailyReport, opts: { interactive?: boolean; size
 
 const freeText = (t: string | undefined) => (t && t !== LOCKED_TEXT ? t : '');
 
+const SHARE_ICON = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>';
+const md = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일`;
+
 /**
- * The stock page's committee card: the seats, how split they are, each side's first public reason, and the lone
- * dissent. id="cs-hero" (the old vote bar under it is gone, so the count lives here only).
+ * The stock page's committee card: the verdict as its title (a tap opens 위원회 판단), the seats, how split they are,
+ * each side's first public reason and the lone dissent. id="cs-hero" (the vote is shown here only).
+ * G-300 (한서님 10/25 '위원회 페이지 깔끔하게', '위원별 판단은 안에 클릭하면 보이게'): the verdict moved up from 지금 판단,
+ * share became an icon, and every member's call with its wrong-if close sits behind one row (a sheet, membersSheet).
  */
-export function committeeHero(report: DailyReport): string {
+export function committeeHero(report: DailyReport, opts: { head?: string } = {}): string {
   const seats = seatsOf(report);
   if (!seats.length) return '';
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined, s = splitOf(seats);
   const bull = freeText(c?.bullish[0]?.text), bear = freeText(c?.bearish[0]?.text), dis = dissentLine(seats);
-  const side = (cls: string, word: string, n: number, text: string) => (text ? `<div class="cs-side ${cls}"><b>${word} 쪽 ${n}명</b><p>${esc(text)}</p></div>` : '');
+  const side = (cls: string, word: string, n: number, text: string) => (text ? `<div class="cs-side ${cls}"><b><i aria-hidden="true"></i>${word} 쪽 ${n}명</b><p>${esc(text)}</p></div>` : '');
   const sides = s.bull && s.bear ? `${side('up', '강세', s.bull, bull)}${side('down', '약세', s.bear, bear)}` : '';
-  return `<section class="block cs-hero" id="cs-hero"><div class="card"><div class="cs-k">위원회 판단 · 20거래일 뒤 채점</div><h2 class="cs-title">위원 ${s.total}명, ${esc(s.word)}</h2>${seatArc(report, { interactive: true, stock: report.name })}<p class="cs-tap">좌석을 누르면 그 위원의 판단과 틀림 기준이 나와요.</p>${sides ? `<div class="cs-sides">${sides}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis)}</span></p>` : ''}<button type="button" class="cs-share" data-cs-share data-n="${esc(report.name)}" data-d="${esc(report.date)}">이미지로 공유</button></div></section>`;
+  const title = `위원 ${s.total}명, ${s.word}`;
+  const share = `<button type="button" class="cs-share" data-cs-share data-n="${esc(report.name)}" data-d="${esc(report.date)}" data-t="${esc(title)}" aria-label="이미지로 공유" title="이미지로 공유">${SHARE_ICON}</button>`;
+  const broken = seats.filter((x) => x.broken).length;
+  const more = `<button type="button" class="cs-mrow" data-cs-list aria-haspopup="dialog" aria-controls="cs-members"><span><b>위원별 판단 · 틀림 기준</b><small>${s.total}명${broken ? ` · ${broken}명 판단 깨짐` : ''}</small></span><i aria-hidden="true">›</i></button>`;
+  return `<section class="block cs-hero" id="cs-hero"><div class="card"><div class="cs-top"><span class="cs-k">AI 위원회 판단 · ${esc(md(report.date))} 마감 · 20거래일 뒤 채점</span>${share}</div>${opts.head || `<h2 class="cs-title">${esc(title)}</h2>`}${seatArc(report, { interactive: true, stock: report.name })}<p class="cs-tap">좌석을 누르면 그 위원의 판단과 틀림 기준이 나와요.</p>${sides ? `<div class="cs-sides">${sides}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis)}</span></p>` : ''}${more}</div>${membersSheet(report, seats)}</section>`;
 }
 
-/** 위원별 틀림 기준: each analyst's own wrong-if close, checked against the report's close. */
-export function killList(report: DailyReport): string {
-  const seats = seatsOf(report);
-  const rows = seats.filter((x) => x.kind === 'analyst' && x.invalidation && (x.stance === 'bull' || x.stance === 'bear'));
-  if (!rows.length) return '';
-  const desks = seats.filter((x) => x.kind === 'desk');
-  const deskLine = desks.length ? `데스크 ${desks.length}곳: ${(['bull', 'neutral', 'bear', 'abstain'] as const).map((k) => { const d = desks.filter((x) => x.stance === k); return d.length ? `${d.map((x) => x.name.replace(' 데스크', '')).join('·')} ${WORD[k]}` : ''; }).filter(Boolean).join(', ')}.` : '';
-  const broken = rows.filter((x) => x.broken).length;
+/** 위원별 판단: every member's call, its wrong-if close checked against the report's close, in a sheet opened from the card. */
+function membersSheet(report: DailyReport, seats: readonly Seat[]): string {
+  const row = (x: Seat) => {
+    const kill = killText(x), tag = x.broken ? '<span class="cs-tag broke">깨짐</span>' : `<span class="cs-tag ${x.stance === 'bull' ? 'up' : x.stance === 'bear' ? 'down' : ''}">${WORD[x.stance]}${x.confidence && x.stance !== 'neutral' ? ` ${x.confidence}%` : ''}</span>`;
+    return `<li><button type="button" class="cs-krow"${sheetAttr({ n: x.name, ch: x.ch, f: x.focus, d: x.kind === 'desk', r: recordLine(report, x), calls: [{ s: report.name, st: x.stance, ...(x.confidence ? { c: x.confidence } : {}), ...(kill ? { k: kill } : {}), ...(x.broken ? { b: true } : {}) }] })}><span class="cs-face s-${x.stance}" aria-hidden="true">${esc(x.ch)}</span><span class="cs-kt"><b>${esc(x.name)}</b><small>${esc(kill || x.focus)}</small></span>${tag}</button></li>`;
+  };
+  const analysts = seats.filter((x) => x.kind === 'analyst'), desks = seats.filter((x) => x.kind === 'desk');
   // The committee's record on this stock (agreed with the '사기 전에 1분' plan): graded member calls, hits and all.
   const board = report.market?.analystBoard ?? [], n = board.reduce((t, b) => t + b.scored, 0), hit = Math.round(board.reduce((t, b) => t + (b.hitRate ?? 0) * b.scored, 0));
   const rec = `<p class="cs-recl"><b>이 종목 맞힌 기록</b><span>${n ? `${n}번 중 ${hit}번 맞음${n < 10 ? ' · 기록 쌓는 중' : ''}` : '아직 채점 전 · 판단 20거래일 뒤부터'}</span></p>`;
-  return `<section class="block cs-kill" id="cs-kill"><div class="card"><div class="cs-kh"><h2>위원별 틀림 기준</h2><small>${broken ? `${broken}명 깨짐 · ` : ''}종가 기준</small></div><ul>${rows.map((x) => `<li><button type="button" class="cs-krow"${sheetAttr({ n: x.name, ch: x.ch, f: x.focus, d: false, r: recordLine(report, x), calls: [{ s: report.name, st: x.stance, ...(x.confidence ? { c: x.confidence } : {}), k: killText(x), ...(x.broken ? { b: true } : {}) }] })}><span class="cs-face s-${x.stance}" aria-hidden="true">${esc(x.ch)}</span><span class="cs-kt"><b>${esc(x.name)}</b><small>${esc(killText(x))}</small></span><span class="cs-tag ${x.stance === 'bull' ? 'up' : 'down'}">${x.broken ? '깨짐' : `${WORD[x.stance]} ${x.confidence ?? ''}%`}</span></button></li>`).join('')}</ul>${rec}${deskLine ? `<p class="cs-fine">${esc(deskLine)} 위원별 긴 근거는 심층 리포트에 있어요.</p>` : ''}</div></section>`;
+  return `<div class="cs-sheet cs-list" id="cs-members" role="dialog" aria-modal="true" aria-label="위원별 판단" hidden><div class="cs-panel"><i class="cs-grip" aria-hidden="true"></i><div class="cs-kh"><h2>위원별 판단</h2><small>틀림 기준은 종가 기준</small></div>
+<h3 class="cs-gh">AI 분석가 ${analysts.length}명</h3><ul>${analysts.map(row).join('')}</ul>${desks.length ? `<h3 class="cs-gh">데스크 ${desks.length}곳</h3><ul>${desks.map(row).join('')}</ul>` : ''}${rec}<p class="cs-fine">이름을 누르면 그 위원의 기록이 나와요. 위원별 긴 근거는 심층 리포트에 있어요. 모두에게 같은 AI 판단 기록이고, 투자 권유가 아니에요.</p><button type="button" class="cs-close">닫기</button></div></div>`;
 }
 
 /** A row of small seat dots for list rows (위원회 탭). */
@@ -148,21 +157,34 @@ export function seatDots(report: DailyReport): string {
   if (!seats.length) return '';
   const s = splitOf(seats), dis = dissentLine(seats);
   const lone = dis ? new Set(seats.filter((x) => x.stance === (s.bull < s.bear ? 'bull' : 'bear')).map((x) => x.key)) : new Set<string>();
-  return `<span class="cs-dots" aria-hidden="true">${seats.map((x, i) => `<i class="s-${x.stance}${lone.has(x.key) ? ' lone' : ''}" style="--i:${i}">${esc(x.ch)}</i>`).join('')}</span><span class="cs-sl"><b>${splitText(s)}</b>${dis ? `<small>소수 의견 · ${esc(dis)}</small>` : ''}</span>`;
+  // G-300: the list row says the split in words only; the seats themselves are on the stock's 위원회 page.
+  void lone;
+  return `<span class="cs-sl"><b>${splitText(s)}</b>${dis ? `<small>소수 의견 · ${esc(dis)}</small>` : ''}</span>`;
 }
-const splitText = (s: Split) => `강세 ${s.bull} · 중립 ${s.neutral} · 약세 ${s.bear}${s.abstain ? ` · 기권 ${s.abstain}` : ''} — ${s.word}`;
+const splitText = (s: Split) => `${s.word} · ${s.bull}·${s.neutral}·${s.bear}${s.abstain ? ` · 기권 ${s.abstain}` : ''}`;
 
 /** Home's committee card (한서님 시안, 10/24): the most split stock as a half circle, the rest as split bars, one dissent. */
-export function homeCommittee(list: readonly { name: string; href: string; report: DailyReport }[], opts: { day: string; allHref?: string }): string {
+/**
+ * G-300 (한서님 10/25 '다른 페이지도 깔끔하게'): the vote as one row of small dots, bull → neutral → bear → abstain.
+ * The half circle of seats lives on the stock's 위원회 page only; elsewhere this row stands for it.
+ */
+export function voteDots(seats: readonly Seat[]): string {
+  if (!seats.length) return '';
+  const s = splitOf(seats), order: SeatStance[] = ['bull', 'neutral', 'bear', 'abstain'];
+  const dots = order.flatMap((k) => seats.filter((x) => x.stance === k)).map((x, i) => `<i class="s-${x.stance}" style="animation-delay:${i * 30}ms" title="${esc(`${x.name} ${WORD[x.stance]}`)}"></i>`).join('');
+  return `<span class="cs-vd" role="img" aria-label="${esc(`강세 ${s.bull}, 중립 ${s.neutral}, 약세 ${s.bear}${s.abstain ? `, 기권 ${s.abstain}` : ''}`)}">${dots}</span><small class="cs-dn">${s.bull} · ${s.neutral} · ${s.bear}${s.abstain ? ` · 기권 ${s.abstain}` : ''}</small>`;
+}
+
+export function homeCommittee(list: readonly { name: string; href: string; report: DailyReport }[], opts: { day: string; allHref?: string; foot?: string }): string {
   const rows = list.map((x) => ({ ...x, seats: seatsOf(x.report) })).filter((x) => x.seats.length);
   if (!rows.length) return '';
   const top = [...rows].sort((a, b) => splitness(splitOf(b.seats)) - splitness(splitOf(a.seats)) || b.seats.length - a.seats.length)[0]!;
   const s = splitOf(top.seats);
-  const head = s.word === '팽팽해요' ? `${esc(top.name)}에서<br>위원 ${s.total}명이 ${s.bull} : ${s.neutral} : ${s.bear}로 갈렸어요` : `${esc(top.name)}, 위원 ${s.total}명이<br>${esc(s.word.replace(/요$/, '요'))}`;
+  const head = s.word === '팽팽해요' ? `${esc(top.name)}, 위원 ${s.total}명이 팽팽하게 갈렸어요` : `${esc(top.name)}, ${esc(s.word)}`;
   const bar = (x: typeof rows[number]) => { const t = splitOf(x.seats); const seg = (k: number, cls: string) => (k ? `<i class="${cls}" style="flex:${k}"></i>` : ''); return `<a class="cs-hrow" href="${esc(x.href)}"><b>${esc(x.name)}</b><span class="cs-bar" aria-hidden="true">${seg(t.bull, 'up')}${seg(t.neutral, '')}${seg(t.bear, 'down')}</span><small>${t.bull >= t.bear ? `강세 ${t.bull} · 약세 ${t.bear}` : `약세 ${t.bear} · 강세 ${t.bull}`}</small></a>`; };
   const rest = rows.filter((x) => x !== top);
   const dis = rows.map((x) => ({ x, d: dissentLine(x.seats) })).find((y) => y.d);
-  return `<section class="card cs-home"><div class="cs-hh"><span>AI 위원회 · ${esc(opts.day)} 마감 판단</span>${opts.allHref ? `<button type="button" class="wd-link" data-wd-go="com">${rows.length}종목 ›</button>` : ''}</div><a class="cs-htop" href="${esc(top.href)}"><h2 class="cs-htitle">${head}</h2>${seatArc(top.report, { size: 'md' })}</a>${rest.length ? `<div class="cs-hrows">${rest.slice(0, 3).map(bar).join('')}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis.x.name)} · ${esc(dis.d)}</span></p>` : ''}</section>`;
+  return `<section class="card cs-home"><div class="cs-hh"><span>AI 위원회 · ${esc(opts.day)} 마감 판단</span>${opts.allHref ? `<button type="button" class="wd-link" data-wd-go="com">${rows.length}종목 ›</button>` : ''}</div><a class="cs-htop" href="${esc(top.href)}"><h2 class="cs-htitle">${head}</h2><span class="cs-drow">${voteDots(top.seats)}</span></a>${rest.length ? `<div class="cs-hrows">${rest.slice(0, 3).map(bar).join('')}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis.x.name)} · ${esc(dis.d)}</span></p>` : ''}${opts.foot ?? ''}</section>`;
 }
 
 /**
@@ -180,7 +202,7 @@ export function rosterCard(reports: readonly { name: string; report: DailyReport
     const short = name.replace(/ (PM|분석가)$/, '').replace('실적·밸류에이션', '실적·가치');
     return `<button type="button" class="cs-mem"${sheetAttr({ n: name, ch: GLYPH[m.key] ?? '·', f: focus, d: m.kind === 'desk', r: recordLine(board, m), calls })}><span class="cs-face big${m.kind === 'desk' ? ' is-desk' : ''}" aria-hidden="true">${esc(GLYPH[m.key] ?? '·')}</span><small>${esc(short)}</small></button>`;
   }).join('');
-  return `<section class="block cs-roster" id="members"><div class="card"><div class="cs-kh"><h2>위원 ${members.length}명</h2><small>누르면 위원 한 명의 기록</small></div><div class="cs-faces">${faces}</div><p class="cs-fine">AI 분석가 6명 · AI 데스크 5명이 따로 판단하고, 20거래일 뒤 채점받아요. 종목마다 업종 전문위원 1명이 더 앉아요.</p></div></section>`;
+  return `<section class="block cs-roster" id="members"><div class="card"><div class="cs-kh"><h2>위원 ${members.length}명</h2><small>누르면 위원 한 명의 기록</small></div><div class="cs-faces">${faces}</div><p class="cs-fine">분석가 6명 · 데스크 5명 · 종목마다 업종 전문위원 1명이 더 앉아요.</p></div></section>`;
 }
 
 export const COMMITTEE_CSS = `.cs-hero .card,.cs-kill .card,.cs-roster .card{padding:20px}.cs-k,.cs-hh span{font-size:13px;font-weight:700;color:var(--fg2)}.cs-title{margin:6px 0 4px;font-size:22px;font-weight:800;letter-spacing:-.4px}
@@ -198,10 +220,12 @@ button.cs-seat{cursor:pointer;transition:transform .35s var(--spring-bouncy,cubi
 .cs-face{width:36px;height:36px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:800}.cs-face.big{width:48px;height:48px;border-radius:16px;font-size:17px;background:var(--fg);color:var(--surface-solid,#fff)}.cs-face.big.is-desk{background:var(--soft);color:var(--fg)}
 .cs-kt{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}.cs-kt b{font-size:14px}.cs-kt small{font-size:12px;color:var(--muted)}
 .cs-tag{font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px;background:var(--soft);white-space:nowrap}.cs-tag.up{color:var(--up)}.cs-tag.down{color:var(--down)}.cs-recl{display:flex;justify-content:space-between;gap:10px;margin:0;padding:12px 0 0;border-top:1px solid var(--line);font-size:13px}.cs-recl span{color:var(--fg2);text-align:right}.cs-fine{margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--muted)}
-.cs-faces{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 6px;margin-top:8px}.cs-mem{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:0;font:inherit;color:var(--fg);cursor:pointer;transition:transform .35s var(--spring-bouncy,cubic-bezier(.34,1.56,.64,1))}.cs-mem:active{transform:scale(.92)}.cs-mem small{font-size:11px;font-weight:600;text-align:center;line-height:1.3}
+.cs-faces{display:flex;gap:6px;margin:8px -20px 0;padding:2px 20px 4px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none}.cs-faces::-webkit-scrollbar{display:none}.cs-faces .cs-mem{flex:none;width:62px;scroll-snap-align:start}.cs-faces .cs-face.big{width:44px;height:44px;border-radius:50%;font-size:16px}.cs-mem{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:0;font:inherit;color:var(--fg);cursor:pointer;transition:transform .35s var(--spring-bouncy,cubic-bezier(.34,1.56,.64,1))}.cs-mem:active{transform:scale(.92)}.cs-mem small{font-size:11px;font-weight:600;text-align:center;line-height:1.3}
 .cs-dots{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0 4px}.cs-dots i{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;font-style:normal;animation:cs-pop .5s var(--spring-bouncy,cubic-bezier(.34,1.56,.64,1)) both;animation-delay:calc(var(--i,0)*25ms)}.cs-dots i.lone{outline:2px solid var(--fg);outline-offset:1px}
 .cs-sl{display:flex;flex-direction:column;gap:3px}.cs-sl b{font-size:13.5px}.cs-sl small{font-size:12.5px;color:var(--fg2);line-height:1.45}
 .cs-home{padding:20px;margin-bottom:14px}.cs-hh{display:flex;justify-content:space-between;align-items:center}.cs-htop{display:block;color:var(--fg);text-decoration:none}.cs-htitle{margin:10px 0 2px;font-size:22px;font-weight:800;line-height:1.35;letter-spacing:-.4px}
+.cs-drow{display:flex;align-items:center;gap:10px;margin:8px 0 2px}.cs-vd{display:flex;gap:4px;flex-wrap:wrap}.cs-vd i{width:12px;height:12px;border-radius:50%;animation:cs-pop .45s var(--spring-bouncy,cubic-bezier(.34,1.56,.64,1)) both}.cs-dn{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cs-hfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);min-height:44px;color:var(--fg);text-decoration:none;font-size:13.5px}.cs-hfoot b{font-variant-numeric:tabular-nums}.cs-hfoot small{color:var(--muted);font-size:12px}
 .cs-hrows{display:flex;flex-direction:column;gap:2px;margin-top:10px}.cs-hrow{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:10px;min-height:36px;color:var(--fg);text-decoration:none}.cs-hrow b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cs-hrow small{font-size:12px;color:var(--fg2);white-space:nowrap}
 .cs-bar{display:flex;gap:2px;height:8px;border-radius:4px;overflow:hidden}.cs-bar i{background:var(--line-strong)}.cs-bar i.up{background:var(--up)}.cs-bar i.down{background:var(--down)}
 .cs-sheet{position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center;background:rgba(20,20,24,.36);opacity:0;transition:opacity .25s ease}.cs-sheet.on{opacity:1}.cs-sheet[hidden]{display:none}
@@ -212,6 +236,16 @@ button.cs-seat{cursor:pointer;transition:transform .35s var(--spring-bouncy,cubi
 .cs-close{display:block;width:100%;min-height:48px;margin-top:16px;border:0;border-radius:24px;background:var(--fg);color:var(--surface-solid,#fff);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
 .cs-share{display:block;width:100%;min-height:44px;margin-top:14px;border:1px solid var(--line-strong);border-radius:22px;background:none;color:var(--fg);font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:transform .35s var(--spring-bouncy,cubic-bezier(.34,1.56,.64,1))}.cs-share:active{transform:scale(.97)}.cs-share:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
 @keyframes cs-pop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+/* G-300: the cleaned committee card (verdict title, share icon, one row to every member's call) */
+.cs-top{display:flex;align-items:center;gap:10px}.cs-top .cs-k{flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--muted)}
+.cs-hero .cs-share{display:inline-flex;align-items:center;justify-content:center;flex:none;width:36px;height:36px;min-height:0;margin:0;padding:0;border:0;border-radius:12px;background:var(--soft);color:var(--fg)}
+.cs-hero .cl-head{margin:8px -6px 2px}.cs-hero .cl-line{font-size:20px;line-height:1.45;font-weight:700;letter-spacing:-.3px}
+.cs-hero .cs-sides{gap:8px}.cs-hero .cs-side{background:var(--soft)}.cs-hero .cs-side b{display:flex;align-items:center;gap:6px;color:var(--fg)!important}.cs-side b i{width:7px;height:7px;border-radius:50%;background:var(--muted)}.cs-side.up b i{background:var(--up)}.cs-side.down b i{background:var(--down)}
+.cs-hero .cs-dis{background:none;padding:0;margin-top:12px}
+.cs-mrow{display:flex;align-items:center;gap:10px;width:100%;margin:14px 0 0;padding:14px 4px 2px;border:0;border-top:1px solid var(--line);background:none;font:inherit;color:var(--fg);text-align:left;cursor:pointer;transition:transform .35s var(--spring-snappy,ease-out)}.cs-mrow:active{transform:scale(.985)}
+.cs-mrow span{flex:1;display:flex;flex-direction:column;gap:2px}.cs-mrow b{font-size:15px;font-weight:600}.cs-mrow small{font-size:12.5px;color:var(--muted)}.cs-mrow i{font-style:normal;font-size:20px;color:var(--muted)}
+.cs-list{z-index:590}.cs-list .cs-kh{margin:2px 0 4px}.cs-gh{margin:14px 0 2px;font-size:12.5px;font-weight:700;color:var(--muted)}.cs-list ul{list-style:none;margin:0;padding:0}.cs-list .cs-krow:first-child{border-top:0}
+.cs-tag.broke{background:var(--fg);color:var(--surface-solid,#fff)}
 @media (prefers-reduced-motion:reduce){.cs-seat,.cs-dots i{animation:none}.cs-panel,.cs-sheet{transition:none}}`;
 
 /** Opens the member sheet from any [data-cs] seat, face or row. */
@@ -230,6 +264,19 @@ export const COMMITTEE_JS = `(function () {
     last = btn; sheet.hidden = false; requestAnimationFrame(function () { sheet.classList.add('on'); var b = sheet.querySelector('.cs-close'); if (b) b.focus(); });
   };
   document.addEventListener('click', function (ev) { var b = ev.target.closest && ev.target.closest('[data-cs]'); if (!b) return; ev.preventDefault(); open(b); });
+  // G-300: the debate card's three bubbles arrive one by one the first time the card is on screen.
+  var dio = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (x) { if (x.isIntersecting) { x.target.classList.add('dc-seen'); dio.unobserve(x.target); } }); }, { threshold: 0.3 }) : null;
+  var dcScan = function () { if (!dio) return; document.querySelectorAll('.dc:not(.dc-wait)').forEach(function (el) { el.classList.add('dc-wait'); dio.observe(el); }); };
+  dcScan(); if (dio && window.MutationObserver) { var dcq = 0; new MutationObserver(function () { if (dcq) return; dcq = requestAnimationFrame(function () { dcq = 0; dcScan(); }); }).observe(document.documentElement, { childList: true, subtree: true }); }
+  // G-300: 위원별 판단 opens as a sheet from the committee card (moved under body so no card clips it).
+  var list = null, listFrom = null;
+  var listClose = function () { if (!list || list.hidden) return; list.classList.remove('on'); setTimeout(function () { list.hidden = true; }, 260); if (listFrom) listFrom.focus({ preventScroll: true }); };
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest && ev.target.closest('[data-cs-list]');
+    if (b) { ev.preventDefault(); list = document.getElementById(b.getAttribute('aria-controls')); if (!list) return; listFrom = b; if (list.parentNode !== document.body) document.body.appendChild(list); list.hidden = false; requestAnimationFrame(function () { list.classList.add('on'); }); return; }
+    if (list && !list.hidden && (ev.target === list || (ev.target.closest && ev.target.closest('.cs-list .cs-close')))) listClose();
+  });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && (!sheet || sheet.hidden)) listClose(); });
   // G-299: 이미지로 공유. The committee card as one 1080x1350 picture: seats, the split, the lone dissent, the date.
   // No price, no return: the same record everyone sees. The link carries utm_source=share so visits count it (G-293).
   var wrap = function (ctx, text, max) { var out = [], line = ''; String(text).split('').forEach(function (ch) { if (ctx.measureText(line + ch).width > max && line) { out.push(line); line = ch.trim() ? ch : ''; } else line += ch; }); if (line) out.push(line); return out; };
@@ -241,7 +288,7 @@ export const COMMITTEE_JS = `(function () {
     ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(60, 60, W - 120, H - 120, 56); else ctx.rect(60, 60, W - 120, H - 120); ctx.fill();
     ctx.fillStyle = '#5E6168'; ctx.font = '600 34px ' + F; ctx.fillText('GNOMON AI 위원회 · ' + btn.getAttribute('data-d') + ' 판단', 120, 160);
     ctx.fillStyle = '#141416'; ctx.font = '800 84px ' + F; ctx.fillText(btn.getAttribute('data-n'), 120, 260);
-    var t = card.querySelector('.cs-title'); ctx.font = '700 40px ' + F; ctx.fillStyle = '#3A3C42'; if (t) ctx.fillText(t.textContent, 120, 330);
+    var t = btn.getAttribute('data-t') || ((card.querySelector('.cs-title') || {}).textContent || ''); ctx.font = '700 40px ' + F; ctx.fillStyle = '#3A3C42'; if (t) ctx.fillText(t, 120, 330);
     var aw = 640, ax = (W - aw) / 2, ay = 380, ah = aw * 196 / 340;
     card.querySelectorAll('.cs-seat').forEach(function (s) {
       var x = ax + parseFloat(s.style.left) / 100 * aw, y = ay + parseFloat(s.style.top) / 100 * ah, k = s.className;

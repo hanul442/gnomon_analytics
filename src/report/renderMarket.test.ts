@@ -31,8 +31,11 @@ test('report pages have eight separate tabs with gauges, fair value, forecasts, 
   // G-71: four tabs; the old tab names live on as parts of them.
   // G-129: 타이밍 (기술 + 전략) and 기업 체력 (수급 + 종목정보); the old ids live on as sections inside them.
   for (const id of ['tab-home', 'tab-chart', 'tab-technical', 'tab-fundamentals', 'tab-news']) assert.match(page, new RegExp(`id="${id}" role="tabpanel"`));
-  // G-277: the debate folds open under the vote in 위원회 (it keeps id="tab-ai" for links and generated fragments).
-  assert.match(page, /<details class="ai-fold"><summary>토론 펼쳐 보기<\/summary><section class="ai-in" id="tab-ai"/);
+  // G-300: the whole committee tab lives in 위원회 판단 (its own page) and keeps id="tab-ai" for links and fragments;
+  // 위원회 shows '위원회 토론' once (the debate card), never the old fold's second title.
+  assert.match(page, /<section class="ai-in" id="tab-ai"/);
+  assert.ok(!page.includes('토론 펼쳐 보기'));
+  assert.ok((page.match(/<h2 class="vf-h">위원회 토론<\/h2>/g) ?? []).length === 0);
   for (const id of ['tab-strategy', 'tab-flows']) assert.match(page, new RegExp(`class="sub-sec" id="${id}"`));
   for (const text of ['기업 체력 한눈에', '재무제표']) assert.ok(page.includes(text), text);
   // G-151: 타이밍 opens on 기술적 신호; a separate 한눈에 card only repeated the vote, the locked gauges and the champion.
