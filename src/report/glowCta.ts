@@ -28,7 +28,7 @@ export const GLOW_CTA_CSS = `
 .glow-pts i{bottom:-10px;position:absolute;animation:glow-rise infinite ease-in-out;pointer-events:none;width:2px;height:2px;background-color:#fff;border-radius:9999px}
 @keyframes glow-rise{0%{transform:translateY(0)}85%{opacity:0}100%{transform:translateY(-55px);opacity:0}}
 ${PTS.map(([left, o, d, delay], i) => `.glow-pts i:nth-child(${i + 1}){left:${left};opacity:${o};animation-duration:${d}s${delay ? `;animation-delay:${delay}s` : ''}}`).join('\n')}
-.glow-in{z-index:2;gap:6px;position:relative;width:100%;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;line-height:1.5;transition:color .2s ease-in-out}
+.glow-in{z-index:2;gap:6px;position:relative;width:100%;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:17.5px;font-weight:700;line-height:1.5;transition:color .2s ease-in-out}
 .glow-in svg{width:18px;height:18px;transition:transform .3s ease;stroke:#fff;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .glow-cta:hover .glow-in svg{transform:translateX(2px)}
 .glow-cta:hover .glow-in svg path{animation:glow-dash .8s linear forwards}

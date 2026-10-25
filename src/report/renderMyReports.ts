@@ -7,8 +7,8 @@ export function renderMyReports(): string {
   const body = `<style>
 .mr{max-width:760px;margin:16px auto 32px}.mr .card{padding:18px;margin-bottom:12px}.mr h1{font-size:23px;margin:2px 0 6px}
 .mr-tabs{margin:0 0 10px}
-.mr-item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.mr-item:first-child{border-top:0}.mr-item b{display:block;font-size:15px}.mr-item small{color:var(--muted);font-size:12.5px}
-.mr-item a.mr-go{flex:none;font-weight:800;font-size:13px}.mr-login{text-align:center}
+.mr-item{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.mr-item:first-child{border-top:0}.mr-item b{display:block;font-size:17px}.mr-item small{color:var(--muted);font-size:15.5px}
+.mr-item a.mr-go{flex:none;font-weight:800;font-size:15.5px}.mr-login{text-align:center}
 </style><div class="mr">
 <section class="card"><div class="pl-k">내 리포트</div><h1>내가 만든 리포트</h1><p class="muted">즉시 생성하거나 요청한 리포트를 모아 봐요. 다른 사람이 만든 리포트는 여기 나오지 않아요.</p></section>
 <section class="card mr-login" id="mr-login" hidden><p>로그인하면 내가 만든 리포트를 볼 수 있어요.</p><a class="btn" href="login.html?return=myreports.html">로그인</a></section>

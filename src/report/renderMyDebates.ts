@@ -7,10 +7,10 @@ export function renderMyDebates(): string {
   const body = `<style>
 .md{max-width:820px;margin:16px auto 32px}.md .card{padding:18px;margin-bottom:12px}.md h1{font-size:23px;margin:2px 0 6px}
 .md-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}.md-tools input{flex:1;min-width:160px;font:inherit;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:12px}
-.md-group{margin-top:14px}.md-gh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 6px}.md-gh a{font-weight:800;font-size:15.5px}.md-gh small{color:var(--muted)}
+.md-group{margin-top:14px}.md-gh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 6px}.md-gh a{font-weight:800;font-size:17.5px}.md-gh small{color:var(--muted)}
 .md-q{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--surface)}.md-q summary{cursor:pointer;list-style:none;padding:11px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px}.md-q summary::-webkit-details-marker{display:none}
-.md-q summary b{font-size:14.5px;font-weight:700}.md-q summary small{grid-column:1/-1;color:var(--muted);font-size:12px}.md-q summary i{font-style:normal;color:var(--muted);grid-row:1;grid-column:2}
-.md-a{padding:0 12px 12px;font-size:14px;line-height:1.65;white-space:pre-wrap;color:var(--fg2)}.md-login{text-align:center}
+.md-q summary b{font-size:17px;font-weight:700}.md-q summary small{grid-column:1/-1;color:var(--muted);font-size:15px}.md-q summary i{font-style:normal;color:var(--muted);grid-row:1;grid-column:2}
+.md-a{padding:0 12px 12px;font-size:16px;line-height:1.65;white-space:pre-wrap;color:var(--fg2)}.md-login{text-align:center}
 </style><div class="md">
 <section class="card"><div class="pl-k">내 토론 기록</div><h1>내가 위원회에 한 질문</h1><p class="muted">토론에 참여해 물어본 것과 받은 답을 종목별로 모아 봐요. 시장 데일리 질문은 날짜별로 묶이고, 누르면 그날 리포트가 열려요. 계정에 저장돼서 다른 기기에서도 그대로 보여요. 다른 사람의 질문은 나오지 않아요.</p></section>
 <section class="card md-login" id="md-login" hidden><p>로그인하면 내 토론 기록을 볼 수 있어요.</p><a class="btn" href="login.html?return=mydebates.html">로그인</a></section>

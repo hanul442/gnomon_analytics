@@ -79,9 +79,9 @@ html.ms .db-typing .db-av.mm-face{animation:mm-talk 1.1s var(--spring-soft) infi
 .mm-wheel-sc{position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior:contain;-webkit-mask:linear-gradient(transparent,#000 28%,#000 72%,transparent);mask:linear-gradient(transparent,#000 28%,#000 72%,transparent)}
 .mm-wheel-sc::-webkit-scrollbar{display:none}
 .mm-wheel-sc .mm-pad{height:57px}
-.mm-wheel-sc button{display:block;width:100%;height:36px;border:0;background:none;scroll-snap-align:center;font:inherit;font-size:17px;font-variant-numeric:tabular-nums;color:var(--muted);cursor:pointer;position:relative}
-.mm-wheel-sc button.mm-sel{color:var(--fg);font-weight:800;font-size:19px}
-.mm-wheel-sc button small{font-size:11.5px;font-weight:700;margin-left:8px}
+.mm-wheel-sc button{display:block;width:100%;height:36px;border:0;background:none;scroll-snap-align:center;font:inherit;font-size:18.5px;font-variant-numeric:tabular-nums;color:var(--muted);cursor:pointer;position:relative}
+.mm-wheel-sc button.mm-sel{color:var(--fg);font-weight:800;font-size:20px}
+.mm-wheel-sc button small{font-size:15px;font-weight:700;margin-left:8px}
 /* ---- 13 업종 지도 꾹 ---- */
 .km-heat .km-cell{transform-box:fill-box;transform-origin:center}
 html.ms .km-heat .km-cell,html.ms .wd-heat>span{transition:transform var(--d-snappy) var(--spring-snappy),opacity .2s}
@@ -94,14 +94,14 @@ html.ms .ia-list .mm-stk{transition:margin-top var(--d-snappy) var(--spring-snap
 .ia-list.mm-closed .mm-stk{margin-inline:-8px;padding-inline:8px;background:var(--surface-solid,var(--surface));border-radius:14px;box-shadow:0 1px 2px rgba(10,12,16,.05),0 8px 18px -14px rgba(10,12,16,.4)}
 .ia-list.mm-closed .mm-stk:not(.mm-stk0){pointer-events:none}
 .ia-list.mm-closed .mm-stk0{cursor:pointer}
-.mm-stk-more{display:flex;justify-content:center;margin:10px 0 0;font-size:13px;font-weight:700;color:var(--fg)}
+.mm-stk-more{display:flex;justify-content:center;margin:10px 0 0;font-size:15.5px;font-weight:700;color:var(--fg)}
 .mm-stk-more button{border:0;background:var(--soft);color:inherit;font:inherit;padding:8px 14px;border-radius:999px;cursor:pointer}
 /* ---- 15 밀어서 확인 ---- */
 [data-job=confirm]{position:relative}
 [data-job=confirm]:has(>.mm-slide){padding-left:calc(var(--mm-kh,44px) + 14px)!important}
 .mm-slide{position:absolute;left:4px;top:4px;bottom:4px;z-index:3;display:flex;align-items:stretch;pointer-events:none}
 .mm-slide-tr{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:999px;background:rgba(255,255,255,.14)}
-.mm-knob{position:relative;aspect-ratio:1;height:100%;border-radius:999px;background:var(--page);color:var(--fg);display:grid;place-items:center;font-size:14px;font-weight:800;pointer-events:auto;touch-action:none;cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.mm-knob{position:relative;aspect-ratio:1;height:100%;border-radius:999px;background:var(--page);color:var(--fg);display:grid;place-items:center;font-size:16px;font-weight:800;pointer-events:auto;touch-action:none;cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 html.ms .mm-knob:not(.mm-drag){transition:transform var(--d-bouncy) var(--spring-bouncy)}
 html.ms .mm-knob.mm-hint{animation:mm-nudge 1.4s var(--spring-bouncy) .3s 2}
 @keyframes mm-nudge{0%,100%{transform:none}30%{transform:translateX(14px)}}
@@ -112,7 +112,7 @@ html.ms .mm-knob.mm-hint{animation:mm-nudge 1.4s var(--spring-bouncy) .3s 2}
 .mm-goo.mm-open .mm-goo-scrim{opacity:1}
 .mm-goo-f{position:absolute;inset:0;filter:url(#mm-goo-f)}
 .mm-goo-b{position:absolute;border-radius:999px;background:var(--fg);color:var(--page);display:grid;place-items:center;font-size:24px;font-weight:300;line-height:1}
-.mm-goo-o{position:absolute;right:0;bottom:0;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border:0;border-radius:22px;background:var(--fg);color:var(--page);font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;transform:translate(0,0) scale(.3);opacity:0}
+.mm-goo-o{position:absolute;right:0;bottom:0;display:flex;align-items:center;gap:8px;height:44px;padding:0 16px;border:0;border-radius:22px;background:var(--fg);color:var(--page);font:inherit;font-size:16px;font-weight:700;white-space:nowrap;cursor:pointer;transform:translate(0,0) scale(.3);opacity:0}
 html.ms .mm-goo-o{transition:transform var(--d-bouncy) var(--spring-bouncy),opacity .2s}
 .mm-goo.mm-open .mm-goo-o{opacity:1}
 .mm-goo-o:focus-visible{outline:2px solid var(--page);outline-offset:-4px}
