@@ -16,14 +16,26 @@ const personName = (n: string) => (/[a-z]/.test(n) || !/[A-Z]/.test(n) ? n : n.s
 /** G-194: long English officer titles shortened to the usual letters so a phone row keeps one line. */
 const TITLES: [RegExp, string][] = [[/chief executive officer/gi, 'CEO'], [/chief financial officer/gi, 'CFO'], [/chief operating officer/gi, 'COO'], [/chief technology officer/gi, 'CTO'], [/chief accounting officer/gi, 'CAO'], [/chief legal officer/gi, 'CLO'], [/chief marketing officer/gi, 'CMO'], [/chief people officer/gi, 'CPO'], [/executive vice president/gi, 'EVP'], [/senior vice president/gi, 'SVP'], [/vice president/gi, 'VP'], [/general counsel/gi, 'GC'], [/principal accounting officer/gi, 'PAO'], [/^director$/i, '이사']];
 const shortTitle = (t: string) => TITLES.reduce((s, [re, to]) => s.replace(re, to), t);
-const ICON: Record<string, string> = { insider: '👤', surprise: '📊', buyback: '🔁', buybackSell: '📤', holder: '🏦', contract: '📝', value: '🔊', dividend: '💰', earnings: '📊', ir: '🎤' };
+// G-300: one-colour line icons in a grey tile (were emoji), so the card reads as quietly as the rest of the 위원회 part.
+const svg = (d: string) => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON: Record<string, string> = {
+  insider: svg('<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/>'),
+  holder: svg('<path d="M4 20h16M6 20V10l6-5 6 5v10M10 20v-5h4v5"/>'),
+  surprise: svg('<path d="M5 20V11M12 20V5M19 20v-7"/>'), earnings: svg('<path d="M5 20V11M12 20V5M19 20v-7"/>'),
+  buyback: svg('<path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/>'),
+  buybackSell: svg('<path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/>'),
+  contract: svg('<path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5"/>'),
+  value: svg('<path d="M4 14V10h4l5-4v12l-5-4zM17 9a4 4 0 0 1 0 6"/>'),
+  dividend: svg('<circle cx="12" cy="12" r="8"/><path d="M12 7.5v9M9.5 10c0-1 1-1.6 2.5-1.6s2.5.6 2.5 1.5c0 2.2-5 1.2-5 3.6 0 .9 1 1.6 2.5 1.6s2.5-.6 2.5-1.6"/>'),
+  ir: svg('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/>'),
+};
 
 /** Summary tab: the few lines that change how the stock reads, each linking to its detail. */
 export function edgeCard(report: DailyReport): string {
   const e = report.edge;
   if (!e || !e.highlights.length) return '';
   const where: Record<string, string> = { insider: 'tab-flows', holder: 'tab-flows', value: 'tab-flows', surprise: 'tab-fundamentals', dividend: 'tab-fundamentals', buyback: 'tab-news', buybackSell: 'tab-news', contract: 'tab-news' };
-  return `<section class="block edge-card"><div class="card"><div class="edge-k">놓치기 쉬운 정보</div><ul>${e.highlights.map((h) => `<li><a href="#${where[h.key] ?? 'tab-news'}"><span aria-hidden="true">${ICON[h.key] ?? '•'}</span><b class="${h.tone}">${esc(h.text)}</b><i aria-hidden="true">›</i></a></li>`).join('')}</ul>${e.nextEarnings ? `<p class="edge-next">다음 실적: <b>${esc(e.nextEarnings.period)}</b> · ${esc(e.nextEarnings.label)}</p>` : ''}</div></section>`;
+  return `<section class="block edge-card"><div class="card"><div class="edge-k">놓치기 쉬운 정보</div><ul>${e.highlights.map((h) => `<li><a href="#${where[h.key] ?? 'tab-news'}"><span class="edge-ic" aria-hidden="true">${ICON[h.key] ?? '•'}</span><b class="${h.tone}">${esc(h.text)}</b><i aria-hidden="true">›</i></a></li>`).join('')}</ul>${e.nextEarnings ? `<p class="edge-next">다음 실적: <b>${esc(e.nextEarnings.period)}</b> · ${esc(e.nextEarnings.label)}</p>` : ''}</div></section>`;
 }
 
 /** 수급: insider (임원·주요주주) and 5% holder reports, and today's trading value against its average. */
@@ -76,5 +88,5 @@ export function edgeEvents(report: DailyReport): string {
 }
 
 
-export const EDGE_CSS = `.edge-card .card{border-left:4px solid var(--navy)}.edge-k{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:6px}.edge-card ul{list-style:none;padding:0;margin:0}.edge-card li a{display:flex;align-items:center;gap:8px;padding:9px 2px;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-size:14px;line-height:1.45}.edge-card li:first-child a{border-top:0}.edge-card li b{flex:1;font-weight:700}.edge-card li i{font-style:normal;color:var(--muted)}.edge-next{margin:8px 0 0;font-size:13px;color:var(--fg2)}
+export const EDGE_CSS = `.edge-k{font-size:17px;font-weight:700;color:var(--fg);margin-bottom:6px}.edge-ic{display:inline-flex;align-items:center;justify-content:center;flex:none;width:34px;height:34px;border-radius:11px;background:var(--soft);color:var(--fg)}.edge-card li b.up,.edge-card li b.down{color:var(--fg)}.edge-card li b{font-weight:500}.edge-card ul{list-style:none;padding:0;margin:0}.edge-card li a{display:flex;align-items:center;gap:8px;padding:9px 2px;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-size:14px;line-height:1.45}.edge-card li:first-child a{border-top:0}.edge-card li b{flex:1;font-weight:700}.edge-card li i{font-style:normal;color:var(--muted)}.edge-next{margin:8px 0 0;font-size:13px;color:var(--fg2)}
 .edge-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px}.edge-grid>.card{min-width:0}.ins-list{list-style:none;padding:0;margin:0}.ins-list li{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line)}.ins-list li:first-child{border-top:0}.ins-who{flex:1;min-width:0}.ins-who b{display:block;font-size:14px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}.ins-who small,.ins-n small{display:block;margin-top:2px;font-size:12px;color:var(--muted);line-height:1.4}.ins-who small a{color:inherit;white-space:nowrap}.ins-n{flex:none;text-align:right}.ins-n b{display:block;font-size:14px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}.ins-n small{white-space:nowrap;font-variant-numeric:tabular-nums}.edge-sum{font-size:14.5px;margin:4px 0 10px}.edge-list{margin:0;padding-left:18px;line-height:1.8;font-size:14px}.edge-ev{list-style:none;padding:0;margin:0}.edge-ev li{padding:10px 0;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}.edge-ev li:first-child{border-top:0}.edge-ev a{font-weight:700;font-size:14px}.edge-ev small{flex-basis:100%;color:var(--muted);font-size:12px}.edge-tag{font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--soft);color:var(--fg2)}.t-earnings,.t-contract{background:var(--down-soft);color:var(--down-strong)}.t-dividend,.t-buyback{background:var(--up-soft);color:var(--up-strong)}.t-insider,.t-holder{background:var(--warn-soft);color:var(--warn-strong)}.t-buybackSell{background:var(--soft);color:var(--fg2)}`;

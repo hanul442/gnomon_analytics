@@ -274,7 +274,7 @@ export const COMMAND_BAR_JS = `
 export const REPORT_TABS_CSS = `
 /* G-277 (한서님 10/21 '종목 탭도 와...진짜 너무 길더라'): the shorter 위원회 part. */
 .kp-line{margin:8px 0 0;font-size:13px;color:var(--muted);line-height:1.5}.kp-line b{color:var(--fg2);font-weight:700}
-.vf .card{padding:18px 18px 6px}.vf-h{margin:0;font-size:16px}.vf-bar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:12px 0 6px}.vf-bar i{background:var(--line-strong)}.vf-bar i.up{background:var(--up)}.vf-bar i.down{background:var(--down)}
+.vf>.card{padding:18px 18px 6px}.vf-h{margin:0;font-size:16px}.vf-bar{display:flex;gap:2px;height:10px;border-radius:5px;overflow:hidden;margin:12px 0 6px}.vf-bar i{background:var(--line-strong)}.vf-bar i.up{background:var(--up)}.vf-bar i.down{background:var(--down)}
 .vf-l{display:flex;justify-content:space-between;font-size:13px;font-weight:700}.vf-l .up{color:var(--up)}.vf-l .down{color:var(--down)}
 .ai-fold,.cal-fold{margin-top:10px;border-top:1px solid var(--line)}.ai-fold>summary,.cal-fold>summary{display:flex;align-items:center;justify-content:space-between;min-height:52px;font-size:15px;font-weight:600;cursor:pointer;list-style:none}
 .ai-fold>summary::-webkit-details-marker,.cal-fold>summary::-webkit-details-marker{display:none}.ai-fold>summary::after,.cal-fold>summary::after{content:"⌄";color:var(--muted);transition:transform .2s}.ai-fold[open]>summary::after,.cal-fold[open]>summary::after{transform:rotate(180deg)}

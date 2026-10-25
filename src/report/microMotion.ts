@@ -9,10 +9,10 @@
 //  3  흐림에서 또렷하게  the committee's verdict line arrives word by word, from blur (bencho Text blur)
 //  4  뼈대가 내용으로    a loading skeleton grows into its text instead of popping; loaded cards arrive from blur
 //  5  당겨서 새로고침    pull the page down at the top: a sundial shadow turns, let go to reload (phones)
-//  6  넘기는 카드        the committee's members as a deck under the vote bar, swiped one by one (bencho Swipe deck)
+//  6  (넘기는 카드: taken out in G-300 — the members are one list behind the committee card instead)
 //  7  끝이 흐려지는 유리  content blurs a little more the closer it gets to the bottom bar (bencho Progressive blur)
 //  9  별 톡             the watchlist star pops and throws six sparks when it is filled (bencho Like)
-// 11  위원 얼굴         debate and deck avatars get two blinking eyes; the one typing bobs (Bots, MIT)
+// 11  위원 얼굴         debate avatars get two blinking eyes; the one typing bobs (Bots, MIT)
 // 12  돌려서 가격 정하기  a picker wheel under the price alert's input (bencho Picker wheel)
 // 13  업종 지도 꾹       a heat tile you touch lifts and the others fade (bencho Heat map)
 // 14  겹친 이슈 펼치기    issue ranking rows after the top three sit as a stack until tapped (morphin Card stack)
@@ -21,7 +21,7 @@
 // 1 (숫자 굴러가기) lives in rollNumber.ts / motionSystem.ts and 8 (알림 쌓기) in plans.ts' toast.
 //
 // Decoration runs only under html.ms (motionSystem adds it unless the reader asks for less motion). The parts that
-// are controls (pull, deck, wheel, slide, ✦ menu) keep working without motion, they just move instantly.
+// are controls (pull, wheel, slide, ✦ menu) keep working without motion, they just move instantly.
 
 export const MICRO_MOTION_CSS = `
 :root{--mm-beam:rgba(17,19,24,.8);--mm-face:#fff}
@@ -50,17 +50,6 @@ html.ms .mm-arrive>:nth-child(2){animation-delay:40ms}html.ms .mm-arrive>:nth-ch
 .mm-ptr svg{width:22px;height:22px}.mm-ptr .mm-gn{transform-origin:12px 12px}
 .mm-ptr.mm-spin .mm-gn{animation:mm-sun .9s linear infinite}
 @keyframes mm-sun{to{transform:rotate(360deg)}}
-/* ---- 6 넘기는 카드 ---- */
-.mm-deck{margin-top:14px}
-.mm-deck-h{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:8px}
-.mm-deck-st{position:relative;height:150px;touch-action:pan-y;outline:none}
-.mm-deck-st:focus-visible{outline:2px solid var(--fg);outline-offset:4px;border-radius:20px}
-.mm-dk{position:absolute;inset:0 6px 12px;background:var(--surface-solid,var(--surface));border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:40px 1fr;gap:4px 12px;align-content:start;box-shadow:0 1px 2px rgba(10,12,16,.06),0 10px 24px -16px rgba(10,12,16,.45);border:1px solid var(--line);cursor:grab;user-select:none;-webkit-user-select:none}
-html.ms .mm-dk{transition:transform var(--d-snappy) var(--spring-snappy),opacity .3s}
-.mm-dk.mm-drag{transition:none!important;cursor:grabbing}
-.mm-dk .db-av{grid-row:span 2;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:14px;background:var(--muted);--mm-s:40px}.mm-dk .db-av-bull{background:var(--up)}.mm-dk .db-av-bear{background:var(--down)}
-.mm-dk b{font-size:15px;align-self:center}.mm-dk em{font-style:normal;font-size:12px;font-weight:800;margin-left:6px}
-.mm-dk p{grid-column:1/-1;margin:6px 0 0;font-size:14px;line-height:1.5;color:var(--fg2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 /* ---- 7 끝이 흐려지는 유리 ---- */
 .mm-pblur{position:fixed;left:0;right:0;bottom:0;pointer-events:none;display:none}
 .mm-pblur i{position:absolute;inset:0}
@@ -81,7 +70,7 @@ html.ms .star.mm-pop .mm-spk{animation:mm-spark .6s var(--spring-soft) both}
 .db-av.mm-face .mm-eyes i{display:block;width:calc(var(--mm-s,36px) * .15);height:calc(var(--mm-s,36px) * .22);border-radius:99px;background:var(--mm-face)}
 html.ms .db-av.mm-face .mm-eyes i{animation:mm-blink 4.6s infinite;animation-delay:var(--mm-bd,0s)}
 @keyframes mm-blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.12)}}
-html.ms .db-typing .db-av.mm-face,html.ms .mm-dk.mm-top .db-av.mm-face{animation:mm-talk 1.1s var(--spring-soft) infinite alternate}
+html.ms .db-typing .db-av.mm-face{animation:mm-talk 1.1s var(--spring-soft) infinite alternate}
 @keyframes mm-talk{from{transform:translateY(0)}to{transform:translateY(-3px)}}
 .db-avs .db-av.mm-face{--mm-s:30px}
 /* ---- 12 돌려서 가격 정하기 ---- */
@@ -158,58 +147,6 @@ export const MICRO_MOTION_JS = `
       var d = (((a.textContent || '').charCodeAt(0) || i) % 7 * 0.6).toFixed(1) + 's';
       a.classList.add('mm-face'); a.insertAdjacentHTML('beforeend', '<span class="mm-eyes" style="--mm-bd:' + d + '" aria-hidden="true"><i></i><i></i></span>');
     });
-  };
-
-  // ---- 6 넘기는 카드: the members as a deck under the vote bar ----
-  var SIDE = { bull: ['강세', 'var(--up)'], bear: ['약세', 'var(--down)'], neutral: ['중립', 'var(--muted)'] };
-  var deck = function () {
-    var vf = document.querySelector('.vf .card,.vf'), data = document.querySelector('script.pl-data');
-    if (!vf || !data || vf.querySelector('.mm-deck')) return;
-    var list; try { list = JSON.parse(data.textContent || '[]'); } catch (e) { return; }
-    list = (list || []).filter(function (m) { return m && m.n; }); if (list.length < 2) return;
-    var box = document.createElement('div'); box.className = 'mm-deck';
-    box.innerHTML = '<div class="mm-deck-h"><span>위원 한 명씩 넘겨 보기</span><span class="mm-deck-n"></span></div><div class="mm-deck-st" tabindex="0" role="group" aria-roledescription="카드 묶음" aria-label="위원 카드. 옆으로 밀거나 화살표 키로 넘겨요"></div>';
-    var after = vf.querySelector('.vf-l'); if (after) after.after(box); else vf.appendChild(box);
-    var st = box.querySelector('.mm-deck-st'), num = box.querySelector('.mm-deck-n'), at = 0;
-    var card = function (m) {
-      var s = SIDE[m.s] || SIDE.neutral, side = m.s === 'bull' ? 'bull' : m.s === 'bear' ? 'bear' : 'mid', line = (m.l || [])[0] || '';
-      return '<span class="db-av db-av-' + side + '" aria-hidden="true">' + esc(String(m.n).replace(/^AI\\s*/, '').charAt(0)) + '</span><b>' + esc(m.n) + '<em style="color:' + s[1] + '">' + esc(m.w || s[0]) + '</em></b><small class="muted">' + esc(m.f || '') + '</small><p>' + esc(line) + '</p>';
-    };
-    var paint = function () {
-      st.innerHTML = '';
-      for (var j = 2; j >= 0; j--) {
-        var m = list[(at + j) % list.length], c = document.createElement('div'); c.className = 'mm-dk' + (j === 0 ? ' mm-top' : '');
-        c.innerHTML = card(m); c.style.zIndex = String(10 - j); c.style.transform = 'translateY(' + (j * 8) + 'px) scale(' + (1 - j * 0.045) + ')'; c.style.opacity = j === 2 ? '.55' : '1';
-        if (j) c.setAttribute('aria-hidden', 'true'); st.appendChild(c);
-      }
-      faces(st); num.textContent = (at + 1) + ' / ' + list.length;
-      bind(st.lastChild);
-    };
-    var go = function (dir, top) {
-      top = top || st.lastChild;
-      var fly = function () { at = (at + (dir > 0 ? 1 : list.length - 1)) % list.length; paint(); };
-      if (reduce()) { fly(); return; }
-      top.style.transition = 'transform 380ms cubic-bezier(.3,.7,.4,1),opacity 380ms';
-      top.style.transform = 'translate(' + (dir * 420) + 'px,-16px) rotate(' + (dir * 22) + 'deg)'; top.style.opacity = '0';
-      setTimeout(fly, 260);
-    };
-    var bind = function (top) {
-      var d = null;
-      top.addEventListener('pointerdown', function (e) { d = { x: e.clientX, y: e.clientY, t: performance.now(), dx: 0, id: e.pointerId, lock: 0 }; });
-      top.addEventListener('pointermove', function (e) {
-        if (!d || e.pointerId !== d.id) return; var dx = e.clientX - d.x, dy = e.clientY - d.y;
-        if (!d.lock) { if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return; d.lock = Math.abs(dx) > Math.abs(dy) ? 1 : -1; if (d.lock > 0) { top.setPointerCapture(e.pointerId); top.classList.add('mm-drag'); } }
-        if (d.lock < 0) return; d.dx = dx; top.style.transform = 'translate(' + dx + 'px,' + (dy * 0.2) + 'px) rotate(' + (dx / 18) + 'deg)';
-      });
-      var up = function () {
-        if (!d) return; var g = d; d = null; top.classList.remove('mm-drag'); if (g.lock <= 0) return;
-        var v = Math.abs(g.dx) / Math.max(1, performance.now() - g.t);
-        if (Math.abs(g.dx) > 80 || (Math.abs(g.dx) > 28 && v > 0.5)) go(g.dx > 0 ? 1 : -1, top); else top.style.transform = 'translateY(0) scale(1)';
-      };
-      top.addEventListener('pointerup', up); top.addEventListener('pointercancel', up);
-    };
-    st.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight') { e.preventDefault(); go(1); } else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); } });
-    paint();
   };
 
   // ---- 9 별 톡: the star pops when the reader fills it (not when the page syncs it on load) ----
@@ -313,7 +250,7 @@ export const MICRO_MOTION_JS = `
   document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-job=confirm]'); if (b && b.__mmSwallow && Date.now() - b.__mmSwallow < 500) { e.preventDefault(); e.stopImmediatePropagation(); b.__mmSwallow = 0; } }, true);
 
   // ---- 2·4·6·9·11·12·14·15: one observer for what appears and changes ----
-  var queued = false, scan = function () { queued = false; watchWords(); faces(); deck(); stacks(); document.querySelectorAll('dialog.pa-dialog[open]').forEach(wheel); };
+  var queued = false, scan = function () { queued = false; watchWords(); faces(); stacks(); document.querySelectorAll('dialog.pa-dialog[open]').forEach(wheel); };
   if (window.MutationObserver) new MutationObserver(function (ms) {
     for (var i = 0; i < ms.length; i++) {
       var m = ms[i], el = m.target; if (m.type !== 'attributes' || el.nodeType !== 1) continue;
@@ -345,7 +282,7 @@ export const MICRO_MOTION_JS = `
   // ---- 5 당겨서 새로고침 (phones): pull at the very top, let go past the line to reload ----
   var ptr = null, pull = null, busy = false;
   var SUN = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" opacity=".35"/><g class="mm-gn"><path d="M12 12V4.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></g><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>';
-  var SKIP = 'input,textarea,select,dialog,[role=dialog],.chat,.sheet,.bottom-nav,.kv-plot,canvas,svg,[data-no-ptr],.wd-filter,.nav-seg,.mm-deck,.mm-wheel,[data-job]';
+  var SKIP = 'input,textarea,select,dialog,[role=dialog],.chat,.sheet,.bottom-nav,.kv-plot,canvas,svg,[data-no-ptr],.wd-filter,.nav-seg,.mm-wheel,[data-job]';
   var scrolled = function (el) { for (; el && el !== document.body; el = el.parentElement) { if (el.scrollTop > 0) return true; } return false; };
   var show = function (y, t) {
     if (!ptr) { ptr = document.createElement('div'); ptr.className = 'mm-ptr'; ptr.setAttribute('role', 'status'); ptr.setAttribute('aria-label', '아래로 당겨서 새로고침'); ptr.innerHTML = SUN; document.body.appendChild(ptr); }

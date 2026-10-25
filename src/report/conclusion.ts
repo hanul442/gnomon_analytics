@@ -99,7 +99,18 @@ function oddsGrid(report: DailyReport): string {
   return `<div class="pm-odds" role="group" aria-label="시나리오 확률, 누르면 차트에 설명이 나와요"><div class="pm-grid">${ks.map((k, i) => { const v = pr[i]; return `<button type="button" class="pm-cell ${k.toLowerCase()}${v === top ? ' top' : ''}" data-pm="${k}" aria-pressed="false"><span>${name[k]}</span><b>${typeof v === 'number' ? `${v}%` : '—'}</b></button>`; }).join('')}</div></div>`;
 }
 
-export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string } = {}): string {
+/**
+ * G-300: the verdict (the summary's first two sentences) as the committee card's title; a tap opens 위원회 판단 as its own
+ * page (the page is returned with it, so it exists exactly once). Without a summary only the page comes back.
+ */
+export function verdictHead(report: DailyReport): string {
+  const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
+  const sents = (c?.summary?.text ?? '').split(/(?<=[.?!요])\s/).filter(Boolean), line2 = sents.slice(0, 2).join(' ');
+  const page = `<div class="cm-page" id="committee" role="dialog" aria-label="위원회 판단" hidden><header class="cm-top"><button type="button" class="cm-back" data-cm-close aria-label="뒤로">‹</button><b>위원회 판단</b><small>${esc(dayOf(report.date))} 마감 기준</small></header><div class="cm-body">${c?.summary?.text ? `<h2 class="cm-h">한눈에</h2><p class="cm-sum">${esc(c.summary.text)}</p>` : ''}<div data-cm-slot></div></div></div>`;
+  return `${line2 ? `<a class="cl-head" href="#committee" data-cm-open><span><h2 class="cl-line">${esc(line2)}</h2></span><i aria-hidden="true">›</i></a>` : ''}${page}`;
+}
+
+export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string; /** G-300: false leaves the verdict to the committee card (verdictHead). */ head?: boolean } = {}): string {
   const p = report.price;
   if (!p) return `<section class="block cl-card"${opts.id?` id="${opts.id}"`:''}><div class="card"><div class="cl-k">${esc(opts.title??'지금 판단')}</div><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 가격 자료와 시나리오가 아직 준비되지 않았어요.</p></div></div></section>`;
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
@@ -170,10 +181,10 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const cmPage = `<div class="cm-page" id="committee" role="dialog" aria-label="위원회 판단" hidden><header class="cm-top"><button type="button" class="cm-back" data-cm-close aria-label="뒤로">‹</button><b>위원회 판단</b><small>${esc(dayOf(report.date))} 마감 기준</small></header><div class="cm-body"><h2 class="cm-h">한눈에</h2><p class="cm-sum">${esc(c?.summary?.text ?? '')}</p><div data-cm-slot></div></div></div>`;
   const rail0 = scenarioRail(report), rail = rail0 ? rail0.replace('</svg>', '</svg>' + grid + notes) : grid;
   const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : `조건 가격 도달만으로 전개가 확정되지는 않아요. 예상 범위와 조건 가격은 다릅니다. 분석 기준은 ${esc(report.date)} 종가 ${won(p.close)}이며, 현재 가격과 차이가 날 수 있어요`;
-  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card">${c?.summary?.text ? `<a class="cl-head" href="#committee" data-cm-open><span><span class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</span><h2 class="cl-line">${esc(line2)}</h2></span><i aria-hidden="true">›</i></a>${cmPage}` : `<div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>`}${rail}
+  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card">${opts.head === false ? '' : c?.summary?.text ? `<a class="cl-head" href="#committee" data-cm-open><span><span class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</span><h2 class="cl-line">${esc(line2)}</h2></span><i aria-hidden="true">›</i></a>${cmPage}` : `<div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>${c ? cmPage : ''}`}${rail}
 ${verdict}<div class="cl-ladder"${grid ? ' hidden' : ''}>${rows}</div>
 ${[bull, base, bear].some((x) => x?.narrative.text === LOCKED_TEXT) ? `<div class="cl-deep"><span>🔒 시나리오 전개·무효화 조건·최악의 경우·위원회 토론은 심층 리포트에 있어요.</span><button type="button" class="btn-primary" data-deep-go>심층 리포트 열기 <small>${CREDIT_COST.unlock}크레딧</small></button></div>` : ''}
-<p class="fine">${bull || bear || base ? '줄을 누르면 시나리오가 펼쳐져요. ' : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
+<p class="fine">${bull || bear || base ? (grid ? '알약을 누르면 그 시나리오가 지도에 칠해져요. ' : '줄을 누르면 시나리오가 펼쳐져요. ') : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
 }
 
 export const CONCLUSION_CSS = `.pm{margin:10px 0 16px}.pm-h b{display:block;font-size:16px;font-weight:700}.pm-h small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
@@ -286,7 +297,9 @@ export const CONCLUSION_JS = `
   // G-172: every "심층 리포트 열기" on 요약 goes to the unlock card at the top of the AI tab.
   document.addEventListener('click', function (e) {
     var g = e.target.closest && e.target.closest('[data-deep-go]'); if (!g) return; e.preventDefault();
-    var t = document.querySelector('[aria-controls=tab-ai]'); if (t) t.click();
+    // G-300: the deep part lives in 위원회 판단 (its own page) now, so open that and go to the unlock card.
+    if (document.getElementById('committee') && document.querySelector('#tab-home .vf-paged,#committee .vf-paged')) cmOpen(true);
+    else { var t = document.querySelector('[aria-controls=tab-ai]'); if (t) t.click(); }
     setTimeout(function () { var s = document.getElementById('deep-slot'); if (s) s.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 80);
   });
   document.addEventListener('click', function (e) {

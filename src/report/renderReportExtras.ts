@@ -196,6 +196,44 @@ ${turns.map((t, i) => {
 }
 
 /**
+ * G-300 (한서님 10/25 '위원회 페이지 깔끔하게'): the debate on the 위원회 part as one card: its title once, three turns as
+ * chat bubbles, a button to the full-screen room (the room itself stays in 위원회 판단's debate) and the question box.
+ * `gate` wraps the preview for plans that cannot read the debate; `sealed` says the debate waits in the deep report.
+ */
+export function debateCard(c: Pick<Commentary, 'status' | 'debate' | 'sectorExpert'> | undefined, opts: { gate: (html: string) => string; join: string; sealed: boolean }): string {
+  if (c?.status !== 'OK') return '';
+  const who = (sp: string) => (sp === 'sector_expert' && c.sectorExpert ? c.sectorExpert.name : SPEAKER[sp] ?? sp);
+  const turns = (c.debate ?? []).filter((t) => t.claim.text && t.claim.text !== LOCKED_TEXT);
+  const speakers = new Set(turns.map((t) => t.speaker)).size;
+  const head = `<div class="dc-h"><h2>위원회 토론</h2>${turns.length ? `<small>위원 ${speakers}명 · 발언 ${turns.length}개</small>` : ''}</div>`;
+  const join = `<div class="dc-join">${opts.join}</div>`;
+  if (!turns.length) {
+    const body = opts.sealed ? `<p class="dc-lock">위원들이 근거를 들어 서로 반박한 토론은 심층 리포트에 있어요.</p><button type="button" class="dc-open" data-deep-go>심층 리포트에서 보기 <i aria-hidden="true">›</i></button>` : '';
+    return `<section class="block dc" id="dc"><div class="card">${head}${body}${join}</div></section>`;
+  }
+  // The first three turns: the opening calls, usually one from each side.
+  const bubble = (t: (typeof turns)[number], i: number) => {
+    const side = t.speaker === 'RED_TEAM' ? 'neutral' : t.stance === 'BULLISH' ? 'bull' : t.stance === 'BEARISH' ? 'bear' : 'neutral';
+    const text = t.claim.text.length > 90 ? `${t.claim.text.slice(0, 90)}…` : t.claim.text;
+    return `<div class="dc-b" style="--i:${i}"><span class="cs-face s-${side}" aria-hidden="true">${esc(who(t.speaker).replace(/^AI\s*/, '').slice(0, 1))}</span><span class="dc-bt"><small>${esc(who(t.speaker))}</small><span>${esc(text)}</span></span></div>`;
+  };
+  const preview = `<div class="dc-bs">${turns.slice(0, 3).map(bubble).join('')}</div><button type="button" class="dc-open" data-room-open aria-haspopup="dialog" aria-controls="db-room">토론방 열기 <i aria-hidden="true">›</i></button>`;
+  return `<section class="block dc" id="dc"><div class="card">${head}${opts.gate(preview)}${join}</div></section>`;
+}
+
+export const DEBATE_CARD_CSS = `.dc .card{padding:18px 18px 16px}.dc-h{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}.dc-h h2{flex:1;margin:0;font-size:17px}.dc-h small{font-size:12px;color:var(--muted)}
+.dc-bs{display:flex;flex-direction:column;gap:10px}.dc-b{display:flex;gap:9px;align-items:flex-start}.dc-b .cs-face{width:30px;height:30px;border-radius:10px;font-size:12px}
+.dc-bt{display:flex;flex-direction:column;gap:3px;min-width:0}.dc-bt small{font-size:12px;color:var(--muted)}.dc-bt span{padding:9px 12px;border-radius:4px 16px 16px 16px;background:var(--soft);font-size:13.5px;line-height:1.5}
+.dc-b:nth-child(3){-webkit-mask-image:linear-gradient(#000 35%,transparent);mask-image:linear-gradient(#000 35%,transparent)}
+html.ms .dc.dc-wait:not(.dc-seen) .dc-b{opacity:0}html.ms .dc.dc-seen .dc-b{animation:dc-in .55s var(--spring-snappy,ease-out) both;animation-delay:calc(var(--i) * 140ms + 120ms)}
+@keyframes dc-in{from{opacity:0;transform:translateY(8px) scale(.97)}}
+.dc-open{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:48px;margin-top:12px;border:0;border-radius:16px;background:var(--fg);color:var(--page);font:inherit;font-size:14.5px;font-weight:700;cursor:pointer;transition:transform .3s var(--spring-snappy,ease-out)}.dc-open:active{transform:scale(.97)}.dc-open i{font-style:normal}
+.dc-lock{margin:0;font-size:14px;line-height:1.55;color:var(--fg2)}.dc-join{margin-top:12px}.dc-join .db-join{margin:0}
+#tab-home>.rs-bar,#tab-home .rs-bar{grid-template-columns:auto minmax(0,1fr) auto!important;margin:12px 0;padding:10px 10px 10px 14px;border-radius:18px;border:0;background:var(--surface)}#tab-home .rs-bar .rs-dot{align-self:center;margin:0;box-shadow:none;width:8px;height:8px}#tab-home .rs-bar .sa-tx b{font-size:13.5px}#tab-home .rs-stale .sa-tx small{display:none}#tab-home .rs-bar .gen-wrap{grid-column:auto!important;width:auto!important;margin:0!important}#tab-home .rs-bar .gen-btn{width:auto!important;padding:8px 12px;font-size:13px;box-shadow:none}#tab-home .rs-bar .gen-btn::before,#tab-home .rs-bar .gen-btn::after{display:none}
+#tab-home .vf-paged{display:none}.cm-page .ez-card .card{border:0;background:var(--surface)}.cm-page .vf-paged{display:block}.cm-page .vf-paged #tab-ai .block-head>h2,.cm-page .vf-paged #tab-ai .card>.head>h2{border-left:0;padding-left:0}
+@media (prefers-reduced-motion:reduce){.dc-b{animation:none!important}}`;
+
+/**
  * G-218: the committee in everyday words, at the top of the AI tab. The model's plain retelling (v8 reports),
  * then the vote and the odds counted from the report itself (every committee report has them, so older reports
  * get this card too), the words this report uses, and how the committee works. Hidden for "전문 용어 그대로".
@@ -251,7 +289,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
  var avatar=function(room){room.querySelectorAll('.db-turn:not([data-av])').forEach(function(t){t.setAttribute('data-av','');var who=t.querySelector('.db-who b'),c=t.classList,side=c.contains('db-me')?'me':c.contains('db-red')?'red':c.contains('db-bull')?'bull':c.contains('db-bear')&&!c.contains('db-guest')?'bear':'mid';if(side==='me')return;var a=document.createElement('span');a.className='db-av db-av-'+side;a.setAttribute('aria-hidden','true');a.textContent=((who&&who.textContent)||'위').replace(/^AI\s*/,'').charAt(0);t.insertBefore(a,t.firstChild);});};
  document.addEventListener('click',function(e){
   var open=e.target.closest&&e.target.closest('[data-room-open]'),close=e.target.closest&&e.target.closest('[data-room-close]');
-  if(open){var room=document.getElementById(open.getAttribute('aria-controls'));if(!room)return;avatar(room);room.hidden=false;document.documentElement.classList.add('layer-open');if(window.GNM_terms)GNM_terms(room);var x=room.querySelector('.db-room-x');if(x)x.focus({preventScroll:true});if(window.GNM_debate)window.GNM_debate();
+  if(open){var room=document.getElementById(open.getAttribute('aria-controls'));if(!room)return;if(room.parentNode!==document.body)document.body.appendChild(room);avatar(room);room.hidden=false;document.documentElement.classList.add('layer-open');if(window.GNM_terms)GNM_terms(room);var x=room.querySelector('.db-room-x');if(x)x.focus({preventScroll:true});if(window.GNM_debate)window.GNM_debate();
    if(!room.dataset.watch){room.dataset.watch='1';new MutationObserver(function(){avatar(room);}).observe(room,{childList:true,subtree:true});}}
   if(close){var r=close.closest('.db-room');if(r){r.hidden=true;document.documentElement.classList.remove('layer-open');var b=document.querySelector('[data-room-open][aria-controls="'+r.id+'"]');if(b)b.focus({preventScroll:true});}}
  });
@@ -269,7 +307,7 @@ export const DEBATE_PLAY_SCRIPT = `<script>
   if(!box||box.dataset.played)return;box.dataset.played='1';
   var turns=Array.prototype.slice.call(box.querySelectorAll('.db-turn:not(.db-guest):not(.db-typing)'));
   if(!turns.length)return;
-  var skip=box.closest('#debate')&&box.closest('#debate').querySelector('.db-skip'),clock=null,hint=null,index=0,stopped=false;
+  var skip=(box.closest('#debate')||box.closest('.db-room')||box).querySelector('.db-skip'),clock=null,hint=null,index=0,stopped=false;
   var finish=function(){stopped=true;clearTimeout(clock);if(hint)hint.remove();turns.forEach(function(t){t.hidden=false;});box.removeAttribute('aria-busy');if(skip)skip.hidden=true;};
   box.GNM_finishReplay=finish;box.setAttribute('aria-busy','true');turns.forEach(function(t){t.hidden=true;});
   if(skip){skip.hidden=false;skip.onclick=finish;}
