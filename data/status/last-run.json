@@ -1,5 +1,5 @@
 {
- "at": "2026-10-25T13:51:59.929Z",
+ "at": "2026-10-25T16:09:01.639Z",
  "selected": null,
  "universe": [
   {
@@ -11,11 +11,6 @@
    "source": "naver:m-stock:etf",
    "ok": true,
    "count": 1183
-  },
-  {
-   "source": "opendart:corpCode",
-   "ok": true,
-   "count": 4003
   },
   {
    "source": "naver:fchart:day:all",
@@ -40,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 37
+   "count": 36
   },
   {
    "source": "google:topic-business-ko",
@@ -341,13 +336,9 @@
   },
   {
    "symbol": "KRW-O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-10-25",
-  "status": "OK"
- }
+ "failed": []
 }
