@@ -785,7 +785,7 @@ export function committeeTab(report: DailyReport, opts: { base: string; from: st
       : report.commentary?.status === 'OK'
       ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요', feature: 'debate' })}${opts.noJoin ? '' : `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>`}${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', feature: 'debateRest' })}`
       : whySection(report);
-  const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: { href: `${base}scorecard.html#analysts`, label: '위원별 지난 판단과 결과 ›' }, note: '좌석 하나가 위원 한 명이에요. 좌석이나 이름을 누르면 그 위원의 판단·확신도·근거가 나와요. 진한 좌석이 내 보기 방식의 위원회예요(설정에서 바꿀 수 있어요).' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`).replace('</div>\n<aside class="pl-detail"', `${consensusNote(report)}</div>\n<aside class="pl-detail"`);
+  const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: { href: `${base}scorecard.html#analysts`, label: '위원별 지난 판단과 결과 ›' }, note: '' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`).replace('</div>\n<aside class="pl-detail"', `${consensusNote(report)}</div>\n<aside class="pl-detail"`);
   // G-172: the paid part's unlock card comes right under 결론, not after the seats at the bottom.
   // G-178: every report keeps the same order of blocks; a block this report cannot fill says so instead of vanishing.
   // G-203: Plus and up (한서님 10/11); free readers see the card faded with a way in, as other Plus blocks.

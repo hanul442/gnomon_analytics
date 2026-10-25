@@ -128,7 +128,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
     const locked = sc.narrative.text === LOCKED_TEXT;
     return `<div class="cl-sc" hidden>${locked ? `<div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 심층 시나리오</b><p>시나리오 전개·근거·무효화 조건은 심층 리포트에 있어요.</p><button type="button" class="btn-primary dl-go" data-deep-go>심층 리포트 열기</button></div></div>` : `<div class="scenario-evidence"><b>조건·근거</b><p>${esc(sc.narrative.text)}</p>`}${!locked && sc.catalysts.length ? `<p class="cl-sc-k"><b>성립 근거·촉매</b> ${sc.catalysts.map(esc).join(', ')}</p>` : ''}${!locked && sc.invalidation.length ? `<p class="cl-sc-k"><b>무효화 조건 · 가정 재검토</b> ${sc.invalidation.map(esc).join(', ')}</p>` : ''}${!locked && sc.zone ? `<p class="cl-sc-k"><b>20거래일 예상 가격대</b> ${zone(sc.zone)}</p>` : ''}${sc.kind === 'BEAR' && worst ? worst : ''}${locked?'':'</div>'}</div>`;
   };
-  const row = (cls: string, sc: typeof bull, label: string, px: string, what: string, arrow: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc||missing ? ' aria-expanded="false"' : ' disabled'}><span class="cl-ic" aria-hidden="true">${arrow}</span><div class="cl-what"><b>${label} 시나리오</b> ${odds(sc)}<small>${what}</small></div>${px}${sc||missing ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
+  const row = (cls: string, sc: typeof bull, label: string, px: string, what: string, arrow: string) => `<div class="cl-item"><button type="button" class="cl-row ${cls}"${sc||missing ? ' aria-expanded="false"' : ' disabled'}><span class="cl-ic" aria-hidden="true">${arrow}</span><div class="cl-what"><b>${label} 시나리오</b> ${odds(sc)}${what ? `<small>${what}</small>` : ''}</div>${px}${sc||missing ? '<span class="cl-more" aria-hidden="true">›</span>' : ''}</button>${detail(sc, label)}</div>`;
   // A crossing condition and a future range are different facts. Only the stored trigger supplies
   // the condition, with explicit base exits supported for legacy reports; targets and forecasts are separate.
   const px = (k: 'BULL' | 'BEAR') => {
@@ -154,10 +154,10 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const verdict = anyCheck ? `<div class="cl-check"><b>📅 ${esc(anyCheck.since.slice(5).replace('-', '/'))} 리포트 이후 ${anyCheck.sessions}거래일</b><p>${playing ? `지금 가격은 <b>${({ BULL: '강세', BASE: '기본', BEAR: '약세' })[playing]} 시나리오</b> 범위 안이에요${typeof sc(playing)?.probability === 'number' ? ` — 위원회가 ${sc(playing)!.probability}%로 본 시나리오예요` : ''}.${why(playing)}` : '지금 가격은 세 시나리오 범위 어디에도 있지 않아요. 아래에서 각 범위까지 남은 거리를 볼 수 있어요.'}</p></div>` : '';
   const baseZone = scenarioZone(report, 'BASE');
   const rows = [
-    row('cl-up', bull, '강세', px('BULL'), checks.BULL ? checkLine(checks.BULL, '강세') : '성립 근거와 무효화 조건 함께 확인', '▲'),
+    row('cl-up', bull, '강세', px('BULL'), checks.BULL ? checkLine(checks.BULL, '강세') : '', '▲'),
     // G-287: the live price lives in the map above; the 기본 row shows its range like the other two.
-    row('cl-now', base, '기본', baseZone ? `<div class="cl-px"><b>${zone(baseZone.zone)}</b><small>20거래일 예상 범위</small></div>` : '', checks.BASE ? checkLine(checks.BASE, '기본') : '현재 근거에서 가장 그럴듯한 전개', '●'),
-    row('cl-down', bear, '약세', px('BEAR'), checks.BEAR ? checkLine(checks.BEAR, '약세') : '성립 근거와 무효화 조건 함께 확인', '▼'),
+    row('cl-now', base, '기본', baseZone ? `<div class="cl-px"><b>${zone(baseZone.zone)}</b><small>20거래일 예상 범위</small></div>` : '', checks.BASE ? checkLine(checks.BASE, '기본') : '', '●'),
+    row('cl-down', bear, '약세', px('BEAR'), checks.BEAR ? checkLine(checks.BEAR, '약세') : '', '▼'),
   ].join('');
   const hasOdds = [bull, base, bear].some((s) => typeof s?.probability === 'number');
   // G-277: with odds, the three rows wait under the 확률 cells; a tap on a cell opens its row.
@@ -226,7 +226,7 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .cl-row .cl-what>b{white-space:nowrap}.cl-row .cl-px b{max-width:9.5em;text-align:right;text-wrap:balance}
 :root body .cl-sc{margin:0 0 12px;border:0;border-radius:18px;background:var(--soft);padding:12px 14px 6px}
 :root body .cl-check{border-radius:18px}
-.cl-head{display:flex;align-items:center;gap:10px;margin:-4px -6px 8px;padding:6px;border-radius:16px;text-decoration:none;color:inherit}.cl-head:active{background:var(--soft)}.cl-head>span{flex:1;min-width:0}.cl-head .cl-k{display:block}.cl-head .cl-line{margin:2px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.cl-head>i{font-style:normal;font-size:22px;color:var(--muted)}
+.cl-head{display:flex;align-items:center;gap:10px;margin:-4px -6px 8px;padding:6px;border-radius:16px;text-decoration:none;color:inherit}.cl-head:active{background:var(--soft)}.cl-head>span{flex:1;min-width:0}.cl-head .cl-k{display:block}.cl-head .cl-line{margin:2px 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}.cl-head>i{font-style:normal;font-size:22px;color:var(--muted)}
 .cm-page{position:fixed;inset:0;z-index:400;background:var(--page);overflow-y:auto;-webkit-overflow-scrolling:touch}.cm-page[hidden]{display:none}.cm-top{position:sticky;top:0;z-index:1;display:flex;align-items:baseline;gap:8px;padding:14px 16px 12px;background:var(--page);border-bottom:1px solid var(--line)}.cm-top b{font-size:18.5px}.cm-top small{color:var(--muted);font-size:15.5px}.cm-back{border:0;background:none;font-size:28px;line-height:1;padding:0 6px 0 0;color:var(--fg);cursor:pointer}
 .cm-body{max-width:760px;margin:0 auto;padding:16px 16px 120px}.cm-h{font-size:17px;color:var(--fg2);margin:4px 0 6px}.cm-sum{font-size:18.5px;line-height:1.7;margin:0 0 16px}.cm-body .vf{margin:0}
 /* G-287: the 확률 cells as small pills under the chart */
