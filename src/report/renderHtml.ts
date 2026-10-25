@@ -474,6 +474,7 @@ ${groupBars(t)}
 function filingsTable(report: DailyReport): string {
   const recent = report.recentFilings ?? report.filings;
   const fresh = new Set(report.filings.map((f) => f.receiptNo));
+  if (recent.every((f) => fresh.has(f.receiptNo))) fresh.clear(); // G-300: every row 새 공시 says nothing
   if (!recent.length) return '<p class="empty">최근 30일 동안 나온 공시가 없어요.</p>';
   // G-151: the same plain-language note under several filings in a row is said once.
   let prevWhy = '';
@@ -557,13 +558,13 @@ export function newsOnly(report: DailyReport): string {
  */
 export function issueSlot(symbol: string): string {
   const s = JSON.stringify(symbol).replace(/</g, '\\u003c');
-  return `<div class="iss-slot" data-issue-slot hidden></div><style>.iss-slot{display:flex;flex-direction:column;gap:10px;margin:0 0 12px}.iss-c{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:22px;background:var(--surface-solid,var(--surface));color:inherit;text-decoration:none}.iss-k{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:var(--muted)}.iss-k b{font-size:11px;padding:1px 7px;border-radius:6px;background:var(--fg);color:var(--surface-solid,#fff)}.iss-t{font-size:17px;font-weight:700;line-height:1.4;word-break:keep-all}.iss-l{font-size:14px;line-height:1.55;color:var(--fg2);word-break:keep-all}</style><script>(function(){var el=document.currentScript.previousElementSibling.previousElementSibling,sym=${s},b=document.body.getAttribute('data-base')||'';var e=function(t){return String(t).replace(/[&<>"']/g,function(c){return '&#'+c.charCodeAt(0)+';';});};
+  return `<div class="iss-slot" data-issue-slot hidden></div><style>.iss-slot{display:flex;flex-direction:column;gap:10px;margin:0 0 12px}.iss-c{display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:22px;background:var(--surface-solid,var(--surface));color:inherit;text-decoration:none}.iss-k{display:flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:var(--muted)}.iss-k b{font-size:11px;padding:1px 7px;border-radius:6px;background:var(--fg);color:var(--surface-solid,#fff)}.iss-t{font-size:14.5px;font-weight:600;line-height:1.45;word-break:keep-all;min-width:0}.iss-h{font-size:15px;margin-bottom:2px}.iss-r{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:8px;align-items:baseline;min-height:44px;padding:8px 0;border-top:1px solid var(--line);color:inherit;text-decoration:none}.iss-n{font-size:13px;font-variant-numeric:tabular-nums}.iss-g{color:var(--muted)}.iss-l{font-size:14px;line-height:1.55;color:var(--fg2);word-break:keep-all}</style><script>(function(){var el=document.currentScript.previousElementSibling.previousElementSibling,sym=${s},b=document.body.getAttribute('data-base')||'';var e=function(t){return String(t).replace(/[&<>"']/g,function(c){return '&#'+c.charCodeAt(0)+';';});};
 fetch(b+'issue-index.json').then(function(r){if(!r.ok)throw r;return r.json();}).then(function(list){var mine=list.filter(function(i){return i.s.indexOf(sym)>=0;}).slice(0,3);if(!mine.length)return;
-el.innerHTML=mine.map(function(i){return '<a class="iss-c" href="'+b+'issue/'+e(i.k)+'.html"><span class="iss-k"><b>오늘 이슈 '+i.r+'위</b>매체 '+i.o+'곳</span><span class="iss-t">'+e(i.t)+'</span>'+(i.l?'<span class="iss-l">'+e(i.l)+'</span>':'')+'</a>';}).join('');el.hidden=false;}).catch(function(){});})();</script>`;
+el.innerHTML='<div class="iss-c"><b class="iss-h">오늘 이슈에 '+mine.length+'번 나왔어요</b>'+mine.map(function(i){return '<a class="iss-r" href="'+b+'issue/'+e(i.k)+'.html"><b class="iss-n">'+i.r+'위</b><span class="iss-t">'+e(i.t)+'</span><span class="iss-g" aria-hidden="true">›</span></a>';}).join('')+'</div>';el.hidden=false;}).catch(function(){});})();</script>`;
 }
 /** G-256: the 공시 part — filings and the event calendar. G-277: three filings first (the rest fold), no 공시 구성 donut. */
 export function filingsBody(report: DailyReport): string {
-  return `<div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 원문이 열려요</span></div><div data-slot="filings">${filingsTable(report)}</div></div></div>${edgeEvents(report)}`;
+  return `<div class="grid2"><div class="card" id="filings"><div class="head"><h2>공시</h2><span class="sub">최근 30일, 제목을 누르면 원문이 열려요</span></div><div data-slot="filings">${filingsTable(report)}</div>${edgeEvents(report)}</div></div>`;
 }
 function newsSection(report: DailyReport): string {
   const news = report.news;
@@ -573,9 +574,12 @@ function newsSection(report: DailyReport): string {
   const warn = failed.length
     ? `<p class="warn">일부 제한: ${failed.map((st) => escape(SOURCE_LABEL[st.source] ?? st.source)).join(', ')} 수집에 실패했어요. 이 소스의 기사는 빠져 있을 수 있어요.</p>` : '';
   const fresh = new Set(news.newIds);
+  // G-300 (한서님 10/25): a badge every story carries tells nothing; 중요도 and 새 뉴스 show only where stories differ.
+  const sameImp = news.clusters.every((c) => c.importance === news.clusters[0]?.importance);
+  const allNew = news.clusters.every((c) => fresh.has(c.id));
   const rowsArr = news.clusters.map((c) => {
     const others = c.articles.filter((a) => a.url !== c.url);
-    return `<div class="story"><div><span class="badge b-${c.importance}">${IMPORTANCE_LABEL[c.importance]}</span> <span class="tag">${escape(c.category)}</span>${fresh.has(c.id) ? '<span class="badge b-new">새 뉴스</span>' : ''}</div>
+    return `<div class="story"><div>${sameImp ? '' : `<span class="badge b-${c.importance}">${IMPORTANCE_LABEL[c.importance]}</span> `}<span class="tag">${escape(c.category)}</span>${fresh.has(c.id) && !allNew ? '<span class="badge b-new">새 뉴스</span>' : ''}</div>
 <div class="story-title"><a href="${escape(c.url)}" rel="noopener" target="_blank">${escape(c.title)}</a></div>
 <div class="why">${meta([`${escape(c.publisher)} (${TIER_LABEL[c.tier]})`, escape(kstTime(c.firstAt)), c.articles.length > 1 ? `같은 내용 기사 ${c.articles.length}건` : ''])}</div>
 ${others.length ? `<details class="more"><summary>다른 기사 ${others.length}건</summary><ul class="plain">${others.map((a) => `<li><a href="${escape(a.url)}" rel="noopener" target="_blank">${escape(a.title)}</a> <span class="why">${meta([escape(a.publisher), escape(kstTime(a.publishedAt))])}</span></li>`).join('')}</ul></details>` : ''}</div>`;
@@ -728,7 +732,9 @@ ${m ? marketStatusWarning(m) : ''}
   const flowsSec = `<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`;
   const fundPanel = report.kind === 'coin' ? `<div data-coin-fit="${base}c/${encodeURIComponent(report.symbol)}.json"></div>${flowsSec}`
     : report.currency === 'USD' ? `${quickInfo}${fundTab}${insiderSection(report)}`
-    : subTabs([['ftg-co', '기업', `${quickInfo}${fundTab}`], ['ftg-flow', '수급', flowsSec], ...(report.kind ? [] : [['ftg-peer', '같은 테마', `${peersSlot(report.symbol)}<p class="empty ft-none">같은 테마로 묶인 종목이 아직 없어요.</p>`] as [string, string, string]])]);
+    // G-300 (한서님 10/25 '위의 바 두기싫다니까'): no 기업 · 수급 · 같은 테마 bar at the top; the three parts follow one another
+    // under their own headings, 기업 first (the most important part, never folded).
+    : `<section class="sub-sec sub-first" id="ftg-co"><h2 class="sub-h">기업</h2>${quickInfo}${fundTab}</section>${flowsSec}${report.kind ? '' : `<section class="sub-sec" id="ftg-peer"><h2 class="sub-h">같은 테마</h2>${peersSlot(report.symbol)}<p class="empty ft-none">같은 테마로 묶인 종목이 아직 없어요.</p></section>`}`;
   const aiFold = aiFoldOf(report, aiTab, report.commentary?.status === 'OK' ? (ctx.commentaryFrom ?? report.date) : '');
   const body = guided(`${bar}${panel('home', home.replace('@@AI_FOLD@@', aiFold))}
 ${panel('chart', chartTab)}

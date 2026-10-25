@@ -30,7 +30,8 @@ test('G-231: a live page rebuilt today is not a report made today; lists, pills 
   const html = renderReportsPage({ entries, selection: null, universe: null, pulse: null, indices: [] });
   assert.match(html, /10\/16 나온 리포트 1개/);
   assert.ok(!html.includes('10/17 나온 리포트') && !html.includes('위원회 10/17'), 'the run date is never shown as the report date');
-  assert.ok(html.includes('위원회 10/05') && html.includes('위원회 10/16'));
+  // G-300: rows no longer repeat '위원회 10/16' (the day heading says it); each report still sits under its own day.
+  assert.ok(html.includes('<div class="dl-day dl-old">10/05</div>') && !html.includes('위원회 10/05'));
   const today = html.slice(html.indexOf('id="today-list"'), html.indexOf('</section>', html.indexOf('id="today-list"')));
   assert.ok(today.includes('NEW/index.html') && !today.includes('OLD/index.html') && !today.includes('NONE/index.html'));
   const info = watchInfo(entries);
@@ -66,7 +67,10 @@ test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab
   // G-255: four tabs; 내 종목's pages are rows under 나 › 내 기록, and 관심 종목 lights up 홈.
   assert.ok(me.includes('class="card st-rows me-rec"') && ['watch.html', 'inbox.html', 'myreports.html', 'mydebates.html'].every((h) => me.includes(`href="${h}"`)));
   // G-281: no jump row; 내 투자 방식 and 내 위원회 are one line each; 내 기록 shows only where the bottom bar is not (wide screens).
-  assert.ok(!me.includes('class="st-nav"') && me.includes('<details class="card st-fold" id="profile">') && me.includes('<details class="card st-fold" id="committee">'));
+  assert.ok(!me.includes('class="st-nav"') && me.includes('<details class="st-fold" id="profile">') && me.includes('<details class="st-fold" id="committee">') && me.includes('class="card st-group"'));
+  // G-300: 내 계정 once (the head card, 요금제 beside it); 약관 and 개인정보 only in the footer.
+  assert.equal(me.split('<b>내 계정</b>').length - 1, 1);
+  assert.ok(me.includes('class="me-plan"') && !me.includes('id="account">계정</h2>'));
   assert.ok(modeBar('', 'inbox.html').includes('href="mydebates.html"') && !modeBar('', 'inbox.html').includes('watch.html'));
   assert.ok(!bar.includes('href="watch.html"'));
 });
