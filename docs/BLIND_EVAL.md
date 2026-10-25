@@ -156,7 +156,7 @@ AI 없이 가격 신호만으로 다섯 가지를 더 봤어요. 코드: `src/an
 공개 예측 모델을 같은 숨긴 미래 시험으로 매달 채점해요. 한서님 요청(2026-10-24): 할 수 있는 한 많이, 월 1회 자동.
 
 - 코드: `src/analysis/arenaEval.ts`(채점), `src/cli/evalArena.ts`(prep/score), `scripts/arena/predict.py`(모델별 어댑터), `scripts/arena/run.sh`(전체 실행), 모델 목록 `data/arena/models.json`, 지난 예측 `data/arena/preds/<모델>.json`(다음 달엔 새 평가일만 계산). Actions `eval.yml` version `arena`.
-- 규칙: 모델마다 가중치가 마지막으로 바뀐 날 뒤 2주 넘게 지난 달부터만 채점(학습 때 본 시기 제외). 통계 기준은 각 평가일 전에 결과가 나온 자료로만 다시 맞춰요(워크포워드). 상업적으로 쓸 수 없는 라이선스(Moirai 2.0)와 확률을 주지 않는 모델(TTM)은 제외.
+- 규칙: 모델마다 가중치가 마지막으로 바뀐 날 뒤 2주 넘게 지난 달부터만 채점(학습 때 본 시기 제외). 통계 기준은 각 평가일 전에 결과가 나온 자료로만 다시 맞춰요(워크포워드). 상업적으로 쓸 수 없는 라이선스(Moirai 1.1·2.0·MoE, FlowState 연구판)와 확률을 주지 않는 모델(TTM, Time-MoE, Timer)은 제외.
 - "이김": 같은 행에서 통계 기준 대비 차이의 95% 구간이 0을 넘을 때(방향 Brier, 종목 순위 IC, 변동 폭 상관). 여러 모델을 시험하니 우연한 승리가 나올 수 있어, 두 달 연속 이겨야 위원회 후보로 봐요.
 
 ## 첫 결과 (2026-10-24, `data/eval/arena-2026-10-24.md`)
@@ -167,3 +167,15 @@ AI 없이 가격 신호만으로 다섯 가지를 더 봤어요. 코드: `src/an
 - 종목 순위: 모든 모델이 통계 기준보다 낮아요(IC 0.01~0.09 vs 0.09~0.12). 통계 기준을 뺀 뒤 더하는 정보는 Chronos-2 +0.05, Toto +0.04로 작고 0과 구별되지 않아요. 지켜볼 후보예요.
 - 변동 폭: 80% 범위 적중은 TiRex 81.6%, Chronos-2·TimesFM 79%로 괜찮지만, 크게 움직일 종목 고르기는 모두 통계 범위(0.26)와 같거나 낮아요.
 - Kronos-mini도 Kronos-small처럼 최근 평균으로 되돌아가는 예측이 강해 범위 적중 39.7%, 순위 IC 0.02예요.
+
+## 2차 결과 (2026-10-25, `data/eval/arena-2026-10-25.md`)
+
+한서님 요청("다른것들 찾아서 해봐")으로 13개를 더해 모두 22개. 새로 넣은 것: Chronos-2 small, Chronos-Bolt tiny·mini, Chronos(T5) mini·small, TimesFM 2.0, FlowState r1·r1.1(IBM Granite), Kairos 10M·23M·50M, YingLong 110M(CC-BY-4.0, 출처 표시 필요), Lag-Llama. 원래 T5와 Lag-Llama는 가중치가 2024년 초라 평가일이 29~31개(2024-03~)로 가장 길어요.
+
+**이번에도 통계 기준을 이긴 모델은 없어요.**
+
+- 방향: Chronos-Bolt mini(0.2543 vs 0.2560)·tiny, Toto만 기준과 같거나 아주 조금 나아요(우연 범위). Chronos T5 mini·small, TimesFM 2.0, FlowState, Kairos 3종은 기준보다 확실히 나빠요(95% 구간이 0 위). YingLong(0.357)·Lag-Llama(0.372)는 Kronos처럼 50%보다 훨씬 나빠요.
+- 종목 순위: 기준을 뺀 뒤 더하는 정보는 Chronos-2 +0.05, Toto +0.04, Chronos-Bolt mini +0.03, Kairos 50M +0.03 정도로 모두 0과 구별되지 않아요. Lag-Llama는 −0.07로 오히려 해로워요.
+- 정리: 지켜볼 후보는 Chronos-2·Toto·Chronos-Bolt mini. 다음 달 새 평가일에서 두 달 연속 이기는지 봐요.
+- 실행 메모: YingLong은 GPU 전용 부품(flash-attn·xformers 등)을 `scripts/arena/shims/`의 CPU용 대체로 돌려요. Lag-Llama는 KV 캐시를 켜 6배 빠르게. FlowState r1.1은 granite-tsfm 0.3.11이 필요해 따로 환경을 써요. CPU에서 T5 small 2,900건 약 2.7시간, Lag-Llama 3,100건 약 47분(4개 동시).
+
