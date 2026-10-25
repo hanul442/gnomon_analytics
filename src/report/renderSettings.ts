@@ -35,14 +35,17 @@ export function renderSettings(): string {
 .cm-new{display:grid;gap:8px;margin-top:10px}.cm-new label{display:grid;gap:4px;font-size:13px;font-weight:700}.cm-new input,.cm-new textarea,.cm-new select{font:inherit;font-weight:400;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--fg)}.cm-new button{min-height:44px;border:0;border-radius:12px;background:var(--btn-bg);color:var(--btn-fg);font:inherit;font-weight:800;cursor:pointer}.cm-err{color:var(--up-strong);font-size:13px;min-height:0;margin:0}.cm-err:empty{display:none}
 .st-fold{padding:0 18px!important}.st-fold>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:60px;cursor:pointer;list-style:none}.st-fold>summary::-webkit-details-marker{display:none}.st-fold>summary small{display:block;color:var(--muted);font-size:12.5px;font-weight:400}.st-fold>summary i{font-style:normal;color:var(--muted);transition:transform .2s}.st-fold[open]>summary i{transform:rotate(90deg)}.st-fold[open]{padding-bottom:18px!important}.st-fold+.st-fold{margin-top:-4px}.st-sub{margin:14px 2px 8px;font-size:13px;color:var(--muted)}.st-sub b{color:var(--fg);font-size:15px;margin-right:4px}
 @media (max-width:820px){#record,.me-rec{display:none}}
+/* G-300 (한서님 10/25): 맞춤 is one card (관심 종목 · 내 투자 방식 · 내 위원회 · 설문), like the other groups. */
+.st-group{padding:0 18px!important}.st-group>*+*{border-top:1px solid var(--line)}.st-group .st-fold{padding:0!important}.st-group .st-fold[open]{padding-bottom:14px!important}.st-group .st-rows a{border-top:0}.st-note{margin:-2px 2px 10px;font-size:13px;color:var(--muted);line-height:1.5}
 .pf-state{font-size:13px;color:var(--muted);margin:10px 0 0}.pf-state:empty{display:none}.pf-links{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;margin-top:6px}
 </style><div class="pf">
 ${meHead('')}
 <h2 class="st-h" id="record">내 기록</h2>
 ${meRecord('')}
 <h2 class="st-h" id="fit">맞춤</h2>
-<section class="card st-rows me-fit"><a href="watch.html"><span><b>관심 종목</b><small>☆를 누른 종목</small></span><i aria-hidden="true">›</i></a></section>
-<details class="card st-fold" id="profile"><summary><span><b>내 투자 방식</b><small id="pf-sum">홈 화면, 종목 화면, AI 답변이 이 값을 따라요</small></span><i aria-hidden="true">›</i></summary><p class="pf-state" id="pf-state" aria-live="polite"></p>
+<section class="card st-group">
+<div class="st-rows me-fit"><a href="watch.html"><span><b>관심 종목</b><small>☆를 누른 종목</small></span><i aria-hidden="true">›</i></a></div>
+<details class="st-fold" id="profile"><summary><span><b>내 투자 방식</b><small id="pf-sum">홈 화면, 종목 화면, AI 답변이 이 값을 따라요</small></span><i aria-hidden="true">›</i></summary><p class="pf-state" id="pf-state" aria-live="polite"></p>
 <section id="pf-form">
 ${group('level', '화면 수준', '종목 화면을 이 수준에 맞춰요. 초보자는 쉬운 풀이와 꼭 볼 카드만, 전문가는 모든 분석을 숫자 위주로 촘촘하게 보여요. 종목 화면 각 탭 맨 아래에서도 바꿀 수 있어요.', 'one', LEVEL).replace('</p>', '<span id="lv-auto"></span></p>')}
 ${group('persona', '보기 방식', '홈과 종목 화면에서 무엇을 먼저 보여 줄지 정해요.', 'one', PERSONAS.map((p) => p.label))}
@@ -51,17 +54,18 @@ ${group('explain', '설명 깊이', 'AI 질문의 답이 이 수준으로 와요
 ${group('assets', '관심 자산', '여러 개 골라도 돼요.', 'many', ASSETS)}
 ${group('sectors', '관심 업종', '홈의 내 종목 카드에 관련 테마로 바로 가는 칩이 생겨요.', 'many', SECTORS)}
 </section></details>
-<details class="card st-fold" id="committee"><summary><span><b>내 위원회</b><small>질문할 때 바로 고르는 위원 5명까지</small></span><i aria-hidden="true">›</i></summary><p class="muted small">리포트 토론의 질문 칸 위에 이 순서대로 나와서 한 번에 골라 물어볼 수 있어요. 5명까지 고르고, 다른 기기에서도 같아요. 위원회 전체는 플러스부터 ${CREDIT_COST.standard}크레딧, 전문가 초청은 프로부터 ${CREDIT_COST.invite}크레딧이에요(질문당).</p>
+<details class="st-fold" id="committee"><summary><span><b>내 위원회</b><small>질문할 때 바로 고르는 위원 5명까지</small></span><i aria-hidden="true">›</i></summary><p class="muted small">리포트 토론의 질문 칸 위에 이 순서대로 나와서 한 번에 골라 물어볼 수 있어요. 5명까지 고르고, 다른 기기에서도 같아요. 위원회 전체는 플러스부터 ${CREDIT_COST.standard}크레딧, 전문가 초청은 프로부터 ${CREDIT_COST.invite}크레딧이에요(질문당).</p>
 <section id="cm"><div class="pf-row" style="padding-top:0"><b>내가 고른 위원</b><p class="pf-note" id="cm-empty">아직 없어요. 아래에서 골라 주세요.</p><div class="cm-list" id="cm-list"></div></div>
 <div class="pf-row"><b>더할 수 있는 위원</b><p class="pf-note">눌러서 내 위원회에 넣어요.</p><div class="cm-add" id="cm-add"></div></div>
 <div class="pf-row"><details id="cm-make"><summary><b>내 전문가 만들기</b></summary><p class="pf-note">이름과 보는 관점을 정하면 그 관점으로 답해요. 로그인하면 계정에 저장돼요(20명까지).</p><form class="cm-new" id="cm-new"><label>이름<input name="name" maxlength="40" placeholder="예: 보수적인 반도체 전문가" required></label><label>분석 관점<textarea name="focus" maxlength="600" rows="3" placeholder="예: 설비투자와 현금흐름 중심으로 위험을 점검" required></textarea></label><label>답변 스타일<select name="style"><option>짧고 쉽게</option><option>숫자와 근거 중심</option><option>반대 근거와 위험 중심</option></select></label><p class="cm-err" id="cm-err" role="alert"></p><button type="submit">만들고 내 위원회에 넣기</button></form></details></div></section>
 </details>
+<div class="st-rows"><a href="onboarding.html"><span><b>설문 처음부터 다시 하기</b><small>모든 문항을 다시 골라요</small></span><i aria-hidden="true">›</i></a></div>
+</section>
 <h2 class="st-h" id="screen">앱</h2>
 <section class="card"><div class="pf-row" style="padding-top:0"><b>화면 색</b><p class="pf-note">이 기기에 저장돼요.</p><div class="theme-bar" role="group" aria-label="화면 색"><button type="button" data-theme-pick="dark">어둡게</button><button type="button" data-theme-pick="light">밝게</button><button type="button" data-theme-pick="auto">기기 설정</button></div></div></section>
-<p class="st-sub" id="alerts"><b>알림</b> 새 리포트, 스크리너 조건, 내가 건 가격, 요청한 리포트를 🔔과 휴대폰으로 알려 드려요.</p>
+<h2 class="st-h" id="alerts">알림</h2><p class="st-note">새 리포트, 스크리너 조건, 내가 건 가격, 요청한 리포트를 🔔과 휴대폰으로 알려 드려요.</p>
 <div class="al">${al.html}</div>
-<h2 class="st-h" id="account">계정</h2>
-<section class="card st-rows"><a href="account.html"><span><b>내 계정</b><small>크레딧, 크레딧 요청, 내 데이터 내려받기</small></span><i aria-hidden="true">›</i></a><a href="pricing.html"><span><b>요금제</b><small>지금 요금제와 쓸 수 있는 기능</small></span><i aria-hidden="true">›</i></a><a href="onboarding.html"><span><b>설문 처음부터 다시 하기</b><small>모든 문항을 다시 골라요</small></span><i aria-hidden="true">›</i></a></section>
+<i id="account" class="anchor" aria-hidden="true"></i>
 <h2 class="st-h" id="help">도움말</h2>
 ${meHelp('')}
 </div>${al.script}<script>

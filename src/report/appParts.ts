@@ -801,8 +801,10 @@ window.addEventListener('DOMContentLoaded', function () {
     var b = activeBars[i]; if (!b) return; shown = i;
     var pc = i > 0 ? activeBars[i - 1].close : b.open, d = b.close - pc;
     var v = function (label, x) { return '<span>' + label + ' <b class="' + cls(x - pc) + '">' + fmtPx(x) + '</b></span>'; };
-    legend.innerHTML = '<span class="lg-d">' + (b.date || '') + '</span>' + v('시', b.open) + v('고', b.high) + v('저', b.low) + v('종', b.close) +
-      '<b class="' + cls(d) + '">' + (d > 0 ? '+' : '') + fmtPx(d) + ' (' + (d > 0 ? '+' : '') + (pc ? (d / pc * 100).toFixed(2) : '0.00') + '%)</b>' +
+    // G-300: on the newest bar, 종가 and the change are already the big price above the chart; say them once.
+    var newest = i === activeBars.length - 1;
+    legend.innerHTML = '<span class="lg-d">' + (b.date || '') + '</span>' + v('시', b.open) + v('고', b.high) + v('저', b.low) + (newest ? '' : v('종', b.close) +
+      '<b class="' + cls(d) + '">' + (d > 0 ? '+' : '') + fmtPx(d) + ' (' + (d > 0 ? '+' : '') + (pc ? (d / pc * 100).toFixed(2) : '0.00') + '%)</b>') +
       (b.volume != null ? '<span>거래량 <b>' + fmtV(b.volume) + '</b></span>' : '');
     legend.setAttribute('aria-label', (b.date || '') + ' 시가 ' + won(b.open) + ' 고가 ' + won(b.high) + ' 저가 ' + won(b.low) + ' 종가 ' + won(b.close));
     paneLegends(i);

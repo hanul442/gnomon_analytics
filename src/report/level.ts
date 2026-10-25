@@ -95,7 +95,7 @@ export const LEVEL_JS = `
     var l = cur(); if (l === 'adv' || l === 'pro') return 0;
     var sel = l === 'easy' ? '.lv-d2,.lv-d3' : '.lv-d3';
     var cards = [].filter.call(p.querySelectorAll(sel), function (el) { return !el.classList.contains('gate'); });
-    return cards.filter(function (el) { return !el.hidden && !cards.some(function (o) { return o !== el && o.contains(el); }); }).length;
+    return cards.filter(function (el) { return !el.hidden && !cards.some(function (o) { return o !== el && o.contains(el); }); });
   };
   // 초보자 reads the plain-words card ("쉽게 보면") before the scenarios; other levels keep the report's order.
   var pcs = document.querySelector('#tab-home .pc-wrap'), mark = pcs && document.createComment('pc-wrap');
@@ -105,11 +105,13 @@ export const LEVEL_JS = `
     place();
     var l = cur(), info = LV.filter(function (x) { return x[0] === l; })[0] || LV[1];
     document.querySelectorAll('.lv-foot').forEach(function (f) {
-      var p = f.closest('[role=tabpanel]'), n = hiddenIn(p), more = f.querySelector('.lv-more');
+      var p = f.closest('[role=tabpanel]'), shut = hiddenIn(p), n = shut.length || 0, more = f.querySelector('.lv-more');
+      // G-300 (한서님 10/25): the button names what it opens ('재무제표 · 시장 대비 수익률 더 보기'), not 'n개'.
+      var names = [].map.call(shut || [], function (el) { var h = el.querySelector('h2,h3'); return h ? h.textContent.replace(/[?？ⓘ]/g, '').trim() : ''; }).filter(Boolean);
       f.querySelector('p').innerHTML = '화면 수준 <b>' + info[1] + '</b> · ' + info[2];
       f.querySelectorAll('[data-level-pick]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-level-pick') === l ? 'true' : 'false'); });
       more.hidden = !n || p.classList.contains('lv-open');
-      more.textContent = '이 탭의 자세한 분석 ' + n + '개 더 보기';
+      more.textContent = names.length ? names.slice(0, 2).join(' · ') + (names.length > 2 ? ' 외 ' + (names.length - 2) + '개' : '') + ' 더 보기' : '자세한 분석 ' + n + '개 더 보기';
     });
   };
   panels.forEach(function (p) {
