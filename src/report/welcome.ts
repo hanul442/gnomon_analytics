@@ -181,7 +181,7 @@ export function welcomeJs(base0 = ''): string {
   var run = function () { if (document.getElementById('mkt-hero')) welcome(); else stockHint(); };
   // A signed-in reader on a new device first takes the account's settings (what was already seen comes with them).
   var go = function () { if (get('gnm-session') && window.GNM && window.GNM.ready) window.GNM.ready.then(run, run); else run(); };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(go, 0); }); else setTimeout(go, 0);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 })();`;
 }
 export const WELCOME_JS = welcomeJs();

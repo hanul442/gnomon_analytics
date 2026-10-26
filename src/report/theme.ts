@@ -84,4 +84,10 @@ html:root[data-theme=dark]{--muted:#A3A8B0;--fg2:#D4D7DC}
 :root body td.num small{white-space:nowrap}
 :root body #signals td:first-child{min-width:7.5em}:root body #signals th,:root body #signals td:not(:first-child){white-space:nowrap}
 @media (max-width:520px){:root body .sc-hero .kr-half{flex-wrap:wrap;justify-content:center}:root body .sc-hero .kr-half .kr-leg{flex-basis:100%}}
+/* G-301 (한서님 10/26 '레퍼런스 참고해서 모든 화면 시인성과 애니메이션 점검'): every row and banner that opens something
+   answers the finger the same way (spring press), plain text links dim while pressed */
+:root body :is(a.ia-t,a.iss-r,a.ad-s,a.cs-htop,a.cs-hrow,a.me-plan,a.ia-chip,a.ia-lead-a,summary){transition:transform var(--dur-base,200ms) var(--spring-press,ease),background-color var(--dur-base,200ms) ease}
+:root body :is(a.ia-t,a.iss-r,a.cs-htop,a.cs-hrow,a.me-plan,a.ia-lead-a,summary):active{transform:scale(.98)}
+:root body :is(a.ad-s,a.ia-chip):active{transform:scale(.97)}
+:root body main p a:not([class]):active,:root body main li a:not([class]):active{opacity:.55}
 `;
