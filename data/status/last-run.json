@@ -1,5 +1,5 @@
 {
- "at": "2026-10-26T18:40:07.375Z",
+ "at": "2026-10-26T20:08:21.761Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 39
+   "count": 40
   },
   {
    "source": "google:topic-business-ko",
@@ -66,11 +66,6 @@
    "source": "opendart:risk-filings",
    "ok": true,
    "count": 307
-  },
-  {
-   "source": "naver:themes",
-   "ok": true,
-   "count": 264
   }
  ],
  "stocks": [
@@ -350,12 +345,12 @@
    "failedSources": []
   },
   {
-   "symbol": "016740",
+   "symbol": "328130",
    "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "328130",
+   "symbol": "016740",
    "report": "EXISTS",
    "failedSources": []
   }

@@ -999,3 +999,4 @@
 {"symbol":"PANW.O","date":"2026-10-23","open":354.3,"high":381.49,"low":351.2401,"close":380.55,"volume":6591668,"source":"naver:world:day","retrievedAt":"2026-10-26T16:17:00.264Z"}
 {"symbol":"PANW.O","date":"2026-10-26","open":384.15,"high":393.9999,"low":379.4841,"close":389.61,"volume":2769702,"source":"naver:world:day","retrievedAt":"2026-10-26T16:17:00.264Z"}
 {"symbol":"PANW.O","date":"2026-10-26","open":384.15,"high":394.7,"low":379.4841,"close":392.41,"volume":3685735,"source":"naver:world:day","retrievedAt":"2026-10-26T18:40:07.375Z"}
+{"symbol":"PANW.O","date":"2026-10-26","open":384.19,"high":394.7,"low":379.4841,"close":390.46,"volume":5065961,"source":"naver:world:day","retrievedAt":"2026-10-26T20:08:21.761Z"}
