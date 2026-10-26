@@ -1,5 +1,5 @@
 {
- "at": "2026-10-25T17:51:11.029Z",
+ "at": "2026-10-26T16:17:00.264Z",
  "selected": null,
  "universe": [
   {
@@ -25,7 +25,7 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 299
+   "count": 298
   },
   {
    "source": "naver:global",
@@ -55,7 +55,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 55
+   "count": 56
   },
   {
    "source": "naver:world:day:all",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 0
+   "count": 307
   }
  ],
  "stocks": [
@@ -335,10 +335,30 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-O",
-   "report": "EXISTS",
+   "symbol": "PANW.O",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "278530",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "328130",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "016740",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
- "failed": []
+ "failed": [],
+ "market": {
+  "date": "2026-10-26",
+  "status": "SKIPPED",
+  "error": "AI 키 또는 예산 확인 필요"
+ }
 }
