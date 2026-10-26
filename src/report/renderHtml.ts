@@ -735,10 +735,10 @@ ${m ? marketStatusWarning(m) : ''}
   // G-244 (화면 개편 4단계): 기업 체력 shows one part at a time: 기업 (종목 정보, 한눈에, 지표, 재무), 수급, 같은 테마.
   const flowsSec = `<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`;
   const fundPanel = report.kind === 'coin' ? `<div data-coin-fit="${base}c/${encodeURIComponent(report.symbol)}.json"></div>${flowsSec}`
-    : report.currency === 'USD' ? `${quickInfo}${fundTab}${insiderSection(report)}`
+    : report.currency === 'USD' ? `${fundTab}${quickInfo}${insiderSection(report)}`
     // G-300 (한서님 10/25 '위의 바 두기싫다니까'): no 기업 · 수급 · 같은 테마 bar at the top; the three parts follow one another
     // under their own headings, 기업 first (the most important part, never folded).
-    : `<section class="sub-sec sub-first" id="ftg-co"><h2 class="sub-h">기업</h2>${quickInfo}${fundTab}</section>${flowsSec}${report.kind ? '' : `<section class="sub-sec" id="ftg-peer"><h2 class="sub-h">같은 테마</h2>${peersSlot(report.symbol)}<p class="empty ft-none">같은 테마로 묶인 종목이 아직 없어요.</p></section>`}`;
+    : `<section class="sub-sec sub-first" id="ftg-co"><h2 class="sub-h">기업</h2>${fundTab}${quickInfo}</section>${flowsSec}${report.kind ? '' : `<section class="sub-sec" id="ftg-peer"><h2 class="sub-h">같은 테마</h2>${peersSlot(report.symbol)}<p class="empty ft-none">같은 테마로 묶인 종목이 아직 없어요.</p></section>`}`;
   const okAi = report.commentary?.status === 'OK';
   const aiFold = aiFoldOf(report, aiTab, okAi ? (ctx.commentaryFrom ?? report.date) : '', okAi);
   const dCard = okAi ? debateCard(report.commentary, { gate: (h) => gate(h, { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요', feature: 'debate' }), join: joinBox(report), sealed: sealedDeep }) : '';
