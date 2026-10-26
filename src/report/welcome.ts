@@ -61,8 +61,12 @@ export const WELCOME_CSS = `
 .wc-btns .wc-alt{flex:1;border:1px solid var(--line);background:var(--surface);color:var(--fg2)}
 .wc-btns .wc-go{flex:2;border:0;background:var(--btn-bg);color:var(--btn-fg);font-size:17.5px;font-weight:800}
 /* The stock page's first-visit card (위원회 part). */
-.fv-card{margin:12px 0 4px;padding:16px;border-radius:22px;background:var(--surface);border:1px solid var(--line-strong);box-shadow:var(--shadow);animation:wc-pop var(--d-bouncy) var(--spring-bouncy) both}
-.fv-card.out{opacity:0;transform:scale(.96);transition:opacity var(--d-out) var(--ease-exit),transform var(--d-out) var(--ease-exit)}
+/* G-301 (한서님 10/26 '종목 위원회탭 다시 만들어봐'): a sheet that rises once over the page, so it never pushes 위원회 판단 down. */
+.fv-scrim{position:fixed;inset:0;z-index:60;background:rgba(10,12,16,.32);animation:fv-fade .2s ease both}
+.fv-card{position:fixed;z-index:61;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);max-width:480px;margin:0 auto;padding:18px 18px 16px;border-radius:26px;background:var(--surface-solid,var(--surface));border:1px solid var(--line-strong);box-shadow:0 18px 48px -12px rgba(0,0,0,.35);animation:fv-up var(--d-bouncy,.5s) var(--spring-bouncy,cubic-bezier(.34,1.4,.64,1)) both}
+.fv-card.out{opacity:0;transform:translateY(24px);transition:opacity var(--d-out,.18s) var(--ease-exit,ease),transform var(--d-out,.18s) var(--ease-exit,ease)}.fv-scrim.out{opacity:0;transition:opacity .18s}
+@keyframes fv-up{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}@keyframes fv-fade{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.fv-card,.fv-scrim{animation:none}}
 .fv-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.fv-head b{font-size:17.5px}
 .fv-ok{flex:none;height:36px;padding:0 14px;border-radius:999px;border:0;background:var(--btn-bg);color:var(--btn-fg);font:inherit;font-size:15.5px;font-weight:700;cursor:pointer}
 .fv-card ol{margin:12px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
@@ -171,12 +175,16 @@ export function welcomeJs(base0 = ''): string {
   var stockHint = function () {
     var part = document.getElementById('tab-home');
     if (!part || !document.getElementById('tab-ai') || get(HKEY)) return;
-    var c = document.createElement('section'); c.className = 'fv-card'; c.setAttribute('aria-label', '처음 보는 분을 위한 안내');
-    c.innerHTML = '<div class="fv-head"><b>처음이면 이 세 가지만 보세요</b><button type="button" class="fv-ok">알겠어요</button></div><ol><li><span>1</span><span><b>위원회 판단</b>: 한 줄 결론과 그렇게 본 이유예요.</span></li><li><span>2</span><span><b>세 갈래 확률</b>: 강세·기본·약세 중 어디에 무게가 있는지 봐요.</span></li><li><span>3</span><span><b>기업</b>: 아래 바에서 회사 정보와 재무를 봐요.</span></li></ol><a href="' + base + 'committee-guide.html">위원회가 뭐예요? ›</a>';
-    // Right under the price card, before 지금 판단; never folded away by the 화면 수준 levels.
-    var hero = part.querySelector(':scope > .hero'); if (hero) hero.after(c); else part.insertBefore(c, part.firstElementChild ? part.firstElementChild.nextSibling : null);
-    c.querySelector('.fv-ok').addEventListener('click', function () { set(HKEY, '1'); c.classList.add('out'); setTimeout(function () { c.remove(); }, 200); });
+    var c = document.createElement('section'); c.className = 'fv-card'; c.setAttribute('role', 'dialog'); c.setAttribute('aria-label', '처음 보는 분을 위한 안내');
+    var third = (document.querySelector('[data-nav=fundamentals]') || {}).getAttribute ? document.querySelector('[data-nav=fundamentals]').getAttribute('aria-label') : '기업';
+    c.innerHTML = '<div class="fv-head"><b>처음이면 이 세 가지만 보세요</b><button type="button" class="fv-ok">알겠어요</button></div><ol><li><span>1</span><span><b>위원회 판단</b>: 한 줄 결론과 그렇게 본 이유예요.</span></li><li><span>2</span><span><b>세 갈래 확률</b>: 강세·기본·약세 중 어디에 무게가 있는지 봐요.</span></li><li><span>3</span><span><b>' + third + '</b>: ' + (third === '체력' ? '아래 바에서 거래량과 매집 흔적을 봐요.' : '아래 바에서 회사 정보와 재무를 봐요.') + '</span></li></ol><a href="' + base + 'committee-guide.html">위원회가 뭐예요? ›</a>';
+    var scrim = document.createElement('div'); scrim.className = 'fv-scrim';
+    var shut = function () { set(HKEY, '1'); c.classList.add('out'); scrim.classList.add('out'); document.removeEventListener('keydown', esc); setTimeout(function () { c.remove(); scrim.remove(); }, 200); };
+    var esc = function (e) { if (e.key === 'Escape') shut(); };
+    c.querySelector('.fv-ok').addEventListener('click', shut); scrim.addEventListener('click', shut); document.addEventListener('keydown', esc);
     c.querySelector('a').addEventListener('click', function () { set(HKEY, '1'); });
+    // After the boot veil lifts, so the sheet rises over a page that is already there.
+    setTimeout(function () { if (get(HKEY)) return; document.body.appendChild(scrim); document.body.appendChild(c); c.querySelector('.fv-ok').focus({ preventScroll: true }); }, 1100);
   };
   var run = function () { if (document.getElementById('mkt-hero')) welcome(); else stockHint(); };
   // A signed-in reader on a new device first takes the account's settings (what was already seen comes with them).

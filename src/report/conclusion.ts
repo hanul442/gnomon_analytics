@@ -107,7 +107,10 @@ export function verdictHead(report: DailyReport): string {
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
   const sents = (c?.summary?.text ?? '').split(/(?<=[.?!요])\s/).filter(Boolean), line2 = sents.slice(0, 2).join(' ');
   const page = `<div class="cm-page" id="committee" role="dialog" aria-label="위원회 판단" hidden><header class="cm-top"><button type="button" class="cm-back" data-cm-close aria-label="뒤로">‹</button><b>위원회 판단</b><small>${esc(dayOf(report.date))} 마감 기준</small></header><div class="cm-body">${c?.summary?.text ? `<h2 class="cm-h">한눈에</h2><p class="cm-sum">${esc(c.summary.text)}</p>` : ''}<div data-cm-slot></div></div></div>`;
-  return `${line2 ? `<a class="cl-head" href="#committee" data-cm-open><span><h2 class="cl-line">${esc(line2)}</h2></span><i aria-hidden="true">›</i></a>` : ''}${page}`;
+  // G-301 (한서님 10/26 '종목 위원회탭 다시 만들어봐'): the first sentence is the title, the second a smaller line under it,
+  // so a long verdict no longer runs four big lines and gets cut.
+  const sub = sents[1] ? `<p class="cl-sub">${esc(sents[1])}</p>` : '';
+  return `${line2 ? `<a class="cl-head" href="#committee" data-cm-open><span><h2 class="cl-line">${esc(sents[0]!)}</h2>${sub}</span><i aria-hidden="true">›</i></a>` : ''}${page}`;
 }
 
 export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string; /** G-300: false leaves the verdict to the committee card (verdictHead). */ head?: boolean } = {}): string {
@@ -143,6 +146,8 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
     const condition = conditionPrice ? `<b>${won(conditionPrice.price)}</b><small>${up ? '이 가격을 넘으면 강세 전개 검토' : '이 가격 아래로 이탈하면 약세 전개 검토'}${conditionPrice.source === 'base-exit' ? ' · 기본 시나리오 이탈 조건' : ''}</small>`
       : edge ? `<b>${won(edge.v)}</b><small>${up ? '강세면 20거래일 안 상단' : '약세면 20거래일 안 하단'} · ${gap(edge.v, p.close)}${edge.fromZone ? '' : ` · ${edge.src}`}</small>`
       : `<b>${up ? '강세' : '약세'} 조건</b><small>가격 자료가 아직 없어요</small>`;
+    // G-301: when the big number already is this range's far end, the range line would repeat it; show the range once.
+    if (z && edge?.fromZone && !conditionPrice) return `<div class="cl-px"><b>${zone(z.zone)}</b><small>${up ? '강세 범위' : '약세 범위'} · ${up ? '상단' : '하단'} ${gap(edge.v, p.close)}${z.source === 'analyst' ? ' · AI 분석가' : z.source === 'calc' ? ' · 변동성 계산' : ''}</small></div>`;
     const range = z ? `<small class="cl-range">${z.source === 'analyst' ? 'AI 분석가 시나리오 가격대' : z.source === 'calc' ? '20거래일 변동성 참고 범위' : '20거래일 예상 범위'} ${zone(z.zone)}${z.source === 'ai' ? ` · 분석 종가 대비 ${gap((z.zone[0]+z.zone[1])/2,p.close)}` : ''}</small>` : '';
     return `<div class="cl-px">${condition}${range}</div>`;
   };
@@ -226,7 +231,7 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .cl-row .cl-what>b{white-space:nowrap}.cl-row .cl-px b{max-width:9.5em;text-align:right;text-wrap:balance}
 :root body .cl-sc{margin:0 0 12px;border:0;border-radius:18px;background:var(--soft);padding:12px 14px 6px}
 :root body .cl-check{border-radius:18px}
-.cl-head{display:flex;align-items:center;gap:10px;margin:-4px -6px 8px;padding:6px;border-radius:16px;text-decoration:none;color:inherit}.cl-head:active{background:var(--soft)}.cl-head>span{flex:1;min-width:0}.cl-head .cl-k{display:block}.cl-head .cl-line{margin:2px 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}.cl-head>i{font-style:normal;font-size:22px;color:var(--muted)}
+.cl-head{display:flex;align-items:center;gap:10px;margin:-4px -6px 8px;padding:6px;border-radius:16px;text-decoration:none;color:inherit}.cl-head:active{background:var(--soft)}.cl-head>span{flex:1;min-width:0}.cl-head .cl-k{display:block}.cl-head .cl-line{margin:2px 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}.cl-head>i{font-style:normal;font-size:22px;color:var(--muted)}.cl-head .cl-sub{margin:6px 0 0;font-size:17px;line-height:1.55;color:var(--fg2)}
 .cm-page{position:fixed;inset:0;z-index:400;background:var(--page);overflow-y:auto;-webkit-overflow-scrolling:touch}.cm-page[hidden]{display:none}.cm-top{position:sticky;top:0;z-index:1;display:flex;align-items:baseline;gap:8px;padding:14px 16px 12px;background:var(--page);border-bottom:1px solid var(--line)}.cm-top b{font-size:18.5px}.cm-top small{color:var(--muted);font-size:15.5px}.cm-back{border:0;background:none;font-size:28px;line-height:1;padding:0 6px 0 0;color:var(--fg);cursor:pointer}
 .cm-body{max-width:760px;margin:0 auto;padding:16px 16px 120px}.cm-h{font-size:17px;color:var(--fg2);margin:4px 0 6px}.cm-sum{font-size:18.5px;line-height:1.7;margin:0 0 16px}.cm-body .vf{margin:0}
 /* G-287: the 확률 cells as small pills under the chart */
