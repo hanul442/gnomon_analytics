@@ -166,10 +166,11 @@ export const ROLE_PLAIN: Record<string, string> = {
 };
 
 /** v4: the committee's own members argue their stances in turn, answering each other; the red team closes. */
-export function debateSection(report: DailyReport, tail = ''): string {
-  return renderCommitteeDebate(report.commentary,tail);
+export function debateSection(report: DailyReport, tail = '', roomOnly = false): string {
+  return renderCommitteeDebate(report.commentary,tail,roomOnly);
 }
-export function renderCommitteeDebate(c:Pick<Commentary,'status'|'debate'|'evidence'|'sectorExpert'>|undefined,tail=''):string {
+/** G-301: roomOnly leaves out the title and the preview (the 위원회 part's debate card has both) and keeps the room. */
+export function renderCommitteeDebate(c:Pick<Commentary,'status'|'debate'|'evidence'|'sectorExpert'>|undefined,tail='',roomOnly=false):string {
   if (c?.status !== 'OK' || !c.debate?.length) return '';
   // G-242: the industry seat speaks under the specialty this report gave it.
   const who = (sp: string) => (sp === 'sector_expert' && c.sectorExpert ? c.sectorExpert.name : SPEAKER[sp] ?? sp);
@@ -181,8 +182,8 @@ export function renderCommitteeDebate(c:Pick<Commentary,'status'|'debate'|'evide
   const initial = (sp: string) => (who(sp)).replace(/^(AI\s*)/, '').slice(0, 1);
   const avs = speakers.slice(0, 5).map((sp) => { const t = turns.find((x) => x.speaker === sp)!; return `<span class="db-av db-av-${sideOf(t)}">${esc(initial(sp))}</span>`; }).join('');
   const lines = turns.slice(-3).map((t) => `<span class="db-pv-l"><b>${esc(who(t.speaker))}</b>${esc(t.claim.text.length > 64 ? `${t.claim.text.slice(0, 64)}…` : t.claim.text)}</span>`).join('');
-  return `<section class="block" id="debate"><div class="block-head"><h2>위원회 토론</h2><span class="muted small">위원 ${speakers.length}명 · 발언 ${turns.length}개</span></div>
-<button type="button" class="card db-preview" data-room-open aria-haspopup="dialog" aria-controls="db-room"><span class="db-pv-top"><span class="db-avs">${avs}</span><span class="db-pv-n">위원회 토론방<small>위원 ${speakers.length}명이 ${turns.length}번 주고받았어요</small></span></span>${lines}<span class="db-pv-cta">토론방 입장 ›</span></button>
+  return `<section class="block${roomOnly ? ' db-only' : ''}" id="debate">${roomOnly ? '' : `<div class="block-head"><h2>위원회 토론</h2><span class="muted small">위원 ${speakers.length}명 · 발언 ${turns.length}개</span></div>
+<button type="button" class="card db-preview" data-room-open aria-haspopup="dialog" aria-controls="db-room"><span class="db-pv-top"><span class="db-avs">${avs}</span><span class="db-pv-n">위원회 토론방<small>위원 ${speakers.length}명이 ${turns.length}번 주고받았어요</small></span></span>${lines}<span class="db-pv-cta">토론방 입장 ›</span></button>`}
 <div class="db-room" id="db-room" role="dialog" aria-modal="true" aria-label="위원회 토론방" hidden><header class="db-room-h"><button type="button" class="db-room-x" data-room-close aria-label="토론방 나가기">‹</button><div class="db-room-t"><b>위원회 토론방</b><small>위원 ${speakers.length}명 · 발언 ${turns.length}개</small></div><span class="db-head-r">${turns.some((t) => t.plain) ? '<button type="button" class="db-easy chip-toggle" data-easy-toggle aria-pressed="false">쉬운 말</button>' : ''}<button type="button" class="db-skip chip-toggle" hidden>전체 바로 보기</button><a class="db-ask-link" href="#join" aria-label="질문 입력창으로 이동">질문</a></span></header>
 <div class="db-room-body"><div class="card debate"><div class="db-chips" role="group" aria-label="발언자 고르기"></div>
 ${turns.map((t, i) => {
@@ -230,7 +231,7 @@ html.ms .dc.dc-wait:not(.dc-seen) .dc-b{opacity:0}html.ms .dc.dc-seen .dc-b{anim
 .dc-open{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:48px;margin-top:12px;border:0;border-radius:16px;background:var(--fg);color:var(--page);font:inherit;font-size:17px;font-weight:700;cursor:pointer;transition:transform .3s var(--spring-snappy,ease-out)}.dc-open:active{transform:scale(.97)}.dc-open i{font-style:normal}
 .dc-lock{margin:0;font-size:16px;line-height:1.55;color:var(--fg2)}.dc-join{margin-top:12px}.dc-join .db-join{margin:0}
 #tab-home>.rs-bar,#tab-home .rs-bar{grid-template-columns:auto minmax(0,1fr) auto!important;margin:12px 0;padding:10px 10px 10px 14px;border-radius:18px;border:0;background:var(--surface)}#tab-home .rs-bar .rs-dot{align-self:center;margin:0;box-shadow:none;width:8px;height:8px}#tab-home .rs-bar .sa-tx b{font-size:16px}#tab-home .rs-stale .sa-tx small{display:none}#tab-home .rs-bar .gen-wrap{grid-column:auto!important;width:auto!important;margin:0!important}#tab-home .rs-bar .gen-btn{width:auto!important;padding:8px 12px;font-size:15.5px;box-shadow:none}#tab-home .rs-bar .gen-btn::before,#tab-home .rs-bar .gen-btn::after{display:none}
-#tab-home .vf-paged{display:none}.cm-page .ez-card .card{border:0;background:var(--surface)}.cm-page .vf-paged{display:block}.cm-page .vf-paged #tab-ai .block-head>h2,.cm-page .vf-paged #tab-ai .card>.head>h2{border-left:0;padding-left:0}
+#tab-home .ez-card .card{border:0;background:var(--surface)}#tab-home .db-only{margin:0}#tab-home .vf{margin:0}#tab-home #tab-ai>.block:first-child{margin-top:0}
 @media (prefers-reduced-motion:reduce){.dc-b{animation:none!important}}`;
 
 /**

@@ -195,7 +195,7 @@ html.mo .kit-funnel:not(.kit-in) .kf-s path{opacity:0}html.mo .kit-funnel.kit-in
 html.mo .kv-val{transition:top .45s var(--ease-out),background .3s}
 .kv-pulse{transform-box:fill-box;transform-origin:center;opacity:0}html.mo .kv-pulse{animation:kv-pulse 1.8s ease-out infinite}
 @keyframes kv-pulse{0%{transform:scale(.6);opacity:.8}100%{transform:scale(2.6);opacity:0}}
-.kv-foot{display:flex;justify-content:space-between;margin-top:6px;font-size:15px;color:var(--muted)}
+.kv-foot{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px;color:var(--muted)}.kv-foot small{font-size:15px;text-align:center;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kv-inhero{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.kv-inhero .kv-plot{height:130px;margin-top:0}
 @media (max-width:600px){.kl-plot{height:180px}.kr-fig{width:100px;height:100px}.kr-half .kr-fig{width:120px;height:66px}.kit-ring{gap:12px}.kr-leg li{font-size:15.5px}}
 `;
 
@@ -326,9 +326,10 @@ export const KIT_STOCK_JS = `
     if (document.querySelector('.pm[data-pm-sym]')) return;
     var coin = sym.indexOf('KRW-') === 0;
     var hero = document.querySelector('#tab-home .hero') || document.querySelector('.hero'); if (!hero) return;
-    var sec = document.createElement('section'); sec.className = 'block kit-live'; sec.hidden = true;
-    sec.innerHTML = '<div class="card"><div class="kv-h"><h2>실시간 가격</h2><small data-kv-note>' + (coin ? '업비트 체결가 · 최근 3분' : '1분 종가 · 장중 실시간') + '</small></div><div class="kv-plot" role="img" aria-label="실시간 가격 선"></div><div class="kv-foot"><span data-kv-from></span><span>지금</span></div></div>';
-    hero.after(sec);
+    // G-301 (새 구조): the live line sits inside the price card itself, not as a second card with its own title.
+    var sec = document.createElement('div'); sec.className = 'kit-live kv-inhero'; sec.hidden = true;
+    sec.innerHTML = '<div class="kv-plot" role="img" aria-label="실시간 가격 선"></div><div class="kv-foot"><span data-kv-from></span><small data-kv-note>' + (coin ? '업비트 체결가 · 최근 3분' : '1분 종가 · 장중 실시간') + '</small><span>지금</span></div>';
+    hero.appendChild(sec);
     var plot = sec.querySelector('.kv-plot'), pts = [], SPAN = 180, raf = 0, shift = 0, from = 0, to = 0, t0 = 0, last = 0;
     var draw = function () {
       if (pts.length < 2) return; sec.hidden = false;

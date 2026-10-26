@@ -5,7 +5,7 @@
 
 import { faceOf } from './committeeSeats.js';
 import type { DailyReport } from './dailyReport.js';
-import { gate, LOCK as LOCK_SVG } from './plans.js';
+import { gate, lockCard } from './plans.js';
 import { PRESETS } from '../analysis/screenRules.js';
 import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystTrack } from '../analysis/analysts.js';
@@ -100,7 +100,7 @@ ${totalScored ? `<table class="compact"><thead><tr><th>기간</th><th>채점</th
     return `<li class="mb-row${i >= 4 ? ' more-row' : ''}" data-sym="${esc(e.symbol)}"${i >= 4 ? ' hidden' : ''}><div class="mb-top"><a href="${esc(e.href)}">${esc(e.name)}</a><span class="muted small">${md(c.reportDate)} 리포트</span><b class="${cls} mb-st">${word} ${c.confidence}%</b></div>
 <div class="mb-line"><span class="mb-k">전망</span>${won(c.baseClose)} → <b>${won(c.target)}</b> (${chg(c.target, c.baseClose)})</div>
 ${c.invalidation ? `<div class="mb-line"><span class="mb-k">철회</span>종가 ${won(c.invalidation)}에 닿으면 틀렸다고 봐요 · ${c.brokeOn ? `<b class="mb-v no">${md(c.brokeOn)}에 닿았어요</b>` : c.done ? '<span class="muted">끝까지 닿지 않았어요</span>' : '<span class="muted">아직 닿지 않았어요</span>'}</div>` : ''}
-<div class="mb-line"><span class="mb-k">결과</span>${verdict(c)}</div><a class="mb-why" href="${esc(dated)}#parliament-ai">근거 보기 ›</a></li>`;
+<div class="mb-line"><span class="mb-k">결과</span>${verdict(c)}</div><a class="mb-why" href="${esc(dated)}#cs-hero">근거 보기 ›</a></li>`;
   };
   const member = ([id, x]: [string, Tally]) => {
     const who = ANALYSTS.find((a) => a.id === id);
@@ -177,19 +177,19 @@ ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 
   // G-301 (한서님 10/26 새 구조): 채점 reads top to bottom — the headline numbers once, the open records, then what plus
   // readers get. For free readers those locked cards fold into one card at the end instead of five scattered ones.
   const locked = ['가상 계좌 평균 결과', '종목별 장부 · 매매 내역 · 수익 곡선', '기간별 예측 적중', '빗나간 예측 하나하나'];
-  const lockCard = `<section class="block sc-lock only-free"><div class="card"><div class="gate-cta">${LOCK_SVG}<div><b>플러스부터 볼 수 있어요</b><ul>${locked.map((x) => `<li>${x}</li>`).join('')}</ul></div><a class="btn-primary" href="pricing.html">요금제 보기</a></div></div></section>`;
+  const lock = lockCard(locked);
   const scoreBody = `${hero}${recent}
 ${group('scenarios', scenarioCard || '<section class="block sc-sec" id="scenarios"><div class="card"><p class="empty">아직 채점한 시나리오가 없어요.</p></div></section>')}
 ${group('signals', signalCard(signals))}
 <div class="need-plus">${group('paper', strategyCard)}
 ${group('forecast', gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">'), { base: '', what: '기간별 예측 적중', feature: 'scoreSummary' }) + gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' }))}</div>
-${lockCard}`;
+${lock}`;
   const how = `<details class="rp-how card"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 기본 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></details>`;
   const membersBody = `<p class="mb-lead">분석가 6명과 데스크 5곳이 종목마다 따로 판단해요. 얼굴을 누르면 그 위원의 기록이 열려요. <a class="rp-what" href="committee-guide.html">위원회가 뭐예요? ›</a></p>${roster}
 ${group('analysts', analystsHtml)}${how}
 <style>.mb-lead{margin:0 4px 6px;font-size:16px;color:var(--fg2)}.rp-what{display:inline-block;padding:6px 0;font-weight:700;color:var(--fg);text-decoration:none;white-space:nowrap}.rp-how{margin:12px 0;padding:2px 16px}.rp-how summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:16px;font-weight:600}.rp-how p{font-size:15.5px;color:var(--muted);line-height:1.55}</style>`;
   const body = `${view === 'members' ? membersBody : scoreBody}
-<style>.sc-lock .gate-cta{display:flex;align-items:center;gap:12px}.sc-lock .gate-cta>div{flex:1;min-width:0}.sc-lock .gate-cta b{font-size:17px}.sc-lock ul{margin:6px 0 0;padding-left:18px;font-size:15.5px;color:var(--fg2);line-height:1.6}.sc-lock .lock{width:22px;height:22px;flex:none}@media (max-width:520px){.sc-lock .gate-cta{flex-wrap:wrap}.sc-lock .gate-cta .btn-primary{width:100%;text-align:center}}.sc-hero{margin-top:18px}.sc-k{font-size:15.5px;color:var(--muted)}.sc-hv{display:flex;align-items:baseline;gap:10px;margin:6px 0 0}.sc-hv b{font-size:56px;line-height:1;font-weight:800;color:var(--accent-strong);font-variant-numeric:tabular-nums}.sc-hv small{font-size:16px;font-weight:500;color:var(--muted)}
+<style>.sc-hero{margin-top:18px}.sc-k{font-size:15.5px;color:var(--muted)}.sc-hv{display:flex;align-items:baseline;gap:10px;margin:6px 0 0}.sc-hv b{font-size:56px;line-height:1;font-weight:800;color:var(--accent-strong);font-variant-numeric:tabular-nums}.sc-hv small{font-size:16px;font-weight:500;color:var(--muted)}
 .sc-meter{position:relative;height:8px;border-radius:4px;background:var(--soft);margin-top:18px}.sc-meter i{display:block;height:8px;border-radius:4px;background:var(--accent)}.sc-meter em{position:absolute;top:-5px;width:2px;height:18px;background:var(--fg)}
 .sc-say{margin:16px 0 0;font-size:17px;line-height:1.65;color:var(--fg2)}.sc-lines{margin-top:14px}.sc-line{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.sc-line>span{display:flex;flex-direction:column;gap:2px;min-width:0}.sc-line b{font-size:17px}.sc-line small{font-size:15.5px;color:var(--muted)}.sc-lv{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}.sc-lv.muted{color:var(--muted)}
 .sc-tabs{position:sticky;top:calc(var(--topbar-h,56px) + 4px);z-index:5;display:flex;gap:4px;margin:24px 0 4px;padding:4px;border-radius:12px;background:var(--surface-solid,var(--surface));border:1px solid var(--line)}.sc-tabs button{flex:1;min-height:40px;border:0;border-radius:9px;background:none;font:inherit;font-size:16px;font-weight:700;color:var(--fg2);cursor:pointer}.sc-tabs button[aria-selected=true]{background:var(--soft);color:var(--fg)}.sc-group[hidden]{display:none}.sc-gh{margin:28px 4px 0;font-size:21px;font-weight:800}

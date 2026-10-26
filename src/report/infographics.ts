@@ -7,7 +7,7 @@ import type { FinancePeriod } from '../types.js';
 import type { FullStatements, StatementRow } from '../sources/dartStatements.js';
 import { esc } from './html.js';
 import { bigMoney, currency, financeScale, financeUnit } from './format.js';
-import { composedChart, depthBar, depthDefs, incomeSankey, radarChart } from './kit/finance.js';
+import { composedChart, depthBar, depthDefs, incomeSankey } from './kit/finance.js';
 import { gradId } from './chartLook.js';
 
 const clamp = (v: number) => Math.max(0, Math.min(100, v));
@@ -47,7 +47,6 @@ export function healthAxes(m: MarketSection, close: number | null): Axis[] {
 }
 
 // G-265: drawn by the chart kit in Bklit UI's radar look (round rings, soft fill, haloed dots).
-const radar = (axes: readonly Axis[]) => radarChart(axes);
 
 /** 기업 체력 한눈에 (G-148): the radar beside one short line per axis; the thresholds sit in each line's title. */
 export function healthInfographic(m: MarketSection | undefined, close: number | null): string {
@@ -55,8 +54,10 @@ export function healthInfographic(m: MarketSection | undefined, close: number | 
   const axes = healthAxes(m, close);
   if (axes.every((a) => a.score == null)) return '';
   const verdict = (s: number | null) => (s == null ? ['na', '자료 없음'] : s >= 67 ? ['good', '좋음'] : s >= 34 ? ['mid', '보통'] : ['warn', '주의']);
-  return `<section class="card ig-card ig-hc"><div class="head"><h2>기업 체력 한눈에</h2></div>
-<div class="ig-health">${radar(axes)}<ul class="ig-hl">${axes.map((a, i) => { const [cls, word] = verdict(a.score); return `<li title="${esc(a.note)}" data-i="${i}" tabindex="0"><b>${esc(a.label)}</b><span class="ig-v ${cls}">${word}</span><em>${esc(a.value)}</em></li>`; }).join('')}</ul></div>
+  // G-301 (새 구조): words only, each one a way to the block it is read from; the numbers live in those blocks once.
+  const to: Record<string, string> = { growth: '#si-fin', profit: '#si-fin', safety: '#si-fin', flow: '#tab-flows', value: '#si-metrics' };
+  return `<section class="card ig-card ig-hc"><div class="head"><h2>기업 체력 한눈에</h2><small class="ig-hint">누르면 그 블록으로</small></div>
+<ul class="ig-words">${axes.map((a) => { const [cls, word] = verdict(a.score); return `<li><a href="${to[a.key] ?? '#si-metrics'}" title="${esc(a.note)}"><b>${esc(a.label)}</b><span class="ig-v ${cls}">${word}</span></a></li>`; }).join('')}</ul>
 <p class="fine">단순 기준으로 환산한 참고값이에요(영업이익률 20%·부채비율 0%면 만점). ${axes.length < 5 ? '미국 주식은 외국인·기관 수급 자료가 없어서 수급 축은 빼고 봐요. ' : ''}같은 업종끼리 비교해 보세요.</p></section>`;
 }
 
@@ -179,6 +180,7 @@ export const INFOGRAPHIC_CSS = `.ig-card .head{display:flex;justify-content:spac
 .ig-bullish{background:var(--up)}.ig-neutral{background:var(--line-strong)}.ig-bearish{background:var(--accent)}.ig-legend{display:flex;justify-content:space-between;gap:6px;font-size:15px;color:var(--muted);margin-top:6px}.ig-legend b{color:var(--fg)}
 
 
+.ig-hc .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.ig-hint{font-size:15px;color:var(--muted)}.ig-words{list-style:none;margin:4px 0 10px;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.ig-words a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border-radius:16px;background:var(--soft);color:var(--fg);text-decoration:none;font-size:16.5px;transition:transform .3s var(--spring-snappy,ease-out)}.ig-words a:active{transform:scale(.97)}.ig-words .ig-v{font-size:15.5px;padding:1px 9px}
 .ig-health{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px;align-items:center}.ig-hc{margin:0 0 14px}.ig-hl{list-style:none;margin:0;padding:0;max-width:560px;display:flex;flex-direction:column;gap:2px}.ig-hl li{display:grid;grid-template-columns:3.4em auto minmax(0,1fr);align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:16px}.ig-hl li:last-child{border-bottom:0}.ig-hl .ig-v{justify-self:start;font-size:inherit;line-height:1.45;padding:1px 9px}.ig-hl em{font-style:normal;font-size:inherit;color:var(--fg2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ig-radar{width:100%;max-width:260px;margin:0 auto;display:block}
 .ig-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.ig-tile{background:var(--soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}.ig-tile>div{display:flex;justify-content:space-between;align-items:center;gap:6px}.ig-tile strong{font-size:16px}.ig-tile small{font-size:15px;color:var(--muted)}.ig-v{font-size:14px;font-weight:700;border-radius:999px;padding:1px 8px;line-height:1.5}.ig-v.good{background:var(--good-soft);color:var(--good-strong)}.ig-v.mid{background:var(--soft);color:var(--fg2)}.ig-v.warn{background:var(--up-soft);color:var(--up-strong)}.ig-v.na{background:var(--soft);color:var(--muted)}
 .ig-seg{margin:2px 0 10px;width:max-content}.ig-fs td.num,.ig-fs th.num{text-align:right;font-variant-numeric:tabular-nums}.ig-fs table{min-width:520px}.ig-fs th[scope=row]{position:sticky;left:0;background:var(--surface-solid);white-space:nowrap;text-align:left;font-weight:700}.ig-fs th small,.ig-fs th[scope=row] small{display:block;font-size:14px;font-weight:500;color:var(--muted)}

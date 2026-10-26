@@ -55,7 +55,7 @@ test('G-277: home is 세계 + 위원회 — tabs, the date, the big banner, key 
 });
 
 test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab', async () => {
-  const { tabBar, modeBar } = await import('./ui.js');
+  const { tabBar, modeBar, pageHead } = await import('./ui.js');
   const { renderSettings } = await import('./renderSettings.js');
   const bar = tabBar('', 'bottom');
   assert.deepEqual([...bar.matchAll(/aria-label="([^"]+)" data-tab-link/g)].map((m) => m[1]), ['홈', '찾기', '위원회', '나']);
@@ -69,12 +69,15 @@ test('G-245: five tabs, no 전체 sheet, sibling pages as modes, and the 나 tab
   assert.ok(!me.includes('id="side-menu"'));
   // G-255: four tabs; 내 종목's pages are rows under 나 › 내 기록, and 관심 종목 lights up 홈.
   assert.ok(me.includes('class="card st-rows me-rec"') && ['watch.html', 'inbox.html', 'myreports.html', 'mydebates.html'].every((h) => me.includes(`href="${h}"`)));
+  assert.ok(!me.slice(me.indexOf('me-rec')).split('</section>')[0]!.includes('watch.html'), '관심 종목 is 맞춤\'s, not 내 기록\'s');
   // G-281: no jump row; 내 투자 방식 and 내 위원회 are one line each; 내 기록 shows only where the bottom bar is not (wide screens).
   assert.ok(!me.includes('class="st-nav"') && me.includes('<details class="st-fold" id="profile">') && me.includes('<details class="st-fold" id="committee">') && me.includes('class="card st-group"'));
   // G-300: 내 계정 once (the head card, 요금제 beside it); 약관 and 개인정보 only in the footer.
   assert.equal(me.split('<b>내 계정</b>').length - 1, 1);
   assert.ok(me.includes('class="me-plan"') && !me.includes('id="account">계정</h2>'));
-  assert.ok(modeBar('', 'inbox.html').includes('href="mydebates.html"') && !modeBar('', 'inbox.html').includes('watch.html'));
+  // G-301 (새 구조): 내 기록's pages carry one heading (their own name, ‹ back to 나) and no row of siblings.
+  assert.equal(modeBar('', 'inbox.html'), '');
+  assert.match(pageHead('', { page: 'inbox.html' }), /<a class="pg-back" href="settings.html"[^>]*>‹<\/a><h1>알림함<\/h1>/);
   assert.ok(!bar.includes('href="watch.html"'));
 });
 

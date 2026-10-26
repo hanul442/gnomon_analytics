@@ -256,7 +256,7 @@ const num = (v: number | null | undefined, unit: string, d = 2) => (v == null ||
  * G-141: 요약's quick stock info, Toss-style, right under the price: today's and the year's range, the six
  * numbers people check first, and who bought over the last five sessions. The full cards live in 기업 체력.
  */
-export function quickInfoCard(market: MarketSection | undefined, close: number | null, bars: readonly Bar[] = []): string {
+export function quickInfoCard(market: MarketSection | undefined, close: number | null, bars: readonly Bar[] = [], inner = false): string {
   if (!market) return '';
   const s = market.snapshot, last = bars.at(-1), now = close ?? last?.close ?? null;
   const year = last ? bars.filter((b) => b.date >= new Date(Date.parse(last.date) - 365 * 864e5).toISOString().slice(0, 10)) : [];
@@ -265,11 +265,14 @@ export function quickInfoCard(market: MarketSection | undefined, close: number |
   const hold = market.flows?.days.at(-1)?.foreignHoldRatio ?? null;
   // G-300 (한서님 10/25 '숫자는 한 곳에만'): 시가총액 · PER · PBR · 배당수익률 sit in 투자 지표 right below, so not here too.
   const cells = [
-    hold != null ? cell('외국인 보유', num(hold, '%')) : '',
+    // G-301: inside 투자 지표 the foreign share is 수급's (with its 20-day change), so it is said once.
+    hold != null && !inner ? cell('외국인 보유', num(hold, '%')) : '',
     last ? cell('거래대금', eok(last.volume * last.close)) : '',
   ].filter(Boolean);
   // G-300: who bought over five sessions is 수급's 투자자 동향 (5일), a little further down the same tab.
   if (!ranges && !cells.length) return '';
+  // G-301 (새 구조): inside 투자 지표 the ranges and the two numbers follow the other numbers, without a card of their own.
+  if (inner) return `<div class="qi-in" id="quick-info">${ranges}${cells.length ? `<div class="si-grid qi-grid qi-g2">${cells.join('')}</div>` : ''}</div>`;
   return `<section class="card qi-card" id="quick-info"><div class="head"><h2>가격 범위</h2></div>${ranges}${cells.length ? `<div class="si-grid qi-grid qi-g2">${cells.join('')}</div>` : ''}</section>`;
 }
 
@@ -312,9 +315,9 @@ ${detail ? `<dialog class="v2-dialog fs-dlg" id="fs-detail" aria-label="재무�
  * Price ranges live in 요약's 종목 정보 and investor flows in 수급, so neither repeats here. Every card shows
  * only what the data has; a missing card is left out rather than filled with dashes.
  */
-export function stockInfoCards(market: MarketSection, close: number | null, _name: string, bars: readonly Bar[] = [], st?: FullStatements): string {
+export function stockInfoCards(market: MarketSection, close: number | null, _name: string, bars: readonly Bar[] = [], st?: FullStatements, range = ''): string {
   const s = market.snapshot, out: string[] = [];
-  const card = (title: string, body: string, sub = '') => out.push(`<section class="card si-card"><div class="head"><h2>${esc(title)}</h2>${sub ? `<span class="sub">${sub}</span>` : ''}</div>${body}</section>`);
+  const card = (title: string, body: string, sub = '', id = '') => out.push(`<section class="card si-card"${id ? ` id="${id}"` : ''}><div class="head"><h2>${esc(title)}</h2>${sub ? `<span class="sub">${sub}</span>` : ''}</div>${body}</section>`);
   const now = close ?? bars.at(-1)?.close ?? null;
   // 투자 지표 (the dividend yield only: payout and history are under 실적·배당 and 재무제표 자세히)
   const q = market.quarters.filter((p) => !p.isEstimate), y = market.years.filter((p) => !p.isEstimate);
@@ -324,11 +327,11 @@ export function stockInfoCards(market: MarketSection, close: number | null, _nam
     const cap = s?.marketCap ?? null, psr = cap && sales4 && Number.isFinite(sales4) && sales4 > 0 ? cap / (sales4 * financeScale()) : null;
     const cells = [cell('시가총액', eok(cap)), cell('PER', num(s?.per, '배')), s?.estimatedPer != null ? cell('추정 PER', num(s.estimatedPer, '배')) : '', cell('PBR', num(s?.pbr, '배')), roe != null ? cell('ROE', num(roe, '%')) : '', psr != null ? cell('PSR', num(psr, '배')) : '',
       s?.eps != null ? cell('EPS', won(s.eps)) : '', s?.bps != null ? cell('BPS', won(s.bps)) : '', s?.dividendYield != null ? cell('배당수익률', num(s.dividendYield, '%')) : ''].filter(Boolean);
-    card('투자 지표', `<div class="si-grid">${cells.join('')}</div>
-<p class="fine">${currency() === 'USD' ? '네이버 증권(지표)·SEC EDGAR(실적) 기준.' : '네이버 증권 기준.'} ROE는 최근 결산, PSR은 시가총액 ÷ 최근 4분기 매출액이에요.</p>`);
-  }
+    card('투자 지표', `<div class="si-grid">${cells.join('')}</div>${range}
+<p class="fine">${currency() === 'USD' ? '네이버 증권(지표)·SEC EDGAR(실적) 기준.' : '네이버 증권 기준.'} ROE는 최근 결산, PSR은 시가총액 ÷ 최근 4분기 매출액이에요.</p>`, '', 'si-metrics');
+  } else if (range) card('가격 범위', range, '', 'si-metrics');
   const fin = financeCard(market, st);
-  if (fin) out.push(fin);
+  if (fin) out.push(fin.replace('<section class="card', '<section id="si-fin" class="card'));
   // 애널리스트 의견 + 최근 증권사 리포트 (one card)
   const cons = s?.consensus;
   // G-117: each report opens on Naver (summary and the broker's PDF) in a new tab.
@@ -342,7 +345,7 @@ export function stockInfoCards(market: MarketSection, close: number | null, _nam
       const recLabel = rec == null ? '' : rec >= 4.5 ? '강력 매수' : rec >= 3.5 ? '매수' : rec >= 2.5 ? '중립' : rec >= 1.5 ? '매도' : '강력 매도';
       head = `<div class="si-target"><div><span>평균 목표가</span><b>${won(cons.targetPriceMean)}</b><small class="${tone(up)}">현재가 대비 ${pct(up)}</small></div>${rec != null ? `<div><span>투자의견 평균</span><b>${recLabel}</b><small>${rec.toFixed(2)} / 5</small></div>` : ''}</div>${targetBar(now, cons.targetPriceMean, null, null)}`;
     }
-    card('애널리스트 의견', `${head}${reports}<p class="fine">증권사 컨센서스${cons?.date ? `(${esc(cons.date)})` : ''}와 리포트 제목이에요. 우리 판단이 아니에요.</p>`);
+    card('애널리스트 의견', `${head}${reports}<p class="fine">증권사 컨센서스${cons?.date ? `(${esc(cons.date)})` : ''}와 리포트 제목이에요. 우리 판단이 아니에요.</p>`, '', 'si-analyst');
   }
   return out.length ? `<div class="si-wrap">${out.join('')}</div>` : '';
 }
@@ -419,7 +422,7 @@ dialog.fs-dlg::backdrop{background:rgba(3,8,16,.72);backdrop-filter:blur(4px)}di
 /** Toggle of the investor-trend period inside 종목정보. */
 export const STOCK_INFO_TOGGLE_JS = `document.addEventListener('click',function(e){var o=e.target.closest&&e.target.closest('[data-dlg-open]');if(o){var d=document.getElementById(o.getAttribute('data-dlg-open'));if(d&&!d.open)d.showModal();return;}var c=e.target.closest&&e.target.closest('[data-dlg-close]');if(c){var dd=c.closest('dialog');if(dd)dd.close();}});document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-si-f]');if(!b)return;var c=b.closest('.si-card');c.querySelectorAll('[data-si-f]').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});c.querySelectorAll('[data-si-fl]').forEach(function(x){x.hidden=x.getAttribute('data-si-fl')!==b.getAttribute('data-si-f');});});`;
 
-export function fundamentalsPanel(market: MarketSection, close: number | null, name = '이 종목', bars: readonly Bar[] = [], st?: FullStatements): string {
+function vsCardOf(market: MarketSection, name: string): string {
   const bench = market.benchmarks.map((b) => `<tr><td>${esc(b.name)}</td>${b.returns.map((r) => {
     const raw = r.stock !== null && r.benchmark !== null ? r.stock - r.benchmark : null;
     const diff = raw === null ? null : Math.abs(raw) < 0.05 ? 0 : raw;
@@ -427,9 +430,18 @@ export function fundamentalsPanel(market: MarketSection, close: number | null, n
   }).join('')}</tr>`).join('');
   const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
   // G-300: the index cards repeated 홈's numbers; the table alone compares the stock with them.
-  const vs = bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
+  return bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
 <p class="fine">작은 숫자(%p)는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 차이예요.</p></div>` : '';
-  return `${healthInfographic(market, close)}${stockInfoCards(market, close, name, bars, st)}${vs}`;
+}
+export function fundamentalsPanel(market: MarketSection, close: number | null, name = '이 종목', bars: readonly Bar[] = [], st?: FullStatements, opts: { range?: string; vsApart?: boolean } = {}): string {
+  const vs = vsCardOf(market, name);
+  // G-301 (새 구조): 체력 → 투자 지표 (가격 범위 inside) → 재무 → 애널리스트; 시장 대비 can sit after 수급 (marketVsCard).
+  return `${healthInfographic(market, close)}${stockInfoCards(market, close, name, bars, st, opts.range ?? '')}${opts.vsApart ? '' : vs}`;
+}
+/** G-301: 시장 대비 수익률 on its own, for the 기업 part's order (after 수급). */
+export function marketVsCard(market: MarketSection, name = '이 종목'): string {
+  const vs = vsCardOf(market, name);
+  return vs ? `<section class="block mv-blk">${vs}</section>` : '';
 }
 
 

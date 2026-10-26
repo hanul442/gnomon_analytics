@@ -274,11 +274,10 @@ const DOCK_ICONS: Record<string, string> = {
 };
 const FILTER_ICON = '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>';
 /** G-258: which screen's own bar a page gets: 찾기 a search field, 위원회 and 나 their icons. */
-function dockOf(page: string): 'find' | 'committee' | 'me' | undefined {
+function dockOf(page: string): 'find' | 'committee' | undefined {
   const g = MODE_GROUPS.find((x) => x.modes.some(([, h]) => h.split('#')[0] === page));
   if (g?.key === 'find' || page === 'screener.html') return 'find';
   if (g?.key === 'committee') return 'committee';
-  if (g?.key === 'record' || page === 'settings.html' || ME_PAGES.includes(page)) return 'me';
   return undefined;
 }
 /** The 종목 bar's question chips (G-258): one tap opens the chat with the question typed in. */
@@ -302,7 +301,7 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목·ETF·코인</span></button>${findModes(base, page)}<button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
   else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
   // G-277: 내 리포트 and 내 토론 each get their icon, so the 알림함·내 리포트·내 토론 row at the top can go on phones.
-  else if (dock === 'me') ctx = seg([['알림함', 'inbox.html', page === 'inbox.html', '<i data-dock-unread hidden></i>'], ['내 리포트', 'myreports.html', page === 'myreports.html'], ['내 토론', 'mydebates.html', page === 'mydebates.html'], ['설정', 'settings.html', page !== 'inbox.html' && page !== 'myreports.html' && page !== 'mydebates.html']]);
+  // G-301 (새 구조): 나 is one screen; 내 기록's three pages open from its rows (and go back with ‹), so the bar keeps no icons.
   // G-289 (한서님 10/23 B안): one order on every screen — left end switches between this screen's bar ('메뉴') and the
   // four tabs ('종목' / '이 화면'), the middle holds named icons, and the ✦ always sits at the right end.
   const here = dock === 'ask' ? '종목' : '이 화면';
@@ -351,9 +350,12 @@ const ASK_ICON = '<path d="M5 5h14v10h-8l-4 4v-4H5z"/>';
  */
 export function pageHead(base: string, opts: { page?: string; title?: string; tabs?: string }): string {
   const g = opts.page ? MODE_GROUPS.find((x) => x.modes.some(([, h]) => h === opts.page)) : undefined;
-  const title = opts.title ?? g?.label ?? '';
-  const tabs = opts.tabs ?? (g ? `<nav class="mode-tabs" aria-label="${escM(g.label)}">${g.modes.map(([l, h]) => `<a href="${base}${h}"${h === opts.page ? ' aria-current="page"' : ''}>${escM(l)}</a>`).join('')}</nav>` : '');
-  return `<div class="pg-title"><h1>${escM(title)}</h1><button type="button" class="pg-ask" data-open-chat aria-haspopup="dialog" aria-controls="chat" aria-label="AI에게 묻기">${svgI(ASK_ICON)}</button></div>${tabs}`;
+  // G-301 (새 구조): 나's 내 기록 pages carry one heading, their own name, with a way back to 나 (no group title, no row).
+  const rec = g?.key === 'record';
+  const title = opts.title ?? (rec ? g!.modes.find(([, h]) => h === opts.page)?.[0] : g?.label) ?? '';
+  const back = rec ? `<a class="pg-back" href="${base}settings.html" aria-label="나로 돌아가기">‹</a>` : '';
+  const tabs = rec ? (opts.tabs ?? '') : opts.tabs ?? (g ? `<nav class="mode-tabs" aria-label="${escM(g.label)}">${g.modes.map(([l, h]) => `<a href="${base}${h}"${h === opts.page ? ' aria-current="page"' : ''}>${escM(l)}</a>`).join('')}</nav>` : '');
+  return `<div class="pg-title">${back ? `<span class="pg-tl">${back}<h1>${escM(title)}</h1></span>` : `<h1>${escM(title)}</h1>`}<button type="button" class="pg-ask" data-open-chat aria-haspopup="dialog" aria-controls="chat" aria-label="AI에게 묻기">${svgI(ASK_ICON)}</button></div>${tabs}`;
 }
 /** Kept for callers that only want the row: the same text tabs as pageHead. */
 export function modeBar(base: string, page: string): string {
@@ -372,8 +374,9 @@ export function meHead(base: string): string {
 }
 /** G-255: 나's 내 기록 rows — what used to be the 내 종목 tab, one tap each. */
 export function meRecord(base: string): string {
-  const rows: readonly [string, string, string][] = [['관심 종목', 'watch.html', '☆를 누른 종목'], ['알림함', 'inbox.html', '가격·리포트·공시 알림'], ['내 리포트', 'myreports.html', '내가 요청한 리포트'], ['내 토론', 'mydebates.html', '위원회에 한 질문']];
-  return `<section class="card st-rows me-rec">${rows.map(([l, h, d]) => `<a href="${base}${h}"><span><b>${escM(l)}</b><small>${escM(d)}</small></span><i aria-hidden="true">›</i></a>`).join('')}</section>`;
+  // G-301: 관심 종목 is 맞춤's; 내 기록 is the three things I did or got.
+  const rows: readonly [string, string, string][] = [['알림함', 'inbox.html', '가격·리포트·공시 알림'], ['내 리포트', 'myreports.html', '내가 요청한 리포트'], ['내 토론', 'mydebates.html', '위원회에 한 질문']];
+  return `<section class="card st-rows me-rec">${rows.map(([l, h, d]) => `<a href="${base}${h}"><span><b>${escM(l)}${h === 'inbox.html' ? ' <i class="me-unread" data-dock-unread hidden></i>' : ''}</b><small>${escM(d)}</small></span><i aria-hidden="true">›</i></a>`).join('')}</section>`;
 }
 /** G-245: the 나 tab's help rows (사용법 and what used to be the small links under the 전체 sheet). */
 export function meHelp(base: string): string {
@@ -735,7 +738,7 @@ export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);bac
 .me-head{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}.me-acct{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:60px;padding:12px 16px;border-radius:14px;background:var(--soft);color:var(--fg);text-decoration:none}.me-acct b{display:block;font-size:17.5px}.me-acct small{color:var(--muted);font-size:15.5px;font-weight:600}.me-acct i{font-style:normal;color:var(--muted);font-size:19px}
 .me-acct-w{position:relative}.me-plan{position:absolute;right:40px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;min-height:36px;padding:0 13px;border-radius:999px;background:var(--surface-solid,var(--surface));color:var(--fg);font-size:15.5px;font-weight:700;text-decoration:none;box-shadow:0 0 0 1px var(--line)}
 .me-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:1px solid var(--line-strong);background:transparent;border-radius:14px;padding:12px 16px;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:var(--fg)}.me-install[hidden]{display:none}.me-install small{color:var(--muted);font-size:15.5px;font-weight:400}#sm-admin:empty{display:none}#sm-admin .sm-title{font-size:15px;font-weight:800;color:var(--muted);margin:6px 2px}#sm-admin a{display:flex;align-items:center;min-height:44px}
-.pg-title{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 24px 4px}.pg-title h1{margin:0;font-size:32px;font-weight:300;letter-spacing:-.035em;line-height:1.15}
+.pg-title{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 24px 4px}.pg-title h1{margin:0;font-size:32px;font-weight:300;letter-spacing:-.035em;line-height:1.15}.me-unread{display:inline-block;min-width:20px;padding:0 6px;border-radius:99px;background:var(--fg);color:var(--page);font-style:normal;font-size:14px;line-height:20px;text-align:center;vertical-align:2px}.me-unread[hidden]{display:none}.pg-tl{display:flex;align-items:center;gap:2px;min-width:0}.pg-back{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;margin-left:-10px;border-radius:50%;font-size:30px;line-height:1;color:var(--fg);text-decoration:none;transition:transform var(--dur-base,200ms) var(--spring-press,ease)}.pg-back:active{transform:scale(.9)}
 .pg-ask{display:none;width:46px;height:46px;border:1px solid var(--glass-line);border-radius:50%;background:var(--surface);color:var(--fg);cursor:pointer;align-items:center;justify-content:center;box-shadow:var(--shadow);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}.pg-ask svg{width:22px;height:22px}
 /* G-248: the mode row is a segmented track with the chewy white pill (G-189) instead of underlined text. */
 .mode-tabs{position:sticky;top:8px;z-index:20;display:flex;gap:2px;width:max-content;max-width:calc(100% - 48px);margin:10px 24px 14px;padding:4px;overflow-x:auto;scrollbar-width:none;border-radius:999px;background:linear-gradient(var(--track),var(--track)),var(--page);box-shadow:0 0 0 100vmax var(--page);clip-path:inset(-8px -100vmax -10px -100vmax)}.mode-tabs::-webkit-scrollbar{display:none}

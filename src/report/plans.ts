@@ -196,6 +196,13 @@ if(mq&&mq.addEventListener)mq.addEventListener('change',function(){if(saved()!==
 export const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
 /** A section shown in full from its feature's lowest plan up (FEATURES). Lower plans get a faded preview and a way in. */
+/**
+ * G-301 (새 구조): one lock card for free readers in place of a locked card per block; the blocks themselves sit in
+ * .need-plus so they are not shown twice. Shown only on the free plan (.only-free).
+ */
+export function lockCard(items: readonly string[], base = '', title = '플러스부터 볼 수 있어요'): string {
+  return `<section class="block lk-card only-free"><div class="card"><div class="gate-cta">${LOCK}<div><b>${title}</b><ul>${items.map((x) => `<li>${x}</li>`).join('')}</ul></div><a class="btn-primary" href="${base}pricing.html">요금제 보기</a></div></div></section>`;
+}
 export function gate(html: string, opts: { base: string; what: string; feature: Feature }): string {
   const need = FEATURES[opts.feature];
   return `<div class="gate" data-need="${need}"><div class="gate-body">${html}</div><div class="gate-cta" role="note">${LOCK}<div><b>${opts.what}</b><span>${needText(opts.feature)} 볼 수 있어요</span></div><a class="btn-primary" href="${opts.base}pricing.html">요금제 보기</a></div></div>`;
@@ -206,7 +213,7 @@ export const PLAN_CSS = `
 html[data-plan=free] .gate,html[data-plan=plus] .gate[data-need=pro]{min-height:170px}
 html[data-plan=free] .gate>.gate-body,html[data-plan=plus] .gate[data-need=pro]>.gate-body{max-height:180px;overflow:hidden;filter:blur(4px);opacity:.7;pointer-events:none;user-select:none;-webkit-mask-image:linear-gradient(#000 40%,transparent);mask-image:linear-gradient(#000 40%,transparent)}
 html[data-plan=free] .gate>.gate-cta,html[data-plan=plus] .gate[data-need=pro]>.gate-cta{display:flex;align-items:center;gap:12px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,92%);background:var(--surface-solid);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 12px 32px rgba(15,27,45,.14);z-index:2}
-html[data-plan=free] .need-plus{display:none}html:not([data-plan=free]) .only-free{display:none}
+html[data-plan=free] .need-plus{display:none}.lk-card .gate-cta{display:flex;align-items:center;gap:12px}.lk-card .gate-cta>div{flex:1;min-width:0}.lk-card .gate-cta b{font-size:17px}.lk-card ul{margin:6px 0 0;padding-left:18px;font-size:15.5px;color:var(--fg2);line-height:1.6}.lk-card .lock{width:22px;height:22px;flex:none}@media (max-width:520px){.lk-card .gate-cta{flex-wrap:wrap}.lk-card .gate-cta .btn-primary{width:100%;text-align:center}}html:not([data-plan=free]) .only-free{display:none}
 .gate-cta .lock{width:22px;height:22px;color:var(--navy)}.gate-cta div{display:flex;flex-direction:column;flex:1;min-width:0}.gate-cta b{font-size:17px}.gate-cta span{font-size:15.5px;color:var(--muted)}.gate-cta .btn-primary{margin:0;padding:10px 14px;font-size:16px;white-space:nowrap}
 .acct{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:4px 10px;font-size:15px;font-weight:600;text-decoration:none;color:#fff}.acct:hover{background:rgba(255,255,255,.1)}.acct i{font-style:normal;opacity:.75;font-weight:500}
 .promo-bar{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:var(--warn-soft);color:var(--warn-strong);font-size:15.5px;padding:8px 14px;border-bottom:1px solid var(--line-strong)}.promo-bar button{border:0;border-radius:999px;background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;padding:4px 12px;cursor:pointer}.promo-bar .promo-x{background:none;color:inherit;font-size:17.5px;padding:0 4px}

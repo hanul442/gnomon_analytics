@@ -106,11 +106,11 @@ function oddsGrid(report: DailyReport): string {
 export function verdictHead(report: DailyReport): string {
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined;
   const sents = (c?.summary?.text ?? '').split(/(?<=[.?!요])\s/).filter(Boolean), line2 = sents.slice(0, 2).join(' ');
-  const page = `<div class="cm-page" id="committee" role="dialog" aria-label="위원회 판단" hidden><header class="cm-top"><button type="button" class="cm-back" data-cm-close aria-label="뒤로">‹</button><b>위원회 판단</b><small>${esc(dayOf(report.date))} 마감 기준</small></header><div class="cm-body">${c?.summary?.text ? `<h2 class="cm-h">한눈에</h2><p class="cm-sum">${esc(c.summary.text)}</p>` : ''}<div data-cm-slot></div></div></div>`;
   // G-301 (한서님 10/26 '종목 위원회탭 다시 만들어봐'): the first sentence is the title, the second a smaller line under it,
   // so a long verdict no longer runs four big lines and gets cut.
   const sub = sents[1] ? `<p class="cl-sub">${esc(sents[1])}</p>` : '';
-  return `${line2 ? `<a class="cl-head" href="#committee" data-cm-open><span><h2 class="cl-line">${esc(sents[0]!)}</h2>${sub}</span><i aria-hidden="true">›</i></a>` : ''}${page}`;
+  // G-301 (새 구조): 위원회 판단 is no longer a page of its own; everything it held sits on the 위원회 part once.
+  return line2 ? `<div class="cl-head"><span><h2 class="cl-line">${esc(sents[0]!)}</h2>${sub}</span></div>` : '';
 }
 
 export function conclusionCard(report: DailyReport, opts: { title?: string; id?: string; /** G-300: false leaves the verdict to the committee card (verdictHead). */ head?: boolean } = {}): string {
@@ -183,16 +183,16 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   // G-291 (한서님 10/23 '위원회 요약 한두줄 맨 위로 빼서 클릭하면 다른 새로운 페이지로'): the first two sentences head the
   // tab as one tappable row; it opens 위원회 판단 as its own page (full summary, the vote and every member's view).
   const sents = (c?.summary?.text ?? '').split(/(?<=[.?!요])\s/).filter(Boolean), line2 = sents.slice(0, 2).join(' ') || line;
-  const cmPage = `<div class="cm-page" id="committee" role="dialog" aria-label="위원회 판단" hidden><header class="cm-top"><button type="button" class="cm-back" data-cm-close aria-label="뒤로">‹</button><b>위원회 판단</b><small>${esc(dayOf(report.date))} 마감 기준</small></header><div class="cm-body"><h2 class="cm-h">한눈에</h2><p class="cm-sum">${esc(c?.summary?.text ?? '')}</p><div data-cm-slot></div></div></div>`;
   const rail0 = scenarioRail(report), rail = rail0 ? rail0.replace('</svg>', '</svg>' + grid + notes) : grid;
   const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : `조건 가격 도달만으로 전개가 확정되지는 않아요. 예상 범위와 조건 가격은 다릅니다. 분석 기준은 ${esc(report.date)} 종가 ${won(p.close)}이며, 현재 가격과 차이가 날 수 있어요`;
-  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card">${opts.head === false ? '' : c?.summary?.text ? `<a class="cl-head" href="#committee" data-cm-open><span><span class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</span><h2 class="cl-line">${esc(line2)}</h2></span><i aria-hidden="true">›</i></a>${cmPage}` : `<div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>${c ? cmPage : ''}`}${rail}
-${verdict}<div class="cl-ladder"${grid ? ' hidden' : ''}>${rows}</div>
+  return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card">${opts.head === false ? '' : c?.summary?.text ? `<div class="cl-head"><span><span class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</span><h2 class="cl-line">${esc(line2)}</h2></span></div>` : `<div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>`}${rail}
+${missing && !c ? '<p class="cl-wait">강세·기본·약세 조건 가격은 위원회 리포트가 나오면 붙어요.</p>' : `${verdict}<div class="cl-ladder"${grid ? ' hidden' : ''}>${rows}</div>`}
 ${[bull, base, bear].some((x) => x?.narrative.text === LOCKED_TEXT) ? `<div class="cl-deep"><span>🔒 시나리오 전개·무효화 조건·최악의 경우·위원회 토론은 심층 리포트에 있어요.</span><button type="button" class="btn-primary" data-deep-go>심층 리포트 열기 <small>${CREDIT_COST.unlock}크레딧</small></button></div>` : ''}
-<p class="fine">${bull || bear || base ? (grid ? '알약을 누르면 그 시나리오가 지도에 칠해져요. ' : '줄을 누르면 시나리오가 펼쳐져요. ') : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p></div></section>`;
+${missing && !c ? '' : `<p class="fine">${bull || bear || base ? (grid ? '알약을 누르면 그 시나리오가 지도에 칠해져요. ' : '줄을 누르면 시나리오가 펼쳐져요. ') : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p>`}</div></section>`;
 }
 
-export const CONCLUSION_CSS = `.pm{margin:10px 0 16px}.pm-h b{display:block;font-size:17.5px;font-weight:700}.pm-h small{display:block;font-size:15.5px;color:var(--muted);margin-top:2px}
+export const CONCLUSION_CSS = `.cl-wait{margin:10px 0 2px;font-size:16.5px;line-height:1.55;color:var(--fg2)}
+.pm{margin:10px 0 16px}.pm-h b{display:block;font-size:17.5px;font-weight:700}.pm-h small{display:block;font-size:15.5px;color:var(--muted);margin-top:2px}
 .pm svg{display:block;width:100%;height:auto;margin-top:8px;overflow:visible}
 .pm-line{fill:none;stroke:var(--fg);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0}
 html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{transition:stroke-dashoffset 1.1s cubic-bezier(.3,.7,.2,1)}
@@ -231,9 +231,7 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .cl-row .cl-what>b{white-space:nowrap}.cl-row .cl-px b{max-width:9.5em;text-align:right;text-wrap:balance}
 :root body .cl-sc{margin:0 0 12px;border:0;border-radius:18px;background:var(--soft);padding:12px 14px 6px}
 :root body .cl-check{border-radius:18px}
-.cl-head{display:flex;align-items:center;gap:10px;margin:-4px -6px 8px;padding:6px;border-radius:16px;text-decoration:none;color:inherit}.cl-head:active{background:var(--soft)}.cl-head>span{flex:1;min-width:0}.cl-head .cl-k{display:block}.cl-head .cl-line{margin:2px 0 0;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}.cl-head>i{font-style:normal;font-size:22px;color:var(--muted)}.cl-head .cl-sub{margin:6px 0 0;font-size:17px;line-height:1.55;color:var(--fg2)}
-.cm-page{position:fixed;inset:0;z-index:400;background:var(--page);overflow-y:auto;-webkit-overflow-scrolling:touch}.cm-page[hidden]{display:none}.cm-top{position:sticky;top:0;z-index:1;display:flex;align-items:baseline;gap:8px;padding:14px 16px 12px;background:var(--page);border-bottom:1px solid var(--line)}.cm-top b{font-size:18.5px}.cm-top small{color:var(--muted);font-size:15.5px}.cm-back{border:0;background:none;font-size:28px;line-height:1;padding:0 6px 0 0;color:var(--fg);cursor:pointer}
-.cm-body{max-width:760px;margin:0 auto;padding:16px 16px 120px}.cm-h{font-size:17px;color:var(--fg2);margin:4px 0 6px}.cm-sum{font-size:18.5px;line-height:1.7;margin:0 0 16px}.cm-body .vf{margin:0}
+.cl-head{display:flex;align-items:center;gap:10px;margin:-4px -6px 8px;padding:6px;border-radius:16px;text-decoration:none;color:inherit}.cl-head>span{flex:1;min-width:0}.cl-head .cl-k{display:block}.cl-head .cl-line{margin:2px 0 0;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}.cl-head>i{font-style:normal;font-size:22px;color:var(--muted)}.cl-head .cl-sub{margin:6px 0 0;font-size:17px;line-height:1.55;color:var(--fg2)}
 /* G-287: the 확률 cells as small pills under the chart */
 .pm-odds{margin:10px 0 0}.pm .pm-grid{display:flex;gap:6px;flex-wrap:wrap}.pm .pm-cell{display:inline-flex;align-items:baseline;gap:6px;padding:7px 14px;border-radius:999px;background:var(--soft);box-shadow:none}.pm .pm-cell span{display:inline;font-size:15.5px;color:var(--fg2)}.pm .pm-cell b{display:inline;font-size:17px;margin:0}.pm .pm-cell.top{box-shadow:none}.pm .pm-cell[aria-pressed=true]{background:var(--fg);box-shadow:none}.pm .pm-cell[aria-pressed=true] span,.pm .pm-cell[aria-pressed=true] b{color:var(--page)}`;
 
@@ -252,27 +250,6 @@ export const CONCLUSION_JS = `
       m.querySelectorAll('[data-pm-at]').forEach(function (s) { var g = (q.price / Number(s.getAttribute('data-pm-at')) - 1) * 100; s.textContent = (g > 0 ? '+' : '') + g.toFixed(1) + '%'; });
     });
   });
-  // G-291: 위원회 판단 opens as its own page; the vote and the debate move into it while it is open, and back after.
-  var cmHome = null;
-  var cmOpen = function (push) {
-    var pg = document.getElementById('committee'), vf = document.querySelector('#tab-home .vf'); if (!pg) return;
-    var slot = pg.querySelector('[data-cm-slot]');
-    if (vf && slot && !slot.contains(vf)) { cmHome = document.createComment('vf'); vf.parentNode.insertBefore(cmHome, vf); slot.appendChild(vf); var d = vf.querySelector('details.ai-fold'); if (d) d.open = true; }
-    if (pg.parentNode !== document.body) { pg.__home = pg.parentNode; document.body.appendChild(pg); }
-    pg.hidden = false; pg.scrollTop = 0; document.documentElement.style.overflow = 'hidden';
-    if (push) history.pushState({ cm: 1 }, '', '#committee');
-  };
-  var cmClose = function () {
-    var pg = document.getElementById('committee'); if (!pg || pg.hidden) return;
-    var vf = pg.querySelector('.vf'); if (vf && cmHome && cmHome.parentNode) { cmHome.parentNode.insertBefore(vf, cmHome); cmHome.remove(); cmHome = null; var d = vf.querySelector('details.ai-fold'); if (d) d.open = false; }
-    pg.hidden = true; document.documentElement.style.overflow = '';
-  };
-  document.addEventListener('click', function (e) {
-    if (e.target.closest && e.target.closest('[data-cm-open]')) { e.preventDefault(); cmOpen(true); return; }
-    if (e.target.closest && e.target.closest('[data-cm-close]')) { e.preventDefault(); if (history.state && history.state.cm) history.back(); else cmClose(); }
-  });
-  window.addEventListener('popstate', function () { if (location.hash === '#committee') cmOpen(false); else cmClose(); });
-  if (location.hash === '#committee') setTimeout(function () { cmOpen(false); }, 0);
   // G-277: a 확률 cell opens its scenario row (the rows stay folded until then).
   // G-287 (한서님 10/23 '기본 시나리오를 켜면 위 차트에서 보고 설명이 나오게'): the map above shows the picked scenario —
   // its bar lit, the others dimmed, and its range as a band across the chart with the prices on it.
@@ -303,8 +280,7 @@ export const CONCLUSION_JS = `
   document.addEventListener('click', function (e) {
     var g = e.target.closest && e.target.closest('[data-deep-go]'); if (!g) return; e.preventDefault();
     // G-300: the deep part lives in 위원회 판단 (its own page) now, so open that and go to the unlock card.
-    if (document.getElementById('committee') && document.querySelector('#tab-home .vf-paged,#committee .vf-paged')) cmOpen(true);
-    else { var t = document.querySelector('[aria-controls=tab-ai]'); if (t) t.click(); }
+    var t = document.querySelector('[aria-controls=tab-ai]'); if (t) t.click();
     setTimeout(function () { var s = document.getElementById('deep-slot'); if (s) s.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 80);
   });
   document.addEventListener('click', function (e) {

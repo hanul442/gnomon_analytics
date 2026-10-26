@@ -128,11 +128,11 @@ export function movedPage(part: string): string {
  * one tap opens the note's page; × or 모두 지우기 clears; reading the page marks everything read.
  */
 export function renderInbox(): string {
-  const body = `<style>.ib{max-width:760px;margin:0 auto}.ib-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}.ib-head h1{margin:0}.ib-tools{display:flex;gap:8px;flex-wrap:wrap}
+  const body = `<style>.ib{max-width:760px;margin:0 auto}.ib-top{margin:6px 0 0}.ib-head{display:flex;justify-content:flex-end;align-items:flex-end;gap:10px;flex-wrap:wrap}.ib-head h1{margin:0}.ib-tools{display:flex;gap:8px;flex-wrap:wrap}
 .ib-day{font-size:15.5px;font-weight:800;color:var(--muted);margin:18px 4px 6px}.ib-item{display:grid;grid-template-columns:28px minmax(0,1fr) 36px;gap:8px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}
 .ib-item a{text-decoration:none;color:inherit;min-width:0}.ib-item b{display:block;font-size:17px}.ib-item small{display:block;color:var(--fg2);font-size:15.5px;margin-top:2px;line-height:1.5}.ib-item time{display:block;font-size:15px;color:var(--muted);margin-top:4px}
 .ib-ic{font-size:19px;line-height:1.4;text-align:center}.ib-item.new{border-color:var(--accent-line);background:var(--accent-soft)}.ib-x{border:0;background:none;font-size:21px;color:var(--muted);cursor:pointer;border-radius:8px}.ib-empty{text-align:center;padding:40px 16px;color:var(--fg2)}</style>
-<div class="ib"><section class="hero"><div class="hero-main ib-head"><div><div class="eyebrow"><span>알림</span></div><h1>알림함</h1></div><div class="ib-tools"><button type="button" class="chip-toggle" id="ib-clear" hidden>모두 지우기</button><a class="chip-toggle" href="alerts.html">⚙︎ 알림 설정</a></div></div></section>
+<div class="ib"><section class="ib-top"><div class="ib-head"><div class="ib-tools"><button type="button" class="chip-toggle" id="ib-clear" hidden>모두 지우기</button><a class="chip-toggle" href="alerts.html">⚙︎ 알림 설정</a></div></div></section>
 <section class="block" id="ib-list"><p class="muted">불러오는 중이에요.</p></section></div>
 <script>
 // G-161: the account script loads after this page's own; wait for it, or a signed-in reader is asked to log in.

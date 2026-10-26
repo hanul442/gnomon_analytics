@@ -36,12 +36,12 @@ import { THEME_CSS } from './theme.js';
 import { POLISH_CSS, POLISH_JS } from './polish.js';
 import { MOTION_SYSTEM_CSS, MOTION_SYSTEM_JS } from './motionSystem.js';
 import { MICRO_MOTION_CSS, MICRO_MOTION_JS } from './microMotion.js';
-import { chartOverlays, quickInfoCard, flowsPanel, forecastCard, fundamentalsPanel, STOCK_INFO_CSS, STOCK_INFO_TOGGLE_JS, miniGauge, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
+import { chartOverlays, quickInfoCard, flowsPanel, forecastCard, fundamentalsPanel, marketVsCard, STOCK_INFO_CSS, STOCK_INFO_TOGGLE_JS, miniGauge, horizonRow, marketStatusWarning, structureCard, valueCard } from './renderMarket.js';
 import { DART_SCRIPT, freshness, freshnessBadge, hero, reportStatusBar, priceChart } from './appParts.js';
 import { dailyCalendar } from './kit/stock.js';
 import { arenaHeadline, arenaPanel } from './renderArena.js';
 import { consensusNote, parliament, PARLIAMENT_SCRIPT } from './renderParliament.js';
-import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, PLAN_BOOT, THEME_BOOT, PLAN_CSS } from './plans.js';
+import { ACCOUNT_SCRIPT, CREDIT_COST, EXPERTS, gate, lockCard, PLAN_BOOT, THEME_BOOT, PLAN_CSS } from './plans.js';
 import { PERSONA_BOOT, PERSONA_CSS, PERSONA_JS, personaCards } from './persona.js';
 import { LEVEL_BOOT, LEVEL_CSS, LEVEL_JS, levelGuide } from './level.js';
 import { CONCLUSION_CSS, CONCLUSION_JS, conclusionCard, conclusionMini, parliamentViewNote, SEATS_JS, verdictHead, VIEW_FOCUS_CSS } from './conclusion.js';
@@ -550,7 +550,7 @@ export function coinNewsFragments(report: DailyReport): { news: string; homeNews
 }
 /** G-256: the 뉴스 tab's part (the 공시 tab holds the rest). */
 export function newsOnly(report: DailyReport): string {
-  return `${issueSlot(report.symbol)}<div data-slot="news">${newsSection(report) || '<div class="card"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div>'}</div>`;
+  return `${issueSlot(report.symbol)}<div data-slot="news">${newsSection(report) || '<div class="card news-none"><p class="empty">이 리포트에는 뉴스 기록이 없어요.</p></div><style>.iss-slot:not([hidden])+[data-slot=news] .news-none{display:none}</style>'}</div>`;
 }
 /**
  * G-284: today's ranked news issues that name this stock, as cards at the top of 소식 (tap = the in-app issue page).
@@ -594,7 +594,7 @@ ${warn}${rows ? contentMore(rowsArr,'뉴스') : '<p class="empty">최근 7일 �
 export function subTabs(groups: readonly [string, string, string][]): string {
   return `<div class="subtabs" data-subtabs role="group" aria-label="나눠 보기">${groups.map(([id, label], i) => `<button type="button" data-sub="${id}" aria-pressed="${i === 0}">${label}</button>`).join('')}</div>${groups.map(([id, , html], i) => `<div class="sub-g" id="${id}"${i ? ' hidden' : ''}>${html}</div>`).join('')}`;
 }
-export const SUBTABS_CSS = `.subtabs{display:flex;gap:4px;margin:4px 0 14px;padding:4px;border-radius:12px;background:var(--soft)}.subtabs button{flex:1;min-height:40px;border:0;border-radius:9px;background:none;font:inherit;font-size:16px;font-weight:700;color:var(--fg2);cursor:pointer}.subtabs button[aria-pressed=true]{background:var(--surface-solid,var(--surface));color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}.sub-g[hidden]{display:none}.ft-none{display:none}#peers[hidden]+.ft-none{display:block}`;
+export const SUBTABS_CSS = `.subtabs{display:flex;gap:4px;margin:4px 0 14px;padding:4px;border-radius:12px;background:var(--soft)}.subtabs button{flex:1;min-height:40px;border:0;border-radius:9px;background:none;font:inherit;font-size:16px;font-weight:700;color:var(--fg2);cursor:pointer}.subtabs button[aria-pressed=true]{background:var(--surface-solid,var(--surface));color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}.sub-g[hidden]{display:none}.ft-none{display:none}#peers[hidden]+.ft-none{display:block}.ft-peer:has(#peers[hidden]){display:none}`;
 
 export const TAB_SCRIPT = `<script>
 (function () {
@@ -694,17 +694,16 @@ function renderReportIn(report: DailyReport, links: { index: string; base?: stri
   // then the vote with the full debate folded under it. The status strip shows only when the report is out of date (the
   // conclusion already carries its date); the latest news is 소식's and the 1-year calendar moved under 차트 › 신호.
   const status = reportStatusBar(report, ctx.commentaryFrom ?? null);
-  // G-300 (한서님 10/25 '위원회 페이지 깔끔하게'): 6 blocks — the committee card (verdict, seats, both sides, every
-  // member's call behind one row), the price map, the debate card, 놓치기 쉬운 정보, then 더 보기. Everything else the old
-  // fold repeated (a second vote, the status strip again, 쉽게 말하면) lives only in 위원회 판단, its own page.
+  // G-301 (새 구조, 한서님 10/26 'ㄱㄱ'): 위원회 판단 is no longer a page of its own. The part reads top to bottom, each
+  // thing once: the committee card (verdict, seats, both sides), the price map, 달라진 점, 쉽게 말하면, the debate card,
+  // 남은 쟁점 and the evidence (the fold, inline), 놓치기 쉬운 정보, then 내 기록.
   const seatsShown = !!committeeHero(report);
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale|rs-none/.test(status) ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${seatsShown ? committeeHero(report, { head: verdictHead(report) }) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !seatsShown })}@@DEBATE@@${edgeCard(report)}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale/.test(status) || (/rs-none/.test(status) && report.commentary?.status === 'OK') ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${seatsShown ? committeeHero(report, { head: verdictHead(report) }) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !seatsShown })}@@DIFF@@@@DEBATE@@@@AI_FOLD@@${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
-@@AI_FOLD@@${moreLinks(report.kind === 'coin', report.commentary?.status === 'OK')}`;
+${moreLinks()}`;
   // G-244 (화면 개편 2단계): 요약 answers "이 종목 지금 어때?" only. 종목 정보 (price ranges, the six numbers, 5-day
   // flows) and the same-theme comparison open 기업 체력; filings live in 뉴스·공시.
-  const quickInfo = report.kind === 'coin' ? '' : quickInfoCard(m, report.price?.close ?? null, report.recentBars ?? []);
   // G-130: the chart alone (the AI summary and the four number cards under it are gone).
   const chartTab = chart.html;
   // Free: the 16-indicator summary (public elsewhere too). Plus: our horizon gauges, fair value, forecasts and structure.
@@ -717,32 +716,40 @@ ${m ? marketStatusWarning(m) : ''}
   // A US report saved while SEC refused our requests (EDGAR_HTTP_403, before G-236) has no financials and is never rebuilt:
   // its page asks the API (/usinfo) for today's SEC financials and swaps them in, along with the insider section.
   const usRefill = report.currency === 'USD' && !report.kind && !!m && !m.quarters.some((q) => !q.isEstimate) && !m.years.some((y) => !y.isEstimate);
-  const fundTab = insightLine(report, 'fundamental', base) + (!report.kind && report.currency !== 'USD' ? companySlot(report.symbol) : '') + `<div data-slot="fundamentals"${usRefill ? ` data-usinfo="${escape(report.symbol)}"` : ''}>${(m ? fundamentalsPanel(m, report.price?.close ?? null, report.name, report.recentBars ?? [], report.statements) : '') || '<div class="card empty">기업 정보를 아직 받지 못했어요.</div>'}</div>` + edgeFundamentals(report);
+  const fundTab = insightLine(report, 'fundamental', base) + (!report.kind && report.currency !== 'USD' ? companySlot(report.symbol) : '') + `<div data-slot="fundamentals"${usRefill ? ` data-usinfo="${escape(report.symbol)}"` : ''}>${(m ? fundamentalsPanel(m, report.price?.close ?? null, report.name, report.recentBars ?? [], report.statements, { range: report.kind === 'coin' ? '' : quickInfoCard(m, report.price?.close ?? null, report.recentBars ?? [], true), vsApart: report.currency !== 'USD' && report.kind !== 'coin' }) : '') || '<div class="card empty">기업 정보를 아직 받지 못했어요.</div>'}</div>` + edgeFundamentals(report);
   // G-168: a report written before v3.5.0 may carry the old short summary; it offers the committee report in its place.
   const upgrade = report.commentary?.status === 'OK' && report.commentary.tier === 'brief' ? `<section class="block"><div class="card paper-link"><div><b>이전 형식의 간단 해설이에요</b><p class="muted small">이제 AI 리포트는 모두 AI 위원회 심층 리포트(데스크 5곳·분석가 6명·레드팀·시나리오)로 써요. 이 종목도 심층 리포트로 새로 만들 수 있어요.</p></div>${reportButton(report.symbol, report.name)}</div></section>` : '';
   // G-114: an older committee says so with a way to a fresh one, on the AI tab as on the summary.
   const fromNote = ctx.commentaryFrom ? (ctx.commentaryFrom < (report.price?.sessionDate ?? report.date) ? reportStatusBar(report, ctx.commentaryFrom) : `<p class="muted small">${escape(ctx.commentaryFrom)} 리포트의 AI 위원회 해설이에요.</p>`) : '';
   const sealedDeep = !!ctx.deep && report.commentary?.status === 'OK' && report.commentary.tier !== 'brief';
-  const record = sealedDeep ? '' : recordSection(report, ctx, base);
+  const record0 = sealedDeep ? '' : recordSection(report, ctx, base), record = record0 ? `<div class="need-plus">${record0}</div>` : '';
   const aiTab = report.commentary?.status === 'OK'
-    ? `${upgrade}${fromNote}${committeeTab(report, { base, noJoin: true, from: ctx.commentaryFrom ?? null, ...(ctx.previous !== undefined ? { previous: ctx.previous } : {}), previousHref: ctx.previousHref ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
-    : `${report.commentary?whySection(report):''}${conclusionMini(report)}<section class="block" id="parliament-ai" data-missing><div class="card"><h2>위원회 표결</h2><div class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><p>🔒 아직 위원회 리포트가 없어요.</p></div></div></section><section class="block" id="debate"><div class="card debate"><h2>위원회 토론</h2><div data-missing class="v2-mask"><div class="v2-mask-shapes" aria-hidden="true"><i></i><i></i><i></i></div><div class="v2-mask-cta"><b>🔒 위원회 토론이 아직 없어요</b>${reportButton(report.symbol, report.name)}</div></div>${joinBox(report)}</div></section><section class="block" data-missing><div class="card"><h2>남은 쟁점</h2><p class="empty">🔒 리포트가 생성되면 같은 위치에서 확인할 수 있어요.</p></div></section>`;
+    ? `${upgrade}${fromNote}${committeeTab(report, { base, noJoin: true, inline: true, from: ctx.commentaryFrom ?? null, ...(sealedDeep ? { deepDate: ctx.deep!.date } : {}) })}${record}`
+    // G-301: one card in place of three locked ones (표결, 토론, 남은 쟁점), with the one button that makes the report.
+    : `${report.commentary ? whySection(report) : ''}<section class="block cm-none" id="debate" data-missing><div class="card"><h2>위원회 리포트</h2><p>아직 이 종목의 위원회 리포트가 없어요. 만들면 위원 11명의 표결과 토론, 남은 쟁점이 여기에 나와요.</p>${reportButton(report.symbol, report.name)}</div></section><section class="block dc"><div class="card"><div class="dc-h"><h2>위원회 토론</h2></div><div class="dc-join">${joinBox(report)}</div></div></section>`;
   // G-270: a coin has no filings at all, so its 뉴스 tab is news only (no empty 공시 and 공시 구성 cards).
   const noFilings = report.kind === 'coin';
   const newsTab = `${insightLine(report, 'news', base)}${newsOnly(report)}`;
   const p = report.price;
   const bar = p ? priceBar({ name: escape(report.name), symbol: escape(report.symbol), price: escape(won(p.close)), change: p.changePct === null ? '' : `${p.changePct > 0 ? '▲' : p.changePct < 0 ? '▼' : ''} ${escape(pct(p.changePct))}`, tone: tone(p.changePct), badge: freshnessBadge(freshness(report)) }) : '';
   // G-244 (화면 개편 4단계): 기업 체력 shows one part at a time: 기업 (종목 정보, 한눈에, 지표, 재무), 수급, 같은 테마.
-  const flowsSec = `<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${flowsTab}</section>`;
+  // G-301: a coin has no investor flows; its 체력 part is trading volume, so the heading says so.
+  const flowsSec = `<section class="sub-sec" id="tab-flows"><h2 class="sub-h">${report.kind === 'coin' ? '거래 체력' : '수급'}</h2>${flowsTab}</section>`;
   const fundPanel = report.kind === 'coin' ? `<div data-coin-fit="${base}c/${encodeURIComponent(report.symbol)}.json"></div>${flowsSec}`
-    : report.currency === 'USD' ? `${fundTab}${quickInfo}${insiderSection(report)}`
+    : report.currency === 'USD' ? `${fundTab}${insiderSection(report)}`
     // G-300 (한서님 10/25 '위의 바 두기싫다니까'): no 기업 · 수급 · 같은 테마 bar at the top; the three parts follow one another
     // under their own headings, 기업 first (the most important part, never folded).
-    : `<section class="sub-sec sub-first" id="ftg-co"><h2 class="sub-h">기업</h2>${fundTab}${quickInfo}</section>${flowsSec}${report.kind ? '' : `<section class="sub-sec" id="ftg-peer"><h2 class="sub-h">같은 테마</h2>${peersSlot(report.symbol)}<p class="empty ft-none">같은 테마로 묶인 종목이 아직 없어요.</p></section>`}`;
+    // G-301 (새 구조): 기업 (체력 · 투자 지표 with 가격 범위 · 재무 · 애널리스트) → 수급 → 시장 대비 → 같은 테마, the last only
+    // when the theme index has peers for it (the slot script shows it).
+    : `<section class="sub-sec sub-first" id="ftg-co"><h2 class="sub-h">기업</h2>${fundTab}</section>${flowsSec}${m ? marketVsCard(m, report.name) : ''}${report.kind ? '' : `<section class="sub-sec ft-peer" id="ftg-peer"><h2 class="sub-h">같은 테마</h2>${peersSlot(report.symbol)}</section>`}`;
   const okAi = report.commentary?.status === 'OK';
-  const aiFold = aiFoldOf(report, aiTab, okAi ? (ctx.commentaryFrom ?? report.date) : '', okAi);
-  const dCard = okAi ? debateCard(report.commentary, { gate: (h) => gate(h, { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요', feature: 'debate' }), join: joinBox(report), sealed: sealedDeep }) : '';
-  const body = guided(`${bar}${panel('home', home.replace('@@DEBATE@@', dCard).replace('@@AI_FOLD@@', aiFold))}
+  const aiFold = aiFoldOf(report, aiTab, okAi ? (ctx.commentaryFrom ?? report.date) : '');
+  // G-301: what changed since the last report and the plain retelling sit right under the price map, before the debate.
+  const diffEasy = okAi ? `${ctx.previous === undefined ? '' : `<div class="need-plus">${gate(reportDiffCard(report, ctx.previous, { conclusionDate: ctx.commentaryFrom ?? null, href: ctx.previousHref ?? null }), { base, what: '지난 리포트와 달라진 점: 확률·표결·입장 바꾼 위원', feature: 'reportDiff' })}</div>`}${easyCard(report.commentary)}` : '';
+  // G-301: free readers get one lock card for everything above that is Plus (each block stays out of sight for them).
+  const lk = okAi ? lockCard(['지난 리포트와 달라진 점', '남은 쟁점과 최악의 경우', '위원회 토론 전체와 근거 목록', '이 판단을 만든 입력'], base, '더 깊은 판단은 플러스부터') : '';
+  const dCard = okAi ? debateCard(report.commentary, { gate: (h) => `<div class="need-plus">${h}</div>`, join: joinBox(report), sealed: sealedDeep }) : '';
+  const body = guided(`${bar}${panel('home', home.replace('@@DIFF@@', diffEasy).replace('@@DEBATE@@', dCard).replace('@@AI_FOLD@@', aiFold + lk))}
 ${panel('chart', chartTab)}
 ${panel('technical', `${technical}<details class="cal-fold"><summary>지난 1년 하루 등락 달력</summary>${dailyCalendar(report.recentBars ?? [])}</details><section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${strategyTab}</section>`)}
 ${panel('fundamentals', fundPanel)}
@@ -776,14 +783,17 @@ const US_REFILL_SCRIPT = `<script>
  * G-115: the AI committee tab's body — conclusion, the seat chart, then the debate with its evidence, the
  * reader's turn and what is left open. One renderer for daily pages and for reports generated on request.
  */
-export function committeeTab(report: DailyReport, opts: { base: string; from: string | null; deepDate?: string; /** G-203: the report to compare with; undefined leaves the card out. */ previous?: DailyReport | null; previousHref?: string | null; /** G-300: the question box sits in the 위원회 part's debate card instead. */ noJoin?: boolean }): string {
+export function committeeTab(report: DailyReport, opts: { base: string; from: string | null; deepDate?: string; /** G-203: the report to compare with; undefined leaves the card out. */ previous?: DailyReport | null; previousHref?: string | null; /** G-300: the question box sits in the 위원회 part's debate card instead. */ noJoin?: boolean; /** G-301: on the 위원회 part itself, which already shows the verdict, the seats, 달라진 점 and 쉽게 말하면, and the debate card. */ inline?: boolean }): string {
   const base = opts.base, isBrief = report.commentary?.status === 'OK' && report.commentary.tier === 'brief';
   const aiBody = isBrief
     ? gate(whySection(report), { base, what: '간단 해설(이전 형식): 요약 · 강세와 약세 근거 · 지켜볼 것', feature: 'legacyCommentary' })
     : opts.deepDate
       ? ''
       : report.commentary?.status === 'OK'
-      ? `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요', feature: 'debate' })}${opts.noJoin ? '' : `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>`}${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', feature: 'debateRest' })}`
+      ? opts.inline
+        // G-301: the room (opened from the debate card) and the evidence as its own fold; both Plus, hidden for free readers.
+        ? `${debateSection(report, '', true) ? `<div class="need-plus">${debateSection(report, '', true)}</div>` : ''}${evidenceFold(report) ? `<section class="block need-plus ev-blk"><div class="card">${evidenceFold(report)}</div></section>` : ''}<div class="need-plus">${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', feature: 'debateRest' })}</div>`
+        : `${gate(debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' }), { base, what: '위원회 토론: 분석가·데스크가 근거를 들어 서로 반박해요', feature: 'debate' })}${opts.noJoin ? '' : `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>`}${gate(issuesSection(report), { base, what: '남은 쟁점 · 최악의 경우 · 스스로 점검할 것', feature: 'debateRest' })}`
       : whySection(report);
   const seats = parliament(report, opts.from, { id: 'parliament-ai', title: '위원회 표결', factions: ['ai', 'desk'], link: { href: `${base}members.html#analysts`, label: '위원별 지난 판단과 결과 ›' }, note: '' }).replace('<div class="pl-figure">', `${parliamentViewNote(report)}<div class="pl-figure">`).replace('</div>\n<aside class="pl-detail"', `${consensusNote(report)}</div>\n<aside class="pl-detail"`);
   // G-172: the paid part's unlock card comes right under 결론, not after the seats at the bottom.
@@ -791,6 +801,7 @@ export function committeeTab(report: DailyReport, opts: { base: string; from: st
   // G-203: Plus and up (한서님 10/11); free readers see the card faded with a way in, as other Plus blocks.
   const diff = opts.previous === undefined || report.commentary?.status !== 'OK' ? '' : gate(reportDiffCard(report, opts.previous, { conclusionDate: opts.from, href: opts.previousHref ?? null }), { base, what: '지난 리포트와 달라진 점: 확률·표결·입장 바꾼 위원', feature: 'reportDiff' });
   // After the unlock card (G-172); on a sealed page the deep part swaps in the card with the AI's own retelling.
+  if (opts.inline) return `${aiBody}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}`;
   return `${conclusionMini(report)}${!isBrief && opts.deepDate ? deepSlot(report.symbol, opts.deepDate) : ''}${diff}${easyCard(report.commentary)}${seats || absentBlock('위원회 표결', '이 리포트에는 위원별 표결이 없어요. 새 리포트를 만들면 분석가 6명과 데스크 5곳의 표결이 함께 나와요.')}${aiBody}${opts.deepDate && !opts.noJoin ? `<section class="block join-wrap"><div class="card">${joinBox(report)}</div></section>` : ''}`;
 }
 /** A block the report does not have, folded, so pages of different vintages still line up. */
@@ -836,14 +847,13 @@ ${c.dataGaps.length ? `<h3 class="why-h">근거가 부족한 부분</h3><ul clas
  * folded right under it. The section keeps id="tab-ai", so links, scripts and generated fragments still find it; the tab
  * script opens the fold when something links there.
  */
-function aiFoldOf(_report: DailyReport | null, inner: string, aiDate: string, paged = false): string {
-  // G-300: with a committee report the whole tab is 위원회 판단's (its own page, which moves this section in when it
-  // opens); on the 위원회 part it stays out of sight, so nothing there is said twice (the debate has its own card).
-  // Without one, the locked cards show in place, each with its own title (the fold's second '위원회 토론' is gone).
-  return `<section class="block vf${paged ? ' vf-paged' : ''}"><section class="ai-in" id="tab-ai" data-ai-date="${escape(aiDate)}">${inner}</section></section>`;
+function aiFoldOf(_report: DailyReport | null, inner: string, aiDate: string): string {
+  // G-301: shown in place on the 위원회 part (위원회 판단 is no longer a page of its own); without a committee report it
+  // holds the one card that makes it.
+  return `<section class="block vf"><section class="ai-in" id="tab-ai" data-ai-date="${escape(aiDate)}">${inner}</section></section>`;
 }
 // G-281: 기업 has its own part in the bar again, so only 내 기록 opens from here.
-const moreLinks = (_coin = false, cm = false) => `<nav class="pn-more" aria-label="더 보기">${cm ? '<a href="#committee" data-cm-open><b>위원회 판단 전체</b><small>지난 리포트와 달라진 점, 표결, 남은 쟁점</small><i aria-hidden="true">›</i></a>' : ''}<a href="#tab-mine"><b>내 기록</b><small>이 종목 가격 알림, 내가 한 질문</small><i aria-hidden="true">›</i></a></nav><style>.pn-more{display:grid;gap:0;margin:18px 0 6px;border-radius:24px;background:var(--surface);overflow:hidden}.pn-more a{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;padding:14px 18px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}.pn-more a:first-child{border-top:0}.pn-more b{font-size:17px}.pn-more small{grid-column:1;color:var(--muted);font-size:15.5px}.pn-more i{grid-row:1/3;grid-column:2;font-style:normal;color:var(--muted)}</style>`;
+const moreLinks = () => `<nav class="pn-more" aria-label="더 보기"><a href="#tab-mine"><b>내 기록</b><small>이 종목 가격 알림, 내가 한 질문</small><i aria-hidden="true">›</i></a></nav><style>.pn-more{display:grid;gap:0;margin:18px 0 6px;border-radius:24px;background:var(--surface);overflow:hidden}.pn-more a{display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;padding:14px 18px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}.pn-more a:first-child{border-top:0}.pn-more b{font-size:17px}.pn-more small{grid-column:1;color:var(--muted);font-size:15.5px}.pn-more i{grid-row:1/3;grid-column:2;font-style:normal;color:var(--muted)}</style>`;
 export function mineTab(base: string, symbol: string): string {
   return `<div class="mi" data-mine="${escape(symbol)}" data-base="${escape(base)}"><section class="block"><div class="card mi-card"><div class="mi-h"><h2>이 종목 알림</h2></div><p class="muted small">정한 가격에 닿으면 🔔과 휴대폰으로 알려 드려요. 강세·약세 가격대에 들어올 때로도 정할 수 있어요.</p><button type="button" class="btn-primary mi-pa">가격 알림 정하기</button></div></section>
 <section class="block"><div class="card mi-card"><div class="mi-h"><h2>내가 한 질문</h2><a href="${base}mydebates.html">전체 ›</a></div><div class="mi-q"><p class="muted small">이 칸을 열면 불러와요.</p></div></div></section></div>`;
@@ -1086,7 +1096,7 @@ ${coin || us ? '' : `<section class="block"><div class="block-head"><h2>AI 리�
   // G-192: a US stock's 기업 체력 and 뉴스·공시 are filled from the API (/usinfo) instead of locked until a report.
   const usSlot=(key:string)=>`<div data-slot="us-${key}"><section class="block"><div class="card us-wait" style="display:flex;align-items:center;gap:10px;color:var(--fg2);font-size:16px"><span class="orbs" aria-hidden="true"><i></i><i></i><i></i></span> ${key==='news'?'SEC 공시와 영문 뉴스를 불러오고 있어요.':'재무·밸류에이션·내부자 거래를 불러오고 있어요.'}</div></section></div>`;
   const usHome=us?'<div data-slot="us-edge"></div><div data-slot="us-latest"></div>':'';
-  body=guided(`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}${usHome}${aiFoldOf(null, `${missing('AI 위원회')}<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`, '')}${moreLinks(coin)}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${missing('전략 대결 · 모의투자')}</section></section>${[{key:'fundamentals',label:coin?'체력':'기업'},{key:'news',label:'뉴스'},...(coin||us?[]:[{key:'filings',label:'공시'}])].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${t.key==='fundamentals'&&!coin&&!us?companySlot('')+peersSlot('')+shortSlot(''):''}${t.key==='fundamentals'&&coin?'<div id="coin-fit"></div>':us&&(t.key==='fundamentals'||t.key==='news')?usSlot(t.key):missing(t.label)}${t.key==='fundamentals'?`${us?'':`<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${missing('')}</section>`}`:''}</section>`).join('')}<section class="panel" id="tab-mine" role="tabpanel" aria-labelledby="t-mine" hidden>${mineTab('', '')}</section>${body.slice(ending)}`, kind, false);
+  body=guided(`<section class="panel" id="tab-home" role="tabpanel" aria-labelledby="t-home">${head}${usHome}${aiFoldOf(null, `${missing('AI 위원회')}<section class="block join-wrap"><div class="card">${joinBox({symbol:'',name:'이 종목'})}</div></section>`, '')}${moreLinks()}</section><section class="panel" id="tab-chart" role="tabpanel" aria-labelledby="t-chart" hidden>${chart}</section><section class="panel" id="tab-technical" role="tabpanel" aria-labelledby="t-technical" hidden>${technical}<section class="sub-sec" id="tab-strategy"><h2 class="sub-h">전략</h2>${missing('전략 대결 · 모의투자')}</section></section>${[{key:'fundamentals',label:coin?'체력':'기업'},{key:'news',label:'뉴스'},...(coin||us?[]:[{key:'filings',label:'공시'}])].map(t=>`<section class="panel" id="tab-${t.key}" role="tabpanel" aria-labelledby="t-${t.key}" hidden>${t.key==='fundamentals'&&!coin&&!us?companySlot('')+peersSlot('')+shortSlot(''):''}${t.key==='fundamentals'&&coin?'<div id="coin-fit"></div>':us&&(t.key==='fundamentals'||t.key==='news')?usSlot(t.key):missing(t.label)}${t.key==='fundamentals'?`${us?'':`<section class="sub-sec" id="tab-flows"><h2 class="sub-h">수급</h2>${missing('')}</section>`}`:''}</section>`).join('')}<section class="panel" id="tab-mine" role="tabpanel" aria-labelledby="t-mine" hidden>${mineTab('', '')}</section>${body.slice(ending)}`, kind, false);
   return shell('', coin ? '코인 차트 | GNOMON' : us ? '미국 주식 차트 | GNOMON' : '종목 차트 | GNOMON', body, { tabs: tabsFor(kind, us), bottomNav: true, ask: '이 종목', scripts: `<script src="${CHART_ASSET}"></script>${coin ? COIN_FIT_SCRIPT : ''}${stockScript(kind)}${TAB_SCRIPT}${MINE_SCRIPT}${DEBATE_FILTER_SCRIPT}${DEBATE_PLAY_SCRIPT}${PARLIAMENT_SCRIPT}` });
 }
 
