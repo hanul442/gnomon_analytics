@@ -5,7 +5,7 @@
 
 import { faceOf } from './committeeSeats.js';
 import type { DailyReport } from './dailyReport.js';
-import { gate } from './plans.js';
+import { gate, LOCK as LOCK_SVG } from './plans.js';
 import { PRESETS } from '../analysis/screenRules.js';
 import type { SignalBoardRow } from '../analysis/signalLog.js';
 import { ANALYSTS, ANALYST_HORIZON, type AnalystTrack } from '../analysis/analysts.js';
@@ -41,7 +41,12 @@ function signalCard(rows: readonly SignalBoardRow[]): string {
 <p class="fine">매일 장 마감 뒤 빠른 조건마다 상위 10종목을 그날 종가로 기록하고, 5·20거래일 뒤 첫 실행에서 종가와 같은 기간 코스피·코스닥 지수로 채점해요. 비용과 세금은 빼지 않았어요. 과거 성과가 앞으로를 보장하지 않아요.</p></div></section>`;
 }
 
-export function renderScorecard(entries: readonly HomeEntry[], signals: readonly SignalBoardRow[] = []): string {
+/** G-301 (한서님 10/26 새 구조): 위원회 › 위원 — the faces, then each member's calls and results (moved here from 성적표). */
+export function renderMembersPage(entries: readonly HomeEntry[], roster: string): string {
+  return renderScorecard(entries, [], 'members', roster);
+}
+
+export function renderScorecard(entries: readonly HomeEntry[], signals: readonly SignalBoardRow[] = [], view: 'score' | 'members' = 'score', roster = ''): string {
   const live = entries.filter((e): e is HomeEntry & { report: DailyReport } => !!e.report?.market);
   // Forecast ranges by horizon.
   const byH = new Map<number, { scored: number; inside: number; err: number[] }>();
@@ -130,7 +135,7 @@ ${board.length ? `<div class="mb-grid">${board.map(member).join('')}</div>` : '<
   const avg = (sel: (f: string) => boolean) => { const xs = live.flatMap((e) => (e.report.market!.paper ?? []).filter((b) => sel(b.follower)).map((b) => b.totalReturn)); return xs.length ? (xs.reduce((x, v) => x + v, 0) / xs.length) * 100 : null; };
   const tile = (label: string, v: number | null, sub: string) => `<div class="sc-tile"><div class="pl-k">${label}</div><b class="${tone(v)}">${pct(v, 2)}</b><small>${sub}</small></div>`;
   const followSummary = `<div class="sc-tiles">${tile('전략 챔피언 규칙(가상)', avg((f) => f === 'champion'), '종목 평균')}${tile('매수 후 보유', avg((f) => f === 'hold'), '비교 기준')}${tile('AI 분석가 판단(가상)', avg((f) => f.startsWith('analyst:')), '분석가 평균')}</div>`;
-  const strategyCard = `<section class="block sc-sec" id="paper"><div class="block-head"><h2>규칙대로였다면 (가상 계좌)</h2><span class="muted">챔피언이 보유보다 나았던 종목 ${beat}/${live.length}</span></div>${gate(followSummary, { base: '', what: '가상 계좌 평균 결과', feature: 'paperAverage' })}
+  const strategyCard = `<section class="block sc-sec" id="paper"><div class="block-head"><h2>규칙대로였다면 (가상 계좌)</h2><span class="muted">플러스</span></div>${gate(followSummary, { base: '', what: '가상 계좌 평균 결과', feature: 'paperAverage' })}
 ${gate(`<div class="card table-wrap"><table class="compact fr-table"><thead><tr><th>종목 · 전략 챔피언</th><th class="num">챔피언 장부</th><th class="num">보유 장부</th><th class="hide-m">최고 AI 분석가</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="empty">아직 기록이 없어요.</td></tr>'}</tbody></table>
 ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.length}종목 보기</button>` : ''}
 <p class="fine">챔피언 장부 수익이 높은 순이에요. 장부는 기록을 시작한 날부터 다음 거래일 수익으로 쌓고, 사고팔 때 비용을 빼요. 종목의 '장부'를 누르면 매매 내역과 수익 곡선이 펼쳐져요.</p></div>`, { base: '', what: '종목별 장부 · 매매 내역 · 수익 곡선', feature: 'paperLedger' })}</section>`;
@@ -147,14 +152,14 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
   // G-265 (Bklit ring chart): the three headline records as concentric rings (a ring stays empty until it is scored).
   // G-281 (한서님 10/22 "또 겹치는거 있네"): no number in the middle; the big number above already says it.
   const hitText = (v: number | null) => (v === null ? '채점 전' : `${Math.round(v)}%`);
-  const scoreRing = live.length ? ringChart([
+  const scoreRing = !live.length ? '' : ringChart([
     { label: '예측 범위 적중', value: fcHit === null ? null : fcHit / 100, color: 'var(--accent)', text: hitText(fcHit) },
     { label: '위원 방향 적중', value: aiHit === null ? null : aiHit / 100, color: 'var(--fg2)', text: hitText(aiHit) },
     { label: '챔피언이 보유보다 나은 종목', value: beat / live.length, color: 'var(--muted)', text: `${beat}/${live.length}` },
-  ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: '', cls: 'sc-ring', half: true }) : '';
+  ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: '', cls: 'sc-ring', half: true });
   const hero = `<section class="block sc-hero" id="top"><div class="sc-k">예측 범위 적중률 · 리포트 종목 ${live.length}개</div><div class="sc-hv" role="heading" aria-level="2"><b>${fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`}</b><small>목표 80% 안팎</small></div>
 ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 ${Math.round(fcHit)}%, 목표 80%"><i style="width:${Math.max(0, Math.min(100, fcHit)).toFixed(0)}%"></i><em style="left:80%"></em></div>`}
-${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
+<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
 <div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언 규칙대로였다면 (가상)', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
 `;
   // G-297 (한서님 시안 ⑤): the newest graded member calls, hits and misses alike, right under the headline — the
@@ -164,15 +169,27 @@ ${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면
   const recent = `<section class="block sc-sec" id="recent"><div class="block-head"><h2>최근 채점</h2><span class="muted">맞은 것도 틀린 것도 그대로</span></div><div class="card">${graded.length ? `<ul class="sc-rec">${graded.map((g) => `<li><span class="cs-face s-${g.c.stance === 'BULLISH' ? 'bull' : g.c.stance === 'BEARISH' ? 'bear' : 'neutral'}" aria-hidden="true">${esc(faceOf(g.id))}</span><span class="sc-rt"><b>${esc(by.get(g.id)?.name ?? g.id)} · ${esc(g.e.name)} ${STANCE[g.c.stance][0]}</b><small>${md(g.c.reportDate)} 판단 · 20거래일 뒤 ${won(g.c.close!)} (${chg(g.c.close!, g.c.baseClose)})${g.c.brokeOn ? ` · 철회 가격에 ${md(g.c.brokeOn)} 닿음` : ''}</small></span><b class="mb-v ${g.c.hit ? 'ok' : 'no'}">${g.c.hit ? '맞음' : '빗나감'}</b></li>`).join('')}</ul>` : `<p class="empty">위원 판단은 20거래일이 지나야 채점해요.${waitingN ? ` 지금 ${waitingN.toLocaleString('ko-KR')}건이 기다리고 있어요.` : ''}</p>`}</div></section>
 <style>.sc-rec{list-style:none;margin:0;padding:0}.sc-rec li{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}.sc-rec li:first-child{border-top:0}.sc-rt{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}.sc-rt b{font-size:16px}.sc-rt small{font-size:15px;color:var(--muted)}</style>`;
   // G-281 (한서님 10/22, 앱 전체 구조 — 위에 줄 없음): no tab row in the middle; the four groups follow each other, each with its title.
-  const GROUP_TITLE: Record<string, string> = { forecast: '예측', analysts: '위원별', scenarios: '시나리오', paper: '가상 계좌' };
+  const GROUP_TITLE: Record<string, string> = { forecast: '예측', analysts: '위원별', scenarios: '시나리오', paper: '가상 계좌', signals: '신호' };
   const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}"><h2 class="sc-gh">${GROUP_TITLE[k]}</h2>${html}</div>`;
   // G-301 (한서님 10/26 배치 점검): the groups everyone can read come first; 예측 (both cards locked for free readers) goes last.
-  const body = `${hero}${recent}
-${group('analysts', (sun ? `<section class="block sc-sec"><div class="block-head"><h2>판단 결과 한눈에</h2><span class="muted">전 위원 합산</span></div><div class="card">${sun}</div></section>` : '') + gate(analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '위원별 판단과 결과', feature: 'scoreSummary' }))}
+  void scoreRing;
+  const analystsHtml = (sun ? `<section class="block sc-sec"><div class="block-head"><h2>판단 결과 한눈에</h2><span class="muted">전 위원 합산</span></div><div class="card">${sun}</div></section>` : '') + gate(analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '위원별 판단과 결과', feature: 'scoreSummary' });
+  // G-301 (한서님 10/26 새 구조): 채점 reads top to bottom — the headline numbers once, the open records, then what plus
+  // readers get. For free readers those locked cards fold into one card at the end instead of five scattered ones.
+  const locked = ['가상 계좌 평균 결과', '종목별 장부 · 매매 내역 · 수익 곡선', '기간별 예측 적중', '빗나간 예측 하나하나'];
+  const lockCard = `<section class="block sc-lock only-free"><div class="card"><div class="gate-cta">${LOCK_SVG}<div><b>플러스부터 볼 수 있어요</b><ul>${locked.map((x) => `<li>${x}</li>`).join('')}</ul></div><a class="btn-primary" href="pricing.html">요금제 보기</a></div></div></section>`;
+  const scoreBody = `${hero}${recent}
 ${group('scenarios', scenarioCard || '<section class="block sc-sec" id="scenarios"><div class="card"><p class="empty">아직 채점한 시나리오가 없어요.</p></div></section>')}
-${group('paper', strategyCard + signalCard(signals))}
-${group('forecast', gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">'), { base: '', what: '기간별 예측 적중', feature: 'scoreSummary' }) + gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' }))}
-<style>.sc-hero{margin-top:18px}.sc-k{font-size:15.5px;color:var(--muted)}.sc-hv{display:flex;align-items:baseline;gap:10px;margin:6px 0 0}.sc-hv b{font-size:56px;line-height:1;font-weight:800;color:var(--accent-strong);font-variant-numeric:tabular-nums}.sc-hv small{font-size:16px;font-weight:500;color:var(--muted)}
+${group('signals', signalCard(signals))}
+<div class="need-plus">${group('paper', strategyCard)}
+${group('forecast', gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">'), { base: '', what: '기간별 예측 적중', feature: 'scoreSummary' }) + gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' }))}</div>
+${lockCard}`;
+  const how = `<details class="rp-how card"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 기본 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></details>`;
+  const membersBody = `<p class="mb-lead">분석가 6명과 데스크 5곳이 종목마다 따로 판단해요. 얼굴을 누르면 그 위원의 기록이 열려요. <a class="rp-what" href="committee-guide.html">위원회가 뭐예요? ›</a></p>${roster}
+${group('analysts', analystsHtml)}${how}
+<style>.mb-lead{margin:0 4px 6px;font-size:16px;color:var(--fg2)}.rp-what{display:inline-block;padding:6px 0;font-weight:700;color:var(--fg);text-decoration:none;white-space:nowrap}.rp-how{margin:12px 0;padding:2px 16px}.rp-how summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:16px;font-weight:600}.rp-how p{font-size:15.5px;color:var(--muted);line-height:1.55}</style>`;
+  const body = `${view === 'members' ? membersBody : scoreBody}
+<style>.sc-lock .gate-cta{display:flex;align-items:center;gap:12px}.sc-lock .gate-cta>div{flex:1;min-width:0}.sc-lock .gate-cta b{font-size:17px}.sc-lock ul{margin:6px 0 0;padding-left:18px;font-size:15.5px;color:var(--fg2);line-height:1.6}.sc-lock .lock{width:22px;height:22px;flex:none}@media (max-width:520px){.sc-lock .gate-cta{flex-wrap:wrap}.sc-lock .gate-cta .btn-primary{width:100%;text-align:center}}.sc-hero{margin-top:18px}.sc-k{font-size:15.5px;color:var(--muted)}.sc-hv{display:flex;align-items:baseline;gap:10px;margin:6px 0 0}.sc-hv b{font-size:56px;line-height:1;font-weight:800;color:var(--accent-strong);font-variant-numeric:tabular-nums}.sc-hv small{font-size:16px;font-weight:500;color:var(--muted)}
 .sc-meter{position:relative;height:8px;border-radius:4px;background:var(--soft);margin-top:18px}.sc-meter i{display:block;height:8px;border-radius:4px;background:var(--accent)}.sc-meter em{position:absolute;top:-5px;width:2px;height:18px;background:var(--fg)}
 .sc-say{margin:16px 0 0;font-size:17px;line-height:1.65;color:var(--fg2)}.sc-lines{margin-top:14px}.sc-line{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.sc-line>span{display:flex;flex-direction:column;gap:2px;min-width:0}.sc-line b{font-size:17px}.sc-line small{font-size:15.5px;color:var(--muted)}.sc-lv{margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}.sc-lv.muted{color:var(--muted)}
 .sc-tabs{position:sticky;top:calc(var(--topbar-h,56px) + 4px);z-index:5;display:flex;gap:4px;margin:24px 0 4px;padding:4px;border-radius:12px;background:var(--surface-solid,var(--surface));border:1px solid var(--line)}.sc-tabs button{flex:1;min-height:40px;border:0;border-radius:9px;background:none;font:inherit;font-size:16px;font-weight:700;color:var(--fg2);cursor:pointer}.sc-tabs button[aria-selected=true]{background:var(--soft);color:var(--fg)}.sc-group[hidden]{display:none}.sc-gh{margin:28px 4px 0;font-size:21px;font-weight:800}
@@ -186,7 +203,7 @@ ${group('forecast', gate(forecastCard.replace('<section class="block">', '<secti
 .mb-row[hidden],.mb-only .mb-row.nw{display:none}.mb-only .mb-row.more-row:not(.nw){display:flex}.mb-only .more-all{display:none}
 @media (max-width:820px){.mb-grid{grid-template-columns:1fr}.sc-bigs{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-tiles{gap:6px}.sc-tile{padding:10px}.sc-tile b{font-size:18.5px}.sc-tile .pl-k{font-size:15px}.hide-m{display:none}}</style>
 <footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 모의투자는 가상 계좌예요. 투자 권유가 아니에요.</p></footer>`;
-  return shell('', '성적표 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS, mode: 'scorecard.html' });
+  return view === 'members' ? shell('', '위원 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS, mode: 'members.html' }) : shell('', '채점 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS, mode: 'scorecard.html' });
 }
 
 /** G-77: 모의투자 is part of the scorecard ('따라 했다면'); the old address forwards there. */
@@ -196,6 +213,8 @@ export function renderPaper(): string {
 
 /** '전체 보기' opens the rest of a list; '장부' opens a stock's ledger under its row; '관심 종목만' (G-213) narrows the members' calls to the watchlist. */
 const SCORE_JS = `<script>
+// G-301: member cards moved to 위원회 › 위원; old 성적표 links to them follow.
+(function () { var h = location.hash; if (/^#(analysts|m-[a-z_]+)$/.test(h) && !document.getElementById(h.slice(1)) && /scorecard\.html$/.test(location.pathname)) location.replace('members.html' + h); })();
 // G-244: one group at a time; a link to #paper, #misses and the like opens the group that holds it.
 (function () {
   var tabs = [].slice.call(document.querySelectorAll('[data-sc-tab]')); if (!tabs.length) return;

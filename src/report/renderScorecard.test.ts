@@ -17,10 +17,12 @@ const scorecardEntry = (symbol: string, name: string, calls: AnalystCall[]): Hom
 });
 
 test('the scorecard shows each member\'s calls from stance to result, with the day\'s report one tap away (G-213)', () => {
+  // G-301 (한서님 10/26 새 구조): the member cards live on 위원회 › 위원 (members.html), not on 채점.
   const html = renderScorecard([
     scorecardEntry('111111', '가 종목', [call('111111', 0, 'BULLISH', 125), call('111111', 30, 'BEARISH', 120)]),
     scorecardEntry('222222', '나 종목', [call('222222', 35, 'BULLISH', 150)]),
-  ]);
+  ], [], 'members');
+  assert.ok(!renderScorecard([scorecardEntry('111111', '가 종목', [call('111111', 0, 'BULLISH', 125)])]).includes('id="m-trend_momentum"'), '채점 has no member cards');
   assert.ok(html.includes('<h2>위원별 판단</h2>') && html.includes('id="m-trend_momentum"'));
   const rows = html.match(/<li class="mb-row[^]*?<\/li>/g) ?? [];
   assert.equal(rows.length, 3);
@@ -35,10 +37,10 @@ test('the scorecard shows each member\'s calls from stance to result, with the d
 test('a member card compares stated confidence with the hit rate once 5 calls are scored (G-226)', () => {
   // Six due bullish calls at 60% on a rising stock: all right, so the member was under-confident by 40%p.
   const calls = Array.from({ length: 6 }, (_, i) => call('111111', i, 'BULLISH', 200));
-  const html = renderScorecard([scorecardEntry('111111', '가 종목', calls)]);
+  const html = renderScorecard([scorecardEntry('111111', '가 종목', calls)], [], 'members');
   assert.match(html, /<small>확신<\/small><b>60%<\/b>/);
   assert.match(html, /적중보다 40%p 덜 자신했어요 · 확신 점수 0\.16/);
-  const few = renderScorecard([scorecardEntry('111111', '가 종목', calls.slice(0, 4))]);
+  const few = renderScorecard([scorecardEntry('111111', '가 종목', calls.slice(0, 4))], [], 'members');
   assert.ok(!few.includes('덜 자신했어요'), 'fewer than 5 scored calls: no calibration line');
 });
 

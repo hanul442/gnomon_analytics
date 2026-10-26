@@ -243,7 +243,7 @@ export const MODE_GROUPS: readonly { key: string; label: string; modes: readonly
   { key: 'find', label: '찾기', modes: [['주식', 'screener.html'], ['미국 주식', 'screener.html#us'], ['ETF', 'screener.html#etf'], ['코인', 'screener.html#coin'], ['테마', 'themes.html'], ['공시', 'signals.html']] },
   // G-255: 내 종목 is no longer a tab; its pages are 나's 내 기록 (관심 종목 itself lives on 홈).
   { key: 'record', label: '내 기록', modes: [['알림함', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html']] },
-  { key: 'committee', label: '위원회', modes: [['AI 리포트', 'reports.html'], ['성적표', 'scorecard.html'], ['시장 데일리', 'market-reports.html']] },
+  { key: 'committee', label: '위원회', modes: [['오늘', 'reports.html'], ['채점', 'scorecard.html'], ['위원', 'members.html']] },
 ];
 /** Pages that belong to the 나 tab (account, money, help). */
 const ME_PAGES = ['account.html', 'pricing.html', 'login.html', 'onboarding.html', 'checkout.html', 'guide.html', 'faq.html', 'updates.html', 'survey.html', 'terms.html', 'privacy.html', 'hanul.html'];
@@ -262,10 +262,11 @@ const MENU_ICON = '<path d="M14.5 5.5L8 12l6.5 6.5"/>';
 const RETURN_ICON = '<path d="M9.5 5.5L16 12l-6.5 6.5"/>';
 const BAR_SHORT: Record<string, string> = { 'AI 리포트': '리포트', '시장 데일리': '데일리' };
 const DOCK_ICONS: Record<string, string> = {
-  'reports.html': '<path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z"/><path d="M14 3.5V8h4M10 12h5M10 15.5h5"/>',
+  'reports.html': '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   'scorecard.html': '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
   'vs.html': '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/>',
   'market-reports.html': '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  'members.html': '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>',
   'inbox.html': '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
   'myreports.html': '<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/><path d="M12 8v4l3 2"/>',
   'mydebates.html': '<path d="M4 6.5h11v7H9l-3 3v-3H4z"/><path d="M15 10h5v6.5h-2v2.5l-3-2.5h-4.5v-3"/>',

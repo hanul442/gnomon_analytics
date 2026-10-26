@@ -7,7 +7,7 @@ import { kmStatArea } from './kit/market.js';
 import type { NewsIssueBoard } from '../analysis/newsIssues.js';
 import type { WorldIssueBoard } from '../analysis/worldNews.js';
 import type { WorldMarkets } from '../sources/naverGlobal.js';
-import type { MarketReport } from './marketReport.js';
+import { marketDayCard, MI_CSS, type MarketReport } from './marketReport.js';
 import { issueMapParts, ISSUE_MAP_CSS, ISSUE_MAP_JS } from './issueMap.js';
 // Site front page as a market dashboard (docs/DESIGN.md §3.7, G-31). It answers
 // "what should I look at now?" (BOR North Star §2): the indices and breadth,
@@ -24,7 +24,7 @@ import { esc } from './html.js';
 import { CONTENT_MORE_CSS } from './contentMore.js';
 import { fadeGrad, gradId, smoothD } from './chartLook.js';
 import { won, tone, move as signed } from './format.js';
-import { homeCommittee, rosterCard, seatDots } from './committeeSeats.js';
+import { homeCommittee, seatDots } from './committeeSeats.js';
 import type { DailyReport } from './dailyReport.js';
 
 // G-84: a move always carries its arrow (▲ red up, ▼ blue down) next to the number.
@@ -94,20 +94,6 @@ const KIND = { stock: '주식', etf: 'ETF', coin: '코인' } as const;
  * G-125: everything that came out on the newest report day, in one list. The 🔔 notes link here
  * (reports.html?hl=<symbols>#today): the reader's watched stocks come first, marked, and the rest of the day follows.
  */
-function todayRows(entries: readonly HomeEntry[]): string {
-  // G-231: by the day each report was made, not the live page's date (every run rebuilds it with the run's date).
-  const withDate = entries.filter((e) => e.report && madeOn(e) && e.group !== 'past');
-  const day = withDate.map(madeOn).sort().at(-1);
-  if (!day) return '';
-  const seen = new Set<string>();
-  const list = withDate.filter((e) => madeOn(e) === day && !seen.has(e.symbol) && seen.add(e.symbol));
-  const deep = (e: HomeEntry) => aiKind(e) === 'core';
-  list.sort((a, b) => Number(deep(b)) - Number(deep(a)) || a.name.localeCompare(b.name, 'ko'));
-  const row = (e: HomeEntry) => reportRow(e, true);
-  return `<section class="block" id="today"><div class="block-head"><h2>${esc(day.slice(5).replace('-', '/'))} 나온 리포트 ${list.length}개</h2><span class="muted">${esc(day)} 장 마감 기준</span></div>
-<p class="muted small td-note" hidden></p><div class="card list rr-list" id="today-list">${list.map(row).join('')}</div></section>`;
-}
-
 /** Watched stocks (from the 🔔 link or this browser's ☆ list) go to the top of today's list, marked. */
 const TODAY_LIST_SCRIPT = `<script>
 (function () {
@@ -134,45 +120,46 @@ function reportRow(e: HomeEntry, seats = false): string {
 <div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
 }
 
+/** The newest report day's stocks with a committee verdict (위원회 › 위원's faces read them). */
+export function rosterReports(entries: readonly HomeEntry[]): { name: string; report: DailyReport }[] {
+  const withDate = entries.filter((e) => e.group !== 'request' && e.report && madeOn(e) && e.group !== 'past');
+  const day = withDate.map(madeOn).sort().at(-1);
+  return withDate.filter((e) => madeOn(e) === day && e.report?.commentary?.status === 'OK').map((e) => ({ name: e.name, report: e.report! }));
+}
+
 /**
- * G-281 (한서님 10/22 "분류가 각 종류에 맞게", 앱 전체 구조): every report in one stream, each stock once.
- * The newest day stays #today (the 🔔 links land there, watched stocks first); older reports — daily picks and tracked
- * stocks alike — follow by the day they were made, newest first, ten shown and the rest folded.
+ * 위원회 › 오늘 (G-301, 한서님 10/26 새 구조): one stream by date, newest first. Each date opens with that day's 시장 데일리
+ * and then the stock reports made that day (each stock once, on its newest day). The newest stock list stays #today-list
+ * (the 🔔 links land there, watched stocks first). Seven dates show; older ones fold.
  */
-function pastRows(entries: readonly HomeEntry[], skip: ReadonlySet<string>): string {
+export function renderReportsPage(data: HomeData): string {
+  const all = data.entries.filter((e) => e.group !== 'request');
   const best = new Map<string, HomeEntry>();
-  for (const e of entries) {
-    if (!e.report || !madeOn(e) || e.group === 'past' || skip.has(e.symbol)) continue;
+  for (const e of all) {
+    if (!e.report || !madeOn(e) || e.group === 'past') continue;
     const had = best.get(e.symbol);
     if (!had || madeOn(e) > madeOn(had)) best.set(e.symbol, e);
   }
-  const list = [...best.values()].sort((a, b) => madeOn(b).localeCompare(madeOn(a)) || a.name.localeCompare(b.name, 'ko'));
-  if (!list.length) return '';
-  const rows: string[] = [];
-  let last = '';
-  for (const e of list) { const d = madeOn(e); if (d !== last) { rows.push(`<div class="dl-day dl-old">${esc(d.slice(5).replace('-', '/'))}</div>`); last = d; } rows.push(reportRow(e)); }
-  const cut = rows.findIndex((_, i) => rows.slice(0, i + 1).filter((x) => x.startsWith('<div class="rr"')).length === 10);
-  const head = cut < 0 ? rows : rows.slice(0, cut + 1), rest = cut < 0 ? [] : rows.slice(cut + 1);
-  return `<section class="block" id="past"><div class="block-head"><h2>지난 리포트 ${list.length}개</h2><span class="muted">만든 날짜 순</span></div>
-<div class="card list rr-list">${head.join('')}${rest.length ? `<details class="more content-more rp-rest"><summary><span class="more-closed">${list.length - 10}개 더 보기</span><span class="more-open">접기</span></summary>${rest.join('')}</details>` : ''}</div></section>`;
-}
-
-/** 위원회 › 리포트: the newest day's reports, then the rest in one stream (G-281). */
-export function renderReportsPage(data: HomeData): string {
-  const all = data.entries.filter((e) => e.group !== 'request');
-  const withDate = all.filter((e) => e.report && madeOn(e) && e.group !== 'past');
-  const day = withDate.map(madeOn).sort().at(-1);
-  const todaySyms = new Set(withDate.filter((e) => madeOn(e) === day).map((e) => e.symbol));
+  const byDay = new Map<string, HomeEntry[]>();
+  for (const e of best.values()) { const d = madeOn(e); byDay.set(d, [...(byDay.get(d) ?? []), e]); }
+  const markets = new Map((data.marketReports ?? []).filter((r) => r.period === 'daily').map((r) => [r.date, r] as const));
+  const days = [...new Set([...byDay.keys(), ...markets.keys()])].sort().reverse().slice(0, 30);
+  const newest = [...byDay.keys()].sort().at(-1);
+  const wk = (d: string) => '일월화수목금토'[new Date(`${d}T00:00:00Z`).getUTCDay()];
+  const deep = (e: HomeEntry) => aiKind(e) === 'core';
+  const dayBlock = (d: string, i: number) => {
+    const list = (byDay.get(d) ?? []).sort((a, b) => Number(deep(b)) - Number(deep(a)) || a.name.localeCompare(b.name, 'ko'));
+    const mr = markets.get(d);
+    const stocks = list.length ? `${d === newest ? '<p class="muted small td-note" hidden></p>' : ''}<div class="card list rr-list"${d === newest ? ' id="today-list"' : ''}>${list.map((e) => reportRow(e, d === newest)).join('')}</div>` : '';
+    return `<section class="block rp-day"${d === newest ? ' id="today"' : ''}><div class="block-head"><h2>${esc(d.slice(5).replace('-', '/'))} (${wk(d)})</h2><span class="muted">${i === 0 ? '최신 · ' : ''}${list.length ? `종목 ${list.length}개` : '시장만'}</span></div>${mr ? marketDayCard(mr) : ''}${stocks}</section>`;
+  };
+  const SHOW = 7;
+  const feed = days.slice(0, SHOW).map(dayBlock).join('') + (days.length > SHOW ? `<details class="more content-more rp-rest rp-older"><summary><span class="more-closed">지난 날짜 ${days.length - SHOW}일 더 보기</span><span class="more-open">접기</span></summary>${days.slice(SHOW).map((d, i) => dayBlock(d, i + SHOW)).join('')}</details>` : '');
   const waiting = all.filter((e) => e.group !== 'past' && e.group !== 'daily' && !(e.report && madeOn(e)));
-  // G-300: 추적 종목 and 고르는 법 share one quiet card at the end (two folds, one card).
-  const wait = waiting.length ? `<details class="rp-wait"><summary>리포트를 기다리는 추적 종목 ${waiting.length}개</summary><p class="muted small">${waiting.map((e) => esc(e.name)).join(' · ')}</p></details>` : '';
-  // G-297 (한서님 시안 ②): the members first, as faces; each opens its record and the day's calls.
-  const todays = withDate.filter((e) => madeOn(e) === day && e.report?.commentary?.status === 'OK').map((e) => ({ name: e.name, report: e.report! }));
-  const head = `<section class="rp-top"><p class="muted">AI 위원들이 종목마다 따로 판단하고, 20거래일 뒤 채점받아요. <a class="rp-what" href="committee-guide.html">위원회가 뭐예요? ›</a></p></section>${rosterCard(todays)}`;
-  const how = `<details class="rp-how"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 기본 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></details>`;
-  return shell('', 'AI 리포트 | GNOMON', `${HOME_STYLE}<style>${CONTENT_MORE_CSS}.rr-mine{background:var(--accent-soft)}.t-mine{background:var(--down-soft);color:var(--accent-strong)}.rp-top p{margin:0 4px 4px;font-size:16px}.rp-what{display:inline-block;padding:6px 0;font-weight:700;color:var(--fg);text-decoration:none;white-space:nowrap}.cs-today{display:block}.cs-today .cs-sl small{display:block}.rp-end{margin:12px 0;padding:2px 16px}.rp-end>details+details{border-top:1px solid var(--line)}.rp-how summary,.rp-wait summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:16px;font-weight:600}.rp-how p{font-size:15.5px;color:var(--muted);line-height:1.55}.rp-rest>summary{display:flex;justify-content:center;align-items:center;min-height:48px;border-top:1px solid var(--line);font-size:16px;font-weight:700;color:var(--fg2);cursor:pointer;list-style:none}.rp-rest>summary::-webkit-details-marker{display:none}</style>${head}${todayRows(data.entries)}${pastRows(all, todaySyms)}<section class="card rp-end">${wait}${how}</section>`, { scripts: HOME_SCRIPT + TODAY_LIST_SCRIPT, mode: 'reports.html' });
+  const wait = waiting.length ? `<section class="card rp-end"><details class="rp-wait"><summary>리포트를 기다리는 추적 종목 ${waiting.length}개</summary><p class="muted small">${waiting.map((e) => esc(e.name)).join(' · ')}</p></details></section>` : '';
+  const lead = `<p class="rp-lead">AI 위원들이 매일 장 마감 뒤 시장과 종목을 판단하고, 20거래일 뒤 채점받아요.</p>`;
+  return shell('', '위원회 | GNOMON', `${HOME_STYLE}${MI_CSS}<style>${CONTENT_MORE_CSS}.rr-mine{background:var(--accent-soft)}.t-mine{background:var(--down-soft);color:var(--accent-strong)}.rp-lead{margin:0 4px 4px;font-size:16px;color:var(--fg2)}.rp-day{display:flex;flex-direction:column;gap:8px}.rp-day .block-head{margin-bottom:0}.cs-today{display:block}.cs-today .cs-sl small{display:block}.rp-end{margin:12px 0;padding:2px 16px}.rp-wait summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:16px;font-weight:600}.rp-rest>summary{display:flex;justify-content:center;align-items:center;min-height:48px;font-size:16px;font-weight:700;color:var(--fg2);cursor:pointer;list-style:none}.rp-rest>summary::-webkit-details-marker{display:none}</style>${lead}${feed || '<div class="card"><p class="empty">아직 위원회 리포트가 없어요.</p></div>'}${wait}`, { scripts: HOME_SCRIPT + TODAY_LIST_SCRIPT, mode: 'reports.html' });
 }
-
 
 // G-201: one "내 종목" card: the stocks starred (☆) and the ones named in the survey, then the survey's sector chips
 // (each opens its strongest theme today) and the screener preset that fits the holding period.
@@ -201,23 +188,24 @@ export function renderHome(data: HomeData): string {
   const key = wp ? `<div class="hm-h"><h2>시장</h2><button type="button" class="wd-link" data-wd-go="market">시장 전체 ›</button></div><div class="km-stats wd-stats">${wp.key6}</div>` : fallbackNumbers(data.indices);
   // G-297 (한서님 10/24 시안): 요약 runs 배너 → 시장 → 이슈 → 내 종목 → 위원회 → 채점. The committee card shows the day's most
   // split stock as a half circle of seats, the others as split bars and one lone dissent; the range score sits under it.
-  const comBlock = calls.length ? `<div class="hm-com"><div class="hm-h"><h2>위원회 오늘</h2></div>${homeCommittee(committeeReports(data.entries), { foot: scoreLine(sorted), day: dayShort(data.entries.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK').map(madeOn).sort().at(-1) ?? ''), allHref: '#com' })}</div>` : '';
-  const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${im?.mini ?? ''}${issuesList(issues, 3, false)}</section>`;
+  const comBlock = calls.length ? `<div class="hm-com"><div class="hm-h"><h2>위원회 오늘</h2></div>${homeCommittee(committeeReports(data.entries), { foot: scoreLine(sorted), day: dayShort(data.entries.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK').map(madeOn).sort().at(-1) ?? ''), allHref: 'reports.html' })}</div>` : '';
+  // G-301 (한서님 10/26 새 구조 'ㄱㄱ'): home is one screen with no parts in the bar — 한 줄 · 배너 · 내 종목 · 위원회 오늘 ·
+  // 시장 6칸 · 이슈 1~3위. 시장 전체 and 이슈 전체 open from their links; the issue map lives only in 이슈 전체.
+  const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${issuesList(issues, 3, false)}</section>`;
   const sum = `<section class="hm-hero" id="mkt-hero"><p class="hm-d">${esc(dayLong(day))}</p><p class="hm-s">${esc(wp?.sentence ?? '오늘 시장을 한눈에 모았어요.')}</p></section>
 <div class="hm-bn">${banner}</div>
-${key}${issueBlock}<i id="watch-slot" hidden></i><div class="hm-left">${WATCH}${comBlock || scoreLine(sorted, true)}</div>`;
-  const com = `<p class="hm-lead">오늘 위원회가 본 종목이에요. 막대는 앞으로 20거래일 범위(왼쪽부터 약세·기본·강세), 점선은 지금 가격이에요.</p>
-<section class="card hm-card">${calls.length ? calls.map(callRow).join('') : '<p class="muted">아직 오늘 나온 위원회 리포트가 없어요.</p>'}</section>
-<a class="hm-go" href="reports.html">AI 리포트 전체<span aria-hidden="true">›</span></a><a class="hm-go" href="scorecard.html">위원회 성적표<span aria-hidden="true">›</span></a>`;
+<i id="watch-slot" hidden></i><div class="hm-left">${WATCH}${comBlock || scoreLine(sorted, true)}</div>${key}${issueBlock}`;
+  void callRow;
+  const back = (t: string) => `<div class="hm-subh"><button type="button" class="hm-back" data-wd-go="sum" aria-label="오늘로 돌아가기">‹</button><h2>${t}</h2></div>`;
   const ISSUE_SHOW = 10;
   const news = `<section class="card hm-card"><div class="hm-h ia-head"><h2>이슈 순위</h2>${ISSUES_FILTER}</div>${issuesList(issues, ISSUE_SHOW, true)}${issues.length > ISSUE_SHOW ? `<details class="more content-more ia-rest"><summary><span class="more-closed">${issues.length - ISSUE_SHOW}개 더 보기</span><span class="more-open">접기</span></summary>${issuesList(issues.slice(ISSUE_SHOW), issues.length, true)}</details>` : ''}</section><p class="fine wd-fine">한국 종목 뉴스와 세계 뉴스를 한 순위로 모았어요. 각 목록 안에서 다룬 매체가 많은 순서를 기준으로 섞었어요. 시장 숫자는 같은 날 함께 움직인 값이고, 원인이라는 뜻이 아니에요.</p>`;
   
-  const tabs = [['sum', '요약', sum], ...(wp ? [['market', '시장', `${im?.card ?? ''}${wp.market}`]] : []), ['com', '위원회', com], ['news', '이슈', news]] as const;
-  const nav = `<nav class="mode-tabs" role="tablist" aria-label="홈 보기">${tabs.map(([k, l], i) => `<button type="button" role="tab" data-wd="${k}" aria-selected="${i === 0}">${l}</button>`).join('')}</nav>`;
-  const body = `${HOME_STYLE}${WORLD_CSS}${ISSUES_CSS}${im ? ISSUE_MAP_CSS + im.sheets : ''}${tabs.map(([k, , html], i) => `<div class="wd-p hm-p" data-wd-p="${k}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
+  const tabs = [['sum', '', sum], ...(wp ? [['market', '시장', `${back('시장 전체')}${wp.market}`]] : []), ['news', '이슈', `${back('이슈 전체')}${im?.card ?? ''}${news}`]] as const;
+  const body = `${HOME_STYLE}${WORLD_CSS}${ISSUES_CSS}${im ? ISSUE_MAP_CSS + im.sheets : ''}${tabs.map(([k, l, html], i) => `<div class="wd-p hm-p" data-wd-p="${k}" data-wd-label="${l}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
 <footer id="sources" class="hm-foot"><details class="hm-src"><summary>데이터 출처·기준 시각<span aria-hidden="true"> ›</span></summary><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS, 해외 뉴스 RSS.${wp ? ` 세계 숫자는 ${esc(wp.asof)} 기준이에요.` : ''} 계산 결과이고, 투자 권유가 아니에요.</p></details></footer>`;
   // G-277 (한서님 10/21 '위의 바 두기싫다니까'): on phones the parts switch from the bottom bar; the row above is for wide screens.
-  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘', tabs: nav }, parts: partButtons(tabs.map(([k, l]) => [k, l] as const)), scripts: WORLD_JS + (im ? ISSUE_MAP_JS : '') + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
+  void partButtons;
+  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘' }, scripts: WORLD_JS + (im ? ISSUE_MAP_JS : '') + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
 }
 
 // G-300 (한서님 10/25): the big banner stays big, but turns through five slides at most (older ones live in 업데이트 기록).
@@ -344,7 +332,7 @@ const FEED_SCRIPT = `<script>
 </script>`;
 
 
-const HOME_STYLE = `<style>.wl-rail{position:relative;display:block;height:6px;margin:7px 0 3px;max-width:180px;border-radius:3px;background:linear-gradient(90deg,var(--down-soft,rgba(5,130,202,.18)) 0 33%,var(--track,rgba(0,0,0,.07)) 33% 67%,var(--up-soft,rgba(229,57,53,.16)) 67%)}.wl-rail i{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--fg);box-shadow:0 0 0 2px var(--surface-solid,#fff)}
+const HOME_STYLE = `<style>.hm-subh{display:flex;align-items:center;gap:6px;margin:0 0 2px}.hm-subh h2{margin:0;font-size:22px}.hm-back{width:40px;height:40px;margin-left:-8px;border:0;border-radius:50%;background:none;font:inherit;font-size:28px;line-height:1;color:var(--fg);cursor:pointer;transition:transform var(--dur-base,200ms) var(--spring-press,ease)}.hm-back:active{transform:scale(.9);background:var(--soft)}.wl-rail{position:relative;display:block;height:6px;margin:7px 0 3px;max-width:180px;border-radius:3px;background:linear-gradient(90deg,var(--down-soft,rgba(5,130,202,.18)) 0 33%,var(--track,rgba(0,0,0,.07)) 33% 67%,var(--up-soft,rgba(229,57,53,.16)) 67%)}.wl-rail i{position:absolute;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;border-radius:50%;background:var(--fg);box-shadow:0 0 0 2px var(--surface-solid,#fff)}
 .wl-st{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:15.5px;font-weight:600;margin-top:2px}.wl-new{color:var(--warn-strong);background:var(--warn-soft);border-radius:6px;padding:0 6px}
 .tier.t-mine{background:var(--warn-soft);color:var(--warn-strong)}#sig-list{padding:6px 12px}#sig-list .row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 2px;border-top:1px solid var(--line);text-decoration:none;color:inherit;font-size:16px}#sig-list .row:first-child{border-top:0}#sig-list .row small{font-size:15px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}#sig-list .row>span:last-child{white-space:nowrap;font-weight:700}
 .find-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:8px 0 0}.find-row .flt-btn{margin:0}@media(max-width:820px){.find-row{gap:4px 8px}.find-row .find-link,.find-row .flt-btn{font-size:15px;white-space:nowrap}}.find-link{display:inline-flex;align-items:center;min-height:36px;font-size:16px;font-weight:800;text-decoration:none;color:var(--accent-strong)}

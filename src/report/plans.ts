@@ -193,7 +193,7 @@ window.GNMTheme={v:v,set:function(t){try{localStorage.setItem('gnm-theme',t)}cat
 chart:function(chart,more){var ap=function(){var c={up:v('--up')||'#F04452',down:v('--down')||'#0582CA',muted:v('--muted')||'#6B7A8C',line:v('--line')||'rgba(127,127,127,.15)',strong:v('--line-strong')||'rgba(127,127,127,.3)',fg:v('--fg')||'#0A1626'};try{chart.applyOptions({layout:{textColor:c.muted,panes:{separatorColor:c.line}},grid:{vertLines:{visible:false},horzLines:{color:c.line,style:1}},crosshair:{vertLine:{color:c.strong,width:1,style:0,labelBackgroundColor:c.fg},horzLine:{color:c.strong,width:1,style:2,labelBackgroundColor:c.fg}}});if(more)more(c);}catch(e){}};ap();window.addEventListener('gnm-theme',ap);return ap;}};
 if(mq&&mq.addEventListener)mq.addEventListener('change',function(){if(saved()!=='auto')return;paint(resolve('auto'));window.dispatchEvent(new Event('gnm-theme'));});})();</script>`;
 
-const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+export const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 
 /** A section shown in full from its feature's lowest plan up (FEATURES). Lower plans get a faded preview and a way in. */
 export function gate(html: string, opts: { base: string; what: string; feature: Feature }): string {

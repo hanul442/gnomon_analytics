@@ -28,10 +28,10 @@ test('G-231: a live page rebuilt today is not a report made today; lists, pills 
   });
   const entries = [live('OLD', '2026-10-05'), live('NEW', '2026-10-16'), live('NONE', null)];
   const html = renderReportsPage({ entries, selection: null, universe: null, pulse: null, indices: [] });
-  assert.match(html, /10\/16 나온 리포트 1개/);
-  assert.ok(!html.includes('10/17 나온 리포트') && !html.includes('위원회 10/17'), 'the run date is never shown as the report date');
-  // G-300: rows no longer repeat '위원회 10/16' (the day heading says it); each report still sits under its own day.
-  assert.ok(html.includes('<div class="dl-day dl-old">10/05</div>') && !html.includes('위원회 10/05'));
+  // G-301 (한서님 10/26 새 구조): one stream by date; each day heads its own block.
+  assert.match(html, /<h2>10\/16 \(금\)<\/h2><span class="muted">최신 · 종목 1개<\/span>/);
+  assert.ok(!html.includes('10/17 (') && !html.includes('위원회 10/17'), 'the run date is never shown as the report date');
+  assert.ok(html.includes('<h2>10/05 (월)</h2>') && !html.includes('위원회 10/05'));
   const today = html.slice(html.indexOf('id="today-list"'), html.indexOf('</section>', html.indexOf('id="today-list"')));
   assert.ok(today.includes('NEW/index.html') && !today.includes('OLD/index.html') && !today.includes('NONE/index.html'));
   const info = watchInfo(entries);
@@ -42,11 +42,14 @@ test('G-277: home is 세계 + 위원회 — tabs, the date, the big banner, key 
   const { marketPulse } = await import('../analysis/quickCalc.js');
   const calcs = [['BEARISH', 20], ['BULLISH', 80], ['NEUTRAL', 50]].map(([level, score]) => ({ date: '2026-10-16', signal: { level, score: Number(score) / 100 }, moves: [{ days: 20, pct: 0 }] }));
   const html = renderHome({ entries: [entry('AAA', 9), entry('BBB', 1)], selection: null, universe: null, pulse: marketPulse(calcs as never), indices: [{ symbol: 'KOSPI', name: '코스피', date: '2026-10-16', close: 5668.05, changePct: 2.05, closes: [] }] });
-  assert.deepEqual([...html.matchAll(/role="tab" data-wd="([a-z]+)"/g)].map((m) => m[1]), ['sum', 'com', 'news'], 'no world snapshot: no market tabs');
+  // G-301 (한서님 10/26 새 구조): home is one screen; 이슈 전체 opens from its link, no part buttons anywhere.
+  assert.deepEqual([...html.matchAll(/class="wd-p hm-p" data-wd-p="([a-z]+)"/g)].map((m) => m[1]), ['sum', 'news'], 'no world snapshot: no 시장 전체');
+  assert.doesNotMatch(html, /data-wd="/, 'no part buttons');
   assert.match(html, /<p class="hm-d">10월 16일 [월화수목금토일]요일<\/p>/);
   assert.match(html, /<p class="hm-s">오늘 시장을 한눈에 모았어요\.<\/p>/, 'no world snapshot: a plain line');
   const at = (k: string) => html.indexOf(k);
   assert.ok(at('id="mkt-hero"') < at('class="hm-bn"') && at('class="hm-bn"') < at('id="watch-slot"') && at('id="watch-slot"') < at('id="watch"'), 'date, the big banner, then mine');
+  assert.ok(at('id="watch"') < at('<h2>오늘 이슈</h2>'), 'mine before the issues');
   assert.ok(html.includes('<h2>내 종목 오늘</h2>') && html.includes('wl-rail'));
   assert.ok(html.includes('data-wd-p="news"') && html.includes('data-wd-tag="세계"'), 'one issue list with a 한국/세계 filter');
 });
@@ -106,12 +109,14 @@ test('G-281, G-291: with the world snapshot, home is 요약·시장·위원회·
   assert.match(html, /<p class="hm-s">[^<]*증시[^<]*<\/p>/);
   assert.match(html, /1,452\.3/);
   assert.match(html, /data-sheet=/, 'cards open the big chart sheet');
-  assert.deepEqual([...html.matchAll(/role="tab" data-wd="([a-z]+)"/g)].map((m) => m[1]), ['sum', 'market', 'com', 'news']);
+  assert.deepEqual([...html.matchAll(/class="wd-p hm-p" data-wd-p="([a-z]+)"/g)].map((m) => m[1]), ['sum', 'market', 'news']);
+  assert.match(html, /data-wd-go="market"/, '시장 전체 opens from 오늘');
   // G-291 (한서님 10/23 '네모박스안에 여러개 배치'): 요약's numbers are chart boxes in two columns again.
   const sum = html.slice(html.indexOf('data-wd-p="sum"'), html.indexOf('data-wd-p="market"'));
   assert.match(sum, /class="km-stats wd-stats"/);
   assert.ok(sum.includes('원/달러') && /S(&amp;|&)P 500/.test(sum), 'S&P 500 and 원/달러 boxes on 요약');
-  const market = html.slice(html.indexOf('data-wd-p="market"'), html.indexOf('data-wd-p="com"'));
+  const market = html.slice(html.indexOf('data-wd-p="market"'), html.indexOf('data-wd-p="news"'));
+  assert.doesNotMatch(market, /wd-heat|km-wmap|im-map/, 'no color grid or map in 시장 (the map lives in 이슈 전체)');
   assert.equal(market.split('<b>원/달러</b>').length - 1, 1, '원/달러 shows once in 시장');
   assert.ok(market.indexOf('id="mk-stocks"') < market.indexOf('id="mk-fx"'));
 });
