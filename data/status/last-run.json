@@ -1,5 +1,5 @@
 {
- "at": "2026-10-26T16:17:00.264Z",
+ "at": "2026-10-26T18:40:07.375Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2664
+   "count": 2662
   },
   {
    "source": "naver:fchart:day:etf",
@@ -66,6 +66,11 @@
    "source": "opendart:risk-filings",
    "ok": true,
    "count": 307
+  },
+  {
+   "source": "naver:themes",
+   "ok": true,
+   "count": 264
   }
  ],
  "stocks": [
@@ -336,22 +341,22 @@
   },
   {
    "symbol": "PANW.O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "278530",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "328130",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "016740",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "328130",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
