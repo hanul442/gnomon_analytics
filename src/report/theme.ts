@@ -78,4 +78,10 @@ html:root[data-theme=light]{--muted:#686D75;--fg2:#33373D}
 html:root[data-theme=dark]{--muted:#A3A8B0;--fg2:#D4D7DC}
 :root body .seat.is-dim{fill-opacity:.38;stroke-opacity:.85}
 :root body .gnm-network{top:calc(env(safe-area-inset-top,0px) + 70px);bottom:auto}
+/* G-301 (한서님 10/26 '순서 배치 크기 이상한거 다 조정'): places the bigger type squeezed or clipped at 390px. */
+:root body .ask-filing{width:auto;min-width:30px;padding:0 10px;border-radius:999px;white-space:nowrap}
+:root body .rs-bar.rs-none,:root body #tab-home .rs-bar.rs-none{grid-template-columns:auto minmax(0,1fr)!important}:root body .rs-bar.rs-none .gen-wrap,:root body #tab-home .rs-bar.rs-none .gen-wrap{grid-column:1/-1!important;justify-self:start}
+:root body td.num small{white-space:nowrap}
+:root body #signals td:first-child{min-width:7.5em}:root body #signals th,:root body #signals td:not(:first-child){white-space:nowrap}
+@media (max-width:520px){:root body .sc-hero .kr-half{flex-wrap:wrap;justify-content:center}:root body .sc-hero .kr-half .kr-leg{flex-basis:100%}}
 `;
