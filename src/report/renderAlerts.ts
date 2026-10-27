@@ -9,6 +9,7 @@ export { SW_JS, MANIFEST } from './pushParts.js';
 /** The alerts settings (G-97) as parts, so 설정 (G-210) can hold them with the rest. */
 export function alertsParts(): { css: string; html: string; script: string } {
   const PREFS: [string, string, string][] = [
+    ['morning', '아침 브리핑', '평일 아침 8시, 장 열기 1시간 전에 간밤 미국 시장과 내 종목의 깨진 판단 조건·새 공시를 한 번 알려요'],
     ['daily', '매일 리포트', '장 마감 뒤 그날 리포트가 나오면 알려요. 관심 종목 리포트가 있으면 그 종목을 먼저 알려요.'],
     ['watchReport', '관심 종목 새 리포트', '☆ 해 둔 종목의 리포트가 새로 나오면'],
     ['screen', '스크리너 조건', '저장한 조건에 새로 걸린 종목이 생기면 (조건별 켜기는 아래에서)'],
