@@ -1,31 +1,32 @@
 {
- "at": "2026-10-26T20:08:21.761Z",
+ "at": "2026-10-27T15:30:41.603Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2766
+   "count": 2767
   },
   {
    "source": "naver:m-stock:etf",
    "ok": true,
-   "count": 1183
+   "count": 1186
   },
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2662
+   "count": 2663
   },
   {
    "source": "naver:fchart:day:etf",
    "ok": true,
-   "count": 1183
+   "count": 1186
   },
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 298
+   "count": 298,
+   "error": "1 failed "
   },
   {
    "source": "naver:global",
@@ -35,7 +36,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 40
+   "count": 44
   },
   {
    "source": "google:topic-business-ko",
@@ -55,7 +56,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 56
+   "count": 48
   },
   {
    "source": "naver:world:day:all",
@@ -65,7 +66,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 307
+   "count": 612
   }
  ],
  "stocks": [
@@ -335,29 +336,29 @@
    "failedSources": []
   },
   {
-   "symbol": "PANW.O",
-   "report": "EXISTS",
+   "symbol": "NOW",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "278530",
-   "report": "EXISTS",
+   "symbol": "KRW-XRP",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "328130",
-   "report": "EXISTS",
+   "symbol": "053800",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "016740",
-   "report": "EXISTS",
+   "symbol": "486510",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
-  "date": "2026-10-26",
+  "date": "2026-10-27",
   "status": "SKIPPED",
   "error": "AI 키 또는 예산 확인 필요"
  }

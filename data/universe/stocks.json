@@ -3415,6 +3415,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "0205H0",
+  "name": "에스케이증권제14호기업인수목적",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "020710",
   "name": "시공테크",
   "market": "KOSDAQ"
