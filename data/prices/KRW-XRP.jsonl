@@ -998,3 +998,4 @@
 {"symbol":"KRW-XRP","date":"2026-10-25","open":1744,"high":1765,"low":1724,"close":1734,"volume":36190227.13664353,"source":"upbit:candles:days","retrievedAt":"2026-10-27T15:30:41.603Z"}
 {"symbol":"KRW-XRP","date":"2026-10-26","open":1734,"high":1749,"low":1698,"close":1745,"volume":51252612.40257396,"source":"upbit:candles:days","retrievedAt":"2026-10-27T15:30:41.603Z"}
 {"symbol":"KRW-XRP","date":"2026-10-27","open":1746,"high":1771,"low":1724,"close":1764,"volume":29950894.96024448,"source":"upbit:candles:days","retrievedAt":"2026-10-27T15:30:41.603Z"}
+{"symbol":"KRW-XRP","date":"2026-10-27","open":1746,"high":1771,"low":1724,"close":1758,"volume":32053379.37874537,"source":"upbit:candles:days","retrievedAt":"2026-10-27T17:57:44.706Z"}

@@ -1,5 +1,5 @@
 {
- "at": "2026-10-27T15:30:41.603Z",
+ "at": "2026-10-27T17:57:44.706Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2663
+   "count": 2661
   },
   {
    "source": "naver:fchart:day:etf",
@@ -36,7 +36,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 44
+   "count": 45
   },
   {
    "source": "google:topic-business-ko",
@@ -337,22 +337,22 @@
   },
   {
    "symbol": "NOW",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "KRW-XRP",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "053800",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "486510",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
