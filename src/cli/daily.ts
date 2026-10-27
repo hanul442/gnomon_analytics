@@ -86,6 +86,7 @@ import { collectUniverse, readCorpCodes, readListedStocks, type ListedStock } fr
 import { loadRequests, type ReportRequest } from '../config/requests.js';
 import { latestSelection, pickTicker, pool, runSelection } from './weekly.js';
 import { writeStockPages } from './stockPages.js';
+import { writeSitemap } from './sitemap.js';
 import { marketPulse, quickCalc, type MarketPulse, type StockCalc } from '../analysis/quickCalc.js';
 import type { Selection, SelectionParams } from '../analysis/selection.js';
 import type { UniverseRow } from '../sources/naverList.js';
@@ -759,8 +760,9 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  * without the address falls back to the mock account and shows a signed-in alpha user as 무료.
  */
 export async function configureSite(root: string): Promise<void> {
-  const config = JSON.parse(await readFile(join(root, 'gnm.config.json'), 'utf8').catch(() => '{}')) as { apiUrl?: string };
+  const config = JSON.parse(await readFile(join(root, 'gnm.config.json'), 'utf8').catch(() => '{}')) as { apiUrl?: string; siteUrl?: string };
   SITE_CONFIG.apiUrl = process.env.GNM_API_URL ?? config.apiUrl ?? '';
+  SITE_CONFIG.siteUrl = process.env.GNM_SITE_URL ?? config.siteUrl ?? '';
 }
 
 /** G-284: what the run gives the in-app news pages: an AI client for summaries, the budget, and fetch for pictures. */
@@ -982,6 +984,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     await copyFile(join(serifRoot, 'files', file), join(siteDir, FONT_DIR, 'serif', file));
   }
   await writeFile(join(siteDir, FONT_DIR, 'serif.css'), serifCss);
+  await writeSitemap(siteDir, SITE_CONFIG.siteUrl ?? '', extras.now ?? new Date());
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

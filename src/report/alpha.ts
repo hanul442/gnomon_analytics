@@ -6,7 +6,16 @@ import { WRAPUP, WRAPUP_LINK } from './wrapup.js';
 // otherwise every page keeps the browser-only MOCK from plans.ts.
 
 /** Set once by the build before pages are rendered. */
-export const SITE_CONFIG: { apiUrl: string } = { apiUrl: '' };
+export const SITE_CONFIG: { apiUrl: string; siteUrl?: string } = { apiUrl: '' };
+/** G-302: the default page description (search results, link previews). */
+export const SITE_DESCRIPTION = 'AI 위원회가 종목마다 판단을 미리 남기고, 서로 반박하고, 20거래일 뒤 맞았는지 공개로 채점받아요. 틀린 판단도 다 보여 줘요.';
+/** G-302: description and link-preview tags. The preview picture needs the public site address (gnm.config.json siteUrl). */
+export function seoMeta(title: string, description?: string): string {
+  const e = (t: string) => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  const d = e((description ?? SITE_DESCRIPTION).replace(/\s+/g, ' ').trim().slice(0, 160)), site = (SITE_CONFIG.siteUrl ?? '').replace(/\/?$/, '/');
+  const img = /^https:\/\//.test(site) ? `<meta property="og:image" content="${e(site)}assets/gnomon-icon-512.png">` : '';
+  return `<meta name="description" content="${d}"><meta property="og:type" content="website"><meta property="og:site_name" content="GNOMON"><meta property="og:title" content="${e(title)}"><meta property="og:description" content="${d}">${img}<meta name="twitter:card" content="summary">`;
+}
 
 export function apiMeta(): string {
   return /^https:\/\/[a-z0-9.-]+(:\d+)?\/?$|^http:\/\/localhost:\d+\/?$/.test(SITE_CONFIG.apiUrl) ? `<meta name="gnm-api" content="${SITE_CONFIG.apiUrl.replace(/\/$/, '')}">` : '';
