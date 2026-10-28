@@ -8,7 +8,7 @@
 // Loaded last (after COMPOSITION_CSS). Page <style> blocks come later, so rules start with `:root body #main`.
 const M = ':root body #main';
 const FLAT = ':is(.card,.mi-card,.cs-home,.iss-c,.sc-hero)';
-const KEEP = ':not(.km-stat):not(.bn-slide):not(.hm-bn):not(.rh-keep)';
+const KEEP = ':not(.km-stat):not(.bn-slide):not(.hm-bn):not(.rh-keep):not(.debate):not(#db-room *):not(.chart-card)'; // the debate room and the chart card keep their own layout
 
 export const ROBINHOOD_CSS = `
 ${M}{--rh-base:var(--line-strong)}
