@@ -170,7 +170,8 @@ ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 
 <style>.sc-rec{list-style:none;margin:0;padding:0}.sc-rec li{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}.sc-rec li:first-child{border-top:0}.sc-rt{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}.sc-rt b{font-size:16px}.sc-rt small{font-size:15px;color:var(--muted)}</style>`;
   // G-281 (한서님 10/22, 앱 전체 구조 — 위에 줄 없음): no tab row in the middle; the four groups follow each other, each with its title.
   const GROUP_TITLE: Record<string, string> = { forecast: '예측', analysts: '위원별', scenarios: '시나리오', paper: '가상 계좌', signals: '신호' };
-  const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}"><h2 class="sc-gh">${GROUP_TITLE[k]}</h2>${html}</div>`;
+  // G-302: one heading per section — the group name stays for screen readers, the section's own h2 is the visible one.
+  const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}" role="group" aria-label="${GROUP_TITLE[k]}">${html}</div>`;
   // G-301 (한서님 10/26 배치 점검): the groups everyone can read come first; 예측 (both cards locked for free readers) goes last.
   void scoreRing;
   const analystsHtml = (sun ? `<section class="block sc-sec"><div class="block-head"><h2>판단 결과 한눈에</h2><span class="muted">전 위원 합산</span></div><div class="card">${sun}</div></section>` : '') + gate(analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '위원별 판단과 결과', feature: 'scoreSummary' });
