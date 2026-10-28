@@ -998,3 +998,4 @@
 {"symbol":"NFLX.O","date":"2026-10-26","open":65.16,"high":65.5,"low":62.8635,"close":63.9,"volume":54422376,"source":"naver:world:day","retrievedAt":"2026-10-28T16:13:56.361Z"}
 {"symbol":"NFLX.O","date":"2026-10-27","open":63.4,"high":63.87,"low":62.48,"close":62.52,"volume":48814090,"source":"naver:world:day","retrievedAt":"2026-10-28T16:13:56.361Z"}
 {"symbol":"NFLX.O","date":"2026-10-28","open":61.96,"high":62.65,"low":61.65,"close":61.77,"volume":18225632,"source":"naver:world:day","retrievedAt":"2026-10-28T16:13:56.361Z"}
+{"symbol":"NFLX.O","date":"2026-10-28","open":61.96,"high":62.65,"low":61.55,"close":61.575,"volume":25525501,"source":"naver:world:day","retrievedAt":"2026-10-28T18:20:10.434Z"}
