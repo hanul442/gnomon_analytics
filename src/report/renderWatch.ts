@@ -23,6 +23,12 @@ const SCRIPT = `<script>
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var isUs = function (s) { return /^(?!KRW-)[A-Z][A-Z0-9-]{0,9}(\\.[A-Z])?$/.test(s); };
   var won = function (p, s) { if (s && isUs(s)) return '$' + p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
+  // G-303 (로빈후드식): a raw 30-day line with a dotted start line; red when it ended higher, blue when lower.
+  var spark = function (v) {
+    if (!v || v.length < 2) return '<span class="wl-sp" aria-hidden="true"></span>';
+    var w = 64, h = 32, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), r = hi - lo || 1, X = function (i) { return (i / (v.length - 1) * (w - 4)).toFixed(1); }, Y = function (x) { return (3 + (hi - x) / r * (h - 6)).toFixed(1); };
+    return '<svg class="wl-sp ' + (v[v.length - 1] >= v[0] ? 'up' : 'down') + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><line class="rh-base" x1="0" x2="' + w + '" y1="' + Y(v[0]) + '" y2="' + Y(v[0]) + '"/><path d="' + v.map(function (x, i) { return (i ? 'L' : 'M') + X(i) + ',' + Y(x); }).join('') + '"/><circle cx="' + X(v.length - 1) + '" cy="' + Y(v[v.length - 1]) + '" r="2.6"/></svg>';
+  };
   var items = null, info = null, live = {};
   try { sortSel.value = localStorage.getItem('gnm-watch-sort') || 'added'; } catch (e) {}
   var row = function (sym, i) {
@@ -33,7 +39,7 @@ const SCRIPT = `<script>
     if (wi && wi.f) tags.push('<span class="new">새 공시 ' + wi.f + '</span>');
     if (wi && wi.n) tags.push('<span class="new">새 뉴스 ' + wi.n + '</span>');
     if (wi && p) { [['▲', wi.up], ['▼', wi.dn]].forEach(function (x) { if (x[1]) tags.push('<span class="' + (x[0] === '▲' ? 'up' : 'down') + '">' + x[0] + ' ' + won(x[1], sym) + ' (' + ((x[1] / p - 1) * 100 > 0 ? '+' : '') + ((x[1] / p - 1) * 100).toFixed(1) + '%)</span>'); }); }
-    return '<div class="wp-row" data-i="' + i + '"><a class="wp-main" href="' + href + '"><div class="wp-name"><b>' + esc(it[1]) + '</b><small>' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : us ? sym.replace(/${US_EXCHANGE_LETTER}/, '') + ' · 미국' : (it[1] === sym ? '국내' : sym) + (it[2] === 'ETF' ? ' · ETF' : '')) + '</small></div>' + (tags.length ? '<div class="wp-tags">' + tags.join('') + '</div>' : '') + '</a>' +
+    return '<div class="wp-row" data-i="' + i + '"><a class="wp-main" href="' + href + '"><div class="wp-name"><b>' + esc(it[1]) + '</b><small>' + esc(coin ? sym.replace('KRW-', '') + ' · 코인' : us ? sym.replace(/${US_EXCHANGE_LETTER}/, '') + ' · 미국' : (it[1] === sym ? '국내' : sym) + (it[2] === 'ETF' ? ' · ETF' : '')) + '</small></div>' + (tags.length ? '<div class="wp-tags">' + tags.join('') + '</div>' : '') + '</a>' + spark(wi && wi.s) +
       '<div class="wp-px" data-no-roll>' + (p == null ? '<span class="muted">' + (items ? '가격 없음' : '가격 확인 중') + '</span>' : '<b data-live="' + esc(sym) + '" data-live-f="price">' + won(p, sym) + '</b>') + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</div>' +
       '<button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="true" aria-label="관심 종목에서 빼기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
   };
