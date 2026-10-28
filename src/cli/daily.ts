@@ -211,6 +211,8 @@ interface RunOptions {
   /** Injected in tests instead of a real API client. */
   anthropic?: Anthropic;
   fetch?: typeof fetch;
+  /** Manual run (env REPORT_DATE): that day's reports whose AI was skipped by the monthly budget get their committee now. */
+  fillDate?: string;
 }
 
 export interface TickerResult {
@@ -436,7 +438,9 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
       if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
     }
   }
-  const market = today.hour >= SETTLED_HOUR_KST ? await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget) : undefined;
+  if (options.fillDate) console.log(`fill ${options.fillDate}: ${JSON.stringify(await fillBudgetSkipped(root, options.fillDate, budget, { now, apiKey: options.apiKey, ...(options.anthropicApiKey ? { anthropicApiKey: options.anthropicApiKey } : {}), ...(options.anthropic ? { anthropic: options.anthropic } : {}), ...(options.fetch ? { fetch: options.fetch } : {}) }))}`);
+  // A manual past-day market committee (MARKET_DATE) runs at any hour; today's waits for the settled close.
+  const market = today.hour >= SETTLED_HOUR_KST || process.env.MARKET_DATE ? await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget) : undefined;
   // G-284: news summaries use the same monthly AI budget; pictures are looked up with the run's fetch.
   const newsClient = options.anthropic ?? (options.anthropicApiKey ? new Anthropic({ apiKey: options.anthropicApiKey, timeout: 60000, maxRetries: 1 }) : null);
   await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp, now, news: { client: newsClient, budget, ...fetchOpt } });
@@ -618,6 +622,36 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
     }
   }
   return { symbol: SYMBOL, addedBars: addedBars.length, addedFilings: addedFilings.length, addedNews: addedNews.length, newsStatus, marketStatus, report };
+}
+
+/**
+ * Gives a past day's reports the committee they missed because the monthly AI budget ran out
+ * (commentary SKIPPED with AI_MONTHLY_BUDGET). Only the AI part is added; the numbers stay as written that day.
+ * The analysts' calls are not logged for scoring: they were made after that day, so they would not be fair calls.
+ */
+export async function fillBudgetSkipped(root: string, date: string, budget: AiBudget, options: { now: Date; apiKey: string; anthropicApiKey?: string; anthropic?: Anthropic; fetch?: typeof fetch }): Promise<Record<string, string>> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error(`REPORT_DATE must be YYYY-MM-DD: ${date}`);
+  const out: Record<string, string> = {};
+  const dirs = await readdir(join(root, 'reports'), { withFileTypes: true }).catch(() => []);
+  for (const d of dirs) {
+    if (!d.isDirectory() || d.name === 'market') continue;
+    const file = join(root, 'reports', d.name, `${date}.json`);
+    const report = await readFile(file, 'utf8').then((t) => JSON.parse(t) as DailyReport, () => null);
+    const c = report?.commentary;
+    if (!report || c?.status !== 'SKIPPED' || !c.error?.startsWith('AI_MONTHLY_BUDGET')) continue;
+    if (!budget.allows('deep')) { out[d.name] = 'BUDGET'; continue; }
+    budget.reserve('deep');
+    if (report.currency !== 'USD' && report.kind !== 'coin') await attachFilingExcerpts(report.filings, options.apiKey, options.fetch ?? fetch);
+    const commentary = await writeCommentary(report, {
+      now: () => options.now,
+      ...(options.anthropic ? { client: options.anthropic } : {}),
+      ...(options.anthropicApiKey ? { apiKey: options.anthropicApiKey } : {}),
+    });
+    await budget.record(d.name, 'deep', commentary, options.now);
+    out[d.name] = commentary.status;
+    if (commentary.status === 'OK') await writeFile(file, `${JSON.stringify(await storable({ ...report, commentary }))}\n`);
+  }
+  return out;
 }
 
 /**
@@ -1003,6 +1037,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       // G-174 (한서님 10/9): no weekly 대표 종목 or weekly-pick reports on the site.
       weeklyReports: false,
       ...(process.env.GNM_AI_BUDGET_USD ? { aiBudgetUsd: Number(process.env.GNM_AI_BUDGET_USD) } : {}),
+      ...(process.env.REPORT_DATE ? { fillDate: process.env.REPORT_DATE } : {}),
     }))
     .then((result) => {
       console.log(JSON.stringify(result));
