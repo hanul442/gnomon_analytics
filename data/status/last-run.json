@@ -1,5 +1,5 @@
 {
- "at": "2026-10-28T18:48:14.132Z",
+ "at": "2026-10-28T19:51:39.130Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 39
+   "count": 38
   },
   {
    "source": "google:topic-business-ko",
@@ -55,7 +55,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 45
+   "count": 47
   },
   {
    "source": "naver:world:day:all",
@@ -335,22 +335,22 @@
    "failedSources": []
   },
   {
-   "symbol": "395160",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
    "symbol": "NFLX.O",
    "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "108490",
+   "symbol": "395160",
    "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "0220W0",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "108490",
    "report": "EXISTS",
    "failedSources": []
   }
