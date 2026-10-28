@@ -9,16 +9,16 @@ export const KIT_SHEET_CSS = `
 .gsh-sheet::backdrop{background:rgba(10,12,16,.38)}
 html.mo .gsh-sheet[open]{animation:gsh-up .34s var(--ease-out,cubic-bezier(.2,.8,.2,1))}@keyframes gsh-up{from{transform:translateY(48px);opacity:0}to{transform:none;opacity:1}}
 .gsh-grab{width:40px;height:5px;margin:0 auto 12px;border-radius:3px;background:var(--line-strong)}
-.gsh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.gsh-t{font-size:15px;color:var(--fg2)}.gsh-v{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}.gsh-s{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px;color:var(--muted)}.gsh-s.up{color:#f04452}.gsh-s.down{color:#3182f6}
-.gsh-x{flex:none;width:40px;height:40px;border:0;border-radius:20px;background:var(--soft);color:var(--fg);font-size:20px;line-height:1;cursor:pointer}
+.gsh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.gsh-t{font-size:17px;color:var(--fg2)}.gsh-v{font-size:30px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-top:2px}.gsh-s{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px;color:var(--muted)}.gsh-s.up{color:#f04452}.gsh-s.down{color:#3182f6}
+.gsh-x{flex:none;width:40px;height:40px;border:0;border-radius:20px;background:var(--soft);color:var(--fg);font-size:21px;line-height:1;cursor:pointer}
 .gsh-svg{display:block;width:100%;height:240px;margin-top:12px;touch-action:none;cursor:crosshair;overflow:visible}
 .gsh-line{fill:none;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
 html.mo .gsh-sheet[open] .gsh-line{stroke-dasharray:1;stroke-dashoffset:1;animation:gsh-draw 1.1s var(--ease-out,cubic-bezier(.3,.7,.2,1)) forwards}@keyframes gsh-draw{to{stroke-dashoffset:0}}
 html.mo .gsh-sheet[open] .gsh-fill{opacity:0;animation:gsh-fade .7s .5s forwards}@keyframes gsh-fade{to{opacity:1}}
-.gsh-hl{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}.gsh-hl.up{fill:#e5323f}.gsh-hl.down{fill:#2468d6}
+.gsh-hl{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}.gsh-hl.up{fill:#e5323f}.gsh-hl.down{fill:#2468d6}
 .gsh-ar{fill:none;stroke-width:1.4;stroke-linecap:round}.gsh-ar.up{stroke:#e5323f}.gsh-ar.down{stroke:#2468d6}
 .gsh-cross{stroke:var(--fg);stroke-opacity:.25}.gsh-dot{fill:var(--surface-solid);stroke-width:2.5}
-.gsh-foot{margin:10px 0 0;font-size:12px;color:var(--muted)}
+.gsh-foot{margin:10px 0 0;font-size:15px;color:var(--muted)}
 .km-stat:not(a){cursor:pointer}[data-sheet]{cursor:pointer}
 @media (prefers-reduced-motion: reduce){.gsh-sheet[open],.gsh-sheet[open] .gsh-line,.gsh-sheet[open] .gsh-fill{animation:none!important;stroke-dashoffset:0;opacity:1}}
 `;

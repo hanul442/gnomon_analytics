@@ -193,7 +193,7 @@ function flowChart(flow: FlowSection): string {
   const H = rows.length * (RH + gap) + 12;
   return `<svg viewBox="0 0 ${W} ${H}" class="flow-chart flow-bars" role="img" aria-label="최근 ${days.length}거래일 투자자별 날마다 순매수">${body}
 <text x="${labW}" y="${H - 1}" class="axis-label">${esc(days[0]!.date.slice(5))}</text><text x="${labW + plotW}" y="${H - 1}" class="axis-label" text-anchor="end">${esc(days.at(-1)!.date.slice(5))}</text></svg>
-<style>.flow-bars .fb-up{fill:var(--up,#f04452)}.flow-bars .fb-dn{fill:var(--down,#3182f6)}.flow-bars .flow-sum{font-size:11.5px;font-weight:700;fill:var(--fg2)}.flow-bars .flow-sum.up{fill:var(--up,#f04452)}.flow-bars .flow-sum.down{fill:var(--down,#3182f6)}</style>`;
+<style>.flow-bars .fb-up{fill:var(--up,#f04452)}.flow-bars .fb-dn{fill:var(--down,#3182f6)}.flow-bars .flow-sum{font-size:15px;font-weight:700;fill:var(--fg2)}.flow-bars .flow-sum.up{fill:var(--up,#f04452)}.flow-bars .flow-sum.down{fill:var(--down,#3182f6)}</style>`;
 }
 
 const FOOTPRINT = { ACCUMULATION_LIKE: '매집 쪽', DISTRIBUTION_LIKE: '분산 쪽', MIXED: '엇갈림', NEUTRAL: '뚜렷하지 않음', DATA_GAP: '기록 부족' } as const;
@@ -256,7 +256,7 @@ const num = (v: number | null | undefined, unit: string, d = 2) => (v == null ||
  * G-141: 요약's quick stock info, Toss-style, right under the price: today's and the year's range, the six
  * numbers people check first, and who bought over the last five sessions. The full cards live in 기업 체력.
  */
-export function quickInfoCard(market: MarketSection | undefined, close: number | null, bars: readonly Bar[] = []): string {
+export function quickInfoCard(market: MarketSection | undefined, close: number | null, bars: readonly Bar[] = [], inner = false): string {
   if (!market) return '';
   const s = market.snapshot, last = bars.at(-1), now = close ?? last?.close ?? null;
   const year = last ? bars.filter((b) => b.date >= new Date(Date.parse(last.date) - 365 * 864e5).toISOString().slice(0, 10)) : [];
@@ -265,11 +265,14 @@ export function quickInfoCard(market: MarketSection | undefined, close: number |
   const hold = market.flows?.days.at(-1)?.foreignHoldRatio ?? null;
   // G-300 (한서님 10/25 '숫자는 한 곳에만'): 시가총액 · PER · PBR · 배당수익률 sit in 투자 지표 right below, so not here too.
   const cells = [
-    hold != null ? cell('외국인 보유', num(hold, '%')) : '',
+    // G-301: inside 투자 지표 the foreign share is 수급's (with its 20-day change), so it is said once.
+    hold != null && !inner ? cell('외국인 보유', num(hold, '%')) : '',
     last ? cell('거래대금', eok(last.volume * last.close)) : '',
   ].filter(Boolean);
   // G-300: who bought over five sessions is 수급's 투자자 동향 (5일), a little further down the same tab.
   if (!ranges && !cells.length) return '';
+  // G-301 (새 구조): inside 투자 지표 the ranges and the two numbers follow the other numbers, without a card of their own.
+  if (inner) return `<div class="qi-in" id="quick-info">${ranges}${cells.length ? `<div class="si-grid qi-grid qi-g2">${cells.join('')}</div>` : ''}</div>`;
   return `<section class="card qi-card" id="quick-info"><div class="head"><h2>가격 범위</h2></div>${ranges}${cells.length ? `<div class="si-grid qi-grid qi-g2">${cells.join('')}</div>` : ''}</section>`;
 }
 
@@ -312,9 +315,9 @@ ${detail ? `<dialog class="v2-dialog fs-dlg" id="fs-detail" aria-label="재무�
  * Price ranges live in 요약's 종목 정보 and investor flows in 수급, so neither repeats here. Every card shows
  * only what the data has; a missing card is left out rather than filled with dashes.
  */
-export function stockInfoCards(market: MarketSection, close: number | null, _name: string, bars: readonly Bar[] = [], st?: FullStatements): string {
+export function stockInfoCards(market: MarketSection, close: number | null, _name: string, bars: readonly Bar[] = [], st?: FullStatements, range = ''): string {
   const s = market.snapshot, out: string[] = [];
-  const card = (title: string, body: string, sub = '') => out.push(`<section class="card si-card"><div class="head"><h2>${esc(title)}</h2>${sub ? `<span class="sub">${sub}</span>` : ''}</div>${body}</section>`);
+  const card = (title: string, body: string, sub = '', id = '') => out.push(`<section class="card si-card"${id ? ` id="${id}"` : ''}><div class="head"><h2>${esc(title)}</h2>${sub ? `<span class="sub">${sub}</span>` : ''}</div>${body}</section>`);
   const now = close ?? bars.at(-1)?.close ?? null;
   // 투자 지표 (the dividend yield only: payout and history are under 실적·배당 and 재무제표 자세히)
   const q = market.quarters.filter((p) => !p.isEstimate), y = market.years.filter((p) => !p.isEstimate);
@@ -324,11 +327,11 @@ export function stockInfoCards(market: MarketSection, close: number | null, _nam
     const cap = s?.marketCap ?? null, psr = cap && sales4 && Number.isFinite(sales4) && sales4 > 0 ? cap / (sales4 * financeScale()) : null;
     const cells = [cell('시가총액', eok(cap)), cell('PER', num(s?.per, '배')), s?.estimatedPer != null ? cell('추정 PER', num(s.estimatedPer, '배')) : '', cell('PBR', num(s?.pbr, '배')), roe != null ? cell('ROE', num(roe, '%')) : '', psr != null ? cell('PSR', num(psr, '배')) : '',
       s?.eps != null ? cell('EPS', won(s.eps)) : '', s?.bps != null ? cell('BPS', won(s.bps)) : '', s?.dividendYield != null ? cell('배당수익률', num(s.dividendYield, '%')) : ''].filter(Boolean);
-    card('투자 지표', `<div class="si-grid">${cells.join('')}</div>
-<p class="fine">${currency() === 'USD' ? '네이버 증권(지표)·SEC EDGAR(실적) 기준.' : '네이버 증권 기준.'} ROE는 최근 결산, PSR은 시가총액 ÷ 최근 4분기 매출액이에요.</p>`);
-  }
+    card('투자 지표', `<div class="si-grid">${cells.join('')}</div>${range}
+<p class="fine">${currency() === 'USD' ? '네이버 증권(지표)·SEC EDGAR(실적) 기준.' : '네이버 증권 기준.'} ROE는 최근 결산, PSR은 시가총액 ÷ 최근 4분기 매출액이에요.</p>`, '', 'si-metrics');
+  } else if (range) card('가격 범위', range, '', 'si-metrics');
   const fin = financeCard(market, st);
-  if (fin) out.push(fin);
+  if (fin) out.push(fin.replace('<section class="card', '<section id="si-fin" class="card'));
   // 애널리스트 의견 + 최근 증권사 리포트 (one card)
   const cons = s?.consensus;
   // G-117: each report opens on Naver (summary and the broker's PDF) in a new tab.
@@ -342,17 +345,17 @@ export function stockInfoCards(market: MarketSection, close: number | null, _nam
       const recLabel = rec == null ? '' : rec >= 4.5 ? '강력 매수' : rec >= 3.5 ? '매수' : rec >= 2.5 ? '중립' : rec >= 1.5 ? '매도' : '강력 매도';
       head = `<div class="si-target"><div><span>평균 목표가</span><b>${won(cons.targetPriceMean)}</b><small class="${tone(up)}">현재가 대비 ${pct(up)}</small></div>${rec != null ? `<div><span>투자의견 평균</span><b>${recLabel}</b><small>${rec.toFixed(2)} / 5</small></div>` : ''}</div>${targetBar(now, cons.targetPriceMean, null, null)}`;
     }
-    card('애널리스트 의견', `${head}${reports}<p class="fine">증권사 컨센서스${cons?.date ? `(${esc(cons.date)})` : ''}와 리포트 제목이에요. 우리 판단이 아니에요.</p>`);
+    card('애널리스트 의견', `${head}${reports}<p class="fine">증권사 컨센서스${cons?.date ? `(${esc(cons.date)})` : ''}와 리포트 제목이에요. 우리 판단이 아니에요.</p>`, '', 'si-analyst');
   }
   return out.length ? `<div class="si-wrap">${out.join('')}</div>` : '';
 }
 
-export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:flex;justify-content:space-between;align-items:baseline}.qi-card h2{font-size:17px;margin:0 0 4px}.qi-more{font-size:13.5px;font-weight:800;color:var(--accent-strong);text-decoration:none}.qi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.qi-grid.qi-g2{grid-template-columns:repeat(2,minmax(0,1fr))}.qi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:13px}.qi-k{color:var(--fg2);font-weight:700;margin-right:auto}.qi-who{display:inline-flex;gap:6px;align-items:baseline}.qi-who small{color:var(--muted)}@media (max-width:520px){.qi-k{width:100%}}
-.si-wrap{columns:2;column-gap:14px;margin-bottom:16px}.si-card{min-width:0;break-inside:avoid;margin:0 0 14px;display:block}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:17px;margin:0 0 10px}
-.si-range{margin:6px 0 14px}.tb-bar{position:relative;height:8px;margin:10px 0 4px;border-radius:99px;background:var(--soft)}.tb-fill{position:absolute;top:0;bottom:0;border-radius:99px;opacity:.85}.tb-fill.up{background:linear-gradient(90deg,#ffd3d7,var(--up))}.tb-fill.down{background:linear-gradient(90deg,var(--down),#d3e3ff)}.tb-tick{position:absolute;top:-3px;width:2px;height:14px;margin-left:-1px;background:#c3c9d2}.tb-now,.tb-tgt{display:inline-block}.tb-bar .tb-now{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--fg);border:2px solid var(--surface-solid);box-shadow:0 1px 4px rgba(0,0,0,.25)}.tb-bar .tb-tgt{position:absolute;top:50%;width:4px;height:18px;margin:-9px 0 0 -2px;border-radius:2px;background:var(--accent)}.tb-key{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--fg2);margin-top:8px}.tb-key span{display:inline-flex;align-items:center;gap:6px}.tb-key .tb-now{width:10px;height:10px;border-radius:50%;background:var(--fg)}.tb-key .tb-tgt{width:4px;height:12px;border-radius:2px;background:var(--accent)}.si-rk{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
-.si-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.si-c{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}.si-c span{color:var(--fg2)}.si-c b{font-variant-numeric:tabular-nums;text-align:right}
-.si-seg{margin-bottom:8px;width:max-content}.si-flow{display:grid;grid-template-columns:56px minmax(0,1fr) 84px;align-items:center;gap:8px;padding:7px 0;font-size:14px}.si-flow b{text-align:right;font-variant-numeric:tabular-nums}.si-fbar{position:relative;height:10px;background:var(--soft);border-radius:4px}.si-fbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}.si-fbar i{position:absolute;top:0;bottom:0;border-radius:3px}.si-fbar i.pos{background:var(--up)}.si-fbar i.neg{background:var(--accent)}
-.fc-row{margin:14px 0 4px}.fc-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}.fc-h span{font-size:13px;color:var(--fg2)}.fc-h span b{color:var(--fg)}.fc-h em{font-style:normal;font-weight:700;margin-left:4px}
+export const STOCK_INFO_CSS = `.qi-card{margin:14px 0}.qi-card .head{display:flex;justify-content:space-between;align-items:baseline}.qi-card h2{font-size:18.5px;margin:0 0 4px}.qi-more{font-size:16px;font-weight:800;color:var(--accent-strong);text-decoration:none}.qi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.qi-grid.qi-g2{grid-template-columns:repeat(2,minmax(0,1fr))}.qi-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);font-size:15.5px}.qi-k{color:var(--fg2);font-weight:700;margin-right:auto}.qi-who{display:inline-flex;gap:6px;align-items:baseline}.qi-who small{color:var(--muted)}@media (max-width:520px){.qi-k{width:100%}}
+.si-wrap{columns:2;column-gap:14px;margin-bottom:16px}.si-card{min-width:0;break-inside:avoid;margin:0 0 14px;display:block}.si-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.si-card h2{font-size:18.5px;margin:0 0 10px}
+.si-range{margin:6px 0 14px}.tb-bar{position:relative;height:8px;margin:10px 0 4px;border-radius:99px;background:var(--soft)}.tb-fill{position:absolute;top:0;bottom:0;border-radius:99px;opacity:.85}.tb-fill.up{background:linear-gradient(90deg,#ffd3d7,var(--up))}.tb-fill.down{background:linear-gradient(90deg,var(--down),#d3e3ff)}.tb-tick{position:absolute;top:-3px;width:2px;height:14px;margin-left:-1px;background:#c3c9d2}.tb-now,.tb-tgt{display:inline-block}.tb-bar .tb-now{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--fg);border:2px solid var(--surface-solid);box-shadow:0 1px 4px rgba(0,0,0,.25)}.tb-bar .tb-tgt{position:absolute;top:50%;width:4px;height:18px;margin:-9px 0 0 -2px;border-radius:2px;background:var(--accent)}.tb-key{display:flex;gap:14px;flex-wrap:wrap;font-size:15.5px;color:var(--fg2);margin-top:8px}.tb-key span{display:inline-flex;align-items:center;gap:6px}.tb-key .tb-now{width:10px;height:10px;border-radius:50%;background:var(--fg)}.tb-key .tb-tgt{width:4px;height:12px;border-radius:2px;background:var(--accent)}.si-rk{display:flex;justify-content:space-between;font-size:15.5px;font-weight:700;color:var(--fg2);margin-bottom:6px}.si-rk small{font-weight:500;color:var(--muted)}.si-rbar{position:relative;height:6px;border-radius:99px;background:linear-gradient(90deg,#c9d7f2,#f2c9c9)}.si-rbar i{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--navy,#13294b);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}.si-rv{display:flex;justify-content:space-between;font-size:15px;color:var(--muted);margin-top:6px}.si-rv b{color:var(--fg);font-weight:700}
+.si-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}.si-c{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:16px}.si-c span{color:var(--fg2)}.si-c b{font-variant-numeric:tabular-nums;text-align:right}
+.si-seg{margin-bottom:8px;width:max-content}.si-flow{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 0;font-size:16px}.si-flow b{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}.si-fbar{position:relative;height:10px;background:var(--soft);border-radius:4px}.si-fbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}.si-fbar i{position:absolute;top:0;bottom:0;border-radius:3px}.si-fbar i.pos{background:var(--up)}.si-fbar i.neg{background:var(--accent)}
+.fc-row{margin:14px 0 4px}.fc-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:16px}.fc-h span{font-size:15.5px;color:var(--fg2)}.fc-h span b{color:var(--fg)}.fc-h em{font-style:normal;font-weight:700;margin-left:4px}
 /* G-185: gauges on glass: the scored band lit with its own colour, a slim needle with a glowing tip, each horizon a glass tile tinted by its verdict. */
 .g-seg{opacity:.3;transition:opacity .4s,filter .4s}.g-seg.on{opacity:1;filter:drop-shadow(0 0 5px currentColor)}
 .mini-gauge:not(:has(.on)) .g-seg,.gauge:not(:has(.on)) .g-seg{opacity:.55}
@@ -370,12 +373,12 @@ html:not([data-theme=dark]) .hz{background:linear-gradient(165deg,rgba(255,255,2
 .fc-tick{position:absolute;top:-9px;width:2px;height:10px;margin-left:-1px;border-radius:2px}.fc-tick::after{content:"";position:absolute;left:50%;top:-5px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:inherit}
 .fc-tick.cons,.lg-tick.cons{background:#F2C14E}.fc-tick.p50,.lg-tick.p50{background:#B794F6}
 .lg-tick{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:0}
-.fc-notes{display:flex;flex-wrap:wrap;gap:4px 16px;margin:8px 0 2px;font-size:12.5px;color:var(--fg2)}.fc-notes b{color:var(--fg)}
+.fc-notes{display:flex;flex-wrap:wrap;gap:4px 16px;margin:8px 0 2px;font-size:15.5px;color:var(--fg2)}.fc-notes b{color:var(--fg)}
 .value-head{margin-bottom:6px}
 .lv-ladder{position:relative;display:flex;flex-direction:column;gap:2px;margin:12px 0 8px}
-.lv-row{display:grid;grid-template-columns:42px minmax(78px,auto) minmax(0,1fr) minmax(54px,auto) 64px;align-items:center;gap:10px;padding:7px 10px;border-radius:12px;font-size:13.5px;font-variant-numeric:tabular-nums;transition:background .2s}
+.lv-row{display:grid;grid-template-columns:42px minmax(78px,auto) minmax(0,1fr) minmax(54px,auto) 64px;align-items:center;gap:10px;padding:7px 10px;border-radius:12px;font-size:16px;font-variant-numeric:tabular-nums;transition:background .2s}
 .lv-row:hover{background:var(--soft)}
-.lv-k{justify-self:start;font-size:11.5px;font-weight:800;padding:2px 8px;border-radius:999px}
+.lv-k{justify-self:start;font-size:15px;font-weight:800;padding:2px 8px;border-radius:999px}
 .lv-res .lv-k{background:var(--up-soft);color:var(--up-strong)}.lv-sup .lv-k{background:var(--down-soft);color:var(--down-strong)}
 .lv-p{font-weight:800;color:var(--fg);white-space:nowrap}.lv-row em{font-style:normal;white-space:nowrap;text-align:right}
 .lv-bar{position:relative;height:8px;border-radius:8px;background:var(--soft);overflow:hidden}
@@ -383,53 +386,62 @@ html:not([data-theme=dark]) .hz{background:linear-gradient(165deg,rgba(255,255,2
 .lv-res .lv-bar i{background:linear-gradient(90deg,rgba(255,122,122,.25),var(--up));box-shadow:0 0 10px -2px var(--up)}
 .lv-sup .lv-bar i{background:linear-gradient(90deg,rgba(92,187,255,.25),var(--down));box-shadow:0 0 10px -2px var(--down)}
 .lv-row em{font-style:normal;font-weight:700;text-align:right}
-.lv-t{display:flex;align-items:center;justify-content:flex-end;gap:3px}.lv-t i{width:5px;height:5px;border-radius:50%;background:var(--fg2);opacity:.7}.lv-t small{margin-left:4px;color:var(--muted);font-size:11.5px}
-.lv-now{display:flex;align-items:center;gap:10px;margin:6px 0;padding:8px 12px;border-radius:12px;border:1px solid var(--accent-line);background:linear-gradient(90deg,var(--accent-soft),transparent);font-size:13px;color:var(--fg2);box-shadow:0 0 22px -12px rgba(0,166,251,.8)}
-.lv-now b{color:var(--fg);font-size:14.5px;font-variant-numeric:tabular-nums}
+.lv-t{display:flex;align-items:center;justify-content:flex-end;gap:3px}.lv-t i{width:5px;height:5px;border-radius:50%;background:var(--fg2);opacity:.7}.lv-t small{margin-left:4px;color:var(--muted);font-size:15px}
+.lv-now{display:flex;align-items:center;gap:10px;margin:6px 0;padding:8px 12px;border-radius:12px;border:1px solid var(--accent-line);background:linear-gradient(90deg,var(--accent-soft),transparent);font-size:15.5px;color:var(--fg2);box-shadow:0 0 22px -12px rgba(0,166,251,.8)}
+.lv-now b{color:var(--fg);font-size:17px;font-variant-numeric:tabular-nums}
 .lv-now::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-soft),0 0 12px var(--accent);animation:lv-pulse 2.4s ease-in-out infinite}
 @keyframes lv-pulse{50%{box-shadow:0 0 0 7px transparent,0 0 12px var(--accent)}}
 html.mo .lv-card:not(.mo-in) .lv-bar i{transform:scaleX(0)}
 @media (max-width:560px){.lv-row{grid-template-columns:38px minmax(70px,auto) minmax(24px,1fr) minmax(50px,auto);gap:8px;padding:7px 6px}.lv-t{display:none}}
 @media (prefers-reduced-motion:reduce){.lv-now::before{animation:none}.lv-bar i{transition:none}}
 .fc-bar{position:relative;height:14px;margin:8px 0 5px;background:var(--soft);border-radius:7px}.fc-rng{position:absolute;top:0;bottom:0;border-radius:7px;background:var(--accent-line)}.fc-mid{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--accent);border:2.5px solid #fff;box-shadow:0 0 0 1px var(--accent)}.fc-now{position:absolute;top:-5px;bottom:-5px;width:0;border-left:2px dashed var(--fg2)}
-.fc-ends{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;color:var(--fg2);font-variant-numeric:tabular-nums}.fc-ends small{color:var(--muted);font-size:11.5px}
-.fc-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--fg2);margin:2px 0 2px}.fc-legend i{display:inline-block;vertical-align:-1px;margin-right:5px}.lg-rng{width:16px;height:9px;border-radius:5px;background:var(--accent-line)}.lg-mid{width:9px;height:9px;border-radius:50%;background:var(--accent)}.lg-now{width:0;height:11px;border-left:2px dashed var(--fg2)}
-.fs-sub{font-size:13px;font-weight:800;color:var(--fg2);margin:12px 0 2px}.fs-sub:first-child{margin-top:4px}.si-stab{margin:6px 0 16px}.si-sk{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;margin-bottom:6px}.si-sk span{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}.si-ok{color:var(--good-strong)}.si-warn{color:var(--up-strong)}.si-cols{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:14px;height:160px;align-items:end;padding:0 0 18px;border-bottom:1px solid var(--line)}.si-cols::before{content:"";position:absolute;z-index:1;left:0;right:0;bottom:calc(18px + var(--ref) * 142px);border-top:1.5px dashed var(--muted);pointer-events:none}.si-cols em{position:absolute;z-index:2;left:0;bottom:calc(21px + var(--ref) * 142px);font-size:11px;font-weight:700;font-style:normal;color:var(--fg2);background:var(--surface-solid);padding:0 5px 0 0}.si-cols div{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}.si-cols div span{font-size:11.5px;font-weight:700;color:var(--fg2);margin-bottom:3px}.si-cols i{display:block;width:56%;max-width:40px;border-radius:5px 5px 0 0;background:#9fb3d9}.si-cols i.ok{background:#7fb38f}.si-cols i.warn{background:#e58a8d}.si-cols div:last-child i{filter:saturate(1.4) brightness(.85)}.si-cols small{position:absolute;bottom:-17px;font-size:10.5px;color:var(--muted)}.si-note{font-size:12px;color:var(--muted);margin:22px 0 0}
-.si-dps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.si-dps span{display:flex;flex-direction:column;font-size:12px;color:var(--muted);background:var(--soft);border-radius:10px;padding:6px 10px}.si-dps b{color:var(--fg);font-size:14px}
-.si-target{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.si-target div{display:flex;flex-direction:column;gap:2px}.si-target span{font-size:13px;color:var(--fg2)}.si-target b{font-size:22px;font-variant-numeric:tabular-nums}.si-target small{font-size:13px}
+.fc-ends{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:15px;color:var(--fg2);font-variant-numeric:tabular-nums}.fc-ends small{color:var(--muted);font-size:15px}
+.fc-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:15px;color:var(--fg2);margin:2px 0 2px}.fc-legend i{display:inline-block;vertical-align:-1px;margin-right:5px}.lg-rng{width:16px;height:9px;border-radius:5px;background:var(--accent-line)}.lg-mid{width:9px;height:9px;border-radius:50%;background:var(--accent)}.lg-now{width:0;height:11px;border-left:2px dashed var(--fg2)}
+.fs-sub{font-size:15.5px;font-weight:800;color:var(--fg2);margin:12px 0 2px}.fs-sub:first-child{margin-top:4px}.si-stab{margin:6px 0 16px}.si-sk{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:16px;margin-bottom:6px}.si-sk span{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}.si-ok{color:var(--good-strong)}.si-warn{color:var(--up-strong)}.si-cols{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:14px;height:160px;align-items:end;padding:0 0 18px;border-bottom:1px solid var(--line)}.si-cols::before{content:"";position:absolute;z-index:1;left:0;right:0;bottom:calc(18px + var(--ref) * 142px);border-top:1.5px dashed var(--muted);pointer-events:none}.si-cols em{position:absolute;z-index:2;left:0;bottom:calc(21px + var(--ref) * 142px);font-size:14px;font-weight:700;font-style:normal;color:var(--fg2);background:var(--surface-solid);padding:0 5px 0 0}.si-cols div{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}.si-cols div span{font-size:15px;font-weight:700;color:var(--fg2);margin-bottom:3px}.si-cols i{display:block;width:56%;max-width:40px;border-radius:5px 5px 0 0;background:#9fb3d9}.si-cols i.ok{background:#7fb38f}.si-cols i.warn{background:#e58a8d}.si-cols div:last-child i{filter:saturate(1.4) brightness(.85)}.si-cols small{position:absolute;bottom:-17px;font-size:14px;color:var(--muted)}.si-note{font-size:15px;color:var(--muted);margin:22px 0 0}
+.si-dps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.si-dps span{display:flex;flex-direction:column;font-size:15px;color:var(--muted);background:var(--soft);border-radius:10px;padding:6px 10px}.si-dps b{color:var(--fg);font-size:16px}
+.si-target{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px}.si-target div{display:flex;flex-direction:column;gap:2px}.si-target span{font-size:15.5px;color:var(--fg2)}.si-target b{font-size:22px;font-variant-numeric:tabular-nums}.si-target small{font-size:15.5px}
 
-.si-more{border:0;background:none;font:inherit;font-size:13.5px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 0}.si-h3{font-size:14px;margin:14px 0 4px}.si-card .research li{margin:6px 0;font-size:13.5px;line-height:1.5}
+.si-more{border:0;background:none;font:inherit;font-size:16px;font-weight:800;color:var(--accent-strong);cursor:pointer;padding:4px 0}.si-h3{font-size:16px;margin:14px 0 4px}.si-card .research li{margin:6px 0;font-size:16px;line-height:1.5}
 /* G-193: the 재무제표 window — a sticky title bar with a plain "✕ 닫기" button on the right (not the back chevron other
    sheets use), the statement tabs pinned under it, tables only, the latest actual column tinted and estimates muted. */
 dialog.fs-dlg,dialog.v2-dialog.fs-dlg[open]{padding:0!important;overflow-y:auto}
 dialog.fs-dlg>header,dialog.v2-dialog.fs-dlg>header{position:sticky;top:0!important;z-index:4;display:flex!important;align-items:center;justify-content:space-between!important;gap:12px!important;margin:0!important;padding:12px 16px!important;background:var(--page);border-bottom:1px solid var(--line)}
-dialog.fs-dlg>header h2{font-size:18px;margin:0;flex:1;min-width:0}
-dialog.fs-dlg>header>.dialog-x,dialog.v2-dialog.fs-dlg>header>.dialog-x{order:2!important;flex:none;display:inline-flex!important;align-items:center;gap:6px;width:auto!important;height:38px!important;margin:0!important;padding:0 14px 0 12px!important;border:1px solid var(--line-strong)!important;border-radius:999px!important;background:var(--soft)!important;color:var(--fg)!important;font:inherit;font-size:14px!important;font-weight:700;cursor:pointer}
-dialog.fs-dlg>header>.dialog-x::before,dialog.v2-dialog.fs-dlg>header>.dialog-x::before{content:"✕"!important;font-size:13px!important;line-height:1!important;font-weight:800!important;margin:0!important}
+dialog.fs-dlg>header h2{font-size:19px;margin:0;flex:1;min-width:0}
+dialog.fs-dlg>header>.dialog-x,dialog.v2-dialog.fs-dlg>header>.dialog-x{order:2!important;flex:none;display:inline-flex!important;align-items:center;gap:6px;width:auto!important;height:38px!important;margin:0!important;padding:0 14px 0 12px!important;border:1px solid var(--line-strong)!important;border-radius:999px!important;background:var(--soft)!important;color:var(--fg)!important;font:inherit;font-size:16px!important;font-weight:700;cursor:pointer}
+dialog.fs-dlg>header>.dialog-x::before,dialog.v2-dialog.fs-dlg>header>.dialog-x::before{content:"✕"!important;font-size:15.5px!important;line-height:1!important;font-weight:800!important;margin:0!important}
 dialog.fs-dlg>header>.dialog-x:hover{background:var(--line)!important}dialog.fs-dlg>header>.dialog-x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 dialog.fs-dlg .fs-full{border:0;box-shadow:none;padding:12px 16px 28px;margin:0;background:none;backdrop-filter:none}
 dialog.fs-dlg .fs-full>.ig-seg{position:sticky;top:63px;z-index:3;display:flex;width:100%;margin:0 0 12px;background:var(--surface-solid);box-shadow:0 0 0 8px var(--page),0 10px 14px -8px rgba(0,0,0,.6)}dialog.fs-dlg .fs-full>.ig-seg>button{flex:1}
-dialog.fs-dlg .ig-fs table{font-size:13.5px;min-width:100%!important;width:max-content}dialog.fs-dlg .ig-fs th,dialog.fs-dlg .ig-fs td{padding:9px 8px}dialog.fs-dlg .ig-fs th[scope=row]{max-width:118px;white-space:normal!important;word-break:keep-all}dialog.fs-dlg .ig-fs thead th{font-size:12.5px;color:var(--fg2);white-space:nowrap;border-bottom:1px solid var(--line-strong)}
+dialog.fs-dlg .ig-fs table{font-size:16px;min-width:100%!important;width:max-content}dialog.fs-dlg .ig-fs th,dialog.fs-dlg .ig-fs td{padding:9px 8px}dialog.fs-dlg .ig-fs th[scope=row]{max-width:118px;white-space:normal!important;word-break:keep-all}dialog.fs-dlg .ig-fs thead th{font-size:15.5px;color:var(--fg2);white-space:nowrap;border-bottom:1px solid var(--line-strong)}
 dialog.fs-dlg .ig-fs th[scope=row]{background:var(--page);box-shadow:6px 0 8px -6px rgba(0,0,0,.45)}dialog.fs-dlg .ig-fs tbody tr:nth-child(even) td,dialog.fs-dlg .ig-fs tbody tr:nth-child(even) th[scope=row]{background:color-mix(in srgb,var(--page) 92%,var(--fg) 8%)}
-dialog.fs-dlg .ig-fs .cur{background:var(--accent-soft)!important;font-weight:800}dialog.fs-dlg .ig-fs thead .cur{color:var(--accent-strong)}dialog.fs-dlg .ig-fs .est{color:var(--muted)}dialog.fs-dlg .ig-fs thead th small{display:block;font-size:10.5px;font-weight:600}
-dialog.fs-dlg::backdrop{background:rgba(3,8,16,.72);backdrop-filter:blur(4px)}dialog.fs-dlg .ig-all>summary{cursor:pointer;font-size:13.5px;font-weight:800;color:var(--accent-strong);padding:10px 0}
+dialog.fs-dlg .ig-fs .cur{background:var(--accent-soft)!important;font-weight:800}dialog.fs-dlg .ig-fs thead .cur{color:var(--accent-strong)}dialog.fs-dlg .ig-fs .est{color:var(--muted)}dialog.fs-dlg .ig-fs thead th small{display:block;font-size:14px;font-weight:600}
+dialog.fs-dlg::backdrop{background:rgba(3,8,16,.72);backdrop-filter:blur(4px)}dialog.fs-dlg .ig-all>summary{cursor:pointer;font-size:16px;font-weight:800;color:var(--accent-strong);padding:10px 0}
 @media (min-width:821px){dialog.v2-dialog.fs-dlg[open]{width:min(920px,calc(100% - 48px))!important}}
 @media (max-width:820px){.si-wrap{columns:1}}`;
 
 /** Toggle of the investor-trend period inside 종목정보. */
 export const STOCK_INFO_TOGGLE_JS = `document.addEventListener('click',function(e){var o=e.target.closest&&e.target.closest('[data-dlg-open]');if(o){var d=document.getElementById(o.getAttribute('data-dlg-open'));if(d&&!d.open)d.showModal();return;}var c=e.target.closest&&e.target.closest('[data-dlg-close]');if(c){var dd=c.closest('dialog');if(dd)dd.close();}});document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-si-f]');if(!b)return;var c=b.closest('.si-card');c.querySelectorAll('[data-si-f]').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});c.querySelectorAll('[data-si-fl]').forEach(function(x){x.hidden=x.getAttribute('data-si-fl')!==b.getAttribute('data-si-f');});});`;
 
-export function fundamentalsPanel(market: MarketSection, close: number | null, name = '이 종목', bars: readonly Bar[] = [], st?: FullStatements): string {
+function vsCardOf(market: MarketSection, name: string): string {
   const bench = market.benchmarks.map((b) => `<tr><td>${esc(b.name)}</td>${b.returns.map((r) => {
     const raw = r.stock !== null && r.benchmark !== null ? r.stock - r.benchmark : null;
     const diff = raw === null ? null : Math.abs(raw) < 0.05 ? 0 : raw;
-    return `<td class="num"><span class="${tone(r.benchmark)}">${pct(r.benchmark)}</span><br><small class="${tone(diff)}">차이 ${diff === null ? '없음' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%p`}</small></td>`;
+    return `<td class="num"><span class="${tone(r.benchmark)}">${pct(r.benchmark)}</span><br><small class="${tone(diff)}">${diff === null ? '차이 없음' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)}%p`}</small></td>`;
   }).join('')}</tr>`).join('');
   const stockRow = market.benchmarks[0] ? `<tr><td class="nowrap"><b>${esc(name)}</b></td>${market.benchmarks[0].returns.map((r) => `<td class="num ${tone(r.stock)}"><b>${pct(r.stock)}</b></td>`).join('')}</tr>` : '';
   // G-300: the index cards repeated 홈's numbers; the table alone compares the stock with them.
-  const vs = bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
-<p class="fine">차이는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 값이에요.</p></div>` : '';
-  return `${healthInfographic(market, close)}${stockInfoCards(market, close, name, bars, st)}${vs}`;
+  return bench ? `<div class="card"><div class="head"><h2>시장 대비 수익률</h2></div><div class="table-wrap"><table class="compact"><thead><tr><th></th><th class="num">5일</th><th class="num">20일</th><th class="num">60일</th></tr></thead><tbody>${stockRow}${bench}</tbody></table></div>
+<p class="fine">작은 숫자(%p)는 ${esc(name)} 수익률에서 비교 대상 수익률을 뺀 차이예요.</p></div>` : '';
+}
+export function fundamentalsPanel(market: MarketSection, close: number | null, name = '이 종목', bars: readonly Bar[] = [], st?: FullStatements, opts: { range?: string; vsApart?: boolean } = {}): string {
+  const vs = vsCardOf(market, name);
+  // G-301 (새 구조): 체력 → 투자 지표 (가격 범위 inside) → 재무 → 애널리스트; 시장 대비 can sit after 수급 (marketVsCard).
+  return `${healthInfographic(market, close)}${stockInfoCards(market, close, name, bars, st, opts.range ?? '')}${opts.vsApart ? '' : vs}`;
+}
+/** G-301: 시장 대비 수익률 on its own, for the 기업 part's order (after 수급). */
+export function marketVsCard(market: MarketSection, name = '이 종목'): string {
+  const vs = vsCardOf(market, name);
+  return vs ? `<section class="block mv-blk">${vs}</section>` : '';
 }
 
 

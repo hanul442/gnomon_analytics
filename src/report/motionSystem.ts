@@ -65,13 +65,13 @@ html.ms .ms-reveal.ms-go{clip-path:inset(0 0 0 0);transition:clip-path 900ms var
 /* U4: cards are white; grey is only for blocks inside a card. */
 :root body .me-acct,:root body a.sl{background:var(--surface);box-shadow:var(--shadow-sm,0 1px 2px rgba(10,22,38,.04))}
 /* U5: two badge kinds. State (위원회 날짜, 오늘 이슈 n위, 중요) is dark; category (코인, 한국·세계, 실적, 새 뉴스, 시장) is grey. */
-:root body .tier,:root body .ia-from,:root body .badge,:root body .tag,:root body .mkt-chip,:root body .iss-k b{display:inline-flex;align-items:center;min-height:20px;padding:0 8px;border:0!important;border-radius:999px;font-size:11.5px;font-weight:700;line-height:1;vertical-align:1px}
+:root body .tier,:root body .ia-from,:root body .badge,:root body .tag,:root body .mkt-chip,:root body .iss-k b{display:inline-flex;align-items:center;min-height:20px;padding:0 8px;border:0!important;border-radius:999px;font-size:15px;font-weight:700;line-height:1;vertical-align:1px}
 :root body .tier,:root body .ia-from,:root body .ia-from.w,:root body .badge,:root body .tag,:root body .mkt-chip{background:var(--soft);color:var(--fg2)}
 :root body .tier.t-core,:root body .badge.b-HIGH,:root body .iss-k b{background:var(--fg);color:var(--page)}
 :root body .ia-new,:root body .wd-new{font-weight:800;color:var(--fg)}
 /* U7: a link in a section head is dark and bold with ›; a note is small and grey. */
-:root body .wd-link,:root body .block-head a,:root body .head a.more{color:var(--fg);font-weight:700;font-size:13px}
-:root body .block-head .muted,:root body .head .sub{font-size:12.5px;font-weight:500}
+:root body .wd-link,:root body .block-head a,:root body .head a.more{color:var(--fg);font-weight:700;font-size:15.5px}
+:root body .block-head .muted,:root body .head .sub{font-size:15.5px;font-weight:500}
 /* I6: on phones 찾기's summary line still opens the filter sheet, but the filter icon lives only in the bar. */
 @media (max-width:600px){body:has(.bottom-nav [data-dock-filter]) .sc-sum svg{display:none}}
 /* I8: home's title says which part is open. */

@@ -99,7 +99,7 @@ ${strategyLines(a)}
 /** Free: the champion's name only. */
 export function arenaHeadline(a: ArenaResult | null): string {
   const champ = a?.results.find((r) => r.key === a.championKey);
-  return `<section class="block arena-head"><div class="card paper-link"><div><div class="pl-k">이 종목의 전략 챔피언</div><b style="font-size:18px">${champ ? esc(champ.name) : '아직 없어요'}</b><p class="muted small">전략 8개를 4년 동안 백테스트해 검증 구간 성과로 순위를 매겨요. 순위표는 플러스, 매매 시점·몬테카를로는 프로부터 볼 수 있어요.</p></div></div></section>`;
+  return `<section class="block arena-head"><div class="card paper-link"><div><div class="pl-k">이 종목의 전략 챔피언</div><b style="font-size:19px">${champ ? esc(champ.name) : '아직 없어요'}</b><p class="muted small">전략 8개를 4년 동안 백테스트해 검증 구간 성과로 순위를 매겨요. 순위표는 플러스, 매매 시점·몬테카를로는 프로부터 볼 수 있어요.</p></div></div></section>`;
 }
 
 

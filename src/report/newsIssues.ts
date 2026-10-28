@@ -7,11 +7,11 @@ import { shell } from './renderHtml.js';
 const CSS = `<style>
 .ni-list{padding:2px 14px}.ni-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:4px 10px;align-items:start;padding:11px 0;border-top:1px solid var(--line)}.ni-row:first-child{border-top:0}
 .ni-n{font-weight:800;color:var(--muted);text-align:center;line-height:1.45}.ni-row:nth-child(-n+3) .ni-n{color:var(--accent)}
-.ni-t{font-weight:700;font-size:14.5px;line-height:1.45;color:inherit;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ni-t:hover{text-decoration:underline}
-.ni-meta{font-size:12px;color:var(--muted);margin-top:3px}.ni-ch{font-size:11.5px;font-weight:800;white-space:nowrap;line-height:1.6;font-variant-numeric:tabular-nums}.ni-ch.new{color:var(--accent)}.ni-ch.same{color:var(--muted)}
-.ni-stocks{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px}.ni-stocks a{display:inline-flex;align-items:center;gap:4px;min-height:30px;padding:2px 9px;border:1px solid var(--line);border-radius:999px;font-size:12.5px;font-weight:700;color:inherit;text-decoration:none;background:var(--surface)}.ni-stocks a:hover{border-color:var(--accent)}.ni-stocks i{font-style:normal;font-weight:600;font-variant-numeric:tabular-nums}
-.ni-more{grid-column:2/-1}.ni-more summary{cursor:pointer;font-size:12.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center}.ni-more ul{margin:2px 0 4px;padding-left:16px}.ni-more li{font-size:13px;line-height:1.5;margin:3px 0}.ni-more li a{color:inherit}.ni-more li small{color:var(--muted)}
-.ni-note{font-size:12px;color:var(--muted);margin:8px 0 2px}
+.ni-t{font-weight:700;font-size:17px;line-height:1.45;color:inherit;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.ni-t:hover{text-decoration:underline}
+.ni-meta{font-size:15px;color:var(--muted);margin-top:3px}.ni-ch{font-size:15px;font-weight:800;white-space:nowrap;line-height:1.6;font-variant-numeric:tabular-nums}.ni-ch.new{color:var(--accent)}.ni-ch.same{color:var(--muted)}
+.ni-stocks{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px}.ni-stocks a{display:inline-flex;align-items:center;gap:4px;min-height:30px;padding:2px 9px;border:1px solid var(--line);border-radius:999px;font-size:15.5px;font-weight:700;color:inherit;text-decoration:none;background:var(--surface)}.ni-stocks a:hover{border-color:var(--accent)}.ni-stocks i{font-style:normal;font-weight:600;font-variant-numeric:tabular-nums}
+.ni-more{grid-column:2/-1}.ni-more summary{cursor:pointer;font-size:15.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center}.ni-more ul{margin:2px 0 4px;padding-left:16px}.ni-more li{font-size:15.5px;line-height:1.5;margin:3px 0}.ni-more li a{color:inherit}.ni-more li small{color:var(--muted)}
+.ni-note{font-size:15px;color:var(--muted);margin:8px 0 2px}
 .ni-page{max-width:820px;margin:14px auto 32px}.ni-hero{padding:18px}.ni-hero h1{font-size:23px;margin:2px 0 6px}.ni-hero p{margin:0;color:var(--fg2);line-height:1.6}.ni-page .card.ni-list{margin-top:12px;padding:4px 16px}
 </style>`;
 

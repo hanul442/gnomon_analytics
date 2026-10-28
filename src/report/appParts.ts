@@ -120,10 +120,10 @@ export function hero(report: DailyReport, options: { live: boolean; asOf: string
   const points = [
     // G-267: no signal words ('강세', '매집 쪽') in the first screen; they read as buy/sell calls. The timing and flow tabs keep them.
     m?.fairValue ? ['기술적 적정가', `${won(m.fairValue.center)} (${POSITION_WORD[m.fairValue.position]})`, ''] : null,
-    m?.snapshot?.consensus?.targetPriceMean ? ['증권가 평균 목표가', won(m.snapshot.consensus.targetPriceMean), ''] : null,
+    // G-301: 증권가 목표가 lives in 기업 › 애널리스트 의견 only (it was shown here and there).
   ].filter((x): x is string[] => x !== null);
   return `<section class="hero" id="top" data-session="${esc(p?.sessionDate ?? report.date)}"><div class="orb" aria-hidden="true"></div>
-<div class="hero-main"><div class="eyebrow"><span>${esc(report.kind === 'coin' ? report.symbol.replace('KRW-', '') : report.symbol)}</span>${marketChip(report)}<span>${options.live ? `${esc(options.asOf)} 기준` : `${esc(report.date)} 리포트`}</span>${freshnessBadge(freshness(report))}</div>
+<div class="hero-main"><div class="eyebrow"><span>${esc(report.kind === 'coin' ? report.symbol.replace('KRW-', '') : report.symbol)}</span>${marketChip(report)}${options.live ? `<span>${esc(options.asOf)} 기준</span>` : report.commentary?.status === 'OK' ? '' : `<span>${esc(report.date)} 리포트</span>`}${freshnessBadge(freshness(report))}</div>
 <div class="h1-row"><h1>${esc(report.name)}</h1>${starButton(report.symbol, report.name)}</div>
 ${p ? `<div class="hero-price"><b data-live="${esc(report.symbol)}" data-live-f="price">${esc(won(p.close))}</b><span class="live-tag" data-live="${esc(report.symbol)}" data-live-f="tag" hidden></span>${p.changePct === null ? '' : `<span class="${tone(p.changePct)}" data-live="${esc(report.symbol)}" data-live-f="full">${p.change! > 0 ? '▲' : p.change! < 0 ? '▼' : ''} ${esc(currency() === 'USD' ? won(Math.abs(p.change!)) : num(Math.abs(p.change!)))} (${esc(pct(p.changePct))})</span>`}</div>
 <div class="hero-sub">${esc(p.sessionDate ?? report.date)} ${report.kind === 'coin' ? '일봉 (09:00 KST 기준)' : '종가'}</div>` : '<p class="empty">아직 가격 기록이 없어요.</p>'}

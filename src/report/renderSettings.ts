@@ -20,24 +20,24 @@ export function renderSettings(): string {
   const al = alertsParts();
   const body = `${al.css}<style>
 .pf{max-width:720px;margin:16px auto 32px}.pf .card{padding:18px;margin-bottom:12px}.pf h1{font-size:23px;margin:2px 0 6px}
-.pf-row{border:0;margin:0;padding:16px 0 0;min-width:0}.pf-row+.pf-row{border-top:1px solid var(--line);margin-top:16px}.pf-row legend{font-weight:800;font-size:15.5px;padding:0;float:left;width:100%}
-.pf-note{clear:both;color:var(--muted);font-size:13px;margin:2px 0 10px}.pf-opts{display:flex;flex-wrap:wrap;gap:8px}
-.pf-opts label{position:relative;display:inline-flex;align-items:center;min-height:44px;border:1px solid var(--line-strong);border-radius:999px;padding:0 14px;font-size:14px;cursor:pointer;background:var(--surface)}
+.pf-row{border:0;margin:0;padding:16px 0 0;min-width:0}.pf-row+.pf-row{border-top:1px solid var(--line);margin-top:16px}.pf-row legend{font-weight:800;font-size:17.5px;padding:0;float:left;width:100%}
+.pf-note{clear:both;color:var(--muted);font-size:15.5px;margin:2px 0 10px}.pf-opts{display:flex;flex-wrap:wrap;gap:8px}
+.pf-opts label{position:relative;display:inline-flex;align-items:center;min-height:44px;border:1px solid var(--line-strong);border-radius:999px;padding:0 14px;font-size:16px;cursor:pointer;background:var(--surface)}
 .pf-opts input{position:absolute;opacity:0;pointer-events:none}.pf-opts label:has(input:checked){border-color:var(--btn-bg);background:var(--btn-bg);color:var(--btn-fg)}.pf-opts label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
-.pf-watch{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.pf-watch b{font-size:15.5px}
+.pf-watch{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.pf-watch b{font-size:17.5px}
 /* G-277 (한서님 10/21 "위의 바 두기싫다니까"): the jump row scrolls with the page instead of sticking over it. */.st-nav{position:static;display:flex;gap:6px;overflow-x:auto;padding:8px 0;margin:0 0 4px;background:var(--page);scrollbar-width:none}.st-nav::-webkit-scrollbar{display:none}
-.st-nav a{flex:none;display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid var(--line-strong);border-radius:999px;font-size:14px;font-weight:700;color:var(--fg);text-decoration:none;background:var(--surface)}
-.st-h{font-size:18px;margin:22px 2px 8px;scroll-margin-top:124px}.pf .al{max-width:none;margin:0}.st-rows a{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:52px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}.st-rows a:first-child{border-top:0}.st-rows small{display:block;color:var(--muted);font-size:12.5px}
-.pf .theme-bar button{min-height:44px;padding:0 16px;font-size:14px}
-.cm-list{display:flex;flex-direction:column;gap:8px}.cm-item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 12px;background:var(--surface)}.cm-item b{flex:1;min-width:0;font-size:14.5px}.cm-item small{display:block;color:var(--muted);font-size:12px;font-weight:400}.cm-n{flex:none;width:22px;color:var(--muted);font-weight:800}
-.cm-item button{flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--fg);font:inherit;font-size:16px;cursor:pointer}.cm-item button:disabled{opacity:.35;cursor:default}
-.cm-add{display:flex;flex-wrap:wrap;gap:8px}.cm-add button{min-height:44px;border:1px dashed var(--line-strong);border-radius:999px;padding:0 14px;background:transparent;color:var(--fg);font:inherit;font-size:14px;cursor:pointer}.cm-add button:disabled{opacity:.4;cursor:default}
-.cm-new{display:grid;gap:8px;margin-top:10px}.cm-new label{display:grid;gap:4px;font-size:13px;font-weight:700}.cm-new input,.cm-new textarea,.cm-new select{font:inherit;font-weight:400;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--fg)}.cm-new button{min-height:44px;border:0;border-radius:12px;background:var(--btn-bg);color:var(--btn-fg);font:inherit;font-weight:800;cursor:pointer}.cm-err{color:var(--up-strong);font-size:13px;min-height:0;margin:0}.cm-err:empty{display:none}
-.st-fold{padding:0 18px!important}.st-fold>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:60px;cursor:pointer;list-style:none}.st-fold>summary::-webkit-details-marker{display:none}.st-fold>summary small{display:block;color:var(--muted);font-size:12.5px;font-weight:400}.st-fold>summary i{font-style:normal;color:var(--muted);transition:transform .2s}.st-fold[open]>summary i{transform:rotate(90deg)}.st-fold[open]{padding-bottom:18px!important}.st-fold+.st-fold{margin-top:-4px}.st-sub{margin:14px 2px 8px;font-size:13px;color:var(--muted)}.st-sub b{color:var(--fg);font-size:15px;margin-right:4px}
-@media (max-width:820px){#record,.me-rec{display:none}}
+.st-nav a{flex:none;display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid var(--line-strong);border-radius:999px;font-size:16px;font-weight:700;color:var(--fg);text-decoration:none;background:var(--surface)}
+.st-h{font-size:19px;margin:22px 2px 8px;scroll-margin-top:124px}.pf .al{max-width:none;margin:0}.st-rows a{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:52px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}.st-rows a:first-child{border-top:0}.st-rows small{display:block;color:var(--muted);font-size:15.5px}
+.pf .theme-bar button{min-height:44px;padding:0 16px;font-size:16px}
+.cm-list{display:flex;flex-direction:column;gap:8px}.cm-item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:6px 6px 6px 12px;background:var(--surface)}.cm-item b{flex:1;min-width:0;font-size:17px}.cm-item small{display:block;color:var(--muted);font-size:15px;font-weight:400}.cm-n{flex:none;width:22px;color:var(--muted);font-weight:800}
+.cm-item button{flex:none;width:44px;height:44px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--fg);font:inherit;font-size:17.5px;cursor:pointer}.cm-item button:disabled{opacity:.35;cursor:default}
+.cm-add{display:flex;flex-wrap:wrap;gap:8px}.cm-add button{min-height:44px;border:1px dashed var(--line-strong);border-radius:999px;padding:0 14px;background:transparent;color:var(--fg);font:inherit;font-size:16px;cursor:pointer}.cm-add button:disabled{opacity:.4;cursor:default}
+.cm-new{display:grid;gap:8px;margin-top:10px}.cm-new label{display:grid;gap:4px;font-size:15.5px;font-weight:700}.cm-new input,.cm-new textarea,.cm-new select{font:inherit;font-weight:400;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--fg)}.cm-new button{min-height:44px;border:0;border-radius:12px;background:var(--btn-bg);color:var(--btn-fg);font:inherit;font-weight:800;cursor:pointer}.cm-err{color:var(--up-strong);font-size:15.5px;min-height:0;margin:0}.cm-err:empty{display:none}
+.st-fold{padding:0 18px!important}.st-fold>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:60px;cursor:pointer;list-style:none}.st-fold>summary::-webkit-details-marker{display:none}.st-fold>summary small{display:block;color:var(--muted);font-size:15.5px;font-weight:400}.st-fold>summary i{font-style:normal;color:var(--muted);transition:transform .2s}.st-fold[open]>summary i{transform:rotate(90deg)}.st-fold[open]{padding-bottom:18px!important}.st-fold+.st-fold{margin-top:-4px}.st-sub{margin:14px 2px 8px;font-size:15.5px;color:var(--muted)}.st-sub b{color:var(--fg);font-size:17px;margin-right:4px}
 /* G-300 (한서님 10/25): 맞춤 is one card (관심 종목 · 내 투자 방식 · 내 위원회 · 설문), like the other groups. */
-.st-group{padding:0 18px!important}.st-group>*+*{border-top:1px solid var(--line)}.st-group .st-fold{padding:0!important}.st-group .st-fold[open]{padding-bottom:14px!important}.st-group .st-rows a{border-top:0}.st-note{margin:-2px 2px 10px;font-size:13px;color:var(--muted);line-height:1.5}
-.pf-state{font-size:13px;color:var(--muted);margin:10px 0 0}.pf-state:empty{display:none}.pf-links{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;margin-top:6px}
+.st-group{padding:0 18px!important}.st-group>*+*{border-top:1px solid var(--line)}.st-group .st-fold{padding:0!important}.st-group .st-fold[open]{padding-bottom:14px!important}.st-group .st-rows a{border-top:0}.st-note{margin:-2px 2px 10px;font-size:15.5px;color:var(--muted);line-height:1.5}
+.pf .al-login:not([hidden]){display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;text-align:left}.pf .al-login p{margin:0;font-size:16px;color:var(--fg2)}.pf .al-login .btn{flex:none}
+.pf-state{font-size:15.5px;color:var(--muted);margin:10px 0 0}.pf-state:empty{display:none}.pf-links{display:flex;gap:14px;flex-wrap:wrap;font-size:16px;margin-top:6px}
 </style><div class="pf">
 ${meHead('')}
 <h2 class="st-h" id="record">내 기록</h2>
@@ -61,10 +61,10 @@ ${group('sectors', '관심 업종', '홈의 내 종목 카드에 관련 테마�
 </details>
 <div class="st-rows"><a href="onboarding.html"><span><b>설문 처음부터 다시 하기</b><small>모든 문항을 다시 골라요</small></span><i aria-hidden="true">›</i></a></div>
 </section>
-<h2 class="st-h" id="screen">앱</h2>
-<section class="card"><div class="pf-row" style="padding-top:0"><b>화면 색</b><p class="pf-note">이 기기에 저장돼요.</p><div class="theme-bar" role="group" aria-label="화면 색"><button type="button" data-theme-pick="dark">어둡게</button><button type="button" data-theme-pick="light">밝게</button><button type="button" data-theme-pick="auto">기기 설정</button></div></div></section>
 <h2 class="st-h" id="alerts">알림</h2><p class="st-note">새 리포트, 스크리너 조건, 내가 건 가격, 요청한 리포트를 🔔과 휴대폰으로 알려 드려요.</p>
 <div class="al">${al.html}</div>
+<h2 class="st-h" id="screen">앱</h2>
+<section class="card"><div class="pf-row" style="padding-top:0"><b>화면 색</b><p class="pf-note">이 기기에 저장돼요.</p><div class="theme-bar" role="group" aria-label="화면 색"><button type="button" data-theme-pick="dark">어둡게</button><button type="button" data-theme-pick="light">밝게</button><button type="button" data-theme-pick="auto">기기 설정</button></div></div></section>
 <i id="account" class="anchor" aria-hidden="true"></i>
 <h2 class="st-h" id="help">도움말</h2>
 ${meHelp('')}

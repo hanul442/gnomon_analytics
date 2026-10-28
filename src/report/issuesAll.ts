@@ -107,23 +107,23 @@ export const ISSUES_FILTER = '<div class="wd-filter ia-filter" role="group" aria
 
 export const ISSUES_CSS = `<style>
 .ia-list{list-style:none;margin:0;padding:0}.ia-row{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;padding:14px 0;border-top:1px solid var(--line)}.ia-row:first-child{border-top:0;padding-top:4px}.ia-row[hidden]{display:none}
-.ia-rk{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.5}.ia-h{display:flex;gap:6px;align-items:center;margin-bottom:3px}
-.ia-from{font-size:11px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--soft);color:var(--fg2)}.ia-from.w{background:var(--fg);color:var(--surface-solid)}
-.ia-new,.ia-mv{font-size:11px;font-weight:800}.ia-new{color:var(--fg)}
-.ia-t{display:block;font-size:15.5px;font-weight:600;line-height:1.45;color:inherit;text-decoration:none;word-break:keep-all}.ia-t:hover{text-decoration:underline}
-.ia-m{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+.ia-rk{font-size:18.5px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.5}.ia-h{display:flex;gap:6px;align-items:center;margin-bottom:3px}
+.ia-from{font-size:14px;font-weight:700;padding:1px 7px;border-radius:6px;background:var(--soft);color:var(--fg2)}.ia-from.w{background:var(--fg);color:var(--surface-solid)}
+.ia-new,.ia-mv{font-size:14px;font-weight:800}.ia-new{color:var(--fg)}
+.ia-t{display:block;font-size:17.5px;font-weight:600;line-height:1.45;color:inherit;text-decoration:none;word-break:keep-all}.ia-t:hover{text-decoration:underline}
+.ia-m{display:block;font-size:15px;color:var(--muted);margin-top:3px}
 .ia-bar{display:block;height:4px;margin-top:6px;border-radius:2px;background:var(--soft);overflow:hidden}.ia-bar>i{display:block;height:100%;border-radius:2px;background:var(--fg);opacity:.55;transform-origin:left;transition:transform .7s var(--ease-out,ease)}
-.ia-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.ia-chip{display:inline-flex;gap:4px;align-items:center;min-height:28px;padding:2px 10px;border-radius:999px;background:var(--soft);font-size:12.5px;font-weight:600;color:var(--fg2);text-decoration:none}
-.ia-more summary{cursor:pointer;font-size:12.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center;margin-top:4px}.ia-more ul{margin:2px 0;padding-left:16px}.ia-more li{font-size:13px;line-height:1.5;margin:3px 0}.ia-more a{color:inherit}.ia-more small{color:var(--muted)}
+.ia-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.ia-chip{display:inline-flex;gap:4px;align-items:center;min-height:28px;padding:2px 10px;border-radius:999px;background:var(--soft);font-size:15.5px;font-weight:600;color:var(--fg2);text-decoration:none}
+.ia-more summary{cursor:pointer;font-size:15.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center;margin-top:4px}.ia-more ul{margin:2px 0;padding-left:16px}.ia-more li{font-size:15.5px;line-height:1.5;margin:3px 0}.ia-more a{color:inherit}.ia-more small{color:var(--muted)}
 .ia-empty{margin:4px 0}
-.ia-kr{display:block;font-size:12px;color:var(--muted);margin-top:3px}.ia-kr b{font-weight:700;color:var(--fg2)}
-.ia-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 4px}.ia-head h2{margin:0;font-size:17px}
-.ia-filter{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--soft)}.ia-filter button{min-height:32px;padding:0 11px;border:0;border-radius:999px;background:none;font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer}.ia-filter button[aria-pressed=true]{background:var(--surface-solid);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.ia-rest>summary{display:flex;justify-content:center;align-items:center;min-height:48px;border-top:1px solid var(--line);font-size:13.5px;font-weight:700;color:var(--fg2);cursor:pointer;list-style:none}.ia-rest>summary::-webkit-details-marker{display:none}.ia-rest .more-open{display:none}.ia-rest[open] .more-open{display:inline}.ia-rest[open] .more-closed{display:none}.ia-rest .ia-row:first-child{border-top:1px solid var(--line);padding-top:14px}
-.ia-s{margin:4px 0 0;font-size:14px;line-height:1.55;color:var(--fg2);word-break:keep-all}
+.ia-kr{display:block;font-size:15px;color:var(--muted);margin-top:3px}.ia-kr b{font-weight:700;color:var(--fg2)}
+.ia-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 4px}.ia-head h2{margin:0;font-size:18.5px}
+.ia-filter{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--soft)}.ia-filter button{min-height:32px;padding:0 11px;border:0;border-radius:999px;background:none;font:inherit;font-size:15.5px;font-weight:700;color:var(--muted);cursor:pointer}.ia-filter button[aria-pressed=true]{background:var(--surface-solid);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.ia-rest>summary{display:flex;justify-content:center;align-items:center;min-height:48px;border-top:1px solid var(--line);font-size:16px;font-weight:700;color:var(--fg2);cursor:pointer;list-style:none}.ia-rest>summary::-webkit-details-marker{display:none}.ia-rest .more-open{display:none}.ia-rest[open] .more-open{display:inline}.ia-rest[open] .more-closed{display:none}.ia-rest .ia-row:first-child{border-top:1px solid var(--line);padding-top:14px}
+.ia-s{margin:4px 0 0;font-size:16px;line-height:1.55;color:var(--fg2);word-break:keep-all}
 .ia-lead{display:block;padding:0 0 16px}.ia-lead-a{display:block;color:inherit;text-decoration:none}.ia-lead .ia-h{margin-top:12px}.ia-lead .ia-m{margin:0 0 0 2px}
-.ia-rk1{font-size:15px;font-weight:800;margin-right:2px}.ia-t1{font-size:19px;font-weight:700;letter-spacing:-.3px;margin-top:2px}
+.ia-rk1{font-size:17px;font-weight:800;margin-right:2px}.ia-t1{font-size:20px;font-weight:700;letter-spacing:-.3px;margin-top:2px}
 .ia-fig{position:relative;margin:0;border-radius:16px;overflow:hidden;background:var(--soft);aspect-ratio:16/9}.ia-fig img{display:block;width:100%;height:100%;object-fit:cover}
-.ia-fig figcaption{position:absolute;left:10px;bottom:10px;font-size:11px;font-weight:600;color:#fff;background:rgba(23,24,26,.62);padding:3px 8px;border-radius:6px}
+.ia-fig figcaption{position:absolute;left:10px;bottom:10px;font-size:14px;font-weight:600;color:#fff;background:rgba(23,24,26,.62);padding:3px 8px;border-radius:6px}
 .ia-lead[hidden]{display:none}
 </style>`;

@@ -51,7 +51,7 @@ html[data-theme=light] .chip-toggle[aria-pressed=true]{background:#0A1626;color:
 /* G-249 (Payrix 화면 구성, 한서님 10/19): big numbers are thin, a card never holds another bordered card, and the
    scorecard's headline sits in one card. Both themes. ":root body" beats the page rules that load later. */
 :root body .hero h1{font-size:23px;font-weight:600;letter-spacing:-.02em;margin:4px 0 2px}
-:root body .hero-price{gap:2px 10px}:root body .hero-price b{font-size:44px;font-weight:300;letter-spacing:-.035em;line-height:1.1}:root body .hero-price>span{font-size:14px}:root body .hero-price b *{font-weight:inherit}
+:root body .hero-price{gap:2px 10px}:root body .hero-price b{font-size:44px;font-weight:300;letter-spacing:-.035em;line-height:1.1}:root body .hero-price>span{font-size:16px}:root body .hero-price b *{font-weight:inherit}
 :root body .hero-chart{border:0;background:var(--soft);border-radius:18px}
 :root body .key-points{border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;padding:14px 2px 0;margin-top:14px}
 :root body .big{font-weight:300;letter-spacing:-.02em}
@@ -71,4 +71,23 @@ html[data-theme=dark] .card{border-radius:24px}
    selected states and the chart kit stop using blue. Blue stays only for falling prices (--down). */
 html:root[data-theme=light]{--accent:#141416;--accent-strong:#141416;--accent-soft:rgba(20,20,22,.06);--accent-line:rgba(20,20,22,.18);--focus:#141416;--brand-grad:linear-gradient(135deg,#2A2C31 0%,#141416 100%)}
 html:root[data-theme=dark]{--accent:#ECEDEF;--accent-strong:#ECEDEF;--accent-soft:rgba(255,255,255,.08);--accent-line:rgba(255,255,255,.22);--focus:#ECEDEF;--brand-grad:linear-gradient(135deg,#F4F5F7 0%,#C9CCD1 100%)}
+/* G-301 (한서님 10/25 '너무 멀리서 보이는거아닌가 시인성 전체적으로 개선', '한단계 더 키워'): darker greys so helper text reaches about
+   4.5:1 on the page (was 2.7:1), plus one size step up across the app (done in each page's own font sizes). The dimmed seats
+   (위원회 표결, other factions) stay readable, and the network "불러오는 중이에요" pill sits under the header instead of over the text. */
+html:root[data-theme=light]{--muted:#686D75;--fg2:#33373D}
+html:root[data-theme=dark]{--muted:#A3A8B0;--fg2:#D4D7DC}
+:root body .seat.is-dim{fill-opacity:.38;stroke-opacity:.85}
+:root body .gnm-network{top:calc(env(safe-area-inset-top,0px) + 70px);bottom:auto}
+/* G-301 (한서님 10/26 '순서 배치 크기 이상한거 다 조정'): places the bigger type squeezed or clipped at 390px. */
+:root body .ask-filing{width:auto;min-width:30px;padding:0 10px;border-radius:999px;white-space:nowrap}
+:root body .rs-bar.rs-none,:root body #tab-home .rs-bar.rs-none{grid-template-columns:auto minmax(0,1fr)!important}:root body .rs-bar.rs-none .gen-wrap,:root body #tab-home .rs-bar.rs-none .gen-wrap{grid-column:1/-1!important;justify-self:start}
+:root body td.num small{white-space:nowrap}
+:root body #signals td:first-child{min-width:7.5em}:root body #signals th,:root body #signals td:not(:first-child){white-space:nowrap}
+@media (max-width:520px){:root body .sc-hero .kr-half{flex-wrap:wrap;justify-content:center}:root body .sc-hero .kr-half .kr-leg{flex-basis:100%}}
+/* G-301 (한서님 10/26 '레퍼런스 참고해서 모든 화면 시인성과 애니메이션 점검'): every row and banner that opens something
+   answers the finger the same way (spring press), plain text links dim while pressed */
+:root body :is(a.ia-t,a.iss-r,a.ad-s,a.cs-htop,a.cs-hrow,a.me-plan,a.ia-chip,a.ia-lead-a,summary){transition:transform var(--dur-base,200ms) var(--spring-press,ease),background-color var(--dur-base,200ms) ease}
+:root body :is(a.ia-t,a.iss-r,a.cs-htop,a.cs-hrow,a.me-plan,a.ia-lead-a,summary):active{transform:scale(.98)}
+:root body :is(a.ad-s,a.ia-chip):active{transform:scale(.97)}
+:root body main p a:not([class]):active,:root body main li a:not([class]):active{opacity:.55}
 `;

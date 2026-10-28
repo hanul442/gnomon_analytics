@@ -133,7 +133,7 @@ export function parliament(report: DailyReport, from: string | null, opts: Parli
 ${showChips ? `<div class="pl-chips" role="group" aria-label="세력별 보기">${chips}</div>` : ''}
 <div class="pl-figure"><svg viewBox="0 0 ${W} 104" class="pl-svg" role="group" aria-label="표결 의석 ${seats.length}석: 강세 ${bull}, 중립 ${neutral}, 약세 ${bear}${abstain ? `, 기권 ${abstain}` : ''}">${circles}</svg>
 ${center}</div>${opts.roster ? tally : ''}${roster}
-<p class="fine">${esc(opts.note ?? '좌석 하나가 표 하나예요. 왼쪽부터 강세(빨강)·중립(회색)·약세(파랑) 순이고, 빈 원은 기권이에요. 표 분포는 결론이 아니에요. 좌석을 누르면 그렇게 본 이유가 나와요.')}</p></div>
+${opts.note === '' ? '' : `<p class="fine">${esc(opts.note ?? '좌석 하나가 표 하나예요. 왼쪽부터 강세(빨강)·중립(회색)·약세(파랑) 순이고, 빈 원은 기권이에요. 표 분포는 결론이 아니에요. 좌석을 누르면 그렇게 본 이유가 나와요.')}</p>`}</div>
 <aside class="pl-detail" aria-live="polite">${summary ? `<div class="need-plus"><div class="pl-k">AI 위원회 결론</div><p>${esc(summary)}</p>${from ? `<div class="muted small">${esc(from)} 리포트의 해설이에요.</div>` : ''}</div><p class="muted only-free">표 분포는 결론이 아니에요. 위원회 결론은 플러스, 위원별 이유는 프로부터 볼 수 있어요. 지표·전략 좌석은 눌러서 이유를 볼 수 있어요.</p>` : '<p class="muted">좌석을 누르면 그 표의 이유가 여기에 나와요.</p>'}</aside></div>
 <script type="application/json" class="pl-data">${data}</script></section>`;
 }

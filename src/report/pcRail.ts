@@ -27,11 +27,11 @@ body:has(>.bottom-nav) #main>.pf{margin-left:0;margin-right:auto}
 .bottom-nav .seg-thumb,.bottom-nav .nav-back,.bottom-nav .nav-return,.bottom-nav .nav-ctx>button{display:none!important}
 .bottom-nav .nav-brand{order:0;display:flex;align-items:center;gap:10px;padding:0 8px 16px;color:var(--fg);text-decoration:none}
 .nav-brand .gnomon-mark{width:32px;height:32px;flex:none}.nav-brand .gnomon-mark img{width:32px;height:32px}
-.nav-brand b{display:block;font-size:16px;font-weight:600;letter-spacing:.16em}.nav-brand small{display:block;font-size:9.5px;letter-spacing:.12em;color:var(--muted)}
+.nav-brand b{display:block;font-size:17.5px;font-weight:600;letter-spacing:.16em}.nav-brand small{display:block;font-size:12px;letter-spacing:.12em;color:var(--muted)}
 .bottom-nav .nav-tabs{display:contents}
 .bottom-nav .nav-tabs a,.bottom-nav .nav-seg a,.bottom-nav .nav-parts button,.bottom-nav .nav-menu a,.bottom-nav .nav-ctx a,.bottom-nav .nav-ctx a.nav-bk,.bottom-nav .nav-ctx a.nav-read{
   position:relative;flex:none;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;width:auto;height:46px;min-height:46px;margin:0;padding:0 14px;
-  border:0;border-radius:15px;background:none;color:var(--fg2);font:inherit;font-size:15px;font-weight:600;text-align:left;text-decoration:none;white-space:nowrap;cursor:pointer;
+  border:0;border-radius:15px;background:none;color:var(--fg2);font:inherit;font-size:17px;font-weight:600;text-align:left;text-decoration:none;white-space:nowrap;cursor:pointer;
   transition:background-color .2s,color .2s,transform .2s var(--spring-bouncy,ease-out)}
 .bottom-nav .nav-tabs a svg,.bottom-nav .nav-ctx svg{position:static;width:21px;height:21px;flex:none}
 .bottom-nav .nav-tabs a span,.bottom-nav .nav-ctx span{position:static;display:block;transform:none;padding:0;background:none;box-shadow:none;color:inherit;font-size:inherit;font-weight:inherit;overflow:hidden;text-overflow:ellipsis;animation:none}
@@ -42,7 +42,7 @@ body:has(>.bottom-nav) #main>.pf{margin-left:0;margin-right:auto}
 .bottom-nav .nav-tabs a:nth-of-type(1){order:2}.bottom-nav .nav-tabs a:nth-of-type(2){order:4}.bottom-nav .nav-tabs a:nth-of-type(3){order:6}.bottom-nav .nav-tabs a:nth-of-type(4){order:8}
 /* This screen's parts sit right under its tab; a screen with no tab of its own (a stock, an issue) lists them under its name. */
 .bottom-nav .nav-ctx{order:10;display:flex;flex-direction:column;align-items:stretch;gap:2px;margin:14px 0 0;padding:14px 0 0;border-top:1px solid var(--line);animation:none}
-.bottom-nav .nav-ctx[data-title]::before{content:attr(data-title);display:block;padding:0 14px 6px;font-size:12.5px;font-weight:700;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bottom-nav .nav-ctx[data-title]::before{content:attr(data-title);display:block;padding:0 14px 6px;font-size:15.5px;font-weight:700;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bottom-nav:has(.nav-tabs a:nth-of-type(1)[aria-current]) .nav-ctx{order:3}
 .bottom-nav:has(.nav-tabs a:nth-of-type(2)[aria-current]) .nav-ctx{order:5}
 .bottom-nav:has(.nav-tabs a:nth-of-type(3)[aria-current]) .nav-ctx{order:7}
@@ -50,20 +50,20 @@ body:has(>.bottom-nav) #main>.pf{margin-left:0;margin-right:auto}
 .bottom-nav:has(.nav-tabs a[aria-current]) .nav-ctx{margin:2px 0 6px 25px;padding:0 0 0 8px;border-top:0;border-left:1.5px solid var(--line-strong)}
 .bottom-nav:has(.nav-tabs a[aria-current]) .nav-ctx::before{display:none}
 .bottom-nav .nav-seg,.bottom-nav .nav-parts{position:static;display:flex;flex-direction:column;align-items:stretch;gap:2px;flex:none}
-.bottom-nav .nav-ctx a,.bottom-nav .nav-ctx button,.bottom-nav .nav-menu a{height:40px;min-height:40px;padding:0 12px;font-size:14.5px;font-weight:600;border-radius:12px}
+.bottom-nav .nav-ctx a,.bottom-nav .nav-ctx button,.bottom-nav .nav-menu a{height:40px;min-height:40px;padding:0 12px;font-size:17px;font-weight:600;border-radius:12px}
 .bottom-nav .nav-ctx svg{width:18px;height:18px}
 .bottom-nav .nav-ctx a i,.bottom-nav .nav-seg a i{position:static;margin-left:auto}
 .bottom-nav .nav-menu,.bottom-nav .nav-menu[hidden]{position:static;display:flex!important;flex-direction:column;gap:2px;min-width:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;animation:none}
 .bottom-nav .nav-ctx a.nav-read{white-space:normal;line-height:1.3;height:auto;padding:10px 12px;background:var(--fg);color:var(--page)}
 .bottom-nav .nav-spark{order:30;position:relative;flex:none;display:flex;align-items:center;justify-content:center;gap:8px;width:auto;height:50px;margin:auto 0 0;padding:0 16px;border:0;border-radius:16px;
   background:var(--fg);color:var(--page);font:inherit;cursor:pointer;box-shadow:0 12px 24px -12px rgba(10,22,38,.7)}
-.bottom-nav .nav-spark::after{content:"AI에게 묻기";font-size:15px;font-weight:700}
+.bottom-nav .nav-spark::after{content:"AI에게 묻기";font-size:17px;font-weight:700}
 .bottom-nav .nav-spark svg{width:20px;height:20px}
 .bottom-nav .nav-spark:active{transform:scale(.97)}
 .bottom-nav .nav-acct{order:31;display:flex;align-items:center;gap:10px;margin-top:8px;padding:6px 8px;border-radius:14px;color:var(--fg);text-decoration:none}
 .bottom-nav .nav-acct:hover{background:var(--soft)}
-.nav-acct>i{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--soft);font-style:normal;font-size:13px;font-weight:700}
-.nav-acct b{display:block;font-size:14px}.nav-acct small{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.nav-acct>i{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--soft);font-style:normal;font-size:15.5px;font-weight:700}
+.nav-acct b{display:block;font-size:16px}.nav-acct small{display:block;font-size:15px;color:var(--muted);font-weight:600}
 .bottom-nav>.bell-btn{order:32;display:block;position:absolute;right:20px;bottom:20px;width:36px;height:36px;border:0;border-radius:50%;background:var(--soft);color:var(--fg)}
 .bottom-nav.mini{transform:none}
 body:has(.bottom-nav){padding-bottom:0}
@@ -93,6 +93,6 @@ html.pc-split main#main>[role=tabpanel]:not([hidden]){grid-column:1;grid-row:1}
 html.pc-split main#main>#tab-news:not([hidden])+#tab-filings:not([hidden]){grid-row:2}
 html.pc-split main#main>#tab-fundamentals{grid-column:2;grid-row:1/span 2;position:relative}
 html.pc-split #tab-fundamentals .si-wrap{column-count:1}html.pc-split #tab-fundamentals .km-stats{grid-template-columns:minmax(0,1fr)}
-html.pc-split #tab-fundamentals::before{content:"기업 정보";display:block;margin:4px 4px 10px;font-size:19px;font-weight:700;color:var(--fg)}
+html.pc-split #tab-fundamentals::before{content:"기업 정보";display:block;margin:4px 4px 10px;font-size:20px;font-weight:700;color:var(--fg)}
 }
 `;
