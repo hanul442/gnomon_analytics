@@ -84,6 +84,7 @@ export const isMinorRelease = (version: string) => /^\d+\.\d+\.0$/.test(version)
  * version.json with each build; the first check after a new version notes it for every active user.
  * G-177: patches reach only readers with updatePatch on, and nothing goes out between 22:00 and 08:00 KST —
  * the version stays pending (not marked done) until a morning run sends it.
+ * Off since 2026-10-29 (한서): the cron no longer calls this, so no release reaches anyone. Kept for tests and a later switch-back.
  */
 export async function runUpdateNotify(ctx: Ctx): Promise<{ version: string | null; sent: number; deferred?: boolean }> {
   const r = await ctx.fetch(`${ctx.site.replace(/\/$/, '')}/version.json`, { signal: AbortSignal.timeout(10_000) }).catch(() => null);
