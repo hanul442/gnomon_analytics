@@ -1169,3 +1169,4 @@
 {"symbol":"KRW-WLD","date":"2026-10-27","open":594,"high":597,"low":567,"close":586,"volume":26130151.52365667,"source":"upbit:candles:days","retrievedAt":"2026-10-27T19:38:09.377Z"}
 {"symbol":"KRW-WLD","date":"2026-10-27","open":594,"high":597,"low":567,"close":587,"volume":29802610.08802732,"source":"upbit:candles:days","retrievedAt":"2026-10-28T08:03:46.851Z"}
 {"symbol":"KRW-WLD","date":"2026-10-28","open":585,"high":595,"low":579,"close":583,"volume":10321594.46203201,"source":"upbit:candles:days","retrievedAt":"2026-10-28T08:03:46.851Z"}
+{"symbol":"KRW-WLD","date":"2026-10-28","open":585,"high":595,"low":579,"close":589,"volume":10767436.13144872,"source":"upbit:candles:days","retrievedAt":"2026-10-28T08:22:17.568Z"}
