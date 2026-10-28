@@ -1,6 +1,6 @@
 import { PC_RAIL_CSS } from './pcRail.js';
 import { COMMAND_BAR_CSS, COMMAND_BAR_JS, REPORT_TABS_CSS, REPORT_TABS_JS } from './commandBar.js';
-import { committeeHero, COMMITTEE_CSS, COMMITTEE_JS } from './committeeSeats.js';
+import { committeeHero, seatsOf, splitOf, COMMITTEE_CSS, COMMITTEE_JS } from './committeeSeats.js';
 import { US_EXCHANGE_LETTER } from '../sources/naverWorld.js';
 import { MODERN_SWITCH_CSS, MODERN_SWITCH_JS } from './modernSwitch.js';
 import { GEN_BUTTON_CSS, GEN_BUTTON_JS, genButton, reportButton } from './generateButton.js';
@@ -26,7 +26,7 @@ import { LOADING_CSS, LOADING_JS } from './loading.js';
 import type { DailyReport } from './dailyReport.js';
 import type { TechnicalSummary } from '../analysis/technicals.js';
 import type { Claim } from '../analysis/commentary.js';
-import { apiMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
+import { apiMeta, seoMeta, ALPHA_CSS, ALPHA_SCRIPT } from './alpha.js';
 import { askFilingButton, CHAT_CSS, CHAT_HTML, CHAT_SCRIPT } from './chat.js';
 import { INFOGRAPHIC_CSS, INFOGRAPHIC_JS } from './infographics.js';
 import { COIN_FIT_CSS, COIN_FIT_SCRIPT } from './coinFitness.js';
@@ -385,14 +385,14 @@ function reportNav(tabs:readonly {key:string;label:string;also?:string;ghost?:bo
  return `<div class="chips" role="tablist" aria-label="리포트 탭">${tabs.filter(t=>!ANALYSIS_KEYS.has(t.key)).map((t,i)=>link(t,i)+(t.key==='chart'&&nested.length?'<button type="button" id="analysis-menu" aria-expanded="false" aria-controls="analysis-tabs">분석<i class="chev" aria-hidden="true"></i></button>':'')).join('')}</div>${nested.length?`<div id="analysis-tabs" class="chips analysis-tabs" role="tablist" aria-label="분석 세부 메뉴" hidden>${nested.map(t=>link(t,1)).join('')}</div>`:''}`;
 }
 
-export function shell(base: string, title: string, body: string, options: { lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'watch' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean; mode?: string; dock?: string; head?: { title?: string; tabs?: string }; ask?: string; parts?: string }): string {
+export function shell(base: string, title: string, body: string, options: { description?: string; lead?: string; tabs?: readonly { key: string; label: string }[]; scripts?: string; archiveHref?: string; homeHref?: string; bottomNav?: boolean; active?: 'home' | 'watch' | 'paper' | 'scorecard' | 'pricing' | 'screener' | 'account' | 'coins' | 'etfs'; chat?: boolean; noFeedback?: boolean; ads?: boolean; mode?: string; dock?: string; head?: { title?: string; tabs?: string }; ask?: string; parts?: string }): string {
   // The site root lists every covered stock; `base` always points at it.
   // G-222: a US report renders inside withCurrency('USD'); data-ccy tells the chart (header price, high/low marks, drawings) to use dollars.
   const rootHref = `${base}index.html`;
   const tabs = options.tabs ?? [];
   const menu = menuHtml(base);
   return `<!doctype html><html lang="ko" data-plan="free"${currency() === 'USD' ? ' data-ccy="USD"' : ''}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0A1626"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/gnomon-icon-192.png"><link rel="icon" type="image/png" href="${base}assets/gnomon-icon-96.png"><title>${escape(title)}</title>${apiMeta()}${PLAN_BOOT}${THEME_BOOT}${PERSONA_BOOT}${LEVEL_BOOT}${INSTALL_BOOT}
+<meta name="theme-color" content="#0A1626"><link rel="manifest" href="${base}manifest.webmanifest"><link rel="apple-touch-icon" href="${base}assets/gnomon-icon-192.png"><link rel="icon" type="image/png" href="${base}assets/gnomon-icon-96.png"><title>${escape(title)}</title>${seoMeta(title, options.description)}${apiMeta()}${PLAN_BOOT}${THEME_BOOT}${PERSONA_BOOT}${LEVEL_BOOT}${INSTALL_BOOT}
 <link rel="stylesheet" href="${base}${FONT_DIR}/pretendard.css"><link rel="stylesheet" href="${base}${FONT_DIR}/serif.css"><link rel="stylesheet" href="${base}assets/app.${ASSET_VERSION}.css"></head><body data-base="${base}"${options.noFeedback ? ' data-no-feedback' : ''}>
 <div class="boot-veil" aria-hidden="true"><span><img src="${base}assets/gnomon-mark.png" alt=""></span></div><script>(function(){var v=document.currentScript.previousElementSibling,done=0,lift=function(){if(done)return;done=1;v.classList.add('gone');setTimeout(function(){v.remove();},220);};var vq=function(t){if(t)['ready','finished','updateCallbackDone'].forEach(function(k){if(t[k])t[k].catch(function(){});});};addEventListener('pageswap',function(e){vq(e.viewTransition);});addEventListener('unhandledrejection',function(e){var r=e.reason;if(r&&/Transition was aborted|skipped|ViewTransition/i.test(String(r.message||r)))e.preventDefault();});addEventListener('pagereveal',function(e){vq(e.viewTransition);if(e.viewTransition){done=1;v.remove();}});setTimeout(lift,Math.max(0,850-performance.now()));addEventListener('DOMContentLoaded',function(){(document.fonts&&document.fonts.ready||Promise.resolve()).then(function(){requestAnimationFrame(function(){requestAnimationFrame(lift);});});});})();</script>
 <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -751,8 +751,15 @@ ${noFilings ? '' : panel('filings', filingsBody(report))}
 ${panel('mine', mineTab(base, report.symbol))}
 <footer id="sources" style="padding:24px 0 0"><p>${report.currency === 'USD' ? '데이터: 네이버 해외 주식 일봉(달러, 미국 현지 날짜)과 지표(PER·EPS·PBR·시가총액·52주), SEC EDGAR(공시·XBRL 재무·Form 4 내부자 거래), 구글 뉴스(영문). 투자자별 수급과 증권가 목표가는 없어요. 환율 변동은 반영하지 않아요.' : report.kind === 'coin' ? '데이터: 업비트 원화 마켓 일봉(가격, 09:00 KST 기준), 네이버 뉴스 검색과 RSS(뉴스). 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : report.kind === 'etf' ? '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급), 네이버 뉴스 검색과 RSS(뉴스). 기초지수·괴리율·보수는 아직 보지 않아요.' : '데이터: Naver 금융 일봉·주봉·분봉(가격), 네이버 증권(수급·밸류에이션·실적·증권사 리포트 목록), OpenDART(공시), 네이버 뉴스 검색과 RSS(뉴스).'} ${ctx.live ? `이 페이지는 실행할 때마다 최신 데이터로 다시 만들어요 (${escape(asOf)}).` : `${escape(report.date)} 리포트는 만든 뒤 고치지 않아요.`}</p>
 <p>적정가와 예측 범위는 계산 결과이고, 투자 권유가 아니에요. <a href="${ctx.archiveHref}">지난 리포트 보기</a></p></footer>`, report.kind);
-  const title = ctx.live ? `${report.name} 리서치 대시보드 | GNOMON` : `${report.name} ${report.date} 일일 리포트 | GNOMON`;
-  return shell(base, title, body, { tabs: tabsFor(report.kind), ask: report.name, scripts: chart.script + (report.kind === 'coin' ? COIN_FIT_SCRIPT : '') + TAB_SCRIPT + MINE_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : '') + (usRefill ? US_REFILL_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
+  // G-302: search-friendly title and a one-line description built from the committee's split (same for everyone).
+  const code = report.symbol.replace(/\.[A-Z]+$/, '');
+  // A stock's own page (live, latest or all-stock s/ page) sits one folder down; dated archives sit two down.
+  const title = ctx.live || base === '../' ? `${report.name}(${code}) 주가와 AI 위원회 판단 | GNOMON` : `${report.name} ${report.date} 일일 리포트 | GNOMON`;
+  const sp = splitOf(seatsOf(report));
+  const description = sp.total
+    ? `${report.name} AI 위원회 ${report.date} 판단: 위원 ${sp.total}명 중 강세 ${sp.bull} · 중립 ${sp.neutral} · 약세 ${sp.bear}. 근거와 반론, 틀리는 조건을 남기고 20거래일 뒤 공개로 채점해요. 투자 권유가 아니에요.`
+    : `${report.name}(${code}) 주가 차트, 기업 정보, 공시와 뉴스를 한곳에서 봐요. AI 위원회 판단은 20거래일 뒤 공개로 채점해요.`;
+  return shell(base, title, body, { description, tabs: tabsFor(report.kind), ask: report.name, scripts: chart.script + (report.kind === 'coin' ? COIN_FIT_SCRIPT : '') + TAB_SCRIPT + MINE_SCRIPT + DART_SCRIPT + PARLIAMENT_SCRIPT + EVIDENCE_SCRIPT + DEBATE_FILTER_SCRIPT + DEBATE_PLAY_SCRIPT + (sealedDeep ? DEEP_SCRIPT : '') + (usRefill ? US_REFILL_SCRIPT : ''), archiveHref: ctx.archiveHref, homeHref: ctx.homeHref });
 }
 
 /**

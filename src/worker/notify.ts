@@ -9,15 +9,17 @@ import { isUsSymbol } from '../report/seal.js';
 import { notifyLimit } from '../report/plans.js';
 import { noteBullets } from '../report/releases.js';
 import { esc, mailButton, mailLayout, mailList, sendMail, type MailEnv } from './mail.js';
+import type { WatchInfo } from '../report/conclusion.js';
 import { WRAPUP_LINK, WRAPUP_NOTICE, inWrapup } from '../report/wrapup.js';
 
-export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'notice' | 'test';
+export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'notice' | 'morning' | 'test';
 /** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
 /** updatePatch (G-177): off by default, only x.Y.0 releases are announced; on, every patch too. */
 /** weekly (G-180): the Sunday-evening summary mail (watched stocks, screens, the week's reports). */
-export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; updatePatch: boolean; weekly: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
-export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, updatePatch: false, weekly: true, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
-const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', notice: null, test: null };
+/** morning (G-303): the weekday 08:00 KST briefing (overnight world markets, my stocks' broken conditions and filings). */
+export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; updatePatch: boolean; weekly: boolean; morning: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
+export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, updatePatch: false, weekly: true, morning: true, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
+const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', morning: 'morning', notice: null, test: null };
 
 export async function prefsOf(db: D1, userId: string): Promise<Prefs> {
   const r = await db.prepare('SELECT prefs FROM notify_prefs WHERE user_id = ?').bind(userId).first<{ prefs: string }>();
@@ -117,7 +119,7 @@ export async function runDailyNotify(ctx: Ctx): Promise<{ date: string | null; s
   const site = ctx.site.replace(/\/$/, '');
   const r = await ctx.fetch(`${site}/watchinfo.json`, { signal: AbortSignal.timeout(15_000) }).catch(() => null);
   if (!r?.ok) return { date: null, sent: 0 };
-  const info = await r.json() as Record<string, { d: string }>;
+  const info = await r.json() as Record<string, Pick<WatchInfo, 'd' | 'sn' | 'sh'>>;
   const date = Object.values(info).map((x) => x.d).sort().at(-1) ?? null;
   // Only fresh days: a first run must not announce an old batch.
   if (!date || date < kstDate(new Date(ctx.now.getTime() - 3 * 86400_000))) return { date, sent: 0 };
@@ -125,14 +127,19 @@ export async function runDailyNotify(ctx: Ctx): Promise<{ date: string | null; s
   if (!today.length) return { date, sent: 0 };
   const nm = await siteNames(ctx);
   const list = (xs: string[]) => xs.slice(0, 3).map(nm).join(', ') + (xs.length > 3 ? ` 외 ${xs.length - 3}개` : '');
+  // G-303: the evening note also says how the calls whose 20 sessions ended today did, so scoring has its moment.
+  const scoredLine = (xs: string[]) => {
+    const n = xs.reduce((a, s) => a + (info[s]!.sn ?? 0), 0), h = xs.reduce((a, s) => a + (info[s]!.sh ?? 0), 0);
+    return n ? ` · 오늘 채점 ${n}건 중 ${h}건 맞음` : '';
+  };
   const users = (await ctx.db.prepare('SELECT u.id, u.plan, w.symbols FROM users u LEFT JOIN watchlists w ON w.user_id = u.id WHERE u.disabled = 0').all<{ id: string; plan: string; symbols: string | null }>()).results;
   let sent = 0;
   for (const u of users) {
     if (!(await once(ctx.db, `daily:${u.id}:${date}`, ctx.now))) continue;
     const watch = new Set<string>(u.symbols && notifyLimit(u.plan).watchReport ? JSON.parse(u.symbols) as string[] : []), mine = today.filter((s) => watch.has(s));
     const ok = mine.length
-      ? await notifyUser(ctx, u.id, 'watchReport', { title: `관심 종목 새 리포트 · ${list(mine)}`, body: `${date} 장 마감 기준 리포트가 나왔어요.`, link: `reports.html?hl=${mine.map(encodeURIComponent).join(',')}#today` })
-      : await notifyUser(ctx, u.id, 'daily', { title: `${date === kstDate(ctx.now) ? '오늘' : `${date.slice(5).replace('-', '/')}`} 리포트 ${today.length}개가 나왔어요`, body: `${list(today)} · ${date} 장 마감 기준`, link: 'reports.html#today' });
+      ? await notifyUser(ctx, u.id, 'watchReport', { title: `관심 종목 새 리포트 · ${list(mine)}`, body: `${date} 장 마감 기준 리포트가 나왔어요.${scoredLine(mine)}`, link: `reports.html?hl=${mine.map(encodeURIComponent).join(',')}#today` })
+      : await notifyUser(ctx, u.id, 'daily', { title: `${date === kstDate(ctx.now) ? '오늘' : `${date.slice(5).replace('-', '/')}`} 리포트 ${today.length}개가 나왔어요`, body: `${list(today)} · ${date} 장 마감 기준${scoredLine(today)}`, link: 'reports.html#today' });
     if (ok) sent += 1;
   }
   // Requested reports (G-97): the request was handled and the stock's report is now in today's batch.
@@ -140,6 +147,51 @@ export async function runDailyNotify(ctx: Ctx): Promise<{ date: string | null; s
   for (const q of reqs) {
     if (!today.includes(q.symbol) || !(await once(ctx.db, `req:${q.id}`, ctx.now))) continue;
     if (await notifyUser(ctx, q.user_id, 'request', { title: `요청한 ${nm(q.symbol)} 리포트가 나왔어요`, body: `${date} 기준으로 만들었어요. 눌러서 바로 보세요.`, link: reportLink(q.symbol) })) sent += 1;
+  }
+  return { date, sent };
+}
+
+/** G-303: the overnight world line of the briefing: US indices and the won, when the snapshot is from the last day. */
+type WorldJson = { generatedAt?: string; indices?: { key: string; changePct: number | null; at: string | null }[]; macro?: { key: string; value: number; changePct: number | null }[] } | null;
+export function worldLine(w: WorldJson, now: Date): string {
+  if (!w?.generatedAt || now.getTime() - Date.parse(w.generatedAt) > 30 * 3600_000) return '';
+  const sign = (v: number) => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
+  const idx = (key: string, name: string) => { const q = w.indices?.find((x) => x.key === key); return q && q.changePct != null ? `${name} ${sign(q.changePct)}` : ''; };
+  const fx = w.macro?.find((x) => x.key === 'USDKRW');
+  const parts = [idx('.INX', 'S&P 500'), idx('.IXIC', '나스닥'), idx('.SOX', '반도체'), fx ? `원/달러 ${Math.round(fx.value).toLocaleString('ko-KR')}원` : ''].filter(Boolean);
+  return parts.length ? `간밤 미국 ${parts.join(' · ')}` : '';
+}
+
+/**
+ * G-303: the weekday morning briefing, once per user and day from 08:00 KST (an hour before the open), on the
+ * 10-minute cron. Same for everyone except the watched-stock line: members whose kill condition the last close
+ * broke, and the newest important filing. No advice, only what changed. A user with nothing to hear is skipped.
+ */
+export async function runMorningBrief(ctx: Ctx): Promise<{ date: string | null; sent: number }> {
+  const k = new Date(ctx.now.getTime() + 9 * 3600_000), hhmm = k.toISOString().slice(11, 16), dow = k.getUTCDay();
+  if (dow === 0 || dow === 6 || hhmm < '08:00' || hhmm >= '09:00') return { date: null, sent: 0 };
+  const date = kstDate(ctx.now);
+  const [world, info] = await Promise.all([siteJson<WorldJson>(ctx, 'world.json'), siteJson<Record<string, WatchInfo>>(ctx, 'watchinfo.json')]);
+  const wl = worldLine(world, ctx.now), nm = await siteNames(ctx);
+  const users = (await ctx.db.prepare('SELECT u.id, u.plan, w.symbols FROM users u LEFT JOIN watchlists w ON w.user_id = u.id WHERE u.disabled = 0').all<{ id: string; plan: string; symbols: string | null }>()).results;
+  const day = `${date.slice(5).replace('-', '/')} ${'일월화수목금토'[dow]}`;
+  const fresh = kstDate(new Date(ctx.now.getTime() - 4 * 86400_000));
+  let sent = 0;
+  for (const u of users) {
+    try {
+      // Only reports from the last few days: an old report's filings and broken conditions are not news this morning.
+      const watch = notifyLimit(u.plan).watchReport ? jsonList(u.symbols).filter((s) => (info?.[s]?.d ?? '') >= fresh) : [];
+      const broke = watch.filter((s) => info![s]!.k), filed = watch.filter((s) => info![s]!.ft && !broke.includes(s));
+      const mine = [
+        ...broke.slice(0, 2).map((s) => `${nm(s)} 위원 ${info![s]!.k}명 조건 깨짐`),
+        ...filed.slice(0, 2).map((s) => `${nm(s)} 공시: ${info![s]!.ft}`),
+      ];
+      if (!wl && !mine.length) continue;
+      if (!(await once(ctx.db, `morning:${u.id}:${date}`, ctx.now))) continue;
+      const title = broke.length ? `아침 브리핑 · 내 종목 ${broke.length}개 판단 조건 깨짐` : `아침 브리핑 · ${day}`;
+      const body = [wl, mine.length ? `내 종목 · ${mine.join(' · ')}` : ''].filter(Boolean).join('\n');
+      if (await notifyUser(ctx, u.id, 'morning', { title, body, link: mine.length ? 'watch.html' : 'world.html' })) sent += 1;
+    } catch { /* one user's bad row must not stop the rest */ }
   }
   return { date, sent };
 }

@@ -6,6 +6,7 @@ export { scenarioZone };
 import type { DailyReport } from './dailyReport.js';
 import { LOCKED_TEXT } from '../analysis/commentary.js';
 import { esc } from './html.js';
+import { seatsOf } from './committeeSeats.js';
 import { won } from './format.js';
 import { CREDIT_COST } from './plans.js';
 import { reportButton } from './generateButton.js';
@@ -353,13 +354,26 @@ export function testPrices(report: DailyReport): { up?: number; dn?: number } {
 }
 
 /** G-85: what the watchlist shows per covered stock: the test prices and what is new since the last report. */
-export function watchInfo(entries: readonly { symbol: string; report: DailyReport | null; reportDate?: string | null }[]): Record<string, { c: number; up?: number; dn?: number; f: number; n: number; d: string }> {
-  const out: Record<string, { c: number; up?: number; dn?: number; f: number; n: number; d: string }> = {};
+/**
+ * G-303: also what the 08:00 briefing and the evening note read: k = members whose "틀리는 조건" the last close
+ * broke, ft = the most important recent filing's title, sn/sh = calls whose 20 sessions ended on this session
+ * (scored today) and how many of them were right.
+ */
+export type WatchInfo = { c: number; up?: number; dn?: number; f: number; n: number; d: string; k?: number; ft?: string; sn?: number; sh?: number };
+export function watchInfo(entries: readonly { symbol: string; report: DailyReport | null; reportDate?: string | null }[]): Record<string, WatchInfo> {
+  const out: Record<string, WatchInfo> = {};
   for (const e of entries) {
     const r = e.report; if (!r?.price) continue;
     const since = new Date(Date.parse(r.date) - 3 * 86_400_000).toISOString().slice(0, 10);
+    const fresh = (r.recentFilings ?? []).filter((x) => x.filedDate >= since);
+    const k = seatsOf(r).filter((x) => x.broken).length;
+    const scored = (r.market?.analystBoard ?? []).flatMap((b) => b.calls ?? []).filter((t) => t.done && t.closeDate === r.price!.sessionDate);
     // G-231: d is the day the report was made (the daily push and weekly mail announce it as new), not the run date.
-    out[e.symbol] = { c: r.price.close, ...testPrices(r), f: (r.recentFilings ?? []).filter((x) => x.filedDate >= since).length, n: r.news?.newIds.length ?? 0, d: e.reportDate === undefined ? r.date : e.reportDate ?? '' };
+    out[e.symbol] = {
+      c: r.price.close, ...testPrices(r), f: fresh.length, n: r.news?.newIds.length ?? 0, d: e.reportDate === undefined ? r.date : e.reportDate ?? '',
+      ...(k ? { k } : {}), ...(fresh[0] ? { ft: fresh[0].title.slice(0, 60) } : {}),
+      ...(scored.length ? { sn: scored.length, sh: scored.filter((t) => t.hit).length } : {}),
+    };
   }
   return out;
 }

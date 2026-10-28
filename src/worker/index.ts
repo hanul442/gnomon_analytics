@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { handle, pruneVisits, runAlerts, runIntraday, type Env } from './api.js';
 import { writeCommentary } from '../analysis/commentary.js';
 import { runReportJob } from './reports.js';
-import { runDailyNotify, runPriceAlerts, runUpdateNotify, runWeeklySummary, runWrapupNotify } from './notify.js';
+import { runDailyNotify, runMorningBrief, runPriceAlerts, runUpdateNotify, runWeeklySummary, runWrapupNotify } from './notify.js';
 import type { AskClient } from './ask.js';
 
 export default {
@@ -19,9 +19,9 @@ export default {
   async scheduled(event: { cron: string }, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<void> {
     const deps = { now: () => new Date(), fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init) };
     const nctx = { db: env.DB, fetch: deps.fetch, site: env.SITE_URL, now: deps.now() };
-    // Every 10 minutes: the intraday scan (session only) and price alerts; the evening triggers: screener alerts and the daily report note.
+    // Every 10 minutes: the intraday scan (session only), price alerts and the 08:00 briefing (G-303); the evening triggers: screener alerts and the daily report note.
     const job = event.cron.startsWith('*/10')
-      ? Promise.all([runIntraday(env, deps), runPriceAlerts(nctx), runUpdateNotify(nctx), runWrapupNotify(nctx, env)])
+      ? Promise.all([runIntraday(env, deps), runPriceAlerts(nctx), runUpdateNotify(nctx), runWrapupNotify(nctx, env), runMorningBrief(nctx)])
       : Promise.all([runAlerts(env, deps), runDailyNotify(nctx), runWeeklySummary(nctx, env), pruneVisits(env.DB, nctx.now)]);
     ctx.waitUntil(job.then((r) => console.log(event.cron, JSON.stringify(r))));
   },
