@@ -1,5 +1,5 @@
 {
- "at": "2026-10-28T18:20:10.434Z",
+ "at": "2026-10-28T18:48:14.132Z",
  "selected": null,
  "universe": [
   {
@@ -335,12 +335,12 @@
    "failedSources": []
   },
   {
-   "symbol": "NFLX.O",
+   "symbol": "395160",
    "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "395160",
+   "symbol": "NFLX.O",
    "report": "EXISTS",
    "failedSources": []
   },
