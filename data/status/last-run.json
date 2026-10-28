@@ -1,11 +1,11 @@
 {
- "at": "2026-10-28T07:57:44.591Z",
+ "at": "2026-10-28T08:03:46.851Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2767
+   "count": 2766
   },
   {
    "source": "naver:m-stock:etf",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2661
+   "count": 2660
   },
   {
    "source": "naver:fchart:day:etf",
@@ -25,8 +25,7 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 298,
-   "error": "1 failed "
+   "count": 299
   },
   {
    "source": "naver:global",
@@ -36,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 47
+   "count": 45
   },
   {
    "source": "google:topic-business-ko",
@@ -51,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 70
+   "count": 68
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 48
+   "count": 39
   },
   {
    "source": "naver:world:day:all",
@@ -66,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 577
+   "count": 588
   }
  ],
  "stocks": [
@@ -336,5 +335,9 @@
    "failedSources": []
   }
  ],
- "failed": []
+ "failed": [],
+ "market": {
+  "date": "2026-10-26",
+  "status": "OK"
+ }
 }
