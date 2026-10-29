@@ -800,7 +800,9 @@ export function absentBlock(title: string, why: string): string {
 
 /** The paid part of a committee report (G-61), rendered from the full commentary and sealed into <symbol>/deep/<date>.txt. */
 export function renderDeep(report: DailyReport, ctx: { live: boolean }): string {
-  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단' })}${easyCard(report.commentary)}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${decisionTrace(report, ctx.live)}</div>`;
+  // The card replaces the public #home-conclusion, so it takes the same head: with the committee card on home, the verdict
+  // line and the 위원회 판단 page (#committee) are already there and must not come twice.
+  return `<div class="deep-body"><div class="deep-swap" hidden>${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !committeeHero(report) })}${easyCard(report.commentary)}</div>${debateSection(report, evidenceFold(report)) || whySection(report, { only: 'claims' })}${issuesSection(report)}${decisionTrace(report, ctx.live)}</div>`;
 }
 
 export const DEEP_UNLOCK_CREDITS = CREDIT_COST.unlock;
