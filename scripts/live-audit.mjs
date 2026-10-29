@@ -29,6 +29,8 @@ try {
 async function pass(label, pages, widths, session) {
  for (const width of widths) for (const path of pages) {
   const page = await browser.newPage({ viewport: { width, height: width < 800 ? 844 : 900 } });
+  // G-307: the audit is not a visitor; keep it out of the anonymous visit count.
+  await page.route('**/visit', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e.message).slice(0, 160)));
   page.on('console', (m) => { if (m.type() === 'error' && !/api\.upbit\.com\/websocket.*429/.test(m.text())) errors.push(m.text().slice(0, 160)); });
