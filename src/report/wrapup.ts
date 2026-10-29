@@ -30,3 +30,28 @@ export const wrapupDaysLeft = (now: Date): number => {
   const kst = (t: number) => Math.floor((t + 9 * 3600_000) / 86_400_000);
   return Math.max(0, kst(Date.parse(WRAPUP.until) - 1) - kst(now.getTime()));
 };
+
+// Alpha end (G-306): one thank-you notice on the last day, then no new sign-ups until the closed beta opens.
+/** 2026-10-31 10:00 KST to the end of that day: the window for the one alpha-end notice. */
+export const ALPHA_END = { from: '2026-10-31T01:00:00Z', until: '2026-10-31T15:00:00Z' } as const;
+export const inAlphaEnd = (now: Date): boolean => now.getTime() >= Date.parse(ALPHA_END.from) && now.getTime() < Date.parse(ALPHA_END.until);
+/** 2026-11-01 00:00 KST to 2026-11-20 00:00 KST: existing accounts keep working, new sign-ups wait. */
+export const SIGNUP_PAUSE = { from: '2026-10-31T15:00:00Z', until: '2026-11-19T15:00:00Z' } as const;
+export const signupPaused = (now: Date): boolean => now.getTime() >= Date.parse(SIGNUP_PAUSE.from) && now.getTime() < Date.parse(SIGNUP_PAUSE.until);
+export const SIGNUP_PAUSED_TEXT = '알파 테스트가 끝나서 11월 19일까지는 새 가입을 받지 않아요. 11월 20일 클로즈드 베타 모집 때 다시 만나요.';
+
+/** The alpha-end notice: 🔔 and push use title/body, the mail adds the longer lines. */
+export const ALPHA_END_NOTICE = {
+  title: '알파 테스트가 오늘 끝나요',
+  body: '함께해 주셔서 고마워요. 쓰던 계정은 그대로 쓸 수 있고, 11월 20일에 클로즈드 베타 테스터를 모집해요.',
+  /** Added for testers who have not answered the wrap-up survey yet. */
+  survey: '마무리 설문은 오늘 밤 12시까지 열려 있어요.',
+  subject: '알파 테스트가 오늘 끝나요. 고마웠어요',
+  mail: [
+    '알파 테스트가 오늘(10월 31일) 끝나요. 3주 넘게 함께 써 주시고 의견을 보내 주셔서 정말 고마워요.',
+    '보내 주신 의견으로 화면을 네 탭으로 줄이고, 위원회 확률과 채점을 더 잘 보이게 바꿨어요.',
+    '쓰던 계정과 기록은 그대로예요. 11월 1일부터 19일까지는 새 가입 없이 앱을 다듬고, 11월 20일에 클로즈드 베타 테스터를 모집해요.',
+  ],
+  cta: '그노몬 열기',
+  surveyCta: '마무리 설문 하기',
+} as const;

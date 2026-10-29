@@ -9,7 +9,7 @@ import { isUsSymbol } from '../report/seal.js';
 import { notifyLimit } from '../report/plans.js';
 import { noteBullets } from '../report/releases.js';
 import { esc, mailButton, mailLayout, mailList, sendMail, type MailEnv } from './mail.js';
-import { WRAPUP_LINK, WRAPUP_NOTICE, inWrapup } from '../report/wrapup.js';
+import { ALPHA_END_NOTICE, WRAPUP_LINK, WRAPUP_NOTICE, inAlphaEnd, inWrapup } from '../report/wrapup.js';
 
 export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'notice' | 'test';
 /** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
@@ -264,6 +264,31 @@ export async function runWrapupNotify(ctx: Ctx, env: MailEnv): Promise<{ sent: n
       if (!(await once(ctx.db, `wrapup:${u.id}`, ctx.now))) continue;
       if (await notifyUser(ctx, u.id, 'notice', { title: n.title, body: n.body, link: WRAPUP_LINK })) sent += 1;
       if (u.email && await sendMail(env, ctx.db, ctx.fetch, ctx.now, { kind: 'notice', userId: u.id, to: u.email, subject: `[그노몬] ${n.subject}`, html, text: `${n.subject}\n\n${n.mail.join('\n\n')}\n\n${link}` })) mailed += 1;
+    } catch { /* one user's bad row must not stop the rest */ }
+  }
+  return { sent, mailed };
+}
+
+/**
+ * G-306: the alpha-end notice, once per active user on 2026-10-31 from 10:00 KST (wrapup.ts). Like the wrap-up
+ * notice it is a service notice to the testers: 🔔 always, the phone when push is on, and one mail. Testers who
+ * have not answered the wrap-up survey also hear that it is open until midnight. The key is written before sending.
+ */
+export async function runAlphaEndNotify(ctx: Ctx, env: MailEnv): Promise<{ sent: number; mailed: number }> {
+  if (!inAlphaEnd(ctx.now)) return { sent: 0, mailed: 0 };
+  const site = ctx.site.replace(/\/$/, '');
+  const users = (await ctx.db.prepare(`SELECT id, email, EXISTS (SELECT 1 FROM surveys s WHERE s.user_id = u.id AND s.kind = 'wrapup') AS answered
+    FROM users u WHERE disabled = 0 AND NOT EXISTS (SELECT 1 FROM notify_log l WHERE l.key = 'alphaend:' || u.id)`).all<{ id: string; email: string; answered: number }>()).results;
+  const n = ALPHA_END_NOTICE;
+  let sent = 0, mailed = 0;
+  for (const u of users) {
+    try {
+      if (!(await once(ctx.db, `alphaend:${u.id}`, ctx.now))) continue;
+      const ask = !u.answered, path = ask ? WRAPUP_LINK : 'index.html', link = `${site}/${path}`, cta = ask ? n.surveyCta : n.cta;
+      const lines = ask ? [...n.mail, n.survey] : [...n.mail];
+      if (await notifyUser(ctx, u.id, 'notice', { title: n.title, body: ask ? `${n.body} ${n.survey}` : n.body, link: path })) sent += 1;
+      const html = mailLayout(site, n.subject, `${lines.map((x) => `<p style="margin:0 0 10px;line-height:1.7">${esc(x)}</p>`).join('')}<p style="margin:18px 0 0">${mailButton(link, cta)}</p>`, { preheader: n.body, settings: false });
+      if (u.email && await sendMail(env, ctx.db, ctx.fetch, ctx.now, { kind: 'notice', userId: u.id, to: u.email, subject: `[그노몬] ${n.subject}`, html, text: `${n.subject}\n\n${lines.join('\n\n')}\n\n${link}` })) mailed += 1;
     } catch { /* one user's bad row must not stop the rest */ }
   }
   return { sent, mailed };

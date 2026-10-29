@@ -18,7 +18,7 @@ import { issueMapParts, ISSUE_MAP_CSS, ISSUE_MAP_JS } from './issueMap.js';
 import type { UniverseRow } from '../sources/naverList.js';
 import type { MarketPulse, StockCalc } from '../analysis/quickCalc.js';
 import { madeOn, shell, type HomeEntry } from './renderHtml.js';
-import { ALPHA_BANNERS, BANNER_JS, bannerHtml, eventBanners, wrapupBanners, type Banner } from './alphaPages.js';
+import { ALPHA_BANNERS, BANNER_JS, alphaEndBanners, bannerHtml, eventBanners, wrapupBanners, type Banner } from './alphaPages.js';
 import { openEvents } from './events.js';
 import { esc } from './html.js';
 import { CONTENT_MORE_CSS } from './contentMore.js';
@@ -190,7 +190,7 @@ export function renderHome(data: HomeData): string {
   // G-281: four parts (요약 · 시장 · 위원회 · 이슈), switched from the bottom bar; a switch goes back to the top.
   const today = data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
   const day = data.pulse?.date ?? data.indices[0]?.date ?? today;
-  const banner = bannerHtml(capBanners([...wrapupBanners(today), ...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(today)), ...ALPHA_BANNERS]));
+  const banner = bannerHtml(capBanners([...wrapupBanners(today), ...alphaEndBanners(today), ...(data.banners ?? []).map((b) => ({ kind: 'notice' as const, ...b })), ...eventBanners(openEvents(today)), ...ALPHA_BANNERS]));
   const wp = data.world && (data.world.indices.length || data.world.macro.length) ? worldPanels({ markets: data.world, news: data.worldIssues ?? { from: null, to: null, articles: 0, issues: [] } }) : null;
   const issues = homeIssues(data);
   const calls = committeeToday(data.entries);

@@ -23,7 +23,7 @@ import { renderDeep } from '../report/renderHtml.js';
 import { renderOps } from '../report/renderAlpha.js';
 import { mailButton, mailLayout, mailList, sendMail as deliverMail } from './mail.js';
 import { withCurrency } from '../report/format.js';
-import { BETA_YES, inWrapup } from '../report/wrapup.js';
+import { BETA_YES, SIGNUP_PAUSED_TEXT, inWrapup, signupPaused } from '../report/wrapup.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
@@ -425,6 +425,7 @@ route('POST', '/auth/start', async ({ req, env, deps, now }) => {
   if (known?.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
   let invite: string | null = null;
   if (!known && !adminList(env).includes(email)) {
+    if (signupPaused(now)) fail(403, 'SIGNUP_PAUSED', SIGNUP_PAUSED_TEXT);
     invite = str(b.invite, 40).toUpperCase();
     if (!invite) fail(403, 'INVITE_REQUIRED', '처음이라면 초대 코드가 필요해요.');
     if (!(await inviteOk(db, invite!, now))) fail(403, 'INVITE_INVALID', '초대 코드가 맞지 않거나 다 쓰였어요.');
@@ -445,6 +446,7 @@ route('POST', '/auth/verify', async ({ req, env, now }) => {
   const isAdmin = adminList(env).includes(row!.email);
   let u = await db.prepare('SELECT id, email, plan, role, created_at, disabled FROM users WHERE email = ?').bind(row!.email).first<User>();
   if (!u) {
+    if (!isAdmin && signupPaused(now)) fail(403, 'SIGNUP_PAUSED', SIGNUP_PAUSED_TEXT);
     const code = row!.invite_code;
     if (code) {
       const took = await db.prepare('UPDATE invites SET uses = uses + 1 WHERE code = ? AND uses < max_uses AND (expires_at IS NULL OR expires_at > ?)').bind(code, iso(now)).run();
@@ -482,6 +484,7 @@ route('POST', '/auth/signup', async ({ req, env, now }) => {
   if (problem) fail(400, 'BAD_PASSWORD', problem);
   if (await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) fail(409, 'ALREADY_JOINED', '이미 가입한 이메일이에요. 로그인해 주세요. 비밀번호를 정하지 않았다면 관리자에게 로그인 링크를 받아 계정 페이지에서 정할 수 있어요.');
   if (b.terms !== true) fail(400, 'TERMS_REQUIRED', '가입 동의 네 가지(이용약관, 개인정보, 투자 유의, 만 19세 이상)에 모두 체크해 주세요.');
+  if (!isAdmin && signupPaused(now)) fail(403, 'SIGNUP_PAUSED', SIGNUP_PAUSED_TEXT);
   const code = str(b.invite, 40).toUpperCase();
   if (!code && !isAdmin) fail(403, 'INVITE_REQUIRED', '처음 가입할 때는 초대 코드가 필요해요.');
   if (code) {
