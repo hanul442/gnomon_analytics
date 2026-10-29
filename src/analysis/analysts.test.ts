@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ANALYST_HORIZON, committeeConsensus, invalidationOf, scoreAnalysts, type AnalystCall } from './analysts.js';
+import { ANALYST_HORIZON, committeeConsensus, hitOf, invalidationOf, neutralBandOf, scoreAnalysts, type AnalystCall } from './analysts.js';
 
 const day = (i: number) => new Date(Date.UTC(2026, 0, 1) + i * 86_400_000).toISOString().slice(0, 10);
 const bars = Array.from({ length: 40 }, (_, i) => ({ date: day(i), close: 100 + i }));
@@ -109,4 +109,29 @@ test('invalidation must sit on the losing side of the close, within a third (G-2
   assert.equal(invalidationOf('BEARISH', 100, 95), undefined);
   assert.equal(invalidationOf('NEUTRAL', 100, 95), undefined);
   assert.equal(invalidationOf('BULLISH', 100, 0), undefined);
+});
+
+test('G-305: NEUTRAL is scored against its own band; older calls keep ±2%', () => {
+  const band = neutralBandOf(0.02)!; // 0.5 × 2% × √20 ≈ 4.47%
+  assert.equal(band, 0.0447);
+  const neutral = { stance: 'NEUTRAL' as const, target: 100, baseClose: 100 };
+  assert.equal(hitOf(neutral, 104), false); // old rule: ±2%
+  assert.equal(hitOf({ ...neutral, neutralBand: band }, 104), true);
+  assert.equal(hitOf({ ...neutral, neutralBand: band }, 95), false);
+  assert.equal(neutralBandOf(null), undefined);
+  assert.equal(neutralBandOf(0), undefined);
+});
+
+test('G-305: directional calls are also scored against the index, and the scored days are listed', () => {
+  // Stock +20% over the window; the index +30%: BULLISH is right on direction but wrong against the index.
+  const index = Array.from({ length: 40 }, (_, i) => ({ date: day(i), close: 100 + 1.5 * i }));
+  const calls = [call('trend_momentum', 0, 'BULLISH', 125), call('mean_reversion', 0, 'BEARISH', 90), call('wave_structure', 0, 'NEUTRAL', 100), call('trend_momentum', 1, 'BULLISH', 125)];
+  const board = scoreAnalysts(calls, bars, index);
+  const trend = board.find((b) => b.analyst === 'trend_momentum')!;
+  assert.deepEqual(trend.rel, { scored: 2, hits: 0 });
+  assert.deepEqual(trend.scoredDays, [day(0), day(1)]);
+  assert.deepEqual(board.find((b) => b.analyst === 'mean_reversion')!.rel, { scored: 1, hits: 1 });
+  assert.equal(board.find((b) => b.analyst === 'wave_structure')!.rel, undefined);
+  // Without index bars nothing is scored against it.
+  assert.equal(scoreAnalysts(calls, bars).find((b) => b.analyst === 'trend_momentum')!.rel, undefined);
 });
