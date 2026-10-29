@@ -1,26 +1,26 @@
 {
- "at": "2026-10-29T10:01:46.253Z",
+ "at": "2026-10-29T16:22:40.731Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2766
+   "count": 2767
   },
   {
    "source": "naver:m-stock:etf",
    "ok": true,
-   "count": 1186
+   "count": 1183
   },
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2658
+   "count": 2659
   },
   {
    "source": "naver:fchart:day:etf",
    "ok": true,
-   "count": 1186
+   "count": 1183
   },
   {
    "source": "upbit:candles:days:all",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 38
+   "count": 41
   },
   {
    "source": "google:topic-business-ko",
@@ -50,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 70
+   "count": 53
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 47
+   "count": 44
   },
   {
    "source": "naver:world:day:all",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 1091
+   "count": 786
   }
  ],
  "stocks": [
@@ -336,14 +336,13 @@
   },
   {
    "symbol": "KRW-LINK",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
   "date": "2026-10-29",
-  "status": "NO_DATA",
-  "error": "당일 데이터가 없어 위원회 생성을 보류합니다"
+  "status": "OK"
  }
 }

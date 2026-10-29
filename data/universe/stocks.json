@@ -1560,6 +1560,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "0053F0",
+  "name": "티앤이코리아",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "005420",
   "name": "코스모화학",
   "market": "KOSPI"

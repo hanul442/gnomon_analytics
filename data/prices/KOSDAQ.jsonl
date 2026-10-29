@@ -281,3 +281,4 @@
 {"symbol":"KOSDAQ","date":"2026-10-27","open":743.09,"high":760.59,"low":740.17,"close":743.83,"volume":539957,"source":"naver:fchart:day","retrievedAt":"2026-10-27T15:30:41.603Z"}
 {"symbol":"KOSDAQ","date":"2026-10-28","open":756.9,"high":773.28,"low":756.57,"close":771.28,"volume":533015,"source":"naver:fchart:day","retrievedAt":"2026-10-28T08:03:46.851Z"}
 {"symbol":"KOSDAQ","date":"2026-10-28","open":756.9,"high":773.28,"low":756.57,"close":771.28,"volume":560627,"source":"naver:fchart:day","retrievedAt":"2026-10-28T16:13:56.361Z"}
+{"symbol":"KOSDAQ","date":"2026-10-29","open":767.78,"high":768.75,"low":741.96,"close":753.23,"volume":494052,"source":"naver:fchart:day","retrievedAt":"2026-10-29T16:22:40.731Z"}
