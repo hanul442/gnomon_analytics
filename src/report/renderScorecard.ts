@@ -65,7 +65,12 @@ ${totalScored ? `<table class="compact"><thead><tr><th>기간</th><th>채점</th
 <p class="fine">범위가 정직하면 약 80%가 안에 들어와요. 이보다 낮으면 범위가 너무 좁고, 훨씬 높으면 너무 넓은 거예요.</p>` : `<p class="empty">아직 채점한 예측이 없어요. 지금 기록된 예측 ${pending.toLocaleString('ko-KR')}건은 기간(5·20·60·120거래일)이 지나면 실제 가격으로 채점해요.</p>`}</div></section>`;
   // AI analysts, all stocks together.
   const by = new Map<string, Tally>();
+  // G-305: the real sample behind the direction number (calls made on one day move together) and the
+  // index-relative hit rate (a falling market sinks every BULLISH call at once).
+  const aiDays = new Set<string>(); let relScored = 0, relHits = 0;
   for (const e of live) for (const a of e.report.market!.analystBoard) {
+    for (const d of a.scoredDays ?? []) aiDays.add(d);
+    if (a.rel) { relScored += a.rel.scored; relHits += a.rel.hits; }
     const x = by.get(a.analyst) ?? { name: a.name, scored: 0, hits: 0, pending: 0, err: [] };
     x.scored += a.scored; x.hits += (a.hitRate ?? 0) * a.scored; x.pending += a.pending;
     if (a.medianErrorPct !== null) x.err.push(a.medianErrorPct);
@@ -116,7 +121,7 @@ ${mine.length ? `<ol class="mb-calls">${mine.map(row).join('')}</ol><p class="em
   const analystCard = `<section class="block"><div class="block-head"><h2>위원별 판단</h2><span class="muted">전 종목 합산</span></div>
 <div class="mb-bar" hidden><button type="button" class="chip-toggle mb-watch" aria-pressed="false">관심 종목만</button></div>
 ${board.length ? `<div class="mb-grid">${board.map(member).join('')}</div>` : '<div class="card"><p class="empty">아직 위원 판단이 없어요.</p></div>'}
-<p class="fine">위원은 AI가 서로 다른 관점을 맡은 분석가예요. 위원회가 모이기 전에 각자 자기 관점의 근거만 보고 따로 판단해요. '철회'는 위원이 판단하면서 정한 “종가가 여기에 닿으면 틀렸다고 보는” 가격이에요. 리포트를 쓴 날 입장과 20거래일 뒤 가격을 그대로 기록하고 고치지 않아요. 20거래일이 지나면 방향이 맞았는지 채점해요(중립은 ±2% 안이면 맞음). '확신'은 위원이 스스로 적은 확신도의 평균이에요. 확신이 적중보다 많이 높으면 자신감이 지나친 거고, 둘이 비슷할수록 믿을 만한 확신이에요. 진행 중인 판단의 '같은 쪽·반대쪽'은 지금까지의 움직임일 뿐 채점이 아니에요. 적중이 높은 위원이 먼저 나와요.</p></section>`;
+<p class="fine">위원은 AI가 서로 다른 관점을 맡은 분석가예요. 위원회가 모이기 전에 각자 자기 관점의 근거만 보고 따로 판단해요. '철회'는 위원이 판단하면서 정한 “종가가 여기에 닿으면 틀렸다고 보는” 가격이에요. 리포트를 쓴 날 입장과 20거래일 뒤 가격을 그대로 기록하고 고치지 않아요. 20거래일이 지나면 방향이 맞았는지 채점해요(중립은 그 종목이 20거래일 동안 보통 움직이는 폭의 절반 안이면 맞음, 10월 29일 전 판단은 ±2% 안). '확신'은 위원이 스스로 적은 확신도의 평균이에요. 확신이 적중보다 많이 높으면 자신감이 지나친 거고, 둘이 비슷할수록 믿을 만한 확신이에요. 진행 중인 판단의 '같은 쪽·반대쪽'은 지금까지의 움직임일 뿐 채점이 아니에요. 적중이 높은 위원이 먼저 나와요.</p></section>`;
   // G-77: strategy champions and paper ledgers ("따라 하기"), one row per stock, best first. Ten rows show;
   // the rest wait behind '전체 보기'. A row opens that stock's ledger in place.
   const follow = live.map((e) => {
@@ -154,8 +159,9 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
   ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: '', cls: 'sc-ring', half: true }) : '';
   const hero = `<section class="block sc-hero" id="top"><div class="sc-k">예측 범위 적중률 · 리포트 종목 ${live.length}개</div><div class="sc-hv" role="heading" aria-level="2"><b>${fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`}</b><small>목표 80% 안팎</small></div>
 ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 ${Math.round(fcHit)}%, 목표 80%"><i style="width:${Math.max(0, Math.min(100, fcHit)).toFixed(0)}%"></i><em style="left:80%"></em></div>`}
-${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
-<div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언 규칙대로였다면 (가상)', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
+${scoreRing}<p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} 같은 방법을 10년치(2016~2026) 거래 많은 종목에 돌려 보면 83~84%였고, 그다음 며칠 동안 시장이 크게 빠진 구간에서는 60% 안팎으로 떨어졌어요. ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
+<div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언 규칙대로였다면 (가상)', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건 · 판단한 날 ${aiDays.size}일` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}${relScored ? line('시장 대비 적중', `강세는 지수보다 나았는지, 약세는 못했는지 · ${relScored}건`, `${Math.round((relHits / relScored) * 100)}%`) : ''}</div>
+${aiScored && aiDays.size < 10 ? `<p class="fine">같은 날 낸 판단은 시장을 따라 함께 움직여서, 판단한 날이 10일이 안 되면 적중률은 그날 시장이 어땠는지에 크게 좌우돼요.</p>` : ''}</section>
 `;
   // G-297 (한서님 시안 ⑤): the newest graded member calls, hits and misses alike, right under the headline — the
   // committee is scored in the open. Waiting calls only count until the first grade comes in.

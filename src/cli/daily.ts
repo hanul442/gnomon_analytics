@@ -76,8 +76,9 @@ import { collectMarketData, financeKey, flowKey, intradayKey, marketPaths, resea
 import { buildMarketSection } from '../report/marketSection.js';
 import { scenarioCallOf } from '../analysis/scenarioScore.js';
 import { readCommitteeCalibration, refreshCommitteeCalibration } from './calibrate.js';
+import { refreshMissReview } from './missReview.js';
 import { forecastKey, type PriceForecast } from '../analysis/valuation.js';
-import { analystCallKey, type AnalystCall } from '../analysis/analysts.js';
+import { ANALYST_HORIZON, analystCallKey, neutralBandOf, type AnalystCall } from '../analysis/analysts.js';
 import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
@@ -257,6 +258,8 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   const corpCodes = await readCorpCodes(root);
   // G-264: the committee number's recalibration, refitted from every scored committee report before today's reports.
   await refreshCommitteeCalibration(root, now).catch((e) => console.error(`calibration: ${String(e).slice(0, 160)}`));
+  // G-305: once a KST week, every scored miss sorted by type (data/eval/misses-<Monday>.md). No AI.
+  await refreshMissReview(root, now).catch((e) => console.error(`miss review: ${String(e).slice(0, 160)}`));
   const core = new Set(options.tickers.map((t) => t.symbol));
   const weeklyDue = async (symbol: string) => {
     const last = (await readdir(join(root, 'reports', symbol)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0, 10) < today.date).sort().at(-1)?.slice(0, 10);
@@ -603,9 +606,10 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
       // Analyst calls are logged as made, to be scored 20 sessions later.
       const c = built.commentary;
       if (c?.status === 'OK' && c.analysts?.length && built.price) {
+        const neutralBand = neutralBandOf(built.market?.forecasts.find((f) => f.horizon === ANALYST_HORIZON)?.sigma);
         const calls: AnalystCall[] = c.analysts.map((v) => ({
           symbol: SYMBOL, analyst: v.analyst, reportDate: today.date, baseDate: built.price!.sessionDate ?? today.date, baseClose: built.price!.close,
-          stance: v.stance, confidence: v.confidence, target: v.target, ...(v.invalidation ? { invalidation: v.invalidation } : {}), promptVersion: c.promptVersion, madeAt: now.toISOString(),
+          stance: v.stance, confidence: v.confidence, target: v.target, ...(v.invalidation ? { invalidation: v.invalidation } : {}), ...(neutralBand != null ? { neutralBand } : {}), promptVersion: c.promptVersion, madeAt: now.toISOString(),
         }));
         await appendUnseen(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`), calls, analystCallKey);
       }
