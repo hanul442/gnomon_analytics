@@ -34,7 +34,7 @@ ${M} .rh-l{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 ${M} .rh-x{stroke:var(--muted);stroke-width:1}
 ${M} .rh-halo{opacity:.18}
 ${M} .rh-per{order:6;display:flex;justify-content:space-between;margin:18px 0 0}
-${M} .rh-per button{border:0;background:none;font:700 14px/1 inherit;min-height:36px;padding:0 10px;border-radius:7px;cursor:pointer;color:var(--rh-c)}
+${M} .rh-per button{border:0;background:none;font:inherit;font-size:15px;font-weight:700;line-height:1;min-height:36px;padding:0 10px;border-radius:7px;cursor:pointer;color:var(--rh-c)}
 ${M} .rh-per button[aria-pressed=true]{background:var(--rh-c);color:#fff}
 ${M} .hero-main .eyebrow{order:7;margin:22px 0 0;gap:0;font-size:14px;color:var(--muted)}
 ${M} .hero-main .eyebrow>span{background:none;border:0;padding:0;margin:0;font-size:14px;font-weight:500;color:var(--muted)}
