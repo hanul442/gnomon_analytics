@@ -1,5 +1,5 @@
 {
- "at": "2026-10-29T16:22:40.731Z",
+ "at": "2026-10-29T18:26:19.308Z",
  "selected": null,
  "universe": [
   {
@@ -35,12 +35,12 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 41
+   "count": 40
   },
   {
    "source": "google:topic-business-ko",
    "ok": true,
-   "count": 70
+   "count": 69
   },
   {
    "source": "rss:yna-world",
@@ -50,7 +50,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 53
+   "count": 55
   },
   {
    "source": "rss:bbc-business",
@@ -340,9 +340,5 @@
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-10-29",
-  "status": "OK"
- }
+ "failed": []
 }
