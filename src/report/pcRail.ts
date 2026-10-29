@@ -95,7 +95,7 @@ html.pc-split main#main>#tab-fundamentals{grid-column:2;grid-row:1/span 2;positi
 html.pc-split #tab-fundamentals .si-wrap{column-count:1}html.pc-split #tab-fundamentals .km-stats{grid-template-columns:minmax(0,1fr)}
 html.pc-split #tab-fundamentals::before{content:"기업 정보";display:block;margin:4px 4px 10px;font-size:20px;font-weight:700;color:var(--fg)}
 }
-/* G-307 (한서님 10/29 'Pc시인성 안고치냐'): PC readability on top of G-301's text remap. Small print (<small>, the
+/* G-308 (한서님 10/29 'Pc시인성 안고치냐'): PC readability on top of G-301's text remap. Small print (<small>, the
    browser's 'smaller') never drops under 14px; long sentences stop at about 46 characters a line instead of running
    1,100px across; the 찾기 search box lines up with the content edge; the 기업 column keeps one heading, not two. */
 @media (min-width:821px){
