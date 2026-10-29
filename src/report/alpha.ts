@@ -66,6 +66,8 @@ export const ALPHA_SCRIPT = `<script>
   (function () {
     var day = new Date(Date.now() + 324e5).toISOString().slice(0, 10);
     if (get('gnm-vday') === day) return;
+    // G-307: robots and test browsers (our own live audit, crawlers) get a fresh id on every page, so they are not counted.
+    if (navigator.webdriver || /bot|crawl|spider|headless|lighthouse|playwright/i.test(navigator.userAgent)) return;
     var v = get('gnm-vid');
     if (!v && window.crypto && crypto.getRandomValues) { v = Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(12)), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); set('gnm-vid', v); }
     if (!v || get('gnm-vid') !== v) return;

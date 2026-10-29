@@ -985,3 +985,18 @@ test('G-293: anonymous visits count once per device a day; the console shows wee
   t.tick(130 * 86_400_000);
   assert.equal(await pruneVisits(t.env.DB, t.deps.now()), 4);
 });
+
+test('G-307: headless browsers and robots are not counted as visits; audit accounts are left out of events', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  for (const ua of ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0 Safari/537.36', 'Googlebot/2.1']) {
+    const res = await handle(new Request('https://api.test/visit', { method: 'POST', headers: { Origin: 'https://hanul442.github.io', 'Content-Type': 'application/json', 'User-Agent': ua }, body: JSON.stringify({ v: 'd'.repeat(24) }) }), t.env, t.deps);
+    assert.equal(res.status, 200);
+  }
+  await t.call('POST', '/visit', { v: 'e'.repeat(24) });
+  await t.env.DB.prepare("INSERT INTO events (user_id, name, page, props, created_at) VALUES ('audit-free', 'page_view', '/', '{}', ?)").bind(t.deps.now().toISOString()).run();
+  await t.call('POST', '/events', { events: [{ name: 'page_view', page: '/' }] }, boss.session);
+  const ov = (await t.call('GET', '/admin/overview', undefined, boss.session)).body;
+  assert.equal(ov.visits.week, 1);
+  assert.deepEqual(ov.events.map((e: any) => [e.name, e.n, e.users]), [['page_view', 1, 1]]);
+});

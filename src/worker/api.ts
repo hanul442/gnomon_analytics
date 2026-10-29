@@ -331,7 +331,8 @@ async function adminOverview(env: Env, now: Date) {
     q<{ kind: string }>(`SELECT s.id, s.user_id, s.kind, s.answers, s.created_at, u.email FROM surveys s JOIN users u ON u.id = s.user_id
        WHERE s.id IN (SELECT MAX(id) FROM surveys WHERE kind = 'onboarding' GROUP BY user_id)
           OR s.id IN (SELECT id FROM surveys WHERE kind <> 'onboarding' ORDER BY id DESC LIMIT 1000) ORDER BY s.id DESC`),
-    q('SELECT name, COUNT(*) AS n, COUNT(DISTINCT user_id) AS users FROM events WHERE created_at >= ? GROUP BY name ORDER BY n DESC', week),
+    // G-307: the live audit's throwaway accounts (audit-*) are not people.
+    q("SELECT name, COUNT(*) AS n, COUNT(DISTINCT user_id) AS users FROM events WHERE created_at >= ? AND user_id NOT LIKE 'audit-%' GROUP BY name ORDER BY n DESC", week),
     q('SELECT x.id, x.symbol, x.tier, x.model, x.question, x.credits, x.usd, x.status, x.rating, x.created_at, u.email FROM questions x JOIN users u ON u.id = x.user_id ORDER BY x.id DESC LIMIT 100'),
     db.prepare('SELECT COALESCE(SUM(CASE WHEN created_at >= ? THEN usd END), 0) AS today, COALESCE(SUM(usd), 0) AS month FROM questions WHERE created_at >= ?').bind(kstDayStart(now), month).first<{ today: number; month: number }>(),
   ]);
@@ -944,7 +945,10 @@ route('POST', '/feedback', async ({ req, env, now }) => {
 // G-293: anonymous visits. No sign-in: the browser sends a random device id once per KST day and where it came from.
 export const VISIT_SOURCES = ['', 'search', 'insta', 'share', 'other'] as const;
 route('POST', '/visit', async ({ req, env, now }) => {
-  const b = await body(req), vid = typeof b.v === 'string' && /^[a-f0-9]{16,32}$/.test(b.v) ? b.v : '';
+  const b = await body(req), ua = req.headers.get('user-agent') ?? '';
+  // G-307: robots and headless browsers are not visitors (the page skips them too; this catches old cached pages).
+  if (/bot|crawl|spider|headless|lighthouse|playwright/i.test(ua)) return { ok: true, skipped: true };
+  const vid = typeof b.v === 'string' && /^[a-f0-9]{16,32}$/.test(b.v) ? b.v : '';
   if (!vid) fail(400, 'BAD_VISIT', '방문 기록이 맞지 않아요.');
   const src = (VISIT_SOURCES as readonly string[]).includes(String(b.src ?? '')) ? String(b.src ?? '') : 'other';
   await env.DB.prepare('INSERT OR IGNORE INTO visits (day, vid, src) VALUES (?, ?, ?)').bind(kst(now).slice(0, 10), vid, src).run();
