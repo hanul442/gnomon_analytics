@@ -36,7 +36,7 @@ export const wrapupBanners = (today: string): Banner[] => today >= '2026-10-24' 
   : [];
 /** G-306: after the alpha closes, a big picture banner says so and points to the beta date until it opens. */
 export const alphaEndBanners = (today: string): Banner[] => today >= '2026-11-01' && today <= '2026-11-19'
-  ? [{ kind: 'notice', title: '알파가 끝났어요', text: '함께해 주셔서 고마워요 · 클로즈드 베타 모집 11.20', href: 'updates.html', cta: '업데이트 기록 보기', image: { wide: 'assets/banners/alpha-end-wide.jpg', narrow: 'assets/banners/alpha-end-narrow.jpg' } }]
+  ? [{ kind: 'notice', title: '알파가 끝났어요', text: '함께해 주셔서 고마워요 · 11.19까지 로그인 쉬어요 · 클로즈드 베타 모집 11.20', href: 'updates.html', cta: '업데이트 기록 보기', image: { wide: 'assets/banners/alpha-end-wide.jpg', narrow: 'assets/banners/alpha-end-narrow.jpg' } }]
   : [];
 /** Credit events become banners with a 받기 button (G-73). */
 export const eventBanners = (events: readonly CreditEvent[]): Banner[] => events.map((e) => ({ kind: 'event', title: `${e.title} · ${e.credits}크레딧`, text: e.text, cta: '받기', tone: 'amber', event: e.id, credits: e.credits }));

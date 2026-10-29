@@ -281,4 +281,12 @@ test('alpha end notice (G-306): 10/31 from 10:00 KST, once per tester, survey li
   assert.doesNotMatch(m2.html, /마무리 설문/);
   assert.deepEqual(await runAlphaEndNotify(at('2026-10-31T01:10:00Z'), env), { sent: 0, mailed: 0 }, 'once');
   assert.deepEqual(await runAlphaEndNotify(at('2026-10-31T15:00:00Z'), env), { sent: 0, mailed: 0 }, 'after 10/31 nobody');
+  assert.match(m2.html, /로그인을 잠시 쉬어요/);
+  // While the alpha rests no note reaches a tester; the admin still gets them.
+  const { notifyUser } = await import('./notify.js');
+  await db.prepare("INSERT INTO users (id, email, plan, role, created_at) VALUES ('boss', 'boss@example.com', 'alpha', 'admin', '2026-10-06T00:00:00Z')").run();
+  const note = { title: 't', body: 'b', link: 'index.html' };
+  assert.equal(await notifyUser(at('2026-11-05T00:00:00Z'), 'u1', 'notice', note), false);
+  assert.equal(await notifyUser(at('2026-11-05T00:00:00Z'), 'boss', 'notice', note), true);
+  assert.equal(await notifyUser(at('2026-11-20T00:00:00Z'), 'u1', 'notice', note), true);
 });
