@@ -2713,3 +2713,4 @@
 {"symbol":"005930","receiptNo":"20261019000318","date":"2026-10-19","reporter":"최고은","position":"상무","isExec":true,"isMajor":false,"shares":1115,"delta":80,"ratio":0,"retrievedAt":"2026-10-19T18:42:28.172Z"}
 {"symbol":"005930","receiptNo":"20261023000478","date":"2026-10-23","reporter":"서경헌","position":"상무","isExec":true,"isMajor":false,"shares":3983,"delta":1597,"ratio":0,"retrievedAt":"2026-10-23T17:02:07.059Z"}
 {"symbol":"005930","receiptNo":"20261026000017","date":"2026-10-26","reporter":"이헌","position":"부사장","isExec":true,"isMajor":false,"shares":5745,"delta":-160,"ratio":0,"retrievedAt":"2026-10-26T16:17:00.264Z"}
+{"symbol":"005930","receiptNo":"20261030000719","date":"2026-10-30","reporter":"윤주한","position":"부사장","isExec":true,"isMajor":false,"shares":2109,"delta":-3000,"ratio":0,"retrievedAt":"2026-10-30T16:10:34.877Z"}

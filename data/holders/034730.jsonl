@@ -5,3 +5,4 @@
 {"symbol":"034730","receiptNo":"20260413002952","date":"2026-04-13","reporter":"최태원","shares":18448888,"delta":-1500,"ratio":25.45,"ratioDelta":0,"reason":"보유주식등의 수 변동, 보유형태의 변경 및\n보유주식 등에 관한 계약의 변경","retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"034730","receiptNo":"20260519000293","date":"2026-05-19","reporter":"최태원","shares":18605896,"delta":157008,"ratio":25.66,"ratioDelta":0.21,"reason":"보유주식등의 수 및 특별관계자 변동,\n보유주식등에 관한 계약의 변경, 보유형태의 변경","retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"034730","receiptNo":"20261013000285","date":"2026-10-13","reporter":"최태원","shares":18596600,"delta":-9296,"ratio":25.65,"ratioDelta":-0.01,"reason":"보유주식등의 수 변동, 보유주식등에 관한 계약의 변경, 주식매매계약 및 주식담보계약 체결","retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"034730","receiptNo":"20261023000447","date":"2026-10-23","reporter":"최태원","shares":18596600,"delta":0,"ratio":25.65,"ratioDelta":0,"reason":"보유주식등에 관한 계약의 변경","retrievedAt":"2026-10-30T16:10:34.877Z"}

@@ -1,0 +1,4 @@
+{"symbol":"018260","receiptNo":"20260401004150","date":"2026-04-01","reporter":"국민연금공단","shares":6733755,"delta":-825582,"ratio":8.7,"ratioDelta":-1.07,"reason":"단순추가취득/처분","retrievedAt":"2026-10-30T16:10:34.877Z"}
+{"symbol":"018260","receiptNo":"20260504000388","date":"2026-05-04","reporter":"STARTECHAIL.P.","shares":6777777,"delta":6777777,"ratio":8.05,"ratioDelta":8.05,"reason":"전환사채 인수에 따른 신규보고","retrievedAt":"2026-10-30T16:10:34.877Z"}
+{"symbol":"018260","receiptNo":"20260707000387","date":"2026-07-07","reporter":"STARTECHAIL.P.","shares":6777777,"delta":0,"ratio":8.05,"ratioDelta":0,"reason":"- 전환사채 양수도계약 체결 및 종결\n- 특별관계자 추가","retrievedAt":"2026-10-30T16:10:34.877Z"}
+{"symbol":"018260","receiptNo":"20261016000503","date":"2026-10-16","reporter":"삼성전자","shares":37840922,"delta":-51463,"ratio":48.9,"ratioDelta":-0.07,"reason":"- 특별관계자 및 보유주식수 변동","retrievedAt":"2026-10-30T16:10:34.877Z"}

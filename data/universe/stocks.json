@@ -1325,11 +1325,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "004415",
-  "name": "서울식품우",
-  "market": "KOSPI"
- },
- {
   "symbol": "004430",
   "name": "송원산업",
   "market": "KOSPI"
@@ -2757,6 +2752,11 @@
  {
   "symbol": "012790",
   "name": "신일제약",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "0127E0",
+  "name": "한화플러스제6호스팩",
   "market": "KOSDAQ"
  },
  {
@@ -12750,6 +12750,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "420610",
+  "name": "인텔리빅스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "420770",
   "name": "기가비스",
   "market": "KOSDAQ"
@@ -12853,6 +12858,11 @@
   "symbol": "439260",
   "name": "대한조선",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "439270",
+  "name": "크리에이츠",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "439580",
