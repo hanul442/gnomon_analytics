@@ -1777,3 +1777,5 @@
 {"date":"2026-10-30","preset":"risky","symbol":"007570","market":"P","close":6990,"method":"gnm-signal-v1"}
 {"date":"2026-10-30","preset":"risky","symbol":"005800","market":"P","close":13550,"method":"gnm-signal-v1"}
 {"date":"2026-10-30","preset":"risky","symbol":"011810","market":"P","close":3530,"method":"gnm-signal-v1"}
+{"date":"2026-10-30","preset":"volsurge","symbol":"175250","market":"Q","close":1530,"method":"gnm-signal-v1"}
+{"date":"2026-10-30","preset":"large","symbol":"425420","market":"Q","close":85800,"method":"gnm-signal-v1"}

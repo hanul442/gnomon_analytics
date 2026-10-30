@@ -1,6 +1,6 @@
 {
- "at": "2026-10-30T16:10:34.877Z",
- "selected": "2026-10-30",
+ "at": "2026-10-30T18:04:21.849Z",
+ "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2663
+   "count": 2661
   },
   {
    "source": "naver:fchart:day:etf",
@@ -50,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 56
+   "count": 53
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 47
+   "count": 48
   },
   {
    "source": "naver:world:day:all",
@@ -330,29 +330,25 @@
    "failedSources": []
   },
   {
-   "symbol": "0162Z0",
-   "report": "WRITTEN",
+   "symbol": "SPCX.O",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "067900",
-   "report": "WRITTEN",
+   "symbol": "0162Z0",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "138040",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "SPCX.O",
-   "report": "WRITTEN",
+   "symbol": "067900",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-10-30",
-  "status": "OK"
- }
+ "failed": []
 }
