@@ -23,7 +23,7 @@ import { renderDeep } from '../report/renderHtml.js';
 import { renderOps } from '../report/renderAlpha.js';
 import { mailButton, mailLayout, mailList, sendMail as deliverMail } from './mail.js';
 import { withCurrency } from '../report/format.js';
-import { BETA_YES, inWrapup } from '../report/wrapup.js';
+import { ALPHA_PAUSED_TEXT, BETA_YES, alphaPaused, inWrapup } from '../report/wrapup.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
@@ -183,6 +183,8 @@ async function authed(req: Request, env: Env, now: Date): Promise<User> {
   if (!u) fail(401, 'LOGIN_REQUIRED', '로그인이 끝났어요. 다시 로그인해 주세요.');
   if (u!.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
   if (adminList(env).includes(u!.email)) u!.role = 'admin';
+  // G-306: while the alpha rests (11/1–19 KST) an open session ends like an expired one; the login page says why.
+  if (u!.role !== 'admin' && alphaPaused(now)) fail(401, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   // An admin can look at the site as a given plan (X-View-As) to test gates and paid flows; nothing else changes.
   const viewAs = req.headers.get('X-View-As');
   if (u!.role === 'admin' && viewAs && STORED_PLANS.includes(viewAs)) { u!.plan = viewAs; u!.role = 'user'; u!.viewAs = viewAs; }
@@ -423,6 +425,7 @@ route('POST', '/auth/start', async ({ req, env, deps, now }) => {
   if ((recent?.n ?? 0) >= 5) fail(429, 'TOO_MANY', '로그인 링크를 너무 많이 요청했어요. 한 시간 뒤 다시 해 주세요.');
   const known = await db.prepare('SELECT disabled FROM users WHERE email = ?').bind(email).first<{ disabled: number }>();
   if (known?.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
+  if (alphaPaused(now) && !adminList(env).includes(email)) fail(403, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   let invite: string | null = null;
   if (!known && !adminList(env).includes(email)) {
     invite = str(b.invite, 40).toUpperCase();
@@ -444,6 +447,7 @@ route('POST', '/auth/verify', async ({ req, env, now }) => {
   if ((used.meta?.changes ?? 0) !== 1) fail(400, 'LINK_INVALID', '로그인 링크가 이미 쓰였어요.');
   const isAdmin = adminList(env).includes(row!.email);
   let u = await db.prepare('SELECT id, email, plan, role, created_at, disabled FROM users WHERE email = ?').bind(row!.email).first<User>();
+  if (!isAdmin && alphaPaused(now)) fail(403, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   if (!u) {
     const code = row!.invite_code;
     if (code) {
@@ -482,6 +486,7 @@ route('POST', '/auth/signup', async ({ req, env, now }) => {
   if (problem) fail(400, 'BAD_PASSWORD', problem);
   if (await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) fail(409, 'ALREADY_JOINED', '이미 가입한 이메일이에요. 로그인해 주세요. 비밀번호를 정하지 않았다면 관리자에게 로그인 링크를 받아 계정 페이지에서 정할 수 있어요.');
   if (b.terms !== true) fail(400, 'TERMS_REQUIRED', '가입 동의 네 가지(이용약관, 개인정보, 투자 유의, 만 19세 이상)에 모두 체크해 주세요.');
+  if (!isAdmin && alphaPaused(now)) fail(403, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   const code = str(b.invite, 40).toUpperCase();
   if (!code && !isAdmin) fail(403, 'INVITE_REQUIRED', '처음 가입할 때는 초대 코드가 필요해요.');
   if (code) {
@@ -507,6 +512,7 @@ route('POST', '/auth/login', async ({ req, env, now }) => {
     fail(401, 'LOGIN_FAILED', '이메일 또는 비밀번호가 맞지 않아요.');
   }
   if (row!.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
+  if (alphaPaused(now) && !adminList(env).includes(row!.email)) fail(403, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   await db.prepare('DELETE FROM login_attempts WHERE email = ? OR at < ?').bind(email, since).run();
   const { password_hash: _drop, ...u } = row!;
   if (adminList(env).includes(u.email)) u.role = 'admin';

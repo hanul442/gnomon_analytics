@@ -9,7 +9,7 @@ import { isUsSymbol } from '../report/seal.js';
 import { notifyLimit } from '../report/plans.js';
 import { noteBullets } from '../report/releases.js';
 import { esc, mailButton, mailLayout, mailList, sendMail, type MailEnv } from './mail.js';
-import { WRAPUP_LINK, WRAPUP_NOTICE, inWrapup } from '../report/wrapup.js';
+import { ALPHA_END_NOTICE, WRAPUP_LINK, WRAPUP_NOTICE, alphaPaused, inAlphaEnd, inWrapup } from '../report/wrapup.js';
 
 export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'notice' | 'test';
 /** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
@@ -47,7 +47,10 @@ export async function notifyUser(ctx: Ctx, userId: string, kind: NotifyKind, not
   const prefs = await prefsOf(ctx.db, userId), key = PREF_OF[kind];
   if (key && !prefs[key]) return false;
   // G-98: the plan decides what reaches the phone; 🔔 always gets what the plan allows at all.
-  const plan = (await ctx.db.prepare('SELECT plan FROM users WHERE id = ?').bind(userId).first<{ plan: string }>())?.plan ?? 'free', lim = notifyLimit(plan);
+  const who = await ctx.db.prepare('SELECT plan, role FROM users WHERE id = ?').bind(userId).first<{ plan: string; role: string }>();
+  // G-306: while the alpha rests (11/1–19 KST) nothing reaches anyone but the admin.
+  if (alphaPaused(ctx.now) && who?.role !== 'admin') return false;
+  const plan = who?.plan ?? 'free', lim = notifyLimit(plan);
   if ((kind === 'watchReport' && !lim.watchReport) || (kind === 'intraday' && !lim.intraday)) return false;
   await ctx.db.prepare('INSERT INTO notifications (user_id, kind, title, body, link, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(userId, kind, note.title, note.body, note.link, iso(ctx.now)).run();
   if (prefs.push && lim.push && !inQuiet(prefs, ctx.now)) await pushTo(ctx.db, ctx.fetch, userId, { ...note, link: `${ctx.site.replace(/\/$/, '')}/${note.link}`, tag: kind }, ctx.site, ctx.now).catch(() => 0);
@@ -210,7 +213,7 @@ export async function runWeeklySummary(ctx: Ctx, env: MailEnv): Promise<{ week: 
   const weekReports = Object.entries(info).filter(([, x]) => x.d >= weekStart).sort((a, b) => b[1].d.localeCompare(a[1].d));
   const reportsBlock = weekReports.length ? `<h2 style="font-size:15px;margin:18px 0 4px">이번 주 리포트 ${weekReports.length}개</h2><p style="margin:0;line-height:1.6">${esc(weekReports.slice(0, 10).map(([s]) => nm(s)).join(', '))}${weekReports.length > 10 ? ` 외 ${weekReports.length - 10}개` : ''}</p>` : '';
   const reportsLine = weekReports.length ? `이번 주 리포트: ${weekReports.slice(0, 10).map(([s]) => nm(s)).join(', ')}` : '';
-  const users = (await ctx.db.prepare('SELECT u.id, u.email, u.plan, w.symbols FROM users u LEFT JOIN watchlists w ON w.user_id = u.id WHERE u.disabled = 0').all<{ id: string; email: string; plan: string; symbols: string | null }>()).results;
+  const users = (await ctx.db.prepare(`SELECT u.id, u.email, u.plan, w.symbols FROM users u LEFT JOIN watchlists w ON w.user_id = u.id WHERE u.disabled = 0${alphaPaused(ctx.now) ? " AND u.role = 'admin'" : ''}`).all<{ id: string; email: string; plan: string; symbols: string | null }>()).results;
   let sent = 0;
   for (const u of users) {
     try {
@@ -264,6 +267,31 @@ export async function runWrapupNotify(ctx: Ctx, env: MailEnv): Promise<{ sent: n
       if (!(await once(ctx.db, `wrapup:${u.id}`, ctx.now))) continue;
       if (await notifyUser(ctx, u.id, 'notice', { title: n.title, body: n.body, link: WRAPUP_LINK })) sent += 1;
       if (u.email && await sendMail(env, ctx.db, ctx.fetch, ctx.now, { kind: 'notice', userId: u.id, to: u.email, subject: `[그노몬] ${n.subject}`, html, text: `${n.subject}\n\n${n.mail.join('\n\n')}\n\n${link}` })) mailed += 1;
+    } catch { /* one user's bad row must not stop the rest */ }
+  }
+  return { sent, mailed };
+}
+
+/**
+ * G-306: the alpha-end notice, once per active user on 2026-10-31 from 10:00 KST (wrapup.ts). Like the wrap-up
+ * notice it is a service notice to the testers: 🔔 always, the phone when push is on, and one mail. Testers who
+ * have not answered the wrap-up survey also hear that it is open until midnight. The key is written before sending.
+ */
+export async function runAlphaEndNotify(ctx: Ctx, env: MailEnv): Promise<{ sent: number; mailed: number }> {
+  if (!inAlphaEnd(ctx.now)) return { sent: 0, mailed: 0 };
+  const site = ctx.site.replace(/\/$/, '');
+  const users = (await ctx.db.prepare(`SELECT id, email, EXISTS (SELECT 1 FROM surveys s WHERE s.user_id = u.id AND s.kind = 'wrapup') AS answered
+    FROM users u WHERE disabled = 0 AND NOT EXISTS (SELECT 1 FROM notify_log l WHERE l.key = 'alphaend:' || u.id)`).all<{ id: string; email: string; answered: number }>()).results;
+  const n = ALPHA_END_NOTICE;
+  let sent = 0, mailed = 0;
+  for (const u of users) {
+    try {
+      if (!(await once(ctx.db, `alphaend:${u.id}`, ctx.now))) continue;
+      const ask = !u.answered, path = ask ? WRAPUP_LINK : 'index.html', link = `${site}/${path}`, cta = ask ? n.surveyCta : n.cta;
+      const lines = ask ? [...n.mail, n.survey] : [...n.mail];
+      if (await notifyUser(ctx, u.id, 'notice', { title: n.title, body: ask ? `${n.body} ${n.survey}` : n.body, link: path })) sent += 1;
+      const html = mailLayout(site, n.subject, `${lines.map((x) => `<p style="margin:0 0 10px;line-height:1.7">${esc(x)}</p>`).join('')}<p style="margin:18px 0 0">${mailButton(link, cta)}</p>`, { preheader: n.body, settings: false });
+      if (u.email && await sendMail(env, ctx.db, ctx.fetch, ctx.now, { kind: 'notice', userId: u.id, to: u.email, subject: `[그노몬] ${n.subject}`, html, text: `${n.subject}\n\n${lines.join('\n\n')}\n\n${link}` })) mailed += 1;
     } catch { /* one user's bad row must not stop the rest */ }
   }
   return { sent, mailed };
