@@ -1,5 +1,5 @@
 {
- "at": "2026-10-30T19:41:41.389Z",
+ "at": "2026-10-31T15:29:16.833Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 37
+   "count": 35
   },
   {
    "source": "google:topic-business-ko",
@@ -50,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 51
+   "count": 64
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 49
+   "count": 50
   },
   {
    "source": "naver:world:day:all",
@@ -330,25 +330,14 @@
    "failedSources": []
   },
   {
-   "symbol": "SPCX.O",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "0162Z0",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "138040",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "067900",
-   "report": "EXISTS",
+   "symbol": "KRW-CT",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
- "failed": []
+ "failed": [],
+ "market": {
+  "date": "2026-10-31",
+  "status": "OK"
+ }
 }
