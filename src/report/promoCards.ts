@@ -131,37 +131,38 @@ function breadthBar(b: PromoBreadth, s: { h: number; font: number; label: number
 <div class="row" style="font-size:${s.font}px;color:#444"><div>상승 ${b.up}</div><div>보합 ${b.flat}</div><div>하락 ${b.down}</div></div>`;
 }
 
-/** ✓/✗ squares, one per scored call (at most `max`, the rest as "+n"). Light squares on dark ground. */
-function marks(xs: readonly PromoCall[], cols: number, max: number, h: number, font: number): string {
-  const room = xs.length > max ? max - 1 : max;
-  const shown = [...xs].sort((a, b) => Number(b.hit) - Number(a.hit)).slice(0, room);
-  const cells = shown.map((x) => `<div style="height:${h}px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:${font}px;font-weight:800;border:3px solid #fff;${x.hit ? 'background:#fff;color:#111' : 'color:#fff'}">${x.hit ? '✓' : '✗'}</div>`).join('');
-  const more = xs.length > max ? `<div style="height:${h}px;display:flex;align-items:center;justify-content:center;font-size:${font * 0.8}px;color:#BDBDBD">+${xs.length - room}</div>` : '';
-  return `<div style="display:grid;grid-template-columns:repeat(${cols},minmax(0,1fr));gap:12px">${cells}${more}</div>`;
-}
-
 function callLine(x: PromoCall, font: number): string {
   return `<div class="row" style="gap:16px;font-size:${font}px"><div style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis"><b>${esc(x.name)}</b> <span class="lgrey">· ${esc(x.member)} · ${stanceWord(x.stance)}</span></div><div style="font-weight:800;flex:none;${x.hit ? '' : 'color:#9E9E9E'}">${x.hit ? '✓ 맞음' : '✗ 틀림'}</div></div>`;
 }
 
 function scoreBlock(d: PromoDay, big: boolean): string {
-  const s = big ? { title: 28, n: 80, word: 32, cols: 12, max: 24, h: 52, mark: 26, line: 27 } : { title: 22, n: 60, word: 24, cols: 10, max: 10, h: 40, mark: 20, line: 20 };
+  const s = big ? { title: 28, line: 30, small: 24, n: 72 } : { title: 22, line: 21, small: 19, n: 56 };
+  const head = `<div class="row"><div style="font-size:${s.title}px;font-weight:700" class="lgrey">오늘 맞힌 위원 판단</div><div style="font-size:${s.title}px" class="lgrey">20거래일 전 판단</div></div>`;
   if (!d.scored.length) {
     const w = count(d.week);
-    return `<div style="font-size:${s.title}px;font-weight:700" class="lgrey">오늘 채점된 위원 판단</div>
-<div style="font-size:${s.word + 4}px;line-height:1.5">오늘은 20거래일이 끝난 판단이 없어요.${d.week.length ? ` 이번 주는 맞음 ${w.ok} · 틀림 ${w.bad}이에요.` : ''}</div>`;
+    return `${head}<div style="font-size:${s.line + 4}px;line-height:1.5">오늘은 20거래일이 끝난 판단이 없어요.${d.week.length ? ` 이번 주는 ${w.ok}건 맞혔어요.` : ''}</div>`;
   }
-  const c = count(d.scored);
-  return `<div class="row"><div style="font-size:${s.title}px;font-weight:700" class="lgrey">오늘 채점된 위원 판단</div><div style="font-size:${s.title}px" class="lgrey">20거래일 전 판단</div></div>
-<div style="display:flex;gap:48px;align-items:baseline"><div style="font-size:${s.n}px;font-weight:800">${c.ok} <span style="font-size:${s.word}px;font-weight:500">맞음</span></div><div style="font-size:${s.n}px;font-weight:800;color:#9E9E9E">${c.bad} <span style="font-size:${s.word}px;font-weight:500;color:#BDBDBD">틀림</span></div></div>
-${marks(d.scored, s.cols, s.max, s.h, s.mark)}
-${big ? `<div style="display:flex;flex-direction:column;gap:14px;margin-top:8px">${pickLines(d.scored, 3).map((x) => callLine(x, s.line)).join('')}</div>` : ''}`;
+  const c = count(d.scored), hits = bestHits(d.scored, big ? 3 : 2);
+  const total = `<div style="font-size:${s.small}px" class="lgrey">오늘 채점 ${d.scored.length}건 · 맞음 ${c.ok} · 틀림 ${c.bad}${big ? ' · 틀린 것도 사이트에 그대로 있어요' : ''}</div>`;
+  if (!hits.length) return `${head}<div style="font-size:${s.line + 4}px;line-height:1.5">오늘은 맞힌 판단이 없었어요. 틀린 이유는 사이트에 남겨 뒀어요.</div>${total}`;
+  return `${head}<div style="font-size:${s.n}px;font-weight:800">${c.ok}건 <span style="font-size:${s.line}px;font-weight:500">맞혔어요</span></div>
+<div style="display:flex;flex-direction:column;gap:${big ? 16 : 10}px">${hits.map((x) => callLine(x, s.line)).join('')}</div>${total}`;
 }
 
-/** A few calls to name: misses first (they are the point), then hits, at most one per stock. */
+/** How far the stock moved the way the call said (bigger = clearer hit); NEUTRAL hits rank by how still it stayed. */
+const towards = (x: PromoCall) => (x.stance === 'BULLISH' ? x.movePct : x.stance === 'BEARISH' ? -x.movePct : -Math.abs(x.movePct) - 100);
+
+/** The clearest hits, one per stock. */
+export function bestHits(xs: readonly PromoCall[], n: number): PromoCall[] {
+  const seen = new Set<string>(); const out: PromoCall[] = [];
+  for (const x of xs.filter((y) => y.hit).sort((a, b) => towards(b) - towards(a))) { if (seen.has(x.symbol)) continue; seen.add(x.symbol); out.push(x); if (out.length >= n) break; }
+  return out;
+}
+
+/** A few calls to name: hits first (clearest first), then misses, at most one per stock. */
 export function pickLines(xs: readonly PromoCall[], n: number): PromoCall[] {
   const seen = new Set<string>(); const out: PromoCall[] = [];
-  for (const x of [...xs.filter((y) => !y.hit), ...xs.filter((y) => y.hit)]) { if (seen.has(x.symbol)) continue; seen.add(x.symbol); out.push(x); if (out.length >= n) break; }
+  for (const x of [...xs.filter((y) => y.hit).sort((a, b) => towards(b) - towards(a)), ...xs.filter((y) => !y.hit)]) { if (seen.has(x.symbol)) continue; seen.add(x.symbol); out.push(x); if (out.length >= n) break; }
   return out;
 }
 
@@ -190,15 +191,16 @@ ${d.breadth || head.length ? `<div class="glass" style="border-radius:30px;paddi
 }
 
 export function coverHtml(d: PromoDay, fontDir: string): string {
-  const c = count(d.week);
+  const c = count(d.week), hits = bestHits(d.week, 4);
   return page(1080, 1350, `<div class="card ink" style="padding:96px 88px;gap:30px">
 <div class="row"><div class="brand" style="font-size:36px">GNOMON</div><div class="lgrey" style="font-size:30px">주간 리포트 · ${md(d.weekFrom)}–${md(d.date)}</div></div>
 <div style="flex:1"></div>
-<div class="lgrey" style="font-size:40px;font-weight:500">이번 주 AI 위원회 성적표</div>
-<div style="font-size:88px;font-weight:800;line-height:1.15">맞힌 것도<br>틀린 것도<br>다 공개해요</div>
-<div style="display:flex;gap:20px;margin-top:16px">${[`채점 ${d.week.length}건`, `맞음 ${c.ok} · 틀림 ${c.bad}`].map((t) => `<div style="padding:20px 36px;border-radius:999px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.2);font-size:34px;font-weight:700">${t}</div>`).join('')}</div>
-${d.week.length ? `${marks(d.week, 12, 36, 52, 24)}<div class="lgrey" style="font-size:26px">칸 하나 = 위원 판단 1건 · 흰 칸 맞음 · 빈 칸 틀림</div>` : '<div class="lgrey" style="font-size:30px">이번 주는 20거래일이 끝난 판단이 없었어요.</div>'}
-<div style="flex:1"></div><div class="row lgrey" style="font-size:30px"><div>옆으로 넘겨서 보기</div><div>1 / 2</div></div></div>`, fontDir, '#111');
+<div class="lgrey" style="font-size:40px;font-weight:500">이번 주 AI 위원회</div>
+<div style="font-size:96px;font-weight:800;line-height:1.15">맞힌 판단<br>${c.ok}건</div>
+${hits.length ? `<div style="display:flex;flex-direction:column;gap:20px;margin-top:8px">${hits.map((x) => callLine(x, 32)).join('')}</div>` : '<div class="lgrey" style="font-size:32px">이번 주는 맞힌 판단이 없었어요.</div>'}
+<div style="flex:1"></div>
+<div class="lgrey" style="font-size:26px">이번 주 채점 ${d.week.length}건 · 맞음 ${c.ok} · 틀림 ${c.bad} · 틀린 판단은 다음 장에</div>
+<div class="row lgrey" style="font-size:30px"><div>옆으로 넘겨서 보기</div><div>1 / 2</div></div></div>`, fontDir, '#111');
 }
 
 /** The week's biggest miss: the miss whose stock moved furthest against the call. */
@@ -228,12 +230,68 @@ export function missHtml(d: PromoDay, fontDir: string): string {
 <div style="font-size:24px;color:#6B6B6B">${PROMO_NOTE}</div></div>`, fontDir);
 }
 
+/** One stock's fresh committee opinion: what each of the 7 seats said today (scored 20 sessions later). */
+export interface PromoOpinion {
+  symbol: string; name: string; date: string;
+  seats: { member: string; stance: AnalystCall['stance'] }[];
+  bull: number; neutral: number; bear: number;
+  lead: AnalystCall['stance']; leadCount: number;
+  /** Median 'proven wrong' close of the leading side, when its members wrote one. */
+  invalidation: number | null;
+  scoreDate: string;
+}
+
+/** Calls made in `date`'s report, one card per stock, the clearest consensus first (ties: more seats). */
+export function opinionsOf(calls: readonly (AnalystCall & { name: string })[], date: string, n: number): PromoOpinion[] {
+  const by = new Map<string, (AnalystCall & { name: string })[]>();
+  for (const c of calls) if (c.reportDate === date) by.set(c.symbol, [...(by.get(c.symbol) ?? []), c]);
+  const out: PromoOpinion[] = [];
+  for (const [symbol, xs] of by) {
+    const k = (s: AnalystCall['stance']) => xs.filter((x) => x.stance === s).length;
+    const bull = k('BULLISH'), neutral = k('NEUTRAL'), bear = k('BEARISH');
+    const lead: AnalystCall['stance'] = bear > bull && bear >= neutral ? 'BEARISH' : bull > bear && bull >= neutral ? 'BULLISH' : 'NEUTRAL';
+    const leadCount = Math.max(bull, neutral, bear);
+    const inv = xs.filter((x) => x.stance === lead && typeof x.invalidation === 'number').map((x) => x.invalidation!).sort((a, b) => a - b);
+    const d = new Date(`${date}T00:00:00Z`); let left = ANALYST_HORIZON;
+    while (left > 0) { d.setUTCDate(d.getUTCDate() + 1); if (d.getUTCDay() % 6) left--; }
+    out.push({
+      symbol, name: xs[0]!.name, date,
+      seats: [...xs].sort((a, b) => STANCE_ORDER[a.stance] - STANCE_ORDER[b.stance]).map((x) => ({ member: analystName(x.analyst), stance: x.stance })),
+      bull, neutral, bear, lead, leadCount, invalidation: inv.length ? inv[Math.floor(inv.length / 2)]! : null,
+      scoreDate: d.toISOString().slice(0, 10),
+    });
+  }
+  return out.filter((o) => o.seats.length >= 3).sort((a, b) => Number(b.lead !== 'NEUTRAL') - Number(a.lead !== 'NEUTRAL') || b.leadCount / b.seats.length - a.leadCount / a.seats.length || b.seats.length - a.seats.length).slice(0, n);
+}
+const STANCE_ORDER = { BULLISH: 0, NEUTRAL: 1, BEARISH: 2 } as const;
+const STANCE_COLOR = { BULLISH: UP, NEUTRAL: '#B5B5B2', BEARISH: DOWN } as const;
+const STANCE_SHORT = { BULLISH: '오른다', NEUTRAL: '보합', BEARISH: '내린다' } as const;
+const priceText = (symbol: string, v: number) => (/\.[A-Z]+$/.test(symbol) ? `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString('ko-KR')}원`);
+
+export function opinionHtml(o: PromoOpinion, fontDir: string, slide = ''): string {
+  const dots = o.seats.map((s) => `<div style="display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:20px;font-size:30px"><div style="width:28px;height:28px;border-radius:50%;background:${STANCE_COLOR[s.stance]}"></div><div>${esc(s.member)}</div><div style="font-weight:700;color:${s.stance === 'NEUTRAL' ? '#555' : STANCE_COLOR[s.stance]}">${STANCE_SHORT[s.stance]}</div></div>`).join('');
+  const bar = (['BULLISH', 'NEUTRAL', 'BEARISH'] as const).map((s) => { const n = s === 'BULLISH' ? o.bull : s === 'NEUTRAL' ? o.neutral : o.bear; return n ? `<div style="flex:${n};background:${STANCE_COLOR[s]}"></div>` : ''; }).join('');
+  const inv = o.invalidation != null && o.lead !== 'NEUTRAL'
+    ? `종가가 ${priceText(o.symbol, o.invalidation)}${o.lead === 'BULLISH' ? ' 아래로 내려가면' : ' 위로 올라가면'} 이 판단은 틀린 걸로 쳐요.`
+    : '20거래일 뒤 종가로 맞았는지 틀렸는지 채점해요.';
+  return page(1080, 1350, `<div class="card" style="padding:88px 80px 64px;gap:30px">
+<div class="row"><div class="brand" style="font-size:36px">GNOMON</div><div class="grey" style="font-size:30px">${md(o.date)} ${weekdayOf(o.date)} · 종목 의견${slide ? ` · ${slide}` : ''}</div></div>
+<div><div class="grey" style="font-size:34px;font-weight:500">AI 위원회가 본</div><div style="font-size:${o.name.length > 16 ? 52 : o.name.length > 9 ? 64 : 76}px;font-weight:800;line-height:1.2;overflow-wrap:anywhere">${esc(o.name)}</div></div>
+<div style="font-size:44px;font-weight:700;line-height:1.4">위원 ${o.seats.length}명 중 ${o.leadCount}명이<br>${stanceWord(o.lead)}</div>
+<div style="display:flex;height:28px;border-radius:14px;overflow:hidden;gap:4px">${bar}</div>
+<div class="glass" style="border-radius:44px;padding:36px 44px;display:flex;flex-direction:column;gap:16px">${dots}</div>
+<div class="ink" style="border-radius:36px;padding:32px 40px;display:flex;flex-direction:column;gap:10px"><div class="lgrey" style="font-size:26px;font-weight:700">${o.lead === 'NEUTRAL' || o.invalidation == null ? '채점' : '틀림 조건'} · 20거래일 뒤(${md(o.scoreDate)}쯤)</div><div style="font-size:31px;line-height:1.5">${esc(inv)}</div></div>
+<div style="flex:1"></div>
+<div style="font-size:24px;color:#6B6B6B;text-align:center">${PROMO_NOTE} · 판단은 기록되고 고칠 수 없어요</div></div>`, fontDir);
+}
+
 /** X counts Hangul as 2; keep the post under 280 weighted characters by trimming the summary. */
 export const xWeight = (s: string) => [...s].reduce((t, ch) => t + (/[ᄀ-ᇿ　-鿿가-힯＀-￯]/.test(ch) ? 2 : 1), 0);
 
 export function xCaption(d: PromoDay, site = PROMO_SITE): string {
   const c = count(d.scored);
-  const score = d.scored.length ? `오늘 채점된 위원 판단: 맞음 ${c.ok} · 틀림 ${c.bad}` : '오늘은 채점할 판단이 없었어요';
+  const best = bestHits(d.scored, 1)[0];
+  const score = d.scored.length ? `${best ? `✓ ${best.name} · ${best.member} · 20거래일 전에 ${stanceWord(best.stance)} → 맞음\n` : ''}오늘 채점 ${d.scored.length}건 중 ${c.ok}건 맞힘` : '오늘은 채점할 판단이 없었어요';
   const tail = `${score}\n틀린 판단도 그대로 남겨 둬요.\n\n${site}?utm_source=x\n(${PROMO_NOTE})`;
   let lead = d.summary;
   const fit = (l: string) => `${md(d.date)} 그노몬 AI 위원회\n${l}\n\n${tail}`;
@@ -247,13 +305,13 @@ export function instaCaption(d: PromoDay, site = PROMO_SITE): string {
   const c = count(d.scored);
   const lines = pickLines(d.scored, 5).map((x) => `${x.hit ? '✓' : '✗'} ${x.name} · ${x.member} · ${stanceWord(x.stance)}`);
   return [`${md(d.date)} ${d.weekday} 오늘의 AI 위원회 리포트`, '', d.summary, '',
-    d.scored.length ? `오늘 채점된 위원 판단 (20거래일 전 판단): 맞음 ${c.ok} · 틀림 ${c.bad}` : '오늘은 20거래일이 끝난 판단이 없었어요.',
+    d.scored.length ? `20거래일 전 위원 판단 중 오늘 ${c.ok}건 맞혔어요 (채점 ${d.scored.length}건 · 틀림 ${c.bad})` : '오늘은 20거래일이 끝난 판단이 없었어요.',
     ...lines, '', '맞힌 것도 틀린 것도 사이트에 그대로 남겨 둬요. 전체 리포트는 프로필 링크에서.', '', `(${PROMO_NOTE}. 투자 판단과 책임은 본인에게 있어요.)`, '', '#그노몬 #AI주식 #주식공부 #오늘의증시'].filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
 }
 
 /** The weekly blog post (Naver Blog), in plain text with section heads, ready to paste. */
 export function blogText(d: PromoDay, site = PROMO_SITE): string {
-  const c = count(d.week), x = worstMiss(d.week);
+  const c = count(d.week), x = worstMiss(d.week), hits = bestHits(d.week, 5);
   const byDay = new Map<string, PromoCall[]>();
   for (const k of d.week) byDay.set(k.outcomeDate, [...(byDay.get(k.outcomeDate) ?? []), k]);
   const days = [...byDay.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([day, xs]) => { const n = count(xs); return `- ${md(day)} ${weekdayOf(day)}: 맞음 ${n.ok} · 틀림 ${n.bad}`; });
@@ -261,9 +319,10 @@ export function blogText(d: PromoDay, site = PROMO_SITE): string {
   return [`제목: AI 위원회 주간 성적표 (${md(d.weekFrom)}–${md(d.date)}): 맞힌 것 ${c.ok}개, 틀린 것 ${c.bad}개`, '카테고리: 주간 위원회 리포트', '',
     `그노몬 AI 위원회가 20거래일 전에 남긴 판단을 이번 주에 채점했어요. 모두 ${d.week.length}건이고, 맞음 ${c.ok} · 틀림 ${c.bad}이에요. 틀린 판단도 빼지 않고 그대로 적어요.`, '',
     '[이미지 1: 주간 표지 카드]', '', '1. 이번 주 시장', d.summary || '(이번 주 시장 요약)', '', '[이미지 2: 오늘 스토리 카드의 세계 지수·종목 온도 그래프]', '',
-    '2. 요일별 채점', ...(days.length ? days : ['- 이번 주는 채점된 판단이 없었어요.']), '',
-    '3. 가장 크게 틀린 판단', x ? `${x.name}, ${x.member}: ${md(x.baseDate)}에 ${stanceWord(x.stance)}. ${missReason(x)}` : '이번 주에는 틀린 판단이 없었어요.', '', '[이미지 3: 틀린 판단 카드]', '',
-    '4. 이번 주 채점 전체', ...(rows.length ? rows : ['- 없음']), '',
+    '2. 이번 주 맞힌 판단', ...(hits.length ? hits.map((k) => `- ✓ ${k.name} · ${k.member} · ${md(k.baseDate)}에 ${stanceWord(k.stance)} → 20거래일 동안 ${sgn(k.movePct, 1)}`) : ['- 이번 주는 맞힌 판단이 없었어요.']), '',
+    '3. 요일별 채점', ...(days.length ? days : ['- 이번 주는 채점된 판단이 없었어요.']), '',
+    '4. 가장 크게 틀린 판단', x ? `${x.name}, ${x.member}: ${md(x.baseDate)}에 ${stanceWord(x.stance)}. ${missReason(x)}` : '이번 주에는 틀린 판단이 없었어요.', '', '[이미지 3: 틀린 판단 카드]', '',
+    '5. 이번 주 채점 전체', ...(rows.length ? rows : ['- 없음']), '',
     `위원회의 전체 토론과 지난 기록은 그노몬에서 볼 수 있어요: ${site}?utm_source=naver`, '',
     `${PROMO_NOTE}. 투자 판단과 책임은 본인에게 있어요.`, '태그: #AI주식 #주식공부 #주간시황 #그노몬'].join('\n');
 }

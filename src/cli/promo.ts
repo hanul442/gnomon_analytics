@@ -12,7 +12,7 @@ import type { AnalystCall } from '../analysis/analysts.js';
 import { asOf, readLog } from '../store/jsonlLog.js';
 import { priceKey } from './marketData.js';
 import type { PriceBar } from '../types.js';
-import { blogText, coverHtml, instaCaption, missHtml, promoDay, promoIndexHtml, scoreCalls, storyHtml, xCaption, xHtml, type MarketLike, type PromoCall } from '../report/promoCards.js';
+import { blogText, coverHtml, instaCaption, missHtml, opinionHtml, opinionsOf, promoDay, promoIndexHtml, scoreCalls, storyHtml, xCaption, xHtml, type MarketLike, type PromoCall } from '../report/promoCards.js';
 
 const KEEP_DAYS = 14;
 const exists = (p: string) => stat(p).then(() => true, () => false);
@@ -31,6 +31,19 @@ async function nameOf(root: string, symbol: string, universe: Map<string, string
     if (r.name) return r.name;
   }
   return symbol;
+}
+
+/** Committee calls from `date`'s stock reports, with stock names, for the opinion cards. */
+export async function loadDayCalls(root: string, date: string): Promise<(AnalystCall & { name: string })[]> {
+  const universe = new Map((JSON.parse(await readFile(join(root, 'data', 'universe', 'stocks.json'), 'utf8').catch(() => '[]')) as { symbol: string; name: string }[]).map((s) => [s.symbol, s.name]));
+  const out: (AnalystCall & { name: string })[] = [];
+  for (const file of (await readdir(join(root, 'data', 'analysts')).catch(() => [] as string[])).filter((f) => f.endsWith('.jsonl')).sort()) {
+    const calls = (await readLog<AnalystCall>(join(root, 'data', 'analysts', file))).filter((c) => c.reportDate === date);
+    if (!calls.length) continue;
+    const name = await nameOf(root, file.slice(0, -6), universe);
+    out.push(...calls.map((c) => ({ ...c, name })));
+  }
+  return out;
 }
 
 export async function loadScoredCalls(root: string, now: Date): Promise<PromoCall[]> {
@@ -80,7 +93,7 @@ export async function buildPromoSite(root: string): Promise<number> {
     await mkdir(join(site, date), { recursive: true });
     for (const f of files) await copyFile(join(promo, date, f), join(site, date, f));
     const cap = async (f: string, label: string) => (files.includes(f) ? [{ label, text: await readFile(join(promo, date, f), 'utf8') }] : []);
-    days.push({ date, files: ['story.png', 'x.png', 'cover.png', 'miss.png'].filter((f) => files.includes(f)), captions: [...(await cap('x.txt', 'X 글')), ...(await cap('insta.txt', '인스타 글')), ...(await cap('blog.txt', '블로그 주간 글'))] });
+    days.push({ date, files: ['story.png', 'x.png', 'opinion1.png', 'opinion2.png', 'cover.png', 'miss.png'].filter((f) => files.includes(f)), captions: [...(await cap('x.txt', 'X 글')), ...(await cap('insta.txt', '인스타 글')), ...(await cap('blog.txt', '블로그 주간 글'))] });
   }
   await writeFile(join(site, 'index.html'), promoIndexHtml(days));
   return days.length;
@@ -102,9 +115,11 @@ async function main(): Promise<void> {
     const d = promoDay(market, await loadScoredCalls(root, new Date()));
     const fontDir = pathToFileURL(resolve(root, 'node_modules', 'pretendard', 'dist', 'web', 'static', 'woff2')).href;
     const weekly = args.includes('--weekly') || isFriday(date);
+    const ops = opinionsOf(await loadDayCalls(root, date), date, 2);
     const cards = [
       { file: 'story.png', html: storyHtml(d, fontDir), w: 1080, h: 1920 },
       { file: 'x.png', html: xHtml(d, fontDir), w: 1200, h: 675 },
+      ...ops.map((o, i) => ({ file: `opinion${i + 1}.png`, html: opinionHtml(o, fontDir, ops.length > 1 ? `${i + 1} / ${ops.length}` : ''), w: 1080, h: 1350 })),
       ...(weekly ? [{ file: 'cover.png', html: coverHtml(d, fontDir), w: 1080, h: 1350 }, { file: 'miss.png', html: missHtml(d, fontDir), w: 1080, h: 1350 }] : []),
     ];
     await mkdir(outDir, { recursive: true });

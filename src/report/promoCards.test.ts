@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { blogText, instaCaption, mondayOf, pickLines, promoDay, scoreCalls, storyHtml, worstMiss, xCaption, xHtml, xWeight, type PromoCall } from './promoCards.js';
+import { bestHits, blogText, instaCaption, mondayOf, opinionHtml, opinionsOf, pickLines, promoDay, scoreCalls, storyHtml, worstMiss, xCaption, xHtml, xWeight, type PromoCall } from './promoCards.js';
 import type { AnalystCall } from '../analysis/analysts.js';
 
 const bars = Array.from({ length: 30 }, (_, i) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, close: 100 + i }));
@@ -49,7 +49,9 @@ test('cards show misses, never returns of ours, and always carry the education n
     assert.ok(!/수익률|매수|매도|목표가/.test(html));
   }
   assert.ok(storyHtml(d, '.').includes('투자 권유가 아닌 교육용 자료예요'));
-  assert.equal(pickLines(d.scored, 1)[0]!.name, '나');
+  assert.equal(pickLines(d.scored, 1)[0]!.name, '가');
+  assert.deepEqual(bestHits(d.scored, 3).map((x) => x.name), ['가']);
+  assert.ok(storyHtml(d, '.').includes('오늘 맞힌 위원 판단'));
   assert.equal(worstMiss(d.week)!.name, '나');
   for (const t of [instaCaption(d), blogText(d), xCaption(d)]) assert.ok(t.includes('교육용') && !/수익률|매수|매도/.test(t));
 });
@@ -64,4 +66,20 @@ test('a day with nothing scored says so instead of showing zeros', () => {
   const d = promoDay(market, []);
   assert.ok(storyHtml(d, '.').includes('20거래일이 끝난 판단이 없어요'));
   assert.ok(xCaption(d).includes('채점할 판단이 없었어요'));
+});
+
+test('opinion cards pick the clearest consensus and never show prices to buy or sell at', () => {
+  const ids = ['trend_momentum', 'mean_reversion', 'wave_structure', 'volume_flow', 'fundamental', 'event_catalyst'] as const;
+  const mk = (symbol: string, name: string, stances: AnalystCall['stance'][]) => stances.map((s, i) => ({ ...call(ids[i]!, s, 100, { symbol, reportDate: '2026-10-30', invalidation: s === 'BEARISH' ? 110 + i : 90 }), name }));
+  const calls = [...mk('A', '가', ['BULLISH', 'BEARISH', 'NEUTRAL', 'BULLISH', 'BEARISH', 'NEUTRAL']), ...mk('B', '나', ['BEARISH', 'BEARISH', 'BEARISH', 'BEARISH', 'BULLISH', 'NEUTRAL']), ...mk('C', '다', ['BEARISH', 'BEARISH', 'BEARISH']).map((c) => ({ ...c, reportDate: '2026-10-29' }))];
+  const [o] = opinionsOf(calls, '2026-10-30', 2);
+  assert.equal(o!.name, '나');
+  assert.equal(o!.lead, 'BEARISH');
+  assert.equal(o!.leadCount, 4);
+  assert.equal(o!.invalidation, 112);
+  assert.equal(o!.scoreDate, '2026-11-27');
+  const html = opinionHtml(o!, '.');
+  assert.ok(html.includes('위원 6명 중 4명이') && html.includes('112원 위로 올라가면'));
+  assert.ok(!/수익률|매수|매도|목표가/.test(html));
+  assert.equal(opinionsOf(calls, '2026-10-30', 5).length, 2);
 });
