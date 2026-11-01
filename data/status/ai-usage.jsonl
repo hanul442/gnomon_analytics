@@ -337,3 +337,12 @@
 {"at":"2026-10-31T18:44:35.035Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":496,"outputTokens":524,"usd":0.00031}
 {"at":"2026-10-31T18:44:35.035Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":505,"outputTokens":556,"usd":0.00033}
 {"at":"2026-10-31T18:44:35.035Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":422,"outputTokens":590,"usd":0.00034}
+{"at":"2026-11-01T16:15:46.509Z","month":"2026-11","symbol":"KRW-STX","model":"claude-opus-5-5","tier":"deep","inputTokens":4775,"outputTokens":12703,"cacheWriteTokens":12647,"usd":0.3364}
+{"at":"2026-11-01T16:15:46.509Z","month":"2026-11","symbol":"KRW-STX","model":"claude-haiku-5-5","tier":"deep","inputTokens":8867,"outputTokens":7547,"cacheWriteTokens":9093,"usd":0.0058}
+{"at":"2026-11-01T16:15:46.509Z","month":"2026-11","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":21819,"outputTokens":6477,"usd":0.21682}
+{"at":"2026-11-01T16:15:46.509Z","month":"2026-11","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":28555,"outputTokens":5942,"usd":0.23306}
+{"at":"2026-11-01T16:15:46.509Z","month":"2026-11","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":28188,"outputTokens":5401,"usd":0.22077}
+{"at":"2026-11-01T16:15:46.509Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":613,"outputTokens":530,"usd":0.00033}
+{"at":"2026-11-01T16:15:46.509Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":579,"outputTokens":554,"usd":0.00033}
+{"at":"2026-11-01T16:15:46.509Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":468,"outputTokens":466,"usd":0.00028}
+{"at":"2026-11-01T16:15:46.509Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":450,"outputTokens":398,"usd":0.00024}

@@ -1,5 +1,5 @@
 {
- "at": "2026-10-31T18:44:35.035Z",
+ "at": "2026-11-01T16:15:46.509Z",
  "selected": null,
  "universe": [
   {
@@ -11,6 +11,11 @@
    "source": "naver:m-stock:etf",
    "ok": true,
    "count": 1183
+  },
+  {
+   "source": "opendart:corpCode",
+   "ok": true,
+   "count": 4009
   },
   {
    "source": "naver:fchart:day:all",
@@ -35,7 +40,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 33
+   "count": 34
   },
   {
    "source": "google:topic-business-ko",
@@ -55,7 +60,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 50
+   "count": 52
   },
   {
    "source": "naver:world:day:all",
@@ -330,10 +335,15 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-CT",
-   "report": "EXISTS",
+   "symbol": "KRW-STX",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
- "failed": []
+ "failed": [],
+ "market": {
+  "date": "2026-11-01",
+  "status": "FAILED",
+  "error": "숫자 검증 실패 4건: 자료에 없는 수익률 -3.83%: \"10월 30일 한국 증시는 코스피가 -3.48%, 코스닥이 -3.83% 하락하며 동반 약세를 기록했고, 미국\""
+ }
 }
