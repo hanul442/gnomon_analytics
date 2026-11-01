@@ -1,5 +1,5 @@
 {
- "at": "2026-11-01T17:55:58.480Z",
+ "at": "2026-11-01T19:11:37.687Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 35
+   "count": 33
   },
   {
    "source": "google:topic-business-ko",
@@ -66,6 +66,11 @@
    "source": "opendart:risk-filings",
    "ok": true,
    "count": 0
+  },
+  {
+   "source": "naver:themes",
+   "ok": true,
+   "count": 264
   }
  ],
  "stocks": [
@@ -338,7 +343,6 @@
  "failed": [],
  "market": {
   "date": "2026-11-01",
-  "status": "FAILED",
-  "error": "숫자 검증 실패 16건: 자료에 없는 수익률 -3.48%: \"10월 30일 코스피는 -3.48%, 코스닥 -3.83% 낙폭으로 약세장을 나타냈고, 반도체·기계장비가 특히\""
+  "status": "OK"
  }
 }

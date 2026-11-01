@@ -354,3 +354,8 @@
 {"at":"2026-11-01T17:55:58.480Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":411,"outputTokens":543,"usd":0.00031}
 {"at":"2026-11-01T17:55:58.480Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":454,"outputTokens":576,"usd":0.00033}
 {"at":"2026-11-01T17:55:58.480Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":420,"outputTokens":573,"usd":0.00033}
+{"at":"2026-11-01T19:11:37.687Z","month":"2026-11","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":22217,"outputTokens":5567,"usd":0.20021}
+{"at":"2026-11-01T19:11:37.687Z","month":"2026-11","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":27905,"outputTokens":5315,"usd":0.21792}
+{"at":"2026-11-01T19:11:37.687Z","month":"2026-11","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":27818,"outputTokens":5283,"usd":0.21693}
+{"at":"2026-11-01T19:11:37.687Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":457,"outputTokens":535,"usd":0.00031}
+{"at":"2026-11-01T19:11:37.687Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":412,"outputTokens":499,"usd":0.00029}

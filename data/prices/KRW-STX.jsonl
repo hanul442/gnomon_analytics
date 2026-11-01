@@ -999,3 +999,4 @@
 {"symbol":"KRW-STX","date":"2026-10-31","open":387,"high":460,"low":386,"close":437,"volume":40470100.83432168,"source":"upbit:candles:days","retrievedAt":"2026-11-01T16:15:46.509Z"}
 {"symbol":"KRW-STX","date":"2026-11-01","open":436,"high":444,"low":426,"close":429,"volume":8556131.91229211,"source":"upbit:candles:days","retrievedAt":"2026-11-01T16:15:46.509Z"}
 {"symbol":"KRW-STX","date":"2026-11-01","open":436,"high":444,"low":426,"close":432,"volume":8710753.62227907,"source":"upbit:candles:days","retrievedAt":"2026-11-01T17:55:58.480Z"}
+{"symbol":"KRW-STX","date":"2026-11-01","open":436,"high":444,"low":426,"close":431,"volume":8825044.42291356,"source":"upbit:candles:days","retrievedAt":"2026-11-01T19:11:37.687Z"}
