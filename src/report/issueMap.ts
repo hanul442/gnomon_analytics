@@ -80,20 +80,20 @@ export function issueMapParts(inp: IssueMapInput): IssueMapParts | null {
 }
 
 export const ISSUE_MAP_CSS = `<style>
-.im-mini{margin:-2px 0 6px}.im-mini .wm-map{margin:0}.im-cap{margin:6px 2px 0;font-size:11.5px;color:var(--muted);line-height:1.45}
-.im-legend{display:flex;justify-content:space-between;gap:8px;margin:8px 2px 2px;font-size:11.5px;color:var(--muted)}.im-legend i{display:inline-block;width:9px;height:9px;border-radius:5px;vertical-align:-1px;margin:0 3px 0 6px}.im-legend i:first-child{margin-left:0}
+.im-mini{margin:-2px 0 6px}.im-mini .wm-map{margin:0}.im-cap{margin:6px 2px 0;font-size:15px;color:var(--muted);line-height:1.45}
+.im-legend{display:flex;justify-content:space-between;gap:8px;margin:8px 2px 2px;font-size:15px;color:var(--muted)}.im-legend i{display:inline-block;width:9px;height:9px;border-radius:5px;vertical-align:-1px;margin:0 3px 0 6px}.im-legend i:first-child{margin-left:0}
 .im-legend i.up{background:#f04452}.im-legend i.down{background:#3182f6}.im-legend i.pin{background:var(--fg)}
 .im-rows{margin-top:6px}.im-row{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px;min-height:56px;padding:8px 2px;border:0;border-top:1px solid var(--line);background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
-.im-row.q{cursor:default}.im-row span:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}.im-row b{font-size:15px}.im-row small{font-size:12.5px;color:var(--muted)}.im-row small i{font-style:normal;font-weight:700}
-.im-n{flex:none;font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:8px;background:var(--fg);color:var(--surface-solid)}.im-n.o{background:var(--soft);color:var(--fg2)}
-.im-k{margin:0;font-size:12.5px;font-weight:700;color:var(--muted)}.im-t{margin:2px 0 4px;font-size:22px;font-weight:800;letter-spacing:-.4px}
-.im-line{margin:0 0 6px;font-size:14px;color:var(--fg2)}.im-line b{font-variant-numeric:tabular-nums}
+.im-row.q{cursor:default}.im-row span:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}.im-row b{font-size:17px}.im-row small{font-size:15.5px;color:var(--muted)}.im-row small i{font-style:normal;font-weight:700}
+.im-n{flex:none;font-size:15px;font-weight:800;padding:3px 9px;border-radius:8px;background:var(--fg);color:var(--surface-solid)}.im-n.o{background:var(--soft);color:var(--fg2)}
+.im-k{margin:0;font-size:15.5px;font-weight:700;color:var(--muted)}.im-t{margin:2px 0 4px;font-size:22px;font-weight:800;letter-spacing:-.4px}
+.im-line{margin:0 0 6px;font-size:16px;color:var(--fg2)}.im-line b{font-variant-numeric:tabular-nums}
 .im-irs{display:flex;flex-direction:column}.im-ir{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;align-items:start;padding:10px 0;border-top:1px solid var(--line);color:inherit;text-decoration:none}.im-ir:first-child{border-top:0}
-.im-ir b{display:grid;place-items:center;width:22px;height:22px;border-radius:11px;background:var(--fg);color:var(--surface-solid);font-size:11.5px;font-weight:800}.im-ir span{font-size:14.5px;font-weight:600;line-height:1.45;word-break:keep-all}
-.im-sub{margin:12px 0 2px;font-size:14px;font-weight:800}
+.im-ir b{display:grid;place-items:center;width:22px;height:22px;border-radius:11px;background:var(--fg);color:var(--surface-solid);font-size:12.5px;font-weight:800}.im-ir span{font-size:17px;font-weight:600;line-height:1.45;word-break:keep-all}
+.im-sub{margin:12px 0 2px;font-size:16px;font-weight:800}
 .im-st{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:52px;border-top:1px solid var(--line);color:inherit;text-decoration:none}.im-st:first-of-type{border-top:0}
-.im-st span{display:flex;flex-direction:column;gap:1px}.im-st span b{font-size:15px}.im-st small{font-size:12px;color:var(--muted)}.im-st>b{font-size:14.5px;font-variant-numeric:tabular-nums}
-.im-fine{margin:8px 0 0;font-size:11.5px;line-height:1.45;color:var(--muted);word-break:keep-all}
+.im-st span{display:flex;flex-direction:column;gap:1px}.im-st span b{font-size:17px}.im-st small{font-size:15px;color:var(--muted)}.im-st>b{font-size:17px;font-variant-numeric:tabular-nums}
+.im-fine{margin:8px 0 0;font-size:15px;line-height:1.45;color:var(--muted);word-break:keep-all}
 .im-sheet{overflow:auto}
 </style>`;
 

@@ -35,7 +35,7 @@ export const POLISH_CSS = `
 :root body .st-nav{background:color-mix(in srgb,var(--page) 88%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);box-shadow:0 0 0 100vmax color-mix(in srgb,var(--page) 88%,transparent);clip-path:inset(0 -100vmax)}
 /* Home quick links: three soft pills with line icons instead of emoji. */
 :root body .find-row{gap:8px;margin:12px 0 0}
-:root body .find-row .flt-btn,:root body .find-row .find-link{display:inline-flex;align-items:center;gap:6px;min-height:36px;margin:0;padding:0 14px 0 11px;border-radius:999px;background:var(--soft);color:var(--fg);font-size:13.5px;font-weight:700;text-decoration:none}
+:root body .find-row .flt-btn,:root body .find-row .find-link{display:inline-flex;align-items:center;gap:6px;min-height:36px;margin:0;padding:0 14px 0 11px;border-radius:999px;background:var(--soft);color:var(--fg);font-size:16px;font-weight:700;text-decoration:none}
 :root body .find-row svg{width:17px;height:17px;flex:none;fill:none;stroke:var(--accent-strong);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 :root body .find-row a:hover{background:var(--line)}
 /* G-235: chips. A choice or link chip is a soft filled pill with no outline (as on 찾기); the chosen one is the primary
@@ -51,7 +51,7 @@ export const POLISH_CSS = `
 /* G-239: titles and buttons. On phones every page title is one size and weight (they were 23/24/26/28px, 600/700),
    section titles are 17px/600 (settings had 18/700), and the one square-cornered primary button is a pill. */
 @media (max-width:640px){:root body main h1{font-size:26px;font-weight:700;letter-spacing:-.015em;line-height:1.25}}
-:root body .st-h{font-size:17px;font-weight:600}
+:root body .st-h{font-size:18.5px;font-weight:600}
 :root body .cm-new button{border-radius:999px;font-weight:700}
 /* G-239: moving between pages. Same-site links cross-fade (the new page rises a little) while the top bar and the
    bottom bar stay put, like an app. Browsers without view transitions just load the page. */

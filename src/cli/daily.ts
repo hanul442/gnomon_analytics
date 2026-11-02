@@ -49,7 +49,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { digestIssues, readDigests, type DigestSource } from '../analysis/newsDigest.js';
 import { renderIssuePage } from '../report/renderIssue.js';
 import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderStockPage, type HomeEntry, type PageContext, APP_CSS, APP_JS, UI_JS, ASSET_VERSION } from '../report/renderHtml.js';
-import { homeIssues, renderHome, renderReportsPage, type IndexQuote, type UsTemp } from '../report/renderHome.js';
+import { homeIssues, renderHome, renderReportsPage, rosterReports, type IndexQuote, type UsTemp } from '../report/renderHome.js';
+import { rosterCard } from '../report/committeeSeats.js';
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
 import { renderInbox, MANIFEST, movedPage, SW_JS } from '../report/renderAlerts.js';
@@ -60,7 +61,7 @@ import { renderSignalsPage, renderThemesPage, signalData, themeData, themesHome 
 import { fetchThemes, type Theme } from '../sources/naverTheme.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
-import { renderPaper, renderScorecard } from '../report/renderScorecard.js';
+import { renderMembersPage, renderPaper, renderScorecard } from '../report/renderScorecard.js';
 import { renderPrivacy, renderTerms } from '../report/legal.js';
 import { renderScreener, screenerRows } from '../report/renderScreener.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
@@ -909,6 +910,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const dataDate = extras.pulse?.date ?? null;
   const signals = await trackSignals(root, rows, dataDate, dataDate ?? kstParts(new Date()).date);
   await writeFile(join(siteDir, 'scorecard.html'), renderScorecard(home.filter((e) => e.group !== 'past'), signals.board));
+  // G-301 (한서님 10/26 새 구조): 위원회 › 위원 — the faces and each member's record.
+  await writeFile(join(siteDir, 'members.html'), renderMembersPage(home.filter((e) => e.group !== 'past'), rosterCard(rosterReports(home))));
   await writeFile(join(siteDir, 'terms.html'), renderTerms());
   await writeFile(join(siteDir, 'privacy.html'), renderPrivacy());
   await writeFile(join(siteDir, 'paper.html'), renderPaper());

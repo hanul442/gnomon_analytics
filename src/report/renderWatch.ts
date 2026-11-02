@@ -6,12 +6,12 @@ import { US_EXCHANGE_LETTER } from '../sources/naverWorld.js';
 import { shell } from './renderHtml.js';
 
 const STYLE = `<style>
-.wp-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}.wp-head h1{margin:0}.wp-sum{display:flex;gap:14px;font-size:14px;color:var(--fg2)}.wp-sum b{font-size:18px;color:var(--fg)}
-.wp-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 10px}.wp-tools select{font:inherit;font-size:14px;border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:var(--surface)}
+.wp-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}.wp-head h1{margin:0}.wp-sum{display:flex;gap:14px;font-size:16px;color:var(--fg2)}.wp-sum b{font-size:19px;color:var(--fg)}
+.wp-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 10px}.wp-tools select{font:inherit;font-size:16px;border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:var(--surface)}
 .wp-list{display:flex;flex-direction:column;gap:10px}.wp-row{display:grid;grid-template-columns:minmax(0,1fr) auto 40px;gap:10px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 14px 14px 16px}
-.wp-row a.wp-main{text-decoration:none;color:inherit;min-width:0}.wp-name{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.wp-name b{font-size:16px}.wp-name small{color:var(--muted)}
-.wp-tags{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:6px;font-size:12.5px;font-weight:600}.wp-tags span{border-radius:6px;padding:1px 7px;background:var(--soft);color:var(--fg2)}.wp-tags .new{background:var(--warn-soft);color:var(--warn-strong)}.wp-tags .rep{background:var(--down-soft);color:var(--accent-strong)}
-.wp-px{text-align:right;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}.wp-px b{font-size:16px}.wp-px span{font-size:13px;font-weight:700}
+.wp-row a.wp-main{text-decoration:none;color:inherit;min-width:0}.wp-name{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.wp-name b{font-size:17.5px}.wp-name small{color:var(--muted)}
+.wp-tags{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:6px;font-size:15.5px;font-weight:600}.wp-tags span{border-radius:6px;padding:1px 7px;background:var(--soft);color:var(--fg2)}.wp-tags .new{background:var(--warn-soft);color:var(--warn-strong)}.wp-tags .rep{background:var(--down-soft);color:var(--accent-strong)}
+.wp-px{text-align:right;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}.wp-px b{font-size:17.5px}.wp-px span{font-size:15.5px;font-weight:700}
 .wp-empty{text-align:center;padding:40px 16px}.wp-empty p{color:var(--fg2)}.wp-empty .btn-primary{display:inline-flex;margin-top:10px}
 .wp-row .star svg{width:22px;height:22px}
 </style>`;
@@ -70,7 +70,7 @@ const SCRIPT = `<script>
 </script>`;
 
 export function renderWatchPage(): string {
-  const body = `${STYLE}<section class="hero" id="top"><div class="hero-main wp-head"><div><div class="eyebrow"><span>관심</span></div><h1>내 관심 종목</h1></div><div class="wp-sum"><span>관심 <b id="wp-n">0</b></span><span class="up">▲ <b id="wp-up">0</b></span><span class="down">▼ <b id="wp-down">0</b></span></div></div></section>
+  const body = `${STYLE}<section class="hero" id="top"><div class="hero-main wp-head"><div class="wp-sum"><span>관심 <b id="wp-n">0</b></span><span class="up">▲ <b id="wp-up">0</b></span><span class="down">▼ <b id="wp-down">0</b></span></div></div></section>
 <section class="block"><div class="wp-tools"><label class="sc-inline">정렬 <select id="wp-sort" aria-label="정렬"><option value="added">추가한 순</option><option value="recent">최근 추가 먼저</option><option value="chg">오늘 많이 오른 순</option><option value="chga">오늘 많이 내린 순</option><option value="report">최신 리포트 순</option><option value="name">이름</option></select></label><a class="chip-toggle" href="alerts.html">🔔 가격 알림</a><a class="chip-toggle" href="reports.html#today">최근 나온 리포트</a></div>
 <div class="wp-list" id="wp-list"></div>
 <p class="fine">☆로 넣고 빼요. 로그인하면 계정에 저장돼서 다른 기기에서도 보여요. 가격은 장중 4초마다 새로 받아요.</p></section>`;

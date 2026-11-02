@@ -9,12 +9,12 @@ export function derivSlot(symbol: string): string {
   return `<section class="card dv-card" data-deriv="${esc(symbol)}" hidden><div class="head"><h2>선물 지표</h2><span class="sub">OKX 무기한 선물 · 1분마다 갱신</span></div><div class="dv-body"><p class="muted">불러오는 중이에요…</p></div></section>`;
 }
 
-export const DERIV_CSS = `.dv-card{margin:14px 0}.dv-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.dv-card h2{font-size:17px;margin:0 0 6px}
+export const DERIV_CSS = `.dv-card{margin:14px 0}.dv-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.dv-card h2{font-size:18.5px;margin:0 0 6px}
 .dv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dv-t{background:var(--soft);border-radius:14px;padding:12px 14px;min-width:0;display:flex;flex-direction:column;gap:4px}
-.dv-t>span{font-size:12.5px;font-weight:800;color:var(--fg2)}.dv-t>b{font-size:19px;font-variant-numeric:tabular-nums}.dv-t>small{font-size:12px;color:var(--muted);line-height:1.4}
+.dv-t>span{font-size:15.5px;font-weight:800;color:var(--fg2)}.dv-t>b{font-size:20px;font-variant-numeric:tabular-nums}.dv-t>small{font-size:15px;color:var(--muted);line-height:1.4}
 .dv-t svg{width:100%;height:34px;display:block}.dv-liq{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--soft);margin:2px 0}.dv-liq i{display:block}.dv-liq .l{background:var(--down)}.dv-liq .s{background:var(--up)}
 /* G-300: two by two on a phone too, one short line under each number (the explanations are one note under the grid). */
-@media (max-width:520px){.dv-grid{gap:8px}.dv-t{padding:10px 12px}.dv-t>b{font-size:17px}.dv-t svg{height:26px}}`;
+@media (max-width:520px){.dv-grid{gap:8px}.dv-t{padding:10px 12px}.dv-t>b{font-size:18.5px}.dv-t svg{height:26px}}`;
 
 export const DERIV_JS = `
 (function () {
