@@ -1,0 +1,3 @@
+{"symbol":"086280","receiptNo":"20260206000805","date":"2026-02-06","reporter":"정의선","shares":37766646,"delta":800,"ratio":50.36,"ratioDelta":0.01,"reason":"특별관계자 보유주식 수 변동","retrievedAt":"2026-11-02T19:42:06.315Z"}
+{"symbol":"086280","receiptNo":"20260312000754","date":"2026-03-12","reporter":"정의선","shares":37766346,"delta":-300,"ratio":50.36,"ratioDelta":0,"reason":"특별관계자 보유주식 수 변동","retrievedAt":"2026-11-02T19:42:06.315Z"}
+{"symbol":"086280","receiptNo":"20260506000274","date":"2026-05-06","reporter":"국민연금공단","shares":6790664,"delta":-779813,"ratio":9.05,"ratioDelta":-1.04,"reason":"단순추가취득/처분","retrievedAt":"2026-11-02T19:42:06.315Z"}
