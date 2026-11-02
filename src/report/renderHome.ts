@@ -448,6 +448,12 @@ const HOME_SCRIPT = `<script>
   // The alpha layer keeps the list on the server too (intraday alerts); it listens for this event.
   var write = function (w) { try { localStorage.setItem(KEY, JSON.stringify(w)); localStorage.setItem('gnm-watch-at', String(Date.now())); } catch (e) {} window.dispatchEvent(new Event('gnm-watch')); };
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  // G-303 (로빈후드식): a raw 30-day line, dotted start line, dot at the end; red when it ended higher, blue when lower.
+  var spark = function (v) {
+    if (!v || v.length < 2) return '<span class="wl-sp" aria-hidden="true"></span>';
+    var w = 72, h = 34, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), r = hi - lo || 1, X = function (i) { return (i / (v.length - 1) * (w - 4)).toFixed(1); }, Y = function (x) { return (3 + (hi - x) / r * (h - 6)).toFixed(1); };
+    return '<svg class="wl-sp ' + (v[v.length - 1] >= v[0] ? 'up' : 'down') + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><line class="rh-base" x1="0" x2="' + w + '" y1="' + Y(v[0]) + '" y2="' + Y(v[0]) + '"/><path d="' + v.map(function (x, i) { return (i ? 'L' : 'M') + X(i) + ',' + Y(x); }).join('') + '"/><circle cx="' + X(v.length - 1) + '" cy="' + Y(v[v.length - 1]) + '" r="2.6"/></svg>';
+  };
   var items = null, info = null;
   fetch('watchinfo.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) { info = d; drawWatch(); }).catch(function () {});
   var drawWatch = function () {
@@ -468,19 +474,15 @@ const HOME_SCRIPT = `<script>
         var it = (items || []).find(function (x) { return x[0] === sym; }) || [sym, named[sym] || sym, '', null, null, 0], starred = w.indexOf(sym) >= 0;
         if (it[4] > 0) up++; else if (it[4] < 0) dn++;
         var ch = it[4], coin = sym.indexOf('KRW-') === 0, href = it[5] ? sym + '/index.html' : coin ? 'coin.html?m=' + sym : 'stock.html?c=' + sym;
-        var p = it[3], price = p == null ? '' : '<b data-live="' + esc(sym) + '" data-live-f="price">' + (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원</b> ';
+        var p = it[3], price = p == null ? '' : '<b data-live="' + esc(sym) + '" data-live-f="price">' + (Math.abs(p) >= 100 ? Math.round(p).toLocaleString('ko-KR') : p.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원</b>';
         var wi = info && info[sym], st = '';
         if (wi) {
-          var near = [wi.up ? ['▲', wi.up] : null, wi.dn ? ['▼', wi.dn] : null].filter(Boolean).map(function (x) { return [x[0], x[1], (x[1] / (p || wi.c) - 1) * 100]; }).sort(function (a, b) { return Math.abs(a[2]) - Math.abs(b[2]); })[0];
-          // G-244: one line under the name: a new filing first, else the nearest price level. News counts stay on the stock page.
-          // G-257: the stock's scenario strip in small — 약세 전환 at the left, 강세 전환 at the right, a dot for now.
-          var now = p || wi.c, rail = '';
-          if (wi.up && wi.dn && now && wi.up > wi.dn) { var at = Math.max(0, Math.min(100, (now - wi.dn) / (wi.up - wi.dn) * 100)); rail = '<span class="wl-rail" role="img" aria-label="약세 전환 ' + Math.round(wi.dn).toLocaleString('ko-KR') + '원과 강세 전환 ' + Math.round(wi.up).toLocaleString('ko-KR') + '원 사이 ' + Math.round(at) + '% 자리"><i style="left:' + at.toFixed(1) + '%"></i></span>'; }
           // G-277 (한서님 10/21): '약세 전환 가격까지 −1.6%' on a day the stock rose read backwards. The two committee prices are shown as they are.
-          var lv = wi.up || wi.dn ? '<span class="wl-lv">' + (wi.dn ? '<span class="down">약세 기준</span> ' + Math.round(wi.dn).toLocaleString('ko-KR') : '') + (wi.up && wi.dn ? ' · ' : '') + (wi.up ? '<span class="up">강세 기준</span> ' + Math.round(wi.up).toLocaleString('ko-KR') : '') + '</span>' : '';
-          st = rail + (wi.f ? '<div class="wl-st"><span class="wl-new">새 공시 ' + wi.f + '건</span></div>' : '') + lv;
+          // G-303 (로빈후드식): the two committee prices sit under the name as two short grey lines, like Robinhood's share count.
+          var lv = wi.up || wi.dn ? '<span class="wl-lv">' + (wi.dn ? '<span>약세 기준 ' + Math.round(wi.dn).toLocaleString('ko-KR') + '</span>' : '') + (wi.up ? '<span>강세 기준 ' + Math.round(wi.up).toLocaleString('ko-KR') + '</span>' : '') + '</span>' : '';
+          st = (wi.f ? '<span class="wl-new">새 공시 ' + wi.f + '건</span>' : '') + lv;
         }
-        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b>' + (coin || it[2] === 'ETF' ? ' <span class="muted small">' + (coin ? '코인' : 'ETF') + '</span>' : '') + st + '</a><span class="wl-px" data-no-roll>' + price + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</span><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="' + starred + '" aria-label="' + (starred ? '관심 종목에서 빼기' : '관심 종목에 담기') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
+        return '<div class="wl"><a href="' + href + '"><b>' + esc(it[1]) + '</b>' + (coin || it[2] === 'ETF' ? ' <span class="muted small">' + (coin ? '코인' : 'ETF') + '</span>' : '') + st + '</a>' + spark(wi && wi.s) + '<button type="button" class="wl-px wl-pill" data-no-roll aria-label="가격과 등락률 바꿔 보기">' + (price || '<b>–</b>') + (ch == null ? '' : '<span class="' + (ch > 0 ? 'up' : ch < 0 ? 'down' : '') + '" data-live="' + esc(sym) + '" data-live-f="pct">' + (ch > 0 ? '▲ +' : ch < 0 ? '▼ ' : '') + ch.toFixed(2) + '%</span>') + '</button><button type="button" class="star" data-star="' + esc(sym) + '" aria-pressed="' + starred + '" aria-label="' + (starred ? '관심 종목에서 빼기' : '관심 종목에 담기') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l2.4 5 5.6.6-4.2 3.8 1.2 5.6L12 16.2 7 19l1.2-5.6L4 9.6 9.6 9z"/></svg></button></div>';
       }).join('');
       if (sum) { sum.innerHTML = '내 종목 <b>' + mineList.length + '</b>개' + (items ? ' · <span class="up">▲ ' + up + '</span> · <span class="down">▼ ' + dn + '</span>' : ''); sum.hidden = false; }
     };

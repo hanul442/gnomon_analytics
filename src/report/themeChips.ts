@@ -15,7 +15,7 @@ export const THEME_CHIPS_JS = `
         (t.length > SHOW ? '<button type="button" class="tc-toggle" aria-expanded="false">+' + (t.length - SHOW) + '</button>' : '');
       var btn = row.querySelector('.tc-toggle');
       if (btn) btn.onclick = function () { var open = btn.getAttribute('aria-expanded') !== 'true'; btn.setAttribute('aria-expanded', String(open)); btn.textContent = open ? '접기' : '+' + (t.length - SHOW); row.querySelectorAll('.tc-more').forEach(function (a) { a.hidden = !open; }); };
-      var h = star.closest('.h1-row'); (h || star).after(row);
+      var h = star.closest('.h1-row'), hm = star.closest('.hero-main'), at = hm && (hm.querySelector('.hero-sub') || hm.querySelector('.hero-price')); (at || h || star).after(row); /* G-302: 이름 → 가격 → 테마 */
     }).catch(function () {});
   };
   go(); setTimeout(go, 1500);

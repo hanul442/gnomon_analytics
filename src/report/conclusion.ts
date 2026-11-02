@@ -334,13 +334,16 @@ export function testPrices(report: DailyReport): { up?: number; dn?: number } {
 }
 
 /** G-85: what the watchlist shows per covered stock: the test prices and what is new since the last report. */
-export function watchInfo(entries: readonly { symbol: string; report: DailyReport | null; reportDate?: string | null }[]): Record<string, { c: number; up?: number; dn?: number; f: number; n: number; d: string }> {
-  const out: Record<string, { c: number; up?: number; dn?: number; f: number; n: number; d: string }> = {};
+export function watchInfo(entries: readonly { symbol: string; report: DailyReport | null; reportDate?: string | null }[]): Record<string, { c: number; up?: number; dn?: number; f: number; n: number; d: string; s?: number[] }> {
+  const out: Record<string, { c: number; up?: number; dn?: number; f: number; n: number; d: string; s?: number[] }> = {};
   for (const e of entries) {
     const r = e.report; if (!r?.price) continue;
     const since = new Date(Date.parse(r.date) - 3 * 86_400_000).toISOString().slice(0, 10);
     // G-231: d is the day the report was made (the daily push and weekly mail announce it as new), not the run date.
     out[e.symbol] = { c: r.price.close, ...testPrices(r), f: (r.recentFilings ?? []).filter((x) => x.filedDate >= since).length, n: r.news?.newIds.length ?? 0, d: e.reportDate === undefined ? r.date : e.reportDate ?? '' };
+    // G-303: the last 30 closes for the Robinhood-style mini chart on each 내 종목 row.
+    const s = (r.recentCloses ?? []).slice(-30).map((x) => x.close);
+    if (s.length > 1) out[e.symbol]!.s = s;
   }
   return out;
 }
