@@ -77,3 +77,4 @@
 {"symbol":"490470","receiptNo":"20261023000134","date":"2026-10-23","reporter":"이승열","position":"연구위원","isExec":true,"isMajor":false,"shares":8000,"delta":5250,"ratio":0.02,"retrievedAt":"2026-10-23T14:21:52.770Z"}
 {"symbol":"490470","receiptNo":"20261023000123","date":"2026-10-23","reporter":"이상길","position":"전무","isExec":true,"isMajor":false,"shares":50000,"delta":20000,"ratio":0.15,"retrievedAt":"2026-10-23T14:21:52.770Z"}
 {"symbol":"490470","receiptNo":"20261023000132","date":"2026-10-23","reporter":"김인성","position":"연구위원","isExec":true,"isMajor":false,"shares":14500,"delta":2000,"ratio":0.04,"retrievedAt":"2026-10-23T14:21:52.770Z"}
+{"symbol":"490470","receiptNo":"20261026000360","date":"2026-10-26","reporter":"이원균","position":"연구위원","isExec":true,"isMajor":false,"shares":3705,"delta":2400,"ratio":0.01,"retrievedAt":"2026-10-26T16:17:00.264Z"}

@@ -1325,11 +1325,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "004415",
-  "name": "서울식품우",
-  "market": "KOSPI"
- },
- {
   "symbol": "004430",
   "name": "송원산업",
   "market": "KOSPI"
@@ -1558,6 +1553,11 @@
   "symbol": "005389",
   "name": "현대차3우B",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "0053F0",
+  "name": "티앤이코리아",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "005420",
@@ -2755,6 +2755,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "0127E0",
+  "name": "한화플러스제6호스팩",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "012800",
   "name": "대창",
   "market": "KOSPI"
@@ -3415,6 +3420,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "0205H0",
+  "name": "에스케이증권제14호기업인수목적",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "020710",
   "name": "시공테크",
   "market": "KOSDAQ"
@@ -4037,11 +4047,6 @@
  {
   "symbol": "032680",
   "name": "소프트센",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "032685",
-  "name": "소프트센우",
   "market": "KOSDAQ"
  },
  {
@@ -12745,6 +12750,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "420610",
+  "name": "인텔리빅스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "420770",
   "name": "기가비스",
   "market": "KOSDAQ"
@@ -12848,6 +12858,11 @@
   "symbol": "439260",
   "name": "대한조선",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "439270",
+  "name": "크리에이츠",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "439580",

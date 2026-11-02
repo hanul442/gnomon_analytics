@@ -56,3 +56,4 @@
 {"symbol":"000720","receiptNo":"20261007000053","date":"2026-10-07","reporter":"이형석","position":"전무","isExec":true,"isMajor":false,"shares":3230,"delta":90,"ratio":0,"retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"000720","receiptNo":"20261013000126","date":"2026-10-13","reporter":"조혁준","position":"상무","isExec":true,"isMajor":false,"shares":80,"delta":20,"ratio":0,"retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"000720","receiptNo":"20261015000005","date":"2026-10-15","reporter":"이한우","position":"부사장","isExec":true,"isMajor":false,"shares":3701,"delta":300,"ratio":0,"retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"000720","receiptNo":"20261030000359","date":"2026-10-30","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":11167926,"delta":-704459,"ratio":9.93,"retrievedAt":"2026-10-30T16:10:34.877Z"}

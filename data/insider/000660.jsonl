@@ -319,3 +319,4 @@
 {"symbol":"000660","receiptNo":"20260821000615","date":"2026-08-21","reporter":"김성래","position":"담당","isExec":true,"isMajor":false,"shares":619,"delta":-595,"ratio":0,"retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"000660","receiptNo":"20260922000361","date":"2026-09-22","reporter":"정인철","position":"담당","isExec":true,"isMajor":false,"shares":600,"delta":142,"ratio":0,"retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"000660","receiptNo":"20260930000861","date":"2026-09-30","reporter":"서진우","position":"부회장","isExec":true,"isMajor":false,"shares":80,"delta":80,"ratio":0,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"000660","receiptNo":"20261026000273","date":"2026-10-26","reporter":"정인철","position":"담당","isExec":true,"isMajor":false,"shares":1000,"delta":400,"ratio":0,"retrievedAt":"2026-10-26T16:17:00.264Z"}

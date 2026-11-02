@@ -22,7 +22,8 @@ export type BudgetTier = 'deep' | 'market' | 'news';
 // G-221: the longer debate (prompt v9) adds about 2.5K output tokens, about $0.05.
 // G-228: six independent analyst calls on Haiku 5.5 add well under a cent; 0.29 keeps a margin.
 export const ESTIMATE_USD: Record<BudgetTier, number> = { deep: 0.29, market: 0.03, news: 0.002 };
-export const DEFAULT_BUDGET_USD = 25;
+// 2026-10-28: 25 → 35 (October hit 25 on 10/25 and the AI committee stopped; 한서 chose 35).
+export const DEFAULT_BUDGET_USD = 35;
 
 export interface UsageLine { at: string; month: string; symbol: string; model: string; /** 'brief' on lines written before v3.5.0. */
   tier: BudgetTier | 'brief'; inputTokens: number; outputTokens: number; cacheReadTokens?: number; cacheWriteTokens?: number; usd: number }

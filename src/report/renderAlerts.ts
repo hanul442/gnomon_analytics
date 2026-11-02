@@ -9,13 +9,12 @@ export { SW_JS, MANIFEST } from './pushParts.js';
 /** The alerts settings (G-97) as parts, so 설정 (G-210) can hold them with the rest. */
 export function alertsParts(): { css: string; html: string; script: string } {
   const PREFS: [string, string, string][] = [
+    ['morning', '아침 브리핑', '평일 아침 8시, 장 열기 1시간 전에 간밤 미국 시장과 내 종목의 깨진 판단 조건·새 공시를 한 번 알려요'],
     ['daily', '매일 리포트', '장 마감 뒤 그날 리포트가 나오면 알려요. 관심 종목 리포트가 있으면 그 종목을 먼저 알려요.'],
     ['watchReport', '관심 종목 새 리포트', '☆ 해 둔 종목의 리포트가 새로 나오면'],
     ['screen', '스크리너 조건', '저장한 조건에 새로 걸린 종목이 생기면 (조건별 켜기는 아래에서)'],
     ['price', '가격 알림 · 장중 급변', '내가 건 가격에 닿거나, 관심 종목이 장중 크게 움직이면'],
     ['request', '요청한 리포트', '즉시 생성하거나 요청한 리포트가 완성되면(실패하면 그 이유도)'],
-    ['update', '업데이트 소식', '큰 업데이트(x.Y.0)가 나오면 한 번 알려요. 밤 10시~아침 8시 사이 것은 아침에 보내요'],
-    ['updatePatch', '작은 업데이트도 알림', '기본은 꺼져 있어요. 켜면 작은 수리(x.Y.Z)도 알려요'],
     ['weekly', '주간 요약 메일', '일요일 저녁에 관심 종목·내 조건·이번 주 리포트를 메일로 모아 보내요'],
   ];
   const css = `<style>
@@ -145,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var items = [];
   var paint = function () {
     clear.hidden = !items.length;
-    if (!items.length) { box.innerHTML = '<div class="ib-empty card">알림이 없어요.<br>새 리포트, 관심 종목, 가격 알림, 스크리너 조건, 업데이트 소식이 여기와 휴대폰으로 와요.</div>'; return; }
+    if (!items.length) { box.innerHTML = '<div class="ib-empty card">알림이 없어요.<br>새 리포트, 관심 종목, 가격 알림, 스크리너 조건 소식이 여기와 휴대폰으로 와요.</div>'; return; }
     var last = '';
     box.innerHTML = items.map(function (n) { var t = kst(n.created_at), head = t.day !== last ? '<div class="ib-day">' + t.day.slice(5).replace('-', '/') + '</div>' : ''; last = t.day;
       return head + '<div class="ib-item' + (n.read_at ? '' : ' new') + '" data-nid="' + n.id + '"><span class="ib-ic" aria-hidden="true">' + (ICON[n.kind] || '🔔') + '</span><a href="' + esc(n.link ? siteLink(n.link) : '#') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small><time>' + t.hm + '</time></a><button type="button" class="ib-x" data-del="' + n.id + '" aria-label="이 알림 지우기">×</button></div>'; }).join('');

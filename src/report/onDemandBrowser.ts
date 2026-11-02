@@ -34,7 +34,10 @@ export const JOBS_JS = `
    var target=panel.querySelector('[data-generated]');
    if(!target){target=document.createElement('section');target.setAttribute('data-generated',key);if(key==='ai'){var title=panel.querySelector('.panel-title');panel.innerHTML='';if(title)panel.appendChild(title);panel.appendChild(target);}else if(key==='home'){var heroEl=panel.querySelector('.hero');while(heroEl&&heroEl.parentElement&&heroEl.parentElement!==panel)heroEl=heroEl.parentElement;if(heroEl&&heroEl.parentElement===panel)heroEl.after(target);else panel.prepend(target);}else panel.prepend(target);}
    if(key==='home'){var old=panel.querySelector('#home-conclusion');if(old&&!target.contains(old))old.remove();}
-   target.innerHTML=r.fragments[key];if(composer){var fresh=target.querySelector('.db-join');if(fresh)fresh.replaceWith(composer);else(panel.querySelector('.card.debate')||target).appendChild(composer);}
+   target.innerHTML=r.fragments[key];
+   // The fresh verdict line and its 위원회 판단 page (#committee) take the static ones' places, so each exists once.
+   if(key==='home')['.cl-head','#committee'].forEach(function(sel){var fresh=target.querySelector(sel);if(!fresh)return;var old=[].filter.call(document.querySelectorAll(sel),function(x){return !target.contains(x);})[0];if(old)old.replaceWith(fresh);});
+   if(composer){var fresh=target.querySelector('.db-join');if(fresh)fresh.replaceWith(composer);else(panel.querySelector('.card.debate')||target).appendChild(composer);}
    if(bar&&key==='ai')target.insertAdjacentHTML('afterbegin',bar);
    if(bar&&key==='home'){var heroEl=panel.querySelector('.hero');if(heroEl)heroEl.insertAdjacentHTML('afterend',bar);else target.insertAdjacentHTML('afterbegin',bar);}
    panel.querySelectorAll('[data-missing]').forEach(function(x){x.remove();});
