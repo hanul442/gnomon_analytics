@@ -42,6 +42,10 @@ function signalCard(rows: readonly SignalBoardRow[]): string {
 }
 
 /** G-301 (한서님 10/26 새 구조): 위원회 › 위원 — the faces, then each member's calls and results (moved here from 성적표). */
+/** G-311 (한서님 10/29 평가 4번): the direction hit rate shows as a % only after this many graded calls; before that
+ * it says '채점 쌓는 중 n/50', because 18 calls from one day say more about that day's market than about the committee. */
+export const DIR_MIN = 50;
+
 export function renderMembersPage(entries: readonly HomeEntry[], roster: string): string {
   return renderScorecard(entries, [], 'members', roster);
 }
@@ -154,13 +158,13 @@ ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.l
   const hitText = (v: number | null) => (v === null ? '채점 전' : `${Math.round(v)}%`);
   const scoreRing = !live.length ? '' : ringChart([
     { label: '예측 범위 적중', value: fcHit === null ? null : fcHit / 100, color: 'var(--accent)', text: hitText(fcHit) },
-    { label: '위원 방향 적중', value: aiHit === null ? null : aiHit / 100, color: 'var(--fg2)', text: hitText(aiHit) },
+    { label: '위원 방향 적중', value: aiHit === null || aiScored < DIR_MIN ? null : aiHit / 100, color: 'var(--fg2)', text: aiScored < DIR_MIN ? `채점 쌓는 중 ${aiScored}/${DIR_MIN}` : hitText(aiHit) },
     { label: '챔피언이 보유보다 나은 종목', value: beat / live.length, color: 'var(--muted)', text: `${beat}/${live.length}` },
-  ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: '', cls: 'sc-ring', half: true });
+  ], { label: `예측 범위 적중 ${hitText(fcHit)}, 위원 방향 적중 ${aiScored < DIR_MIN ? `채점 쌓는 중 ${aiScored}/${DIR_MIN}` : hitText(aiHit)}, 챔피언이 보유보다 나은 종목 ${beat}/${live.length}`, big: '', cls: 'sc-ring', half: true });
   const hero = `<section class="block sc-hero" id="top"><div class="sc-k">예측 범위 적중률 · 리포트 종목 ${live.length}개</div><div class="sc-hv" role="heading" aria-level="2"><b>${fcHit === null ? '채점 전' : `${Math.round(fcHit)}%`}</b><small>목표 80% 안팎</small></div>
 ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 ${Math.round(fcHit)}%, 목표 80%"><i style="width:${Math.max(0, Math.min(100, fcHit)).toFixed(0)}%"></i><em style="left:80%"></em></div>`}
 <p class="sc-say">10~90% 범위로 낸 예측이라, 정직하다면 열에 여덟은 범위 안에 들어와야 해요. ${fcSay} ${totalScored ? `채점 ${totalScored.toLocaleString('ko-KR')}건.` : `기록 ${pending.toLocaleString('ko-KR')}건이 채점을 기다려요.`} 틀린 기록도 지우지 않아요.</p>
-<div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언 규칙대로였다면 (가상)', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored ? `채점 ${aiScored}건` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : `${Math.round(aiHit)}%`, aiHit === null ? 'muted' : '')}</div></section>
+<div class="sc-lines">${line('챔피언 전략이 보유보다 나았던 종목', `리포트 종목 ${live.length}개 중`, `${beat}개`)}${line('챔피언 규칙대로였다면 (가상)', `그냥 들고 있었다면 ${pct(hold, 2)}`, pct(champ, 2), tone(champ))}${line('위원 방향 적중', aiScored >= DIR_MIN ? `채점 ${aiScored}건` : aiScored ? `${DIR_MIN}건이 쌓이면 적중률을 보여 드려요` : '20거래일 뒤 첫 채점', aiHit === null ? '채점 전' : aiScored < DIR_MIN ? `채점 쌓는 중 ${aiScored}/${DIR_MIN}` : `${Math.round(aiHit)}%`, aiHit === null || aiScored < DIR_MIN ? 'muted' : '')}</div></section>
 `;
   // G-297 (한서님 시안 ⑤): the newest graded member calls, hits and misses alike, right under the headline — the
   // committee is scored in the open. Waiting calls only count until the first grade comes in.

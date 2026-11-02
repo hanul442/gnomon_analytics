@@ -3,7 +3,7 @@
 // G-216: with the alpha API the plan and credits live on the server, so the MOCK checkout would change
 // nothing. There the pages say payment is closed, show the server ledger and point to a credit request.
 
-import { CREDIT_ACTIONS, CREDIT_COST, CREDIT_PACKS, needText, PLANS, UNLOCK, won } from './plans.js';
+import { BETA_OPEN, CREDIT_ACTIONS, CREDIT_COST, CREDIT_PACKS, needText, PLANS, TESTERS, UNLOCK, won } from './plans.js';
 import { shell } from './renderHtml.js';
 import { glowCta } from './glowCta.js';
 
@@ -28,9 +28,7 @@ const COMPARE: readonly [string, Cell, Cell, Cell, Cell][] = [
   ['매달 포함 크레딧', false, false, '300', '1,000'],
   ['크레딧 충전 · 리포트 요청 · AI 질문', false, true, true, true],
   ['전문가 AI 초청', false, false, '크레딧', '매달 30회 포함'],
-  ['전문가 정기 초청(주간 위원회 고정)', false, false, false, '5명'],
   ['충전할 때 추가 크레딧', false, false, '+10%', '+20%'],
-  ['관심 종목 매주 AI 위원회 자동 리포트', false, false, false, '10종목'],
   ['스크리너', '빠른 조건 1개·5개', '조건 검색 전체', '+ 조건 백테스트(출시 예정)', '+ 조건 백테스트(출시 예정)'],
   ['차트 그리기(추세선·수평선·박스·피보나치·메모)', '저장 안 됨', '10종목 저장', '무제한', '무제한'],
   ['차트 일·주·월봉 전환 · 지수와 겹쳐 보기', true, true, true, true],
@@ -68,7 +66,44 @@ html[data-plan=free] .plan[data-key=free] .btn-primary,html[data-plan=plus] .pla
 @media (max-width:1100px){.pr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:820px){.pr-tabs{display:flex;margin-bottom:12px}.pr-tabs button{flex:1}.pr-grid>.plan{display:none}.pr-grid[data-show=free]>[data-key=free],.pr-grid[data-show=plus]>[data-key=plus],.pr-grid[data-show=pro]>[data-key=pro],.pr-grid[data-show=max]>[data-key=max]{display:flex}.packs{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px}.pack{padding:12px 10px}.pack b{font-size:17.5px}.pack .price{font-size:17px!important}.pack .btn-primary{padding:9px 6px;font-size:15.5px}}@media (max-width:820px){.pr-grid{grid-template-columns:minmax(0,1fr)}.cmp{font-size:15px}.cmp td,.cmp th{padding:6px 4px}}
 </style>`;
 
+/**
+ * G-311 (한서님 10/29 평가 5번, BETA_PLAN 4.2): while BETA_OPEN, one plain page instead of four priced plans, so the
+ * app does not look like it sells calls before 신고. Prices come back with paid plans (2027-04), shaped by the beta survey.
+ */
+function renderBetaPricing(): string {
+  const items = [
+    ['전 종목 검색과 차트', '찾기 결과도 전부 보여요'],
+    ['매일 AI 위원회 판단', '20거래일 뒤 맞았는지 모두에게 공개해요'],
+    ['AI 위원회 리포트 전체', '위원별 근거, 시나리오, 레드팀 반론까지'],
+    ['AI 질문', `테스터는 매달 크레딧 ${TESTERS.beta.monthlyCredits}개(알파 테스터 ${TESTERS.alpha.monthlyCredits}개)`],
+    ['알림', '아침 브리핑, 저녁 리포트, 가격 알림'],
+  ];
+  const body = `<style>.bp-list{list-style:none;margin:0;padding:0}.bp-list li{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line)}.bp-list li:first-child{border-top:0}.bp-list .ck{width:20px;height:20px;flex:none;color:var(--accent);margin-top:2px}.bp-list b{display:block;font-size:17px;font-weight:600}.bp-list span span{display:block;font-size:15.5px;color:var(--fg2);margin-top:2px}.faq details{border-top:1px solid var(--line);padding:12px 0}.faq details:first-child{border-top:0}.faq summary{font-weight:600;cursor:pointer}.faq p{margin:6px 0 0;font-size:16px;color:var(--fg2)}.log{font-size:15.5px;width:100%}.bp-lead{margin:12px 0 0;font-size:17px;line-height:1.55;color:var(--fg2)}.log td{padding:7px 6px}</style>
+<section class="hero" id="top"><div class="hero-main"><h1>베타 동안 모두 무료예요</h1>
+<p class="bp-lead">테스터는 그노몬의 모든 기능을 돈을 내지 않고 써요. 결제는 받지 않고, 카드 정보도 묻지 않아요.</p></div></section>
+<section class="block"><div class="block-head"><h2>베타 동안 쓸 수 있는 것</h2></div><div class="card"><ul class="bp-list">${items.map(([t, d]) => `<li>${CHECK}<span><b>${t}</b><span>${d}</span></span></li>`).join('')}</ul></div></section>
+<section class="block" id="log"><div class="block-head"><h2>내 크레딧</h2></div><div class="card"><div id="log-body"><p class="empty">로그인하면 내 크레딧 기록이 보여요.</p></div></div></section>
+<section class="block faq"><div class="block-head"><h2>자주 묻는 것</h2></div><div class="card">
+<details><summary>베타가 끝나면 돈을 내야 하나요?</summary><p>유료 요금제는 사업자 등록과 신고를 마친 뒤(2027년 봄)에 열어요. 그 전에 미리 알리고, 베타 설문을 보고 무엇을 무료로 남길지 정해요.</p></details>
+<details><summary>크레딧이 모자라면요?</summary><p>앱 안 '크레딧 요청'으로 말해 주세요. 베타 동안은 손으로 더 넣어 드려요.</p></details>
+<details><summary>투자 자문인가요?</summary><p>아니요. 공개 데이터로 계산한 결과와 AI 해설이고, 사거나 팔라고 권하지 않아요. 판단은 모든 사람에게 같고, 사람마다 따로 만들지 않아요.</p></details></div></section>
+<footer id="sources" style="padding:24px 0 0"><p>투자 권유가 아니에요.</p></footer>`;
+  return shell('', '요금제 | GNOMON', body, { active: 'pricing', scripts: BETA_PRICING_SCRIPT });
+}
+
+const BETA_PRICING_SCRIPT = `<script>
+(function () {
+  var G = window.GNM, box = document.getElementById('log-body'); if (!G || !G.call || !G.me || !box) return;
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  G.call('GET', '/me/ledger').then(function (r) {
+    if (r.error || !r.rows) { box.innerHTML = '<p class="empty">' + esc(r.message || '기록을 불러오지 못했어요.') + '</p>'; return; }
+    box.innerHTML = r.rows.length ? '<table class="log"><tbody>' + r.rows.slice(0, 30).map(function (x) { return '<tr><td class="muted">' + esc(String(x.created_at).slice(0, 16).replace('T', ' ')) + '</td><td>' + esc(x.note || x.kind) + '</td><td style="text-align:right;font-weight:600">' + (x.delta > 0 ? '+' : '') + x.delta + '</td></tr>'; }).join('') + '</tbody></table><p class="muted small"><a href="account.html">내 계정에서 전체 보기</a></p>' : '<p class="empty">아직 내역이 없어요.</p>';
+  });
+})();
+</script>`;
+
 export function renderPricing(): string {
+  if (BETA_OPEN) return renderBetaPricing();
   const plan = (p: (typeof PLANS)[number], i: number) => `<div class="card plan${p.key === 'pro' ? ' featured' : ''}${p.key === 'max' ? ' top' : ''}" data-key="${p.key}">${p.key === 'pro' ? '<span class="ribbon">추천</span>' : ''}
 <h3>${p.name}</h3><div class="muted small">${p.tagline}</div><div class="price">${p.price ? `${won(p.price)}<small> / 월</small>` : '0원'}</div>
 ${i ? `<div class="inherits">${PLANS[i - 1]!.name}의 모든 것에 더해</div>` : ''}<ul>${p.adds.map((f) => `<li>${CHECK}<span>${f}</span></li>`).join('')}</ul>${p.soon?.length ? `<details class="soon-more"><summary>출시 예정 ${p.soon.length}개</summary><ul>${p.soon.map((f) => `<li class="soon">${CHECK}<span>${f}</span></li>`).join('')}</ul></details>` : ''}
@@ -95,7 +130,7 @@ ${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>$
 <details><summary>지금 결제하면 실제로 돈이 나가나요?</summary><p>아니요. 아직 결제를 받지 않아요. 이 화면은 출시 전 요금제 구조를 보여 주는 초안이고, 실제 결제는 사업자 등록과 결제 대행 계약을 마친 뒤에 열어요.</p></details>
 <details><summary>잠긴 리포트는 어떻게 열리나요?</summary><p>플러스부터 상세 내용이 보여요. AI 위원회 심층 리포트(매일 리포트와 다른 사람이 만든 리포트)는 한 번 열 때 ${CREDIT_COST.unlock}크레딧이고, 한 번 열면 계속 봐요. 플러스는 매달 5개, 알파는 10개까지 무료로 열고, 만든 지 7일이 지난 리포트는 누구나 무료예요. 프로·맥스와 리포트를 만든 사람은 크레딧 없이 바로 봐요. 다른 사람이 내가 만든 리포트를 크레딧으로 열면 나에게 ${UNLOCK.makerShare}크레딧이 돌아와요(리포트 하나에 ${UNLOCK.makerCap}크레딧까지).</p></details>
 <details><summary>크레딧은 언제 사라지나요? (초안)</summary><p>프로·맥스에 포함된 크레딧은 매달 새로 채워지고, 남은 포함 크레딧은 이월되지 않아요. 따로 충전한 크레딧은 1년 동안 써요.</p></details>
-<details><summary>요금제마다 무엇이 달라요?</summary><p>AI 리포트는 모두 AI 위원회 심층 리포트 한 종류예요(한 번 만들 때 ${CREDIT_COST.report}크레딧). 플러스는 계산 상세를 보고 크레딧으로 심층 리포트를 요청해요. 프로는 AI 위원회 리포트 전체·전략·모의투자를 바로 봐요. 맥스는 관심 종목 10개를 매주 AI 위원회가 알아서 분석하고, 전문가용 도구(전략 랩·포트폴리오 리스크·시점 재현)를 써요.</p></details>
+<details><summary>요금제마다 무엇이 달라요?</summary><p>AI 리포트는 모두 AI 위원회 심층 리포트 한 종류예요(한 번 만들 때 ${CREDIT_COST.report}크레딧). 플러스는 계산 상세를 보고 크레딧으로 심층 리포트를 요청해요. 프로는 AI 위원회 리포트 전체·전략·모의투자를 바로 봐요. 맥스는 전문가 초청이 매달 30회 포함되고, 전문가용 도구(전략 랩·포트폴리오 리스크·시점 재현)를 써요.</p></details>
 <details><summary>투자 자문인가요?</summary><p>아니요. 공개 데이터로 계산한 결과와 AI 해설이고, 매수·매도를 권하지 않아요. 유료 서비스를 열기 전에 관련 법(유사투자자문업 신고 등)을 확인할 예정이에요.</p></details></div></section>
 <footer id="sources" style="padding:24px 0 0"><p>가격은 부가세 포함 기준의 초안이에요. 투자 권유가 아니에요.</p></footer>`;
   return shell('', '요금제 | GNOMON', body, { active: 'pricing', scripts: PRICING_SCRIPT });

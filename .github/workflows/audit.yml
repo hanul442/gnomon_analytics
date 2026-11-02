@@ -9,6 +9,7 @@ on:
     types: [completed]
 permissions:
   contents: read
+  issues: write
 # One at a time: each run ends by deleting the audit sessions, which would log a parallel run out.
 concurrency:
   group: live-audit
@@ -42,6 +43,14 @@ jobs:
       - run: node scripts/live-audit.mjs
         env:
           AUDIT_SESSIONS: ${{ steps.sessions.outputs.json }}
+          AUDIT_OUT: audit-findings.json
+      # G-312: one `live-audit` issue that follows what is broken today (opened, updated, or closed when clean).
+      - name: Keep the live-audit issue up to date
+        if: always() && hashFiles('audit-findings.json') != ''
+        run: node scripts/audit-issue.mjs
+        env:
+          AUDIT_OUT: audit-findings.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: End audit sessions
         if: always() && env.CLOUDFLARE_API_TOKEN != ''
         run: npx wrangler d1 execute gnm --remote --command "DELETE FROM sessions WHERE user_id LIKE 'audit-%'" >/dev/null || true
