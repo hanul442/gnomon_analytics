@@ -122,7 +122,7 @@ test('a past day\'s failed committee can be asked again from that day\'s stored 
  }finally{await rm(root,{recursive:true,force:true});}
 });
 
-test('G-311: scheduled runs share four market committee calls a day, and a coin-only day writes no report', async()=>{
+test('G-314: scheduled runs share four market committee calls a day, and a coin-only day writes no report', async()=>{
  const root=await tempDir('gnomon-market-');
  try {
   await mkdir(join(root,'data','prices'),{recursive:true});

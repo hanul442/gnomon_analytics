@@ -1151,7 +1151,7 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
       var d = all[0], hit = (all[1].rows || []).filter(function (x) { return x[0] === code; })[0];
       var part = hit ? String(hit[2]).split(' · ') : [], ex = part[1] || 'US';
       d.name = hit ? hit[1] : code.replace(/${US_EXCHANGE_LETTER}/, ''); d.ticker = part[0] || d.ticker; d.english = part.slice(2).join(' · '); d.market = ex.replace(/ ETF$/, ''); d.kind = / ETF$/.test(ex) ? 'etf' : 'stock'; return d; }); };
-  // G-311: a bare ticker (us.html?s=AAPL) is sent to the listed code (AAPL.O); it waited on "불러오는 중" forever.
+  // G-314: a bare ticker (us.html?s=AAPL) is sent to the listed code (AAPL.O); it waited on "불러오는 중" forever.
   if (US && !/\\.[A-Z]$/.test(code)) fetch('usnames.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; }).then(function (x) {
     var hit = (x.rows || []).filter(function (row) { return String(row[2]).split(' · ')[0] === code && row[0] !== code; })[0];
     if (hit) { var q = new URLSearchParams(location.search); q.set('s', hit[0]); location.replace(location.pathname + '?' + q.toString() + location.hash); }

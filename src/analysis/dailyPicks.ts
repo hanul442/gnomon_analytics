@@ -12,7 +12,7 @@ export interface DailyPick { date: string; symbol: string; name: string; kind: P
 
 export const DAILY_STOCKS = 2;
 /**
- * G-311: the core rotation. The biggest companies by market cap (preferred shares aside) take turns, two a
+ * G-314: the core rotation. The biggest companies by market cap (preferred shares aside) take turns, two a
  * weekday, the one with the oldest committee report first, so every one of them gets a new report about every
  * two weeks. Before this, the draw only reached screen tops, and 삼성전자·SK하이닉스 sat on a 10/05 report for
  * 18 sessions. With the rotation on, the random draw gives one stock instead of two.
@@ -60,7 +60,7 @@ export function chooseDailyPicks(input: {
   /** usstocks.json rows: [code, 한글 이름, "TICKER · NASDAQ · English", …, value(백만 달러) at 12]. */
   us?: readonly (readonly unknown[])[];
   exclude: ReadonlySet<string>;
-  /** G-311: last committee report date per symbol (YYYY-MM-DD). Given, the core rotation is on. */
+  /** G-314: last committee report date per symbol (YYYY-MM-DD). Given, the core rotation is on. */
   lastReported?: ReadonlyMap<string, string>;
 }): DailyPick[] {
   const rand = seeded(`gnm-daily:${input.date}`);
@@ -115,7 +115,7 @@ export function chooseDailyPicks(input: {
 }
 
 /**
- * G-311: today's core stocks: the CORE_SIZE biggest by market cap (preferred shares aside), those whose last
+ * G-314: today's core stocks: the CORE_SIZE biggest by market cap (preferred shares aside), those whose last
  * committee report is at least CORE_MIN_DAYS old (or missing), oldest report first, then bigger first. Pure.
  */
 export function coreRotation(stocks: readonly (readonly unknown[])[], lastReported: ReadonlyMap<string, string>, date: string): (readonly unknown[])[] {

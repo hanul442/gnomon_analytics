@@ -431,7 +431,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
       date: today.date, weekday: session ? new Date(`${today.date}T00:00:00Z`).getUTCDay() : 0,
       stocks: session && universe.rows ? screenerRows(universe.rows, calcs, new Set(), risk.flags) : [], etfs: session ? etfList : [], coins: coinList, us: session ? usRows : [], exclude, lastReported,
     }));
-    // G-311: a core-rotation pick can be a stock already on a dashboard job (tickers.json: 삼성전자·SK하이닉스);
+    // G-314: a core-rotation pick can be a stock already on a dashboard job (tickers.json: 삼성전자·SK하이닉스);
     // that job runs again as a committee report, one by one (the two are each other's peer).
     const again = jobs.filter((j) => !j.reportDay && j.ticker.ai && picks.some((p) => p.symbol === j.ticker.symbol));
     for (const j of again) {

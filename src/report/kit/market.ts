@@ -209,7 +209,7 @@ export function kmSectorMap(themes: readonly ThemeLike[], words: Record<string, 
     var stocks = Object.keys(by).map(function (x) { return by[x]!; }).filter(function (x) { return !used[x.sym] && x.ch != null; })
       .sort(function (a, b) { return (b.cap || 0) - (a.cap || 0) || (a.sym < b.sym ? -1 : 1); }).slice(0, 5);
     stocks.forEach(function (x) { used[x.sym] = 1; });
-    // G-311: a theme sits in one 업종 only (인터넷은행 was under 금융 and 인터넷·게임 both).
+    // G-314: a theme sits in one 업종 only (인터넷은행 was under 금융 and 인터넷·게임 both).
     var picked = hit.filter(function (t) { return !usedTheme[t.no]; }).sort(function (a, b) { return (b.value || 0) - (a.value || 0); }).slice(0, 4);
     picked.forEach(function (t) { usedTheme[t.no] = 1; });
     out.push({ s: s, themes: picked.map(function (t) { return { no: t.no, name: t.name, avg: t.avg, n: t.members.length, value: t.value || 0 }; }), stocks: stocks });
@@ -228,7 +228,7 @@ export function kmHeatmap(rows: readonly SectorRow[]): string {
     for (var j = 0; j < C; j++) {
       var t = r.themes[j], x = L + j * (cw + G);
       if (!t) { cells += '<rect x="' + x + '" y="' + y + '" width="' + cw + '" height="' + CH + '" rx="7" style="fill:var(--line);fill-opacity:.6"/>'; continue; }
-      // G-311: '2차전지(장비)'·'2차전지(소재/부품)' both read '2차전지' once the brackets went; a repeated name shows its bracket part.
+      // G-314: '2차전지(장비)'·'2차전지(소재/부품)' both read '2차전지' once the brackets went; a repeated name shows its bracket part.
       var strip = function (n: string) { return n.replace(/\([^)]*\)/g, '').trim(); }, nm = strip(t.name), inner = (t.name.match(/\(([^)]*)\)/) || [])[1];
       var lab = inner && r.themes.some(function (o, jj) { return jj !== j && strip(o.name) === nm; }) ? inner : nm;
       var short = lab.length > 6 ? lab.slice(0, 5) + '…' : lab, strong = t.avg != null && Math.abs(t.avg) >= 1.6;

@@ -74,7 +74,7 @@ export function shapeIssue(error:unknown):string{
  if(!Array.isArray(issues))return error instanceof Error?error.message.slice(0,120):'형식 오류';
  return issues.slice(0,3).map(i=>`${i.path.map(String).join('.')||'답'} ${i.code==='too_small'?`개수 부족(필요 ${String(i.minimum)})`:i.code==='too_big'?`개수 초과(최대 ${String(i.maximum)})`:i.code}`).join(', ');
 }
-/** G-311: committee calls a scheduled day may spend on the market daily, across runs. */
+/** G-314: committee calls a scheduled day may spend on the market daily, across runs. */
 export const MARKET_DAY_TRIES = 4;
 export async function writeMarketReports(root:string, now:Date, universe:readonly UniverseRow[], apiKey?:string, injectedClient?:Anthropic, sharedBudget?:AiBudget, regenerate=process.env.MARKET_REGEN==='1', newsFetch?:typeof fetch, pastDate=process.env.MARKET_DATE||''):Promise<{date:string;status:string;error?:string}|undefined>{
  let outcome:{date:string;status:string;error?:string}|undefined;
@@ -94,10 +94,10 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
   const news=fromStore?old!.news??[]:await collectMarketNews(date,newsFetch?{fetch:newsFetch}:{});
   const report:MarketReport=fromStore?{...old!,schema:'curia.market-report.v4',ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}}:{schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),...await macroCards(root,date),...world,...(news.length?{news}:{}),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
   // The committee's structure is checked strictly, so a regeneration gets up to three tries; each failure is logged (no secrets in it).
-  // G-311: a day when only coins traded (weekend, holiday) repeats the last session's stock story, so it gets no
+  // G-314: a day when only coins traded (weekend, holiday) repeats the last session's stock story, so it gets no
   // committee; 11/1 (Sun) cost nine calls. A manual MARKET_DATE run is unchanged.
   const hasToday=report.groups.some(g=>g.name!=='코인'&&g.assets.some(a=>a.date===date));
-  // G-311: scheduled runs share MARKET_DAY_TRIES calls a day; a day that kept failing tried again on every run.
+  // G-314: scheduled runs share MARKET_DAY_TRIES calls a day; a day that kept failing tried again on every run.
   const spent=regenerate||old?.date!==date?0:old?.tries??0;let tries=spent;
   // G-278: when an answer had the wrong shape (e.g. 10 of 11 experts), the next try shows the model its own answer and what to fix.
   let lastText='',lastIssue='';

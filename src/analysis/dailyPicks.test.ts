@@ -70,7 +70,7 @@ test('daily picks (G-197): one of the two stocks is a larger company when the po
   assert.ok(days > 0 && withBig === days, `the 1조+ stock is one of the two whenever it is in the pool (${withBig}/${days})`);
 });
 
-test('daily picks (G-311): with report dates given, two of the biggest companies with the oldest reports come first, then one random stock', () => {
+test('daily picks (G-314): with report dates given, two of the biggest companies with the oldest reports come first, then one random stock', () => {
   // Caps: 종목100000 is the biggest, then down; one preferred share bigger than all.
   const capped = stocks.map((r, i) => stock(String(r[0]), Number(r[7]), 0, 900_000 - i * 10_000));
   const pref = ['100005', '종목100000우', 'P', 2_000_000, 10_000, 1, 'BULLISH', 50, 1, 2, 3, 0, 'I', 0, 1, 1, 0, 0, null, 50, -10, 0, []];
