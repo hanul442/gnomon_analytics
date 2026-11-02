@@ -199,7 +199,7 @@ type ThemeLike = { no: string; name: string; avg: number | null; value: number; 
  * and its representative stocks (the five largest by 시가총액 among those themes' members, a stock shown once).
  */
 export function kmSectorMap(themes: readonly ThemeLike[], words: Record<string, readonly string[]>, skip: Record<string, readonly string[] | undefined>): SectorRow[] {
-  var used: Record<string, number> = {}, out: SectorRow[] = [];
+  var used: Record<string, number> = {}, usedTheme: Record<string, number> = {}, out: SectorRow[] = [];
   Object.keys(words).forEach(function (s) {
     var w = (words[s] || []).map(function (x) { return x.toLowerCase(); }), k = (skip[s] || []).map(function (x) { return x.toLowerCase(); });
     var hit = themes.filter(function (t) { var n = t.name.toLowerCase(); return t.members.length >= 3 && w.some(function (x) { return n.indexOf(x) >= 0; }) && !k.some(function (x) { return n.indexOf(x) >= 0; }); });
@@ -209,7 +209,10 @@ export function kmSectorMap(themes: readonly ThemeLike[], words: Record<string, 
     var stocks = Object.keys(by).map(function (x) { return by[x]!; }).filter(function (x) { return !used[x.sym] && x.ch != null; })
       .sort(function (a, b) { return (b.cap || 0) - (a.cap || 0) || (a.sym < b.sym ? -1 : 1); }).slice(0, 5);
     stocks.forEach(function (x) { used[x.sym] = 1; });
-    out.push({ s: s, themes: hit.slice().sort(function (a, b) { return (b.value || 0) - (a.value || 0); }).slice(0, 4).map(function (t) { return { no: t.no, name: t.name, avg: t.avg, n: t.members.length, value: t.value || 0 }; }), stocks: stocks });
+    // G-311: a theme sits in one 업종 only (인터넷은행 was under 금융 and 인터넷·게임 both).
+    var picked = hit.filter(function (t) { return !usedTheme[t.no]; }).sort(function (a, b) { return (b.value || 0) - (a.value || 0); }).slice(0, 4);
+    picked.forEach(function (t) { usedTheme[t.no] = 1; });
+    out.push({ s: s, themes: picked.map(function (t) { return { no: t.no, name: t.name, avg: t.avg, n: t.members.length, value: t.value || 0 }; }), stocks: stocks });
   });
   return out;
 }
@@ -225,8 +228,11 @@ export function kmHeatmap(rows: readonly SectorRow[]): string {
     for (var j = 0; j < C; j++) {
       var t = r.themes[j], x = L + j * (cw + G);
       if (!t) { cells += '<rect x="' + x + '" y="' + y + '" width="' + cw + '" height="' + CH + '" rx="7" style="fill:var(--line);fill-opacity:.6"/>'; continue; }
-      var nm = t.name.replace(/\([^)]*\)/g, '').trim(), short = nm.length > 6 ? nm.slice(0, 5) + '…' : nm, strong = t.avg != null && Math.abs(t.avg) >= 1.6;
-      cells += '<a href="#' + e(t.no) + '" class="km-cell" style="--i:' + (k++) + '" data-km-tip="' + e(nm) + '" data-km-v="' + e(pct(t.avg)) + '" data-km-t="' + (t.avg == null || t.avg === 0 ? '' : t.avg > 0 ? 'up' : 'down') + '" data-km-s="' + e(r.s + ' · ' + t.n + '종목') + '"><rect x="' + x + '" y="' + y + '" width="' + cw + '" height="' + CH + '" rx="7" style="' + heat(t.avg) + '"/><text x="' + (x + cw / 2) + '" y="' + (y + 15) + '" text-anchor="middle" class="km-hn' + (strong ? ' on' : '') + '">' + e(short) + '</text><text x="' + (x + cw / 2) + '" y="' + (y + 28) + '" text-anchor="middle" class="km-hv' + (strong ? ' on' : '') + '">' + e(pct(t.avg)) + '</text></a>';
+      // G-311: '2차전지(장비)'·'2차전지(소재/부품)' both read '2차전지' once the brackets went; a repeated name shows its bracket part.
+      var strip = function (n: string) { return n.replace(/\([^)]*\)/g, '').trim(); }, nm = strip(t.name), inner = (t.name.match(/\(([^)]*)\)/) || [])[1];
+      var lab = inner && r.themes.some(function (o, jj) { return jj !== j && strip(o.name) === nm; }) ? inner : nm;
+      var short = lab.length > 6 ? lab.slice(0, 5) + '…' : lab, strong = t.avg != null && Math.abs(t.avg) >= 1.6;
+      cells += '<a href="#' + e(t.no) + '" class="km-cell" style="--i:' + (k++) + '" data-km-tip="' + e(t.name) + '" data-km-v="' + e(pct(t.avg)) + '" data-km-t="' + (t.avg == null || t.avg === 0 ? '' : t.avg > 0 ? 'up' : 'down') + '" data-km-s="' + e(r.s + ' · ' + t.n + '종목') + '"><rect x="' + x + '" y="' + y + '" width="' + cw + '" height="' + CH + '" rx="7" style="' + heat(t.avg) + '"/><text x="' + (x + cw / 2) + '" y="' + (y + 15) + '" text-anchor="middle" class="km-hn' + (strong ? ' on' : '') + '">' + e(short) + '</text><text x="' + (x + cw / 2) + '" y="' + (y + 28) + '" text-anchor="middle" class="km-hv' + (strong ? ' on' : '') + '">' + e(pct(t.avg)) + '</text></a>';
     }
     return '<text x="0" y="' + (y + CH / 2 + 4) + '" class="km-hs">' + e(r.s) + '</text>' + cells;
   }).join('');

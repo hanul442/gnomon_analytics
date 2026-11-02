@@ -61,8 +61,8 @@ export const KIT_SHEET_JS = `
       + '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".22"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>'
       + '<path class="gsh-fill" d="' + line + ' L' + W + ' ' + H + ' L0 ' + H + ' Z" fill="url(#' + id + ')"/>'
       + '<path class="gsh-line" pathLength="1" d="' + line + '" stroke="' + col + '"/>'
-      + '<path class="gsh-ar up" d="' + arrow(hp[0], 16, hp[1] - 6) + '"/><text class="gsh-hl up" x="' + hp[0] + '" y="11" text-anchor="' + anc(hp[0]) + '">최고 ' + esc(fmt(hi, o.d)) + ' (' + rel(hi) + ', ' + esc(day(D[hiI][0])) + ')</text>'
-      + '<path class="gsh-ar down" d="' + arrow(lp[0], H - 16, lp[1] + 6) + '"/><text class="gsh-hl down" x="' + lp[0] + '" y="' + (H - 3) + '" text-anchor="' + anc(lp[0]) + '">최저 ' + esc(fmt(lo, o.d)) + ' (' + rel(lo) + ', ' + esc(day(D[loI][0])) + ')</text>'
+      + '<path class="gsh-ar up" d="' + arrow(hp[0], 16, hp[1] - 6) + '"/><text class="gsh-hl up" x="' + hp[0] + '" y="11" text-anchor="' + anc(hp[0]) + '">최고 ' + esc(fmt(hi, o.d)) + ' (' + esc(day(D[hiI][0])) + ' · 지금 ' + rel(hi) + ')</text>'
+      + '<path class="gsh-ar down" d="' + arrow(lp[0], H - 16, lp[1] + 6) + '"/><text class="gsh-hl down" x="' + lp[0] + '" y="' + (H - 3) + '" text-anchor="' + anc(lp[0]) + '">최저 ' + esc(fmt(lo, o.d)) + ' (' + esc(day(D[loI][0])) + ' · 지금 ' + rel(lo) + ')</text>'
       + '<line class="gsh-cross" x1="0" x2="0" y1="' + (T - 8) + '" y2="' + (H - B + 8) + '"/><circle class="gsh-dot" r="5" stroke="' + col + '"/></svg>';
     var c = dlg.querySelector('.gsh-c'); c.innerHTML = svg;
     dlg.querySelector('.gsh-t').textContent = o.title;

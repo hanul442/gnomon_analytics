@@ -74,6 +74,8 @@ export function shapeIssue(error:unknown):string{
  if(!Array.isArray(issues))return error instanceof Error?error.message.slice(0,120):'형식 오류';
  return issues.slice(0,3).map(i=>`${i.path.map(String).join('.')||'답'} ${i.code==='too_small'?`개수 부족(필요 ${String(i.minimum)})`:i.code==='too_big'?`개수 초과(최대 ${String(i.maximum)})`:i.code}`).join(', ');
 }
+/** G-311: committee calls a scheduled day may spend on the market daily, across runs. */
+export const MARKET_DAY_TRIES = 4;
 export async function writeMarketReports(root:string, now:Date, universe:readonly UniverseRow[], apiKey?:string, injectedClient?:Anthropic, sharedBudget?:AiBudget, regenerate=process.env.MARKET_REGEN==='1', newsFetch?:typeof fetch, pastDate=process.env.MARKET_DATE||''):Promise<{date:string;status:string;error?:string}|undefined>{
  let outcome:{date:string;status:string;error?:string}|undefined;
  // G-278: MARKET_DATE (manual run) asks a past day's committee again from that day's stored numbers and headlines.
@@ -92,11 +94,15 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
   const news=fromStore?old!.news??[]:await collectMarketNews(date,newsFetch?{fetch:newsFetch}:{});
   const report:MarketReport=fromStore?{...old!,schema:'curia.market-report.v4',ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}}:{schema:'curia.market-report.v4',date,from:date,generatedAt:now.toISOString(),period,groups:await collectMarketGroups(root,date,period,universe),...await macroCards(root,date),...world,...(news.length?{news}:{}),ai:{status:'SKIPPED',error:'AI 키 또는 예산 확인 필요'}};
   // The committee's structure is checked strictly, so a regeneration gets up to three tries; each failure is logged (no secrets in it).
-  const hasToday=report.groups.some(g=>g.assets.some(a=>a.date===date));
+  // G-311: a day when only coins traded (weekend, holiday) repeats the last session's stock story, so it gets no
+  // committee; 11/1 (Sun) cost nine calls. A manual MARKET_DATE run is unchanged.
+  const hasToday=report.groups.some(g=>g.name!=='코인'&&g.assets.some(a=>a.date===date));
+  // G-311: scheduled runs share MARKET_DAY_TRIES calls a day; a day that kept failing tried again on every run.
+  const spent=regenerate||old?.date!==date?0:old?.tries??0;let tries=spent;
   // G-278: when an answer had the wrong shape (e.g. 10 of 11 experts), the next try shows the model its own answer and what to fix.
   let lastText='',lastIssue='';
-  for(let attempt=1;attempt<=3&&report.ai.status!=='OK'&&(apiKey||injectedClient)&&hasToday&&budget.allows('market');attempt++){
-   budget.reserve('market'); let accounted=false;
+  for(let attempt=1;attempt<=3&&tries<MARKET_DAY_TRIES&&report.ai.status!=='OK'&&(apiKey||injectedClient)&&hasToday&&budget.allows('market');attempt++){
+   budget.reserve('market'); let accounted=false; tries++;
    try{
     const client=injectedClient??new Anthropic({apiKey:apiKey!,timeout:180000,maxRetries:1});
     const input={...report,committee:[...CORE_ANALYSTS,{id:'MARKET',name:'시장 데스크',focus:'시장 상대강도와 분포'},{id:'TECHNICAL',name:'기술 데스크',focus:'제공된 기술 신호 분포'},{id:'FLOW',name:'수급 데스크',focus:'거래대금·거래량, 투자자 수급 없으면 보류'},{id:'FUNDAMENTAL',name:'펀더멘털 데스크',focus:'실적 자료 없으면 보류'},{id:'EVENT',name:'공시·뉴스 데스크',focus:'공시·뉴스 자료 없으면 보류'}],groups:report.groups.map(g=>({...g,breadthScope:`breadth(up/down/flat)는 ${g.name} 전체 ${g.universe}종목의 오늘 등락 수(표본 아님)`,sampleScope:`assets·leaders·laggards는 ${g.assets.length}개 표본`,assets:g.assets.slice(0,20),leaders:[...g.assets].filter(a=>a.returnPct!==null).sort((a,b)=>b.returnPct!-a.returnPct!).slice(0,5),laggards:[...g.assets].filter(a=>a.returnPct!==null).sort((a,b)=>a.returnPct!-b.returnPct!).slice(0,5)}))};
@@ -112,7 +118,10 @@ export async function writeMarketReports(root:string, now:Date, universe:readonl
    }catch(error){report.ai={status:'FAILED',error:error instanceof Error?error.message.slice(0,300):'생성 오류'};}finally{if(!accounted)budget.spent-=0.03;}
    if(report.ai.status!=='OK')console.log(`market ${period} AI attempt ${attempt} failed: ${report.ai.error}`);
   }
-  if(!hasToday)report.ai.error='당일 데이터가 없어 위원회 생성을 보류합니다';
+  if(!hasToday&&!old){console.log(`market ${period}: no stock session on ${date}, no report`);outcome={date,status:'NO_DATA'};continue;}
+  if(!hasToday)report.ai.error='당일 주식 시장 데이터가 없어 위원회 생성을 보류합니다';
+  else if(report.ai.status!=='OK'&&tries>=MARKET_DAY_TRIES&&tries===spent&&old)report.ai={...old.ai,error:`오늘 위원회 시도 ${MARKET_DAY_TRIES}번을 다 써서 보류 · ${(old.ai.error??'').replace(/^오늘 위원회 시도 \d+번을 다 써서 보류 · /,'')}`.slice(0,300)};
+  if(!fromStore&&!regenerate)report.tries=tries;
   if(done&&report.ai.status!=='OK')console.log(`market ${period}: regeneration failed, keeping the earlier committee`);
   const saved=await savePrivateMarketReport(file,done&&report.ai.status!=='OK'?old!:report);
   // G-278: the run status records a failed committee so the run alert (and the morning check) sees it.

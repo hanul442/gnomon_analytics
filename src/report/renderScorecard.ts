@@ -174,7 +174,10 @@ ${fcHit === null ? '' : `<div class="sc-meter" role="img" aria-label="적중률 
   const group = (k: string, html: string) => `<div class="sc-group" id="scg-${k}" role="group" aria-label="${GROUP_TITLE[k]}">${html}</div>`;
   // G-301 (한서님 10/26 배치 점검): the groups everyone can read come first; 예측 (both cards locked for free readers) goes last.
   void scoreRing;
-  const analystsHtml = (sun ? `<section class="block sc-sec"><div class="block-head"><h2>판단 결과 한눈에</h2><span class="muted">전 위원 합산</span></div><div class="card">${sun}</div></section>` : '') + gate(analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '위원별 판단과 결과', feature: 'scoreSummary' });
+  // G-311: the ring's percentages are shares of every call, pending included; '맞음 2%' read as a 2% hit rate.
+  const tot = board.reduce((a, [, x]) => ({ hits: a.hits + x.hits, scored: a.scored + x.scored, pending: a.pending + x.pending }), { hits: 0, scored: 0, pending: 0 });
+  const sunNote = `<p class="muted small">비율은 아직 채점 전인 판단까지 합친 몫이에요. 채점이 끝난 ${tot.scored}건만 보면 ${tot.hits}건 맞았어요${tot.scored ? ` (적중 ${Math.round((tot.hits / tot.scored) * 100)}%)` : ''}. 채점 전 ${tot.pending}건.</p>`;
+  const analystsHtml = (sun ? `<section class="block sc-sec"><div class="block-head"><h2>판단 결과 한눈에</h2><span class="muted">전 위원 합산</span></div><div class="card">${sun}${sunNote}</div></section>` : '') + gate(analystCard.replace('<section class="block">', '<section class="block sc-sec" id="analysts">'), { base: '', what: '위원별 판단과 결과', feature: 'scoreSummary' });
   // G-301 (한서님 10/26 새 구조): 채점 reads top to bottom — the headline numbers once, the open records, then what plus
   // readers get. For free readers those locked cards fold into one card at the end instead of five scattered ones.
   const locked = ['가상 계좌 평균 결과', '종목별 장부 · 매매 내역 · 수익 곡선', '기간별 예측 적중', '빗나간 예측 하나하나'];
