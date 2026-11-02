@@ -698,7 +698,7 @@ function renderReportIn(report: DailyReport, links: { index: string; base?: stri
   // member's call behind one row), the price map, the debate card, 놓치기 쉬운 정보, then 더 보기. Everything else the old
   // fold repeated (a second vote, the status strip again, 쉽게 말하면) lives only in 위원회 판단, its own page.
   const seatsShown = !!committeeHero(report);
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale|rs-none/.test(status) ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${seatsShown ? committeeHero(report, { head: verdictHead(report) }) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !seatsShown })}@@DEBATE@@${edgeCard(report)}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale|rs-none/.test(status) ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${seatsShown ? committeeHero(report, { head: verdictHead(report), from: ctx.commentaryFrom ?? null }) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !seatsShown })}@@DEBATE@@${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 @@AI_FOLD@@${moreLinks(report.kind === 'coin', report.commentary?.status === 'OK')}`;

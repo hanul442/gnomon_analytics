@@ -305,8 +305,8 @@ function scoreLine(entries: readonly HomeEntry[], alone = false): string {
   for (const e of entries) for (const s of e.report?.market?.forecastScores ?? []) { scored += s.scored; inside += (s.coverage ?? 0) * s.scored; }
   if (!scored) return '';
   // G-300: the range score is the committee card's last line (one card for the committee, not two).
-  if (!alone) return `<a class="cs-hfoot" href="scorecard.html"><span>예측 범위 적중률 <b>${Math.round((inside / scored) * 100)}%</b> <small>채점 ${scored.toLocaleString('ko-KR')}건 · 정직하면 80% 근처</small></span><span aria-hidden="true">›</span></a>`;
-  return `<section class="block sl-wrap"><a class="sl" href="scorecard.html"><b class="sl-v">${Math.round((inside / scored) * 100)}%</b><span><b>위원회 예측 범위 적중률</b><small>채점 ${scored.toLocaleString('ko-KR')}건 · 정직하면 80% 근처예요</small></span><span class="sl-go" aria-hidden="true">›</span></a></section>`;
+  if (!alone) return `<a class="cs-hfoot" href="scorecard.html"><span>예측 범위 적중률 <b>${Math.round((inside / scored) * 100)}%</b> <small>실제 가격이 예측 범위 안에 든 비율 · 채점 ${scored.toLocaleString('ko-KR')}건 · 목표 80%</small></span><span aria-hidden="true">›</span></a>`;
+  return `<section class="block sl-wrap"><a class="sl" href="scorecard.html"><b class="sl-v">${Math.round((inside / scored) * 100)}%</b><span><b>위원회 예측 범위 적중률</b><small>실제 가격이 예측 범위 안에 든 비율이에요 · 채점 ${scored.toLocaleString('ko-KR')}건 · 목표 80%</small></span><span class="sl-go" aria-hidden="true">›</span></a></section>`;
 }
 
 /** The survey's part of 내 종목 (G-46, G-201): the note on top, the holding-period preset and the sector chips. */
