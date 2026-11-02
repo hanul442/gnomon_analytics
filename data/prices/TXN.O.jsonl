@@ -998,3 +998,4 @@
 {"symbol":"TXN.O","date":"2026-10-29","open":306.03,"high":313.07,"low":306.03,"close":312.94,"volume":5662036,"source":"naver:world:day","retrievedAt":"2026-11-02T19:42:06.315Z"}
 {"symbol":"TXN.O","date":"2026-10-30","open":307.633,"high":308,"low":294.7,"close":300.84,"volume":12998725,"source":"naver:world:day","retrievedAt":"2026-11-02T19:42:06.315Z"}
 {"symbol":"TXN.O","date":"2026-11-02","open":304.5,"high":311.515,"low":303.0001,"close":303.34,"volume":5088351,"source":"naver:world:day","retrievedAt":"2026-11-02T19:42:06.315Z"}
+{"symbol":"TXN.O","date":"2026-11-02","open":304.095,"high":311.515,"low":301.235,"close":302.02,"volume":11045431,"source":"naver:world:day","retrievedAt":"2026-11-02T21:41:21.762Z"}

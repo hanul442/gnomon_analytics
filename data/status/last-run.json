@@ -1,5 +1,5 @@
 {
- "at": "2026-11-02T19:42:06.315Z",
+ "at": "2026-11-02T21:41:21.762Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2661
+   "count": 2659
   },
   {
    "source": "naver:fchart:day:etf",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 31
+   "count": 35
   },
   {
    "source": "google:topic-business-ko",
@@ -330,29 +330,25 @@
    "failedSources": []
   },
   {
-   "symbol": "139260",
-   "report": "WRITTEN",
+   "symbol": "TXN.O",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "086280",
-   "report": "WRITTEN",
+   "symbol": "139260",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "012210",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "TXN.O",
-   "report": "WRITTEN",
+   "symbol": "086280",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-11-02",
-  "status": "OK"
- }
+ "failed": []
 }
