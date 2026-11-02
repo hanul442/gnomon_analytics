@@ -4,7 +4,7 @@
 //   dotted start line and a dot at the end, period chips under it; dragging the chart shows that day's price.
 // - Market: small cards in one row that scrolls sideways (name → mini chart → value → change).
 // - Lists: rows with a mini chart and a coloured price pill; tapping a pill switches every pill to the change.
-// - Headings 22px/700. (G-303 also took every white card away; G-309 brought the cards back at 한서님's ask.)
+// - Headings 22px/700. (G-303 also took every white card away; G-310 brought the cards back at 한서님's ask.)
 // Loaded last (after COMPOSITION_CSS). Page <style> blocks come later, so rules start with `:root body #main`.
 const M = ':root body #main';
 const FLAT = ':is(.card,.mi-card,.cs-home,.iss-c,.sc-hero)';
@@ -83,7 +83,7 @@ ${M} .rh-pct .wl-pill>b{display:none}${M} .rh-pct .wl-pill>span{display:inline}
 ${M} #watch .my-card,${M} #watch #watch-list{padding-left:0;padding-right:0;margin-left:0;margin-right:0}
 ${M} #feed-sum{font-size:14px;color:var(--muted)}
 
-/* ── 섹션 제목·줄 모양 (G-309: 흰 카드 상자는 되살림, 한서님 11/2 '하얀색 박스는 왜 다 없앴대') ── */
+/* ── 섹션 제목·줄 모양 (G-310: 흰 카드 상자는 되살림, 한서님 11/2 '하얀색 박스는 왜 다 없앴대') ── */
 ${M} ${FLAT} .head h2,${M} ${FLAT}>h2,${M} .panel-title,${M} .sub-h,${M} .si-card h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
 ${M} .cs-home{padding-bottom:20px}
 ${M} .ig-words{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:0}
