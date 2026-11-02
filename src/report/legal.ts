@@ -54,11 +54,11 @@ function articleHtml(a: Article, id: string): string {
 const toc = (arts: Article[], prefix: string) => arts.filter((a) => a.no !== '부칙').map((a, i) => `<a href="#${prefix}${i + 1}">${a.no} ${esc(a.title)}</a>`).join('');
 const articles = (arts: Article[], prefix: string) => arts.map((a, i) => articleHtml(a, a.no === '부칙' ? `${prefix}-end` : `${prefix}${i + 1}`)).join('\n');
 
-const CSS = `<style>.tm-key h2{margin:0 0 12px}.tm-keys{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tm-keys li{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:16px;background:var(--soft);border:1px solid var(--line)}.tm-keys b{font-size:15.5px}.tm-keys span{font-size:13.5px;line-height:1.6;color:var(--fg2)}
-.tm-toc{display:flex;flex-wrap:wrap;gap:6px}.tm-toc a{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;text-decoration:none;color:var(--fg)}
-.tm-part{margin:28px 0 4px;font-size:20px}
-.terms{scroll-margin-top:90px}.terms h2{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;font-size:17px}.tm-no{font-size:13px;font-weight:800;color:var(--accent-strong)}.terms p{margin:0 0 10px;line-height:1.75}.tm-list{margin:0;padding-left:22px}.tm-list li{margin:0 0 8px;line-height:1.75}.tm-sub{margin:6px 0 0;padding-left:20px;list-style:lower-alpha}
-.tm-table{overflow-x:auto;margin:6px 0 12px}.tm-table table{border-collapse:collapse;width:100%;min-width:560px;font-size:13.5px}.tm-table th,.tm-table td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;line-height:1.6}.tm-table th{background:var(--soft);font-weight:700}
+const CSS = `<style>.tm-key h2{margin:0 0 12px}.tm-keys{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.tm-keys li{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:16px;background:var(--soft);border:1px solid var(--line)}.tm-keys b{font-size:17.5px}.tm-keys span{font-size:16px;line-height:1.6;color:var(--fg2)}
+.tm-toc{display:flex;flex-wrap:wrap;gap:6px}.tm-toc a{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:15.5px;font-weight:700;text-decoration:none;color:var(--fg)}
+.tm-part{margin:28px 0 4px;font-size:21px}
+.terms{scroll-margin-top:90px}.terms h2{display:flex;align-items:baseline;gap:10px;margin:0 0 12px;font-size:18.5px}.tm-no{font-size:15.5px;font-weight:800;color:var(--accent-strong)}.terms p{margin:0 0 10px;line-height:1.75}.tm-list{margin:0;padding-left:22px}.tm-list li{margin:0 0 8px;line-height:1.75}.tm-sub{margin:6px 0 0;padding-left:20px;list-style:lower-alpha}
+.tm-table{overflow-x:auto;margin:6px 0 12px}.tm-table table{border-collapse:collapse;width:100%;min-width:560px;font-size:16px}.tm-table th,.tm-table td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;line-height:1.6}.tm-table th{background:var(--soft);font-weight:700}
 @media (max-width:820px){.tm-keys{grid-template-columns:1fr}}</style>`;
 
 const hero = (eyebrow: string, title: string) => `<section class="hero" id="top"><div class="hero-main"><div class="eyebrow"><span>${eyebrow}</span><span>법률 검토 전</span></div><h1>${title}</h1>

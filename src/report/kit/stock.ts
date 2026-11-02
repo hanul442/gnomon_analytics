@@ -154,11 +154,11 @@ export const KIT_STOCK_CSS = `
 .race .spark.race-pnl{display:block;width:100%;max-width:440px;height:auto;margin:2px 0 10px}
 .kit-pnl .kp-base{stroke:var(--muted);stroke-opacity:.45;stroke-dasharray:2 3}
 html.mo .kit-pnl:not(.mo-in) .kp-a{opacity:0}html.mo .kit-pnl.mo-in .kp-a{opacity:1;transition:opacity .6s .7s}
-.kit-lc{margin:0;position:relative;min-width:0}.kl-leg{list-style:none;display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 10px;padding:0;font-size:12.5px;color:var(--fg2)}.kl-leg li{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.kl-leg i{width:12px;height:3px;border-radius:2px}.kl-leg i.dash{background:repeating-linear-gradient(90deg,var(--muted) 0 4px,transparent 4px 6px)!important}.kl-leg b{font-variant-numeric:tabular-nums}
+.kit-lc{margin:0;position:relative;min-width:0}.kl-leg{list-style:none;display:flex;flex-wrap:wrap;gap:4px 14px;margin:0 0 10px;padding:0;font-size:15.5px;color:var(--fg2)}.kl-leg li{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.kl-leg i{width:12px;height:3px;border-radius:2px}.kl-leg i.dash{background:repeating-linear-gradient(90deg,var(--muted) 0 4px,transparent 4px 6px)!important}.kl-leg b{font-variant-numeric:tabular-nums}
 .kl-plot{position:relative;height:200px;touch-action:pan-y;cursor:crosshair;border-radius:8px}.kl-plot:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.kl-plot svg{position:absolute;left:0;top:0;width:calc(100% - 46px);height:100%;overflow:visible}
 .kl-g{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}.kl-z{stroke:var(--muted);stroke-opacity:.55;stroke-dasharray:3 3}
-.kl-y span{position:absolute;right:0;transform:translateY(-50%);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
-.kl-x{display:flex;margin-right:46px;justify-content:space-between;margin-top:6px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.kl-y span{position:absolute;right:0;transform:translateY(-50%);font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
+.kl-x{display:flex;margin-right:46px;justify-content:space-between;margin-top:6px;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
 .kl-dot{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;border:2px solid var(--surface-solid,#fff);pointer-events:none;box-sizing:border-box}.kl-dot[hidden]{display:none}
 html.mo .kit-lc:not(.kit-in) .kl-l{clip-path:inset(0 100% 0 0)}html.mo .kit-lc.kit-in .kl-l{clip-path:inset(0 0 0 0);transition:clip-path 1.3s var(--ease-out)}
 .sc-ring{margin:18px 0 0;max-width:460px}.pl-ring{margin:4px 0 12px;max-width:420px}
@@ -166,37 +166,37 @@ html.mo .kit-lc:not(.kit-in) .kl-l{clip-path:inset(0 100% 0 0)}html.mo .kit-lc.k
 .kr-t{fill:none;stroke:var(--soft);stroke:color-mix(in srgb,var(--muted) 16%,transparent)}.kr-arc{fill:none;stroke-linecap:round;transition:stroke-dasharray 1.1s var(--ease-out) calc(var(--i,0) * 140ms)}
 html.mo .kit-ring:not(.kit-in) .kr-arc{stroke-dasharray:0 100}
 .kr-half .kr-fig{width:132px;height:72px}.kr-half .kr-c{justify-content:flex-end;padding-bottom:0}.kr-half .kr-c b{font-size:24px}
-.kr-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}.kr-c b{font-size:22px;line-height:1.1;font-weight:800;color:var(--fg);font-variant-numeric:tabular-nums}.kr-c small{font-size:11px;color:var(--muted);margin-top:2px}
-.kr-leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;min-width:0;flex:1}.kr-leg li{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px;color:var(--fg2)}.kr-leg i{width:10px;height:10px;border-radius:50%}.kr-leg span{min-width:0;overflow-wrap:anywhere}.kr-leg b{color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
+.kr-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}.kr-c b{font-size:22px;line-height:1.1;font-weight:800;color:var(--fg);font-variant-numeric:tabular-nums}.kr-c small{font-size:14px;color:var(--muted);margin-top:2px}
+.kr-leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;min-width:0;flex:1}.kr-leg li{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:15.5px;color:var(--fg2)}.kr-leg i{width:10px;height:10px;border-radius:50%}.kr-leg span{min-width:0;overflow-wrap:anywhere}.kr-leg b{color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap}
 .kit-cal{margin:0;position:relative}.kit-cal svg{display:block;width:100%;max-width:560px;height:auto;touch-action:pan-y}
 .kc{fill:var(--line)}.kc.e{fill:none;stroke:var(--line);stroke-width:1}.kc.z{fill:var(--muted);fill-opacity:.3}
 .kc.u1{fill:${UP};fill-opacity:.28}.kc.u2{fill:${UP};fill-opacity:.5}.kc.u3{fill:${UP};fill-opacity:.75}.kc.u4{fill:${UP}}
 .kc.d1{fill:${DOWN};fill-opacity:.28}.kc.d2{fill:${DOWN};fill-opacity:.5}.kc.d3{fill:${DOWN};fill-opacity:.75}.kc.d4{fill:${DOWN}}
-.kc[data-i]{cursor:pointer}.kc.hi{stroke:var(--fg);stroke-width:1.5}.kc-m{font-size:8px;fill:var(--muted)}
-.kc-leg{display:flex;align-items:center;gap:3px;margin-top:8px;font-size:11.5px;color:var(--muted)}.kc-leg>span{margin:0 4px;white-space:nowrap}.kc-gr{position:relative;flex:0 1 180px;height:22px;margin:0 16px}.kc-gr i{position:absolute;left:0;right:0;top:0;height:8px;border-radius:4px;background:linear-gradient(90deg,${DOWN},${DOWN}80,color-mix(in srgb,var(--muted) 30%,transparent),${UP}80,${UP})}.kc-gr em{position:absolute;top:10px;white-space:nowrap;transform:translateX(-50%);font-style:normal;font-size:10.5px;font-variant-numeric:tabular-nums}.kc-sw{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--line)}
+.kc[data-i]{cursor:pointer}.kc.hi{stroke:var(--fg);stroke-width:1.5}.kc-m{font-size:12px;fill:var(--muted)}
+.kc-leg{display:flex;align-items:center;gap:3px;margin-top:8px;font-size:15px;color:var(--muted)}.kc-leg>span{margin:0 4px;white-space:nowrap}.kc-gr{position:relative;flex:0 1 180px;height:22px;margin:0 16px}.kc-gr i{position:absolute;left:0;right:0;top:0;height:8px;border-radius:4px;background:linear-gradient(90deg,${DOWN},${DOWN}80,color-mix(in srgb,var(--muted) 30%,transparent),${UP}80,${UP})}.kc-gr em{position:absolute;top:10px;white-space:nowrap;transform:translateX(-50%);font-style:normal;font-size:14px;font-variant-numeric:tabular-nums}.kc-sw{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--line)}
 .kc-sw.z{background:color-mix(in srgb,var(--muted) 30%,transparent)}.kc-sw.u1{background:${UP}47}.kc-sw.u2{background:${UP}80}.kc-sw.u3{background:${UP}bf}.kc-sw.u4{background:${UP}}.kc-sw.d1{background:${DOWN}47}.kc-sw.d2{background:${DOWN}80}.kc-sw.d3{background:${DOWN}bf}.kc-sw.d4{background:${DOWN}}
-.kc-sum{margin:10px 0 0;font-size:13.5px;line-height:1.7;color:var(--fg2)}
+.kc-sum{margin:10px 0 0;font-size:16px;line-height:1.7;color:var(--fg2)}
 html.mo .kit-cal:not(.kit-in) .kc{opacity:0}html.mo .kit-cal.kit-in .kc{opacity:1;transition:opacity .5s}
-.kit-scatter{position:relative;margin:4px 0 12px}.kit-scatter svg{display:block;width:100%;touch-action:pan-y}.ks-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 6px}.ks-h b{font-size:15px}.ks-h small{font-size:12px;color:var(--muted)}
-.ks-g{stroke:var(--line)}.ks-m{stroke:var(--muted);stroke-opacity:.5;stroke-dasharray:3 3}.ks-t{font-size:10.5px;fill:var(--muted);font-variant-numeric:tabular-nums}.ks-n{font-size:11.5px;font-weight:800;fill:var(--fg)}
+.kit-scatter{position:relative;margin:4px 0 12px}.kit-scatter svg{display:block;width:100%;touch-action:pan-y}.ks-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 6px}.ks-h b{font-size:17px}.ks-h small{font-size:15px;color:var(--muted)}
+.ks-g{stroke:var(--line)}.ks-m{stroke:var(--muted);stroke-opacity:.5;stroke-dasharray:3 3}.ks-t{font-size:14px;fill:var(--muted);font-variant-numeric:tabular-nums}.ks-n{font-size:15px;font-weight:800;fill:var(--fg)}
 .ks-d{fill:var(--accent);fill-opacity:.5;stroke:var(--accent);stroke-width:1.2;cursor:pointer;transition:r .15s,fill-opacity .15s}.ks-d.me{fill:${UP};fill-opacity:1;stroke:var(--surface-solid,#fff);stroke-width:2}.ks-d.hi{fill-opacity:.95}
 html.mo .kit-scatter:not(.kit-in) .ks-d{opacity:0;transform:scale(.2)}.ks-d{transform-box:fill-box;transform-origin:center}html.mo .kit-scatter.kit-in .ks-d{opacity:1;transform:none;transition:opacity .4s calc(var(--i,0) * 60ms),transform .55s var(--ease-spring,ease-out) calc(var(--i,0) * 60ms),r .15s}
 .kit-funnel[hidden],.kit-live[hidden],.kit-scatter[hidden]{display:none!important}
 .kit-funnel{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(70px,1fr) auto;column-gap:10px;margin:2px 0 12px;padding:10px 12px;border-radius:12px;background:var(--soft)}
-.kf-h{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;font-size:13px}.kf-h b{font-size:13.5px}.kf-h small{color:var(--muted);font-size:11.5px}
-.kf-l,.kf-n{height:28px;display:flex;align-items:center;font-size:12.5px;min-width:0}.kf-l{color:var(--fg2)}.kf-l span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kf-n{justify-content:flex-end;gap:6px;font-variant-numeric:tabular-nums;white-space:nowrap}.kf-n b{font-size:13px}.kf-n small{color:var(--muted);font-size:11px}
+.kf-h{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;font-size:15.5px}.kf-h b{font-size:16px}.kf-h small{color:var(--muted);font-size:15px}
+.kf-l,.kf-n{height:28px;display:flex;align-items:center;font-size:15.5px;min-width:0}.kf-l{color:var(--fg2)}.kf-l span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kf-n{justify-content:flex-end;gap:6px;font-variant-numeric:tabular-nums;white-space:nowrap}.kf-n b{font-size:15.5px}.kf-n small{color:var(--muted);font-size:14px}
 .kf-s{grid-column:2;grid-row:2/span var(--rows);width:100%;height:calc(var(--rows) * 28px);display:block}.kf-s rect{fill:var(--accent);transform-box:fill-box;transform-origin:center}.kf-s path{fill:var(--accent);fill-opacity:.14}
 html.mo .kit-funnel:not(.kit-in) .kf-s rect{transform:scaleX(0)}html.mo .kit-funnel.kit-in .kf-s rect{transform:none;transition:transform .7s var(--ease-out) calc(var(--i,0) * 90ms)}
 html.mo .kit-funnel:not(.kit-in) .kf-s path{opacity:0}html.mo .kit-funnel.kit-in .kf-s path{opacity:1;transition:opacity .5s .4s}
-.kit-live .card{position:relative}.kv-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.kv-h h2{margin:0;font-size:16px}.kv-h small{color:var(--muted);font-size:12px}
+.kit-live .card{position:relative}.kv-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.kv-h h2{margin:0;font-size:17.5px}.kv-h small{color:var(--muted);font-size:15px}
 .kv-plot{position:relative;height:150px;margin-top:10px;overflow:hidden;touch-action:pan-y}.kv-plot svg{position:absolute;left:0;top:0;display:block}
 .kv-l{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.kv-g{stroke:var(--line)}
-.kv-val{position:absolute;right:4px;transform:translateY(-50%);padding:2px 8px;border-radius:999px;font-size:12px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none}
+.kv-val{position:absolute;right:4px;transform:translateY(-50%);padding:2px 8px;border-radius:999px;font-size:15px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none}
 html.mo .kv-val{transition:top .45s var(--ease-out),background .3s}
 .kv-pulse{transform-box:fill-box;transform-origin:center;opacity:0}html.mo .kv-pulse{animation:kv-pulse 1.8s ease-out infinite}
 @keyframes kv-pulse{0%{transform:scale(.6);opacity:.8}100%{transform:scale(2.6);opacity:0}}
-.kv-foot{display:flex;justify-content:space-between;margin-top:6px;font-size:11.5px;color:var(--muted)}
-@media (max-width:600px){.kl-plot{height:180px}.kr-fig{width:100px;height:100px}.kr-half .kr-fig{width:120px;height:66px}.kit-ring{gap:12px}.kr-leg li{font-size:12.5px}}
+.kv-foot{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:15px;color:var(--muted)}.kv-foot small{font-size:15px;text-align:center;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kv-inhero{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.kv-inhero .kv-plot{height:130px;margin-top:0}
+@media (max-width:600px){.kl-plot{height:180px}.kr-fig{width:100px;height:100px}.kr-half .kr-fig{width:120px;height:66px}.kit-ring{gap:12px}.kr-leg li{font-size:15.5px}}
 `;
 
 // ---------------------------------------------------------------- page script
@@ -326,9 +326,10 @@ export const KIT_STOCK_JS = `
     if (document.querySelector('.pm[data-pm-sym]')) return;
     var coin = sym.indexOf('KRW-') === 0;
     var hero = document.querySelector('#tab-home .hero') || document.querySelector('.hero'); if (!hero) return;
-    var sec = document.createElement('section'); sec.className = 'block kit-live'; sec.hidden = true;
-    sec.innerHTML = '<div class="card"><div class="kv-h"><h2>실시간 가격</h2><small data-kv-note>' + (coin ? '업비트 체결가 · 최근 3분' : '1분 종가 · 장중 실시간') + '</small></div><div class="kv-plot" role="img" aria-label="실시간 가격 선"></div><div class="kv-foot"><span data-kv-from></span><span>지금</span></div></div>';
-    hero.after(sec);
+    // G-301 (새 구조): the live line sits inside the price card itself, not as a second card with its own title.
+    var sec = document.createElement('div'); sec.className = 'kit-live kv-inhero'; sec.hidden = true;
+    sec.innerHTML = '<div class="kv-plot" role="img" aria-label="실시간 가격 선"></div><div class="kv-foot"><span data-kv-from></span><small data-kv-note>' + (coin ? '업비트 체결가 · 최근 3분' : '1분 종가 · 장중 실시간') + '</small><span>지금</span></div>';
+    hero.appendChild(sec);
     var plot = sec.querySelector('.kv-plot'), pts = [], SPAN = 180, raf = 0, shift = 0, from = 0, to = 0, t0 = 0, last = 0;
     var draw = function () {
       if (pts.length < 2) return; sec.hidden = false;
@@ -428,10 +429,10 @@ export function outcomeSunburst(groups: readonly SunGroup[], opts: { label: stri
   return `<figure class="kit-sun"><div class="ks-fig"><svg viewBox="0 0 ${S} ${S}" role="img" aria-label="${esc(opts.label)}">${inner}${outer}</svg><div class="ks-c"><b>${total}</b><small>판단</small></div></div><ul class="ks-leg">${legend.join('')}</ul><figcaption class="fine">안쪽은 결과, 바깥쪽은 그 결과를 낸 위원이에요. 칸 크기는 판단 수예요.</figcaption></figure>`;
 }
 
-export const KIT_SUN_CSS = `.kit-hit{color:var(--fg2)}.kit-sun{margin:14px 0 4px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px}.ks-fig{position:relative;width:180px;height:180px;flex:none}.ks-fig svg{width:100%;height:100%;display:block}.ks-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}.ks-c b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--fg)}.ks-c small{font-size:12px;color:var(--muted)}
+export const KIT_SUN_CSS = `.kit-hit{color:var(--fg2)}.kit-sun{margin:14px 0 4px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 22px}.ks-fig{position:relative;width:180px;height:180px;flex:none}.ks-fig svg{width:100%;height:100%;display:block}.ks-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}.ks-c b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--fg)}.ks-c small{font-size:15px;color:var(--muted)}
 .ks-seg{stroke:var(--surface-solid,var(--surface));stroke-width:1}.ks-seg.ks-o{opacity:.78}path.ks-ok,i.ks-ok{fill:#7FCB9C;background:#7FCB9C}path.ks-no,i.ks-no{fill:#EE9DBE;background:#EE9DBE}path.ks-wait,i.ks-wait{fill:#C4C8CE;background:#C4C8CE}
 :root[data-theme=dark] path.ks-ok{fill:#4E9E6E}:root[data-theme=dark] path.ks-no{fill:#B9668A}:root[data-theme=dark] path.ks-wait{fill:#5A5F66}
-.ks-leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:150px;flex:1}.ks-leg li{display:flex;align-items:center;gap:8px;font-size:14px}.ks-leg i{width:10px;height:10px;border-radius:3px;flex:none}.ks-leg b{margin-left:auto;font-variant-numeric:tabular-nums}.ks-leg small{color:var(--muted);width:36px;text-align:right}.kit-sun figcaption{flex-basis:100%;margin:0}
+.ks-leg{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;min-width:150px;flex:1}.ks-leg li{display:flex;align-items:center;gap:8px;font-size:16px}.ks-leg i{width:10px;height:10px;border-radius:3px;flex:none}.ks-leg b{margin-left:auto;font-variant-numeric:tabular-nums}.ks-leg small{color:var(--muted);width:36px;text-align:right}.kit-sun figcaption{flex-basis:100%;margin:0}
 @media (prefers-reduced-motion:no-preference){.kit-sun .ks-seg{animation:ks-in .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 30ms)}@keyframes ks-in{from{opacity:0}}}`;
 
 // ---------------------------------------------------------------- hit-count line (G-271)
@@ -464,6 +465,6 @@ export function hitLine(values: readonly number[], label: string, opts: { w?: nu
  * shown while a chart's data or library loads. Static under reduced motion. The caller removes it when the chart draws.
  */
 export const KIT_SWEEP_CSS = `.kit-sweep{position:relative;height:100%;min-height:120px;overflow:hidden;border-radius:12px}.kit-sweep svg{position:absolute;inset:18% 0 0;width:100%;height:82%}.kit-sweep path{fill:var(--fg);opacity:.05}.kit-sweep .ks-l{fill:none;stroke:var(--fg);stroke-width:1.5;opacity:.18;vector-effect:non-scaling-stroke}
-.kit-sweep span{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-size:12.5px;color:var(--muted)}
+.kit-sweep span{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-size:15.5px;color:var(--muted)}
 .kit-sweep::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surface-solid,#fff) 70%,transparent),transparent);transform:translateX(-100%)}
 @media (prefers-reduced-motion:no-preference){.kit-sweep::after{animation:ks-sweep 1.4s ease-in-out infinite}@keyframes ks-sweep{to{transform:translateX(100%)}}}`;

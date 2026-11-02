@@ -49,11 +49,11 @@ export function kmWorldMapAll(entries: readonly WorldMapEntry[], caption: string
 
 export const KIT_WORLD_CSS = `.wm-box{position:relative}.wm-map .km-ct{stroke-width:.8;outline:none}.wm-map .km-ct:focus-visible{stroke:var(--fg);stroke-width:1.6}.km-dot{stroke:var(--surface-solid);stroke-width:1.5}
 .wm-pin{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;padding:2px 6px;border-radius:9px;background:color-mix(in srgb,var(--surface-solid) 86%,transparent);box-shadow:0 1px 4px rgba(0,0,0,.12);line-height:1.15;pointer-events:none;white-space:nowrap}
-.wm-pin.r{transform:translate(-100%,-50%)}.wm-pin span{font-size:9.5px;font-weight:700;color:var(--fg2)}.wm-pin b{font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--fg)}.wm-pin b.up{color:#f04452}.wm-pin b.down{color:#3182f6}
+.wm-pin.r{transform:translate(-100%,-50%)}.wm-pin span{font-size:12px;font-weight:700;color:var(--fg2)}.wm-pin b{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--fg)}.wm-pin b.up{color:#f04452}.wm-pin b.down{color:#3182f6}
 html.mo .wm-map:not(.km-in) .wm-pin{opacity:0}html.mo .wm-map.km-in .wm-pin{transition:opacity .5s .5s}
-.wm-ip{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:11px;background:var(--fg);color:var(--surface-solid);font:inherit;font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums;box-shadow:0 0 0 2.5px var(--surface-solid),0 2px 6px rgba(0,0,0,.25);cursor:pointer;z-index:2}
+.wm-ip{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:22px;height:22px;padding:0;border:0;border-radius:11px;background:var(--fg);color:var(--surface-solid);font:inherit;font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;box-shadow:0 0 0 2.5px var(--surface-solid),0 2px 6px rgba(0,0,0,.25);cursor:pointer;z-index:2}
 .wm-ip::before{content:"";position:absolute;inset:-10px}.wm-ip:focus-visible{outline:2px solid var(--fg);outline-offset:3px}
 html.mo .wm-map:not(.km-in) .wm-ip{transform:translate(-50%,-50%) scale(0)}html.mo .wm-map.km-in .wm-ip{transition:transform .5s calc(.35s + var(--i,0) * .07s) cubic-bezier(.34,1.56,.64,1)}
-@media(min-width:620px){.wm-ip{width:26px;height:26px;border-radius:13px;font-size:13px}}
+@media(min-width:620px){.wm-ip{width:26px;height:26px;border-radius:13px;font-size:14px}}
 @media (prefers-reduced-motion: reduce){html.mo .wm-map .wm-ip{transform:translate(-50%,-50%);transition:none}}
-@media(min-width:620px){.wm-pin span{font-size:11px}.wm-pin b{font-size:13px}}`;
+@media(min-width:620px){.wm-pin span{font-size:14px}.wm-pin b{font-size:15.5px}}`;

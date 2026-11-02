@@ -23,11 +23,11 @@ ${f.timeline.length || f.historyNote ? `<section class="card block cf-card"><h2>
 <p class="fine">${esc(f.date)} 기준 · 시가총액·발행량·역대 최고가·첫 거래일은 CoinPaprika, 거래대금·주의 항목은 업비트예요. 계산 결과이고, 투자 권유가 아니에요.</p>`;
 }
 
-export const COIN_FIT_CSS = `.cf-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.cf-card h2{font-size:17px;margin:0 0 6px}.cf-total{font-size:20px;color:var(--fg)}
-.cf-card .ig-hl em{white-space:normal;text-align:left}.cf-card .ig-hl li{grid-template-columns:3.6em auto minmax(0,1fr)}.cf-card .ig-hl small{grid-column:1/-1;font-size:12px;line-height:1.5;color:var(--muted)}
-.cf-tl{list-style:none;margin:4px 0 0;padding:0}.cf-tl li{position:relative;padding:0 0 14px 22px;display:flex;flex-direction:column;gap:2px}.cf-tl li::before{content:"";position:absolute;left:4px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--fg)}.cf-tl li::after{content:"";position:absolute;left:8px;top:18px;bottom:2px;width:2px;background:var(--line)}.cf-tl li:last-child::after{display:none}.cf-tl span{font-size:12px;color:var(--muted)}.cf-tl b{font-size:14px;font-weight:500}
-.cf-hist{margin:4px 0 0;font-size:12px;line-height:1.5;color:var(--fg2);padding:10px 12px;border-radius:12px;background:var(--soft)}
-.cf-chips{display:flex;flex-wrap:wrap;gap:6px}.cf-off{margin:0;font-size:13px;color:var(--fg2);line-height:1.5;flex-basis:100%}.cf-chip{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--fg2)}.cf-chip.on{border-color:var(--up-strong);color:var(--up-strong);background:var(--up-soft);font-weight:700}.cf-warn{color:var(--up-strong)}`;
+export const COIN_FIT_CSS = `.cf-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.cf-card h2{font-size:18.5px;margin:0 0 6px}.cf-total{font-size:21px;color:var(--fg)}
+.cf-card .ig-hl em{white-space:normal;text-align:left}.cf-card .ig-hl li{grid-template-columns:3.6em auto minmax(0,1fr)}.cf-card .ig-hl small{grid-column:1/-1;font-size:15px;line-height:1.5;color:var(--muted)}
+.cf-tl{list-style:none;margin:4px 0 0;padding:0}.cf-tl li{position:relative;padding:0 0 14px 22px;display:flex;flex-direction:column;gap:2px}.cf-tl li::before{content:"";position:absolute;left:4px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--fg)}.cf-tl li::after{content:"";position:absolute;left:8px;top:18px;bottom:2px;width:2px;background:var(--line)}.cf-tl li:last-child::after{display:none}.cf-tl span{font-size:15px;color:var(--muted)}.cf-tl b{font-size:16px;font-weight:500}
+.cf-hist{margin:4px 0 0;font-size:15px;line-height:1.5;color:var(--fg2);padding:10px 12px;border-radius:12px;background:var(--soft)}
+.cf-chips{display:flex;flex-wrap:wrap;gap:6px}.cf-off{margin:0;font-size:15.5px;color:var(--fg2);line-height:1.5;flex-basis:100%}.cf-chip{font-size:15px;padding:5px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--fg2)}.cf-chip.on{border-color:var(--up-strong);color:var(--up-strong);background:var(--up-soft);font-weight:700}.cf-warn{color:var(--up-strong)}`;
 
 /**
  * Fills [data-coin-fit] slots: on a coin's report page the slot names its c/<market>.json; the free coin page passes
