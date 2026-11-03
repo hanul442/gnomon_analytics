@@ -144,7 +144,7 @@ export function buildMarketSection(input: {
     weeklyStructure: structureSnapshot(weekly, 260),
     footprint: footprint(daily, input.flows.filter((f) => f.symbol === input.symbol)),
     arena: runArena(daily),
-    analystBoard: scoreAnalysts((input.analystCalls ?? []).filter((c) => c.symbol === input.symbol), daily),
+    analystBoard: scoreAnalysts((input.analystCalls ?? []).filter((c) => c.symbol === input.symbol), daily, upTo(input.benchmarks[0]?.bars ?? [])),
     ...(input.committeeCalibration ? { committeeCalibration: input.committeeCalibration } : {}),
     scenarioBoard: scoreScenarios((input.scenarioCalls ?? []).filter((c) => c.reportDate <= input.date), daily),
     paper: paperBooks((input.paperEntries ?? []).filter((e) => e.symbol === input.symbol && e.date <= input.date), daily),

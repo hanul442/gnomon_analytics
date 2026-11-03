@@ -36,6 +36,11 @@ export interface AnalystCall {
   target: number;
   /** G-229: the close that would prove the call wrong (below the base for BULLISH, above for BEARISH). */
   invalidation?: number;
+  /**
+   * G-305: how far (log move) a NEUTRAL call may drift and still count as right: half the stock's usual
+   * 20-session move (EWMA sigma × √20 ÷ 2) when the call was made. Calls made before it use ±2%.
+   */
+  neutralBand?: number;
   promptVersion: string;
   madeAt: string;
 }
@@ -64,6 +69,10 @@ export interface AnalystScore {
   calls?: AnalystTrack[];
   /** G-229: over scored calls that set an invalidation price: how many, how many saw it crossed, and how many of those missed. */
   kill?: { set: number; broke: number; brokeMissed: number };
+  /** G-305: the distinct base dates behind `scored` (calls made the same day move together, so this is the real sample). */
+  scoredDays?: string[];
+  /** G-305: directional calls scored against the index over the same 20 sessions. */
+  rel?: { scored: number; hits: number };
 }
 
 /**
@@ -90,9 +99,16 @@ export function invalidationOf(stance: AnalystCall['stance'], close: number, pri
 const crossed = (c: Pick<AnalystCall, 'stance' | 'invalidation'>, close: number) =>
   c.invalidation != null && (c.stance === 'BULLISH' ? close <= c.invalidation : c.stance === 'BEARISH' ? close >= c.invalidation : false);
 export const TRACK_KEEP = 5;
-export const hitOf = (c: Pick<AnalystCall, 'stance' | 'target' | 'baseClose'>, close: number) => {
+/**
+ * G-305: ±2% over 20 sessions held only 13% of the time in ten years of the most-traded stocks (rising: 43%),
+ * so NEUTRAL was nearly always scored wrong. Half the usual 20-session move held 45% of the time.
+ */
+export const NEUTRAL_SHARE = 0.5;
+export const neutralBandOf = (sigma: number | null | undefined): number | undefined =>
+  sigma != null && Number.isFinite(sigma) && sigma > 0 ? Number((NEUTRAL_SHARE * sigma * Math.sqrt(ANALYST_HORIZON)).toFixed(4)) : undefined;
+export const hitOf = (c: Pick<AnalystCall, 'stance' | 'target' | 'baseClose' | 'neutralBand'>, close: number) => {
   const move = close / c.baseClose - 1;
-  if (c.stance === 'NEUTRAL') return Math.abs(move) <= 0.02;
+  if (c.stance === 'NEUTRAL') return c.neutralBand != null ? Math.abs(Math.log(close / c.baseClose)) <= c.neutralBand : Math.abs(move) <= 0.02;
   return Math.sign(c.target - c.baseClose) === Math.sign(move);
 };
 
@@ -105,14 +121,17 @@ const median = (xs: readonly number[]) => {
 /**
  * Direction counts as hit when the target and the actual close 20 sessions
  * later sit on the same side of the base close; a NEUTRAL stance hits when
- * the actual move stays within ±2%.
+ * the actual move stays within its band (G-305; ±2% for older calls).
+ * With the index bars, each scored directional call is also scored against the index (G-305): BULLISH is
+ * right when the stock beat the index over the same 20 sessions, BEARISH when it lagged.
  */
-export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { date: string; close: number }[]): AnalystScore[] {
+export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { date: string; close: number }[], index: readonly { date: string; close: number }[] = []): AnalystScore[] {
+  const ix = new Map(index.map((b) => [b.date, b.close]));
   const sorted = [...bars].sort((a, b) => (a.date < b.date ? -1 : 1));
   const idx = new Map(sorted.map((b, i) => [b.date, i]));
   const board = ANALYSTS.map((a) => {
     const mine = calls.filter((c) => c.analyst === a.id).sort((x, y) => (x.baseDate < y.baseDate ? -1 : 1));
-    const results: { hit: boolean; err: number; conf: number; set: boolean; broke: boolean }[] = [];
+    const results: { hit: boolean; err: number; conf: number; set: boolean; broke: boolean; day: string; rel: boolean | null }[] = [];
     let pending = 0;
     const last = sorted.at(-1);
     const track = (c: AnalystCall, i: number | undefined, outcome: { date: string; close: number } | undefined): AnalystTrack => {
@@ -133,7 +152,9 @@ export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { da
       const t = track(c, i, outcome);
       tracked.push(t);
       if (!outcome) { pending += 1; continue; }
-      results.push({ hit: hitOf(c, outcome.close), err: Math.abs(outcome.close / c.target - 1) * 100, conf: Math.max(0, Math.min(100, c.confidence)) / 100, set: c.invalidation != null, broke: !!t.brokeOn });
+      const i0 = ix.get(c.baseDate), i1 = ix.get(outcome.date);
+      const rel = c.stance === 'NEUTRAL' || !i0 || !i1 ? null : (outcome.close / c.baseClose - i1 / i0 > 0) === (c.stance === 'BULLISH');
+      results.push({ hit: hitOf(c, outcome.close), err: Math.abs(outcome.close / c.target - 1) * 100, conf: Math.max(0, Math.min(100, c.confidence)) / 100, set: c.invalidation != null, broke: !!t.brokeOn, day: c.baseDate, rel });
     }
     return {
       analyst: a.id, name: a.name, scored: results.length,
@@ -142,6 +163,8 @@ export function scoreAnalysts(calls: readonly AnalystCall[], bars: readonly { da
       brier: results.length ? mean(results.map((r) => (r.conf - (r.hit ? 1 : 0)) ** 2)) : null,
       avgConfidence: results.length ? mean(results.map((r) => r.conf * 100)) : null,
       pending, latest: mine.at(-1) ?? null, rank: null as number | null,
+      scoredDays: [...new Set(results.map((r) => r.day))].sort(),
+      ...(results.some((r) => r.rel !== null) ? { rel: { scored: results.filter((r) => r.rel !== null).length, hits: results.filter((r) => r.rel === true).length } } : {}),
       calls: tracked.slice(-TRACK_KEEP).reverse(),
       ...(results.some((r) => r.set) ? { kill: { set: results.filter((r) => r.set).length, broke: results.filter((r) => r.broke).length, brokeMissed: results.filter((r) => r.broke && !r.hit).length } } : {}),
     };
