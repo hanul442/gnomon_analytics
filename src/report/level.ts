@@ -53,14 +53,14 @@ export const LEVEL_BOOT = `<script>(function(){var l='mid';try{var a=JSON.parse(
 
 const closed = (lv: string, d: string) => `html[data-level=${lv}] [role=tabpanel]:not(.lv-open) .lv-d${d}`;
 export const LEVEL_CSS = `${[closed('easy', '2'), closed('easy', '3'), closed('mid', '3')].join(',')}{display:none!important}
-.lv-guide{display:none}html[data-level=easy] .lv-guide{display:flex;gap:10px;align-items:baseline;margin:0 0 14px;padding:12px 14px;border:1px solid var(--accent-line,var(--line));border-radius:12px;background:var(--accent-soft,var(--soft));font-size:14.5px;line-height:1.65;color:var(--fg)}.lv-guide b{flex:none;font-size:12px;color:var(--accent-strong)}
+.lv-guide{display:none}html[data-level=easy] .lv-guide{display:flex;gap:10px;align-items:baseline;margin:0 0 14px;padding:12px 14px;border:1px solid var(--accent-line,var(--line));border-radius:12px;background:var(--accent-soft,var(--soft));font-size:17px;line-height:1.65;color:var(--fg)}.lv-guide b{flex:none;font-size:15px;color:var(--accent-strong)}
 html[data-level=easy] .pc-beginner{display:block}html[data-level=easy] .pc-trader,html[data-level=easy] .pc-long{display:none}
 html[data-level=pro] .pc-trader,html[data-level=pro] .pc-long{display:block}html[data-level=pro] .pc-beginner{display:none}
-html[data-level=pro] .pc-rows small,html[data-level=pro] [role=tabpanel] .tip{display:none}html[data-level=pro] .pc .card{padding:12px 14px}html[data-level=pro] .pc h2{font-size:16px;margin-bottom:8px}
+html[data-level=pro] .pc-rows small,html[data-level=pro] [role=tabpanel] .tip{display:none}html[data-level=pro] .pc .card{padding:12px 14px}html[data-level=pro] .pc h2{font-size:17.5px;margin-bottom:8px}
 html[data-level=pro] [role=tabpanel] .card{padding:12px 14px}html[data-level=pro] [role=tabpanel] .block{margin-top:12px}html[data-level=pro] [role=tabpanel]{font-variant-numeric:tabular-nums}
-.lv-foot{margin:22px 0 6px;padding:14px 16px;border:1px dashed var(--line-strong);border-radius:14px;display:grid;gap:10px}.lv-foot p{margin:0;font-size:13px;color:var(--muted);line-height:1.6}.lv-foot p b{color:var(--fg)}
-.lv-pick{display:flex;flex-wrap:wrap;gap:6px}.lv-pick button{min-height:44px;padding:0 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);color:var(--fg);font:inherit;font-size:14px;cursor:pointer}.lv-pick button[aria-pressed=true]{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
-.lv-more{justify-self:start;min-height:44px;padding:0 16px;border:1px solid var(--accent);border-radius:12px;background:transparent;color:var(--accent-strong);font:inherit;font-size:14px;font-weight:700;cursor:pointer}.lv-more[hidden]{display:none}
+.lv-foot{margin:22px 0 6px;padding:14px 16px;border:1px dashed var(--line-strong);border-radius:14px;display:grid;gap:10px}.lv-foot p{margin:0;font-size:15.5px;color:var(--muted);line-height:1.6}.lv-foot p b{color:var(--fg)}
+.lv-pick{display:flex;flex-wrap:wrap;gap:6px}.lv-pick button{min-height:44px;padding:0 14px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);color:var(--fg);font:inherit;font-size:16px;cursor:pointer}.lv-pick button[aria-pressed=true]{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
+.lv-more{justify-self:start;min-height:44px;padding:0 16px;border:1px solid var(--accent);border-radius:12px;background:transparent;color:var(--accent-strong);font:inherit;font-size:16px;font-weight:700;cursor:pointer}.lv-more[hidden]{display:none}
 .lv-pick button:focus-visible,.lv-more:focus-visible{outline:2px solid var(--accent);outline-offset:2px}`;
 
 /** Tags the cards by DEPTH, adds the foot (switch + "더 보기") to each tab that has a guide, and saves picks. */
@@ -95,7 +95,7 @@ export const LEVEL_JS = `
     var l = cur(); if (l === 'adv' || l === 'pro') return 0;
     var sel = l === 'easy' ? '.lv-d2,.lv-d3' : '.lv-d3';
     var cards = [].filter.call(p.querySelectorAll(sel), function (el) { return !el.classList.contains('gate'); });
-    return cards.filter(function (el) { return !el.hidden && !cards.some(function (o) { return o !== el && o.contains(el); }); }).length;
+    return cards.filter(function (el) { return !el.hidden && !cards.some(function (o) { return o !== el && o.contains(el); }); });
   };
   // 초보자 reads the plain-words card ("쉽게 보면") before the scenarios; other levels keep the report's order.
   var pcs = document.querySelector('#tab-home .pc-wrap'), mark = pcs && document.createComment('pc-wrap');
@@ -105,11 +105,13 @@ export const LEVEL_JS = `
     place();
     var l = cur(), info = LV.filter(function (x) { return x[0] === l; })[0] || LV[1];
     document.querySelectorAll('.lv-foot').forEach(function (f) {
-      var p = f.closest('[role=tabpanel]'), n = hiddenIn(p), more = f.querySelector('.lv-more');
+      var p = f.closest('[role=tabpanel]'), shut = hiddenIn(p), n = shut.length || 0, more = f.querySelector('.lv-more');
+      // G-300 (한서님 10/25): the button names what it opens ('재무제표 · 시장 대비 수익률 더 보기'), not 'n개'.
+      var names = [].map.call(shut || [], function (el) { var h = el.querySelector('h2,h3'); return h ? h.textContent.replace(/[?？ⓘ]/g, '').trim() : ''; }).filter(Boolean);
       f.querySelector('p').innerHTML = '화면 수준 <b>' + info[1] + '</b> · ' + info[2];
       f.querySelectorAll('[data-level-pick]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-level-pick') === l ? 'true' : 'false'); });
       more.hidden = !n || p.classList.contains('lv-open');
-      more.textContent = '이 탭의 자세한 분석 ' + n + '개 더 보기';
+      more.textContent = names.length ? names.slice(0, 2).join(' · ') + (names.length > 2 ? ' 외 ' + (names.length - 2) + '개' : '') + ' 더 보기' : '자세한 분석 ' + n + '개 더 보기';
     });
   };
   panels.forEach(function (p) {

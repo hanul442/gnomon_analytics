@@ -10,10 +10,10 @@ export const SEG_THUMB_CSS = `
 :where(.has-thumb){position:relative;isolation:isolate}
 .has-thumb>.seg-thumb{position:absolute;z-index:0;left:0;right:100%;top:0;height:0;border-radius:999px;pointer-events:none;opacity:0;
   background:var(--btn-bg);box-shadow:0 1px 3px rgba(0,0,0,.12),0 8px 18px -10px rgba(0,166,251,.55),inset 0 -1px rgba(0,0,0,.08);
-  transition:left .42s cubic-bezier(.34,1.4,.64,1),right .42s cubic-bezier(.34,1.4,.64,1),top .3s var(--ease-out),height .3s var(--ease-out),opacity var(--dur-fast) var(--ease-out)}
+  transition:left .42s var(--spring-bouncy),right .42s var(--spring-bouncy),top .3s var(--ease-out),height .3s var(--ease-out),opacity var(--dur-fast) var(--ease-out)}
 .has-thumb>.seg-thumb.on{opacity:1}
-.has-thumb>.seg-thumb[data-dir=r]{transition:right .3s cubic-bezier(.2,.9,.3,1),left .55s cubic-bezier(.34,1.32,.64,1) .06s,top .3s var(--ease-out),height .3s var(--ease-out),opacity var(--dur-fast) var(--ease-out)}
-.has-thumb>.seg-thumb[data-dir=l]{transition:left .3s cubic-bezier(.2,.9,.3,1),right .55s cubic-bezier(.34,1.32,.64,1) .06s,top .3s var(--ease-out),height .3s var(--ease-out),opacity var(--dur-fast) var(--ease-out)}
+.has-thumb>.seg-thumb[data-dir=r]{transition:right .3s var(--spring-press),left .55s var(--spring-snappy) .06s,top .3s var(--ease-out),height .3s var(--ease-out),opacity var(--dur-fast) var(--ease-out)}
+.has-thumb>.seg-thumb[data-dir=l]{transition:left .3s var(--spring-press),right .55s var(--spring-snappy) .06s,top .3s var(--ease-out),height .3s var(--ease-out),opacity var(--dur-fast) var(--ease-out)}
 .has-thumb>.seg-thumb.squish{animation:seg-squish .5s var(--ease-out)}
 @keyframes seg-squish{0%{transform:scaleY(1)}35%{transform:scaleY(.84)}70%{transform:scaleY(1.04)}100%{transform:scaleY(1)}}
 .has-thumb>.seg-thumb.still{transition:none!important}
@@ -27,7 +27,7 @@ html.chart-fs .cfs-foot>.seg>.seg-thumb{background:var(--soft);box-shadow:none}
 
 export const SEG_THUMB_JS = `
 (function () {
-  var SEL = '.seg,.find-tabs,.mode-tabs,.adm-tabs,.bn-dots';
+  var SEL = '.seg,.find-tabs,.mode-tabs,.adm-tabs,.bn-dots,.wd-filter,.subtabs,.bottom-nav .nav-tabs,.bottom-nav .nav-seg'; // G-286: + 이슈 filter, 기업 tabs, the bottom bar
   var ON = '[aria-pressed=true],[aria-selected=true],[aria-current=page]';
   var kids = function (g) { var out = [], c = g.children; for (var i = 0; i < c.length; i++) if (c[i] !== g.__thumb) out.push(c[i]); return out; };
   var place = function (g, lean) {

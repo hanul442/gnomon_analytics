@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ALPHA, allows, CREDIT_COST, TESTERS, UNLOCK, type Feature } from '../report/plans.js';
-import { handle, type Deps, type Env } from './api.js';
+import { handle, pruneVisits, type Deps, type Env } from './api.js';
 import { askParams } from './ask.js';
 import { testDb } from './testDb.js';
 import { SAMPLE_XML, zipOf } from '../sources/dartDocument.test.js';
@@ -101,10 +101,12 @@ test('sign-in needs an invite the first time; the admin needs none; links work o
   const again = await t.login('a@example.com');
   assert.equal(again.me.credits.balance, ALPHA.monthlyCredits + 50);
   // Next month the allowance comes once more.
-  t.tick(27 * 86_400_000);
-  assert.equal((await t.call('GET', '/me', undefined, again.session)).body.credits.balance, 2 * ALPHA.monthlyCredits + 50);
+  // (11/20, after the alpha rest of G-306: 11/1–19 only the admin signs in.)
+  t.tick(46 * 86_400_000);
+  const nov = await t.login('a@example.com');
+  assert.equal(nov.me.credits.balance, 2 * ALPHA.monthlyCredits + 50);
   // Admin pages are the admin's.
-  assert.equal((await t.call('GET', '/admin/overview', undefined, a.session)).status, 403);
+  assert.equal((await t.call('GET', '/admin/overview', undefined, nov.session)).status, 403);
   assert.equal((await t.call('GET', '/me')).status, 401);
 });
 
@@ -966,4 +968,45 @@ test('G-279: a saved screen can be overwritten from the condition sheet', async 
   assert.equal(got[0].name, '급증 5배');
   assert.deepEqual(got[0].screen.rules, [{ f: 'vol1', op: '>=', v: 5 }]);
   assert.equal((await t.call('POST', `/screens/99999`, { name: 'x', screen: { match: 'all', rules: [{ f: 'vol1', op: '>=', v: 5 }] } }, u.session)).body.error, 'NO_SCREEN');
+});
+
+test('G-293: anonymous visits count once per device a day; the console shows weekly return and sources; old rows go', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const a = 'a'.repeat(24), b = 'b'.repeat(24), c = 'c'.repeat(24);
+  assert.equal((await t.call('POST', '/visit', { v: 'not-hex!' })).status, 400);
+  for (const v of [a, b]) assert.equal((await t.call('POST', '/visit', { v, src: 'search' })).status, 200);
+  await t.call('POST', '/visit', { v: a, src: 'insta' });
+  t.tick(8 * 86_400_000);
+  await t.call('POST', '/visit', { v: a, src: '' });
+  await t.call('POST', '/visit', { v: c, src: 'weird' });
+  const ov = (await t.call('GET', '/admin/overview', undefined, boss.session)).body.visits;
+  assert.deepEqual([ov.week, ov.prevWeek, ov.returned, ov.returnRate], [2, 2, 1, 50]);
+  assert.deepEqual(ov.days.map((d: any) => d.n), [2, 2]);
+  assert.deepEqual(ov.sources.map((s: any) => s.src).sort(), ['', 'other']);
+  t.tick(130 * 86_400_000);
+  assert.equal(await pruneVisits(t.env.DB, t.deps.now()), 4);
+});
+
+test('alpha end (G-306): from 11/1 to 11/19 KST only the admin signs in; open sessions end; then it opens again', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const code = (await t.call('POST', '/admin/invites', { credits: 0, maxUses: 5 }, boss.session)).body.code;
+  const old = (await t.call('POST', '/auth/signup', { email: 'old@example.com', password: 'abcd1234', invite: code, terms: true })).body.session;
+  t.tick(Date.parse('2026-10-31T14:59:00Z') - t.deps.now().getTime()); // 10/31 23:59 KST: still open
+  assert.equal((await t.call('GET', '/me', undefined, old)).status, 200);
+  t.tick(60_000); // 11/1 00:00 KST
+  const me = await t.call('GET', '/me', undefined, old);
+  assert.deepEqual([me.status, me.body.error], [401, 'ALPHA_PAUSED'], 'an open session ends like an expired one');
+  const login = await t.call('POST', '/auth/login', { email: 'old@example.com', password: 'abcd1234' });
+  assert.deepEqual([login.status, login.body.error], [403, 'ALPHA_PAUSED']);
+  assert.match(login.body.message, /11월 20일/);
+  assert.equal((await t.call('POST', '/auth/signup', { email: 'new@example.com', password: 'abcd1234', invite: code, terms: true })).body.error, 'ALPHA_PAUSED');
+  assert.equal((await t.call('POST', '/auth/start', { email: 'old@example.com' })).body.error, 'ALPHA_PAUSED');
+  assert.equal((await t.call('POST', '/auth/start', { email: 'new2@example.com', invite: code, terms: true })).body.error, 'ALPHA_PAUSED');
+  assert.equal((await t.call('GET', '/me', undefined, boss.session)).status, 200, 'the admin keeps working');
+  assert.ok((await t.login('boss@example.com')).session, 'and can still sign in');
+  t.tick(Date.parse('2026-11-19T15:00:00Z') - t.deps.now().getTime()); // 11/20 00:00 KST: open again
+  assert.ok((await t.call('POST', '/auth/login', { email: 'old@example.com', password: 'abcd1234' })).body.session);
+  assert.notEqual((await t.call('POST', '/auth/signup', { email: 'beta@example.com', password: 'abcd1234', invite: code, terms: true })).body.error, 'ALPHA_PAUSED');
 });

@@ -268,3 +268,13 @@
 {"symbol":"066570","date":"2026-10-22","open":162200,"high":172000,"low":157900,"close":158200,"volume":2544190,"source":"naver:fchart:week","retrievedAt":"2026-10-22T09:25:51.036Z"}
 {"symbol":"066570","date":"2026-10-22","open":162200,"high":172000,"low":157900,"close":158400,"volume":2546012,"source":"naver:fchart:week","retrievedAt":"2026-10-22T09:41:29.698Z"}
 {"symbol":"066570","date":"2026-10-22","open":162200,"high":172000,"low":157900,"close":158500,"volume":2561669,"source":"naver:fchart:week","retrievedAt":"2026-10-22T14:43:04.918Z"}
+{"symbol":"066570","date":"2026-10-23","open":162200,"high":172000,"low":152200,"close":155700,"volume":3077689,"source":"naver:fchart:week","retrievedAt":"2026-10-23T14:21:52.770Z"}
+{"symbol":"066570","date":"2026-10-23","open":162200,"high":172000,"low":152200,"close":155700,"volume":3087074,"source":"naver:fchart:week","retrievedAt":"2026-10-26T16:17:00.264Z"}
+{"symbol":"066570","date":"2026-10-26","open":153700,"high":158400,"low":153500,"close":156500,"volume":422519,"source":"naver:fchart:week","retrievedAt":"2026-10-26T16:17:00.264Z"}
+{"symbol":"066570","date":"2026-10-27","open":153700,"high":161300,"low":153500,"close":158600,"volume":892117,"source":"naver:fchart:week","retrievedAt":"2026-10-27T15:30:41.603Z"}
+{"symbol":"066570","date":"2026-10-28","open":153700,"high":164600,"low":153500,"close":162400,"volume":1753125,"source":"naver:fchart:week","retrievedAt":"2026-10-28T08:03:46.851Z"}
+{"symbol":"066570","date":"2026-10-28","open":153700,"high":164600,"low":153500,"close":162400,"volume":1756889,"source":"naver:fchart:week","retrievedAt":"2026-10-28T08:22:17.568Z"}
+{"symbol":"066570","date":"2026-10-28","open":153700,"high":164600,"low":153500,"close":162600,"volume":1788168,"source":"naver:fchart:week","retrievedAt":"2026-10-28T16:13:56.361Z"}
+{"symbol":"066570","date":"2026-10-29","open":153700,"high":164600,"low":151200,"close":155000,"volume":2882495,"source":"naver:fchart:week","retrievedAt":"2026-10-29T16:22:40.731Z"}
+{"symbol":"066570","date":"2026-10-30","open":153700,"high":164600,"low":147600,"close":147800,"volume":3606225,"source":"naver:fchart:week","retrievedAt":"2026-10-30T16:10:34.877Z"}
+{"symbol":"066570","date":"2026-11-02","open":146600,"high":155500,"low":144800,"close":153800,"volume":483931,"source":"naver:fchart:week","retrievedAt":"2026-11-02T19:42:06.315Z"}

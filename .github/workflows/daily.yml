@@ -21,6 +21,10 @@ on:
         description: "Or ask a past day's market committee again (YYYY-MM-DD), from that day's stored numbers"
         type: string
         default: ''
+      report_date:
+        description: "Give that day's (YYYY-MM-DD) stock reports the AI committee they missed when the monthly budget ran out"
+        type: string
+        default: ''
 permissions:
   contents: write
   pages: write
@@ -68,6 +72,7 @@ jobs:
           EDGAR_CONTACT: ${{ secrets.EDGAR_CONTACT }}
           MARKET_REGEN: ${{ inputs.regen_market && '1' || '' }}
           MARKET_DATE: ${{ inputs.market_date || '' }}
+          REPORT_DATE: ${{ inputs.report_date || '' }}
           GNM_FETCH_CACHE: ${{ github.event_name == 'push' && 'replay' || 'record' }}
         run: npm run daily
       - name: Keep this run's fetches for the next merge

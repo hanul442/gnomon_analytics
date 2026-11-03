@@ -107,3 +107,8 @@
 {"symbol":"068270","receiptNo":"20260731000526","date":"2026-07-31","reporter":"이영남","position":"이사","isExec":true,"isMajor":false,"shares":6579,"delta":6579,"ratio":0,"retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"068270","receiptNo":"20260731000527","date":"2026-07-31","reporter":"염동림","position":"이사","isExec":true,"isMajor":false,"shares":1528,"delta":1528,"ratio":0,"retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"068270","receiptNo":"20260821000493","date":"2026-08-21","reporter":"마민지","position":"이사","isExec":true,"isMajor":false,"shares":5172,"delta":-793,"ratio":0,"retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"068270","receiptNo":"20261030000738","date":"2026-10-30","reporter":"양성욱","position":"전무","isExec":true,"isMajor":false,"shares":8143,"delta":793,"ratio":0,"retrievedAt":"2026-10-30T16:10:34.877Z"}
+{"symbol":"068270","receiptNo":"20261030000739","date":"2026-10-30","reporter":"양현주","position":"전무","isExec":true,"isMajor":false,"shares":22576,"delta":-878,"ratio":0.01,"retrievedAt":"2026-10-30T16:10:34.877Z"}
+{"symbol":"068270","receiptNo":"20261030000740","date":"2026-10-30","reporter":"신경하","position":"전무","isExec":true,"isMajor":false,"shares":13258,"delta":340,"ratio":0.01,"retrievedAt":"2026-10-30T16:10:34.877Z"}
+{"symbol":"068270","receiptNo":"20261030000741","date":"2026-10-30","reporter":"최병욱","position":"상무","isExec":true,"isMajor":false,"shares":15394,"delta":1731,"ratio":0.01,"retrievedAt":"2026-10-30T16:10:34.877Z"}
+{"symbol":"068270","receiptNo":"20261030000742","date":"2026-10-30","reporter":"강경두","position":"이사","isExec":true,"isMajor":false,"shares":4090,"delta":1000,"ratio":0,"retrievedAt":"2026-10-30T16:10:34.877Z"}

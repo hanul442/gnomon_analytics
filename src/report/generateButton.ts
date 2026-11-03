@@ -38,10 +38,10 @@ export const GEN_BUTTON_JS_FN = `function gnmGenButton(label, attrs, small) { va
 export const GEN_BUTTON_CSS = `
 .gen-wrap{position:relative;display:inline-block;isolation:isolate;flex:none;max-width:100%}
 .gen-btn{--gr:24px;--gp:4px;--gt:.4s;--gc:#101010;--gh:200deg;user-select:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;
-  font:inherit;font-size:14.5px;font-weight:700;color:#fff;background-color:var(--gc);border:solid 1px #ffffff22;border-radius:var(--gr);cursor:pointer;outline:none;
+  font:inherit;font-size:17px;font-weight:700;color:#fff;background-color:var(--gc);border:solid 1px #ffffff22;border-radius:var(--gr);cursor:pointer;outline:none;
   box-shadow:inset 0 1px 1px rgba(255,255,255,.2),inset 0 2px 2px rgba(255,255,255,.15),inset 0 4px 4px rgba(255,255,255,.1),inset 0 8px 8px rgba(255,255,255,.05),inset 0 16px 16px rgba(255,255,255,.05),
     0 -1px 1px rgba(0,0,0,.02),0 -2px 2px rgba(0,0,0,.03),0 -4px 4px rgba(0,0,0,.05),0 -8px 8px rgba(0,0,0,.06),0 -16px 16px rgba(0,0,0,.08);
-  transition:box-shadow var(--gt),border var(--gt),background-color var(--gt),transform .18s cubic-bezier(.2,1.4,.4,1)}
+  transition:box-shadow var(--gt),border var(--gt),background-color var(--gt),transform .18s var(--spring-bouncy)}
 .gen-btn::before{content:"";position:absolute;top:calc(0px - var(--gp));left:calc(0px - var(--gp));width:calc(100% + var(--gp) * 2);height:calc(100% + var(--gp) * 2);
   border-radius:calc(var(--gr) + var(--gp));pointer-events:none;background-image:linear-gradient(0deg,#0004,#000a);z-index:-1;transition:box-shadow var(--gt),filter var(--gt);
   box-shadow:0 -8px 8px -6px #0000 inset,0 -16px 16px -8px #00000000 inset,1px 1px 1px #fff2,2px 2px 2px #fff1,-1px -1px 1px #0002,-2px -2px 2px #0001}
@@ -56,7 +56,7 @@ export const GEN_BUTTON_CSS = `
 .gen-t1{word-spacing:-1em;white-space:nowrap}
 .gen-t1{animation:gen-appear 1s ease-in-out forwards}
 @keyframes gen-appear{0%{opacity:0}100%{opacity:1}}
-.gen-btn small{font-size:12px;font-weight:600;color:#ffffff99}
+.gen-btn small{font-size:15px;font-weight:600;color:#ffffff99}
 .gen-btn:focus-visible .gen-l,.gen-btn[data-pressed] .gen-l{animation:gen-burst 1s ease-in-out forwards,gen-letter 1.2s ease-in-out infinite;animation-delay:0s,1s}
 @keyframes gen-burst{0%,100%{filter:blur(0)}45%{transform:translateY(-2px) scale(1.18);filter:blur(.6px) brightness(150%) drop-shadow(0 0 6px hsl(var(--gh),100%,70%))}}
 .gen-btn:focus-visible .gen-svg,.gen-btn[data-pressed] .gen-svg{animation-duration:1.2s;animation-delay:.2s}
@@ -78,7 +78,7 @@ ${LETTER_DELAYS.slice(1).map((i) => `.gen-btn:focus-visible .gen-l:nth-child(${i
 [data-job]{position:relative}
 [data-job] .job-main,[data-job] .job-sub,[data-job] .job-spin,[data-job] .job-ok{position:relative;z-index:1}
 .job-main{font-weight:800;white-space:nowrap}
-.job-sub{font-size:12px;font-weight:600;opacity:.82;font-variant-numeric:tabular-nums;white-space:nowrap}
+.job-sub{font-size:15px;font-weight:600;opacity:.82;font-variant-numeric:tabular-nums;white-space:nowrap}
 .job-fill{position:absolute;left:0;top:0;bottom:0;z-index:0;min-width:18px;border-radius:var(--gr,999px) 4px 4px var(--gr,999px);pointer-events:none;overflow:hidden;
   background:linear-gradient(90deg,rgba(0,166,251,.16),rgba(0,166,251,.46));box-shadow:inset -1px 0 rgba(143,208,255,.85);transition:width .9s linear}
 .job-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);background-size:220% 100%;animation:job-sheen 1.6s linear infinite}
@@ -88,24 +88,24 @@ ${LETTER_DELAYS.slice(1).map((i) => `.gen-btn:focus-visible .gen-l:nth-child(${i
 @keyframes job-sweep{from{background-position:-60% 0}to{background-position:160% 0}}
 .job-spin{flex:none;width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.22);border-top-color:#8FD0FF;animation:job-spin .8s linear infinite}
 @keyframes job-spin{to{transform:rotate(360deg)}}
-.job-ok{flex:none;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#86E3B5;color:#0A1626;font-size:11px;font-weight:900}
+.job-ok{flex:none;display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#86E3B5;color:#0A1626;font-size:12px;font-weight:900}
 [data-job=running],[data-job=sending]{cursor:progress}
 .gen-btn{max-width:100%}.gen-btn[data-job]{flex-wrap:wrap;row-gap:1px}
 .gen-btn[data-job=confirm]{border-color:rgba(0,166,251,.75);animation:job-ask 2.4s ease-in-out infinite}
 @keyframes job-ask{50%{box-shadow:0 0 0 5px rgba(0,166,251,.16),inset 0 1px 1px rgba(255,255,255,.2)}}
 /* G-196: a state change (price → 접수 → 진행 → 완료 → back) no longer snaps: the new content rises in while the width eases to its size. */
-.gen-btn>.gen-txt,.gen-btn>small,.gen-btn>.job-main,.gen-btn>.job-sub,.gen-btn>.job-spin,.gen-btn>.job-ok{transition:opacity .24s var(--ease-out,ease-out),transform .34s cubic-bezier(.2,1.2,.4,1)}
-.gen-btn>.gen-svg{transition:opacity .24s var(--ease-out,ease-out),transform .34s cubic-bezier(.2,1.2,.4,1),fill var(--gt),filter var(--gt)}
+.gen-btn>.gen-txt,.gen-btn>small,.gen-btn>.job-main,.gen-btn>.job-sub,.gen-btn>.job-spin,.gen-btn>.job-ok{transition:opacity .24s var(--ease-out,ease-out),transform .34s var(--spring-snappy)}
+.gen-btn>.gen-svg{transition:opacity .24s var(--ease-out,ease-out),transform .34s var(--spring-snappy),fill var(--gt),filter var(--gt)}
 .gen-btn.sw-in>:not(.job-fill){opacity:0;transform:translateY(6px) scale(.97)}
 .gen-btn.sw-in>.job-sub{transform:translateY(8px)}
 .gen-btn:active{transform:scale(.97)}
 .gen-btn[data-job=done]{border-color:rgba(134,227,181,.6)}
 .gen-btn[data-job=short],.gen-btn[data-job=failed]{border-color:rgba(255,122,122,.55)}
-.job-cancel{margin-left:8px;height:32px;padding:0 12px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.06);color:#C3CDD6;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;vertical-align:middle}
-.gen-wrap>.job-cancel{position:absolute;right:8px;top:50%;margin:0;transform:translateY(-50%);z-index:2;animation:job-cancel-in .3s .12s both cubic-bezier(.2,1.3,.4,1)}@keyframes job-cancel-in{from{opacity:0;transform:translate(6px,-50%) scale(.9)}}.gen-btn[data-job=confirm]{padding-right:76px}
+.job-cancel{margin-left:8px;height:32px;padding:0 12px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.06);color:#C3CDD6;font:inherit;font-size:15.5px;font-weight:700;cursor:pointer;vertical-align:middle}
+.gen-wrap>.job-cancel{position:absolute;right:8px;top:50%;margin:0;transform:translateY(-50%);z-index:2;animation:job-cancel-in .3s .12s both var(--spring-snappy)}@keyframes job-cancel-in{from{opacity:0;transform:translate(6px,-50%) scale(.9)}}.gen-btn[data-job=confirm]{padding-right:76px}
 .rs-bar .sa-tx small{transition:opacity .16s}.rs-bar .sa-tx small.swap{opacity:0}
 .job-float{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:6px;max-width:calc(100% - 24px);animation:job-rise .35s var(--ease-out)}
-.job-float .job-x{width:34px;height:34px;border:0;border-radius:50%;background:rgba(10,22,38,.8);color:#fff;font-size:18px;cursor:pointer}
+.job-float .job-x{width:34px;height:34px;border:0;border-radius:50%;background:rgba(10,22,38,.8);color:#fff;font-size:19px;cursor:pointer}
 @keyframes job-rise{from{opacity:0;transform:translate(-50%,16px)}}
 @media (min-width:821px){.job-float{bottom:24px}}
 @media (prefers-reduced-motion:reduce){.gen-l,.gen-svg,.gen-t1,.job-fill::after,.gen-btn[data-job=confirm],.gen-wrap>.job-cancel{animation:none!important;color:#fff}.job-fill.indet{animation-duration:3s}}`;
@@ -126,7 +126,7 @@ window.gnmBtnSwap = function (b, html) {
   b.classList.add('sw-in'); b.innerHTML = html;
   clearTimeout(b._sw); b.style.transition = 'none'; b.style.width = ''; var w1 = b.getBoundingClientRect().width;
   b.style.width = w0 + 'px'; void b.offsetWidth;
-  b.style.transition = 'width .34s cubic-bezier(.3,1.15,.5,1),box-shadow var(--gt),border var(--gt),background-color var(--gt),transform .18s cubic-bezier(.2,1.4,.4,1)'; b.style.width = w1 + 'px';
+  b.style.transition = 'width .34s var(--spring-snappy),box-shadow var(--gt),border var(--gt),background-color var(--gt),transform .18s var(--spring-bouncy)'; b.style.width = w1 + 'px';
   requestAnimationFrame(function () { requestAnimationFrame(function () { b.classList.remove('sw-in'); }); });
   b._sw = setTimeout(function () { b.style.width = ''; b.style.transition = ''; }, 380);
 };

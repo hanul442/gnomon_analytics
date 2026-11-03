@@ -28,3 +28,4 @@
 {"symbol":"440110","receiptNo":"20260623000390","date":"2026-06-23","reporter":"박상현","position":"전무","isExec":true,"isMajor":false,"shares":0,"delta":-5200,"ratio":0,"retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"440110","receiptNo":"20260623000392","date":"2026-06-23","reporter":"이성갑","position":"상무","isExec":true,"isMajor":false,"shares":257700,"delta":1100,"ratio":0.51,"retrievedAt":"2026-10-16T09:44:17.785Z"}
 {"symbol":"440110","receiptNo":"20260724000541","date":"2026-07-24","reporter":"박만수","position":"상무","isExec":true,"isMajor":false,"shares":10960,"delta":9600,"ratio":0.02,"retrievedAt":"2026-10-16T09:44:17.785Z"}
+{"symbol":"440110","receiptNo":"20261023000420","date":"2026-10-23","reporter":"박만수","position":"상무","isExec":true,"isMajor":false,"shares":14160,"delta":3200,"ratio":0.03,"retrievedAt":"2026-10-23T14:21:52.770Z"}

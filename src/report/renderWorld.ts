@@ -86,7 +86,7 @@ export function marketsOf(m: WorldMarkets): Map<string, { name: string; move: st
 export function issueRow(i: WorldIssue, mk: ReturnType<typeof marketsOf>, full: boolean): string {
   const chips = i.markets.map((k) => mk.get(k)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => `<span class="wd-chip">${esc(x.name)} <b class="${x.tone}">${esc(x.move)}</b></span>`).join('');
   const more = full && i.headlines.length > 1 ? `<details class="wd-more"><summary>같은 이슈 제목 ${i.headlines.length}개</summary><ul>${i.headlines.map((h) => `<li><a href="${esc(h.url)}" target="_blank" rel="noopener">${esc(h.title)}</a> <small>${esc(h.publisher)}</small></li>`).join('')}</ul></details>` : '';
-  const move = i.isNew ? '<span class="wd-new">NEW</span>' : i.prevRank && i.prevRank !== i.rank ? `<span class="wd-mv ${i.prevRank > i.rank ? 'up' : 'down'}">${i.prevRank > i.rank ? '▲' : '▼'}${Math.abs(i.prevRank - i.rank)}</span>` : '';
+  const move = i.isNew ? '<span class="wd-new">새</span>' : i.prevRank && i.prevRank !== i.rank ? `<span class="wd-mv ${i.prevRank > i.rank ? 'up' : 'down'}">${i.prevRank > i.rank ? '▲' : '▼'}${Math.abs(i.prevRank - i.rank)}</span>` : '';
   return `<li class="wd-is" data-tag="${esc(i.tag ?? '')}"><b class="wd-rk">${i.rank}</b><div><div class="wd-ih"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a>${move}</div><small class="wd-im">${i.lang === 'en' ? '영문 · ' : ''}매체 ${i.outlets}곳 · ${esc(i.publisher)}</small><div class="wd-chips">${i.tag ? `<span class="wd-chip tag">${esc(i.tag)}</span>` : ''}${chips}</div>${more}</div></li>`;
 }
 
@@ -163,10 +163,27 @@ ${dual}<section class="card wd-card"><div class="wd-h"><h2>10년 국채 금리</
   const rateRow = (x: WorldMacroQuote) => (x.group === 'policy' ? row(x.name, '기준금리', valueText(x), '', '') : mrow(x));
   const rates0 = of('policy', 'bond');
   const rateRows = [...rateFirst.map((k) => rates0.find((x) => x.key === k)).filter((x): x is WorldMacroQuote => !!x), ...rates0.filter((x) => !rateFirst.includes(x.key))].map(rateRow);
+  // G-287 (한서님 10/23 '해외 보여주는건 이전에 보여주던 방식으로 … 지수말한거임'): 증시 is the old world 증시 view again —
+  // every index's move in one grid, then one card per region (한국·미국·아시아·유럽·남미) with whether it is trading.
+  // VIX, the US market's fear gauge, sits in 미국.
+  const regionCards = regions.map((r) => { const xs = m.indices.filter((x) => x.region === r); if (!xs.length) return ''; const open = xs.some((x) => x.open);
+    return `<section class="card wd-card"><div class="wd-h"><h2>${r}</h2><span class="wd-st${open ? ' on' : ''}">${open ? '지금 거래 중' : '마감'}</span></div>${xs.map(irow).join('')}${r === '미국' && vix ? mrow(vix) : ''}</section>`; }).join('');
+  // G-301 (한서님 10/26 새 구조): each index once — 한국·미국 cards, the other regions folded under them; no color grid
+  // (it repeated the region cards' numbers).
+  const regionCard = (r: WorldRegion) => { const xs = m.indices.filter((x) => x.region === r); if (!xs.length) return ''; const open = xs.some((x) => x.open);
+    return `<section class="card wd-card"><div class="wd-h"><h2>${r}</h2><span class="wd-st${open ? ' on' : ''}">${open ? '지금 거래 중' : '마감'}</span></div>${xs.map(irow).join('')}${r === '미국' && vix ? mrow(vix) : ''}</section>`; };
+  const restRegions: WorldRegion[] = ['아시아', '유럽', '남미'];
+  const rest = restRegions.map(regionCard).join('');
+  const stocksOld = `<div class="mk-sec mk-ix" id="mk-stocks">${regionCard('한국')}${regionCard('미국')}${rest ? `<details class="card wd-card mk-more"><summary><b>아시아 · 유럽 · 남미</b><span class="muted small">지수 ${m.indices.filter((x) => restRegions.includes(x.region)).length}개 ›</span></summary><div class="mk-more-in">${rest}</div></details>` : ''}</div>`;
+  void regionCards; void heat; void up; void down;
+  void ixRows;
   const market = [
-    sec('stocks', '증시', `${m.indices.length}개 중 <span class="up">▲${up}</span> <span class="down">▼${down}</span>`, ixRows, '지수', 6),
-    sec('rates', '금리', '기준금리 · 10년 국채', rateRows, '금리', 4),
-    sec('fx', '환율', '원화는 하나은행 고시', of('fx').map(mrow), '환율', 4),
+    stocksOld,
+    // G-301: 환율 first, with the 원/달러 × 미국 10년 chart folded inside it; then one 금리 card (기준금리 bars + 10년물).
+    sec('fx', '환율', '원화는 하나은행 고시', of('fx').map(mrow), '환율', 4).replace(/<\/section>$/, dualFig ? `<details class="mk-dual"><summary>금리와 같이 보기 ›</summary>${dualFig}</details></section>` : '</section>'),
+    policy.length
+      ? `<section class="card wd-card mk-sec" id="mk-rates"><div class="wd-h"><h2>금리</h2><span class="muted small">기준금리 · 10년물</span></div><div class="wd-bars">${policy.map((x) => `<div><span>${esc(x.name)}</span><i><i style="width:${((x.value / maxRate) * 100).toFixed(0)}%"></i></i><b>${fmt(x.value, 2)}%</b></div>`).join('')}</div><h3 class="mk-h3">10년 국채</h3>${contentMore([...rateFirst.map((k) => rates0.find((x) => x.key === k)).filter((x): x is WorldMacroQuote => !!x && x.group === 'bond'), ...rates0.filter((x) => x.group === 'bond' && !rateFirst.includes(x.key))].map(mrow), '금리', (h) => h, 4)}</section>`
+      : sec('rates', '금리', '기준금리 · 10년 국채', rateRows, '금리', 4),
     sec('commod', '원자재', '선물 · 달러, 운임', [...of('energy', 'metals'), ...of('ship')].map(mrow), '원자재', 5),
   ].join('') + `<p class="fine wd-fine">장이 열린 곳은 15분 안팎 늦은 값이에요. 선은 최근 30거래일 종가예요. 줄을 누르면 크게 볼 수 있어요.</p>`;
   // 요약's four numbers: one per kind, each named with its kind and opening its own section in 시장.
@@ -211,51 +228,64 @@ function heatBg(v: number | null): string {
 }
 
 export const WORLD_CSS = `<style>${KIT_WORLD_CSS}
-.wd-p{max-width:820px;margin:0 auto;padding:0 16px;display:flex;flex-direction:column;gap:12px}.wd-p[hidden],.wd-is[hidden]{display:none}.wd-asof{max-width:820px;margin:-6px auto 6px;padding:0 20px;font-size:12px;color:var(--muted)}
-.wd-card{padding:16px 18px;margin:0}.wd-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}.wd-h h2{margin:0;font-size:16.5px}.wd-out{margin:6px 4px -2px}
-.wd-link{border:0;background:none;padding:6px 0;min-height:32px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
-.wd-hero p{margin:6px 0;font-size:20px;line-height:1.45;font-weight:500;letter-spacing:-.01em}.wd-hero small{font-size:12px;color:var(--muted)}
-.wd-bands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.wd-band{display:flex;flex-direction:column;gap:1px;padding:9px 10px;border-radius:14px;background:var(--soft)}.wd-band.on{box-shadow:inset 0 0 0 1.5px var(--fg)}.wd-band small{font-size:11.5px;color:var(--muted)}.wd-band b{font-size:16px;font-variant-numeric:tabular-nums}
+.wd-p{max-width:820px;margin:0 auto;padding:0 16px;display:flex;flex-direction:column;gap:12px}.wd-p[hidden],.wd-is[hidden]{display:none}.wd-asof{max-width:820px;margin:-6px auto 6px;padding:0 20px;font-size:15px;color:var(--muted)}
+.wd-card{padding:16px 18px;margin:0}.wd-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}.wd-h h2{margin:0;font-size:18.5px}.wd-out{margin:6px 4px -2px}
+.wd-link{border:0;background:none;padding:6px 0;min-height:32px;font:inherit;font-size:15.5px;font-weight:600;color:var(--muted);cursor:pointer}a.wd-link{text-decoration:none;display:inline-flex;align-items:center}
+.wd-hero p{margin:6px 0;font-size:21px;line-height:1.45;font-weight:500;letter-spacing:-.01em}.wd-hero small{font-size:15px;color:var(--muted)}
+.wd-bands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.wd-band{display:flex;flex-direction:column;gap:1px;padding:9px 10px;border-radius:14px;background:var(--soft)}.wd-band.on{box-shadow:inset 0 0 0 1.5px var(--fg)}.wd-band small{font-size:15px;color:var(--muted)}.wd-band b{font-size:17.5px;font-variant-numeric:tabular-nums}
 .wd-stats{grid-template-columns:repeat(2,minmax(0,1fr));margin:0}@media(min-width:700px){.wd-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .wd-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto 70px;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.wd-row:first-of-type{border-top:0}
-.wd-n{display:flex;flex-direction:column;min-width:0}.wd-n b{font-size:14.5px;font-weight:600;line-height:1.3;word-break:keep-all}.wd-n small{font-size:12px;color:var(--muted)}
-.wd-v{font-size:14.5px;font-variant-numeric:tabular-nums}.wd-c{font-size:14.5px;text-align:right;font-variant-numeric:tabular-nums}.wd-row:not(:has(.wd-sp)){grid-template-columns:minmax(0,1fr) auto 70px}
+.wd-n{display:flex;flex-direction:column;min-width:0}.wd-n b{font-size:17px;font-weight:600;line-height:1.3;word-break:keep-all}.wd-n small{font-size:15px;color:var(--muted)}
+.wd-v{font-size:17px;font-variant-numeric:tabular-nums}.wd-c{font-size:17px;text-align:right;font-variant-numeric:tabular-nums}.wd-row:not(:has(.wd-sp)){grid-template-columns:minmax(0,1fr) auto 70px}
 .wd-sp{width:48px;height:22px}.wd-sp path{fill:none;stroke:var(--muted);stroke-width:1.6;vector-effect:non-scaling-stroke}.wd-sp.up path{stroke:#f04452}.wd-sp.down path{stroke:#3182f6}
-.wd-st{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--fg2)}.wd-st.on{background:var(--fg);color:var(--surface-solid)}
-.wd-heat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.wd-heat span{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:48px;border-radius:12px;color:var(--fg)}.wd-heat small{font-size:11.5px;font-weight:700}.wd-heat b{font-size:12.5px;font-variant-numeric:tabular-nums}
+.wd-st{font-size:15px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--fg2)}.wd-st.on{background:var(--fg);color:var(--surface-solid)}
+.wd-heat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.wd-heat span{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:48px;border-radius:12px;color:var(--fg)}.wd-heat small{font-size:15px;font-weight:700}.wd-heat b{font-size:15.5px;font-variant-numeric:tabular-nums}
 @media(min-width:620px){.wd-heat{grid-template-columns:repeat(7,minmax(0,1fr))}}
-.wd-bars{display:grid;gap:9px}.wd-bars div{display:grid;grid-template-columns:92px minmax(0,1fr) 52px;gap:10px;align-items:center;font-size:14px}.wd-bars span{font-weight:600}.wd-bars>div>i{height:8px;border-radius:4px;background:var(--soft)}.wd-bars>div>i>i{display:block;height:8px;border-radius:4px;background:var(--fg);opacity:.75}.wd-bars b{text-align:right;font-variant-numeric:tabular-nums}
+.wd-bars{display:grid;gap:9px}.wd-bars div{display:grid;grid-template-columns:92px minmax(0,1fr) 52px;gap:10px;align-items:center;font-size:16px}.wd-bars span{font-weight:600}.wd-bars>div>i{height:8px;border-radius:4px;background:var(--soft)}.wd-bars>div>i>i{display:block;height:8px;border-radius:4px;background:var(--fg);opacity:.75}.wd-bars b{text-align:right;font-variant-numeric:tabular-nums}
 .wd-iss{list-style:none;margin:0;padding:0}.wd-is{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:13px 0;border-top:1px solid var(--line)}.wd-is:first-child{border-top:0;padding-top:4px}
-.wd-rk{font-size:18px;font-weight:300;font-variant-numeric:tabular-nums}.wd-ih{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.wd-ih a{font-size:15px;font-weight:600;line-height:1.45;color:inherit;text-decoration:none}.wd-ih a:hover{text-decoration:underline}
-.wd-new,.wd-mv{flex:none;font-size:11.5px;font-weight:800}.wd-new{color:var(--fg)}.wd-im{display:block;font-size:12px;color:var(--muted);margin:3px 0 6px}
-.wd-chips{display:flex;flex-wrap:wrap;gap:6px}.wd-chip{display:inline-flex;gap:4px;align-items:center;font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;background:var(--soft);color:var(--fg2)}.wd-chip.tag{background:none;box-shadow:inset 0 0 0 1px var(--line-strong)}
-.wd-more summary{cursor:pointer;font-size:12.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center;margin-top:4px}.wd-more ul{margin:2px 0;padding-left:16px}.wd-more li{font-size:13px;line-height:1.5;margin:3px 0}.wd-more a{color:inherit}.wd-more small{color:var(--muted)}
-.wd-filter{display:flex;gap:6px;flex-wrap:wrap}.wd-filter button{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font:inherit;font-size:13px;font-weight:600;color:var(--fg2);cursor:pointer}.wd-filter button[aria-pressed=true]{background:var(--fg);border-color:var(--fg);color:var(--surface-solid)}
-.wd-fine{margin:0 4px}.up{color:#f04452}.down{color:#3182f6}
-${CONTENT_MORE_CSS}.mk-sec .content-more>summary{display:flex;justify-content:center;align-items:center;min-height:44px;border-top:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);list-style:none}.mk-sec .content-more>summary::-webkit-details-marker{display:none}.mk-sec{scroll-margin-top:16px}
-.mk-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mk-tile{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px;border:0;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm,0 1px 2px rgba(0,0,0,.04));font:inherit;color:var(--fg);text-align:left;cursor:pointer;min-height:44px}.mk-tile small{font-size:12px;font-weight:600;color:var(--muted)}.mk-tile b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}.mk-tile span{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.wd-rk{font-size:19px;font-weight:300;font-variant-numeric:tabular-nums}.wd-ih{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.wd-ih a{font-size:17px;font-weight:600;line-height:1.45;color:inherit;text-decoration:none}.wd-ih a:hover{text-decoration:underline}
+.wd-new,.wd-mv{flex:none;font-size:15px;font-weight:800}.wd-new{color:var(--fg)}.wd-im{display:block;font-size:15px;color:var(--muted);margin:3px 0 6px}
+.wd-chips{display:flex;flex-wrap:wrap;gap:6px}.wd-chip{display:inline-flex;gap:4px;align-items:center;font-size:15px;font-weight:600;padding:4px 9px;border-radius:999px;background:var(--soft);color:var(--fg2)}.wd-chip.tag{background:none;box-shadow:inset 0 0 0 1px var(--line-strong)}
+.wd-more summary{cursor:pointer;font-size:15.5px;color:var(--muted);min-height:30px;display:inline-flex;align-items:center;margin-top:4px}.wd-more ul{margin:2px 0;padding-left:16px}.wd-more li{font-size:15.5px;line-height:1.5;margin:3px 0}.wd-more a{color:inherit}.wd-more small{color:var(--muted)}
+.wd-filter{display:flex;gap:6px;flex-wrap:wrap}.wd-filter button{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font:inherit;font-size:15.5px;font-weight:600;color:var(--fg2);cursor:pointer}.wd-filter button[aria-pressed=true]{background:var(--fg);border-color:var(--fg);color:var(--surface-solid)}
+.wd-fine{margin:0 4px}.mk-ix{display:flex;flex-direction:column;gap:12px}.mk-more>summary{display:flex;justify-content:space-between;align-items:baseline;gap:8px;cursor:pointer;list-style:none;font-size:18.5px}.mk-more>summary::-webkit-details-marker{display:none}.mk-more-in{display:flex;flex-direction:column;gap:12px;margin-top:10px}.mk-more-in>.card{padding:0;box-shadow:none;background:none;border:0}.mk-dual{margin-top:6px;border-top:1px solid var(--line);padding-top:8px}.mk-dual>summary{cursor:pointer;font-size:15.5px;font-weight:600;color:var(--muted);min-height:36px;display:flex;align-items:center;list-style:none}.mk-dual>summary::-webkit-details-marker{display:none}.mk-h3{margin:14px 0 2px;font-size:16px;color:var(--fg2)}.up{color:#f04452}.down{color:#3182f6}
+${CONTENT_MORE_CSS}.mk-sec .content-more>summary{display:flex;justify-content:center;align-items:center;min-height:44px;border-top:1px solid var(--line);font-size:15.5px;font-weight:600;color:var(--muted);list-style:none}.mk-sec .content-more>summary::-webkit-details-marker{display:none}.mk-sec{scroll-margin-top:16px}
+.mk-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mk-tile{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:14px;border:0;border-radius:18px;background:var(--surface);box-shadow:var(--shadow-sm,0 1px 2px rgba(0,0,0,.04));font:inherit;color:var(--fg);text-align:left;cursor:pointer;min-height:44px}.mk-tile small{font-size:15px;font-weight:600;color:var(--muted)}.mk-tile b{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums}.mk-tile span{font-size:15.5px;font-weight:700;font-variant-numeric:tabular-nums}
 </style>`;
 
 export const WORLD_JS = `<script>
 (function () {
   var tabs = [].slice.call(document.querySelectorAll('[data-wd]'));
+  var cur = 'sum';
   var pick = function (k, push) {
     tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t.getAttribute('data-wd') === k)); });
-    document.querySelectorAll('[data-wd-p]').forEach(function (p) { p.hidden = p.getAttribute('data-wd-p') !== k; });
-    if (push) history.replaceState(null, '', k === 'sum' ? location.pathname : '#' + k);
+    var lab = '';
+    document.querySelectorAll('[data-wd-p]').forEach(function (p) { p.hidden = p.getAttribute('data-wd-p') !== k; if (!p.hidden) lab = p.getAttribute('data-wd-label') || ''; });
+    // G-301: with no part buttons (home), the title names the open page and the phone's back returns to 오늘.
+    if (!tabs.length) { var h1 = document.querySelector('main .pg-title h1'); if (h1) h1.hidden = k !== 'sum'; }
+    if (push) { var url = k === 'sum' ? location.pathname : '#' + k; if (!tabs.length && k !== 'sum' && cur === 'sum') history.pushState({ wd: k }, '', url); else history.replaceState(null, '', url); }
+    cur = k;
   };
+  window.addEventListener('popstate', function () { var h = location.hash.slice(1); if (document.querySelector('[data-wd-p="' + (h || 'sum') + '"]')) { pick(h || 'sum', false); window.scrollTo(0, 0); } });
+  window.addEventListener('hashchange', function () { if (!location.hash || location.hash === '#top') { pick('sum', false); window.scrollTo(0, 0); } });
   // G-277 (한서님 10/21): switching a tab goes back to the top of the page.
   tabs.forEach(function (t) { t.addEventListener('click', function () { pick(t.getAttribute('data-wd'), true); window.scrollTo({ top: 0, behavior: 'smooth' }); }); });
   document.addEventListener('click', function (e) {
-    var g = e.target.closest && e.target.closest('[data-wd-go]'); if (g) { pick(g.getAttribute('data-wd-go'), true); var sec = g.getAttribute('data-mk') && document.getElementById('mk-' + g.getAttribute('data-mk')); if (sec) sec.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0); return; }
+    var g = e.target.closest && e.target.closest('[data-wd-go]');
+    if (g && g.getAttribute('data-wd-go') === 'sum' && history.state && history.state.wd) { history.back(); return; }
+    if (g) { pick(g.getAttribute('data-wd-go'), true); var sec = g.getAttribute('data-mk') && document.getElementById('mk-' + g.getAttribute('data-mk')); if (sec) sec.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0); return; }
+    // G-287: 한국 · 세계 on home's 이슈 switch which list shows.
+    var ig = e.target.closest && e.target.closest('[data-iss-go]');
+    if (ig) { var w = ig.getAttribute('data-iss-go'); document.querySelectorAll('[data-iss-go]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === ig)); }); document.querySelectorAll('[data-iss]').forEach(function (d) { d.hidden = d.getAttribute('data-iss') !== w; }); return; }
     var f = e.target.closest && e.target.closest('[data-wd-tag]'); if (!f) return;
-    var tag = f.getAttribute('data-wd-tag');
-    document.querySelectorAll('[data-wd-tag]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
-    document.querySelectorAll('[data-wd-p="news"] [data-tag]').forEach(function (li) { li.hidden = !!tag && li.getAttribute('data-tag') !== tag; });
+    var tag = f.getAttribute('data-wd-tag'), scope = f.closest('[data-iss]') || document.querySelector('[data-wd-p="news"]') || document;
+    scope.querySelectorAll('[data-wd-tag]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === f)); });
+    scope.querySelectorAll('[data-tag]').forEach(function (li) { li.hidden = !!tag && li.getAttribute('data-tag') !== tag; });
   });
   // G-281: the old 증시·금리·환율·원자재 links land on their section in 시장.
   var h = location.hash.slice(1), old = { stocks: 'stocks', rates: 'rates', commod: 'commod', fx: 'fx' };
   if (old[h] && document.querySelector('[data-wd-p="market"]')) { pick('market', false); var s0 = document.getElementById('mk-' + old[h]); if (s0) s0.scrollIntoView({ block: 'start' }); }
-  else if (['com', 'market', 'stocks', 'rates', 'commod', 'news'].indexOf(h) >= 0) pick(h, false);
+  else if (['market', 'stocks', 'rates', 'commod', 'news'].indexOf(h) >= 0 && document.querySelector('[data-wd-p="' + h + '"]')) pick(h, false);
+  else if (h === 'com' && !document.querySelector('[data-wd-p="com"]')) location.replace('reports.html');
 })();
 </script>`;

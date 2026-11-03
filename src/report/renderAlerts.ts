@@ -9,25 +9,24 @@ export { SW_JS, MANIFEST } from './pushParts.js';
 /** The alerts settings (G-97) as parts, so 설정 (G-210) can hold them with the rest. */
 export function alertsParts(): { css: string; html: string; script: string } {
   const PREFS: [string, string, string][] = [
+    ['morning', '아침 브리핑', '평일 아침 8시, 장 열기 1시간 전에 간밤 미국 시장과 내 종목의 깨진 판단 조건·새 공시를 한 번 알려요'],
     ['daily', '매일 리포트', '장 마감 뒤 그날 리포트가 나오면 알려요. 관심 종목 리포트가 있으면 그 종목을 먼저 알려요.'],
     ['watchReport', '관심 종목 새 리포트', '☆ 해 둔 종목의 리포트가 새로 나오면'],
     ['screen', '스크리너 조건', '저장한 조건에 새로 걸린 종목이 생기면 (조건별 켜기는 아래에서)'],
     ['price', '가격 알림 · 장중 급변', '내가 건 가격에 닿거나, 관심 종목이 장중 크게 움직이면'],
     ['request', '요청한 리포트', '즉시 생성하거나 요청한 리포트가 완성되면(실패하면 그 이유도)'],
-    ['update', '업데이트 소식', '큰 업데이트(x.Y.0)가 나오면 한 번 알려요. 밤 10시~아침 8시 사이 것은 아침에 보내요'],
-    ['updatePatch', '작은 업데이트도 알림', '기본은 꺼져 있어요. 켜면 작은 수리(x.Y.Z)도 알려요'],
     ['weekly', '주간 요약 메일', '일요일 저녁에 관심 종목·내 조건·이번 주 리포트를 메일로 모아 보내요'],
   ];
   const css = `<style>
-.al{max-width:760px;margin:16px auto 32px}.al .card{padding:18px;margin-bottom:12px}.al h1{font-size:23px;margin:2px 0 6px}.al h2{font-size:17px;margin:0 0 8px}.al p{line-height:1.6}
+.al{max-width:760px;margin:16px auto 32px}.al .card{padding:18px;margin-bottom:12px}.al h1{font-size:23px;margin:2px 0 6px}.al h2{font-size:18.5px;margin:0 0 8px}.al p{line-height:1.6}
 .al-push{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.al-state{font-weight:800}.al-state.on{color:var(--good)}.al-btns{display:flex;gap:6px;flex-wrap:wrap}.al-btns button{font:inherit;font-weight:800;border-radius:12px;padding:10px 14px;cursor:pointer;border:1.5px solid var(--navy);background:var(--navy);color:var(--on-accent)}.al-btns .ghost{background:var(--surface);color:var(--navy)}.al-btns button[hidden]{display:none}
-.al-help{font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.6}.al-help b{color:var(--fg2)}
-.al-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.al-row:first-of-type{border-top:0}.al-row b{display:block;font-size:15px}.al-row small{color:var(--muted);font-size:12.5px;line-height:1.5}
-.sw{position:relative;display:block;flex:none}.sw input{opacity:0;width:0;height:0;position:absolute}.al-list .al-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.al-list .al-item:first-child{border-top:0}.al-item a{font-weight:700}.al-item small{display:block;color:var(--muted);font-size:12px}.al-item button{font:inherit;font-size:12.5px;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:5px 10px;cursor:pointer}.al-done{opacity:.6}
-.al-add{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.al-add input,.al-add select{font:inherit;padding:10px;border:1px solid var(--line-strong);border-radius:10px;min-width:0}.al-add .wide{grid-column:1/-1}.al-add button{grid-column:1/-1;font:inherit;font-weight:800;border:0;border-radius:12px;padding:11px;background:var(--navy);color:var(--on-accent);cursor:pointer}.al-sugg{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}.al-sugg button{grid-column:auto;background:var(--soft);color:var(--fg);font-weight:700;font-size:13px;padding:6px 10px;border-radius:999px}
-.al-plan{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13.5px}.al-plan[hidden]{display:none}.al-now{margin:2px 0 4px;font-size:13.5px;color:var(--fg2)}.al-now[hidden]{display:none}.al-plan b{font-size:15px}.al-plan span{color:var(--fg2)}.al-plan a{font-weight:800;margin-left:auto}.al-lock{opacity:.55}.al-lock small::after{content:' · 플러스부터';font-weight:700;color:var(--accent-strong)}
-.al-quiet{display:flex;gap:12px;flex-wrap:wrap;padding-top:4px}.al-quiet label{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--fg2)}.al-quiet input{font:inherit;padding:8px 10px;border:1px solid var(--line-strong);border-radius:10px}
-.al-msg{font-size:13px;color:var(--muted);margin:6px 0 0}.al-msg:empty{display:none}.al-login{text-align:center}
+.al-help{font-size:15.5px;color:var(--muted);margin:10px 0 0;line-height:1.6}.al-help b{color:var(--fg2)}
+.al-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.al-row:first-of-type{border-top:0}.al-row b{display:block;font-size:17px}.al-row small{color:var(--muted);font-size:15.5px;line-height:1.5}
+.sw{position:relative;display:block;flex:none}.sw input{opacity:0;width:0;height:0;position:absolute}.al-list .al-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}.al-list .al-item:first-child{border-top:0}.al-item a{font-weight:700}.al-item small{display:block;color:var(--muted);font-size:15px}.al-item button{font:inherit;font-size:15.5px;border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:5px 10px;cursor:pointer}.al-done{opacity:.6}
+.al-add{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.al-add input,.al-add select{font:inherit;padding:10px;border:1px solid var(--line-strong);border-radius:10px;min-width:0}.al-add .wide{grid-column:1/-1}.al-add button{grid-column:1/-1;font:inherit;font-weight:800;border:0;border-radius:12px;padding:11px;background:var(--navy);color:var(--on-accent);cursor:pointer}.al-sugg{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}.al-sugg button{grid-column:auto;background:var(--soft);color:var(--fg);font-weight:700;font-size:15.5px;padding:6px 10px;border-radius:999px}
+.al-plan{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:16px}.al-plan[hidden]{display:none}.al-now{margin:2px 0 4px;font-size:16px;color:var(--fg2)}.al-now[hidden]{display:none}.al-plan b{font-size:17px}.al-plan span{color:var(--fg2)}.al-plan a{font-weight:800;margin-left:auto}.al-lock{opacity:.55}.al-lock small::after{content:' · 플러스부터';font-weight:700;color:var(--accent-strong)}
+.al-quiet{display:flex;gap:12px;flex-wrap:wrap;padding-top:4px}.al-quiet label{display:flex;align-items:center;gap:8px;font-size:16px;color:var(--fg2)}.al-quiet input{font:inherit;padding:8px 10px;border:1px solid var(--line-strong);border-radius:10px}
+.al-msg{font-size:15.5px;color:var(--muted);margin:6px 0 0}.al-msg:empty{display:none}.al-login{text-align:center}
 </style>`;
   const html = `<section class="card al-login" id="al-login" hidden><p>알림은 로그인한 계정으로 받아요.</p><a class="btn" href="login.html?return=settings.html%23alerts">로그인</a></section>
 <div id="al-body" hidden>
@@ -128,11 +127,11 @@ export function movedPage(part: string): string {
  * one tap opens the note's page; × or 모두 지우기 clears; reading the page marks everything read.
  */
 export function renderInbox(): string {
-  const body = `<style>.ib{max-width:760px;margin:0 auto}.ib-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}.ib-head h1{margin:0}.ib-tools{display:flex;gap:8px;flex-wrap:wrap}
-.ib-day{font-size:12.5px;font-weight:800;color:var(--muted);margin:18px 4px 6px}.ib-item{display:grid;grid-template-columns:28px minmax(0,1fr) 36px;gap:8px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}
-.ib-item a{text-decoration:none;color:inherit;min-width:0}.ib-item b{display:block;font-size:15px}.ib-item small{display:block;color:var(--fg2);font-size:13px;margin-top:2px;line-height:1.5}.ib-item time{display:block;font-size:11.5px;color:var(--muted);margin-top:4px}
-.ib-ic{font-size:18px;line-height:1.4;text-align:center}.ib-item.new{border-color:var(--accent-line);background:var(--accent-soft)}.ib-x{border:0;background:none;font-size:20px;color:var(--muted);cursor:pointer;border-radius:8px}.ib-empty{text-align:center;padding:40px 16px;color:var(--fg2)}</style>
-<div class="ib"><section class="hero"><div class="hero-main ib-head"><div><div class="eyebrow"><span>알림</span></div><h1>알림함</h1></div><div class="ib-tools"><button type="button" class="chip-toggle" id="ib-clear" hidden>모두 지우기</button><a class="chip-toggle" href="alerts.html">⚙︎ 알림 설정</a></div></div></section>
+  const body = `<style>.ib{max-width:760px;margin:0 auto}.ib-top{margin:6px 0 0}.ib-head{display:flex;justify-content:flex-end;align-items:flex-end;gap:10px;flex-wrap:wrap}.ib-head h1{margin:0}.ib-tools{display:flex;gap:8px;flex-wrap:wrap}
+.ib-day{font-size:15.5px;font-weight:800;color:var(--muted);margin:18px 4px 6px}.ib-item{display:grid;grid-template-columns:28px minmax(0,1fr) 36px;gap:8px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}
+.ib-item a{text-decoration:none;color:inherit;min-width:0}.ib-item b{display:block;font-size:17px}.ib-item small{display:block;color:var(--fg2);font-size:15.5px;margin-top:2px;line-height:1.5}.ib-item time{display:block;font-size:15px;color:var(--muted);margin-top:4px}
+.ib-ic{font-size:19px;line-height:1.4;text-align:center}.ib-item.new{border-color:var(--accent-line);background:var(--accent-soft)}.ib-x{border:0;background:none;font-size:21px;color:var(--muted);cursor:pointer;border-radius:8px}.ib-empty{text-align:center;padding:40px 16px;color:var(--fg2)}</style>
+<div class="ib"><section class="ib-top"><div class="ib-head"><div class="ib-tools"><button type="button" class="chip-toggle" id="ib-clear" hidden>모두 지우기</button><a class="chip-toggle" href="alerts.html">⚙︎ 알림 설정</a></div></div></section>
 <section class="block" id="ib-list"><p class="muted">불러오는 중이에요.</p></section></div>
 <script>
 // G-161: the account script loads after this page's own; wait for it, or a signed-in reader is asked to log in.
@@ -145,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var items = [];
   var paint = function () {
     clear.hidden = !items.length;
-    if (!items.length) { box.innerHTML = '<div class="ib-empty card">알림이 없어요.<br>새 리포트, 관심 종목, 가격 알림, 스크리너 조건, 업데이트 소식이 여기와 휴대폰으로 와요.</div>'; return; }
+    if (!items.length) { box.innerHTML = '<div class="ib-empty card">알림이 없어요.<br>새 리포트, 관심 종목, 가격 알림, 스크리너 조건 소식이 여기와 휴대폰으로 와요.</div>'; return; }
     var last = '';
     box.innerHTML = items.map(function (n) { var t = kst(n.created_at), head = t.day !== last ? '<div class="ib-day">' + t.day.slice(5).replace('-', '/') + '</div>' : ''; last = t.day;
       return head + '<div class="ib-item' + (n.read_at ? '' : ' new') + '" data-nid="' + n.id + '"><span class="ib-ic" aria-hidden="true">' + (ICON[n.kind] || '🔔') + '</span><a href="' + esc(n.link ? siteLink(n.link) : '#') + '"><b>' + esc(n.title) + '</b><small>' + esc(n.body) + '</small><time>' + t.hm + '</time></a><button type="button" class="ib-x" data-del="' + n.id + '" aria-label="이 알림 지우기">×</button></div>'; }).join('');

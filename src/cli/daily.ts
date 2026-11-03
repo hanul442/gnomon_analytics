@@ -32,7 +32,7 @@ import { fetchUsdtKrw, withOuterHistory } from '../sources/coinHistory.js';
 import { escapeRegex } from './weekly.js';
 import { renderCoinsRedirect } from '../report/renderCoins.js';
 import { watchInfo } from '../report/conclusion.js';
-import { renderGuide, renderUpdates, renderSurvey, validBanners } from '../report/alphaPages.js';
+import { renderCommitteeGuide, renderGuide, renderUpdates, renderSurvey, validBanners } from '../report/alphaPages.js';
 import { trackSignals } from './signals.js';
 import type { RiskFlag } from '../analysis/riskFilings.js';
 import { SITE_CONFIG } from '../report/alpha.js';
@@ -49,7 +49,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { digestIssues, readDigests, type DigestSource } from '../analysis/newsDigest.js';
 import { renderIssuePage } from '../report/renderIssue.js';
 import { CHART_ASSET, FONT_DIR, renderDeep, renderIndex, renderReport, renderStockPage, type HomeEntry, type PageContext, APP_CSS, APP_JS, UI_JS, ASSET_VERSION } from '../report/renderHtml.js';
-import { homeIssues, renderHome, renderReportsPage, type IndexQuote, type UsTemp } from '../report/renderHome.js';
+import { homeIssues, renderHome, renderReportsPage, rosterReports, type IndexQuote, type UsTemp } from '../report/renderHome.js';
+import { rosterCard } from '../report/committeeSeats.js';
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
 import { renderInbox, MANIFEST, movedPage, SW_JS } from '../report/renderAlerts.js';
@@ -60,7 +61,7 @@ import { renderSignalsPage, renderThemesPage, signalData, themeData, themesHome 
 import { fetchThemes, type Theme } from '../sources/naverTheme.js';
 import { renderCheckout, renderPricing } from '../report/renderPricing.js';
 import { validPromos } from '../report/plans.js';
-import { renderPaper, renderScorecard } from '../report/renderScorecard.js';
+import { renderMembersPage, renderPaper, renderScorecard } from '../report/renderScorecard.js';
 import { renderPrivacy, renderTerms } from '../report/legal.js';
 import { renderScreener, screenerRows } from '../report/renderScreener.js';
 import { fetchNaverDailyBars, NAVER_PRICE_SOURCE } from '../sources/naverPrice.js';
@@ -86,6 +87,7 @@ import { collectUniverse, readCorpCodes, readListedStocks, type ListedStock } fr
 import { loadRequests, type ReportRequest } from '../config/requests.js';
 import { latestSelection, pickTicker, pool, runSelection } from './weekly.js';
 import { writeStockPages } from './stockPages.js';
+import { writeSitemap } from './sitemap.js';
 import { marketPulse, quickCalc, type MarketPulse, type StockCalc } from '../analysis/quickCalc.js';
 import type { Selection, SelectionParams } from '../analysis/selection.js';
 import type { UniverseRow } from '../sources/naverList.js';
@@ -211,6 +213,8 @@ interface RunOptions {
   /** Injected in tests instead of a real API client. */
   anthropic?: Anthropic;
   fetch?: typeof fetch;
+  /** Manual run (env REPORT_DATE): that day's reports whose AI was skipped by the monthly budget get their committee now. */
+  fillDate?: string;
 }
 
 export interface TickerResult {
@@ -436,7 +440,9 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
       if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
     }
   }
-  const market = today.hour >= SETTLED_HOUR_KST ? await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget) : undefined;
+  if (options.fillDate) console.log(`fill ${options.fillDate}: ${JSON.stringify(await fillBudgetSkipped(root, options.fillDate, budget, { now, apiKey: options.apiKey, ...(options.anthropicApiKey ? { anthropicApiKey: options.anthropicApiKey } : {}), ...(options.anthropic ? { anthropic: options.anthropic } : {}), ...(options.fetch ? { fetch: options.fetch } : {}) }))}`);
+  // A manual past-day market committee (MARKET_DATE) runs at any hour; today's waits for the settled close.
+  const market = today.hour >= SETTLED_HOUR_KST || process.env.MARKET_DATE ? await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget) : undefined;
   // G-284: news summaries use the same monthly AI budget; pictures are looked up with the run's fetch.
   const newsClient = options.anthropic ?? (options.anthropicApiKey ? new Anthropic({ apiKey: options.anthropicApiKey, timeout: 60000, maxRetries: 1 }) : null);
   await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp, now, news: { client: newsClient, budget, ...fetchOpt } });
@@ -621,6 +627,36 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
 }
 
 /**
+ * Gives a past day's reports the committee they missed because the monthly AI budget ran out
+ * (commentary SKIPPED with AI_MONTHLY_BUDGET). Only the AI part is added; the numbers stay as written that day.
+ * The analysts' calls are not logged for scoring: they were made after that day, so they would not be fair calls.
+ */
+export async function fillBudgetSkipped(root: string, date: string, budget: AiBudget, options: { now: Date; apiKey: string; anthropicApiKey?: string; anthropic?: Anthropic; fetch?: typeof fetch }): Promise<Record<string, string>> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error(`REPORT_DATE must be YYYY-MM-DD: ${date}`);
+  const out: Record<string, string> = {};
+  const dirs = await readdir(join(root, 'reports'), { withFileTypes: true }).catch(() => []);
+  for (const d of dirs) {
+    if (!d.isDirectory() || d.name === 'market') continue;
+    const file = join(root, 'reports', d.name, `${date}.json`);
+    const report = await readFile(file, 'utf8').then((t) => JSON.parse(t) as DailyReport, () => null);
+    const c = report?.commentary;
+    if (!report || c?.status !== 'SKIPPED' || !c.error?.startsWith('AI_MONTHLY_BUDGET')) continue;
+    if (!budget.allows('deep')) { out[d.name] = 'BUDGET'; continue; }
+    budget.reserve('deep');
+    if (report.currency !== 'USD' && report.kind !== 'coin') await attachFilingExcerpts(report.filings, options.apiKey, options.fetch ?? fetch);
+    const commentary = await writeCommentary(report, {
+      now: () => options.now,
+      ...(options.anthropic ? { client: options.anthropic } : {}),
+      ...(options.anthropicApiKey ? { apiKey: options.anthropicApiKey } : {}),
+    });
+    await budget.record(d.name, 'deep', commentary, options.now);
+    out[d.name] = commentary.status;
+    if (commentary.status === 'OK') await writeFile(file, `${JSON.stringify(await storable({ ...report, commentary }))}\n`);
+  }
+  return out;
+}
+
+/**
  * Builds a report from everything known at `now`. Used for the dated report
  * (written once after 18:00 KST) and for the live front page (every run).
  * The live page reuses the latest dated report's AI commentary, labelled
@@ -759,8 +795,9 @@ async function loadReports(reportDir: string): Promise<DailyReport[]> {
  * without the address falls back to the mock account and shows a signed-in alpha user as 무료.
  */
 export async function configureSite(root: string): Promise<void> {
-  const config = JSON.parse(await readFile(join(root, 'gnm.config.json'), 'utf8').catch(() => '{}')) as { apiUrl?: string };
+  const config = JSON.parse(await readFile(join(root, 'gnm.config.json'), 'utf8').catch(() => '{}')) as { apiUrl?: string; siteUrl?: string };
   SITE_CONFIG.apiUrl = process.env.GNM_API_URL ?? config.apiUrl ?? '';
+  SITE_CONFIG.siteUrl = process.env.GNM_SITE_URL ?? config.siteUrl ?? '';
 }
 
 /** G-284: what the run gives the in-app news pages: an AI client for summaries, the budget, and fetch for pictures. */
@@ -863,6 +900,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   // Picture banners named in banners.json (teasers).
   await cp(new URL('../../assets/banners/', import.meta.url), join(siteDir, 'assets', 'banners'), { recursive: true }).catch(() => undefined);
   await writeFile(join(siteDir, 'guide.html'), renderGuide());
+  await writeFile(join(siteDir, 'committee-guide.html'), renderCommitteeGuide());
   await writeFile(join(siteDir, 'updates.html'), renderUpdates());
   // G-137: what the API's update note reads after each deploy.
   await writeFile(join(siteDir, 'version.json'), JSON.stringify({ version: VERSION, date: RELEASES[0]?.[1] ?? '', note: RELEASES[0]?.[2] ?? '' }));
@@ -874,6 +912,8 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   const dataDate = extras.pulse?.date ?? null;
   const signals = await trackSignals(root, rows, dataDate, dataDate ?? kstParts(new Date()).date);
   await writeFile(join(siteDir, 'scorecard.html'), renderScorecard(home.filter((e) => e.group !== 'past'), signals.board));
+  // G-301 (한서님 10/26 새 구조): 위원회 › 위원 — the faces and each member's record.
+  await writeFile(join(siteDir, 'members.html'), renderMembersPage(home.filter((e) => e.group !== 'past'), rosterCard(rosterReports(home))));
   await writeFile(join(siteDir, 'terms.html'), renderTerms());
   await writeFile(join(siteDir, 'privacy.html'), renderPrivacy());
   await writeFile(join(siteDir, 'paper.html'), renderPaper());
@@ -981,6 +1021,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
     await copyFile(join(serifRoot, 'files', file), join(siteDir, FONT_DIR, 'serif', file));
   }
   await writeFile(join(siteDir, FONT_DIR, 'serif.css'), serifCss);
+  await writeSitemap(siteDir, SITE_CONFIG.siteUrl ?? '', extras.now ?? new Date());
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -1002,6 +1043,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       // G-174 (한서님 10/9): no weekly 대표 종목 or weekly-pick reports on the site.
       weeklyReports: false,
       ...(process.env.GNM_AI_BUDGET_USD ? { aiBudgetUsd: Number(process.env.GNM_AI_BUDGET_USD) } : {}),
+      ...(process.env.REPORT_DATE ? { fillDate: process.env.REPORT_DATE } : {}),
     }))
     .then((result) => {
       console.log(JSON.stringify(result));

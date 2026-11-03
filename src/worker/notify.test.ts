@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cleanPrefs, DEFAULT_PREFS, inQuiet, notifyUser, runDailyNotify, runPriceAlerts, runUpdateNotify } from './notify.js';
+import { cleanPrefs, DEFAULT_PREFS, inQuiet, notifyUser, runDailyNotify, runMorningBrief, runPriceAlerts, runUpdateNotify, worldLine } from './notify.js';
 import { b64u, encryptPayload, unb64u, vapid, vapidHeader } from './push.js';
 import { testDb } from './testDb.js';
 
@@ -251,4 +251,77 @@ test('alpha wrap-up notice (G-241): from 10/24 10:00 KST, once per tester, 🔔 
   assert.deepEqual(await runWrapupNotify(at('2026-10-27T01:00:00Z'), env), { sent: 1, mailed: 1 });
   await db.prepare("INSERT INTO users (id, email, plan, role, created_at) VALUES ('u5', 'e@example.com', 'alpha', 'user', '2026-10-31T00:00:00Z')").run();
   assert.deepEqual(await runWrapupNotify(at('2026-10-31T15:00:00Z'), env), { sent: 0, mailed: 0 });
+});
+
+test('alpha end notice (G-306): 10/31 from 10:00 KST, once per tester, survey line only for who has not answered', async () => {
+  const db = testDb();
+  const { runAlphaEndNotify } = await import('./notify.js');
+  await db.prepare("INSERT INTO users (id, email, plan, role, created_at) VALUES ('u1', 'a@example.com', 'alpha', 'user', '2026-10-06T00:00:00Z'), ('u2', 'b@example.com', 'alpha', 'user', '2026-10-06T00:00:00Z'), ('u3', 'c@example.com', 'alpha', 'user', '2026-10-06T00:00:00Z')").run();
+  await db.prepare("UPDATE users SET disabled = 1 WHERE id = 'u3'").run();
+  await db.prepare("INSERT INTO surveys (user_id, kind, answers, created_at) VALUES ('u2', 'wrapup', '{}', '2026-10-24T00:30:00Z')").run();
+  const sent: { to: string; subject: string; html: string }[] = [];
+  const fetchFn = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (String(url).startsWith('https://api.resend.com')) { const b = JSON.parse(String(init!.body)); sent.push({ to: b.to[0], subject: b.subject, html: b.html }); return new Response('{}', { status: 200 }); }
+    return new Response('', { status: 404 });
+  }) as typeof fetch;
+  const env = { RESEND_API_KEY: 'k', SITE_URL: SITE };
+  const at = (iso: string) => ({ db, fetch: fetchFn, site: SITE, now: new Date(iso) });
+  assert.deepEqual(await runAlphaEndNotify(at('2026-10-31T00:50:00Z'), env), { sent: 0, mailed: 0 }, '09:50 KST: not yet');
+  assert.deepEqual(await runAlphaEndNotify(at('2026-10-31T01:00:00Z'), env), { sent: 2, mailed: 2 }, 'u1 and u2; u3 is off');
+  const n1 = await db.prepare("SELECT kind, title, body, link FROM notifications WHERE user_id = 'u1'").first<{ kind: string; title: string; body: string; link: string }>();
+  const n2 = await db.prepare("SELECT body, link FROM notifications WHERE user_id = 'u2'").first<{ body: string; link: string }>();
+  assert.deepEqual([n1!.kind, n1!.title, n1!.link], ['notice', '알파 테스트가 오늘 끝나요', 'survey.html?k=wrapup']);
+  assert.match(n1!.body, /오늘 밤 12시까지/);
+  assert.equal(n2!.link, 'index.html');
+  assert.doesNotMatch(n2!.body, /설문/);
+  const m1 = sent.find((m) => m.to === 'a@example.com')!, m2 = sent.find((m) => m.to === 'b@example.com')!;
+  assert.match(m1.subject, /\[그노몬\] 알파 테스트가 오늘 끝나요/);
+  assert.match(m1.html, /survey\.html\?k=wrapup/);
+  assert.match(m2.html, /11월 20일/);
+  assert.doesNotMatch(m2.html, /마무리 설문/);
+  assert.deepEqual(await runAlphaEndNotify(at('2026-10-31T01:10:00Z'), env), { sent: 0, mailed: 0 }, 'once');
+  assert.deepEqual(await runAlphaEndNotify(at('2026-10-31T15:00:00Z'), env), { sent: 0, mailed: 0 }, 'after 10/31 nobody');
+  assert.match(m2.html, /로그인을 잠시 쉬어요/);
+  // While the alpha rests no note reaches a tester; the admin still gets them.
+  const { notifyUser } = await import('./notify.js');
+  await db.prepare("INSERT INTO users (id, email, plan, role, created_at) VALUES ('boss', 'boss@example.com', 'alpha', 'admin', '2026-10-06T00:00:00Z')").run();
+  const note = { title: 't', body: 'b', link: 'index.html' };
+  assert.equal(await notifyUser(at('2026-11-05T00:00:00Z'), 'u1', 'notice', note), false);
+  assert.equal(await notifyUser(at('2026-11-05T00:00:00Z'), 'boss', 'notice', note), true);
+  assert.equal(await notifyUser(at('2026-11-20T00:00:00Z'), 'u1', 'notice', note), true);
+});
+
+test('morning briefing (G-308): weekdays 08:00–09:00 KST, once a day; world line for all, broken conditions and filings for my stocks; evening note counts scoring', async () => {
+  const db = testDb(), sent: string[] = [];
+  for (const id of ['u1', 'u2']) await db.prepare("INSERT INTO users (id, email, plan, created_at) VALUES (?, ?, 'plus', ?)").bind(id, `${id}@x.test`, '2026-10-01T00:00:00Z').run();
+  await db.prepare('INSERT INTO watchlists (user_id, symbols, updated_at) VALUES (?, ?, ?)').bind('u1', JSON.stringify(['000660', '005930', '035420']), '2026-10-01T00:00:00Z').run();
+  const world = { generatedAt: '2026-10-26T20:08:00Z', indices: [{ key: '.INX', changePct: 0.7, at: null }, { key: '.IXIC', changePct: -0.834, at: null }], macro: [{ key: 'USDKRW', value: 1326.2, changePct: 0 }] };
+  const fetcher = (async (url: string) => {
+    sent.push(String(url));
+    if (String(url).endsWith('/world.json')) return Response.json(world);
+    if (String(url).endsWith('/watchinfo.json')) return Response.json({ '000660': { c: 1, f: 0, n: 0, d: '2026-10-26', k: 2, sn: 3, sh: 2 }, '005930': { c: 1, f: 1, n: 0, d: '2026-10-26', ft: '임원ㆍ주요주주특정증권등소유상황보고서' }, '035420': { c: 1, f: 1, n: 0, d: '2026-10-05', k: 1, ft: '옛 공시' } });
+    if (String(url).endsWith('/search.json')) return Response.json({ items: [['005930', '삼성전자'], ['000660', 'SK하이닉스']] });
+    return new Response('no', { status: 404 });
+  }) as typeof fetch;
+  const ctx = (iso: string) => ({ db, fetch: fetcher, site: SITE, now: new Date(iso) });
+  assert.deepEqual(await runMorningBrief(ctx('2026-10-26T22:50:00Z')), { date: null, sent: 0 }, '07:50 KST: too early');
+  assert.deepEqual(await runMorningBrief(ctx('2026-10-24T23:10:00Z')), { date: null, sent: 0 }, 'Sunday 08:10 KST: no briefing');
+  const r = await runMorningBrief(ctx('2026-10-26T23:10:00Z'));
+  assert.deepEqual(r, { date: '2026-10-27', sent: 2 });
+  const rows = (await db.prepare("SELECT user_id, title, body, link FROM notifications WHERE kind = 'morning' ORDER BY user_id").all<{ user_id: string; title: string; body: string; link: string }>()).results;
+  assert.equal(rows[0]!.title, '아침 브리핑 · 내 종목 1개 판단 조건 깨짐');
+  assert.match(rows[0]!.body, /간밤 미국 S&P 500 \+0\.70% · 나스닥 -0\.83% · 원\/달러 1,326원/);
+  assert.match(rows[0]!.body, /SK하이닉스 위원 2명 조건 깨짐 · 삼성전자 공시: 임원/);
+  assert.equal(rows[0]!.link, 'watch.html'); assert.doesNotMatch(rows[0]!.body, /옛 공시/, 'an old report is not news');
+  assert.equal(rows[1]!.title, '아침 브리핑 · 10/27 화'); assert.doesNotMatch(rows[1]!.body, /내 종목/); assert.equal(rows[1]!.link, 'world.html');
+  await runMorningBrief(ctx('2026-10-26T23:40:00Z'));
+  assert.equal((await db.prepare("SELECT COUNT(*) AS n FROM notifications WHERE kind = 'morning'").first<{ n: number }>())!.n, 2, 'once a day');
+  await db.prepare('INSERT INTO notify_prefs (user_id, prefs, updated_at) VALUES (?, ?, ?)').bind('u2', JSON.stringify({ morning: false }), '2026-10-27T00:00:00Z').run();
+  await runMorningBrief(ctx('2026-10-27T23:10:00Z'));
+  assert.deepEqual((await db.prepare("SELECT user_id FROM notifications WHERE kind = 'morning' AND created_at > '2026-10-27T12:00:00Z'").all<{ user_id: string }>()).results.map((x) => x.user_id), ['u1'], 'turned off');
+  assert.equal(worldLine({ ...world, generatedAt: '2026-10-20T00:00:00Z' }, new Date('2026-10-26T23:10:00Z')), '', 'a stale snapshot says nothing');
+  // The evening note: the calls whose 20 sessions ended today, and how many were right.
+  await runDailyNotify(ctx('2026-10-26T11:00:00Z'));
+  const eve = (await db.prepare("SELECT user_id, body FROM notifications WHERE kind IN ('daily', 'watchReport') ORDER BY user_id").all<{ user_id: string; body: string }>()).results;
+  assert.match(eve[0]!.body, /오늘 채점 3건 중 2건 맞음/);
 });

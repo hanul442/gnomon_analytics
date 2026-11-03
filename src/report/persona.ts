@@ -38,11 +38,11 @@ export const TAB_KEEP: Record<Exclude<Persona, 'all'>, string[]> = {
 
 export const PERSONA_CSS = `${(Object.keys(TAB_KEEP) as Exclude<Persona, 'all'>[]).map((p) => `html[data-persona=${p}]:not(.show-all) .chips [role=tab]:not(${TAB_KEEP[p].map((t) => `#t-${t}`).join(',')})`).join(',')}{display:none}
 .pc{display:none}${(['beginner', 'trader', 'swing', 'long'] as const).map((p) => `html[data-persona=${p}] .pc-${p}`).join(',')},html[data-persona=all] .pc-swing{display:block}
-.pc-wrap{margin:14px 0 4px}.pc-wrap .persona-bar{margin-bottom:10px}.pc{margin-bottom:14px}.pc .card{border:1px solid var(--accent);background:linear-gradient(180deg,var(--soft),var(--surface))}.pc-q{font-size:12px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.pc h2{font-size:19px;margin:0 0 10px;line-height:1.45}
-.pc-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.pc-rows>div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.pc-rows span{display:block;font-size:12px;color:var(--muted)}.pc-rows b{font-size:16px}.pc-rows small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5}
+.pc-wrap{margin:14px 0 4px}.pc-wrap .persona-bar{margin-bottom:10px}.pc{margin-bottom:14px}.pc .card{border:1px solid var(--accent);background:linear-gradient(180deg,var(--soft),var(--surface))}.pc-q{font-size:15px;font-weight:800;color:var(--accent-strong);margin-bottom:4px}.pc h2{font-size:20px;margin:0 0 10px;line-height:1.45}
+.pc-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.pc-rows>div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.pc-rows span{display:block;font-size:15px;color:var(--muted)}.pc-rows b{font-size:17.5px}.pc-rows small{display:block;font-size:15px;color:var(--muted);margin-top:2px;line-height:1.5}
 html[data-persona=beginner]:not(.show-all) .pc-hide-beginner,html[data-persona=trader]:not(.show-all) .pc-hide-trader,html[data-persona=long]:not(.show-all) .pc-hide-long{display:none}
-.persona-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}.persona-bar .lbl{color:var(--muted);font-weight:700}.persona-bar button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}${PERSONAS.map((p) => `html[data-persona=${p.key}] .persona-bar [data-persona=${p.key}]`).join(',')}{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
-.theme-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}.theme-bar .lbl{color:var(--muted);font-weight:700}.theme-bar button{border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}.theme-bar button[aria-pressed=true]{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}`;
+.persona-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:15.5px}.persona-bar .lbl{color:var(--muted);font-weight:700}.persona-bar button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:5px 11px;font:inherit;font-size:15.5px;cursor:pointer}${PERSONAS.map((p) => `html[data-persona=${p.key}] .persona-bar [data-persona=${p.key}]`).join(',')}{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}
+.theme-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:15.5px}.theme-bar .lbl{color:var(--muted);font-weight:700}.theme-bar button{border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:999px;padding:5px 11px;font:inherit;font-size:15.5px;cursor:pointer}.theme-bar button[aria-pressed=true]{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}`;
 
 /** The view switch (front page and stock pages). */
 export const PERSONA_BAR = `<div class="persona-bar" role="group" aria-label="보기 방식"><span class="lbl">보기</span>${PERSONAS.map((p) => `<button type="button" data-persona="${p.key}" title="${p.question}">${p.label}</button>`).join('')}</div>`;
@@ -108,5 +108,9 @@ export function personaCards(report: DailyReport): string {
     + (snap?.per != null ? row('PER', `${snap.per.toFixed(1)}배`) : '') + (snap?.pbr != null ? row('PBR', `${snap.pbr.toFixed(2)}배`) : '')
     + (yoy != null ? row('최근 분기 영업이익', `<span class="${tone(yoy)}">${pct(yoy)}</span>`, '1년 전 같은 분기 대비') : '')
     + (snap?.consensus?.targetPriceMean ? row('증권가 평균 목표가', won(snap.consensus.targetPriceMean), '증권사 의견이에요') : ''));
-  return beginner + trader + swing + long;
+  // G-287 (한서님 10/23 '너무 겹치는거 같아 없애도'): 오늘 움직임 and 가치와 실적 are gone from the page. Each number has
+  // its place already: 지지·저항 in the price map, 거래대금·PER·PBR·수급 in 기업, 목표가 in the head, earnings in 재무제표.
+  // Their 오늘 was the report day's move too, which read against the live price in the header.
+  void trader; void long;
+  return beginner + swing;
 }

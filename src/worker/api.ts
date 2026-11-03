@@ -23,7 +23,7 @@ import { renderDeep } from '../report/renderHtml.js';
 import { renderOps } from '../report/renderAlpha.js';
 import { mailButton, mailLayout, mailList, sendMail as deliverMail } from './mail.js';
 import { withCurrency } from '../report/format.js';
-import { BETA_YES, inWrapup } from '../report/wrapup.js';
+import { ALPHA_PAUSED_TEXT, BETA_YES, alphaPaused, inWrapup } from '../report/wrapup.js';
 // Alpha API (docs/DESIGN.md §5.13, G-44): email sign-in links behind invite codes, a credit ledger,
 // credit requests approved by hand, report requests, the AI chat, surveys, feedback and usage
 // events, plus an admin view. Runs as a Cloudflare Worker over D1; pure enough to test under Node.
@@ -183,6 +183,8 @@ async function authed(req: Request, env: Env, now: Date): Promise<User> {
   if (!u) fail(401, 'LOGIN_REQUIRED', '로그인이 끝났어요. 다시 로그인해 주세요.');
   if (u!.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
   if (adminList(env).includes(u!.email)) u!.role = 'admin';
+  // G-306: while the alpha rests (11/1–19 KST) an open session ends like an expired one; the login page says why.
+  if (u!.role !== 'admin' && alphaPaused(now)) fail(401, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   // An admin can look at the site as a given plan (X-View-As) to test gates and paid flows; nothing else changes.
   const viewAs = req.headers.get('X-View-As');
   if (u!.role === 'admin' && viewAs && STORED_PLANS.includes(viewAs)) { u!.plan = viewAs; u!.role = 'user'; u!.viewAs = viewAs; }
@@ -335,8 +337,8 @@ async function adminOverview(env: Env, now: Date) {
     q('SELECT x.id, x.symbol, x.tier, x.model, x.question, x.credits, x.usd, x.status, x.rating, x.created_at, u.email FROM questions x JOIN users u ON u.id = x.user_id ORDER BY x.id DESC LIMIT 100'),
     db.prepare('SELECT COALESCE(SUM(CASE WHEN created_at >= ? THEN usd END), 0) AS today, COALESCE(SUM(usd), 0) AS month FROM questions WHERE created_at >= ?').bind(kstDayStart(now), month).first<{ today: number; month: number }>(),
   ]);
-  const pulses = surveys.filter((x) => x.kind !== 'onboarding');
-  return { users, creditRequests, actions, invites, feedback, surveys, pulses, events, questions, spend: { ...spend, dailyCap: Number(env.AI_DAILY_USD ?? 5) } };
+  const pulses = surveys.filter((x) => x.kind !== 'onboarding'), visits = await visitStats(db, now);
+  return { visits, users, creditRequests, actions, invites, feedback, surveys, pulses, events, questions, spend: { ...spend, dailyCap: Number(env.AI_DAILY_USD ?? 5) } };
 }
 
 type Handler = (ctx: { req: Request; env: Env; deps: Deps; now: Date; params: string[] }) => Promise<unknown>;
@@ -423,6 +425,7 @@ route('POST', '/auth/start', async ({ req, env, deps, now }) => {
   if ((recent?.n ?? 0) >= 5) fail(429, 'TOO_MANY', '로그인 링크를 너무 많이 요청했어요. 한 시간 뒤 다시 해 주세요.');
   const known = await db.prepare('SELECT disabled FROM users WHERE email = ?').bind(email).first<{ disabled: number }>();
   if (known?.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
+  if (alphaPaused(now) && !adminList(env).includes(email)) fail(403, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   let invite: string | null = null;
   if (!known && !adminList(env).includes(email)) {
     invite = str(b.invite, 40).toUpperCase();
@@ -444,6 +447,7 @@ route('POST', '/auth/verify', async ({ req, env, now }) => {
   if ((used.meta?.changes ?? 0) !== 1) fail(400, 'LINK_INVALID', '로그인 링크가 이미 쓰였어요.');
   const isAdmin = adminList(env).includes(row!.email);
   let u = await db.prepare('SELECT id, email, plan, role, created_at, disabled FROM users WHERE email = ?').bind(row!.email).first<User>();
+  if (!isAdmin && alphaPaused(now)) fail(403, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   if (!u) {
     const code = row!.invite_code;
     if (code) {
@@ -482,6 +486,7 @@ route('POST', '/auth/signup', async ({ req, env, now }) => {
   if (problem) fail(400, 'BAD_PASSWORD', problem);
   if (await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()) fail(409, 'ALREADY_JOINED', '이미 가입한 이메일이에요. 로그인해 주세요. 비밀번호를 정하지 않았다면 관리자에게 로그인 링크를 받아 계정 페이지에서 정할 수 있어요.');
   if (b.terms !== true) fail(400, 'TERMS_REQUIRED', '가입 동의 네 가지(이용약관, 개인정보, 투자 유의, 만 19세 이상)에 모두 체크해 주세요.');
+  if (!isAdmin && alphaPaused(now)) fail(403, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   const code = str(b.invite, 40).toUpperCase();
   if (!code && !isAdmin) fail(403, 'INVITE_REQUIRED', '처음 가입할 때는 초대 코드가 필요해요.');
   if (code) {
@@ -507,6 +512,7 @@ route('POST', '/auth/login', async ({ req, env, now }) => {
     fail(401, 'LOGIN_FAILED', '이메일 또는 비밀번호가 맞지 않아요.');
   }
   if (row!.disabled) fail(403, 'DISABLED', '사용이 중지된 계정이에요.');
+  if (alphaPaused(now) && !adminList(env).includes(row!.email)) fail(403, 'ALPHA_PAUSED', ALPHA_PAUSED_TEXT);
   await db.prepare('DELETE FROM login_attempts WHERE email = ? OR at < ?').bind(email, since).run();
   const { password_hash: _drop, ...u } = row!;
   if (adminList(env).includes(u.email)) u.role = 'admin';
@@ -940,6 +946,37 @@ route('POST', '/feedback', async ({ req, env, now }) => {
   await env.DB.prepare('INSERT INTO feedback (user_id, page, target, rating, text, created_at) VALUES (?, ?, ?, ?, ?, ?)').bind(u.id, str(b.page, 200), target, rating, text, iso(now)).run();
   return { ok: true };
 });
+
+// G-293: anonymous visits. No sign-in: the browser sends a random device id once per KST day and where it came from.
+export const VISIT_SOURCES = ['', 'search', 'insta', 'share', 'other'] as const;
+route('POST', '/visit', async ({ req, env, now }) => {
+  const b = await body(req), vid = typeof b.v === 'string' && /^[a-f0-9]{16,32}$/.test(b.v) ? b.v : '';
+  if (!vid) fail(400, 'BAD_VISIT', '방문 기록이 맞지 않아요.');
+  const src = (VISIT_SOURCES as readonly string[]).includes(String(b.src ?? '')) ? String(b.src ?? '') : 'other';
+  await env.DB.prepare('INSERT OR IGNORE INTO visits (day, vid, src) VALUES (?, ?, ?)').bind(kst(now).slice(0, 10), vid, src).run();
+  return { ok: true };
+});
+
+/** G-293: visitors per day (28 days), this week's and last week's devices, how many came back, and sources this week. */
+export async function visitStats(db: Env['DB'], now: Date) {
+  const day = (back: number) => kst(new Date(now.getTime() - back * 86_400_000)).slice(0, 10);
+  const q = <T>(sql: string, ...v: unknown[]) => db.prepare(sql).bind(...v).all<T>().then((r) => r.results);
+  const [days, week, prev, back, sources] = await Promise.all([
+    q<{ day: string; n: number }>('SELECT day, COUNT(*) AS n FROM visits WHERE day >= ? GROUP BY day ORDER BY day', day(27)),
+    db.prepare('SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE day >= ?').bind(day(6)).first<{ n: number }>(),
+    db.prepare('SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE day >= ? AND day <= ?').bind(day(13), day(7)).first<{ n: number }>(),
+    db.prepare('SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE day >= ? AND vid IN (SELECT vid FROM visits WHERE day >= ? AND day <= ?)').bind(day(6), day(13), day(7)).first<{ n: number }>(),
+    q<{ src: string; n: number }>('SELECT src, COUNT(*) AS n FROM visits WHERE day >= ? GROUP BY src ORDER BY n DESC', day(6)),
+  ]);
+  const p = prev?.n ?? 0, r = back?.n ?? 0;
+  return { days, week: week?.n ?? 0, prevWeek: p, returned: r, returnRate: p ? Math.round((r / p) * 1000) / 10 : null, sources };
+}
+
+/** G-293: visit rows are kept 120 days. */
+export async function pruneVisits(db: Env['DB'], now: Date): Promise<number> {
+  const r = await db.prepare('DELETE FROM visits WHERE day < ?').bind(kst(new Date(now.getTime() - 120 * 86_400_000)).slice(0, 10)).run();
+  return Number(r.meta?.changes ?? 0);
+}
 
 route('POST', '/events', async ({ req, env, now }) => {
   const u = await authed(req, env, now), b = await body(req);

@@ -1,11 +1,11 @@
 {
- "at": "2026-10-23T09:23:18.074Z",
- "selected": "2026-10-23",
+ "at": "2026-11-02T22:53:06.179Z",
+ "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2765
+   "count": 2769
   },
   {
    "source": "naver:m-stock:etf",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2665
+   "count": 2659
   },
   {
    "source": "naver:fchart:day:etf",
@@ -25,7 +25,7 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 298
+   "count": 299
   },
   {
    "source": "naver:global",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 45
+   "count": 38
   },
   {
    "source": "google:topic-business-ko",
@@ -50,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 65
+   "count": 70
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 57
+   "count": 49
   },
   {
    "source": "naver:world:day:all",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 956
+   "count": 324
   }
  ],
  "stocks": [
@@ -85,102 +85,12 @@
    "failedSources": []
   },
   {
-   "symbol": "373220",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "009150",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "207940",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "028050",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "329180",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "012450",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "086790",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "064350",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "010120",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "079550",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "316140",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "009540",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "010950",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "440110",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "055550",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "000500",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "247540",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "403870",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "042660",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "068270",
+   "symbol": "373220",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -190,12 +100,42 @@
    "failedSources": []
   },
   {
+   "symbol": "012450",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "329180",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "034020",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "000270",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "005380",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
    "symbol": "028260",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "267250",
+   "symbol": "278470",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "042660",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -210,32 +150,7 @@
    "failedSources": []
   },
   {
-   "symbol": "036930",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "196170",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "042700",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "229640",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "034020",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "005380",
+   "symbol": "267260",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -245,17 +160,87 @@
    "failedSources": []
   },
   {
+   "symbol": "034730",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "009830",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "042700",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "047040",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "009540",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
    "symbol": "105560",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "051910",
+   "symbol": "353200",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "278470",
+   "symbol": "011070",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "055550",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "010140",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "000720",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "032830",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "068270",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "018260",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "298040",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "128940",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "443060",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -265,7 +250,22 @@
    "failedSources": []
   },
   {
-   "symbol": "000150",
+   "symbol": "207940",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "028050",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "267270",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "053800",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -285,11 +285,6 @@
    "failedSources": []
   },
   {
-   "symbol": "009830",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "043260",
    "report": "SKIPPED",
    "failedSources": []
@@ -305,7 +300,7 @@
    "failedSources": []
   },
   {
-   "symbol": "353200",
+   "symbol": "403870",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -335,29 +330,25 @@
    "failedSources": []
   },
   {
-   "symbol": "232080",
-   "report": "WRITTEN",
+   "symbol": "TXN.O",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "077500",
-   "report": "WRITTEN",
+   "symbol": "139260",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "181710",
-   "report": "WRITTEN",
+   "symbol": "012210",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "NBIS.O",
-   "report": "WRITTEN",
+   "symbol": "086280",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-10-23",
-  "status": "OK"
- }
+ "failed": []
 }

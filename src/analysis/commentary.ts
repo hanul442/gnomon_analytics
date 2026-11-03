@@ -177,7 +177,7 @@ export const MAX_CAUTION = '최근 20거래일 가운데 하루 상승이 가장
 export function baseEvidence(report: DailyReport): EvidenceItem | null {
   const p = reportBase(report);
   if (p == null) return null;
-  return { id: 'R2', kind: 'BASE_RATE', label: '통계 기준 확률', url: '#parliament-ai',
+  return { id: 'R2', kind: 'BASE_RATE', label: '통계 기준 확률', url: '#cs-hero',
     detail: `20거래일 뒤 지금보다 높을 확률 약 ${Math.round(p * 100)}%. 2016~2026년 거래대금 상위 200종목(상장폐지 포함)으로 맞춘 통계 모델이고, 변동성이 높을수록·최근 급등이 클수록 낮아져요. 같은 자료에서 20거래일 뒤 오른 경우는 평균 ${Math.round(BASE_MODEL.fitted.upRate * 100)}%였어요. 위원회 종합 확률은 이 값에서 출발하고, 실적·공시·뉴스를 읽은 위원만 최대 ±${AI_CAP}%p 움직여요.` };
 }
 

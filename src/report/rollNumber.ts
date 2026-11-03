@@ -6,8 +6,8 @@
 export const ROLL_CSS = `
 .rl{display:inline-block;position:relative;overflow:hidden;height:1.18em;line-height:1.18;vertical-align:-.2em}
 .rl-v{display:inline-block}
-.rl.go::before{content:attr(data-seq);position:absolute;left:0;right:0;top:0;white-space:pre;text-align:center;animation:rl-out var(--d,700ms) cubic-bezier(.22,.9,.24,1) var(--dl,0ms) both}
-.rl.go .rl-v{animation:rl-in var(--d,700ms) cubic-bezier(.22,.9,.24,1) var(--dl,0ms) both}
+.rl.go::before{content:attr(data-seq);position:absolute;left:0;right:0;top:0;white-space:pre;text-align:center;animation:rl-out var(--d,700ms) var(--spring-snappy,cubic-bezier(.22,.9,.24,1)) var(--dl,0ms) both}
+.rl.go .rl-v{animation:rl-in var(--d,700ms) var(--spring-snappy,cubic-bezier(.22,.9,.24,1)) var(--dl,0ms) both}
 .rl.go.dn::before{top:auto;bottom:0;animation-name:rl-out-dn}
 .rl.go.dn .rl-v{animation-name:rl-in-dn}
 @keyframes rl-out{from{transform:translateY(0)}to{transform:translateY(calc(var(--n) * -1.18em))}}
