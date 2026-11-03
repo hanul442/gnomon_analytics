@@ -1,0 +1,2 @@
+torch==2.14.1
+toto-models==1.0.0

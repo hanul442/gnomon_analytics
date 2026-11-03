@@ -1,0 +1,2 @@
+toto-ts==0.2.0
+setuptools<80

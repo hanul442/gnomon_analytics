@@ -1,0 +1,3 @@
+granite-tsfm==0.3.11
+torch==2.11.0
+transformers==5.20.2
