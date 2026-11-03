@@ -701,7 +701,7 @@ function renderReportIn(report: DailyReport, links: { index: string; base?: stri
   // thing once: the committee card (verdict, seats, both sides), the price map, 달라진 점, 쉽게 말하면, the debate card,
   // 남은 쟁점 and the evidence (the fold, inline), 놓치기 쉬운 정보, then 내 기록.
   const seatsShown = !!committeeHero(report);
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale/.test(status) || (/rs-none/.test(status) && report.commentary?.status === 'OK') ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${seatsShown ? committeeHero(report, { head: verdictHead(report) }) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !seatsShown })}@@DIFF@@@@DEBATE@@@@AI_FOLD@@${edgeCard(report)}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale/.test(status) || (/rs-none/.test(status) && report.commentary?.status === 'OK') ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${seatsShown ? committeeHero(report, { head: verdictHead(report), from: ctx.commentaryFrom ?? null }) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !seatsShown })}@@DIFF@@@@DEBATE@@@@AI_FOLD@@${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 ${moreLinks()}`;
