@@ -1010,3 +1010,18 @@ test('alpha end (G-306): from 11/1 to 11/19 KST only the admin signs in; open se
   assert.ok((await t.call('POST', '/auth/login', { email: 'old@example.com', password: 'abcd1234' })).body.session);
   assert.notEqual((await t.call('POST', '/auth/signup', { email: 'beta@example.com', password: 'abcd1234', invite: code, terms: true })).body.error, 'ALPHA_PAUSED');
 });
+
+test('나 vs 위원회 (G-315): pick up or down, change it before the start close, one open call per stock, scored next to the committee', async () => {
+  const t = setup();
+  const { session } = await t.login('boss@example.com');
+  assert.equal((await t.call('POST', '/mycalls', { symbol: '000660', stance: 'up', com: 'down' })).status, 401, 'signed in only');
+  assert.equal((await t.call('POST', '/mycalls', { symbol: '000660', stance: 'sideways', com: 'down' }, session)).status, 400);
+  // 2026-10-05 12:00 KST (Monday, before the close): the start is that day's close.
+  const a = await t.call('POST', '/mycalls', { symbol: '000660', name: 'SK하이닉스', stance: 'up', com: 'down' }, session);
+  assert.equal(a.status, 200); assert.equal(a.body.base_day, '2026-10-05');
+  assert.equal((await t.call('POST', '/mycalls', { symbol: '000660', name: 'SK하이닉스', stance: 'down', com: 'down' }, session)).body.stance, 'down', 'still changeable');
+  t.tick(86_400_000);
+  assert.equal((await t.call('POST', '/mycalls', { symbol: '000660', stance: 'up', com: 'down' }, session)).status, 409, 'the start close is in: it stands');
+  const mine = await t.call('GET', '/mycalls?s=000660', undefined, session);
+  assert.equal(mine.body.items.length, 1); assert.equal(mine.body.items[0].stance, 'down'); assert.equal(mine.body.total.pending, 1);
+});
