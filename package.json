@@ -10,7 +10,7 @@
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test \"dist/**/*.test.js\" \"test/*.test.mjs\"",
     "daily": "node dist/cli/daily.js",
-    "test:ui": "npm run build && node scripts/check-ui.mjs"
+    "test:ui": "npm run build && node scripts/check-ui.mjs && node scripts/check-rules.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
