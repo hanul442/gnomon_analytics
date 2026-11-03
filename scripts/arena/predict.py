@@ -256,9 +256,33 @@ def tirex2(m, a):
     return run, 64
 
 
+def timestral(m, a):
+    """Mistral Timestral: 21 quantiles (0.01, 0.05, 0.1, ..., 0.9, 0.95, 0.99); the 10%..90% ones are kept."""
+    from timestral import TimestralForecaster
+    model = TimestralForecaster.from_pretrained(m['hf'], device='cpu', revision=m['revision'])
+    idx = [model.quantile_levels.index(l) for l in LEVELS]
+
+    def run(rows):
+        ctx = np.stack([closes(r, m['context']) for r in rows])
+        q = model.forecast(ctx, prediction_length=20).quantiles  # (batch, 1, 20, 21)
+        return [{'q': [round(float(q[k, 0, 19, i]) / closes(r, 1)[-1], 5) for i in idx]} for k, r in enumerate(rows)]
+    return by_length(run, m['context']), 64
+
+
+def hirondel(m, a):
+    from hirondel import HirondelForecaster
+    model = HirondelForecaster.from_pretrained(m['hf'], device='cpu', revision=m['revision'])
+
+    def run(rows):
+        q = np.asarray(model.forecast([closes(r, m['context']) for r in rows], prediction_length=20).quantiles)  # (batch, 20, 9)
+        return [{'q': [round(float(v) / closes(r, 1)[-1], 5) for v in q[k, 19]]} for k, r in enumerate(rows)]
+    return run, 64
+
+
 ADAPTERS = {'chronos': chronos_like, 'chronos2': chronos_like, 'timesfm': timesfm, 'tirex': tirex, 'toto': toto, 'sundial': sundial, 'kronos': kronos,
             'timesfm1': timesfm1, 'kairos': kairos, 'flowstate': flowstate, 'yinglong': yinglong, 'lagllama': lagllama,
-            'toto2': toto2, 'tirex2': tirex2}
+            'toto2': toto2, 'tirex2': tirex2,
+            'timestral': timestral, 'hirondel': hirondel}
 
 
 def main() -> None:
