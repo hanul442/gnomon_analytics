@@ -2945,6 +2945,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "0147B0",
+  "name": "래블업",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "014820",
   "name": "동원시스템즈",
   "market": "KOSPI"
@@ -11181,7 +11186,7 @@
  },
  {
   "symbol": "304840",
-  "name": "피플바이오",
+  "name": "타임X AI",
   "market": "KOSDAQ"
  },
  {
