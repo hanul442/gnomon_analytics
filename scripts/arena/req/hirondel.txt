@@ -1,2 +1,2 @@
 torch==2.14.1
-hirondel @ git+https://github.com/tncrd/hirondel@v1.1.0
+hirondel @ git+https://github.com/tncrd/hirondel@89a23388694637bea7365d06fa2ac982ff1546e1
