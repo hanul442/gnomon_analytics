@@ -56,3 +56,10 @@ test('xWithoutLink keeps a long post under 280', () => {
   assert.ok(xWeight(out) <= 280);
   assert.ok(out.split('\n')[1]!.endsWith('…'));
 });
+
+test('planDay: the G-322 carousel goes to the feed in order; the blog takes its weekly slides', () => {
+  const files = ['x.png', 'story.jpg', 'story.png', 'deck02-market.jpg', 'deck01-cover.jpg', 'deck03-week.jpg', 'deck03-week.png', 'deck04-miss.png', 'opinion1.jpg'];
+  const fri = planDay('2026-11-06', files, { ...texts, blog: `blog ${PROMO_NOTE}` });
+  assert.deepEqual(fri.find((p) => p.channel === 'insta')!.images, ['deck01-cover.jpg', 'deck02-market.jpg', 'deck03-week.jpg']);
+  assert.deepEqual(fri.find((p) => p.channel === 'blog')!.images, ['deck03-week.png', 'story.png', 'deck04-miss.png']);
+});
