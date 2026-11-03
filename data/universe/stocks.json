@@ -11980,6 +11980,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "359410",
+  "name": "영광",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "360070",
   "name": "탑머티리얼",
   "market": "KOSDAQ"
@@ -13387,11 +13392,6 @@
  {
   "symbol": "475230",
   "name": "엔알비",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "475240",
-  "name": "하나32호스팩",
   "market": "KOSDAQ"
  },
  {
