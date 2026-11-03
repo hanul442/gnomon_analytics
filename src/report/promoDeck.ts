@@ -179,7 +179,7 @@ ${d.week.length ? `<div style="font-size:30px;color:#666;margin-top:24px">틀린
   parts.push({ role: 'cta', body: `<div class="fill" style="display:flex;flex-direction:column;justify-content:center">
 <div class="h" style="font-size:104px">${md(scoreDate)}에<br>맞았는지<br>같이 확인해요</div>
 <div style="display:flex;gap:20px;margin-top:64px"><div class="ink" style="font-size:40px;font-weight:700;padding:28px 44px">저장해 두기</div><div class="box" style="font-size:40px;font-weight:700;padding:28px 44px">팔로우</div></div>
-<div style="font-size:36px;color:#555;margin-top:56px;line-height:1.5">전체 리포트와 위원들의 토론은<br>프로필 링크의 그노몬에서 봐요 (무료)</div></div>` });
+<div style="font-size:36px;color:#555;margin-top:56px;line-height:1.5">전체 리포트와 위원들의 토론은<br>프로필 링크의 그노몬에서 봐요 (무료)<br>베타 준비 중 · 팔로우하면 모집 소식을 먼저 알려드려요</div></div>` });
 
   const n = parts.length;
   return parts.map((p, i) => ({
