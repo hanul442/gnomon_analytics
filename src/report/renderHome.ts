@@ -23,7 +23,7 @@ import { openEvents } from './events.js';
 import { esc } from './html.js';
 import { CONTENT_MORE_CSS } from './contentMore.js';
 import { fadeGrad, gradId, smoothD } from './chartLook.js';
-import { won, tone, move as signed } from './format.js';
+import { won, tone, move as signed, withCurrency } from './format.js';
 import { homeCommittee, seatDots } from './committeeSeats.js';
 import type { DailyReport } from './dailyReport.js';
 
@@ -117,7 +117,7 @@ function reportRow(e: HomeEntry, seats = false): string {
   const r = e.report!, p = r.price, c = r.commentary?.status === 'OK' ? r.commentary : undefined;
   const line = (c?.summary?.text ?? r.headline ?? '').split(/(?<=요\.)\s/)[0] ?? '';
   return `<div class="rr" data-sym="${esc(e.symbol)}"><a class="rr-main" href="${esc(e.href)}"><div class="rr-name"><b>${esc(e.name)}</b>${e.kind && e.kind !== 'stock' ? `<span class="tier t-k">${KIND[e.kind]}</span>` : ''}${aiPill(e)}</div><p class="rr-line">${esc(line)}</p>${seats && c ? `<span class="cs-today">${seatDots(r)}</span>` : ''}</a>
-<div class="rr-side">${p ? `<b>${won(p.close)}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
+<div class="rr-side">${p ? `<b>${withCurrency(r.currency, () => won(p.close))}</b><span class="${tone(p.changePct)}">${signed(p.changePct)}</span>` : ''}</div>${star(e.symbol, e.name)}</div>`;
 }
 
 /** The newest report day's stocks with a committee verdict (위원회 › 위원's faces read them). */
@@ -169,10 +169,6 @@ const WATCH = `<section class="block" id="watch"><span id="feed" class="anchor" 
 
 
 export function renderHome(data: HomeData): string {
-  // Reports someone requested stay off the front page (G-61): they are found by search and opened with credits.
-  const entries = data.entries.filter((e) => e.group !== 'past' && e.group !== 'daily' && e.group !== 'request');
-  const order = { core: 0, weekly: 1, request: 2, past: 3, daily: 4 } as const;
-  const sorted = [...entries].sort((a, b) => order[a.group] - order[b.group] || (a.tier === b.tier ? 0 : a.tier === 'deep' ? -1 : 1));
   // G-277 (한서님 10/21 "세계+위원회를 거의 메인으로"): home is the world screen and the committee in one page.
   // G-281: four parts (요약 · 시장 · 위원회 · 이슈), switched from the bottom bar; a switch goes back to the top.
   const today = data.today ?? new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
@@ -181,6 +177,8 @@ export function renderHome(data: HomeData): string {
   const wp = data.world && (data.world.indices.length || data.world.macro.length) ? worldPanels({ markets: data.world, news: data.worldIssues ?? { from: null, to: null, articles: 0, issues: [] } }) : null;
   const issues = homeIssues(data);
   const calls = committeeToday(data.entries);
+  // Same reports as 위원회 > 채점 (scorecard.html), so the range hit rate reads the same number on both screens.
+  const scored = data.entries.filter((e) => e.group !== 'past');
   // G-295: issue pins on the world map — small on 오늘 이슈, big at the top of 시장, a sheet per region.
   const im = issueMapParts({ issues, world: data.world, universe: data.universe });
   // G-281 (한서님 10/22 "구조화시켜서 분류가 각 종류에 맞게"): four parts, one kind each, every number in one place.
@@ -188,13 +186,13 @@ export function renderHome(data: HomeData): string {
   const key = wp ? `<div class="hm-h"><h2>시장</h2><button type="button" class="wd-link" data-wd-go="market">시장 전체 ›</button></div><div class="km-stats wd-stats">${wp.key6}</div>` : fallbackNumbers(data.indices);
   // G-297 (한서님 10/24 시안): 요약 runs 배너 → 시장 → 이슈 → 내 종목 → 위원회 → 채점. The committee card shows the day's most
   // split stock as a half circle of seats, the others as split bars and one lone dissent; the range score sits under it.
-  const comBlock = calls.length ? `<div class="hm-com"><div class="hm-h"><h2>위원회 오늘</h2></div>${homeCommittee(committeeReports(data.entries), { foot: scoreLine(sorted), day: dayShort(data.entries.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK').map(madeOn).sort().at(-1) ?? ''), allHref: 'reports.html' })}</div>` : '';
+  const comBlock = calls.length ? `<div class="hm-com"><div class="hm-h"><h2>위원회 오늘</h2></div>${homeCommittee(committeeReports(data.entries), { foot: scoreLine(scored), day: dayShort(data.entries.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK').map(madeOn).sort().at(-1) ?? ''), allHref: 'reports.html' })}</div>` : '';
   // G-301 (한서님 10/26 새 구조 'ㄱㄱ'): home is one screen with no parts in the bar — 한 줄 · 배너 · 내 종목 · 위원회 오늘 ·
   // 시장 6칸 · 이슈 1~3위. 시장 전체 and 이슈 전체 open from their links; the issue map lives only in 이슈 전체.
   const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${issuesList(issues, 3, false)}</section>`;
   const sum = `<section class="hm-hero" id="mkt-hero"><p class="hm-d">${esc(dayLong(day))}</p><p class="hm-s">${esc(wp?.sentence ?? '오늘 시장을 한눈에 모았어요.')}</p></section>
 <div class="hm-bn">${banner}</div>
-<i id="watch-slot" hidden></i><div class="hm-left">${WATCH}${comBlock || scoreLine(sorted, true)}</div>${key}${issueBlock}`;
+<i id="watch-slot" hidden></i><div class="hm-left">${WATCH}${comBlock || scoreLine(scored, true)}</div>${key}${issueBlock}`;
   void callRow;
   const back = (t: string) => `<div class="hm-subh"><button type="button" class="hm-back" data-wd-go="sum" aria-label="오늘로 돌아가기">‹</button><h2>${t}</h2></div>`;
   const ISSUE_SHOW = 10;

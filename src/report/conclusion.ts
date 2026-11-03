@@ -230,6 +230,8 @@ html.mo .pm:not(.km-in) .pm-line{stroke-dashoffset:1}html.mo .pm.km-in .pm-line{
 .cl-row .cl-more{grid-area:more}
 /* A range price ("272,000원 ~ 278,000원") wraps at the tilde instead of squeezing the scenario name to one letter a line. */
 .cl-row .cl-what>b{white-space:nowrap}.cl-row .cl-px b{max-width:9.5em;text-align:right;text-wrap:balance}
+/* Phones: the price moves under the name, so a long status line ("아직 범위 밖이에요 · 범위까지 21.7%") never squeezes the name column to one letter a line. */
+@media (max-width:520px){:root body .cl-row{grid-template-columns:40px minmax(0,1fr) 14px;grid-template-areas:"ic what more" ". px more" ". sub more" ". rng more"}.cl-row .cl-px b{justify-self:start;text-align:left;max-width:none}}
 :root body .cl-sc{margin:0 0 12px;border:0;border-radius:18px;background:var(--soft);padding:12px 14px 6px}
 :root body .cl-check{border-radius:18px}
 .cl-head{display:flex;align-items:center;gap:10px;margin:-4px -6px 8px;padding:6px;border-radius:16px;text-decoration:none;color:inherit}.cl-head>span{flex:1;min-width:0}.cl-head .cl-k{display:block}.cl-head .cl-line{margin:2px 0 0;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}.cl-head>i{font-style:normal;font-size:22px;color:var(--muted)}.cl-head .cl-sub{margin:6px 0 0;font-size:17px;line-height:1.55;color:var(--fg2)}

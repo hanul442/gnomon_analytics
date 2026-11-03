@@ -122,7 +122,7 @@ ${M} .rh-pct .wp-px>b{display:none}${M} .rh-pct .wp-px>span:not(.muted){display:
 export const ROBINHOOD_JS = `(function () {
   var NS = 'http://www.w3.org/2000/svg';
   var fmt = function (v) { return Math.abs(v) >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 2 }); };
-  var chg = function (a, b) { var d = b - a, p = a ? d / a * 100 : 0; return { up: d > 0, dn: d < 0, t: (d > 0 ? '▲ ' : d < 0 ? '▼ ' : '') + fmt(Math.abs(d)) + ' (' + Math.abs(p).toFixed(2) + '%)' }; };
+  var chg = function (a, b) { var d = b - a, p = a ? d / a * 100 : 0; return { up: d > 0, dn: d < 0, t: (d > 0 ? '▲ ' : d < 0 ? '▼ ' : '') + fmt(Math.abs(d)) + ' (' + (d > 0 ? '+' : d < 0 ? '-' : '') + Math.abs(p).toFixed(2) + '%)' }; };
   var tone = function (c) { return c.dn ? 'var(--down)' : c.up ? 'var(--up)' : 'var(--fg)'; };
   /* Raw line (no smoothing), dotted start line, dot at the end. */
   var spark = function (v, w, h, cls) {
@@ -156,7 +156,10 @@ export const ROBINHOOD_JS = `(function () {
       if (!today) { c2.hidden = true; return; }
       var t = today.textContent.replace('+', ''), up = today.classList.contains('up'), dn = today.classList.contains('down');
       c2.innerHTML = '<b style="color:' + (dn ? 'var(--down)' : up ? 'var(--up)' : 'inherit') + ';font-weight:600"></b><span></span>';
-      c2.firstChild.textContent = t; c2.lastChild.textContent = '오늘 · ' + dateK(bars[bars.length - 1].date) + ' 종가';
+      c2.firstChild.textContent = t;
+      /* The quote's move is always one session against the close before it: '오늘' only while the market is open. */
+      var tag = hm.querySelector('[data-live-f=tag]');
+      c2.lastChild.textContent = tag && !tag.hidden ? (tag.classList.contains('on') ? '오늘 하루' : '마지막 거래일 하루') : dateK(bars[bars.length - 1].date) + ' 하루';
     };
     drawToday();
     if (today && window.MutationObserver) new MutationObserver(drawToday).observe(today, { childList: true, characterData: true, subtree: true, attributes: true });
