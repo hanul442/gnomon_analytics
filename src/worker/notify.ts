@@ -12,14 +12,15 @@ import { esc, mailButton, mailLayout, mailList, sendMail, type MailEnv } from '.
 import type { WatchInfo } from '../report/conclusion.js';
 import { ALPHA_END_NOTICE, WRAPUP_LINK, WRAPUP_NOTICE, alphaPaused, inAlphaEnd, inWrapup } from '../report/wrapup.js';
 
-export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'notice' | 'morning' | 'mycall' | 'test';
+export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'notice' | 'morning' | 'kill' | 'mycall' | 'test';
 /** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
 /** updatePatch (G-177): off by default, only x.Y.0 releases are announced; on, every patch too. */
 /** weekly (G-180): the Sunday-evening summary mail (watched stocks, screens, the week's reports). */
+/** kill (G-314): a watched stock closed past the line a committee member named as "틀렸다고 인정". */
 /** morning (G-308): the weekday 08:00 KST briefing (overnight world markets, my stocks' broken conditions and filings). */
-export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; updatePatch: boolean; weekly: boolean; morning: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
-export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, updatePatch: false, weekly: true, morning: true, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
-const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', morning: 'morning', mycall: null, notice: null, test: null };
+export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; updatePatch: boolean; weekly: boolean; morning: boolean; kill: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
+export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, updatePatch: false, weekly: true, morning: true, kill: true, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
+const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', morning: 'morning', kill: 'kill', mycall: null, notice: null, test: null };
 
 export async function prefsOf(db: D1, userId: string): Promise<Prefs> {
   const r = await db.prepare('SELECT prefs FROM notify_prefs WHERE user_id = ?').bind(userId).first<{ prefs: string }>();
@@ -198,6 +199,36 @@ export async function runMorningBrief(ctx: Ctx): Promise<{ date: string | null; 
     } catch { /* one user's bad row must not stop the rest */ }
   }
   return { date, sent };
+}
+
+/**
+ * G-314 (한서님 11/3, 목업 5): after the evening build, a watched stock whose close crossed the line a member named
+ * ("종가가 여기를 넘으면 틀렸다고 인정해요") gets one push. The line is the same for everyone and says nothing about
+ * buying or selling. Once per stock, report and number of broken members; reports older than 30 days (past their
+ * 20-session scoring) are left out.
+ */
+export async function runKillNotify(ctx: Ctx): Promise<{ sent: number }> {
+  const info = await siteJson<Record<string, WatchInfo>>(ctx, 'watchinfo.json');
+  if (!info) return { sent: 0 };
+  const old = kstDate(new Date(ctx.now.getTime() - 30 * 86400_000)), nm = await siteNames(ctx);
+  const broke = Object.keys(info).filter((s) => info[s]!.k && (info[s]!.d ?? '') >= old);
+  if (!broke.length) return { sent: 0 };
+  const users = (await ctx.db.prepare('SELECT u.id, u.plan, w.symbols FROM users u LEFT JOIN watchlists w ON w.user_id = u.id WHERE u.disabled = 0').all<{ id: string; plan: string; symbols: string | null }>()).results;
+  let sent = 0;
+  for (const u of users) {
+    try {
+      const watch = new Set(jsonList(u.symbols));
+      for (const s of broke.filter((x) => watch.has(x))) {
+        const w = info[s]!;
+        if (!(await once(ctx.db, `kill:${u.id}:${s}:${w.d}:${w.k}`, ctx.now))) continue;
+        const who = w.k === 1 ? '위원 1명' : `위원 ${w.k}명`;
+        const [member, line] = (w.kn ?? '').split('|');
+        const body = `${member && line ? `${member}이 "종가 ${line}로 닫히면 틀렸다고 인정해요"라고 정한 선을 마지막 종가가 넘었어요.` : '위원이 정한 틀림 기준을 마지막 종가가 넘었어요.'} ${w.d.slice(5).replace('-', '/')} 판단이에요. 사고팔라는 뜻이 아니에요.`;
+        if (await notifyUser(ctx, u.id, 'kill', { title: `${nm(s)}, ${who}의 판단이 틀림 기준을 넘었어요`, body, link: reportLink(s) })) sent += 1;
+      }
+    } catch { /* one user's bad row must not stop the rest */ }
+  }
+  return { sent };
 }
 
 /**

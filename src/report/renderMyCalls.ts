@@ -1,4 +1,4 @@
-// 나 vs 위원회 (G-315): my up/down calls next to the committee's lean, scored 20 sessions later. Signed-in only.
+// 나 vs 위원회 (G-323): my up/down calls next to the committee's lean, scored 20 sessions later. Signed-in only.
 
 import { shell } from './renderHtml.js';
 

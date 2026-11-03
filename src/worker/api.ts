@@ -38,7 +38,7 @@ import { intradaySignals, readIntraday } from '../analysis/intraday.js';
 import { readerNote } from '../report/profile.js';
 import { deepPath, DEEP_DATE, DEEP_SYMBOL, isUsSymbol, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
-import { parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
+import { INDEX_CODES, indexQuoteUrl, parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
 import { fetchNaverMinuteCandles, parseNaverMinuteChart } from '../sources/naverPrice.js';
 import { getJson as naverJson, parseFinance, parseInvestorFlows, parseResearch, parseSnapshot, parseStockDisclosures, parseStockNews } from '../sources/naverStock.js';
 import { stockInfoFragments } from '../report/stockInfo.js';
@@ -334,7 +334,8 @@ async function adminOverview(env: Env, now: Date) {
     q<{ kind: string }>(`SELECT s.id, s.user_id, s.kind, s.answers, s.created_at, u.email FROM surveys s JOIN users u ON u.id = s.user_id
        WHERE s.id IN (SELECT MAX(id) FROM surveys WHERE kind = 'onboarding' GROUP BY user_id)
           OR s.id IN (SELECT id FROM surveys WHERE kind <> 'onboarding' ORDER BY id DESC LIMIT 1000) ORDER BY s.id DESC`),
-    q('SELECT name, COUNT(*) AS n, COUNT(DISTINCT user_id) AS users FROM events WHERE created_at >= ? GROUP BY name ORDER BY n DESC', week),
+    // G-315: the live audit's throwaway accounts (audit-*) are not people.
+    q("SELECT name, COUNT(*) AS n, COUNT(DISTINCT user_id) AS users FROM events WHERE created_at >= ? AND user_id NOT LIKE 'audit-%' GROUP BY name ORDER BY n DESC", week),
     q('SELECT x.id, x.symbol, x.tier, x.model, x.question, x.credits, x.usd, x.status, x.rating, x.created_at, u.email FROM questions x JOIN users u ON u.id = x.user_id ORDER BY x.id DESC LIMIT 100'),
     db.prepare('SELECT COALESCE(SUM(CASE WHEN created_at >= ? THEN usd END), 0) AS today, COALESCE(SUM(usd), 0) AS month FROM questions WHERE created_at >= ?').bind(kstDayStart(now), month).first<{ today: number; month: number }>(),
   ]);
@@ -360,6 +361,18 @@ route('GET', '/quote', async ({ req, deps, now }) => {
     if (hit && now.getTime() - hit.at < 3000) return { quotes: hit.quotes, cached: true };
     const quotes = (await Promise.all(us.map((c) => deps.fetch(worldQuoteUrl(c), { signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).then((r) => (r.ok ? r.json() : null)).then(parseWorldQuote).catch(() => null)))).filter((x): x is Quote => !!x);
     if (!quotes.length) fail(502, 'UPSTREAM', '실시간 시세를 가져오지 못했어요.');
+    if (quoteCache.size > 500) quoteCache.clear();
+    quoteCache.set(key, { at: now.getTime(), quotes });
+    return { quotes };
+  }
+  // G-314: ix=KOSPI,KOSDAQ for the home tiles while the market is open; cached like the stocks.
+  const ix = [...new Set((q.get('ix') ?? '').split(',').map((x) => x.trim().toUpperCase()).filter((x) => INDEX_CODES.test(x)))].sort();
+  if (ix.length) {
+    const key = `ix:${ix.join(',')}`, hit = quoteCache.get(key);
+    if (hit && now.getTime() - hit.at < 3000) return { quotes: hit.quotes, cached: true };
+    const r = await deps.fetch(indexQuoteUrl(ix), { signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).catch(() => null);
+    if (!r || !r.ok) fail(502, 'UPSTREAM', '실시간 지수를 가져오지 못했어요.');
+    const quotes = parseNaverQuotes(await r!.json().catch(() => null), INDEX_CODES);
     if (quoteCache.size > 500) quoteCache.clear();
     quoteCache.set(key, { at: now.getTime(), quotes });
     return { quotes };
@@ -951,7 +964,10 @@ route('POST', '/feedback', async ({ req, env, now }) => {
 // G-293: anonymous visits. No sign-in: the browser sends a random device id once per KST day and where it came from.
 export const VISIT_SOURCES = ['', 'search', 'insta', 'share', 'other'] as const;
 route('POST', '/visit', async ({ req, env, now }) => {
-  const b = await body(req), vid = typeof b.v === 'string' && /^[a-f0-9]{16,32}$/.test(b.v) ? b.v : '';
+  const b = await body(req), ua = req.headers.get('user-agent') ?? '';
+  // G-315: robots and headless browsers are not visitors (the page skips them too; this catches old cached pages).
+  if (/bot|crawl|spider|headless|lighthouse|playwright/i.test(ua)) return { ok: true, skipped: true };
+  const vid = typeof b.v === 'string' && /^[a-f0-9]{16,32}$/.test(b.v) ? b.v : '';
   if (!vid) fail(400, 'BAD_VISIT', '방문 기록이 맞지 않아요.');
   const src = (VISIT_SOURCES as readonly string[]).includes(String(b.src ?? '')) ? String(b.src ?? '') : 'other';
   await env.DB.prepare('INSERT OR IGNORE INTO visits (day, vid, src) VALUES (?, ?, ?)').bind(kst(now).slice(0, 10), vid, src).run();
@@ -1097,7 +1113,7 @@ route('POST', '/notify/prefs', async ({ req, env, now }) => {
   return { prefs };
 });
 
-// 나 vs 위원회 (G-315): my up/down call on a stock, scored after 20 sessions next to the committee's lean.
+// 나 vs 위원회 (G-323): my up/down call on a stock, scored after 20 sessions next to the committee's lean.
 route('GET', '/mycalls', async ({ req, env, now }) => {
   const u = await authed(req, env, now), s = str(new URL(req.url).searchParams.get('s'), 20).toUpperCase();
   return myCallsOf(env.DB, u.id, s || undefined);

@@ -10,7 +10,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import type { DailyReport } from '../report/dailyReport.js';
 import { won, withCurrency, financeUnit } from '../report/format.js';
-import { ANALYSTS, ANALYST_HORIZON, invalidationOf, type AnalystId } from './analysts.js';
+import { ANALYSTS, ANALYST_HORIZON, invalidationOf, neutralBandOf, type AnalystId } from './analysts.js';
 import { AI_CAP, BASE_MODEL, reportBase } from './baseOdds.js';
 import { macroText } from './macro.js';
 import { baseRateText } from './eventStudy.js';
@@ -38,7 +38,12 @@ export type CommentaryTier = 'deep' | 'brief';
 /** v15 (G-246): analysts get the hidden-future test base rates; evidence adds L1 (volatility, 52-week high) and an A1 caution. */
 /** v16 (G-264): R2, the statistical base chance the committee number starts from; L1 adds the recent one-day jump (MAX) and its caution. */
 /** v17 (G-242): an industry specialist (sector_expert, src/analysis/sectorExpert.ts) joins the analysts; Z1 says what the company does. */
-export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v17';
+export const COMMENTARY_PROMPT_VERSION = 'gnm-committee-v18';
+/** G-305: the stock's NEUTRAL band, shown in R1 so a NEUTRAL call knows what it will be scored against. */
+const neutralNote = (forecasts: readonly { horizon: number; sigma: number }[]) => {
+  const band = neutralBandOf(forecasts.find((f) => f.horizon === ANALYST_HORIZON)?.sigma);
+  return band == null ? '' : `. 중립 폭: ${ANALYST_HORIZON}거래일 뒤 ±${(100 * (Math.exp(band) - 1)).toFixed(1)}% 안이면 중립이 맞음`;
+};
 const MAX_FILINGS = 15;
 const MAX_NEWS = 30;
 
@@ -233,7 +238,7 @@ function evidenceOf(report: DailyReport): EvidenceItem[] {
     }
     if (m.forecasts.length) {
       items.push({ id: 'R1', kind: 'FORECAST', label: '예측 범위', url: '#forecast',
-        detail: `${m.forecasts.map((f) => `${f.horizon}거래일 하단 ${won(f.p10)} 중앙 ${won(f.p50)} 상단 ${won(f.p90)}`).join('; ')}. 지난 예측 채점: ${m.forecastScores.map((sc) => `${sc.horizon}일 ${sc.scored ? `${Math.round(sc.coverage! * 100)}%(${sc.scored}건)` : '없음'}`).join(', ')}` });
+        detail: `${m.forecasts.map((f) => `${f.horizon}거래일 하단 ${won(f.p10)} 중앙 ${won(f.p50)} 상단 ${won(f.p90)}`).join('; ')}. 지난 예측 채점: ${m.forecastScores.map((sc) => `${sc.horizon}일 ${sc.scored ? `${Math.round(sc.coverage! * 100)}%(${sc.scored}건)` : '없음'}`).join(', ')}${neutralNote(m.forecasts)}` });
     }
     if (m.structure) {
       const st = m.structure, b = st.breaks.at(-1);
@@ -363,7 +368,7 @@ export const CommentarySchema = z.object({
   analysts: z.array(z.object({
     analyst: z.enum(ANALYSTS.map((a) => a.id) as [AnalystId, ...AnalystId[]]),
     stance: z.enum(['BULLISH', 'BEARISH', 'NEUTRAL']),
-    confidence: z.number().describe('이 판단이 20거래일 뒤 맞을 확률(%) 0~100. 강세·약세는 방향이, 중립은 ±2% 안에 머무는 것이 맞음. 50은 반반'),
+    confidence: z.number().describe('이 판단이 20거래일 뒤 맞을 확률(%) 0~100. 강세·약세는 방향이, 중립은 R1에 적힌 중립 폭 안에 머무는 것이 맞음. 50은 반반'),
     target: z.number().describe(`P1 종가 기준 ${ANALYST_HORIZON}거래일 뒤 예상 가격(원)`),
     invalidation: z.number().describe('이 판단이 틀렸다고 인정할 종가(원). 강세면 P1 종가보다 아래, 약세면 위. 근거에 있는 지지·저항·이동평균 가격으로. 중립이면 0'),
     rationale: ClaimSchema.describe('이 분석가의 근거 2~3문장: 본 숫자, 그렇게 판단한 이유, 판단이 틀렸다고 볼 조건'),
@@ -461,7 +466,7 @@ const DEEP_SYSTEM = `당신은 GNOMON의 리서치 위원회예요. 사용자 �
 - 분석가 대결: 아래 분석가들이 각자 자기 관점에서 판단(강세·약세·중립), 확신도(0~100), 20거래일 뒤 예상 가격을 냅니다. 예상 가격은 P1 종가에서 출발해 근거로 설명할 수 있는 수준이어야 하고, 기록되어 20거래일 뒤 실제 가격으로 채점됩니다. 서로 의견이 달라도 됩니다.
   - 각 분석가는 다른 위원의 결론을 보기 전처럼 자기 관점의 근거만으로 먼저 판단합니다. 다른 위원 다수가 같은 쪽이라는 이유로 따라가지 않고, 토론에서도 입장을 바꾸지 않습니다.
   - 사용자 메시지에 "잠긴_분석가_판단"이 있으면, 그 분석가들은 위원회 전에 혼자 판단을 마쳤어요. analysts에는 그 입장·확신도·예상 가격을 그대로 옮기고(바꾸지 않음), 토론에서도 그 입장으로 말합니다. 위원회는 그 판단에 동의하거나 반박할 수 있지만 고치지는 않아요. 잠긴 판단끼리 갈렸으면 그 이견을 토론의 중심에 둡니다.
-  - 확신도는 그 판단이 20거래일 뒤 맞을 확률(%)입니다(강세·약세는 방향, 중립은 ±2% 안). 50은 반반이고, 주가 방향은 맞히기 어려우니 근거가 여러 갈래로 겹칠 때만 70을 넘깁니다. 확신도는 적중 여부와 비교해 채점되므로(맞으면 높을수록, 틀리면 낮을수록 좋음) 부풀리지 않습니다.
+  - 확신도는 그 판단이 20거래일 뒤 맞을 확률(%)입니다(강세·약세는 방향, 중립은 R1에 적힌 중립 폭 안. 그 폭은 이 종목이 20거래일 동안 보통 움직이는 폭의 절반이라 10년 자료에서 45% 정도 맞았어요). 50은 반반이고, 주가 방향은 맞히기 어려우니 근거가 여러 갈래로 겹칠 때만 70을 넘깁니다. 확신도는 적중 여부와 비교해 채점되므로(맞으면 높을수록, 틀리면 낮을수록 좋음) 부풀리지 않습니다.
   - invalidation은 그 판단이 틀렸다고 인정할 종가 하나예요. 강세면 P1 종가보다 아래, 약세면 위에서, 근거에 있는 지지·저항·이동평균·통계 범위 가격으로 정합니다(중립은 0). 종가가 그 가격에 닿으면 매일 공개로 표시되니, 실제로 생각을 바꿀 가격을 적어요. 잠긴 판단의 틀렸다고_볼_종가도 그대로 옮깁니다.
 - 지난 성적(K1)이 있으면 각 분석가는 자기 기록을 보고 확신도를 맞춥니다. 평균 확신이 적중률보다 높았으면 확신을 낮추고, 최근 빗나간 판단과 같은 이유로 같은 쪽을 말할 때는 이번에는 무엇이 다른지 rationale에 씁니다. 시나리오 확률 점수가 0.67보다 나빴으면 확률을 한쪽으로 덜 몰아요. 지난 성적은 판단을 바꾸는 근거가 아니라 확신의 크기를 맞추는 근거입니다.
 - 통계 기준 확률(R2)이 있으면 분석가 확신도의 출발점이에요. 강세의 확신도는 오를 확률이니 R2에서, 약세는 100−R2에서 출발하고, R2가 보지 못한 근거(실적·공시·뉴스)가 있을 때만 벗어납니다. 최근 급등(L1의 가장 크게 오른 하루)이나 추세·돌파 신호만으로는 강세라고 하지 않아요: 10년 시험에서 그런 종목은 다음 20거래일에 평균보다 덜 올랐어요.

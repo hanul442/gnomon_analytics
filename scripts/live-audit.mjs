@@ -20,6 +20,8 @@ const LOGGED = (process.env.LOGGED_PAGES ?? [
 
 const browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
 let problems = 0;
+// G-312: every finding, kept for scripts/audit-issue.mjs (AUDIT_OUT), which turns the serious ones into one GitHub issue.
+const findings = [];
 // The newest market daily, found from its list page.
 try {
   const p = await browser.newPage(); await p.goto(BASE + 'market-reports.html', { waitUntil: 'domcontentloaded' });
@@ -29,6 +31,8 @@ try {
 async function pass(label, pages, widths, session) {
  for (const width of widths) for (const path of pages) {
   const page = await browser.newPage({ viewport: { width, height: width < 800 ? 844 : 900 } });
+  // G-315: the audit is not a visitor; keep it out of the anonymous visit count.
+  await page.route('**/visit', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }));
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e.message).slice(0, 160)));
   page.on('console', (m) => { if (m.type() === 'error' && !/api\.upbit\.com\/websocket.*429/.test(m.text())) errors.push(m.text().slice(0, 160)); });
@@ -93,6 +97,7 @@ async function pass(label, pages, widths, session) {
   // Sealed committee text must not show for plans that have to unlock it (the audit accounts never unlock).
   if (['free', 'plus', 'alpha'].includes(label)) { const leak = await page.locator('.deep-body:visible').count(); if (leak) found.deepLeak = leak; }
   if (errors.length) found.errors = [...new Set(errors)].slice(0, 8);
+  if (Object.keys(found).length) findings.push({ as: label, width, path, ...found });
   if (Object.keys(found).length) { problems++; console.log(JSON.stringify({ as: label, width, path, ...found })); }
   await page.close();
 }
@@ -102,3 +107,4 @@ await pass('anon', PAGES, WIDTHS, '');
 for (const [plan, token] of Object.entries(SESSIONS)) await pass(plan, LOGGED, plan === 'alpha' ? WIDTHS : [390], token);
 await browser.close();
 console.log(`audit done: ${problems} page-width pairs with findings`);
+if (process.env.AUDIT_OUT) { const { writeFile } = await import('node:fs/promises'); await writeFile(process.env.AUDIT_OUT, JSON.stringify(findings)); }

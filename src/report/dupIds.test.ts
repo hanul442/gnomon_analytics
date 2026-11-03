@@ -35,7 +35,7 @@ test('a report made on request: the AI tab carries no second question box, and t
   assert.match(JOBS_JS, /\['\.cl-head','#committee'\]\.forEach/);
 });
 
-test('나 vs 위원회 (G-315): one pick row under the seats, with the committee lean and the report date for the script', () => {
+test('나 vs 위원회 (G-323): one pick row under the seats, with the committee lean and the report date for the script', () => {
   const r = report(), page = renderReport(r, { index: 'index.html', live: true } as any);
   assert.equal(count(page, 'data-mc '), 1);
   assert.match(page, /data-mc data-s="005930" data-n="삼성전자" data-d="2026-09-30" data-com="(up|down|flat)" hidden>/);

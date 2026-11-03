@@ -60,7 +60,7 @@ test('the first settled run picks the week: core and the largest company get the
   for (const page of ['login.html', 'onboarding.html', 'account.html', 'coins.html', 'coin.html', 'etfs.html']) assert.ok((await readFile(join(root, 'site', page), 'utf8')).includes('<title>'), page);
   // G-185: the ops console is not part of the user site any more (the API serves it at /ops).
   await assert.rejects(readFile(join(root, 'site', 'admin.html')));
-  assert.ok((await readFile(join(root, 'site', 'pricing.html'), 'utf8')).includes('플러스') && (await readFile(join(root, 'site', 'checkout.html'), 'utf8')).includes('MOCK'));
+  assert.ok((await readFile(join(root, 'site', 'pricing.html'), 'utf8')).includes('베타 동안 모두 무료') && (await readFile(join(root, 'site', 'checkout.html'), 'utf8')).includes('MOCK'));
   const scorecard = await readFile(join(root, 'site', 'scorecard.html'), 'utf8');
   assert.ok(scorecard.includes('예측 범위 적중') && scorecard.includes('href="222220/index.html"'));
   const members = await readFile(join(root, 'site', 'members.html'), 'utf8');
@@ -131,7 +131,7 @@ test('a refresh request writes one new deep report in the current prompt, even o
   const refresh = [{ symbol: '000660', requestedAt: '2026-10-03', refresh: true }];
   await runDaily({ ...opts, requests: refresh, now: new Date('2026-10-03T09:30:00Z') });
   assert.deepEqual(calls, ['SK하이닉스 (000660)']);
-  assert.match(await readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'), /gnm-committee-v17/);
+  assert.match(await readFile(join(root, 'reports', '000660', '2026-10-03.json'), 'utf8'), /gnm-committee-v18/);
   assert.match(await readFile(path, 'utf8'), /gnm-committee-v2/);
   // Once a current report exists, the request does nothing.
   calls.length = 0;

@@ -123,7 +123,9 @@ const md = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}
  * G-300 (한서님 10/25 '위원회 페이지 깔끔하게', '위원별 판단은 안에 클릭하면 보이게'): the verdict moved up from 지금 판단,
  * share became an icon, and every member's call with its wrong-if close sits behind one row (a sheet, membersSheet).
  */
-export function committeeHero(report: DailyReport, opts: { head?: string } = {}): string {
+export function committeeHero(report: DailyReport, opts: { head?: string; from?: string | null } = {}): string {
+  // The committee's own date: a page built today may carry an older report's committee (commentaryFrom).
+  const day = opts.from && opts.from < report.date ? opts.from : report.date;
   const seats = seatsOf(report);
   if (!seats.length) return '';
   const c = report.commentary?.status === 'OK' ? report.commentary : undefined, s = splitOf(seats);
@@ -131,14 +133,14 @@ export function committeeHero(report: DailyReport, opts: { head?: string } = {})
   const side = (cls: string, word: string, n: number, text: string) => (text ? `<div class="cs-side ${cls}"><b><i aria-hidden="true"></i>${word} 쪽 ${n}명</b><p>${esc(text)}</p></div>` : '');
   const sides = s.bull && s.bear ? `${side('up', '강세', s.bull, bull)}${side('down', '약세', s.bear, bear)}` : '';
   const title = `위원 ${s.total}명, ${s.word}`;
-  const share = `<button type="button" class="cs-share" data-cs-share data-n="${esc(report.name)}" data-d="${esc(report.date)}" data-t="${esc(title)}" aria-label="이미지로 공유" title="이미지로 공유">${SHARE_ICON}</button>`;
+  const share = `<button type="button" class="cs-share" data-cs-share data-n="${esc(report.name)}" data-d="${esc(day)}" data-t="${esc(title)}" aria-label="이미지로 공유" title="이미지로 공유">${SHARE_ICON}</button>`;
   const broken = seats.filter((x) => x.broken).length;
   const more = `<button type="button" class="cs-mrow" data-cs-list aria-haspopup="dialog" aria-controls="cs-members"><span><b>위원별 판단 · 틀림 기준</b><small>${s.total}명${broken ? ` · ${broken}명 판단 깨짐` : ''}</small></span><i aria-hidden="true">›</i></button>`;
-  return `<section class="block cs-hero" id="cs-hero"><div class="card"><div class="cs-top"><span class="cs-k">${esc(md(report.date))} 판단 · 20거래일 뒤 채점</span>${share}</div>${opts.head || `<h2 class="cs-title">${esc(title)}</h2>`}${seatArc(report, { interactive: true, stock: report.name })}<p class="cs-tap">좌석을 누르면 그 위원의 판단과 틀림 기준이 나와요.</p>${sides ? `<div class="cs-sides">${sides}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis)}</span></p>` : ''}${more}${myCallRow(report, s)}</div>${membersSheet(report, seats)}</section>`;
+  return `<section class="block cs-hero" id="cs-hero"><div class="card"><div class="cs-top"><span class="cs-k">AI 위원회 판단 · ${esc(md(day))} 마감 · 20거래일 뒤 채점</span>${share}</div>${opts.head || `<h2 class="cs-title">${esc(title)}</h2>`}${seatArc(report, { interactive: true, stock: report.name })}<p class="cs-tap">좌석을 누르면 그 위원의 판단과 틀림 기준이 나와요.</p>${sides ? `<div class="cs-sides">${sides}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis)}</span></p>` : ''}${more}${myCallRow(report, s)}</div>${membersSheet(report, seats)}</section>`;
 }
 
 /**
- * G-315 나 vs 위원회: under the seats, the reader picks up or down; 20 sessions later it is scored next to the committee's
+ * G-323 나 vs 위원회: under the seats, the reader picks up or down; 20 sessions later it is scored next to the committee's
  * lean (more 강세 seats = up, more 약세 = down, else flat). Shown by the script for a recent report only, and to signed-in
  * readers it shows their pick; signed out, the buttons lead to the login.
  */

@@ -245,11 +245,11 @@ try{
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');
   assert.equal(await page.locator('#market-report-cards').count(),0);assert.equal(await page.locator('#market-daily-link').count(),0);if(await page.locator('.ix-row .tmp').count())assert.match(await page.locator('.ix-row .tmp').getAttribute('href'),/market/);
   assert.ok(await page.evaluate(()=>{const search=document.getElementById('mkt-hero'),banner=document.getElementById('banner');return !!banner&&!!(search.compareDocumentPosition(banner)&Node.DOCUMENT_POSITION_FOLLOWING);}));
-  const ad=page.locator('.bn-hanul');const slide=await ad.getAttribute('data-i');await page.locator('[data-go="'+slide+'"]').click();
-  assert.ok(await ad.isVisible());assert.ok(await ad.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0));
+  // G-314: no mock-ad (HANUL) slide in the home banner during the beta; the HANUL page itself still opens.
+  assert.equal(await page.locator('.bn-hanul, .bn-k-ad, .ad-strip').count(),0);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-  if(width===375)await page.screenshot({path:'test-artifacts/hanul-banner-mobile.png'});
-  await ad.click();await page.waitForURL('**/hanul.html');await page.locator('#hanul-title').waitFor();
+  if(width===375)await page.screenshot({path:'test-artifacts/home-banner-mobile.png'});
+  await page.goto(origin+'/hanul.html');await page.locator('#hanul-title').waitFor();
   assert.equal(await page.locator('.hanul-project').count(),4);assert.ok(await page.locator('.hanul-intro img').evaluate(img=>img.complete&&img.naturalWidth>0));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.screenshot({path:'test-artifacts/hanul-'+width+'.png',fullPage:true});
@@ -273,7 +273,7 @@ try{
  await page.goto(origin+'/myreports.html');await page.locator('#mr-list .mr-item').first().waitFor();assert.equal(await page.locator('#mr-list .mr-item').count(),2);
  await page.locator('.mr-tabs [data-f=failed]').click();assert.equal(await page.locator('#mr-list .mr-item').count(),1);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.locator('.mr-tabs [data-f=""]').click();await page.screenshot({path:'test-artifacts/myreports.png',fullPage:true});
- // G-315: 나 vs 위원회 — the score line and both kinds of rows, no sideways scroll.
+ // G-323: 나 vs 위원회 — the score line and both kinds of rows, no sideways scroll.
  await page.goto(origin+'/mycalls.html');await page.locator('#mc-list .mc-item').first().waitFor();assert.equal(await page.locator('#mc-list .mc-item').count(),2);
  assert.equal(await page.locator('#mc-me').textContent(),'1/1');assert.match(await page.locator('#mc-sum').textContent(),/내가 1건 더/);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await page.screenshot({path:'test-artifacts/mycalls.png',fullPage:true});
@@ -335,9 +335,9 @@ try{
  // G-176: the 코스피/코스닥 chips narrow the stock list (fixture: 999999 is P, 999998 is Q); ETF·코인 tabs hide them.
  await page.locator('#sc-sum').click();await page.locator('[data-mkt="Q"]').click();await page.locator('#sc-sheet-go').click();await page.locator('#sc-body a[href="stock.html?c=999998"]').waitFor();assert.equal(await page.locator('#sc-body a[href="stock.html?c=999999"]').count(),0);if(await page.locator('[data-find="etf"]').isVisible())await page.locator('[data-find="etf"]').click();else{await page.locator('[data-dock-kind]').click();await page.locator('.nav-menu [data-find-go="etf"]').click();assert.equal(await page.locator('[data-dock-kind] b').innerText(),'ETF','G-277: 찾기 kinds switch from the bottom bar');}assert.ok(await page.locator('#sc-mkt').isHidden());await page.locator('#sc-body tr.tap-card').first().waitFor();assert.ok(await page.locator('#sc-body tr.tap-card').count()>0,'ETF rows ignore the exchange chip');await page.evaluate(()=>document.querySelector('[data-find="stock"]').click());assert.equal(await page.locator('#sc-mkt').getAttribute('hidden'),null,'the 시장 chips come back for 주식 (inside the sheet)');await page.locator('#sc-sum').click();await page.locator('[data-mkt=""]').click();await page.locator('#sc-sheet-go').click();await page.locator('#sc-body a[href="stock.html?c=999999"]').waitFor();
  await page.locator('#sc-body tr.tap-card td:nth-child(2)').first().click();await page.waitForURL(/(stock\.html\?c=|\/index\.html)/);await page.waitForLoadState('networkidle');
- await page.goto(origin+'/pricing.html');await page.locator('.pr-tabs [data-pr=plus]').click();assert.equal(await page.locator('.plan[data-key=plus]').isVisible(),true);assert.equal(await page.locator('.plan[data-key=pro]').isVisible(),false);
+ // G-311: during the beta the pricing page is one '베타 동안 모두 무료' page, with no plans or prices.
+ await page.goto(origin+'/pricing.html');await page.getByRole('heading',{name:'베타 동안 모두 무료예요'}).waitFor();assert.equal(await page.locator('.plan').count(),0);assert.equal(await page.getByText('99,000').count(),0);
  // G-216: with the alpha API the MOCK checkout has nothing to change, so it says payment is closed and the downgrade button is gone.
- assert.equal(await page.locator('.mock-note[data-alpha]').isVisible(),true);assert.equal(await page.locator('.mock-note[data-mock]').isVisible(),false);assert.equal(await page.locator('[data-downgrade]').isVisible(),false);
  await page.goto(origin+'/checkout.html?item=pro');await page.getByText('지금은 결제를 받지 않아요').waitFor();assert.equal(await page.locator('#co-pay').count(),0);assert.equal(await page.locator('#co-mock').isVisible(),false);
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  // G-121: popups open full screen on phones and the back button closes them without leaving the page.
@@ -351,7 +351,7 @@ try{
  assert.ok(await page.locator('.mode-tabs').isHidden());await page.locator('[data-dock-kind]').click();await page.locator('.nav-menu a[href$="themes.html"]').click();await page.waitForURL(/themes\.html/);
  assert.equal(await page.locator('.bottom-nav .nav-tabs [aria-current=page]').getAttribute('aria-label'),'찾기');assert.equal(await page.locator('[data-dock-kind] b').textContent(),'테마');
  // G-258: 찾기 pages get the search bar; the grid button brings the four tabs back.
- await page.locator('.bottom-nav.ctx .nav-field').waitFor();await page.locator('.bottom-nav .nav-back').click();await page.locator('.bottom-nav:not(.ctx) .nav-tabs a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),5,'G-300: 약관·개인정보 live in the footer only');assert.equal(await page.locator('.me-rec a').count(),4,'G-301, G-315: 내 기록 is four rows on 나 itself (나 vs 위원회 added)');assert.equal(await page.locator('.bottom-nav[data-dock]').count(),0,'G-301: 나 has no part icons in the bar');await page.locator('.me-rec a[href$="inbox.html"]').click();await page.waitForURL(/inbox\.html/);assert.equal(await page.locator('.bottom-nav .nav-tabs [aria-current=page]').getAttribute('aria-label'),'나','G-255: 알림함 lights up 나');assert.equal(await page.locator('main h1').count(),1,'G-301: one heading');assert.equal(await page.locator('.pg-back[href$="settings.html"]').isVisible(),true,'‹ goes back to 나');await page.screenshot({path:'test-artifacts/me-390.png'});
+ await page.locator('.bottom-nav.ctx .nav-field').waitFor();await page.locator('.bottom-nav .nav-back').click();await page.locator('.bottom-nav:not(.ctx) .nav-tabs a[aria-label="나"]').click();await page.waitForURL(/settings\.html/);await page.locator('.me-acct').waitFor();assert.equal(await page.locator('#help + .st-rows a').count(),5,'G-300: 약관·개인정보 live in the footer only');assert.equal(await page.locator('.me-rec a').count(),4,'G-301, G-323: 내 기록 is four rows on 나 itself (나 vs 위원회 added)');assert.equal(await page.locator('.bottom-nav[data-dock]').count(),0,'G-301: 나 has no part icons in the bar');await page.locator('.me-rec a[href$="inbox.html"]').click();await page.waitForURL(/inbox\.html/);assert.equal(await page.locator('.bottom-nav .nav-tabs [aria-current=page]').getAttribute('aria-label'),'나','G-255: 알림함 lights up 나');assert.equal(await page.locator('main h1').count(),1,'G-301: one heading');assert.equal(await page.locator('.pg-back[href$="settings.html"]').isVisible(),true,'‹ goes back to 나');await page.screenshot({path:'test-artifacts/me-390.png'});
  await page.goto(here);await page.waitForLoadState('load');
  // G-120: one tap installs where the browser offers it; the button hides when there is nothing to install.
  // G-252: phones have no top bar, so there the button is the one in the 나 tab. G-294: wide screens have the rail instead of a top bar, so the same.

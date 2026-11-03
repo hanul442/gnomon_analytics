@@ -1,6 +1,7 @@
 import { PC_RAIL_CSS } from './pcRail.js';
 import { COMPOSITION_CSS } from './composition.js';
 import { ROBINHOOD_CSS, ROBINHOOD_JS } from './robinhood.js';
+import { RULES_CSS } from './designRules.js';
 import { COMMAND_BAR_CSS, COMMAND_BAR_JS, REPORT_TABS_CSS, REPORT_TABS_JS } from './commandBar.js';
 import { committeeHero, seatsOf, splitOf, COMMITTEE_CSS, COMMITTEE_JS } from './committeeSeats.js';
 import { US_EXCHANGE_LETTER } from '../sources/naverWorld.js';
@@ -81,7 +82,7 @@ const STYLE = `
 /* G-181 (v3.8.0): one token set per theme. Dark is the default (D안: deep navy, soft light pools, glass panels, white pill buttons); light is the option. */
 :root{--page:#EEF3F8;--surface:rgba(255,255,255,.78);--surface-solid:#ffffff;--soft:#F1F5F9;--line:rgba(10,22,38,.09);--line-strong:rgba(10,22,38,.18);--fg:#0A1626;--fg2:#3A4A5C;--muted:#6B7A8C;--bar:#0A1626;--navy:var(--accent);
 --accent:#0582CA;--accent-strong:#006494;--accent-soft:#E3F3FD;--accent-line:#B6E0FA;--brand-grad:linear-gradient(135deg,#00A6FB 0%,#0582CA 100%);
---up:#F04452;--down:#0582CA;--up-soft:#FDE8E6;--down-soft:#E3F3FD;--up-strong:#B4232A;--down-strong:#006494;--warn:#B07A1E;--warn-soft:#FFF4DC;--good:#0F9B8E;--good-soft:#E7F5EC;--good-strong:#1d6b3a;--warn-strong:#5b3d00;--ink:#1D3557;--focus:#0582CA;
+--up:#D0293A;--down:#0A6FC2;--up-soft:#FDE8E6;--down-soft:#E3F3FD;--up-strong:#B4232A;--down-strong:#006494;--warn:#B07A1E;--warn-soft:#FFF4DC;--good:#0F9B8E;--good-soft:#E7F5EC;--good-strong:#1d6b3a;--warn-strong:#5b3d00;--ink:#1D3557;--focus:#0582CA;
 --btn-bg:var(--accent);--btn-fg:#ffffff;--on-accent:#ffffff;--tip-bg:rgba(10,22,38,.92);--tip-fg:#ffffff;--glass-blur:18px;--page-grad:radial-gradient(900px 600px at 15% -10%,rgba(0,166,251,.16),transparent 60%),radial-gradient(800px 600px at 110% 20%,rgba(5,130,202,.12),transparent 60%);
 --brand-serif:"Noto Serif KR","Nanum Myeongjo","AppleMyungjo",serif;--serif:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;--ease-out:cubic-bezier(.16,1,.3,1);--shadow:0 1px 2px rgba(10,22,38,.04),0 8px 24px rgba(10,22,38,.05);--track:rgba(10,22,38,.06);--pill:#ffffff;--glass-line:rgba(255,255,255,.7)}
 html[data-theme=dark]{--page:#0A1626;--surface:rgba(255,255,255,.045);--surface-solid:#13223A;--soft:rgba(255,255,255,.06);--line:rgba(255,255,255,.09);--line-strong:rgba(255,255,255,.18);--fg:#F4F7FA;--fg2:#C3CDD6;--muted:#8593A1;--bar:#06101C;
@@ -700,7 +701,7 @@ function renderReportIn(report: DailyReport, links: { index: string; base?: stri
   // thing once: the committee card (verdict, seats, both sides), the price map, 달라진 점, 쉽게 말하면, the debate card,
   // 남은 쟁점 and the evidence (the fold, inline), 놓치기 쉬운 정보, then 내 기록.
   const seatsShown = !!committeeHero(report);
-  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale/.test(status) || (/rs-none/.test(status) && report.commentary?.status === 'OK') ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${seatsShown ? committeeHero(report, { head: verdictHead(report) }) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !seatsShown })}@@DIFF@@@@DEBATE@@@@AI_FOLD@@${edgeCard(report)}
+  const home = `${hero(report, { live: ctx.live, asOf: new Date(Date.parse(report.generatedAt) + 9 * 3600_000).toISOString().slice(0, 16).replace('T', ' ') + ' KST' })}${/rs-stale/.test(status) || (/rs-none/.test(status) && report.commentary?.status === 'OK') ? status : ''}${report.kind === 'coin' ? derivSlot(report.symbol) : ''}${seatsShown ? committeeHero(report, { head: verdictHead(report), from: ctx.commentaryFrom ?? null }) : ''}${conclusionCard(report, { id: 'home-conclusion', title: '지금 판단', head: !seatsShown })}@@DIFF@@@@DEBATE@@@@AI_FOLD@@${edgeCard(report)}
 ${m ? marketStatusWarning(m) : ''}
 <div class="pc-wrap">${personaCards(report)}</div>
 ${moreLinks()}`;
@@ -1151,6 +1152,11 @@ const stockScript = (kind: 'stock' | 'coin' | 'us') => `<script>
       var d = all[0], hit = (all[1].rows || []).filter(function (x) { return x[0] === code; })[0];
       var part = hit ? String(hit[2]).split(' · ') : [], ex = part[1] || 'US';
       d.name = hit ? hit[1] : code.replace(/${US_EXCHANGE_LETTER}/, ''); d.ticker = part[0] || d.ticker; d.english = part.slice(2).join(' · '); d.market = ex.replace(/ ETF$/, ''); d.kind = / ETF$/.test(ex) ? 'etf' : 'stock'; return d; }); };
+  // G-314: a bare ticker (us.html?s=AAPL) is sent to the listed code (AAPL.O); it waited on "불러오는 중" forever.
+  if (US && !/\\.[A-Z]$/.test(code)) fetch('usnames.json').then(function (r) { return r.ok ? r.json() : { rows: [] }; }).then(function (x) {
+    var hit = (x.rows || []).filter(function (row) { return String(row[2]).split(' · ')[0] === code && row[0] !== code; })[0];
+    if (hit) { var q = new URLSearchParams(location.search); q.set('s', hit[0]); location.replace(location.pathname + '?' + q.toString() + location.hash); }
+  }).catch(function () {});
   fetch((COIN ? 'c/' : US ? 'u/' : 's/') + code + '.json').then(function (r) { if(r.status===404 && new URLSearchParams(location.search).get('job'))return fetch('research/'+code+'.json').then(function(rr){if(!rr.ok)throw new Error();return rr.json();}).then(function(x){loadPanels();return {name:x.name,symbol:x.symbol,market:x.kind||'주식',bars:(x.recentBars||[]).map(function(b){return [b.date,b.open,b.high,b.low,b.close,b.volume];})};}); if (r.status === 404 && !COIN && !US) return toReport().then(function (moved) { if (!moved) throw new Error(); return new Promise(function () {}); }); if (r.status === 404 && US) return usOnDemand(); if (!r.ok) throw new Error(); return r.json(); }).then(function (d) {
     if(d.pageUrl && /^(?:[sc]\\/[0-9A-Z-]+\\.html|[0-9A-Z-]+\\/index\\.html)$/.test(d.pageUrl)){location.replace(d.pageUrl+location.search+location.hash);return;}
     if (d.research) loadPanels();
@@ -1280,7 +1286,7 @@ html.chart-fs #tab-chart::after,.db-room:not([hidden])::after{content:"";positio
 @media(max-width:820px){.moms{grid-template-columns:repeat(2,minmax(0,1fr))}.momentum-axis{font-size:14px;gap:0}.market-scenarios{grid-template-columns:minmax(0,1fr)}.market-thermals{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding:2px 0 8px;scrollbar-width:none}.market-thermals::-webkit-scrollbar{display:none}.market-thermals>*{flex:0 0 84%;scroll-snap-align:start}.topbar.scrolled .gnomon-mark{width:28px;height:28px}.topbar.scrolled .price-bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 7px;font-size:15px;overflow:visible;line-height:1.5}.price-bar>b{overflow:hidden;text-overflow:ellipsis;grid-column:1;grid-row:1/3}.price-bar .pb-price{grid-column:2;grid-row:1;white-space:nowrap}.price-bar [data-live-f=arrowpct]{grid-column:2;grid-row:2;text-align:right;white-space:nowrap}.price-bar .pb-code,.price-bar .freshness-badge{display:none}.topbar-in{gap:8px}.top-links,.topbar-in>.menu-button{flex:none}.chips button{padding:6px 12px;font-size:15.5px}.analysis-tabs{padding-top:0}.chips{gap:4px}}
 ${FS_CSS}${THEME_CSS}
 /* G-183: command bar, switch, generate button, and glow CTA are ported from ThreeUI Community (github.com/MengTo/threeui), MIT License, Copyright (c) 2026 Meng To. See docs/third-party/threeui-LICENSE.txt. */
-${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${COMMITTEE_CSS}${DEBATE_CARD_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}${SEG_THUMB_CSS}${POLISH_CSS}${MOTION_SYSTEM_CSS}${MICRO_MOTION_CSS}${PC_RAIL_CSS}${COMPOSITION_CSS}${ROBINHOOD_CSS}
+${COMMAND_BAR_CSS}${REPORT_TABS_CSS}${COMMITTEE_CSS}${DEBATE_CARD_CSS}${ROLL_CSS}${LIQUID_CSS}${GLASS_CSS}${MOTION_TOKENS_CSS}${SEG_THUMB_CSS}${POLISH_CSS}${MOTION_SYSTEM_CSS}${MICRO_MOTION_CSS}${PC_RAIL_CSS}${COMPOSITION_CSS}${ROBINHOOD_CSS}${RULES_CSS}
 .page-load{position:fixed;inset:0;z-index:400;display:grid;place-content:center;justify-items:center;gap:14px;padding:24px;text-align:center;background:var(--page);background-image:var(--page-grad);transition:opacity .35s ease,visibility .35s}.page-load.out{opacity:0;visibility:hidden}.page-load canvas{width:72px;height:72px}.page-load b{font-size:17px;color:var(--fg2);font-weight:700}.pl-track{position:relative;display:block;width:160px;height:3px;border-radius:3px;background:var(--line);overflow:hidden}.pl-track i{position:absolute;inset:0 auto 0 0;width:40%;border-radius:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);animation:pl-run 1.1s ease-in-out infinite}@keyframes pl-run{from{transform:translateX(-100%)}to{transform:translateX(260%)}}@media (prefers-reduced-motion:reduce){.pl-track i{animation-duration:3s}}html.embed .page-load{display:none}${MODERN_SWITCH_CSS}${GEN_BUTTON_CSS}${GLOW_CTA_CSS}`;
 /** Accounts first (the page's own scripts use window.GNM), then the alpha layer. */
 // G-169: the loading layer, the version banner and the ad strip used to be inlined in every page (about 19 KB each,

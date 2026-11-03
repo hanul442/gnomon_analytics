@@ -1,4 +1,4 @@
-// 나 vs 위원회 (G-315): a reader picks up or down on a stock; 20 sessions later it is scored next to the committee's
+// 나 vs 위원회 (G-323): a reader picks up or down on a stock; 20 sessions later it is scored next to the committee's
 // lean at the time, by the same rule the committee is scored by (direction; a flat lean hits within ±2%).
 // Same for everyone and nothing to win: an educational game, not advice.
 

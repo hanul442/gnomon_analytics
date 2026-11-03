@@ -1,4 +1,4 @@
--- 나 vs 위원회 (G-315): a reader's own up/down call on a stock, scored after 20 sessions next to the committee's lean.
+-- 나 vs 위원회 (G-323): a reader's own up/down call on a stock, scored after 20 sessions next to the committee's lean.
 -- base_day is the first session whose close counts as the start (the day of the choice if made before 15:30 KST on a
 -- weekday, else the next day), so nobody picks after seeing the close they are measured from.
 CREATE TABLE my_calls (

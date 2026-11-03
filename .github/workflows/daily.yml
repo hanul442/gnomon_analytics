@@ -75,6 +75,12 @@ jobs:
           REPORT_DATE: ${{ inputs.report_date || '' }}
           GNM_FETCH_CACHE: ${{ github.event_name == 'push' && 'replay' || 'record' }}
         run: npm run daily
+      # G-309: the day's SNS cards (promo/<date>/, committed with the data) and the site/promo/ page that lists them.
+      # Chromium is installed only on the run that first sees a new market day; other runs just rebuild the page.
+      - name: Make SNS cards
+        continue-on-error: true
+        run: |
+          if node dist/cli/promo.js --need; then npx playwright install --with-deps chromium && node dist/cli/promo.js; else node dist/cli/promo.js --site; fi
       - name: Keep this run's fetches for the next merge
         if: github.event_name != 'push' && success()
         uses: actions/cache/save@v4
