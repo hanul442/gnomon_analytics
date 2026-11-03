@@ -17,9 +17,9 @@ export const DESIGN_RULES: readonly string[] = [
   "문구는 쉬운 한국어로 쓰고, '사세요·파세요·수익 보장' 같은 말은 쓰지 않아요.",
 ];
 
-/** Rule 1 and 10 on the light theme. Loaded last, after ROBINHOOD_CSS. Dark theme keeps its own tokens. */
+/** Rule 1 and 10 on the light theme. .my-card/.hm-card are flat rows on the ground (G-302), so no shadow box (4.6.1). Loaded last, after ROBINHOOD_CSS. Dark theme keeps its own tokens. */
 export const RULES_CSS = `
 html:root[data-theme=light]{--page:#FFFFFF;--page-grad:none;--muted:#5A5F67;--fg2:#2B2F35;--soft:rgba(0,0,0,.035)}
 html:root[data-theme=light] body{background:#FFFFFF}
-html:root[data-theme=light] body #main :is(.card,.mi-card,.iss-c){box-shadow:0 0 0 1px rgba(0,0,0,.06),0 2px 12px rgba(0,0,0,.05)}
+html:root[data-theme=light] body #main :is(.card,.mi-card,.iss-c):not(.my-card):not(.hm-card){box-shadow:0 0 0 1px rgba(0,0,0,.06),0 2px 12px rgba(0,0,0,.05)}
 `;
