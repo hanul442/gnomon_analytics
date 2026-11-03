@@ -923,6 +923,7 @@ PER·PBR 같은 전 종목 펀더멘털은 출처를 확인한 뒤 넣어요(지
 | G-315 | 방문 숫자에서 자동 점검·로봇 빼기 (4.6.0) | 10/29 방문 숫자가 부풀려진 원인은 우리 라이브 점검(한 번에 약 120페이지)이었어요. 헤드리스 브라우저·로봇은 방문으로 세지 않고, audit-* 계정은 이벤트에서 빼요. (PR #278, 처음 번호 G-307은 검색 태그와 겹쳐서 바꿈) | `src/report/alpha.ts`, `src/worker/api.ts`, `scripts/live-audit.mjs` |
 | G-316 | PC 화면 시인성 (4.6.0) | 한서님 10/29 'Pc시인성 안고치냐'. PC에서 작은 글자를 키우고, 다크 모드의 옅은 상승·하락 색 위 글자는 진한 잉크로. (PR #279, 처음 번호 G-308은 아침 브리핑과 겹쳐서 바꿈) | `src/report/pcRail.ts`, `src/report/theme.ts` |
 | G-317 | 흰 카드 상자 되살리기 (4.6.0) | 한서님 11/2 '하얀색 박스는 왜 다 없앴대'. G-303이 없앤 흰 카드 상자를 되살렸어요. (PR #279, 처음 번호 G-310은 #283과 겹쳐서 바꿈) | `src/report/robinhood.ts` |
+| G-321 | SNS 자동 게시 | 한서님 11/3 '2번하는거 너가 하도록 자동화 가능한가'. `promo-post.yml`이 G-309 카드를 X(평일)·인스타 스토리(평일)·인스타 게시물(월·수·금)에 올리고, 금요일 블로그 글은 네이버 글쓰기 API가 없어 `promo-blog` 이슈로 보낸다. 저장소 변수 `PROMO_POST`(off 기본·manual·on)로 켜고, 올리기 전 금지어 검사(수익률·사라·목표가·리딩방·돈·군 복무)와 교육용 문구 확인. X는 2026년부터 유료(글당 과금, 링크 글이 더 비쌈)라 기본으로 링크를 빼고 '프로필 링크에서'. 인스타는 JPEG만 받아 카드 만들 때 .jpg도 저장. 올린 기록 `promo/<날짜>/posted.json`. 설정법 docs/SNS_AUTOPOST.md | `.github/workflows/promo-post.yml`, `src/cli/promoPost.ts`, `src/report/promoPost.ts` |
 
 ## 7. BLACK ORACLE에서 가져온 것
 

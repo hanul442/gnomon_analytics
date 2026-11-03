@@ -61,7 +61,7 @@ export async function loadScoredCalls(root: string, now: Date): Promise<PromoCal
 
 const isFriday = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay() === 5;
 
-async function render(cards: { file: string; html: string; w: number; h: number }[], outDir: string): Promise<void> {
+async function render(cards: { file: string; html: string; w: number; h: number; jpg?: boolean }[], outDir: string): Promise<void> {
   const { chromium } = await import('playwright');
   const tmp = await mkdtemp(join(tmpdir(), 'gnm-promo-'));
   const browser = await chromium.launch();
@@ -74,6 +74,8 @@ async function render(cards: { file: string; html: string; w: number; h: number 
       await page.goto(pathToFileURL(html).href);
       await page.evaluate(() => document.fonts.ready);
       await page.screenshot({ path: join(outDir, c.file), clip: { x: 0, y: 0, width: c.w, height: c.h } });
+      // G-321: Instagram's publishing API takes JPEG only.
+      if (c.jpg) await page.screenshot({ path: join(outDir, c.file.replace(/\.png$/, '.jpg')), type: 'jpeg', quality: 90, clip: { x: 0, y: 0, width: c.w, height: c.h } });
     }
   } finally {
     await browser.close();
@@ -117,10 +119,10 @@ async function main(): Promise<void> {
     const weekly = args.includes('--weekly') || isFriday(date);
     const ops = opinionsOf(await loadDayCalls(root, date), date, 2);
     const cards = [
-      { file: 'story.png', html: storyHtml(d, fontDir), w: 1080, h: 1920 },
+      { file: 'story.png', html: storyHtml(d, fontDir), w: 1080, h: 1920, jpg: true },
       { file: 'x.png', html: xHtml(d, fontDir), w: 1200, h: 675 },
-      ...ops.map((o, i) => ({ file: `opinion${i + 1}.png`, html: opinionHtml(o, fontDir, ops.length > 1 ? `${i + 1} / ${ops.length}` : ''), w: 1080, h: 1350 })),
-      ...(weekly ? [{ file: 'cover.png', html: coverHtml(d, fontDir), w: 1080, h: 1350 }, { file: 'miss.png', html: missHtml(d, fontDir), w: 1080, h: 1350 }] : []),
+      ...ops.map((o, i) => ({ file: `opinion${i + 1}.png`, html: opinionHtml(o, fontDir, ops.length > 1 ? `${i + 1} / ${ops.length}` : ''), w: 1080, h: 1350, jpg: true })),
+      ...(weekly ? [{ file: 'cover.png', html: coverHtml(d, fontDir), w: 1080, h: 1350, jpg: true }, { file: 'miss.png', html: missHtml(d, fontDir), w: 1080, h: 1350, jpg: true }] : []),
     ];
     await mkdir(outDir, { recursive: true });
     await render(cards, outDir);
