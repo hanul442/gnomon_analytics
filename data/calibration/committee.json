@@ -1,13 +1,13 @@
 {
  "method": "platt-v1",
- "a": 0,
- "b": 1,
- "n": 0,
+ "a": -0.7737149133251967,
+ "b": 1.2235376332206807,
+ "n": 16,
  "active": false,
- "brierSaid": null,
- "brierFitted": null,
- "brierBase": null,
- "saidPct": null,
- "happenedPct": null,
- "madeAt": "2026-11-03T17:15:02.628Z"
+ "brierSaid": 0.1809394447950347,
+ "brierFitted": 0.0595138419020722,
+ "brierBase": 0.16878399268736427,
+ "saidPct": 42.38960063731494,
+ "happenedPct": 0,
+ "madeAt": "2026-11-03T19:28:26.114Z"
 }

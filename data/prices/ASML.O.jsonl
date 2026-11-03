@@ -998,3 +998,4 @@
 {"symbol":"ASML.O","date":"2026-10-30","open":1587.82,"high":1609.26,"low":1535.33,"close":1565.9,"volume":2176369,"source":"naver:world:day","retrievedAt":"2026-11-03T17:15:02.628Z"}
 {"symbol":"ASML.O","date":"2026-11-02","open":1577.315,"high":1600.8,"low":1518,"close":1526.14,"volume":1817199,"source":"naver:world:day","retrievedAt":"2026-11-03T17:15:02.628Z"}
 {"symbol":"ASML.O","date":"2026-11-03","open":1554.15,"high":1575.585,"low":1548.0101,"close":1558.255,"volume":718488,"source":"naver:world:day","retrievedAt":"2026-11-03T17:15:02.628Z"}
+{"symbol":"ASML.O","date":"2026-11-03","open":1554.15,"high":1575.585,"low":1548.0101,"close":1554,"volume":891355,"source":"naver:world:day","retrievedAt":"2026-11-03T19:28:26.114Z"}
