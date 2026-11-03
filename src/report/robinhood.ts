@@ -4,11 +4,10 @@
 //   dotted start line and a dot at the end, period chips under it; dragging the chart shows that day's price.
 // - Market: small cards in one row that scrolls sideways (name → mini chart → value → change).
 // - Lists: rows with a mini chart and a coloured price pill; tapping a pill switches every pill to the change.
-// - No white cards anywhere else: sections sit on the page and are split by one thin line; headings 22px/700.
+// - Headings 22px/700. (G-303 also took every white card away; G-310 brought the cards back at 한서님's ask.)
 // Loaded last (after COMPOSITION_CSS). Page <style> blocks come later, so rules start with `:root body #main`.
 const M = ':root body #main';
 const FLAT = ':is(.card,.mi-card,.cs-home,.iss-c,.sc-hero)';
-const KEEP = ':not(.km-stat):not(.bn-slide):not(.hm-bn):not(.rh-keep):not(.debate):not(#db-room *):not(.chart-card)'; // the debate room and the chart card keep their own layout
 
 export const ROBINHOOD_CSS = `
 ${M}{--rh-base:var(--line-strong)}
@@ -34,7 +33,7 @@ ${M} .rh-l{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
 ${M} .rh-x{stroke:var(--muted);stroke-width:1}
 ${M} .rh-halo{opacity:.18}
 ${M} .rh-per{order:6;display:flex;justify-content:space-between;margin:18px 0 0}
-${M} .rh-per button{border:0;background:none;font:700 14px/1 inherit;min-height:36px;padding:0 10px;border-radius:7px;cursor:pointer;color:var(--rh-c)}
+${M} .rh-per button{border:0;background:none;font:inherit;font-size:15px;font-weight:700;line-height:1;min-height:36px;padding:0 10px;border-radius:7px;cursor:pointer;color:var(--rh-c)}
 ${M} .rh-per button[aria-pressed=true]{background:var(--rh-c);color:#fff}
 ${M} .hero-main .eyebrow{order:7;margin:22px 0 0;gap:0;font-size:14px;color:var(--muted)}
 ${M} .hero-main .eyebrow>span{background:none;border:0;padding:0;margin:0;font-size:14px;font-weight:500;color:var(--muted)}
@@ -84,10 +83,7 @@ ${M} .rh-pct .wl-pill>b{display:none}${M} .rh-pct .wl-pill>span{display:inline}
 ${M} #watch .my-card,${M} #watch #watch-list{padding-left:0;padding-right:0;margin-left:0;margin-right:0}
 ${M} #feed-sum{font-size:14px;color:var(--muted)}
 
-/* ── 카드 없애기: 섹션은 가는 선 하나로 ── */
-${M} ${FLAT}${KEEP}{background:transparent;box-shadow:none;border:0;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none;padding-left:0;padding-right:0}
-${M} ${FLAT}${KEEP}:not(${FLAT} *){border-top:1px solid var(--line);padding-top:24px;padding-bottom:8px}
-#main#main :is(h2,.st-h,.panel-title,.block-head,.hm-h,.sub-h)+${FLAT},#main#main :is(.block-head,.hm-h)+* ${FLAT}{border-top:0;padding-top:4px}
+/* ── 섹션 제목·줄 모양 (G-310: 흰 카드 상자는 되살림, 한서님 11/2 '하얀색 박스는 왜 다 없앴대') ── */
 ${M} ${FLAT} .head h2,${M} ${FLAT}>h2,${M} .panel-title,${M} .sub-h,${M} .si-card h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
 ${M} .cs-home{padding-bottom:20px}
 ${M} .ig-words{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:0}
@@ -105,13 +101,12 @@ ${M} .story .why{order:2;margin:0}
 ${M} .story .why .meta{font-size:13.5px;color:var(--muted)}
 ${M} .story .story-title{order:3;flex-basis:100%;margin-top:6px;font-size:16.5px;font-weight:600;line-height:1.45}
 ${M} .story>:not(div:first-child):not(.why):not(.story-title){order:4;flex-basis:100%}
-${M} .me-acct-w,${M} .me-acct{background:transparent;box-shadow:none;border:0;-webkit-backdrop-filter:none;backdrop-filter:none;padding-left:0;padding-right:0}
 #main#main#main .st-group{padding-left:0;padding-right:0}
 #main#main#main .st-group .st-fold>summary,#main#main#main .st-group .st-rows>a,#main#main .st-rows>a{padding:16px 0;margin:0}
 ${M} .st-rows>a,${M} .st-group summary{border-top:1px solid var(--line)}
 ${M} .st-rows>a:first-child{border-top:0}
 /* ── 관심 종목 페이지: 같은 줄 + 가격 칩 ── */
-${M} .wp-list{gap:0}
+${M} .wp-list{gap:0;background:var(--surface-solid);border-radius:20px;padding:4px 20px}
 ${M} .wp-row{grid-template-columns:minmax(0,1fr) 64px 100px 32px;gap:10px;background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding:16px 0}
 ${M} .wp-row:first-child{border-top:0}
 ${M} .wp-row .wl-sp{width:64px;height:32px}
@@ -122,10 +117,6 @@ ${M} .wp-px:has(.up){background:var(--up)}${M} .wp-px:has(.down){background:var(
 ${M} .wp-px:has(.muted){background:none;color:var(--muted);cursor:default}
 ${M} .wp-px b{font-size:15px;font-weight:600;color:inherit}${M} .wp-px>span:not(.muted){display:none;font-size:15px;font-weight:600;color:inherit!important}
 ${M} .rh-pct .wp-px>b{display:none}${M} .rh-pct .wp-px>span:not(.muted){display:inline}
-/* ── 남은 카드들: 테마·공시 목록, 위원회 양쪽 상자 ── */
-${M} :is(.tm-item,.sg-item){background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;padding-left:0;padding-right:0;margin:0}
-${M} :is(.tm-list,#sg-list){gap:0}
-${M} .cs-side{background:transparent;border-radius:0;padding-left:0;padding-right:0}
 `;
 
 export const ROBINHOOD_JS = `(function () {
