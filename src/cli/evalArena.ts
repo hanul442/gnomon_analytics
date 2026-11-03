@@ -22,7 +22,7 @@ const STAGE = arg('stage', 'prep'), TOP = Number(arg('top', '100')), FROM = arg(
 const root = process.cwd(), dir = join(root, '.cache', 'eval'), out = join(dir, 'arena');
 const readJson = async <T>(p: string, d: T): Promise<T> => JSON.parse(await readFile(p, 'utf8').catch(() => JSON.stringify(d))) as T;
 
-export interface ArenaModel { key: string; name: string; org: string; hf: string; license: string; params?: string; weightsDate: string; testFrom?: string; status: 'active' | 'retired' | 'excluded'; note?: string }
+export interface ArenaModel { key: string; name: string; org: string; hf: string; license: string; params?: string; weightsDate: string; testFrom?: string; status: 'active' | 'waiting' | 'retired' | 'excluded'; note?: string }
 const registry = async () => (await readJson<{ models: ArenaModel[] }>(join(root, 'data/arena/models.json'), { models: [] })).models;
 
 async function prep() {
@@ -79,7 +79,7 @@ async function score() {
   const t = await readJson<{ top: number; windowFrom: string; rows: TruthRow[] }>(join(out, 'truth.json'), { top: 0, windowFrom: '', rows: [] });
   const models = await registry();
   const results: { m: ArenaModel; s: ArenaScore; runs: unknown[]; missing: number }[] = [];
-  for (const m of models.filter((x) => x.status !== 'excluded')) {
+  for (const m of models.filter((x) => x.status !== 'excluded' && x.status !== 'waiting')) {
     // Kept forecasts (data/arena/preds/<key>.json) plus this run's new ones; the merge is written back.
     const keptPath = join(root, 'data/arena/preds', `${m.key}.json`);
     const kept = await readJson<{ model?: string; runs: unknown[]; preds: Record<string, Forecast> }>(keptPath, { runs: [], preds: {} });
@@ -113,6 +113,7 @@ async function score() {
     '|---|---|---:|---|---|---:|---|---|---|---|',
     ...board.map(({ m, s }) => { const v = verdict(s); return `| ${m.name} | ${s.from} ~ ${s.to} (${s.dates}일) | ${s.rows} | ${f(s.brier.model, 4)} / ${f(s.brier.base, 4)} | ${f(s.ic.move.mean)} / ${f(s.ic.base.mean)} | ${pct(s.range.coverage)} | ${f(s.range.sizeIc.mean, 2)} / ${f(s.range.statSizeIc.mean, 2)} | ${win(v.direction)} | ${win(v.ranking)} | ${win(v.size)} |`; }), '',
     `통계 예측 범위(지금 화면)의 80% 범위 적중: ${board.map(({ m, s }) => `${m.name} 기간 ${pct(s.range.statCoverage)}`).join(', ')}.`, '',
+    ...models.filter((m) => m.status === 'waiting').map((m) => `- 대기: ${m.name}(${m.org}, ${m.testFrom}부터) — ${m.note ?? ''}`),
     ...models.filter((m) => m.status === 'excluded').map((m) => `- 제외: ${m.name}(${m.org}) — ${m.note ?? ''}`), '',
     ...results.flatMap(({ m, s, missing }) => [
       `## ${m.name} (${m.org}, ${m.params ?? ''}, ${m.license})`, '',

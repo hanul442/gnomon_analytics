@@ -179,3 +179,12 @@ AI 없이 가격 신호만으로 다섯 가지를 더 봤어요. 코드: `src/an
 - 정리: 지켜볼 후보는 Chronos-2·Toto·Chronos-Bolt mini. 다음 달 새 평가일에서 두 달 연속 이기는지 봐요.
 - 실행 메모: YingLong은 GPU 전용 부품(flash-attn·xformers 등)을 `scripts/arena/shims/`의 CPU용 대체로 돌려요. Lag-Llama는 KV 캐시를 켜 6배 빠르게. FlowState r1.1은 granite-tsfm 0.3.11이 필요해 따로 환경을 써요. CPU에서 T5 small 2,900건 약 2.7시간, Lag-Llama 3,100건 약 47분(4개 동시).
 
+
+## 11월 결과 (2026-11-03, `data/eval/arena-2026-11-03.md`, 첫 월간 자동 실행)
+
+주가를 11/3까지 갱신했지만 10월 평가일의 20거래일 결과가 아직 나오지 않아 **새 평가일은 없어요**(기존 22개 모델은 다시 계산할 것 없음). 새 모델 5개를 기존 평가일로 채점했어요.
+
+- 새로 넣음: Toto 2.0 4M·22M·313M·1B(Datadog, Apache-2.0), TiRex-2(NXAI, Apache-2.0). Toto 2.0은 Python 3.12가 필요해요(`scripts/arena/req/toto2.python`).
+- 대기(`status: waiting`): Timestral 5M·28M·123M·209M(Mistral, 수정 MIT: 출처 표시, 월매출 2,000만 달러 넘는 회사 제외)는 2026-11부터, Hirondel 7M(Apache-2.0)은 2026-12부터 채점할 평가일이 생겨요. 둘 다 코드가 PyPI에 없어 GitHub 설치 승인이 필요해요.
+- 제외: TimesFM 3.0(구글, 비상업 라이선스로 바뀜), TimeH2O(H2O.ai, 접근 승인 필요·라이선스 확인 불가).
+- **이긴 모델 없음.** Toto 2.0 4M이 오를 확률 Brier 0.2249 vs 기준 0.2353으로 가장 가까웠지만 95% 구간 [−0.022, +0.001]이 0을 아주 조금 넘어 아직 우연과 구별되지 않아요(평가일 5개뿐). Toto 2.0 네 크기 모두 Brier가 기준보다 낮고 80% 범위 적중 86~89%라, 평가일이 쌓이면 다시 봐요. TiRex-2는 평가일 2개라 판단하기 이릅니다.

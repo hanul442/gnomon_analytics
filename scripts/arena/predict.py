@@ -232,8 +232,33 @@ def lagllama(m, a):
     return run, 64
 
 
+def toto2(m, a):
+    from toto2 import Toto2Model
+    model = Toto2Model.from_pretrained(m['hf'], revision=m['revision']).to('cpu').eval()
+
+    def run(rows):
+        target = torch.tensor(np.stack([closes(r, m['context']) for r in rows]), dtype=torch.float32).unsqueeze(1)  # (batch, 1, time)
+        target = target[..., -(target.shape[-1] // 32) * 32:]  # whole 32-bar patches only
+        q = model.forecast({'target': target, 'target_mask': torch.ones_like(target, dtype=torch.bool), 'series_ids': torch.zeros(len(rows), 1, dtype=torch.long)},
+                           horizon=20, decode_block_size=None, has_missing_values=False)  # (9, batch, 1, 20)
+        return [{'q': [round(float(v) / closes(r, 1)[-1], 5) for v in q[:, k, 0, 19]]} for k, r in enumerate(rows)]
+    return by_length(run, m['context']), 32
+
+
+def tirex2(m, a):
+    from tirex2 import TimeseriesType, load_model
+    model = load_model(m['hf'], device='cpu', hf_kwargs={'revision': m['revision']})
+
+    def run(rows):
+        ts = [TimeseriesType(target=torch.tensor(closes(r, m['context']), dtype=torch.float32).unsqueeze(0), past_covariates=None, future_covariates=None) for r in rows]
+        out = model.forecast(ts, prediction_length=20, output_type='numpy')  # each (1, 9, 20)
+        return [{'q': [round(float(v) / closes(r, 1)[-1], 5) for v in f[0, :, 19]]} for f, r in zip(out, rows)]
+    return run, 64
+
+
 ADAPTERS = {'chronos': chronos_like, 'chronos2': chronos_like, 'timesfm': timesfm, 'tirex': tirex, 'toto': toto, 'sundial': sundial, 'kronos': kronos,
-            'timesfm1': timesfm1, 'kairos': kairos, 'flowstate': flowstate, 'yinglong': yinglong, 'lagllama': lagllama}
+            'timesfm1': timesfm1, 'kairos': kairos, 'flowstate': flowstate, 'yinglong': yinglong, 'lagllama': lagllama,
+            'toto2': toto2, 'tirex2': tirex2}
 
 
 def main() -> None:

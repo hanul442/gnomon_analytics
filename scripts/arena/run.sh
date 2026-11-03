@@ -25,7 +25,9 @@ venv() {
   esac
   v=.cache/arena-venv/$a; req=scripts/arena/req/$a.txt
   if [ ! -x "$v/bin/python" ]; then
-    "$PY" -m venv "$v"
+    local py=$PY
+    [ -f "scripts/arena/req/$a.python" ] && py=python$(cat "scripts/arena/req/$a.python")  # a few need a newer Python
+    "$py" -m venv "$v"
     "$v/bin/pip" install -q --extra-index-url "$TORCH_INDEX" torch -r "$req"
   fi
   echo "$v/bin/python"
