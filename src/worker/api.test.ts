@@ -44,6 +44,7 @@ function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
       if (String(url).startsWith('https://m.stock.naver.com/api/stock/000660/trend')) return Response.json([{ bizdate: '20261002', accumulatedTradingVolume: '2,000' }]);
       if (String(url).startsWith('https://stock.naver.com/api/domestic/market/trendDeposit')) return Response.json({ content: [{ bizdate: '20261002', customerDeposit: '1000000', creditLoan: '330000' }] });
       if (String(url).startsWith('https://www.okx.com/')) return Response.json(String(url).includes('XYZ') ? { code: '51001', data: [] } : String(url).includes('funding-rate') ? { code: '0', data: [{ fundingRate: '0.0001', fundingTime: '1791475200000' }] } : String(url).includes('/public/open-interest') ? { code: '0', data: [{ oiUsd: '2500000000' }] } : { code: '0', data: [] });
+      if (String(url).startsWith('https://polling.finance.naver.com/api/realtime/domestic/index/')) return Response.json({ datas: [{ itemCode: 'KOSPI', closePrice: '5,705.40', compareToPreviousClosePrice: '-153.68', compareToPreviousPrice: { code: '5', name: 'FALLING' }, fluctuationsRatio: '-2.62', marketStatus: 'OPEN', localTradedAt: '2026-11-03T11:01:17+09:00' }] });
       if (String(url).startsWith('https://polling.finance.naver.com/')) return Response.json({ datas: [{ itemCode: '000660', closePrice: '1,860,000', compareToPreviousClosePrice: '18,000', fluctuationsRatio: '0.98', compareToPreviousPrice: { code: '2', name: 'RISING' }, marketStatus: 'OPEN', localTradedAt: '2026-10-05T12:00:00+09:00' }] });
       return new Response('no', { status: 404 });
     }) as typeof fetch,
@@ -1009,4 +1010,27 @@ test('alpha end (G-306): from 11/1 to 11/19 KST only the admin signs in; open se
   t.tick(Date.parse('2026-11-19T15:00:00Z') - t.deps.now().getTime()); // 11/20 00:00 KST: open again
   assert.ok((await t.call('POST', '/auth/login', { email: 'old@example.com', password: 'abcd1234' })).body.session);
   assert.notEqual((await t.call('POST', '/auth/signup', { email: 'beta@example.com', password: 'abcd1234', invite: code, terms: true })).body.error, 'ALPHA_PAUSED');
+});
+
+test('G-315: headless browsers and robots are not counted as visits; audit accounts are left out of events', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  for (const ua of ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0 Safari/537.36', 'Googlebot/2.1']) {
+    const res = await handle(new Request('https://api.test/visit', { method: 'POST', headers: { Origin: 'https://hanul442.github.io', 'Content-Type': 'application/json', 'User-Agent': ua }, body: JSON.stringify({ v: 'd'.repeat(24) }) }), t.env, t.deps);
+    assert.equal(res.status, 200);
+  }
+  await t.call('POST', '/visit', { v: 'e'.repeat(24) });
+  await t.env.DB.prepare("INSERT INTO events (user_id, name, page, props, created_at) VALUES ('audit-free', 'page_view', '/', '{}', ?)").bind(t.deps.now().toISOString()).run();
+  await t.call('POST', '/events', { events: [{ name: 'page_view', page: '/' }] }, boss.session);
+  const ov = (await t.call('GET', '/admin/overview', undefined, boss.session)).body;
+  assert.equal(ov.visits.week, 1);
+  assert.deepEqual(ov.events.map((e: any) => [e.name, e.n, e.users]), [['page_view', 1, 1]]);
+});
+
+test('G-314: ix=KOSPI reads the live index from Naver\'s index feed, cached', async () => {
+  const t = setup();
+  const a = await t.call('GET', '/quote?ix=KOSPI,EVIL');
+  assert.deepEqual([a.status, a.body.quotes[0].symbol, a.body.quotes[0].price, a.body.quotes[0].changePct, a.body.quotes[0].open], [200, 'KOSPI', 5705.4, -2.62, true]);
+  assert.ok(t.seen.some((u) => /realtime\/domestic\/index\/KOSPI$/.test(u)));
+  assert.equal((await t.call('GET', '/quote?ix=KOSPI')).body.cached, true);
 });

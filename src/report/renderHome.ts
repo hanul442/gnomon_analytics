@@ -205,8 +205,42 @@ export function renderHome(data: HomeData): string {
 <footer id="sources" class="hm-foot"><details class="hm-src"><summary>데이터 출처·기준 시각<span aria-hidden="true"> ›</span></summary><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS, 해외 뉴스 RSS.${wp ? ` 세계 숫자는 ${esc(wp.asof)} 기준이에요.` : ''} 계산 결과이고, 투자 권유가 아니에요.</p></details></footer>`;
   // G-277 (한서님 10/21 '위의 바 두기싫다니까'): on phones the parts switch from the bottom bar; the row above is for wide screens.
   void partButtons;
-  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘' }, scripts: WORLD_JS + (im ? ISSUE_MAP_JS : '') + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS });
+  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘' }, scripts: WORLD_JS + (im ? ISSUE_MAP_JS : '') + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + HOME_LIVE_JS });
 }
+
+/**
+ * G-314 (한서님 11/3 '다 해버려', 목업 2): while KRX is open (weekdays 09:00–15:30 KST) the KOSPI tile and the date line
+ * show the live index, once a minute, with the last close kept small under it. Outside the session, or when the feed
+ * fails, the page stays as built. Holidays: Naver answers marketStatus CLOSE, so nothing changes.
+ */
+const HOME_LIVE_JS = `<script>
+(function () {
+  var tile = document.querySelector('[data-live-ix="KOSPI"]'), meta = document.querySelector('meta[name=gnm-api]'), api = meta && meta.content;
+  if (!tile || !api) return;
+  var kst = function () { return new Date(Date.now() + 9 * 3600000); };
+  var open = function () { var d = kst(), w = d.getUTCDay(), m = d.getUTCHours() * 60 + d.getUTCMinutes(); return w > 0 && w < 6 && m >= 540 && m <= 930; };
+  var W = ['일', '월', '화', '수', '목', '금', '토'];
+  var v = tile.querySelector('.km-sv'), l = tile.querySelector('.km-sl'), b = tile.querySelector('.km-badge'), prev = v ? v.textContent : '';
+  var fmt = function (x) { return x.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var tick = function () {
+    if (!open() || document.hidden) return;
+    fetch(api.replace(/[/]$/, '') + '/quote?ix=KOSPI').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      var q = j && j.quotes && j.quotes[0]; if (!q || !q.open) return;
+      if (v) v.textContent = fmt(q.price);
+      if (b) { b.className = 'km-badge ' + (q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : ''); b.textContent = (q.changePct > 0 ? '▲ +' : q.changePct < 0 ? '▼ ' : '') + q.changePct.toFixed(2) + '%'; }
+      var t = q.at ? q.at.slice(11, 16) : '';
+      if (l) l.textContent = '● 실시간 ' + t + (prev ? ' · 전 종가 ' + prev : '');
+      tile.classList.add('km-live');
+      var hd = document.querySelector('#mkt-hero .hm-d'), d = kst();
+      if (hd) hd.textContent = (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일 ' + W[d.getUTCDay()] + '요일 · 장 열려 있어요';
+      var hs = document.querySelector('#mkt-hero .hm-s');
+      if (hs && !document.getElementById('hm-live-note')) hs.insertAdjacentHTML('afterend', '<p class="hm-live-note" id="hm-live-note">이 한 줄은 지난 장 마감 기준이에요. 위원회 오늘 판단은 15:30 장 마감 뒤에 나와요.</p>');
+    }).catch(function () {});
+  };
+  tick(); setInterval(tick, 60000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
+})();
+</script><style>.km-live .km-sl{color:var(--fg)}.hm-live-note{margin:4px 0 0;font-size:13px;color:var(--muted)}</style>`;
 
 // G-300 (한서님 10/25): the big banner stays big, but turns through five slides at most (older ones live in 업데이트 기록).
 const BANNER_MAX = 5;
@@ -293,8 +327,8 @@ function scoreLine(entries: readonly HomeEntry[], alone = false): string {
   for (const e of entries) for (const s of e.report?.market?.forecastScores ?? []) { scored += s.scored; inside += (s.coverage ?? 0) * s.scored; }
   if (!scored) return '';
   // G-300: the range score is the committee card's last line (one card for the committee, not two).
-  if (!alone) return `<a class="cs-hfoot" href="scorecard.html"><span>예측 범위 적중률 <b>${Math.round((inside / scored) * 100)}%</b> <small>채점 ${scored.toLocaleString('ko-KR')}건 · 정직하면 80% 근처</small></span><span aria-hidden="true">›</span></a>`;
-  return `<section class="block sl-wrap"><a class="sl" href="scorecard.html"><b class="sl-v">${Math.round((inside / scored) * 100)}%</b><span><b>위원회 예측 범위 적중률</b><small>채점 ${scored.toLocaleString('ko-KR')}건 · 정직하면 80% 근처예요</small></span><span class="sl-go" aria-hidden="true">›</span></a></section>`;
+  if (!alone) return `<a class="cs-hfoot" href="scorecard.html"><span>예측 범위 적중률 <b>${Math.round((inside / scored) * 100)}%</b> <small>실제 가격이 예측 범위 안에 든 비율 · 채점 ${scored.toLocaleString('ko-KR')}건 · 목표 80%</small></span><span aria-hidden="true">›</span></a>`;
+  return `<section class="block sl-wrap"><a class="sl" href="scorecard.html"><b class="sl-v">${Math.round((inside / scored) * 100)}%</b><span><b>위원회 예측 범위 적중률</b><small>실제 가격이 예측 범위 안에 든 비율이에요 · 채점 ${scored.toLocaleString('ko-KR')}건 · 목표 80%</small></span><span class="sl-go" aria-hidden="true">›</span></a></section>`;
 }
 
 /** The survey's part of 내 종목 (G-46, G-201): the note on top, the holding-period preset and the sector chips. */

@@ -77,8 +77,9 @@ import { collectMarketData, financeKey, flowKey, intradayKey, marketPaths, resea
 import { buildMarketSection } from '../report/marketSection.js';
 import { scenarioCallOf } from '../analysis/scenarioScore.js';
 import { readCommitteeCalibration, refreshCommitteeCalibration } from './calibrate.js';
+import { refreshMissReview } from './missReview.js';
 import { forecastKey, type PriceForecast } from '../analysis/valuation.js';
-import { analystCallKey, type AnalystCall } from '../analysis/analysts.js';
+import { ANALYST_HORIZON, analystCallKey, neutralBandOf, type AnalystCall } from '../analysis/analysts.js';
 import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
@@ -259,6 +260,8 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   const corpCodes = await readCorpCodes(root);
   // G-264: the committee number's recalibration, refitted from every scored committee report before today's reports.
   await refreshCommitteeCalibration(root, now).catch((e) => console.error(`calibration: ${String(e).slice(0, 160)}`));
+  // G-305: once a KST week, every scored miss sorted by type (data/eval/misses-<Monday>.md). No AI.
+  await refreshMissReview(root, now).catch((e) => console.error(`miss review: ${String(e).slice(0, 160)}`));
   const core = new Set(options.tickers.map((t) => t.symbol));
   const weeklyDue = async (symbol: string) => {
     const last = (await readdir(join(root, 'reports', symbol)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f) && f.slice(0, 10) < today.date).sort().at(-1)?.slice(0, 10);
@@ -425,17 +428,27 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   // the monthly AI budget goes to the core stocks and the weekly picks first.
   if (today.hour >= SETTLED_HOUR_KST && options.dailyPicks !== false) {
     const session = pulse?.date === today.date;
-    const exclude = new Set([...jobs.map((j) => j.ticker.symbol), ...await recentlyReported(root, today.date, 28)]);
+    const lastReported = await lastReports(root);
+    const exclude = new Set([...jobs.map((j) => j.ticker.symbol), ...[...lastReported].filter(([, d]) => daysBetween(d, today.date) < 28).map(([sym]) => sym)]);
     const picks = await dailyPicksFor(root, today.date, () => chooseDailyPicks({
       date: today.date, weekday: session ? new Date(`${today.date}T00:00:00Z`).getUTCDay() : 0,
-      stocks: session && universe.rows ? screenerRows(universe.rows, calcs, new Set(), risk.flags) : [], etfs: session ? etfList : [], coins: coinList, us: session ? usRows : [], exclude,
+      stocks: session && universe.rows ? screenerRows(universe.rows, calcs, new Set(), risk.flags) : [], etfs: session ? etfList : [], coins: coinList, us: session ? usRows : [], exclude, lastReported,
     }));
+    // G-314: a core-rotation pick can be a stock already on a dashboard job (tickers.json: 삼성전자·SK하이닉스);
+    // that job runs again as a committee report, one by one (the two are each other's peer).
+    const again = jobs.filter((j) => !j.reportDay && j.ticker.ai && picks.some((p) => p.symbol === j.ticker.symbol));
+    for (const j of again) {
+      Object.assign(j, { tier: 'deep', reportDay: true });
+      const i = results.findIndex((r) => r.symbol === j.ticker.symbol);
+      if (i >= 0) results.splice(i, 1);
+      await run(j);
+    }
     const fresh = picks.filter((p) => !jobs.some((j) => j.ticker.symbol === p.symbol));
     const pickJobs = fresh.map((p) => ({ ticker: dailyTicker(p, corpCodes), tier: p.tier, reportDay: true }));
     jobs.push(...pickJobs);
     await fetchBenches(pickJobs.map((j) => j.ticker));
     await pool(pickJobs, options.concurrency ?? 4, run);
-    for (const j of pickJobs) {
+    for (const j of [...again, ...pickJobs]) {
       const r = results.find((x) => x.symbol === j.ticker.symbol);
       if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
     }
@@ -463,12 +476,12 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
 const benchBars = (symbol: string, now: Date, fetchOpt: { fetch?: typeof fetch }) =>
   symbol.startsWith('KRW-') ? fetchUpbitDays(symbol, now, fetchOpt.fetch) : fetchNaverDailyBars(symbol, 250, { now: () => now, ...fetchOpt });
 
-/** Symbols with a dated report in the last `days` days. */
-async function recentlyReported(root: string, date: string, days: number): Promise<string[]> {
-  const out: string[] = [];
+/** The latest dated report of every symbol under reports/. */
+async function lastReports(root: string): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
   for (const d of await readdir(join(root, 'reports')).catch(() => [] as string[])) {
     const last = (await readdir(join(root, 'reports', d)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().at(-1)?.slice(0, 10);
-    if (last && daysBetween(last, date) < days) out.push(d);
+    if (last) out.set(d, last);
   }
   return out;
 }
@@ -605,9 +618,10 @@ async function runTicker(options: RunOptions, ticker: Ticker, tier: 'deep' | nul
       // Analyst calls are logged as made, to be scored 20 sessions later.
       const c = built.commentary;
       if (c?.status === 'OK' && c.analysts?.length && built.price) {
+        const neutralBand = neutralBandOf(built.market?.forecasts.find((f) => f.horizon === ANALYST_HORIZON)?.sigma);
         const calls: AnalystCall[] = c.analysts.map((v) => ({
           symbol: SYMBOL, analyst: v.analyst, reportDate: today.date, baseDate: built.price!.sessionDate ?? today.date, baseClose: built.price!.close,
-          stance: v.stance, confidence: v.confidence, target: v.target, ...(v.invalidation ? { invalidation: v.invalidation } : {}), promptVersion: c.promptVersion, madeAt: now.toISOString(),
+          stance: v.stance, confidence: v.confidence, target: v.target, ...(v.invalidation ? { invalidation: v.invalidation } : {}), ...(neutralBand != null ? { neutralBand } : {}), promptVersion: c.promptVersion, madeAt: now.toISOString(),
         }));
         await appendUnseen(join(root, 'data', 'analysts', `${SYMBOL}.jsonl`), calls, analystCallKey);
       }

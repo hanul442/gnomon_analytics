@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cleanPrefs, DEFAULT_PREFS, inQuiet, notifyUser, runDailyNotify, runMorningBrief, runPriceAlerts, runUpdateNotify, worldLine } from './notify.js';
+import { cleanPrefs, DEFAULT_PREFS, inQuiet, notifyUser, runDailyNotify, runKillNotify, runMorningBrief, runPriceAlerts, runUpdateNotify, worldLine } from './notify.js';
 import { b64u, encryptPayload, unb64u, vapid, vapidHeader } from './push.js';
 import { testDb } from './testDb.js';
 
@@ -324,4 +324,29 @@ test('morning briefing (G-308): weekdays 08:00–09:00 KST, once a day; world li
   await runDailyNotify(ctx('2026-10-26T11:00:00Z'));
   const eve = (await db.prepare("SELECT user_id, body FROM notifications WHERE kind IN ('daily', 'watchReport') ORDER BY user_id").all<{ user_id: string; body: string }>()).results;
   assert.match(eve[0]!.body, /오늘 채점 3건 중 2건 맞음/);
+});
+
+test('G-314: 틀림 기준 push: once per watched stock, report and broken count; old reports and other stocks stay quiet; can be turned off', async () => {
+  const db = testDb();
+  for (const id of ['u1', 'u2']) await db.prepare("INSERT INTO users (id, email, plan, created_at) VALUES (?, ?, 'free', ?)").bind(id, `${id}@x.test`, '2026-10-01T00:00:00Z').run();
+  await db.prepare('INSERT INTO watchlists (user_id, symbols, updated_at) VALUES (?, ?, ?)').bind('u1', JSON.stringify(['000660', '035420', '005930']), '2026-10-01T00:00:00Z').run();
+  let info: Record<string, unknown> = { '000660': { c: 1352000, f: 0, n: 0, d: '2026-11-20', k: 1, kn: '추세·모멘텀 PM|1,373,000원 아래' }, '035420': { c: 1, f: 0, n: 0, d: '2026-10-05', k: 2 }, '005930': { c: 1, f: 0, n: 0, d: '2026-11-20' } };
+  const fetcher = (async (url: string) => {
+    if (String(url).endsWith('/watchinfo.json')) return Response.json(info);
+    if (String(url).endsWith('/search.json')) return Response.json({ items: [['000660', 'SK하이닉스']] });
+    return new Response('no', { status: 404 });
+  }) as typeof fetch;
+  const ctx = { db, fetch: fetcher, site: SITE, now: new Date('2026-11-24T09:30:00Z') };
+  assert.deepEqual(await runKillNotify(ctx), { sent: 1 });
+  const row = (await db.prepare("SELECT user_id, title, body FROM notifications WHERE kind = 'kill'").first<{ user_id: string; title: string; body: string }>())!;
+  assert.equal(row.user_id, 'u1');
+  assert.equal(row.title, 'SK하이닉스, 위원 1명의 판단이 틀림 기준을 넘었어요');
+  assert.match(row.body, /추세·모멘텀 PM이 "종가 1,373,000원 아래로 닫히면 틀렸다고 인정해요"/);
+  assert.match(row.body, /사고팔라는 뜻이 아니에요/);
+  assert.deepEqual(await runKillNotify(ctx), { sent: 0 }, 'once');
+  info = { ...info, '000660': { ...(info['000660'] as object), k: 2 } };
+  assert.deepEqual(await runKillNotify(ctx), { sent: 1 }, 'a second member breaking is news');
+  await db.prepare('INSERT INTO notify_prefs (user_id, prefs, updated_at) VALUES (?, ?, ?)').bind('u1', JSON.stringify({ kill: false }), '2026-11-24T00:00:00Z').run();
+  info = { ...info, '000660': { ...(info['000660'] as object), k: 3 } };
+  assert.deepEqual(await runKillNotify(ctx), { sent: 0 }, 'turned off');
 });

@@ -109,14 +109,15 @@ test('report failures preserve actionable categories without exposing provider d
  assert.doesNotMatch(reportFailureMessage('API_401:sensitive server details'),/sensitive server details/);
 });
 
-test('G-244: no release card on any page; the ad strip goes after the page everywhere',async()=>{
+test('G-244: no release card on any page; no mock ads during the beta (G-314)',async()=>{
  const {shell}=await import('./renderHtml.js');const {renderHome}=await import('./renderHome.js');
  assert.doesNotMatch(shell('','홈','',{active:'home'}),/class="version-banner"/);
  assert.doesNotMatch(renderStockPage(),/class="version-banner"/);
  assert.doesNotMatch(renderGuide(),/class="version-banner"/);
  const home=renderHome({entries:[],selection:null,universe:null,pulse:null,indices:[]});
- assert.ok(home.indexOf('class="ad-strip"')>home.indexOf('data-wd-p="news"'),'the ad strip comes after the page');
- assert.ok(renderStockPage().indexOf('class="ad-strip"')>renderStockPage().indexOf('id="tab-news"'),'on every page');
+ // G-314: the mock ads are off during the beta, so no page carries the ad strip or a mock-ad banner.
+ assert.doesNotMatch(home,/class="ad-strip"/);assert.doesNotMatch(renderStockPage(),/class="ad-strip"/);
+ assert.doesNotMatch(home,/bn-k-ad|bn-hanul|509OP/);
 });
 
 
@@ -197,7 +198,7 @@ test('G-277: the price map puts 약세 · 기본 · 강세 bars left to right af
  const top=(k:string)=>Number(html.match(new RegExp('class="'+k+'" x="[0-9.]+" y="([0-9.]+)"'))![1]);
  assert.ok(x('r-bear')<x('r-base')&&x('r-base')<x('r-bull'),'약세 left, 강세 right');
  assert.ok(top('r-bear')>top('r-base')&&top('r-base')>top('r-bull'),'higher ranges sit higher');
- assert.match(html,/최저 100원 \(\+[0-9.]+%, 9\.01\)/);
+ assert.match(html,/최저 100원 \(9\.01\)/);
  report.price=undefined as any;assert.equal(scenarioRail(report),'');
 });
 

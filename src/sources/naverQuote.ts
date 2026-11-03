@@ -8,6 +8,9 @@
  */
 export interface Quote { symbol: string; price: number; change: number; changePct: number; open: boolean; at: string | null; session?: 'regular' | 'pre' | 'after' | 'closed' }
 
+/** G-314: the KOSPI and KOSDAQ index from the same polling feed, for the home tiles while the market is open. */
+export const INDEX_CODES = /^(KOSPI|KOSDAQ)$/;
+export const indexQuoteUrl = (codes: readonly string[]) => `https://polling.finance.naver.com/api/realtime/domestic/index/${codes.join(',')}`;
 export const quoteUrl = (symbols: readonly string[]) => `https://polling.finance.naver.com/api/realtime/domestic/stock/${symbols.join(',')}`;
 
 const n = (v: unknown) => {
@@ -16,13 +19,13 @@ const n = (v: unknown) => {
 };
 
 /** `datas` rows → quotes; rows without a price are skipped. The sign comes from compareToPreviousPrice. */
-export function parseNaverQuotes(json: unknown): Quote[] {
+export function parseNaverQuotes(json: unknown, codes: RegExp = /^[0-9A-Z]{6}$/): Quote[] {
   const rows = (json as { datas?: unknown[] } | null)?.datas;
   if (!Array.isArray(rows)) return [];
   const out: Quote[] = [];
   for (const r of rows as Record<string, unknown>[]) {
     const symbol = String(r.itemCode ?? r.cd ?? ''), price = n(r.closePrice ?? r.nv);
-    if (!/^[0-9A-Z]{6}$/.test(symbol) || !(price > 0)) continue;
+    if (!codes.test(symbol) || !(price > 0)) continue;
     // Nextrade's pre/after market: its price is the live one while KRX is shut (G-128).
     const over = r.overMarketPriceInfo as Record<string, unknown> | null | undefined, overPrice = n(over?.overPrice);
     const sessionType = String(r.marketSessionType ?? '');

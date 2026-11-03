@@ -121,3 +121,26 @@ test('a past day\'s failed committee can be asked again from that day\'s stored 
   const saved=JSON.parse(await readFile(file,'utf8'));assert.equal(saved.groups[0].assets[0].close,100);assert.equal(saved.generatedAt,'2026-10-20T18:43:00Z');
  }finally{await rm(root,{recursive:true,force:true});}
 });
+
+test('G-314: scheduled runs share four market committee calls a day, and a coin-only day writes no report', async()=>{
+ const root=await tempDir('gnomon-market-');
+ try {
+  await mkdir(join(root,'data','prices'),{recursive:true});
+  await writeFile(join(root,'data','prices','KOSPI.jsonl'),'{"date":"2026-10-06","close":100}\n{"date":"2026-10-07","close":110}\n');
+  let calls=0;
+  const client={beta:{messages:{stream:()=>{calls++;return {finalMessage:async()=>({model:'claude-haiku-4-5',stop_reason:'end_turn',usage:{input_tokens:100,output_tokens:10},content:[{type:'text',text:'not json'}]})};}}}} as unknown as Anthropic;
+  const budget=new AiBudget(root,'2026-10',25,0);
+  await writeMarketReports(root,new Date('2026-10-07T09:30:00Z'),[],undefined,client,budget,false,noNews);
+  assert.equal(calls,3);
+  await writeMarketReports(root,new Date('2026-10-07T10:30:00Z'),[],undefined,client,budget,false,noNews);
+  assert.equal(calls,4,'the second run gets the one call left');
+  await writeMarketReports(root,new Date('2026-10-07T11:30:00Z'),[],undefined,client,budget,false,noNews);
+  assert.equal(calls,4,'a third run spends nothing');
+  const report=JSON.parse(await readFile(join(root,'reports','market','daily-2026-10-07.json'),'utf8'));
+  assert.equal(report.tries,4);assert.equal(report.ai.status,'FAILED');
+  // Saturday 10/10: KOSPI has no bar for that day, so there is no committee and no file.
+  const out=await writeMarketReports(root,new Date('2026-10-10T09:30:00Z'),[],undefined,client,budget,false,noNews);
+  assert.equal(calls,4);assert.equal(out?.status,'NO_DATA');
+  await assert.rejects(readFile(join(root,'reports','market','daily-2026-10-10.json'),'utf8'));
+ } finally { await rm(root,{recursive:true,force:true}); }
+});
