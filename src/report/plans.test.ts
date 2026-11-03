@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { allows, CREDIT_ACTIONS, FEATURES, gate, isTester, needText, notifyLimit, NOTIFY_LIMITS, PLANS, TESTERS, TRIAL, validPromos, WATCH_LIMIT, type Feature } from './plans.js';
+import { allows, BETA_OPEN, CREDIT_ACTIONS, FEATURES, gate, isTester, needText, notifyLimit, NOTIFY_LIMITS, PLANS, TESTERS, TRIAL, validPromos, WATCH_LIMIT, type Feature } from './plans.js';
 
 test('promotions: only well-formed ones are published; the repo file is valid', async () => {
   assert.deepEqual(validPromos([{ id: 'a', credits: 20, from: '2026-10-05', to: '2026-10-31', title: 't' }]).length, 1);
@@ -32,8 +32,8 @@ test('one permission table (G-215): what each of the five plans may use', () => 
   // Credit actions, notifications and the site's locks read the same table.
   for (const a of CREDIT_ACTIONS) assert.equal(a.min, FEATURES[a.key], a.key);
   for (const p of PLANS) assert.deepEqual([NOTIFY_LIMITS[p.key].push, NOTIFY_LIMITS[p.key].intraday], [allows(p.key, 'push'), allows(p.key, 'intraday')], p.key);
-  assert.match(gate('x', { base: '', what: '예측', feature: 'forecast' }), /data-need="pro".*프로부터 볼 수 있어요/s);
-  assert.match(gate('x', { base: '', what: '토론', feature: 'debate' }), /data-need="plus".*플러스부터 볼 수 있어요/s);
+  assert.match(gate('x', { base: '', what: '예측', feature: 'forecast' }), BETA_OPEN ? /data-need="pro".*베타 테스터는 로그인하면/s : /data-need="pro".*프로부터 볼 수 있어요/s);
+  assert.match(gate('x', { base: '', what: '토론', feature: 'debate' }), BETA_OPEN ? /data-need="plus".*베타 테스터는 로그인하면 볼 수 있어요/s : /data-need="plus".*플러스부터 볼 수 있어요/s);
   assert.equal(needText('screenTools'), '플러스부터');
 });
 

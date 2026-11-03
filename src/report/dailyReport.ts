@@ -221,7 +221,8 @@ function buildReport(input: {
     if (price.close >= price.high20) notes.push('최근 20거래일 중 가장 높은 가격 근처에서 마감했어요.');
     if (price.close <= price.low20) notes.push('최근 20거래일 중 가장 낮은 가격 근처에서 마감했어요.');
   } else if (price) {
-    parts.push(`${input.date}에는 거래가 없었어요. 마지막 거래일(${price.sessionDate}) 종가는 ${won(price.close)}이에요`);
+    // A run during market hours also lands here (today's bar is not closed yet), so it never says the market was shut.
+    parts.push(`${input.date} 종가는 아직 없어요. 마지막 거래일(${price.sessionDate}) 종가는 ${won(price.close)}이에요`);
   } else {
     parts.push(`${input.date}에는 거래가 없었고 가격 기록도 없어요`);
   }

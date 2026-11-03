@@ -43,7 +43,7 @@ test('a holiday report keeps the last session price and picks up filings since t
   assert.equal(report.price?.sessionDate, '2026-10-01');
   assert.equal(report.price?.close, 301000);
   assert.equal(report.filings.length, 1);
-  assert.equal(report.headline, '2026-10-03에는 거래가 없었어요. 마지막 거래일(2026-10-01) 종가는 301,000원이에요. 새 공시 1건(중요 1건).');
+  assert.equal(report.headline, '2026-10-03 종가는 아직 없어요. 마지막 거래일(2026-10-01) 종가는 301,000원이에요. 새 공시 1건(중요 1건).');
 });
 
 test('changes compare against the previous report', () => {

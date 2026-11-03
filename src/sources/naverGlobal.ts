@@ -171,7 +171,14 @@ export async function fetchWorldMarkets(options: { fetch?: Fetch; now?: () => Da
         try { series = withLive(parseMarketIndexPrices(await getJson(`https://m.stock.naver.com/front-api/marketIndex/prices?category=${def.category}&reutersCode=${encodeURIComponent(def.code)}&page=1&pageSize=30`, f)), value, at); }
         catch (e) { status.push({ source: `naver:marketIndex:${def.code}`, ok: false, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }); }
       }
-      macro.push({ key: def.key, name: def.name, group: def.group, unit: def.unit, ...(def.hint ? { hint: def.hint } : {}), value, change: num(r.fluctuations), changePct: def.group === 'policy' ? null : num(r.fluctuationsRatio), at, open: r.marketStatus === 'OPEN', series });
+      // After the close Naver reports a 0 move for futures (WTI 96.46 '0.00%' on 11/3 while it fell 7.4% from 104.12).
+      // When the day's own bar is the last point of the series, the move comes from the bar before it instead.
+      let change = num(r.fluctuations), changePct = def.group === 'policy' ? null : num(r.fluctuationsRatio);
+      const prev = series.length >= 2 && series[series.length - 1]![1] === value ? series[series.length - 2]![1] : null;
+      if (changePct === 0 && r.marketStatus !== 'OPEN' && prev && prev !== value) {
+        change = Math.round((value - prev) * 100) / 100; changePct = Math.round((value / prev - 1) * 10000) / 100;
+      }
+      macro.push({ key: def.key, name: def.name, group: def.group, unit: def.unit, ...(def.hint ? { hint: def.hint } : {}), value, change, changePct, at, open: r.marketStatus === 'OPEN', series });
     }
   } catch (e) { status.push({ source: 'naver:marketIndex:majors', ok: false, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }); }
   // VIX lives with the indices at Naver but reads as a fear gauge, so it joins the macro rows.

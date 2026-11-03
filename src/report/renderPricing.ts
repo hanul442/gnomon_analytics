@@ -152,7 +152,7 @@ const PRICING_SCRIPT = `<script>
     document.querySelectorAll('[data-alpha]').forEach(function (el) { el.hidden = false; });
     document.querySelectorAll('[data-downgrade]').forEach(function (b) { b.style.display = 'none'; });
     var box = document.getElementById('log-body');
-    if (!G.me) { box.innerHTML = '<p class="empty"><a href="login.html">알파 로그인</a>하면 내 크레딧 기록이 보여요.</p>'; return; }
+    if (!G.me) { box.innerHTML = '<p class="empty"><a href="login.html">로그인</a>하면 내 크레딧 기록이 보여요.</p>'; return; }
     G.call('GET', '/me/ledger').then(function (r) {
       if (r.error || !r.rows) { box.innerHTML = '<p class="empty">' + esc(r.message || '기록을 불러오지 못했어요.') + '</p>'; return; }
       box.innerHTML = r.rows.length ? '<table class="log"><tbody>' + r.rows.slice(0, 30).map(function (x) { return '<tr><td class="muted">' + esc(String(x.created_at).slice(0, 16).replace('T', ' ')) + '</td><td>' + esc(x.note || x.kind) + '</td><td style="text-align:right;font-weight:700">' + (x.delta > 0 ? '+' : '') + x.delta + '</td></tr>'; }).join('') + '</tbody></table><p class="muted small"><a href="account.html">내 계정에서 전체 보기</a></p>' : '<p class="empty">아직 내역이 없어요.</p>';

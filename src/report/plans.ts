@@ -209,12 +209,15 @@ export const LOCK = '<svg viewBox="0 0 24 24" aria-hidden="true" class="lock"><r
  * G-301 (새 구조): one lock card for free readers in place of a locked card per block; the blocks themselves sit in
  * .need-plus so they are not shown twice. Shown only on the free plan (.only-free).
  */
+/** G-311: while BETA_OPEN every tester sees everything, so locks say '로그인' instead of naming a paid plan. */
+const BETA_LOCK = '베타 테스터는 로그인하면 볼 수 있어요';
 export function lockCard(items: readonly string[], base = '', title = '플러스부터 볼 수 있어요'): string {
+  if (BETA_OPEN) title = title.startsWith('더 깊은 판단') ? '더 깊은 판단은 로그인하면 볼 수 있어요' : BETA_LOCK;
   return `<section class="block lk-card only-free"><div class="card"><div class="gate-cta">${LOCK}<div><b>${title}</b><ul>${items.map((x) => `<li>${x}</li>`).join('')}</ul></div><a class="btn-primary" href="${base}pricing.html">요금제 보기</a></div></div></section>`;
 }
 export function gate(html: string, opts: { base: string; what: string; feature: Feature }): string {
   const need = FEATURES[opts.feature];
-  return `<div class="gate" data-need="${need}"><div class="gate-body">${html}</div><div class="gate-cta" role="note">${LOCK}<div><b>${opts.what}</b><span>${needText(opts.feature)} 볼 수 있어요</span></div><a class="btn-primary" href="${opts.base}pricing.html">요금제 보기</a></div></div>`;
+  return `<div class="gate" data-need="${need}"><div class="gate-body">${html}</div><div class="gate-cta" role="note">${LOCK}<div><b>${opts.what}</b><span>${BETA_OPEN ? BETA_LOCK : `${needText(opts.feature)} 볼 수 있어요`}</span></div><a class="btn-primary" href="${opts.base}pricing.html">요금제 보기</a></div></div>`;
 }
 
 export const PLAN_CSS = `
