@@ -1,5 +1,5 @@
 {
- "at": "2026-11-03T02:37:34.816Z",
+ "at": "2026-11-03T03:09:59.528Z",
  "selected": null,
  "universe": [
   {
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 353
+   "count": 356
   }
  ],
  "stocks": [
