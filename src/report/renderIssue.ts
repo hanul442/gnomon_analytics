@@ -51,7 +51,7 @@ export function renderIssuePage(i: MergedIssue, opts: { firstAt?: string | null 
   const head = `<section class="is-sec"><div class="is-k"><span class="is-from${i.from === '세계' ? ' w' : ''}">${i.from}</span>이슈 ${i.rank}위 · 매체 ${i.outlets}곳 · 기사 ${i.articles}건</div>
 <h1 class="is-h">${esc(title)}</h1>${i.ko ? `<p class="is-orig" lang="en">${esc(i.title)}</p>` : ''}<div class="is-pub">${esc(i.publisher)}${when ? ` · ${esc(when)} 처음 보도` : ''}</div>${issueImage(i.image, 'is-fig')}</section>`;
   const summary = i.lines.length
-    ? `<section class="is-sec"><h2 class="is-t">${SPARK}AI ${i.lines.length}줄 요약</h2><ol class="is-sum">${i.lines.map((l, n) => `<li><b>${n + 1}</b><span>${esc(l)}</span></li>`).join('')}</ol><p class="is-fine">같은 이슈를 다룬 여러 매체의 기사 제목을 AI가 모아 쓴 요약이에요. 제목에 있는 사실만 옮기고, 투자 권유가 아니에요. 자세한 내용은 기사 원문에서 확인해 주세요.</p></section>`
+    ? `<section class="is-sec"><h2 class="is-t">${SPARK}AI ${i.lines.length}줄 요약</h2><ol class="is-sum">${i.lines.map((l, n) => `<li><b>${n + 1}</b><span>${esc(l)}</span></li>`).join('')}</ol><p class="is-fine">같은 이슈를 다룬 여러 매체의 기사 제목을 AI가 모아 쓴 요약이에요. 제목에 있는 사실만 옮겨요. 자세한 내용은 기사 원문에서 확인해 주세요.</p></section>`
     : '';
   const stocks = i.chips.length
     ? `<section class="is-sec"><h2 class="is-t">${i.from === '한국' ? '관련 종목' : '같은 날 함께 움직인 시장'}</h2>${i.chips.map((c) => {

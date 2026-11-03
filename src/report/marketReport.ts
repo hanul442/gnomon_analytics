@@ -91,12 +91,18 @@ const councilClaims=(c:MarketCouncil)=>[c.summary,...c.desks.flatMap(d=>d.claims
 export function marketNumberIssues(council:MarketCouncil, groups:readonly MarketGroup[]):string[] {
  const returns=groups.flatMap(g=>g.assets.map(a=>a.returnPct)).filter((v):v is number=>v!==null);
  const breadth=new Set(groups.flatMap(g=>[g.breadth.up,g.breadth.down,g.breadth.flat]).filter(n=>n>30));
+ const indexCloses=groups.flatMap(g=>g.assets.filter(a=>a.symbol==='KOSPI'||a.symbol==='KOSDAQ').map(a=>a.close)).filter(v=>Number.isFinite(v)&&v>0);
  const issues:string[]=[];
  for(const c of councilClaims(council)){
   const t=c.text.replace(/−/g,'-');
   for(const m of t.matchAll(/(?<![\d.~])([+-]\d+(?:\.(\d+))?)%(?!p)/g)){
    const v=Number(m[1]),tol=(m[2]?.length??0)>=2?0.011:0.051;
    if(!returns.some(r=>Math.abs(r-v)<=tol))issues.push(`자료에 없는 수익률 ${m[1]}%: "${c.text.slice(0,60)}"`);
+  }
+  // 11/3 검수: "5900선 아래에서" on a day the KOSPI closed at 6,012. An index level claim must match some index close.
+  for(const m of t.matchAll(/(\d[\d,]{2,5})\s*선\s*(위|아래|밑|을 돌파|돌파|을 회복|회복|이 무너|붕괴)/g)){
+   const n=Number(m[1]!.replace(/,/g,'')),below=/아래|밑|무너|붕괴/.test(m[2]!);
+   if(indexCloses.length&&!indexCloses.some(c=>below?c<n:c>=n))issues.push(`지수 ${n}선 ${m[2]}: 자료의 지수 종가(${indexCloses.map(c=>Math.round(c)).join('·')})와 맞지 않아요: "${c.text.slice(0,60)}"`);
   }
   for(const m of t.matchAll(/(상위\s*\d+|표본)[^.,;]{0,25}?(\d[\d,]*)\s*개/g)){
    const n=Number(m[2]!.replace(/,/g,''));

@@ -87,7 +87,7 @@ function renderBetaPricing(): string {
 <details><summary>베타가 끝나면 돈을 내야 하나요?</summary><p>유료 요금제는 사업자 등록과 신고를 마친 뒤(2027년 봄)에 열어요. 그 전에 미리 알리고, 베타 설문을 보고 무엇을 무료로 남길지 정해요.</p></details>
 <details><summary>크레딧이 모자라면요?</summary><p>앱 안 '크레딧 요청'으로 말해 주세요. 베타 동안은 손으로 더 넣어 드려요.</p></details>
 <details><summary>투자 자문인가요?</summary><p>아니요. 공개 데이터로 계산한 결과와 AI 해설이고, 사거나 팔라고 권하지 않아요. 판단은 모든 사람에게 같고, 사람마다 따로 만들지 않아요.</p></details></div></section>
-<footer id="sources" style="padding:24px 0 0"><p>투자 권유가 아니에요.</p></footer>`;
+`;
   return shell('', '요금제 | GNOMON', body, { active: 'pricing', scripts: BETA_PRICING_SCRIPT });
 }
 
@@ -132,7 +132,7 @@ ${CREDIT_ACTIONS.map((a) => `<tr><td><b>${a.label}</b>: ${a.detail}</td><td><b>$
 <details><summary>크레딧은 언제 사라지나요? (초안)</summary><p>프로·맥스에 포함된 크레딧은 매달 새로 채워지고, 남은 포함 크레딧은 이월되지 않아요. 따로 충전한 크레딧은 1년 동안 써요.</p></details>
 <details><summary>요금제마다 무엇이 달라요?</summary><p>AI 리포트는 모두 AI 위원회 심층 리포트 한 종류예요(한 번 만들 때 ${CREDIT_COST.report}크레딧). 플러스는 계산 상세를 보고 크레딧으로 심층 리포트를 요청해요. 프로는 AI 위원회 리포트 전체·전략·모의투자를 바로 봐요. 맥스는 전문가 초청이 매달 30회 포함되고, 전문가용 도구(전략 랩·포트폴리오 리스크·시점 재현)를 써요.</p></details>
 <details><summary>투자 자문인가요?</summary><p>아니요. 공개 데이터로 계산한 결과와 AI 해설이고, 매수·매도를 권하지 않아요. 유료 서비스를 열기 전에 관련 법(유사투자자문업 신고 등)을 확인할 예정이에요.</p></details></div></section>
-<footer id="sources" style="padding:24px 0 0"><p>가격은 부가세 포함 기준의 초안이에요. 투자 권유가 아니에요.</p></footer>`;
+<footer id="sources" style="padding:24px 0 0"><p>가격은 부가세 포함 기준의 초안이에요.</p></footer>`;
   return shell('', '요금제 | GNOMON', body, { active: 'pricing', scripts: PRICING_SCRIPT });
 }
 
@@ -188,7 +188,7 @@ export function renderCheckout(): string {
 <p class="muted small" style="text-align:center"><a href="pricing.html">요금제로 돌아가기</a></p></div>
 <div id="co-done" class="card done" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
 <h2 style="margin:6px 0">테스트 결제가 끝났어요</h2><p id="co-result"></p><p class="muted small">MOCK 영수증이에요. 실제 결제 기록이 아니에요.</p><p><a class="btn-primary" href="index.html">홈으로</a> <a href="pricing.html" style="margin-left:10px">요금제 보기</a></p></div></div>
-<footer id="sources" style="padding:24px 0 0"><p>투자 권유가 아니에요.</p></footer>`;
+`;
   return shell('', '결제 | GNOMON', body, { active: 'pricing', scripts: `<script>
 (function () {
   var G = window.GNM, ITEMS = ${JSON.stringify(ITEMS)}, BONUS = ${JSON.stringify(Object.fromEntries(PLANS.map((p) => [p.key, p.topUpBonus])))};

@@ -26,7 +26,7 @@ ${coin ? '<label class="sc-inline"><input type="checkbox" id="cn-warn"> 유의 �
 .th-sort{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:3px;white-space:nowrap}.th-sort:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}.th-sort i{font-style:normal;font-size:14px;min-width:8px}th[aria-sort=descending] .th-sort i::after{content:"▼";color:var(--accent-strong)}th[aria-sort=ascending] .th-sort i::after{content:"▲";color:var(--accent-strong)}#cn-dir{white-space:nowrap}.sc-table td a{text-decoration:none}.sc-table td.st{padding:0;width:36px}.warn{display:inline-block;margin-left:4px;font-size:14px;font-weight:700;border-radius:6px;padding:0 5px;background:var(--up-soft);color:var(--up-strong)}
 html[data-plan=free] .sc-table th:nth-child(7),html[data-plan=free] .sc-table td:nth-child(7){display:none}
 @media (max-width:820px){.sc-table th:nth-child(5),.sc-table td:nth-child(5),.sc-table th:nth-child(6),.sc-table td:nth-child(6),.sc-table th:nth-child(8),.sc-table td:nth-child(8){display:none}}</style>
-<footer id="sources" style="padding:24px 0 0"><p>${coin ? '데이터: 업비트 공개 시세. 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : '데이터: Naver 금융. 레버리지·인버스 ETF는 오래 들고 있으면 기초지수와 수익이 달라질 수 있어요.'} 계산 결과이고, 투자 권유가 아니에요.</p></footer>`;
+<footer id="sources" style="padding:24px 0 0"><p>${coin ? '데이터: 업비트 공개 시세. 가상자산은 변동성이 매우 크고 원금 손실 위험이 커요.' : '데이터: Naver 금융. 레버리지·인버스 ETF는 오래 들고 있으면 기초지수와 수익이 달라질 수 있어요.'} 계산 결과예요.</p></footer>`;
   return shell('', `${coin ? '코인' : 'ETF'} | GNOMON`, body, { active: coin ? 'coins' : 'etfs', scripts: COINS_SCRIPT(coin) });
 }
 

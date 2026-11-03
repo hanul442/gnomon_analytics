@@ -86,7 +86,7 @@ export function personaCards(report: DailyReport): string {
     row('오늘', `<span class="${tone(p.changePct)}">${pct(p.changePct)}</span>`, big ? '평소보다 크게 움직였어요' : '평소 범위 안의 움직임이에요')
     + (sig ? row('기술 신호', sig, '여러 지표가 가리키는 방향이에요. 오를 확률은 아니에요') : '')
     + (fv ? row('가격 위치', fv.position === 'ABOVE' ? '비싼 쪽' : fv.position === 'BELOW' ? '싼 쪽' : '보통', `거래가 많이 된 가격대(${won(fv.low)}~${won(fv.high)})와 비교했어요`) : ''),
-    '<p class="fine" style="margin-top:8px">모르는 말은 옆의 ? 를 누르면 풀이가 나와요. 투자 권유가 아니에요.</p>');
+    '<p class="fine" style="margin-top:8px">모르는 말은 옆의 ? 를 누르면 풀이가 나와요.</p>');
   // Trader: today's move, volume and the nearest levels.
   const value = p.close * p.volume;
   const trader = card('trader', '오늘 움직임', `${pct(p.changePct)} · 거래량 평소의 ${p.volumeRatio20 == null ? '—' : p.volumeRatio20.toFixed(1)}배`,

@@ -126,11 +126,12 @@ export function dailyCalendar(bars: readonly { date: string; close: number }[], 
     cells += i === undefined ? `<rect x="${p.x}" y="${p.y}" width="${cell}" height="${cell}" rx="2" class="kc e"/>` : `<rect x="${p.x}" y="${p.y}" width="${cell}" height="${cell}" rx="2" class="kc ${level(days[i]!.pct)}" data-i="${i}"/>`;
   }
   // A month's name over the first week that holds its first day, never closer than three weeks to the last name.
-  let lastM = -1, lastAt = -9;
+  let lastM = -1, lastAt = -9, gap = 3;
   for (let wk = 0; wk < weeks; wk += 1) {
     const n = Math.max(days[0]!.n, mon + wk * 7), m = new Date(n * 864e5).getUTCMonth(), band = wk >= per ? 1 : 0, col = wk - band * per;
     if (col === 0) lastAt = -9;
-    if (m !== lastM && col - lastAt >= 3) { months += `<text x="${left + col * P}" y="${band * (bandH + 10) + 8}" class="kc-m">${!months || m === 0 ? `${String(new Date(n * 864e5).getUTCFullYear()).slice(2)}년 ` : ''}${m + 1}월</text>`; lastAt = col; }
+    // 11/3 검수: a label with its year ("25년 11월") is twice as wide, so the next one waits five weeks instead of three.
+    if (m !== lastM && col - lastAt >= gap) { const yr = !months || m === 0; months += `<text x="${left + col * P}" y="${band * (bandH + 10) + 8}" class="kc-m">${yr ? `${String(new Date(n * 864e5).getUTCFullYear()).slice(2)}년 ` : ''}${m + 1}월</text>`; lastAt = col; gap = yr ? 5 : 3; }
     lastM = m;
   }
   const wd = ['월', '', '수', '', '금', '', '일'];
@@ -172,7 +173,7 @@ html.mo .kit-ring:not(.kit-in) .kr-arc{stroke-dasharray:0 100}
 .kc{fill:var(--line)}.kc.e{fill:none;stroke:var(--line);stroke-width:1}.kc.z{fill:var(--muted);fill-opacity:.3}
 .kc.u1{fill:${UP};fill-opacity:.28}.kc.u2{fill:${UP};fill-opacity:.5}.kc.u3{fill:${UP};fill-opacity:.75}.kc.u4{fill:${UP}}
 .kc.d1{fill:${DOWN};fill-opacity:.28}.kc.d2{fill:${DOWN};fill-opacity:.5}.kc.d3{fill:${DOWN};fill-opacity:.75}.kc.d4{fill:${DOWN}}
-.kc[data-i]{cursor:pointer}.kc.hi{stroke:var(--fg);stroke-width:1.5}.kc-m{font-size:12px;fill:var(--muted)}
+.kc[data-i]{cursor:pointer}.kc.hi{stroke:var(--fg);stroke-width:1.5}.kc-m{font-size:8.5px;fill:var(--muted)}
 .kc-leg{display:flex;align-items:center;gap:3px;margin-top:8px;font-size:15px;color:var(--muted)}.kc-leg>span{margin:0 4px;white-space:nowrap}.kc-gr{position:relative;flex:0 1 180px;height:22px;margin:0 16px}.kc-gr i{position:absolute;left:0;right:0;top:0;height:8px;border-radius:4px;background:linear-gradient(90deg,${DOWN},${DOWN}80,color-mix(in srgb,var(--muted) 30%,transparent),${UP}80,${UP})}.kc-gr em{position:absolute;top:10px;white-space:nowrap;transform:translateX(-50%);font-style:normal;font-size:14px;font-variant-numeric:tabular-nums}.kc-sw{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--line)}
 .kc-sw.z{background:color-mix(in srgb,var(--muted) 30%,transparent)}.kc-sw.u1{background:${UP}47}.kc-sw.u2{background:${UP}80}.kc-sw.u3{background:${UP}bf}.kc-sw.u4{background:${UP}}.kc-sw.d1{background:${DOWN}47}.kc-sw.d2{background:${DOWN}80}.kc-sw.d3{background:${DOWN}bf}.kc-sw.d4{background:${DOWN}}
 .kc-sum{margin:10px 0 0;font-size:16px;line-height:1.7;color:var(--fg2)}

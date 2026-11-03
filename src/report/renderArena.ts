@@ -92,7 +92,7 @@ ${championCard(a)}
 ${strategyLines(a)}
 <div class="card race" style="margin-top:14px"><div class="head"><h2>챔피언 레이스</h2><span class="sub small">검증 구간(${esc(a.oosFrom)}~) 샤프 순 · 지금 강세/약세</span></div>${rows}</div>
 <details class="card more" style="margin-top:14px"><summary>실험 기록 (전략별 성적표)</summary><div class="table-wrap"><table class="compact"><thead><tr><th>전략</th><th class="num">전체 수익</th><th class="num">연환산</th><th class="num">샤프</th><th class="num">최대 낙폭</th><th class="num">거래</th><th class="num">승률</th><th class="num">보유 비중</th><th class="num">검증 수익</th><th class="num">몬테카를로 5/50/95%</th></tr></thead><tbody>${ledger}</tbody></table></div></details>
-<p class="fine">BOT의 전략 규칙을 이 종목의 과거 일봉에 그대로 적용해 본 결과예요. 신호가 난 날의 다음 날부터 수익을 계산하고(미리 보기 없음), 왕복 거래 비용 ${(a.cost * 100).toFixed(2)}%를 빼요. 순위는 뒤쪽 30% 검증 구간의 샤프 비율로 매기고, 거래가 2번 미만이면 챔피언이 될 수 없어요. 몬테카를로는 실제 거래 수익을 무작위로 다시 뽑아 2,000번 돌린 결과예요. 과거 성적이 앞날을 보장하지 않고, 투자 권유가 아니에요.</p></section>`;
+<p class="fine">BOT의 전략 규칙을 이 종목의 과거 일봉에 그대로 적용해 본 결과예요. 신호가 난 날의 다음 날부터 수익을 계산하고(미리 보기 없음), 왕복 거래 비용 ${(a.cost * 100).toFixed(2)}%를 빼요. 순위는 뒤쪽 30% 검증 구간의 샤프 비율로 매기고, 거래가 2번 미만이면 챔피언이 될 수 없어요. 몬테카를로는 실제 거래 수익을 무작위로 다시 뽑아 2,000번 돌린 결과예요. 과거 성적이 앞날을 보장하지 않아요.</p></section>`;
 }
 
 
@@ -112,7 +112,7 @@ export function arenaHeadline(a: ArenaResult | null): string {
 /** Paper-trading ledger (G-21): each follower's virtual account, replayed from logged entries. */
 export function paperPanel(books: readonly PaperBook[] | undefined): string {
   const list = books ?? [];
-  const note = `<p class="fine">장 마감 뒤 기록할 때마다 따라 하는 쪽마다 "그날 종가부터 보유할지"를 기록하고 고치지 않아요. 수익은 다음 거래일부터 계산하고, 사고팔 때마다 비용 ${(ARENA_COST * 50).toFixed(3)}%를 빼요. 공매도는 하지 않아요. AI 분석가는 강세 판단이면 보유, 중립·약세면 현금이에요. 가상 계좌이고, 투자 권유가 아니에요.</p>`;
+  const note = `<p class="fine">장 마감 뒤 기록할 때마다 따라 하는 쪽마다 "그날 종가부터 보유할지"를 기록하고 고치지 않아요. 수익은 다음 거래일부터 계산하고, 사고팔 때마다 비용 ${(ARENA_COST * 50).toFixed(3)}%를 빼요. 공매도는 하지 않아요. AI 분석가는 강세 판단이면 보유, 중립·약세면 현금이에요. 가상 계좌예요.</p>`;
   if (!list.length) return `<section class="block"><div class="block-head"><h2>모의투자 장부</h2></div><div class="card"><p class="empty">아직 기록이 없어요. 장 마감 뒤 첫 기록부터 쌓여요.</p>${note}</div></section>`;
   const since = list.map((b) => b.since).sort()[0]!;
   const hold = list.find((b) => b.follower === 'hold');

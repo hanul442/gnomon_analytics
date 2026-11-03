@@ -35,7 +35,7 @@ export async function collectRiskFilings(input: { root: string; apiKey: string; 
             const rule = f.stockCode ? riskOf(f.title) : null;
             if (rule && !seen.has(f.receiptNo)) { seen.add(f.receiptNo); fresh.push({ symbol: f.stockCode, date: f.filedDate, title: f.title, receiptNo: f.receiptNo, key: rule.key }); }
             const ev = f.stockCode ? eventOf(f.title) : null;
-            if (ev && !seenEvents.has(f.receiptNo)) { seenEvents.add(f.receiptNo); freshEvents.push({ symbol: f.stockCode, date: f.filedDate, title: f.title, receiptNo: f.receiptNo, key: ev.key }); }
+            if (ev && !seenEvents.has(f.receiptNo)) { seenEvents.add(f.receiptNo); freshEvents.push({ symbol: f.stockCode, date: f.filedDate, title: f.title, receiptNo: f.receiptNo, key: ev.key, ...(f.corpName ? { name: f.corpName } : {}) }); }
           }
         }
         from = iso(Date.parse(`${to}T00:00:00Z`) + DAY);
@@ -50,7 +50,7 @@ export async function collectRiskFilings(input: { root: string; apiKey: string; 
         const to = [iso(Date.parse(`${dFrom}T00:00:00Z`) + 6 * DAY), input.today].sort()[0]!;
         const list = await fetchDartFilings({ apiKey: input.apiKey, kind: 'D', from: dFrom.replaceAll('-', ''), to: to.replaceAll('-', ''), maxPages: 100, ...(input.fetch ? { fetch: input.fetch } : {}), ...(input.now ? { now: input.now } : {}) });
         fetched += list.length;
-        for (const f of list) { const ev = f.stockCode ? eventOf(f.title) : null; if (ev && !seenEvents.has(f.receiptNo)) { seenEvents.add(f.receiptNo); freshEvents.push({ symbol: f.stockCode, date: f.filedDate, title: f.title, receiptNo: f.receiptNo, key: ev.key }); } }
+        for (const f of list) { const ev = f.stockCode ? eventOf(f.title) : null; if (ev && !seenEvents.has(f.receiptNo)) { seenEvents.add(f.receiptNo); freshEvents.push({ symbol: f.stockCode, date: f.filedDate, title: f.title, receiptNo: f.receiptNo, key: ev.key, ...(f.corpName ? { name: f.corpName } : {}) }); } }
         dFrom = iso(Date.parse(`${to}T00:00:00Z`) + DAY);
       }
       await writeFile(dMark, `${JSON.stringify({ through: input.today })}\n`);

@@ -19,7 +19,7 @@ export const EVENT_RULES: readonly EventRule[] = [
   { key: 'ir', label: 'IR·설명회', pattern: /기업설명회\(IR\)개최|기업설명회개최/, why: '실적이나 사업 계획을 설명하는 자리예요.' },
 ];
 
-export interface EventFiling { symbol: string; date: string; title: string; receiptNo: string; key: EventKey }
+export interface EventFiling { symbol: string; date: string; title: string; receiptNo: string; key: EventKey; /** DART corp name, so the radar can name a company that is not in the universe (11/3). */ name?: string }
 
 export function eventOf(title: string): EventRule | null {
   if (/철회|취소/.test(title) && !/결정/.test(title)) return null;

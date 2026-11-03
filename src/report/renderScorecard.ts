@@ -198,7 +198,7 @@ ${group('signals', signalCard(signals))}
 <div class="need-plus">${group('paper', strategyCard)}
 ${group('forecast', gate(forecastCard.replace('<section class="block">', '<section class="block sc-sec" id="forecast">'), { base: '', what: '기간별 예측 적중', feature: 'scoreSummary' }) + gate(missCard.replace('<section class="block">', '<section class="block sc-sec" id="misses">'), { base: '', what: '빗나간 예측 하나하나', feature: 'scoreMisses' }))}</div>
 ${lock}`;
-  const how = `<details class="rp-how card"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 기본 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이고, 투자 권유가 아니에요.</p></details>`;
+  const how = `<details class="rp-how card"><summary>매일 리포트 종목은 이렇게 골라요</summary><p>주식은 스크리너 기본 조건에 걸린 종목(과열·위험 조건과 시가총액 1,000억 원 미만 제외) 가운데 날짜마다 2개를 뽑아요. ETF는 거래대금 상위 20개(레버리지·인버스·채권형 제외), 코인은 거래대금 상위 15개(스테이블코인 제외)에서 하나를 골라요. 추적 종목은 대표 종목과 시가총액·거래대금·공시·움직임으로 골라요. 시나리오 해설이에요.</p></details>`;
   const membersBody = `<p class="mb-lead">분석가 6명과 데스크 5곳이 종목마다 따로 판단해요. 얼굴을 누르면 그 위원의 기록이 열려요. <a class="rp-what" href="committee-guide.html">위원회가 뭐예요? ›</a></p>${roster}
 ${group('analysts', analystsHtml)}${how}
 <style>.mb-lead{margin:0 4px 6px;font-size:16px;color:var(--fg2)}.rp-what{display:inline-block;padding:6px 0;font-weight:700;color:var(--fg);text-decoration:none;white-space:nowrap}.rp-how{margin:12px 0;padding:2px 16px}.rp-how summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:16px;font-weight:600}.rp-how p{font-size:15.5px;color:var(--muted);line-height:1.55}</style>`;
@@ -216,7 +216,7 @@ ${group('analysts', analystsHtml)}${how}
 :root[data-theme=dark] .mb-v.ok{background:rgba(88,200,134,.16);color:#8EDCAE}:root[data-theme=dark] .mb-v.no{background:rgba(236,120,168,.15);color:#F2A3C4}.mb-why{align-self:flex-end;font-size:15.5px;font-weight:700;text-decoration:none;color:var(--accent-strong)}
 .mb-row[hidden],.mb-only .mb-row.nw{display:none}.mb-only .mb-row.more-row:not(.nw){display:flex}.mb-only .more-all{display:none}
 @media (max-width:820px){.mb-grid{grid-template-columns:1fr}.sc-bigs{grid-template-columns:repeat(2,minmax(0,1fr))}.sc-tiles{gap:6px}.sc-tile{padding:10px}.sc-tile b{font-size:18.5px}.sc-tile .pl-k{font-size:15px}.hide-m{display:none}}</style>
-<footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 모의투자는 가상 계좌예요. 투자 권유가 아니에요.</p></footer>`;
+<footer id="sources" style="padding:24px 0 0"><p>매일 장 마감 뒤 다시 계산해요. 과거 성적이 앞으로의 결과를 보장하지 않아요. 모의투자는 가상 계좌예요.</p></footer>`;
   return view === 'members' ? shell('', '위원 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS, mode: 'members.html' }) : shell('', '채점 | GNOMON', body, { active: 'scorecard', scripts: SCORE_JS, mode: 'scorecard.html' });
 }
 
