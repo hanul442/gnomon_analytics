@@ -75,6 +75,9 @@ test('market numbers: signed returns must come from the data and whole-market co
  const bad=marketNumberIssues(council(['코스피 상위30 중 하락 506개 vs 상승 365개.','평균 -2.40% 하락.']),groups as never);
  assert.deepEqual(marketNumberIssues(council(['상승 비중이 +2.3%p 늘었어요.']),groups as never),[]);
  assert.equal(bad.length,2);assert.match(bad[0]!,/506개/);assert.match(bad[1]!,/-2\.40%/);
+ // 11/3 검수: an index level must agree with the close (6803.9 is below 7,000 but not below 6,500).
+ assert.deepEqual(marketNumberIssues(council(['코스피 -1.98%, 7000선 아래로 밀렸어요.']),groups as never),[]);
+ assert.match(marketNumberIssues(council(['코스피 -1.98%, 6500선 아래에서 마감했어요.']),groups as never)[0]!,/6500선/);
 });
 
 test('market news: today\'s headlines only, one per story, numbered N1…',async()=>{

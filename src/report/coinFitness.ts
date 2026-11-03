@@ -20,7 +20,7 @@ export function coinFitnessCard(f: CoinFitness): string {
 <div class="ig-health">${radarChart(f.axes)}<ul class="ig-hl">${f.axes.map((a, i) => { const [cls, word] = verdict(a.score); return `<li title="${esc(a.note)}" data-i="${i}" tabindex="0"><b>${esc(a.label)}</b><span class="ig-v ${cls}">${a.score == null ? word : `${word} ${a.score}`}</span><em>${esc(a.value)}</em><small>${esc(a.note)}</small></li>`; }).join('')}</ul></div></section>
 ${f.timeline.length || f.historyNote ? `<section class="card block cf-card"><h2>거래 이력</h2>${f.timeline.length ? `<ol class="cf-tl">${f.timeline.map((t) => `<li><span>${esc(t.date)}</span><b>${esc(t.text)}</b></li>`).join('')}</ol>` : ''}${f.historyNote ? `<p class="cf-hist">${esc(f.historyNote)}</p>` : ''}</section>` : ''}
 <section class="card block cf-card"><div class="head"><h2>업비트 주의 항목</h2><span class="muted small">${f.warning ? '<b class="cf-warn">유의 종목</b> · ' : ''}5개 중 ${on.size}개 켜짐</span></div><div class="cf-chips">${flags}</div></section>
-<p class="fine">${esc(f.date)} 기준 · 시가총액·발행량·역대 최고가·첫 거래일은 CoinPaprika, 거래대금·주의 항목은 업비트예요. 계산 결과이고, 투자 권유가 아니에요.</p>`;
+<p class="fine">${esc(f.date)} 기준 · 시가총액·발행량·역대 최고가·첫 거래일은 CoinPaprika, 거래대금·주의 항목은 업비트예요. 계산 결과예요.</p>`;
 }
 
 export const COIN_FIT_CSS = `.cf-card .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.cf-card h2{font-size:18.5px;margin:0 0 6px}.cf-total{font-size:21px;color:var(--fg)}

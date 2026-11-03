@@ -8,7 +8,6 @@ import { LOCKED_TEXT } from '../analysis/commentary.js';
 import { esc } from './html.js';
 import { seatsOf } from './committeeSeats.js';
 import { won } from './format.js';
-import { CREDIT_COST } from './plans.js';
 import { reportButton } from './generateButton.js';
 
 const gap = (to: number, from: number) => { const g = (to / from - 1) * 100; return `${g > 0 ? '+' : ''}${g.toFixed(1)}%`; };
@@ -188,8 +187,7 @@ export function conclusionCard(report: DailyReport, opts: { title?: string; id?:
   const source = missing ? '시나리오 해석은 아직 생성되지 않았어요' : `조건 가격 도달만으로 전개가 확정되지는 않아요. 예상 범위와 조건 가격은 다릅니다. 분석 기준은 ${esc(report.date)} 종가 ${won(p.close)}이며, 현재 가격과 차이가 날 수 있어요`;
   return `<section class="block cl-card"${opts.id ? ` id="${opts.id}"` : ''}><div class="card">${opts.head === false ? '' : c?.summary?.text ? `<div class="cl-head"><span><span class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</span><h2 class="cl-line">${esc(line2)}</h2></span></div>` : `<div class="cl-k">${esc(opts.title ?? '결론')} · ${esc(dayOf(report.date))} 마감 기준</div><h2 class="cl-line">${esc(line)}</h2>`}${rail}
 ${missing && !c ? '<p class="cl-wait">강세·기본·약세 조건 가격은 위원회 리포트가 나오면 붙어요.</p>' : `${verdict}<div class="cl-ladder"${grid ? ' hidden' : ''}>${rows}</div>`}
-${[bull, base, bear].some((x) => x?.narrative.text === LOCKED_TEXT) ? `<div class="cl-deep"><span>🔒 시나리오 전개·무효화 조건·최악의 경우·위원회 토론은 심층 리포트에 있어요.</span><button type="button" class="btn-primary" data-deep-go>심층 리포트 열기 <small>${CREDIT_COST.unlock}크레딧</small></button></div>` : ''}
-${missing && !c ? '' : `<p class="fine">${bull || bear || base ? (grid ? '알약을 누르면 그 시나리오가 지도에 칠해져요. ' : '줄을 누르면 시나리오가 펼쳐져요. ') : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'} 투자 권유가 아니에요.</p>`}</div></section>`;
+${missing && !c ? '' : `<p class="fine">${bull || bear || base ? (grid ? '알약을 누르면 그 시나리오가 지도에 칠해져요. ' : '줄을 누르면 시나리오가 펼쳐져요. ') : ''}${source}. ${hasOdds ? '확률은 지금 근거로 본 위원회의 추정이고, 기록해 두었다가 실제 결과로 채점해요.' : '확률은 AI 위원회 리포트가 나오면 붙어요.'}</p>`}</div></section>`;
 }
 
 export const CONCLUSION_CSS = `.cl-wait{margin:10px 0 2px;font-size:16.5px;line-height:1.55;color:var(--fg2)}

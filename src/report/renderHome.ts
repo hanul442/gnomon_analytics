@@ -142,7 +142,9 @@ export function renderReportsPage(data: HomeData): string {
   }
   const byDay = new Map<string, HomeEntry[]>();
   for (const e of best.values()) { const d = madeOn(e); byDay.set(d, [...(byDay.get(d) ?? []), e]); }
-  const markets = new Map((data.marketReports ?? []).filter((r) => r.period === 'daily').map((r) => [r.date, r] as const));
+  // 11/3 검수: a weekend market daily only retold Friday (made before G-314 stopped them), so Sat/Sun are left out.
+  const weekend = (d: string) => [0, 6].includes(new Date(`${d}T00:00:00Z`).getUTCDay());
+  const markets = new Map((data.marketReports ?? []).filter((r) => r.period === 'daily' && !weekend(r.date)).map((r) => [r.date, r] as const));
   const days = [...new Set([...byDay.keys(), ...markets.keys()])].sort().reverse().slice(0, 30);
   const newest = [...byDay.keys()].sort().at(-1);
   const wk = (d: string) => '일월화수목금토'[new Date(`${d}T00:00:00Z`).getUTCDay()];
@@ -200,7 +202,7 @@ export function renderHome(data: HomeData): string {
   
   const tabs = [['sum', '', sum], ...(wp ? [['market', '시장', `${back('시장 전체')}${wp.market}`]] : []), ['news', '이슈', `${back('이슈 전체')}${im?.card ?? ''}${news}`]] as const;
   const body = `${HOME_STYLE}${WORLD_CSS}${ISSUES_CSS}${im ? ISSUE_MAP_CSS + im.sheets : ''}${tabs.map(([k, l, html], i) => `<div class="wd-p hm-p" data-wd-p="${k}" data-wd-label="${l}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
-<footer id="sources" class="hm-foot"><details class="hm-src"><summary>데이터 출처·기준 시각<span aria-hidden="true"> ›</span></summary><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS, 해외 뉴스 RSS.${wp ? ` 세계 숫자는 ${esc(wp.asof)} 기준이에요.` : ''} 계산 결과이고, 투자 권유가 아니에요.</p></details></footer>`;
+<footer id="sources" class="hm-foot"><details class="hm-src"><summary>데이터 출처·기준 시각<span aria-hidden="true"> ›</span></summary><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS, 해외 뉴스 RSS.${wp ? ` 세계 숫자는 ${esc(wp.asof)} 기준이에요.` : ''} 계산 결과예요.</p></details></footer>`;
   // G-277 (한서님 10/21 '위의 바 두기싫다니까'): on phones the parts switch from the bottom bar; the row above is for wide screens.
   void partButtons;
   return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘' }, scripts: WORLD_JS + (im ? ISSUE_MAP_JS : '') + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + HOME_LIVE_JS });

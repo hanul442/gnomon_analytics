@@ -209,7 +209,8 @@ export function debateCard(c: Pick<Commentary, 'status' | 'debate' | 'sectorExpe
   const head = `<div class="dc-h"><h2>위원회 토론</h2>${turns.length ? `<small>위원 ${speakers}명 · 발언 ${turns.length}개</small>` : ''}</div>`;
   const join = `<div class="dc-join">${opts.join}</div>`;
   if (!turns.length) {
-    const body = opts.sealed ? `<p class="dc-lock">위원들이 근거를 들어 서로 반박한 토론은 심층 리포트에 있어요.</p><button type="button" class="dc-open" data-deep-go>심층 리포트에서 보기 <i aria-hidden="true">›</i></button>` : '';
+    // 11/3 검수: the sealed debate is opened from the one deep-report card, not from a second button here.
+    const body = '';
     return `<section class="block dc" id="dc"><div class="card">${head}${body}${join}</div></section>`;
   }
   // The first three turns: the opening calls, usually one from each side.
@@ -260,7 +261,7 @@ ${terms.length ? `<div class="ez-terms"><div class="ez-k">이 리포트에 나�
 <li><b>레드팀</b>은 많은 위원이 고른 쪽에 일부러 반대해서 놓친 위험을 찾아요.</li>
 <li>말마다 붙은 <span class="ck ck-FACT">사실</span>은 자료에 그대로 있는 것, <span class="ck ck-INFERENCE">해석</span>은 자료에서 읽어 낸 것, <span class="ck ck-ASSUMPTION">가정</span>은 아직 확인되지 않은 것이에요. 끝의 번호(P1, T1…)를 누르면 근거 자료가 나와요.</li>
 <li><b>강세</b>는 오를 쪽, <b>약세</b>는 내릴 쪽, <b>중립</b>은 아직 방향을 정하지 않은 거예요. 확신도는 그 위원이 자기 판단을 얼마나 믿는지(0~100)예요.</li>
-<li>다수결로 결론을 내지 않아요. 판단은 기록해 두고 20거래일 뒤 실제 가격으로 채점해요. 투자 권유가 아니에요.</li>
+<li>다수결로 결론을 내지 않아요. 판단은 기록해 두고 20거래일 뒤 실제 가격으로 채점해요.</li>
 </ul></details></div></section>`;
 }
 

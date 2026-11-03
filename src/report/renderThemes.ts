@@ -53,9 +53,20 @@ export function sectorThemes(themes: readonly { no: string; name: string; avg: n
 export function signalData(events: readonly EventFiling[], rows: readonly UniverseLite[], today: string) {
   const by = new Map(rows.map((r) => [r.symbol, r]));
   const since = new Date(Date.parse(`${today}T00:00:00Z`) - 14 * 86_400_000).toISOString().slice(0, 10);
-  const items = events.filter((e) => e.date >= since && e.date <= today).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, 1500)
-    .map((e) => { const r = by.get(e.symbol); return [e.date, e.key, e.symbol, r?.name ?? e.symbol, e.title, e.receiptNo, r?.changePct ?? null] as const; });
-  return { date: today, labels: Object.fromEntries(EVENT_RULES.map((r) => [r.key, [r.label, r.why]])), fields: ['date', 'key', 'symbol', 'name', 'title', 'receiptNo', 'changePct'], items };
+  // 11/3 검수: a company outside the universe showed its code (093510); use the DART name the filing carried.
+  const dartName = new Map<string, string>();
+  for (const e of events) if (e.name) dartName.set(e.symbol, e.name);
+  // The same filing title from the same company on the same day (several 임원 reports at once) is one row with a count.
+  const rows2: [string, string, string, string, string, string, number | null, number][] = [], at = new Map<string, number>();
+  for (const e of events.filter((x) => x.date >= since && x.date <= today).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.receiptNo < b.receiptNo ? 1 : -1))) {
+    const k = `${e.date}|${e.symbol}|${e.title}`, i = at.get(k);
+    if (i != null) { rows2[i]![7] += 1; continue; }
+    if (rows2.length >= 1500) continue;
+    const r = by.get(e.symbol);
+    at.set(k, rows2.length);
+    rows2.push([e.date, e.key, e.symbol, r?.name ?? dartName.get(e.symbol) ?? e.symbol, e.title, e.receiptNo, r?.changePct ?? null, 1]);
+  }
+  return { date: today, labels: Object.fromEntries(EVENT_RULES.map((r) => [r.key, [r.label, r.why]])), fields: ['date', 'key', 'symbol', 'name', 'title', 'receiptNo', 'changePct', 'count'], items: rows2 };
 }
 
 const PAGE_CSS = `<style>
@@ -77,7 +88,7 @@ export function renderThemesPage(): string {
 <div id="tm-list-wrap"><section class="card km-tmap" id="tm-map" hidden><div class="km-tmap-h"><h2>오늘 업종 지도</h2><div class="seg" role="group" aria-label="지도 종류"><button type="button" data-tmv="heat" aria-pressed="true">히트맵</button><button type="button" data-tmv="sun" aria-pressed="false">시장 지도</button></div></div><div data-tmp="heat"></div><div data-tmp="sun" hidden></div><p class="fine" data-tmp="heat">업종마다 거래대금이 큰 테마 4개예요. 색이 진할수록 오늘 많이 움직였고, 칸을 누르면 테마로 가요.</p></section>
 <div class="tm-tools"><input id="tm-q" type="search" placeholder="테마나 종목 이름 (예: 2차전지, 삼성)" aria-label="테마 검색"><div class="seg tm-seg" role="group" aria-label="정렬"><button type="button" data-sort="avg" aria-pressed="true">상승률</button><button type="button" data-sort="value" aria-pressed="false">거래대금</button><button type="button" data-sort="low" aria-pressed="false">하락률</button><button type="button" data-sort="count" aria-pressed="false">종목 수</button><button type="button" data-sort="name" aria-pressed="false">이름순</button></div><button type="button" id="tm-list-direction" class="chip-toggle" aria-label="테마 목록 정렬 방향">내림차순 ↓</button></div><div class="tm-list" id="tm-list"><p class="muted">불러오는 중…</p></div></div>
 <div class="tm-detail" id="tm-detail" hidden></div>
-<p class="fine">테마 분류와 편입 이유는 네이버 금융 기준이고 매주 다시 가져와요. 등락은 장 마감 기준이에요. 투자 권유가 아니에요.</p></div>
+<p class="fine">테마 분류와 편입 이유는 네이버 금융 기준이고 매주 다시 가져와요. 등락은 장 마감 기준이에요.</p></div>
 <script>
 (function(){${COMMON_JS}
  var data=null,tmShown=30,sort='avg',listAsc=false,memberSort='change',memberAsc=false;var compareMembers=(${compareThemeMembers.toString()});try{memberSort=localStorage.getItem('gnm-theme-sort')||'change';memberAsc=localStorage.getItem('gnm-theme-direction')==='asc';}catch(e){}
@@ -117,7 +128,7 @@ export function renderSignalsPage(): string {
 <div class="sg-tools"><input id="sg-q" type="search" placeholder="종목이나 공시 제목" aria-label="종목이나 공시 제목으로 찾기"><label class="sc-inline">기간<select id="sg-days" aria-label="기간"><option value="14">2주</option><option value="7">1주</option><option value="3">3일</option><option value="1">오늘</option></select></label><label class="sc-inline">주가<select id="sg-move" aria-label="오늘 주가"><option value="">전체</option><option value="up">오른 종목</option><option value="down">내린 종목</option></select></label><label class="sc-inline">정렬<select id="sg-sort" aria-label="정렬"><option value="new">최신 순</option><option value="old">오래된 순</option><option value="up">오늘 많이 오른 순</option><option value="down">오늘 많이 내린 순</option><option value="name">종목 이름</option></select></label><span class="muted small" id="sg-n"></span></div>
 <div id="sg-list"><p class="muted">불러오는 중…</p></div>
 <style>.sg-tools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:4px 0 12px}.sg-tools .sc-inline{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.sg-tools input{flex:1 1 200px;min-width:0;font:inherit;font-size:16px;border:1px solid var(--line-strong);border-radius:10px;padding:8px 10px}.sg-tools select{font:inherit;font-size:16px;border:1px solid var(--line-strong);border-radius:10px;padding:7px 9px;background:var(--surface)}.sg-tools #sg-n{margin-left:auto}</style>
-<p class="fine">OpenDART 공시 목록 기준이에요. 제목을 누르면 원문이 열려요. 지분 변화는 매매뿐 아니라 증여·보상 등일 수 있어 원문에서 사유를 확인하세요. 투자 권유가 아니에요.</p></div>
+<p class="fine">OpenDART 공시 목록 기준이에요. 제목을 누르면 원문이 열려요. 지분 변화는 매매뿐 아니라 증여·보상 등일 수 있어 원문에서 사유를 확인하세요.</p></div>
 <script>
 (function(){${COMMON_JS}
  var data=null,kind=location.hash.slice(1)||'all';
@@ -133,7 +144,7 @@ export function renderSignalsPage(): string {
   $('sg-n').textContent=items.length+'건';
   document.getElementById('sg-why').textContent=kind!=='all'&&lab[kind]?lab[kind][1]:'';
   var byDay=sort==='new'||sort==='old',days={},order=[];items.slice(0,sgShown).forEach(function(x){var k=byDay?x[0]:'_';if(!days[k]){days[k]=[];order.push(k);}days[k].push(x);});
-  document.getElementById('sg-list').innerHTML=order.length?order.map(function(d){return (d==='_'?'':'<div class="sg-day">'+esc(d)+' · '+days[d].length+'건</div>')+days[d].map(function(x){return '<div class="sg-item"><span class="sg-tag edge-tag t-'+esc(x[1])+'">'+esc(lab[x[1]]?lab[x[1]][0]:x[1])+'</span><a class="nm" href="'+href(x[2])+'">'+esc(x[3])+'</a><span class="'+cls(x[6])+'">'+(x[6]==null?'':pct(x[6]))+'</span><span class="ti"><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo='+esc(x[5])+'" target="_blank" rel="noopener">'+esc(x[4])+' ↗</a>'+(/^\\d{14}$/.test(x[5])?'<button type="button" class="ask-filing" data-ask-filing="'+esc(x[5])+'" data-title="'+esc(x[4])+'" data-sym="'+esc(x[2])+'">AI에게 묻기</button>':'')+'</span></div>';}).join('');}).join('')+(items.length>sgShown?'<button type="button" class="more-btn" data-sg-more>'+Math.min(60,items.length-sgShown)+'건 더 보기 <small>'+sgShown+' / '+items.length+'</small></button>':''):'<p class="muted">조건에 맞는 공시가 없어요. 기간을 늘리거나 검색어를 지워 보세요.</p>';
+  document.getElementById('sg-list').innerHTML=order.length?order.map(function(d){return (d==='_'?'':'<div class="sg-day">'+esc(d)+' · '+days[d].length+'건</div>')+days[d].map(function(x){return '<div class="sg-item"><span class="sg-tag edge-tag t-'+esc(x[1])+'">'+esc(lab[x[1]]?lab[x[1]][0]:x[1])+'</span><a class="nm" href="'+href(x[2])+'">'+esc(x[3])+'</a><span class="'+cls(x[6])+'">'+(x[6]==null?'':pct(x[6]))+'</span><span class="ti"><a href="https://dart.fss.or.kr/dsaf001/main.do?rcpNo='+esc(x[5])+'" target="_blank" rel="noopener">'+esc(x[4])+(x[7]>1?' <small class="muted">· '+x[7]+'건</small>':'')+' ↗</a>'+(/^\\d{14}$/.test(x[5])?'<button type="button" class="ask-filing" data-ask-filing="'+esc(x[5])+'" data-title="'+esc(x[4])+'" data-sym="'+esc(x[2])+'">AI에게 묻기</button>':'')+'</span></div>';}).join('');}).join('')+(items.length>sgShown?'<button type="button" class="more-btn" data-sg-more>'+Math.min(60,items.length-sgShown)+'건 더 보기 <small>'+sgShown+' / '+items.length+'</small></button>':''):'<p class="muted">조건에 맞는 공시가 없어요. 기간을 늘리거나 검색어를 지워 보세요.</p>';
  };
  // G-154: 60 filings at a time (the full list ran 38 phone screens).
  document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('[data-sg-more]')){sgShown+=60;paint();}});

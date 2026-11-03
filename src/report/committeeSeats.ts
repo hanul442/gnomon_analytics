@@ -150,7 +150,7 @@ function membersSheet(report: DailyReport, seats: readonly Seat[]): string {
   const board = report.market?.analystBoard ?? [], n = board.reduce((t, b) => t + b.scored, 0), hit = Math.round(board.reduce((t, b) => t + (b.hitRate ?? 0) * b.scored, 0));
   const rec = `<p class="cs-recl"><b>이 종목 맞힌 기록</b><span>${n ? `${n}번 중 ${hit}번 맞음${n < 10 ? ' · 기록 쌓는 중' : ''}` : '아직 채점 전 · 판단 20거래일 뒤부터'}</span></p>`;
   return `<div class="cs-sheet cs-list" id="cs-members" role="dialog" aria-modal="true" aria-label="위원별 판단" hidden><div class="cs-panel"><i class="cs-grip" aria-hidden="true"></i><div class="cs-kh"><h2>위원별 판단</h2><small>틀림 기준은 종가 기준</small></div>
-<h3 class="cs-gh">AI 분석가 ${analysts.length}명</h3><ul>${analysts.map(row).join('')}</ul>${desks.length ? `<h3 class="cs-gh">데스크 ${desks.length}곳</h3><ul>${desks.map(row).join('')}</ul>` : ''}${rec}<p class="cs-fine">이름을 누르면 그 위원의 기록이 나와요. 위원별 긴 근거는 심층 리포트에 있어요. 모두에게 같은 AI 판단 기록이고, 투자 권유가 아니에요.</p><button type="button" class="cs-close">닫기</button></div></div>`;
+<h3 class="cs-gh">AI 분석가 ${analysts.length}명</h3><ul>${analysts.map(row).join('')}</ul>${desks.length ? `<h3 class="cs-gh">데스크 ${desks.length}곳</h3><ul>${desks.map(row).join('')}</ul>` : ''}${rec}<p class="cs-fine">이름을 누르면 그 위원의 기록이 나와요. 위원별 긴 근거는 심층 리포트에 있어요. 모두에게 같은 AI 판단 기록이에요.</p><button type="button" class="cs-close">닫기</button></div></div>`;
 }
 
 /** A row of small seat dots for list rows (위원회 탭). */
@@ -262,7 +262,7 @@ export const COMMITTEE_JS = `(function () {
       document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') close(); }); }
     var calls = (d.calls || []).map(function (c) { return '<li><span><b>' + e(c.s) + '</b>' + (c.k ? '<small>' + e(c.k) + (c.b ? ' · 이미 깨졌어요' : '') + '</small>' : '') + '</span><em class="cs-tag ' + (c.st === 'bull' ? 'up' : c.st === 'bear' ? 'down' : '') + '">' + W[c.st] + (c.c ? ' ' + c.c + '%' : '') + '</em></li>'; }).join('');
     sheet.setAttribute('aria-label', d.n);
-    sheet.innerHTML = '<div class="cs-panel"><i class="cs-grip" aria-hidden="true"></i><div class="cs-who"><span class="cs-face' + (d.d ? ' is-desk' : '') + '" aria-hidden="true">' + e(d.ch) + '</span><span><b>' + e(d.n) + '</b><small>' + e(d.f) + '</small></span></div><div class="cs-rec"><b>성적</b>' + e(d.r) + '</div>' + (calls ? '<b style="font-size:16px">판단</b><ul class="cs-calls">' + calls + '</ul>' : '<p class="cs-fine">이 위원은 오늘 판단이 없어요.</p>') + '<p class="cs-fine">종목에 대한 AI 위원의 판단 기록이에요. 모두에게 같은 내용이고, 투자 권유가 아니에요.</p><button type="button" class="cs-close">닫기</button></div>';
+    sheet.innerHTML = '<div class="cs-panel"><i class="cs-grip" aria-hidden="true"></i><div class="cs-who"><span class="cs-face' + (d.d ? ' is-desk' : '') + '" aria-hidden="true">' + e(d.ch) + '</span><span><b>' + e(d.n) + '</b><small>' + e(d.f) + '</small></span></div><div class="cs-rec"><b>성적</b>' + e(d.r) + '</div>' + (calls ? '<b style="font-size:16px">판단</b><ul class="cs-calls">' + calls + '</ul>' : '<p class="cs-fine">이 위원은 오늘 판단이 없어요.</p>') + '<p class="cs-fine">종목에 대한 AI 위원의 판단 기록이에요. 모두에게 같은 내용이에요.</p><button type="button" class="cs-close">닫기</button></div>';
     last = btn; sheet.hidden = false; requestAnimationFrame(function () { sheet.classList.add('on'); var b = sheet.querySelector('.cs-close'); if (b) b.focus(); });
   };
   document.addEventListener('click', function (ev) { var b = ev.target.closest && ev.target.closest('[data-cs]'); if (!b) return; ev.preventDefault(); open(b); });

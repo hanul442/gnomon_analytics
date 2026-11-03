@@ -133,7 +133,7 @@ export function forecastCard(forecasts: readonly PriceForecast[], scores: readon
   }).join('');
   return `<div class="card fc-card" id="forecast"><div class="head"><h2>예측 범위</h2><span class="sub" style="margin:0">${esc(base.baseDate)} 종가 ${won(close)} 기준</span></div>
 <div class="fc-legend"><span><i class="lg-rng"></i>80% 범위</span><span><i class="lg-mid"></i>중앙</span><span><i class="lg-now"></i>기준 종가</span></div>${rows}
-<p class="fine">최근 변동성으로 그린 가격 범위예요. 열 번 중 여덟 번 정도 이 안에 들어오도록 만들었고, 실제로 그런지 매일 채점해요(지난 예측 적중). 방향은 최근 추세의 4분의 1만 반영해요. 투자 권유가 아니에요.</p></div>`;
+<p class="fine">최근 변동성으로 그린 가격 범위예요. 열 번 중 여덟 번 정도 이 안에 들어오도록 만들었고, 실제로 그런지 매일 채점해요(지난 예측 적중). 방향은 최근 추세의 4분의 1만 반영해요.</p></div>`;
 }
 
 const BIAS = { BULLISH: '강세 구조', BEARISH: '약세 구조', NEUTRAL: '구조 없음' } as const;
