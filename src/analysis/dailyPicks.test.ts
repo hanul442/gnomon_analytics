@@ -69,3 +69,20 @@ test('daily picks (G-197): one of the two stocks is a larger company when the po
   }
   assert.ok(days > 0 && withBig === days, `the 1조+ stock is one of the two whenever it is in the pool (${withBig}/${days})`);
 });
+
+test('daily picks (G-314): with report dates given, two of the biggest companies with the oldest reports come first, then one random stock', () => {
+  // Caps: 종목100000 is the biggest, then down; one preferred share bigger than all.
+  const capped = stocks.map((r, i) => stock(String(r[0]), Number(r[7]), 0, 900_000 - i * 10_000));
+  const pref = ['100005', '종목100000우', 'P', 2_000_000, 10_000, 1, 'BULLISH', 50, 1, 2, 3, 0, 'I', 0, 1, 1, 0, 0, null, 50, -10, 0, []];
+  const last = new Map([['100000', '2026-10-30'], ['100010', '2026-10-05'], ['100020', '2026-10-01']]);
+  const picks = chooseDailyPicks({ date: '2026-11-02', weekday: 1, stocks: [pref, ...capped], etfs, coins, exclude: new Set(), lastReported: last }).filter((p) => p.kind === 'stock');
+  // 100000 is too fresh (3 days); never-reported core names count as oldest, bigger first.
+  assert.deepEqual(picks.slice(0, 2).map((p) => p.symbol), ['100030', '100040']);
+  assert.equal(picks.length, 3);
+  assert.ok(!picks.some((p) => p.symbol === '100005'), 'preferred shares are not core');
+  assert.ok(!['100030', '100040'].includes(picks[2]!.symbol));
+  // Once every core name has a recent report, only the old ones rotate in.
+  const all = new Map(capped.slice(0, 20).map((r, i) => [String(r[0]), i === 1 ? '2026-10-05' : i === 2 ? '2026-10-01' : '2026-10-28']));
+  const next = chooseDailyPicks({ date: '2026-11-02', weekday: 1, stocks: capped, etfs, coins, exclude: new Set(), lastReported: all }).filter((p) => p.kind === 'stock');
+  assert.deepEqual(next.slice(0, 2).map((p) => p.symbol), ['100020', '100010']);
+});

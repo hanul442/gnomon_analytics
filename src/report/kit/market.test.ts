@@ -90,7 +90,10 @@ test('heatmap and sunburst run on their own in the page (no outer helpers) and l
   const rows = own(kmSectorMap)(themes, words, skip);
   const heat = own(kmHeatmap)(rows);
   assert.equal((heat.match(/class="km-cell"/g) ?? []).length, 3);
-  assert.match(heat, /<a href="#1" class="km-cell" style="--i:0" data-km-tip="HBM" data-km-v="\+2\.40%" data-km-t="up" data-km-s="반도체 · 3종목">/);
+  assert.match(heat, /<a href="#1" class="km-cell" style="--i:0" data-km-tip="HBM\(고대역폭메모리\)" data-km-v="\+2\.40%" data-km-t="up" data-km-s="반도체 · 3종목">/);
+  // G-314: themes whose names match once the brackets go show the bracket part instead.
+  const twin = own(kmHeatmap)([{ s: '2차전지', themes: [{ no: 'a', name: '2차전지', avg: 1, n: 3, value: 2 }, { no: 'b', name: '2차전지(장비)', avg: 1, n: 3, value: 1 }, { no: 'c', name: '2차전지(소재/부품)', avg: 1, n: 3, value: 1 }], stocks: [] }]);
+  assert.deepEqual([...twin.matchAll(/class="km-hn[^"]*">([^<]+)</g)].map((m) => m[1]), ['2차전지', '장비', '소재/부품']);
   const sun = own(kmSunburst)(rows);
   assert.equal((sun.match(/class="km-seg"/g) ?? []).length, 2 + 6);
   assert.match(sun, /href="stock\.html\?c=005930"/);

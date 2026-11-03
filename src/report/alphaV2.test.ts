@@ -197,7 +197,7 @@ test('G-277: the price map puts 약세 · 기본 · 강세 bars left to right af
  const top=(k:string)=>Number(html.match(new RegExp('class="'+k+'" x="[0-9.]+" y="([0-9.]+)"'))![1]);
  assert.ok(x('r-bear')<x('r-base')&&x('r-base')<x('r-bull'),'약세 left, 강세 right');
  assert.ok(top('r-bear')>top('r-base')&&top('r-base')>top('r-bull'),'higher ranges sit higher');
- assert.match(html,/최저 100원 \(\+[0-9.]+%, 9\.01\)/);
+ assert.match(html,/최저 100원 \(9\.01\)/);
  report.price=undefined as any;assert.equal(scenarioRail(report),'');
 });
 

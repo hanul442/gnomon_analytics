@@ -428,17 +428,27 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   // the monthly AI budget goes to the core stocks and the weekly picks first.
   if (today.hour >= SETTLED_HOUR_KST && options.dailyPicks !== false) {
     const session = pulse?.date === today.date;
-    const exclude = new Set([...jobs.map((j) => j.ticker.symbol), ...await recentlyReported(root, today.date, 28)]);
+    const lastReported = await lastReports(root);
+    const exclude = new Set([...jobs.map((j) => j.ticker.symbol), ...[...lastReported].filter(([, d]) => daysBetween(d, today.date) < 28).map(([sym]) => sym)]);
     const picks = await dailyPicksFor(root, today.date, () => chooseDailyPicks({
       date: today.date, weekday: session ? new Date(`${today.date}T00:00:00Z`).getUTCDay() : 0,
-      stocks: session && universe.rows ? screenerRows(universe.rows, calcs, new Set(), risk.flags) : [], etfs: session ? etfList : [], coins: coinList, us: session ? usRows : [], exclude,
+      stocks: session && universe.rows ? screenerRows(universe.rows, calcs, new Set(), risk.flags) : [], etfs: session ? etfList : [], coins: coinList, us: session ? usRows : [], exclude, lastReported,
     }));
+    // G-314: a core-rotation pick can be a stock already on a dashboard job (tickers.json: 삼성전자·SK하이닉스);
+    // that job runs again as a committee report, one by one (the two are each other's peer).
+    const again = jobs.filter((j) => !j.reportDay && j.ticker.ai && picks.some((p) => p.symbol === j.ticker.symbol));
+    for (const j of again) {
+      Object.assign(j, { tier: 'deep', reportDay: true });
+      const i = results.findIndex((r) => r.symbol === j.ticker.symbol);
+      if (i >= 0) results.splice(i, 1);
+      await run(j);
+    }
     const fresh = picks.filter((p) => !jobs.some((j) => j.ticker.symbol === p.symbol));
     const pickJobs = fresh.map((p) => ({ ticker: dailyTicker(p, corpCodes), tier: p.tier, reportDay: true }));
     jobs.push(...pickJobs);
     await fetchBenches(pickJobs.map((j) => j.ticker));
     await pool(pickJobs, options.concurrency ?? 4, run);
-    for (const j of pickJobs) {
+    for (const j of [...again, ...pickJobs]) {
       const r = results.find((x) => x.symbol === j.ticker.symbol);
       if (r) lives.set(r.symbol, await composeReport(root, j.ticker, now, { newsStatus: r.newsStatus, marketStatus: r.marketStatus, barsLimit: 1000 }));
     }
@@ -466,12 +476,12 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
 const benchBars = (symbol: string, now: Date, fetchOpt: { fetch?: typeof fetch }) =>
   symbol.startsWith('KRW-') ? fetchUpbitDays(symbol, now, fetchOpt.fetch) : fetchNaverDailyBars(symbol, 250, { now: () => now, ...fetchOpt });
 
-/** Symbols with a dated report in the last `days` days. */
-async function recentlyReported(root: string, date: string, days: number): Promise<string[]> {
-  const out: string[] = [];
+/** The latest dated report of every symbol under reports/. */
+async function lastReports(root: string): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
   for (const d of await readdir(join(root, 'reports')).catch(() => [] as string[])) {
     const last = (await readdir(join(root, 'reports', d)).catch(() => [] as string[])).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort().at(-1)?.slice(0, 10);
-    if (last && daysBetween(last, date) < days) out.push(d);
+    if (last) out.set(d, last);
   }
   return out;
 }

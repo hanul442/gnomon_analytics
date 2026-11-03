@@ -69,7 +69,7 @@ export function scenarioRail(report: DailyReport): string {
   const pct = (v: number) => { const g = (p.close / v - 1) * 100; return `${g > 0 ? '+' : ''}${g.toFixed(1)}%`; };
   const mark = (i: number, up: boolean) => {
     const c = closes[i]!, cx = x(i), cy = y(c.close), ty = up ? cy - 9 : cy + 15, anchor = cx < 60 ? 'start' : cx > xEnd - 60 ? 'end' : 'middle';
-    return `<path class="pm-arw" d="M${f1(cx)},${f1(up ? cy - 3 : cy + 3)}l-3,${up ? -4 : 4}h6z"/><text class="pm-ext ${up ? 'up' : 'down'}" x="${f1(cx)}" y="${f1(ty)}" text-anchor="${anchor}">${up ? '최고' : '최저'} ${won(c.close)} (${pct(c.close)}, ${md(c.date)})</text>`;
+    return `<path class="pm-arw" d="M${f1(cx)},${f1(up ? cy - 3 : cy + 3)}l-3,${up ? -4 : 4}h6z"/><text class="pm-ext ${up ? 'up' : 'down'}" x="${f1(cx)}" y="${f1(ty)}" text-anchor="${anchor}">${up ? '최고' : '최저'} ${won(c.close)} (${md(c.date)})</text>`;
   };
   const marks = closes.length > 4 && iHi !== iLo ? mark(iHi, true) + mark(iLo, false) : '';
   const name = { BEAR: '약세', BASE: '기본', BULL: '강세' } as const, cls = { BEAR: 'r-bear', BASE: 'r-base', BULL: 'r-bull' } as const;
