@@ -1011,7 +1011,7 @@ test('alpha end (G-306): from 11/1 to 11/19 KST only the admin signs in; open se
   assert.notEqual((await t.call('POST', '/auth/signup', { email: 'beta@example.com', password: 'abcd1234', invite: code, terms: true })).body.error, 'ALPHA_PAUSED');
 });
 
-test('G-307: headless browsers and robots are not counted as visits; audit accounts are left out of events', async () => {
+test('G-315: headless browsers and robots are not counted as visits; audit accounts are left out of events', async () => {
   const t = setup();
   const boss = await t.login('boss@example.com');
   for (const ua of ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0 Safari/537.36', 'Googlebot/2.1']) {
