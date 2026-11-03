@@ -37,7 +37,7 @@ import { intradaySignals, readIntraday } from '../analysis/intraday.js';
 import { readerNote } from '../report/profile.js';
 import { deepPath, DEEP_DATE, DEEP_SYMBOL, isUsSymbol, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
-import { parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
+import { INDEX_CODES, indexQuoteUrl, parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
 import { fetchNaverMinuteCandles, parseNaverMinuteChart } from '../sources/naverPrice.js';
 import { getJson as naverJson, parseFinance, parseInvestorFlows, parseResearch, parseSnapshot, parseStockDisclosures, parseStockNews } from '../sources/naverStock.js';
 import { stockInfoFragments } from '../report/stockInfo.js';
@@ -360,6 +360,18 @@ route('GET', '/quote', async ({ req, deps, now }) => {
     if (hit && now.getTime() - hit.at < 3000) return { quotes: hit.quotes, cached: true };
     const quotes = (await Promise.all(us.map((c) => deps.fetch(worldQuoteUrl(c), { signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).then((r) => (r.ok ? r.json() : null)).then(parseWorldQuote).catch(() => null)))).filter((x): x is Quote => !!x);
     if (!quotes.length) fail(502, 'UPSTREAM', '실시간 시세를 가져오지 못했어요.');
+    if (quoteCache.size > 500) quoteCache.clear();
+    quoteCache.set(key, { at: now.getTime(), quotes });
+    return { quotes };
+  }
+  // G-314: ix=KOSPI,KOSDAQ for the home tiles while the market is open; cached like the stocks.
+  const ix = [...new Set((q.get('ix') ?? '').split(',').map((x) => x.trim().toUpperCase()).filter((x) => INDEX_CODES.test(x)))].sort();
+  if (ix.length) {
+    const key = `ix:${ix.join(',')}`, hit = quoteCache.get(key);
+    if (hit && now.getTime() - hit.at < 3000) return { quotes: hit.quotes, cached: true };
+    const r = await deps.fetch(indexQuoteUrl(ix), { signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).catch(() => null);
+    if (!r || !r.ok) fail(502, 'UPSTREAM', '실시간 지수를 가져오지 못했어요.');
+    const quotes = parseNaverQuotes(await r!.json().catch(() => null), INDEX_CODES);
     if (quoteCache.size > 500) quoteCache.clear();
     quoteCache.set(key, { at: now.getTime(), quotes });
     return { quotes };

@@ -18,8 +18,13 @@ export interface BannerImage { wide: string; narrow?: string; /** A short film t
 export interface Banner { title: string; text?: string; href?: string; cta?: string; tone?: 'navy' | 'teal' | 'amber' | 'rose'; until?: string; kind?: BannerKind; event?: string; credits?: number; benefits?: readonly string[]; brand?: 'hanul'; image?: BannerImage }
 const KIND_TAG: Record<BannerKind, [string, string]> = { notice: ['공지', '📣'], event: ['이벤트', '🎁'], guide: ['사용법', '🧭'], survey: ['설문', '📝'], ad: ['광고', '🏷️'] };
 
+/**
+ * G-314: the mock ads (HANUL, 509OP, 가상 프로 광고, 광고 자리) stay off from the beta on: a mock ad was the first thing
+ * on an investment app's home. Flip to true to test the ad slot again.
+ */
+export const MOCK_ADS = false;
 /** Always on during the alpha: the guide and the two surveys. */
-export const ALPHA_BANNERS: readonly Banner[] = [
+const ALL_ALPHA_BANNERS: readonly Banner[] = [
   { kind: 'ad', brand: 'hanul', title: '아이디어를 실험하고, 제품으로 만듭니다.', text: 'AI 리서치부터 일상의 기록까지. HANUL의 프로젝트를 만나보세요.', href: 'hanul.html', cta: '프로젝트 둘러보기', tone: 'navy' },
   { kind: 'guide', title: '처음이면 1분 둘러보기', text: '실제 화면 위에서 결론 카드, 시나리오, 위원회 토론을 차례로 짚어 드려요.', href: 'guide.html', cta: '사용법 보기', tone: 'navy' },
   { kind: 'survey', title: '화면 설정 설문 (약 7분)', text: '투자 경험·관심 업종·궁금한 것을 알려 주시면 보이는 순서와 설명 수준이 바뀌어요. 종목 판단은 모두에게 같아요.', href: 'onboarding.html', cta: '설문 하기', tone: 'teal' },
@@ -28,6 +33,7 @@ export const ALPHA_BANNERS: readonly Banner[] = [
   { kind: 'ad', title: '509OP 육군 부사관 지원', text: '상황간부 · 영상간부 | 상황을 판단하고, 경계를 이어가는 당신의 다음 커리어.', href: '509op.html', cta: '육군 간부 혜택 보기', tone: 'teal' },
   { kind: 'ad', title: '여기에 광고가 들어갈 수 있어요', text: '증권·핀테크 파트너 광고 자리예요. 지금은 시험용 가상 광고이고, 실제 상품이 아니에요.', cta: '광고 문의 (준비 중)', tone: 'rose' },
 ];
+export const ALPHA_BANNERS: readonly Banner[] = ALL_ALPHA_BANNERS.filter((b) => MOCK_ADS || b.kind !== 'ad');
 
 /** G-241: the wrap-up survey leads the banner from 10/24 (KST date of the build) to the alpha's last day. */
 export const wrapupBanners = (today: string): Banner[] => today >= '2026-10-24' && today <= '2026-10-31'

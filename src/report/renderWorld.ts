@@ -107,7 +107,8 @@ export function worldPanels(p: WorldPage): WorldPanels {
   const bandHtml = `<div class="wd-bands">${bands(m.indices).map((b) => `<div class="wd-band${b.open ? ' on' : ''}"><small>${esc(b.name)} · ${b.open ? '거래 중' : '마감'}</small><b class="${tone(b.change)}">${pct(b.change, 1)}</b><small>${b.total}곳 중 ${b.down}곳 내림</small></div>`).join('')}</div>`;
   const statIx = (x: WorldIndexQuote | null) => (x ? kmStatArea({ title: x.name, value: x.value, change: x.changePct, series: x.series, digits: 2, label: x.open ? '거래 중' : '종가', unit: '일', openTail: !!x.open }) : '');
   const statMacro = worldMacroStat;
-  const key6 = [statIx(ix('KOSPI')), statIx(ix('.INX')), statMacro(q('USDKRW')), statMacro(q('WTI')), statMacro(q('GOLD')), statMacro(q('US10Y'), true)].join('');
+  // G-314: the KOSPI tile is filled from the live index while the Korean market is open (HOME_LIVE_JS).
+  const key6 = [statIx(ix('KOSPI')).replace('class="card km-stat', 'data-live-ix="KOSPI" class="card km-stat'), statIx(ix('.INX')), statMacro(q('USDKRW')), statMacro(q('WTI')), statMacro(q('GOLD')), statMacro(q('US10Y'), true)].join('');
   const issues = p.news.issues;
   const top = issues.length ? `<section class="card wd-card"><div class="wd-h"><h2>세계 이슈 순위</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length}개 보기 ›</button></div><ol class="wd-iss">${issues.slice(0, 3).map((i) => issueRow(i, mk, false)).join('')}</ol></section>` : '';
   const sum = `<section class="card wd-card wd-hero"><small>오늘 세계, 한 줄로</small><p>${esc(worldSentence(m))}</p><small>숫자로 자동으로 쓴 문장이에요. 이유는 단정하지 않아요.</small></section>

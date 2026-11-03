@@ -340,19 +340,20 @@ export function testPrices(report: DailyReport): { up?: number; dn?: number } {
  * broke, ft = the most important recent filing's title, sn/sh = calls whose 20 sessions ended on this session
  * (scored today) and how many of them were right.
  */
-export type WatchInfo = { c: number; up?: number; dn?: number; f: number; n: number; d: string; k?: number; ft?: string; sn?: number; sh?: number; s?: number[] };
+/** G-314: kn = the first broken member and the close they named ("추세·모멘텀 PM|214,500원 아래"), for the 틀림 기준 push. */
+export type WatchInfo = { c: number; up?: number; dn?: number; f: number; n: number; d: string; k?: number; kn?: string; ft?: string; sn?: number; sh?: number; s?: number[] };
 export function watchInfo(entries: readonly { symbol: string; report: DailyReport | null; reportDate?: string | null }[]): Record<string, WatchInfo> {
   const out: Record<string, WatchInfo> = {};
   for (const e of entries) {
     const r = e.report; if (!r?.price) continue;
     const since = new Date(Date.parse(r.date) - 3 * 86_400_000).toISOString().slice(0, 10);
     const fresh = (r.recentFilings ?? []).filter((x) => x.filedDate >= since);
-    const k = seatsOf(r).filter((x) => x.broken).length;
+    const broken = seatsOf(r).filter((x) => x.broken), k = broken.length;
     const scored = (r.market?.analystBoard ?? []).flatMap((b) => b.calls ?? []).filter((t) => t.done && t.closeDate === r.price!.sessionDate);
     // G-231: d is the day the report was made (the daily push and weekly mail announce it as new), not the run date.
     out[e.symbol] = {
       c: r.price.close, ...testPrices(r), f: fresh.length, n: r.news?.newIds.length ?? 0, d: e.reportDate === undefined ? r.date : e.reportDate ?? '',
-      ...(k ? { k } : {}), ...(fresh[0] ? { ft: fresh[0].title.slice(0, 60) } : {}),
+      ...(k ? { k, kn: `${broken[0]!.name}|${won(broken[0]!.invalidation!)} ${broken[0]!.stance === 'bull' ? '아래' : '위'}` } : {}), ...(fresh[0] ? { ft: fresh[0].title.slice(0, 60) } : {}),
       ...(scored.length ? { sn: scored.length, sh: scored.filter((t) => t.hit).length } : {}),
     };
     // G-303: the last 30 closes for the Robinhood-style mini chart on each 내 종목 row.

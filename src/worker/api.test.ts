@@ -44,6 +44,7 @@ function setup(opts: { ai?: Deps['ai']; mail?: boolean } = {}) {
       if (String(url).startsWith('https://m.stock.naver.com/api/stock/000660/trend')) return Response.json([{ bizdate: '20261002', accumulatedTradingVolume: '2,000' }]);
       if (String(url).startsWith('https://stock.naver.com/api/domestic/market/trendDeposit')) return Response.json({ content: [{ bizdate: '20261002', customerDeposit: '1000000', creditLoan: '330000' }] });
       if (String(url).startsWith('https://www.okx.com/')) return Response.json(String(url).includes('XYZ') ? { code: '51001', data: [] } : String(url).includes('funding-rate') ? { code: '0', data: [{ fundingRate: '0.0001', fundingTime: '1791475200000' }] } : String(url).includes('/public/open-interest') ? { code: '0', data: [{ oiUsd: '2500000000' }] } : { code: '0', data: [] });
+      if (String(url).startsWith('https://polling.finance.naver.com/api/realtime/domestic/index/')) return Response.json({ datas: [{ itemCode: 'KOSPI', closePrice: '5,705.40', compareToPreviousClosePrice: '-153.68', compareToPreviousPrice: { code: '5', name: 'FALLING' }, fluctuationsRatio: '-2.62', marketStatus: 'OPEN', localTradedAt: '2026-11-03T11:01:17+09:00' }] });
       if (String(url).startsWith('https://polling.finance.naver.com/')) return Response.json({ datas: [{ itemCode: '000660', closePrice: '1,860,000', compareToPreviousClosePrice: '18,000', fluctuationsRatio: '0.98', compareToPreviousPrice: { code: '2', name: 'RISING' }, marketStatus: 'OPEN', localTradedAt: '2026-10-05T12:00:00+09:00' }] });
       return new Response('no', { status: 404 });
     }) as typeof fetch,
@@ -1024,4 +1025,12 @@ test('G-315: headless browsers and robots are not counted as visits; audit accou
   const ov = (await t.call('GET', '/admin/overview', undefined, boss.session)).body;
   assert.equal(ov.visits.week, 1);
   assert.deepEqual(ov.events.map((e: any) => [e.name, e.n, e.users]), [['page_view', 1, 1]]);
+});
+
+test('G-314: ix=KOSPI reads the live index from Naver\'s index feed, cached', async () => {
+  const t = setup();
+  const a = await t.call('GET', '/quote?ix=KOSPI,EVIL');
+  assert.deepEqual([a.status, a.body.quotes[0].symbol, a.body.quotes[0].price, a.body.quotes[0].changePct, a.body.quotes[0].open], [200, 'KOSPI', 5705.4, -2.62, true]);
+  assert.ok(t.seen.some((u) => /realtime\/domestic\/index\/KOSPI$/.test(u)));
+  assert.equal((await t.call('GET', '/quote?ix=KOSPI')).body.cached, true);
 });
