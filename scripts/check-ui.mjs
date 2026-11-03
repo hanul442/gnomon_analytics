@@ -244,11 +244,11 @@ try{
   await page.setViewportSize({width,height:850});await page.goto(origin+'/index.html');
   assert.equal(await page.locator('#market-report-cards').count(),0);assert.equal(await page.locator('#market-daily-link').count(),0);if(await page.locator('.ix-row .tmp').count())assert.match(await page.locator('.ix-row .tmp').getAttribute('href'),/market/);
   assert.ok(await page.evaluate(()=>{const search=document.getElementById('mkt-hero'),banner=document.getElementById('banner');return !!banner&&!!(search.compareDocumentPosition(banner)&Node.DOCUMENT_POSITION_FOLLOWING);}));
-  const ad=page.locator('.bn-hanul');const slide=await ad.getAttribute('data-i');await page.locator('[data-go="'+slide+'"]').click();
-  assert.ok(await ad.isVisible());assert.ok(await ad.locator('img').evaluate(img=>img.complete&&img.naturalWidth>0));
+  // G-314: no mock-ad (HANUL) slide in the home banner during the beta; the HANUL page itself still opens.
+  assert.equal(await page.locator('.bn-hanul, .bn-k-ad, .ad-strip').count(),0);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-  if(width===375)await page.screenshot({path:'test-artifacts/hanul-banner-mobile.png'});
-  await ad.click();await page.waitForURL('**/hanul.html');await page.locator('#hanul-title').waitFor();
+  if(width===375)await page.screenshot({path:'test-artifacts/home-banner-mobile.png'});
+  await page.goto(origin+'/hanul.html');await page.locator('#hanul-title').waitFor();
   assert.equal(await page.locator('.hanul-project').count(),4);assert.ok(await page.locator('.hanul-intro img').evaluate(img=>img.complete&&img.naturalWidth>0));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   await page.screenshot({path:'test-artifacts/hanul-'+width+'.png',fullPage:true});

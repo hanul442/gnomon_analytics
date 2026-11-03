@@ -2,6 +2,7 @@
 // Alpha: mock ads that test the ad slot; one is picked per page view, and × hides it for the session.
 
 import { esc } from './html.js';
+import { MOCK_ADS } from './alphaPages.js';
 const ADS: readonly { brand: string; text: string; href: string; cta: string; tone: string }[] = [
   { brand: 'HANUL', text: '아이디어를 실험하고, 제품으로 만듭니다.', href: 'hanul.html', cta: '보기', tone: 'ink' },
   { brand: '509OP', text: '육군 부사관 지원 · 상황간부 · 영상간부', href: '509op.html', cta: '혜택 보기', tone: 'teal' },
@@ -11,6 +12,8 @@ const ADS: readonly { brand: string; text: string; href: string; cta: string; to
 
 
 export function adStrip(base: string): string {
+  // G-314: no mock ads during the beta.
+  if (!MOCK_ADS) return '';
   return `<aside class="ad-strip" aria-label="광고" hidden>${ADS.map((a, i) => `<a class="ad-s ad-${a.tone}" href="${base}${a.href}" data-ad="${i}" hidden><span class="ad-tag">광고</span><b>${esc(a.brand)}</b><span class="ad-t">${esc(a.text)}</span><span class="ad-cta">${esc(a.cta)} ›</span></a>`).join('')}<button type="button" class="ad-x" aria-label="광고 닫기">×</button></aside>`;
 }
 
