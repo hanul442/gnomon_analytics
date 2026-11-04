@@ -1,5 +1,5 @@
-// G-185: prices and changes roll into place like an odometer. On first sight each digit spins through a few
-// numbers and lands, left to right; when a live quote moves, only the digits that changed roll, upwards when the
+// G-185: prices and changes roll into place like an odometer. On first sight each digit counts up from 0 and lands,
+// left to right (G-333: never through bigger digits, so 54% no longer flashes 98% on its way); when a live quote moves, only the digits that changed roll, upwards when the
 // price rose and downwards when it fell. The element's text stays the plain number (the spinning digits are a
 // CSS pseudo-element), so scripts that read the price back still read "1,842,000원".
 
@@ -29,7 +29,7 @@ export const ROLL_JS = `
       var c = text.charAt(i);
       if (c < '0' || c > '9') { html += esc(c); continue; }
       var fromRight = nd.length - 1 - k, o = od.charAt(od.length - 1 - fromRight), seq = [], down = dir < 0; k++;
-      if (first) { var n = 3 + (k % 3) + Math.floor(k / 2); for (var j = 0; j < n; j++) seq.push(String((+c + 3 + j * 7) % 10)); down = false; }
+      if (first) { for (var j = 0; j < +c; j++) seq.push(String(j)); down = false; if (!seq.length) { html += '<span class="rl"><span class="rl-v">' + c + '</span></span>'; continue; } }
       else if (o === c) { html += '<span class="rl"><span class="rl-v">' + c + '</span></span>'; continue; }
       else { var a = o === '' ? (+c + 5) % 10 : +o, step = down ? -1 : 1; while (a !== +c) { seq.push(String(a)); a = (a + step + 10) % 10; } }
       if (down) seq.reverse();

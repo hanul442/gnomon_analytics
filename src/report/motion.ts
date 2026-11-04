@@ -59,17 +59,19 @@ export const MOTION_JS = `
   var esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var money = function (v) { if (root.getAttribute('data-ccy') === 'USD') return '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('ko-KR') : v.toLocaleString('ko-KR', { maximumFractionDigits: 4 })) + '원'; };
   var day = function (d) { d = String(d || ''); return /^\\d{4}-\\d{2}-\\d{2}/.test(d) ? d.slice(2, 4) + '.' + d.slice(5, 7) + '.' + d.slice(8, 10) : d; };
-  // ---- numbers count up from zero, keeping their commas, decimals and units ----
+  // ---- numbers settle into place, keeping their commas, decimals and units ----
   var count = function (el) {
     if (el.dataset.moDone) return; el.dataset.moDone = '1'; if (el.dataset.moText == null) el.dataset.moText = el.textContent; if (reduce) return;
     var t = el.dataset.moText, m = t.match(/-?[0-9][0-9,]*(\\.[0-9]+)?/); if (!m || (t.match(/[0-9][0-9,.]*/g) || []).length > 1) return;
     var end = Number(m[0].replace(/,/g, '')); if (!isFinite(end) || end === 0) return;
     var dec = m[1] ? m[1].length - 1 : 0, comma = m[0].indexOf(',') >= 0, pre = t.slice(0, m.index), post = t.slice(m.index + m[0].length), t0 = null;
     var fmt = function (v) { var s = v.toFixed(dec); if (comma) { var p = s.split('.'); p[0] = Number(p[0]).toLocaleString('en-US'); s = p.join('.'); } return pre + s + post; };
-    var step = function (ts) { if (t0 == null) t0 = ts; var k = Math.min(1, (ts - t0) / 1100); el.textContent = k < 1 ? fmt(end * (1 - Math.pow(1 - k, 3))) : t; if (k < 1) requestAnimationFrame(step); };
+    // G-333: a short settle from 90% (it used to count from zero for 1.1 s, showing 90조 for a 1298조 company).
+    var step = function (ts) { if (t0 == null) t0 = ts; var k = Math.min(1, (ts - t0) / 450); el.textContent = k < 1 ? fmt(end * (0.9 + 0.1 * (1 - Math.pow(1 - k, 3)))) : t; if (k < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step);
   };
-  var NUMS = '.mo-count, .ig-hl em, .si-c b, .si-target b';
+  // G-333: company metrics (.si-c b, .si-target b) are facts to read, so they arrive as they are and never count.
+  var NUMS = '.mo-count, .ig-hl em';
   var show = function (el) { if (el.classList.contains('mo-in')) return; el.classList.add('mo-in'); el.querySelectorAll(NUMS).forEach(count); };
   // G-170: a picture that leaves the screen, or whose tab is hidden, goes back to its start, so it plays again on the way back.
   var reset = function (el) { if (!el.classList.contains('mo-in')) return; el.classList.remove('mo-in'); el.querySelectorAll(NUMS).forEach(function (n) { if (n.dataset.moText != null) n.textContent = n.dataset.moText; delete n.dataset.moDone; }); };

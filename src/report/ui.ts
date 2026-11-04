@@ -601,8 +601,8 @@ export const LIVE_JS = `
     // last known price right away, and a symbol never fetched yet is asked for now instead of at the next slow tick.
     var again = null; new MutationObserver(function (list) { if (again || !list.some(function (m) { return m.type === 'attributes' || [].some.call(m.addedNodes, function (n) { return n.nodeType === 1 && (n.matches('[data-live]') || n.querySelector('[data-live]')); }); })) return; again = setTimeout(function () { again = null; Object.keys(last).forEach(function (sym) { paint(sym, last[sym]); }); if (symbols().some(function (x) { return !last[x]; })) tick(); }, 100); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-live'] });
     window.GNM_live = { tick: tick, last: last };
-    // G-332: a price coming into view waits up to 1.8 s for the first quote, so it rolls in once, to the live number.
-    if (G.api && symbols().some(function (x) { return /^[0-9A-Z]{6}$/.test(x) || isUs(x); })) window.gnmLiveWait = Date.now() + 1800;
+    // G-332: a price coming into view waits up to 1.8 s for the first quote (API or the Upbit socket), so it rolls in once, to the live number.
+    if (symbols().some(function (x) { return (G.api && (/^[0-9A-Z]{6}$/.test(x) || isUs(x))) || (x.indexOf('KRW-') === 0 && 'WebSocket' in window); })) window.gnmLiveWait = Date.now() + 1800;
     setTimeout(tick, 300);
   })();`;
 
