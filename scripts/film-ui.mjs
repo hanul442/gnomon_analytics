@@ -31,6 +31,27 @@ const ALL = {
   find: { path: 'screener.html' },
   committee: { path: 'reports.html' },
   me: { path: 'settings.html' },
+  'home-ask': { path: 'index.html', tap: '.bottom-nav .nav-spark' },
+  'home-to-committee': { path: 'index.html', tap: '.nav-tabs a[href*="reports.html"]' },
+  'stock-ask': { path: '005930/index.html', tap: '.bottom-nav .nav-ask-r' },
+  'stock-menu': { path: '005930/index.html', tap: '.bottom-nav .nav-back' },
+  'stock-period': { path: '005930/index.html', tap: '.rh-per button[data-n="250"]' },
+  'stock-free': { path: 'stock.html?c=015760' },
+  us: { path: 'us.html?s=AAPL.O' },
+  coin: { path: 'coin.html?m=KRW-BTC' },
+  'find-us': { path: 'screener.html#us' },
+  market: { path: 'market-reports.html' },
+  world: { path: 'world.html' },
+  themes: { path: 'themes.html' },
+  signals: { path: 'signals.html' },
+  issues: { path: 'issues.html' },
+  watch: { path: 'watch.html' },
+  inbox: { path: 'inbox.html' },
+  updates: { path: 'updates.html' },
+  scorecard: { path: 'scorecard.html' },
+  guide: { path: 'guide.html' },
+  'committee-guide': { path: 'committee-guide.html' },
+  pricing: { path: 'pricing.html' },
 };
 const SHOTS = (process.env.SHOTS ?? Object.keys(ALL).join(',')).split(',').filter((k) => ALL[k]);
 
@@ -67,7 +88,10 @@ function instrument(slow) {
         let id = ids.get(e); if (id === undefined) { id = next++; ids.set(e, id); film.labels[id] = label(e); }
         boxes[id] = [r.left + scrollX, r.top + scrollY, r.width, r.height];
       }
-      film.frames.push({ t: scene(ts), shown, boxes });
+      // The boot veil covers the page while it settles; what moves under it is never seen.
+      const veil = document.querySelector('.boot-veil');
+      const veiled = !!veil && veil.isConnected && +getComputedStyle(veil).opacity > 0.5 && getComputedStyle(veil).display !== 'none';
+      film.frames.push({ t: scene(ts), shown, boxes, veiled });
     }
     raf(tick);
   };
@@ -83,7 +107,7 @@ function analyse(film) {
   for (const id of ids) {
     const s = frames.map((f) => f.boxes[id]);
     for (let i = 3; i < s.length - 1; i++) {
-      if (!s[i] || !s[i - 1] || !s[i - 2] || !s[i - 3]) continue;
+      if (frames[i].veiled || !s[i] || !s[i - 1] || !s[i - 2] || !s[i - 3]) continue;
       const still = [1, 2].every((k) => Math.abs(s[i - k][0] - s[i - k - 1][0]) < 0.5 && Math.abs(s[i - k][1] - s[i - k - 1][1]) < 0.5);
       if (!still) continue;
       const dx = s[i][0] - s[i - 1][0], dy = s[i][1] - s[i - 1][1], d = Math.hypot(dx, dy);
@@ -98,7 +122,7 @@ function analyse(film) {
   const seen = new Map();
   for (const f of found) { const key = `${f.kind}|${Math.round(f.t)}|${f.dx ?? f.px}|${f.dy ?? ''}`; if (!seen.has(key)) seen.set(key, { ...f, what: labels[f.id], n: 0 }); seen.get(key).n++; }
   const most = Math.max(1, ...frames.map((f) => f.shown));
-  const blank = frames.filter((f, i) => i > 2 && f.shown < most * 0.15).map((f) => ({ kind: 'blank', t: f.t - t0, shown: f.shown }));
+  const blank = frames.filter((f, i) => i > 2 && !f.veiled && f.shown < most * 0.15).map((f) => ({ kind: 'blank', t: f.t - t0, shown: f.shown }));
   return [...seen.values(), ...blank].map(({ id, ...f }) => f);
 }
 
@@ -130,8 +154,7 @@ for (const width of WIDTHS) for (const name of SHOTS) {
     const start = Date.now(); const every = (SCENE_MS * SLOW) / FRAMES;
     for (let i = 0; i < FRAMES; i++) {
       const file = join(OUT, `${title}-${String(i).padStart(2, '0')}.jpg`);
-      await page.screenshot({ path: file, type: 'jpeg', quality: 70 }).catch(() => {});
-      files.push({ file, t: (Date.now() - start) / SLOW });
+      if (await page.screenshot({ path: file, type: 'jpeg', quality: 70, timeout: 5000 }).then(() => true, () => false)) files.push({ file, t: (Date.now() - start) / SLOW });
       const wait = start + (i + 1) * every - Date.now(); if (wait > 0) await page.waitForTimeout(wait);
     }
   };
