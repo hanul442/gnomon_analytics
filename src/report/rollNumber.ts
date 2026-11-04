@@ -39,7 +39,8 @@ export const ROLL_JS = `
     el.innerHTML = html;
   };
   // First sight: the hero's price and change, and anything marked data-roll, roll once when they come into view.
-  var seen = window.IntersectionObserver ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; seen.unobserve(e.target); var t = e.target.textContent.trim(); if (/[0-9]/.test(t)) gnmRoll(e.target, t, 0); }); }, { threshold: 0.6 }) : null;
+  // G-332: a live price whose first quote is on its way waits for it (LIVE_JS rolls it in with the live number).
+  var seen = window.IntersectionObserver ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; seen.unobserve(e.target); var el = e.target, go = function () { el.__rlWant = 0; var t = el.textContent.trim(); if (/[0-9]/.test(t)) gnmRoll(el, t, 0); }; if (el.hasAttribute('data-live') && window.gnmLiveWait && Date.now() < window.gnmLiveWait) { el.__rlWant = setTimeout(go, window.gnmLiveWait - Date.now()); return; } go(); }); }, { threshold: 0.6 }) : null;
   window.gnmRollIn = function (root) {
     if (!seen) return;
     (root || document).querySelectorAll('.hero-price [data-live-f=price],.hero-price [data-live-f=full],.hero-price>b,.hero-price>span.up,.hero-price>span.down,[data-roll]').forEach(function (el) { if (el.__rl) return; el.__rl = 1; seen.observe(el); });

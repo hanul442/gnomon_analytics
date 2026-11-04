@@ -162,7 +162,8 @@ export const COMMAND_BAR_JS = `
   var lastY = window.scrollY || 0, ticking = false;
   window.addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { var y = window.scrollY || 0; if (Math.abs(y - lastY) > 6) { nav.classList.toggle('mini', y > lastY && y > 80); lastY = y; } ticking = false; }); }, { passive: true });
   if (!nav.hasAttribute('data-dock')) return;
-  var t = setTimeout(function () { set(true); }, still ? 0 : 600);
+  // G-332: the screen's own bar is there from the first frame (it used to swap in 600ms later, after the page showed).
+  nav.classList.add('ctx'); var t = 0;
   var back = nav.querySelector('.nav-back'); if (back) back.addEventListener('click', function () { clearTimeout(t); set(false); });
   // G-289: the left end's '종목' / '이 화면' brings this screen's own bar back.
   var ret = nav.querySelector('.nav-return'); if (ret) ret.addEventListener('click', function () { clearTimeout(t); set(true); });

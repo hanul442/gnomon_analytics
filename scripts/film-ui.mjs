@@ -41,6 +41,8 @@ function instrument(slow) {
   const t0 = realNow();
   const scene = (t) => t0 + (t - t0) / slow;
   performance.now = () => scene(realNow());
+  const realDate = Date.now, d0 = realDate();
+  Date.now = () => Math.round(d0 + (realDate() - d0) / slow);
   const raf = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = (cb) => raf((ts) => cb(scene(ts)));
   const st = window.setTimeout.bind(window);

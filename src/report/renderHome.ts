@@ -222,21 +222,26 @@ const HOME_LIVE_JS = `<script>
   var W = ['일', '월', '화', '수', '목', '금', '토'];
   var v = tile.querySelector('.km-sv'), l = tile.querySelector('.km-sl'), b = tile.querySelector('.km-badge'), prev = v ? v.textContent : '';
   var fmt = function (x) { return x.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+  var hd = document.querySelector('#mkt-hero .hm-d'), hs = document.querySelector('#mkt-hero .hm-s'), built = hd ? hd.textContent : '';
   var tick = function () {
     if (!open() || document.hidden) return;
     fetch(api.replace(/[/]$/, '') + '/quote?ix=KOSPI').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-      var q = j && j.quotes && j.quotes[0]; if (!q || !q.open) return;
+      var q = j && j.quotes && j.quotes[0]; if (!q) return;
+      if (!q.open) { if (hd) hd.textContent = built; var n = document.getElementById('hm-live-note'); if (n) n.remove(); return; }
       if (v) v.textContent = fmt(q.price);
       if (b) { b.className = 'km-badge ' + (q.changePct > 0 ? 'up' : q.changePct < 0 ? 'down' : ''); b.textContent = (q.changePct > 0 ? '▲ +' : q.changePct < 0 ? '▼ ' : '') + q.changePct.toFixed(2) + '%'; }
       var t = q.at ? q.at.slice(11, 16) : '';
       if (l) l.textContent = '● 실시간 ' + t + (prev ? ' · 전 종가 ' + prev : '');
       tile.classList.add('km-live');
-      var hd = document.querySelector('#mkt-hero .hm-d'), d = kst();
-      if (hd) hd.textContent = (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일 ' + W[d.getUTCDay()] + '요일 · 장 열려 있어요';
-      var hs = document.querySelector('#mkt-hero .hm-s');
-      if (hs && !document.getElementById('hm-live-note')) hs.insertAdjacentHTML('afterend', '<p class="hm-live-note" id="hm-live-note">이 한 줄은 지난 장 마감 기준이에요. 위원회 오늘 판단은 15:30 장 마감 뒤에 나와요.</p>');
     }).catch(function () {});
   };
+  // G-332: the date line and its note follow the clock and are written before the first paint, so they no longer
+  // arrive with the quote and push the banner down. A holiday (the quote says the market is closed) puts them back.
+  if (open()) {
+    var d = kst();
+    if (hd) hd.textContent = (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일 ' + W[d.getUTCDay()] + '요일 · 장 열려 있어요';
+    if (hs && !document.getElementById('hm-live-note')) hs.insertAdjacentHTML('afterend', '<p class="hm-live-note" id="hm-live-note">이 한 줄은 지난 장 마감 기준이에요. 위원회 오늘 판단은 15:30 장 마감 뒤에 나와요.</p>');
+  }
   tick(); setInterval(tick, 60000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) tick(); });
 })();
