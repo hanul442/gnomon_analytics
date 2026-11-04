@@ -1,5 +1,5 @@
 {
- "at": "2026-11-04T19:42:39.359Z",
+ "at": "2026-11-04T20:55:52.846Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 35
+   "count": 30
   },
   {
    "source": "google:topic-business-ko",
@@ -50,7 +50,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 66
+   "count": 70
   },
   {
    "source": "rss:bbc-business",
@@ -349,6 +349,6 @@
  "market": {
   "date": "2026-11-04",
   "status": "FAILED",
-  "error": "형식 검사 실패: desks.5.name invalid_value, desks 개수 초과(최대 5)"
+  "error": "오늘 위원회 시도 4번을 다 써서 보류 · 형식 검사 실패: desks.5.name invalid_value, desks 개수 초과(최대 5)"
  }
 }

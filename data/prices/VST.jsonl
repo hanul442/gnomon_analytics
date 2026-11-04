@@ -999,3 +999,4 @@
 {"symbol":"VST","date":"2026-11-03","open":135.995,"high":142.4,"low":135.995,"close":139.59,"volume":5884425,"source":"naver:world:day","retrievedAt":"2026-11-04T17:43:09.415Z"}
 {"symbol":"VST","date":"2026-11-04","open":125.45,"high":128.065,"low":117.28,"close":119.95,"volume":12362712,"source":"naver:world:day","retrievedAt":"2026-11-04T17:43:09.415Z"}
 {"symbol":"VST","date":"2026-11-04","open":125.45,"high":128.065,"low":117.28,"close":119.765,"volume":15180396,"source":"naver:world:day","retrievedAt":"2026-11-04T19:42:39.359Z"}
+{"symbol":"VST","date":"2026-11-04","open":125.4,"high":128.065,"low":117.27,"close":120.29,"volume":20299345,"source":"naver:world:day","retrievedAt":"2026-11-04T20:55:52.846Z"}
