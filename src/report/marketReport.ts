@@ -18,9 +18,10 @@ export interface MarketAsset { symbol: string; name: string; date: string; close
 export interface MarketGroup { id: string; name: string; source: string; universe: number; assets: MarketAsset[]; snapshotDate: string | null; temperature?: MarketPulse | null; breadth: { up: number; down: number; flat: number } }
 const claim = z.object({ text: z.string(), kind: z.enum(['FACT','INFERENCE','ASSUMPTION']), refs: z.array(z.string()).min(1) });
 const EXPERT_IDS=[...CORE_ANALYSTS.map(a=>a.id),'MARKET','TECHNICAL','FLOW','FUNDAMENTAL','EVENT'] as unknown as [string,...string[]];
+const MARKET_DESKS=['코스피','코스닥','코인','ETF','미국'] as const;
 const expert=z.object({speaker:z.enum(EXPERT_IDS),stance:z.enum(['BULLISH','NEUTRAL','BEARISH','INSUFFICIENT_DATA']),claim});
 const marketTurn=z.object({speaker:z.enum([...EXPERT_IDS,'RED_TEAM'] as [string,...string[]]),stance:z.enum(['BULLISH','NEUTRAL','BEARISH']),replyTo:z.number(),claim});
-export const MarketCouncilSchema = z.object({ summary: claim, desks: z.array(z.object({ name: z.enum(['코스피','코스닥','코인','ETF','미국']), view: z.enum(['강세','중립','약세','판단보류']), claims: z.array(claim) })).min(4).max(5), consensus: z.array(claim), disagreements: z.array(claim), scenarios: z.array(z.object({ name: z.enum(['강세','기본','약세']), trigger: claim, outlook: claim, invalidation: claim })).length(3), redTeam: z.array(claim), watch: z.array(claim), dataGaps: z.array(z.string()), experts:z.array(expert).optional(),debate:z.array(marketTurn).optional() });
+export const MarketCouncilSchema = z.object({ summary: claim, desks: z.array(z.object({ name: z.enum(MARKET_DESKS), view: z.enum(['강세','중립','약세','판단보류']), claims: z.array(claim) })).min(4).max(5), consensus: z.array(claim), disagreements: z.array(claim), scenarios: z.array(z.object({ name: z.enum(['강세','기본','약세']), trigger: claim, outlook: claim, invalidation: claim })).length(3), redTeam: z.array(claim), watch: z.array(claim), dataGaps: z.array(z.string()), experts:z.array(expert).optional(),debate:z.array(marketTurn).optional() });
 /** The model is asked for all 11 experts and 12 turns; G-278: a council missing up to two members is still published. */
 export const MARKET_MIN_MEMBERS=9;
 export const MarketCouncilGenerationSchema=MarketCouncilSchema.extend({experts:z.array(expert).min(MARKET_MIN_MEMBERS).max(11),debate:z.array(marketTurn).min(MARKET_MIN_MEMBERS).max(12)});
@@ -57,6 +58,8 @@ export function parseMarketCouncil(text:string):MarketCouncil {
   const at=new Map(keep.map((x,j)=>[x.i,j]));
   raw.debate=keep.map(({t},j)=>{const r=at.get(Number(t.replyTo));return {...t,replyTo:r!==undefined&&r<j&&keep[r]!.t.speaker!==t.speaker?r:-1};});
  }
+ // A desk outside the five markets (e.g. a sixth 'world' desk) is dropped the same way; fewer than four still fails.
+ if(Array.isArray(raw?.desks)){const keep=raw.desks.filter((d:unknown)=>!!d&&typeof d==='object'&&(MARKET_DESKS as readonly string[]).includes(String((d as {name?:unknown}).name)));if(keep.length!==raw.desks.length){raw.desks=keep;if(Array.isArray(raw.dataGaps))raw.dataGaps.push('지원 범위를 벗어난 추가 데스크는 제외했습니다.');}}
  if(Array.isArray(raw?.scenarios)){const keep=raw.scenarios.filter((s:unknown)=>!!s&&typeof s==='object'&&['강세','기본','약세'].includes(String((s as {name?:unknown}).name)));if(keep.length!==raw.scenarios.length){raw.scenarios=keep;if(Array.isArray(raw.dataGaps))raw.dataGaps.push('지원 범위를 벗어난 추가 시나리오는 제외했습니다.');}}
  return MarketCouncilSchema.parse(raw);
 }
