@@ -7,7 +7,7 @@
 /** The rail's brand and account links; hidden on phones (the bar carries tabs only there). */
 export const railExtras = (base: string): { brand: string; acct: string } => ({
   brand: `<a class="nav-brand" href="${base}index.html" aria-label="GNOMON 홈"><span class="gnomon-mark"><img src="${base}assets/gnomon-mark.png" alt=""></span><span><b>GNOMON</b><small>AI COMMITTEE</small></span></a>`,
-  acct: `<a class="nav-acct" href="${base}pricing.html" aria-label="요금제와 크레딧"><i aria-hidden="true">나</i><span><b data-plan-name>무료</b><small><span data-credits>0</span> 크레딧</small></span></a>`,
+  acct: `<a class="nav-acct" href="${base}login.html" aria-label="로그인"><i aria-hidden="true" class="sg-in">나</i><span class="sg-in"><b data-plan-name>무료</b><small><span data-credits>0</span> 크레딧</small></span><span class="sg-out nav-login">로그인</span></a>`,
 });
 
 export const PC_RAIL_CSS = `
@@ -62,6 +62,7 @@ body:has(>.bottom-nav) #main>.pf{margin-left:0;margin-right:auto}
 .bottom-nav .nav-spark:active{transform:scale(.97)}
 .bottom-nav .nav-acct{order:31;display:flex;align-items:center;gap:10px;margin-top:8px;padding:6px 8px;border-radius:14px;color:var(--fg);text-decoration:none}
 .bottom-nav .nav-acct:hover{background:var(--soft)}
+.nav-acct .nav-login{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;background:var(--surface-solid,var(--surface));box-shadow:0 0 0 1px var(--line);font-size:16px;font-weight:700}.bottom-nav .nav-acct:has(.nav-login):hover{background:transparent}
 .nav-acct>i{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--soft);font-style:normal;font-size:15.5px;font-weight:700}
 .nav-acct b{display:block;font-size:16px}.nav-acct small{display:block;font-size:15px;color:var(--muted);font-weight:600}
 .bottom-nav>.bell-btn{order:32;display:block;position:absolute;right:20px;bottom:20px;width:36px;height:36px;border:0;border-radius:50%;background:var(--soft);color:var(--fg)}
