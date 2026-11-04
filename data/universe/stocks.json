@@ -2530,11 +2530,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "011155",
-  "name": "CJ씨푸드1우",
-  "market": "KOSPI"
- },
- {
   "symbol": "011170",
   "name": "롯데케미칼",
   "market": "KOSPI"
@@ -3512,6 +3507,11 @@
  {
   "symbol": "022220",
   "name": "티케이지애강",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "0222E0",
+  "name": "아이엠스팩1호",
   "market": "KOSDAQ"
  },
  {
@@ -13722,6 +13722,11 @@
  {
   "symbol": "494120",
   "name": "큐리오시스",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "495910",
+  "name": "이에스티",
   "market": "KOSDAQ"
  },
  {

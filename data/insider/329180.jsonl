@@ -11,3 +11,4 @@
 {"symbol":"329180","receiptNo":"20251208000164","date":"2025-12-08","reporter":"HD한국조선해양","position":"-","isExec":false,"isMajor":true,"shares":72668285,"delta":6874769,"ratio":69.23,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"329180","receiptNo":"20260121000469","date":"2026-01-21","reporter":"HD한국조선해양","position":"-","isExec":false,"isMajor":true,"shares":72639443,"delta":-28842,"ratio":69.21,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"329180","receiptNo":"20260401005073","date":"2026-04-01","reporter":"이태진","position":"전무","isExec":true,"isMajor":false,"shares":180,"delta":80,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"329180","receiptNo":"20261104000037","date":"2026-11-04","reporter":"손은종","position":"상무","isExec":true,"isMajor":false,"shares":40,"delta":40,"ratio":0,"retrievedAt":"2026-11-04T17:43:09.415Z"}
