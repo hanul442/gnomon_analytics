@@ -1,0 +1,94 @@
+name: SNS auto-post
+# G-321: posts the day's SNS cards (promo/<date>/, made by the daily run) to X and Instagram,
+# and opens the weekly Naver blog text as an issue to copy. Repository variable PROMO_POST decides:
+#   off (or unset) = only a preview in the run summary · manual = posts only when someone presses Run · on = posts by itself.
+# Setup steps: docs/SNS_AUTOPOST.md
+on:
+  workflow_run:
+    workflows: ['Daily report']
+    types: [completed]
+  schedule:
+    # 08:10 KST: posts a day whose daily run finished overnight.
+    - cron: '10 23 * * *'
+    # Monday 09:20 KST: keeps the Instagram token alive (it lasts 60 days).
+    - cron: '20 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Card day to post (YYYY-MM-DD). Empty = the newest'
+        type: string
+        default: ''
+      only:
+        description: 'Only these, comma separated: x,story,insta,blog. Empty = all'
+        type: string
+        default: ''
+      dry:
+        description: 'Preview only, post nothing'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: promo-post
+  cancel-in-progress: false
+jobs:
+  post:
+    if: github.event.schedule != '20 0 * * 1' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Post
+        env:
+          PROMO_POST: ${{ vars.PROMO_POST }}
+          PROMO_X_LINK: ${{ vars.PROMO_X_LINK }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATE: ${{ inputs.date }}
+          ONLY: ${{ inputs.only }}
+          DRY: ${{ inputs.dry && '--dry' || '' }}
+          MANUAL: ${{ github.event_name == 'workflow_dispatch' && '--manual' || '' }}
+        run: node dist/cli/promoPost.js $MANUAL $DRY ${DATE:+--date=$DATE} ${ONLY:+--only=$ONLY}
+      - name: Keep what went out (posted.json)
+        if: always()
+        run: |
+          git config user.name "gnomon-bot"
+          git config user.email "gnomon-bot@users.noreply.github.com"
+          git add promo/*/posted.json 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -m "promo: posted $(date -u +%Y-%m-%dT%H:%MZ)"
+          ok=0; for i in 1 2 3; do if git pull --rebase -X theirs origin main && git push; then ok=1; break; fi; sleep 5; done
+          [ "$ok" = 1 ]
+
+  ig-token:
+    if: github.event.schedule == '20 0 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Refresh the Instagram token
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_SECRETS_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$IG_ACCESS_TOKEN" ]; then echo "인스타 토큰이 아직 없어요." >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          r=$(curl -sS "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=$IG_ACCESS_TOKEN")
+          new=$(echo "$r" | jq -r '.access_token // empty'); days=$(( $(echo "$r" | jq -r '.expires_in // 0') / 86400 ))
+          if [ -z "$new" ]; then echo "인스타 토큰을 늘리지 못했어요: $(echo "$r" | jq -c '.error.message // .')" >> "$GITHUB_STEP_SUMMARY"; exit 1; fi
+          echo "::add-mask::$new"
+          if [ "$new" = "$IG_ACCESS_TOKEN" ]; then echo "인스타 토큰을 늘렸어요 (${days}일 남음)." >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          if [ -n "$GH_TOKEN" ]; then gh secret set IG_ACCESS_TOKEN --repo "$REPO" --body "$new"; echo "새 인스타 토큰을 저장했어요 (${days}일)." >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          echo "인스타가 새 토큰을 줬는데 저장할 권한(GH_SECRETS_PAT)이 없어요. 지금 토큰이 끝나기 전에 docs/SNS_AUTOPOST.md의 '토큰 다시 받기'를 해 주세요." >> "$GITHUB_STEP_SUMMARY"; exit 1

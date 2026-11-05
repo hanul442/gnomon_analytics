@@ -12,7 +12,8 @@ import type { AnalystCall } from '../analysis/analysts.js';
 import { asOf, readLog } from '../store/jsonlLog.js';
 import { priceKey } from './marketData.js';
 import type { PriceBar } from '../types.js';
-import { blogText, coverHtml, instaCaption, missHtml, opinionHtml, opinionsOf, promoDay, promoIndexHtml, scoreCalls, storyHtml, xCaption, xHtml, type MarketLike, type PromoCall } from '../report/promoCards.js';
+import { blogText, opinionsOf, PROMO_SITE, promoDay, promoIndexHtml, scoreCalls, type MarketLike, type PromoCall } from '../report/promoCards.js';
+import { deckInstaCaption, deckSlides, deckStoryHtml, deckXCaption, deckXHtml } from '../report/promoDeck.js';
 
 const KEEP_DAYS = 14;
 const exists = (p: string) => stat(p).then(() => true, () => false);
@@ -61,7 +62,7 @@ export async function loadScoredCalls(root: string, now: Date): Promise<PromoCal
 
 const isFriday = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay() === 5;
 
-async function render(cards: { file: string; html: string; w: number; h: number }[], outDir: string): Promise<void> {
+async function render(cards: { file: string; html: string; w: number; h: number; jpg?: boolean }[], outDir: string): Promise<void> {
   const { chromium } = await import('playwright');
   const tmp = await mkdtemp(join(tmpdir(), 'gnm-promo-'));
   const browser = await chromium.launch();
@@ -74,6 +75,8 @@ async function render(cards: { file: string; html: string; w: number; h: number 
       await page.goto(pathToFileURL(html).href);
       await page.evaluate(() => document.fonts.ready);
       await page.screenshot({ path: join(outDir, c.file), clip: { x: 0, y: 0, width: c.w, height: c.h } });
+      // G-321: Instagram's publishing API takes JPEG only.
+      if (c.jpg) await page.screenshot({ path: join(outDir, c.file.replace(/\.png$/, '.jpg')), type: 'jpeg', quality: 90, clip: { x: 0, y: 0, width: c.w, height: c.h } });
     }
   } finally {
     await browser.close();
@@ -93,7 +96,7 @@ export async function buildPromoSite(root: string): Promise<number> {
     await mkdir(join(site, date), { recursive: true });
     for (const f of files) await copyFile(join(promo, date, f), join(site, date, f));
     const cap = async (f: string, label: string) => (files.includes(f) ? [{ label, text: await readFile(join(promo, date, f), 'utf8') }] : []);
-    days.push({ date, files: ['story.png', 'x.png', 'opinion1.png', 'opinion2.png', 'cover.png', 'miss.png'].filter((f) => files.includes(f)), captions: [...(await cap('x.txt', 'X 글')), ...(await cap('insta.txt', '인스타 글')), ...(await cap('blog.txt', '블로그 주간 글'))] });
+    days.push({ date, files: ['story.png', 'x.png', ...files.filter((f) => /^deck\d\d-.*\.png$/.test(f)), 'opinion1.png', 'opinion2.png', 'cover.png', 'miss.png'].filter((f) => files.includes(f)), captions: [...(await cap('x.txt', 'X 글')), ...(await cap('insta.txt', '인스타 글')), ...(await cap('blog.txt', '블로그 주간 글'))] });
   }
   await writeFile(join(site, 'index.html'), promoIndexHtml(days));
   return days.length;
@@ -116,16 +119,17 @@ async function main(): Promise<void> {
     const fontDir = pathToFileURL(resolve(root, 'node_modules', 'pretendard', 'dist', 'web', 'static', 'woff2')).href;
     const weekly = args.includes('--weekly') || isFriday(date);
     const ops = opinionsOf(await loadDayCalls(root, date), date, 2);
+    // G-322: one info-style carousel (deckNN-<role>), a story and an X card that share the cover's hook.
+    const deck = deckSlides(d, ops, fontDir, weekly);
     const cards = [
-      { file: 'story.png', html: storyHtml(d, fontDir), w: 1080, h: 1920 },
-      { file: 'x.png', html: xHtml(d, fontDir), w: 1200, h: 675 },
-      ...ops.map((o, i) => ({ file: `opinion${i + 1}.png`, html: opinionHtml(o, fontDir, ops.length > 1 ? `${i + 1} / ${ops.length}` : ''), w: 1080, h: 1350 })),
-      ...(weekly ? [{ file: 'cover.png', html: coverHtml(d, fontDir), w: 1080, h: 1350 }, { file: 'miss.png', html: missHtml(d, fontDir), w: 1080, h: 1350 }] : []),
+      { file: 'story.png', html: deckStoryHtml(d, ops, fontDir), w: 1080, h: 1920, jpg: true },
+      { file: 'x.png', html: deckXHtml(d, ops, fontDir), w: 1200, h: 675 },
+      ...deck.map((s, i) => ({ file: `deck${String(i + 1).padStart(2, '0')}-${s.role}.png`, html: s.html, w: 1080, h: 1350, jpg: true })),
     ];
     await mkdir(outDir, { recursive: true });
     await render(cards, outDir);
-    await writeFile(join(outDir, 'x.txt'), `${xCaption(d)}\n`);
-    await writeFile(join(outDir, 'insta.txt'), `${instaCaption(d)}\n`);
+    await writeFile(join(outDir, 'x.txt'), `${deckXCaption(d, ops, PROMO_SITE)}\n`);
+    await writeFile(join(outDir, 'insta.txt'), `${deckInstaCaption(d, ops)}\n`);
     if (weekly) await writeFile(join(outDir, 'blog.txt'), `${blogText(d)}\n`);
     console.log(`promo: ${date} cards ${cards.map((c) => c.file).join(', ')} · scored today ${d.scored.length}, this week ${d.week.length}`);
   }
