@@ -7,6 +7,7 @@ import { runReportJob } from './reports.js';
 import { runDailyNotify, runKillNotify, runMorningBrief, runPriceAlerts, runWeeklySummary, runWrapupNotify, runAlphaEndNotify } from './notify.js';
 import type { AskClient } from './ask.js';
 import { runMyCallsScore } from './myCalls.js';
+import { dispatchDaily } from './dispatch.js';
 
 export default {
   async fetch(req: Request, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<Response> {
@@ -22,7 +23,10 @@ export default {
     const nctx = { db: env.DB, fetch: deps.fetch, site: env.SITE_URL, now: deps.now() };
     // Every 10 minutes: the intraday scan (session only), price alerts and the 08:00 briefing (G-308); the evening triggers: screener alerts and the daily report note.
     // Update notes are off (한서 10/29): no runUpdateNotify, so a new version never reaches the 🔔 or the phone.
-    const job = event.cron.startsWith('*/10')
+    // 18:30 KST: start the GitHub daily build on time (GitHub's own schedule runs hours late).
+    const job = event.cron === '30 9 * * *'
+      ? dispatchDaily(env, deps.fetch)
+      : event.cron.startsWith('*/10')
       ? Promise.all([runIntraday(env, deps), runPriceAlerts(nctx), runWrapupNotify(nctx, env), runAlphaEndNotify(nctx, env), runMorningBrief(nctx)])
       : Promise.all([runAlerts(env, deps), runDailyNotify(nctx), runKillNotify(nctx), runWeeklySummary(nctx, env), pruneVisits(env.DB, nctx.now), runMyCallsScore(nctx)]);
     ctx.waitUntil(job.then((r) => console.log(event.cron, JSON.stringify(r))));

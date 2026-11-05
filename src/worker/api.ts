@@ -64,6 +64,8 @@ export interface Env {
   /** G-223: reads filing originals for the chat (GitHub secret OPENDART_API_KEY). */
   OPENDART_API_KEY?: string;
   REPORT_QUEUE?: ReportQueue;
+  /** Starts daily.yml at 18:30 KST (src/worker/dispatch.ts; GitHub secret GNM_DISPATCH_TOKEN). */
+  GH_DISPATCH_TOKEN?: string;
 }
 export interface Deps { now: () => Date; fetch: typeof fetch; ai?: AskClient; waitUntil?: (promise: Promise<unknown>) => void; generate?: (report: DailyReport) => Promise<Commentary> }
 
