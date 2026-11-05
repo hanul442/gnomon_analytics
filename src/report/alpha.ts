@@ -115,7 +115,7 @@ export const ALPHA_SCRIPT = `<script>
       else { a.href = base + 'login.html'; a.setAttribute('aria-label', '로그인'); a.innerHTML = '<span>로그인</span>'; }
     });
     document.querySelectorAll('[data-acct-tab]').forEach(function (a) { a.href = base + (m ? 'account.html' : 'login.html'); });
-    // G-332 (한서님 11/4 '로그인을 어디에서 해야될지 안보임'): signed out, the 나 row and the PC rail's account row say 로그인 (.sg-out) instead of 무료 · 0 크레딧.
+    // G-334 (한서님 11/4 '로그인을 어디에서 해야될지 안보임'): signed out, the 나 row and the PC rail's account row say 로그인 (.sg-out) instead of 무료 · 0 크레딧.
     document.documentElement.setAttribute('data-signed', m ? 'in' : 'out');
     document.querySelectorAll('.nav-acct').forEach(function (a) { a.href = base + (m ? 'account.html' : 'login.html'); a.setAttribute('aria-label', m ? '내 계정과 크레딧' : '로그인'); });
     var ww = document.getElementById('watch-where'); if (ww && !m) ww.innerHTML = '<a href="' + base + 'login.html">로그인</a>하면 계정에 저장돼요';
