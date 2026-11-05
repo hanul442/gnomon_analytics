@@ -1,5 +1,5 @@
 {
- "at": "2026-11-05T01:37:50.142Z",
+ "at": "2026-11-05T04:31:13.655Z",
  "selected": null,
  "universe": [
   {
@@ -330,9 +330,5 @@
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-11-04",
-  "status": "OK"
- }
+ "failed": []
 }
