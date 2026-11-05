@@ -223,7 +223,7 @@ export function deckInstaCaption(d: PromoDay, ops: readonly PromoOpinion[]): str
     ops.length ? `· ${ops.map((o) => `${o.name} ${o.seats.length}명 중 ${o.leadCount}명 '${SHORT[o.lead]}'`).join(', ')}` : '',
   ].filter(Boolean);
   return [`${oneLine(hook.pre)} ${oneLine(hook.main)}`.replace(/봤어요$/, '봤어요.'), '', `${md(d.date)} ${weekdayOf(d.date)} 그노몬 AI 위원회 기록이에요.`, ...pts, '',
-    `모든 판단은 잠가 두고 20거래일 뒤(${md(scoreDate)})에 채점해요. 틀려도 그대로 공개해요.`, `🔖 저장해 두고 ${md(scoreDate)}에 같이 확인해요.`, '',
+    `모든 판단은 잠가 두고 20거래일 뒤(${md(scoreDate)})에 채점해요. 틀려도 그대로 공개해요.`, `🔖 저장해 두고 ${md(scoreDate)}에 같이 확인해요.`, '📝 한 주 채점 정리는 매주 금요일 블로그에, 짧은 기록은 X(@gnomonanalytics)에 올려요. 링크는 프로필에.', '',
     `${PROMO_NOTE}. 투자 판단과 책임은 본인에게 있어요.`, '#그노몬 #AI주식 #주식공부 #오늘의증시'].join('\n');
 }
 

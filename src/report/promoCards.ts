@@ -6,6 +6,13 @@ import { ANALYST_HORIZON, analystName, hitOf, type AnalystCall } from '../analys
 
 export const PROMO_SITE = 'https://hanul442.github.io/gnomon_analytics/';
 export const PROMO_NOTE = '투자 권유가 아닌 교육용 자료예요';
+/** GNOMON's other channels, so each post points to the rest (Instagram captions can't carry links, so they name the profile link). */
+export const PROMO_CHANNELS = {
+  instagram: 'https://www.instagram.com/gnomon_analytics/',
+  x: 'https://x.com/gnomonanalytics',
+  naver: 'https://blog.naver.com/eco_hanso',
+  tistory: 'https://gnomonanalytics.tistory.com/',
+} as const;
 
 /** One committee member's call whose 20 sessions ended on `outcomeDate`. */
 export interface PromoCall {
@@ -324,6 +331,8 @@ export function blogText(d: PromoDay, site = PROMO_SITE): string {
     '4. 가장 크게 틀린 판단', x ? `${x.name}, ${x.member}: ${md(x.baseDate)}에 ${stanceWord(x.stance)}. ${missReason(x)}` : '이번 주에는 틀린 판단이 없었어요.', '', '[이미지 3: 틀린 판단 카드]', '',
     '5. 이번 주 채점 전체', ...(rows.length ? rows : ['- 없음']), '',
     `위원회의 전체 토론과 지난 기록은 그노몬에서 볼 수 있어요: ${site}?utm_source=naver`, '',
+    '매일 기록은 인스타그램과 X에 올려요.', `- 인스타그램 @gnomon_analytics: ${PROMO_CHANNELS.instagram}`, `- X @gnomonanalytics: ${PROMO_CHANNELS.x}`,
+    `- 같은 글을 네이버 블로그(${PROMO_CHANNELS.naver})와 티스토리(${PROMO_CHANNELS.tistory})에 함께 올려요.`, '',
     `${PROMO_NOTE}. 투자 판단과 책임은 본인에게 있어요.`, '태그: #AI주식 #주식공부 #주간시황 #그노몬'].join('\n');
 }
 
