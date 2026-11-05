@@ -1,5 +1,5 @@
 {
- "at": "2026-11-04T20:55:52.846Z",
+ "at": "2026-11-05T01:31:25.172Z",
  "selected": null,
  "universe": [
   {
@@ -65,290 +65,270 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 597
+   "count": 625
   }
  ],
  "stocks": [
   {
    "symbol": "000660",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "005930",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "402340",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "009150",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "373220",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "006400",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "012450",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "329180",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "034020",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "000270",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "005380",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "028260",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "278470",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "042660",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "272210",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "096770",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "267260",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "066570",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "009830",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "042700",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "047040",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "009540",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "105560",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "353200",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "011070",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "055550",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "010140",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "000720",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "032830",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "018260",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "298040",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "128940",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "443060",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "012330",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "207940",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "028050",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "267270",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "053800",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "452190",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "003490",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "439090",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "043260",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "232140",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "327260",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "403870",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "490470",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-BTC",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-ETH",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-WLD",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "069500",
-   "report": "SKIPPED",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "034730",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "009830",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "042700",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "047040",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "009540",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "105560",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "353200",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "011070",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "055550",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "010140",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "000720",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "032830",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
    "symbol": "068270",
-   "report": "EXISTS",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
-   "symbol": "VST",
-   "report": "EXISTS",
+   "symbol": "018260",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
-   "symbol": "457990",
-   "report": "EXISTS",
+   "symbol": "298040",
+   "report": "NOT_SETTLED",
    "failedSources": []
   },
   {
-   "symbol": "047810",
-   "report": "EXISTS",
+   "symbol": "128940",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "443060",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "012330",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "207940",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "028050",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "267270",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "053800",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "452190",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "003490",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "439090",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "043260",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "232140",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "327260",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "403870",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "490470",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-BTC",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-ETH",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-WLD",
+   "report": "NOT_SETTLED",
+   "failedSources": []
+  },
+  {
+   "symbol": "069500",
+   "report": "NOT_SETTLED",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-11-04",
-  "status": "FAILED",
-  "error": "오늘 위원회 시도 4번을 다 써서 보류 · 형식 검사 실패: desks.5.name invalid_value, desks 개수 초과(최대 5)"
- }
+ "failed": []
 }

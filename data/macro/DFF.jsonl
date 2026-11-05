@@ -415,3 +415,4 @@
 {"series":"DFF","date":"2026-10-31","value":3.88,"source":"fred:csv","retrievedAt":"2026-11-04T17:43:09.415Z"}
 {"series":"DFF","date":"2026-11-01","value":3.88,"source":"fred:csv","retrievedAt":"2026-11-04T17:43:09.415Z"}
 {"series":"DFF","date":"2026-11-02","value":3.88,"source":"fred:csv","retrievedAt":"2026-11-04T17:43:09.415Z"}
+{"series":"DFF","date":"2026-11-03","value":3.88,"source":"fred:csv","retrievedAt":"2026-11-05T01:31:25.172Z"}
