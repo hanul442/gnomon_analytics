@@ -5,6 +5,8 @@
 //   --date=YYYY-MM-DD  --only=x,story,insta,blog  --dry (never post)
 // Env: PROMO_POST (off|manual|on, default off), PROMO_X_LINK (on keeps the site link in X posts), X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET,
 //      IG_ACCESS_TOKEN, IG_USER_ID (optional, default me), GITHUB_TOKEN + GITHUB_REPOSITORY (blog issue).
+//      An Instagram-login token (IGAA…) goes to graph.instagram.com; a Facebook-login token (EAA…) to graph.facebook.com,
+//      which needs the account ID (IG_USER_ID, else GNOMON's own account).
 // What went out is kept in promo/<date>/posted.json so a day is never posted twice.
 
 import { appendFile, readdir, readFile, writeFile } from 'node:fs/promises';
@@ -15,7 +17,9 @@ import { checkText, modeOf, xWithoutLink, oauth1Header, planDay, type Channel, t
 
 type Posted = Partial<Record<Channel, { id: string; at: string; url?: string }>>;
 const LABEL: Record<Channel, string> = { x: 'X', story: '인스타 스토리', insta: '인스타 게시물', blog: '네이버 블로그 글(이슈)' };
-const IG = 'https://graph.instagram.com/v23.0';
+const GNOMON_IG_ID = '17841462813820948';
+/** Which Graph host a token belongs to: Facebook-login tokens start with EAA. */
+const igHost = (token: string) => (token.startsWith('EAA') ? 'https://graph.facebook.com/v23.0' : 'https://graph.instagram.com/v23.0');
 
 const kstDate = (d: Date) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10);
 const readText = (p: string) => readFile(p, 'utf8').catch(() => undefined);
@@ -44,6 +48,7 @@ async function postX(p: PlannedPost, dir: string, k: OAuth1Keys): Promise<{ id: 
 
 async function igCall(path: string, params: Record<string, string>, token: string, method = 'POST'): Promise<Record<string, unknown>> {
   const q = new URLSearchParams({ ...params, access_token: token });
+  const IG = igHost(token);
   return json(await fetch(method === 'GET' ? `${IG}/${path}?${q}` : `${IG}/${path}`, method === 'GET' ? {} : { method, body: q }), `인스타 ${path.split('/').pop()}`);
 }
 
@@ -120,6 +125,8 @@ async function main(): Promise<void> {
   const posted = JSON.parse((await readText(postedPath)) ?? '{}') as Posted;
   const xKeys = env.X_API_KEY && env.X_API_SECRET && env.X_ACCESS_TOKEN && env.X_ACCESS_SECRET
     ? { consumerKey: env.X_API_KEY, consumerSecret: env.X_API_SECRET, token: env.X_ACCESS_TOKEN, tokenSecret: env.X_ACCESS_SECRET } : null;
+  // Pasted secrets sometimes carry a stray space or line break.
+  const igToken = (env.IG_ACCESS_TOKEN ?? '').trim();
   let failed = 0;
   if (!plan.length) say('- 주말이거나 이날 만든 카드가 없어서 올릴 게 없어요.');
   for (const p of plan) {
@@ -129,7 +136,7 @@ async function main(): Promise<void> {
     if (posted[p.channel]) { say(`${head}: 이미 올렸어요 ${posted[p.channel]!.url ?? posted[p.channel]!.id}`); continue; }
     const problems = checkText(p.text, p.channel);
     if (problems.length) { say(`${head}: 올리지 않아요. 걸린 것: ${problems.join(', ')}`); failed++; continue; }
-    const missing = p.channel === 'x' ? !xKeys : p.channel === 'blog' ? !(env.GITHUB_TOKEN && env.GITHUB_REPOSITORY) : !env.IG_ACCESS_TOKEN;
+    const missing = p.channel === 'x' ? !xKeys : p.channel === 'blog' ? !(env.GITHUB_TOKEN && env.GITHUB_REPOSITORY) : !igToken;
     // The blog only becomes an issue to copy from, so it goes out once posting is switched on at all.
     const go = send || (p.channel === 'blog' && mode !== 'off' && !args.includes('--dry'));
     if (!go || missing) {
@@ -140,7 +147,7 @@ async function main(): Promise<void> {
     try {
       const r = p.channel === 'x' ? await postX(p, dir, xKeys!)
         : p.channel === 'blog' ? await postBlogIssue(p, date, env.GITHUB_TOKEN!, env.GITHUB_REPOSITORY!)
-          : await postInsta(p, date, env.IG_ACCESS_TOKEN!, env.IG_USER_ID || 'me');
+          : await postInsta(p, date, igToken, env.IG_USER_ID?.trim() || (igToken.startsWith('EAA') ? GNOMON_IG_ID : 'me'));
       posted[p.channel] = { ...r, at: new Date().toISOString() };
       await writeFile(postedPath, `${JSON.stringify(posted, null, 2)}\n`);
       say(`${head}: 올렸어요 ${'url' in r ? r.url : r.id}`);
