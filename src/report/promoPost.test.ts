@@ -6,8 +6,8 @@ import { PROMO_NOTE, xWeight } from './promoCards.js';
 const all = ['x.png', 'x.txt', 'insta.txt', 'story.png', 'story.jpg', 'opinion1.jpg', 'opinion2.jpg', 'cover.jpg', 'miss.jpg', 'cover.png', 'miss.png'];
 const texts = { x: `x (${PROMO_NOTE})`, insta: `insta ${PROMO_NOTE}` };
 
-test('planDay: X and a story every weekday, the feed on Mon/Wed/Fri, nothing on weekends', () => {
-  assert.deepEqual(planDay('2026-11-03', all, texts).map((p) => p.channel), ['x', 'story']); // Tue
+test('planDay: X and a story every weekday, the feed too, nothing on weekends', () => {
+  assert.deepEqual(planDay('2026-11-03', all, texts).map((p) => p.channel), ['x', 'story', 'insta']); // Tue
   assert.deepEqual(planDay('2026-11-02', all, texts).map((p) => p.channel), ['x', 'story', 'insta']); // Mon
   assert.deepEqual(planDay('2026-11-02', all, texts).at(-1)!.images, ['opinion1.jpg', 'opinion2.jpg']);
   const fri = planDay('2026-11-06', all, { ...texts, blog: `blog ${PROMO_NOTE}` });

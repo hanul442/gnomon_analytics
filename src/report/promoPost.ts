@@ -33,7 +33,7 @@ const dow = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
 /**
  * The plan for one promo day, following the promo doc's routine:
  * X every weekday (x.png + x.txt), an Instagram story every weekday (story.jpg),
- * an Instagram feed post on Mon/Wed/Fri (the day's G-322 carousel; Friday's adds the weekly scorecard and miss),
+ * an Instagram feed post every weekday (한서 11/5) (the day's G-322 carousel; Friday's adds the weekly scorecard and miss),
  * and on Friday the Naver blog text (sent as an issue to copy, Naver has no write API).
  * Instagram takes JPEG only, so a day rendered before G-321 (PNG only) gets no Instagram posts.
  */
@@ -44,7 +44,7 @@ export function planDay(date: string, files: readonly string[], texts: { x?: str
   const out: PlannedPost[] = [];
   if (texts.x && has('x.png')) out.push({ channel: 'x', images: ['x.png'], text: texts.x.trim() });
   if (has('story.jpg')) out.push({ channel: 'story', images: ['story.jpg'], text: '' });
-  if (texts.insta && [1, 3, 5].includes(d)) {
+  if (texts.insta) {
     // G-322 carousel (deckNN-<role>.jpg, in order); days made before it use the old opinion/cover/miss cards.
     const deck = files.filter((f) => /^deck\d\d-.*\.jpg$/.test(f)).sort();
     const feed = deck.length ? deck.slice(0, 10) : [...(d === 5 ? ['cover.jpg', 'miss.jpg'] : []), 'opinion1.jpg', 'opinion2.jpg'].filter(has);
