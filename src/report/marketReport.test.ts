@@ -13,6 +13,14 @@ test('unsupported extra scenarios can be excluded, but missing required cases ne
  assert.equal(parseMarketCouncil(JSON.stringify(raw)).scenarios.length,3);
  raw.scenarios.splice(1,1);assert.throws(()=>parseMarketCouncil(JSON.stringify(raw)));
 });
+test('a desk outside the five markets is dropped instead of failing the whole council',()=>{
+ const claim={text:'근거',kind:'FACT',refs:['M1']};
+ const raw={summary:claim,desks:['코스피','코스닥','코인','ETF','미국','세계'].map(name=>({name,view:'중립',claims:[claim]})),consensus:[],disagreements:[],scenarios:['강세','기본','약세'].map(name=>({name,trigger:claim,outlook:claim,invalidation:claim})),redTeam:[],watch:[],dataGaps:[] as string[]};
+ const c=parseMarketCouncil(JSON.stringify(raw));
+ assert.deepEqual(c.desks.map(d=>d.name),['코스피','코스닥','코인','ETF','미국']);
+ assert.ok(c.dataGaps.some(g=>g.includes('추가 데스크')));
+ raw.desks=raw.desks.slice(2);assert.throws(()=>parseMarketCouncil(JSON.stringify(raw)));
+});
 test('stale data and missing baseline never become current returns',()=>{
  assert.equal(periodAsset('K','K',bars.slice(0,1),'2026-10-07','2026-10-07','daily')?.returnPct,null);
  assert.equal(periodAsset('K','K',bars.slice(1),'2026-10-07','2026-10-05','weekly')?.returnPct,null);
