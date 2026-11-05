@@ -20,3 +20,4 @@
 {"symbol":"267260","receiptNo":"20260707000397","date":"2026-07-07","reporter":"HD현대","position":"-","isExec":false,"isMajor":true,"shares":12764785,"delta":-8118,"ratio":35.41,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"267260","receiptNo":"20260728000348","date":"2026-07-28","reporter":"HD현대","position":"-","isExec":false,"isMajor":true,"shares":12758156,"delta":-6629,"ratio":35.39,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"267260","receiptNo":"20261002000385","date":"2026-10-02","reporter":"HD현대","position":"-","isExec":false,"isMajor":true,"shares":12756533,"delta":-1623,"ratio":35.39,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"267260","receiptNo":"20261105000139","date":"2026-11-05","reporter":"김선길","position":"상무","isExec":true,"isMajor":false,"shares":4000,"delta":4000,"ratio":0,"retrievedAt":"2026-11-05T04:35:54.173Z"}
