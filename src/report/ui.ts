@@ -242,7 +242,7 @@ export const TABS: readonly [string, string, string][] = [
 export const MODE_GROUPS: readonly { key: string; label: string; modes: readonly [string, string][] }[] = [
   { key: 'find', label: '찾기', modes: [['주식', 'screener.html'], ['미국 주식', 'screener.html#us'], ['ETF', 'screener.html#etf'], ['코인', 'screener.html#coin'], ['테마', 'themes.html'], ['공시', 'signals.html']] },
   // G-255: 내 종목 is no longer a tab; its pages are 나's 내 기록 (관심 종목 itself lives on 홈).
-  { key: 'record', label: '내 기록', modes: [['알림함', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html']] },
+  { key: 'record', label: '내 기록', modes: [['알림함', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html'], ['나 vs 위원회', 'mycalls.html']] },
   { key: 'committee', label: '위원회', modes: [['오늘', 'reports.html'], ['채점', 'scorecard.html'], ['위원', 'members.html']] },
 ];
 /** Pages that belong to the 나 tab (account, money, help). */
@@ -268,6 +268,7 @@ const DOCK_ICONS: Record<string, string> = {
   'market-reports.html': '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   'members.html': '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>',
   'inbox.html': '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  'mycalls.html': '<circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/>',
   'myreports.html': '<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/><path d="M12 8v4l3 2"/>',
   'mydebates.html': '<path d="M4 6.5h11v7H9l-3 3v-3H4z"/><path d="M15 10h5v6.5h-2v2.5l-3-2.5h-4.5v-3"/>',
   'settings.html': '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',
@@ -375,7 +376,7 @@ export function meHead(base: string): string {
 /** G-255: 나's 내 기록 rows — what used to be the 내 종목 tab, one tap each. */
 export function meRecord(base: string): string {
   // G-301: 관심 종목 is 맞춤's; 내 기록 is the three things I did or got.
-  const rows: readonly [string, string, string][] = [['알림함', 'inbox.html', '가격·리포트·공시 알림'], ['내 리포트', 'myreports.html', '내가 요청한 리포트'], ['내 토론', 'mydebates.html', '위원회에 한 질문']];
+  const rows: readonly [string, string, string][] = [['알림함', 'inbox.html', '가격·리포트·공시 알림'], ['내 리포트', 'myreports.html', '내가 요청한 리포트'], ['내 토론', 'mydebates.html', '위원회에 한 질문'], ['나 vs 위원회', 'mycalls.html', '내 예상과 위원회를 20거래일 뒤 같이 채점']];
   return `<section class="card st-rows me-rec">${rows.map(([l, h, d]) => `<a href="${base}${h}"><span><b>${escM(l)}${h === 'inbox.html' ? ' <i class="me-unread" data-dock-unread hidden></i>' : ''}</b><small>${escM(d)}</small></span><i aria-hidden="true">›</i></a>`).join('')}</section>`;
 }
 /** G-245: the 나 tab's help rows (사용법 and what used to be the small links under the 전체 sheet). */

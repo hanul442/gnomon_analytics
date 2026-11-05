@@ -136,7 +136,17 @@ export function committeeHero(report: DailyReport, opts: { head?: string; from?:
   const share = `<button type="button" class="cs-share" data-cs-share data-n="${esc(report.name)}" data-d="${esc(day)}" data-t="${esc(title)}" aria-label="이미지로 공유" title="이미지로 공유">${SHARE_ICON}</button>`;
   const broken = seats.filter((x) => x.broken).length;
   const more = `<button type="button" class="cs-mrow" data-cs-list aria-haspopup="dialog" aria-controls="cs-members"><span><b>위원별 판단 · 틀림 기준</b><small>${s.total}명${broken ? ` · ${broken}명 판단 깨짐` : ''}</small></span><i aria-hidden="true">›</i></button>`;
-  return `<section class="block cs-hero" id="cs-hero"><div class="card"><div class="cs-top"><span class="cs-k">AI 위원회 판단 · ${esc(md(day))} 마감 · 20거래일 뒤 채점</span>${share}</div>${opts.head || `<h2 class="cs-title">${esc(title)}</h2>`}${seatArc(report, { interactive: true, stock: report.name })}<p class="cs-tap">좌석을 누르면 그 위원의 판단과 틀림 기준이 나와요.</p>${sides ? `<div class="cs-sides">${sides}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis)}</span></p>` : ''}${more}</div>${membersSheet(report, seats)}</section>`;
+  return `<section class="block cs-hero" id="cs-hero"><div class="card"><div class="cs-top"><span class="cs-k">AI 위원회 판단 · ${esc(md(day))} 마감 · 20거래일 뒤 채점</span>${share}</div>${opts.head || `<h2 class="cs-title">${esc(title)}</h2>`}${seatArc(report, { interactive: true, stock: report.name })}<p class="cs-tap">좌석을 누르면 그 위원의 판단과 틀림 기준이 나와요.</p>${sides ? `<div class="cs-sides">${sides}</div>` : ''}${dis ? `<p class="cs-dis"><b>소수 의견</b><span>${esc(dis)}</span></p>` : ''}${more}${myCallRow(report, s)}</div>${membersSheet(report, seats)}</section>`;
+}
+
+/**
+ * G-323 나 vs 위원회: under the seats, the reader picks up or down; 20 sessions later it is scored next to the committee's
+ * lean (more 강세 seats = up, more 약세 = down, else flat). Shown by the script for a recent report only, and to signed-in
+ * readers it shows their pick; signed out, the buttons lead to the login.
+ */
+function myCallRow(report: DailyReport, s: Split): string {
+  const lean = s.bull > s.bear ? 'up' : s.bear > s.bull ? 'down' : 'flat';
+  return `<div class="cs-me" data-mc data-s="${esc(report.symbol)}" data-n="${esc(report.name)}" data-d="${esc(report.date)}" data-com="${lean}" hidden><p class="cs-mq"><b>나는 어떻게 볼까요?</b><small>고르면 20거래일 뒤 위원회와 같이 채점해요</small></p><div class="cs-mb" role="group" aria-label="내 예상"><button type="button" data-mc-pick="up" aria-pressed="false">오를 것 같아요</button><button type="button" data-mc-pick="down" aria-pressed="false">내릴 것 같아요</button></div><p class="cs-ms" data-mc-state aria-live="polite"></p></div>`;
 }
 
 /** 위원별 판단: every member's call, its wrong-if close checked against the report's close, in a sheet opened from the card. */
@@ -248,7 +258,11 @@ button.cs-seat{cursor:pointer;transition:transform .35s var(--spring-bouncy,cubi
 .cs-mrow span{flex:1;display:flex;flex-direction:column;gap:2px}.cs-mrow b{font-size:17px;font-weight:600}.cs-mrow small{font-size:15.5px;color:var(--muted)}.cs-mrow i{font-style:normal;font-size:21px;color:var(--muted)}
 .cs-list{z-index:590}.cs-list .cs-kh{margin:2px 0 4px}.cs-gh{margin:14px 0 2px;font-size:15.5px;font-weight:700;color:var(--muted)}.cs-list ul{list-style:none;margin:0;padding:0}.cs-list .cs-krow:first-child{border-top:0}
 .cs-tag.broke{background:var(--fg);color:var(--surface-solid,#fff)}
-@media (prefers-reduced-motion:reduce){.cs-seat,.cs-dots i{animation:none}.cs-panel,.cs-sheet{transition:none}}`;
+@media (prefers-reduced-motion:reduce){.cs-seat,.cs-dots i{animation:none}.cs-panel,.cs-sheet{transition:none}}
+.cs-me{margin:14px 0 0;padding:14px 4px 0;border-top:1px solid var(--line)}.cs-me[hidden]{display:none}.cs-mq{margin:0 0 10px;display:flex;flex-direction:column;gap:2px}.cs-mq b{font-size:17px;font-weight:600}.cs-mq small{font-size:15.5px;color:var(--muted)}
+.cs-mb{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cs-mb button{min-height:48px;border:1px solid var(--line-strong);border-radius:24px;background:none;color:var(--fg);font:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:transform .35s var(--spring-snappy,ease),background-color .2s}
+.cs-mb button:active{transform:scale(.96)}.cs-mb button[aria-pressed=true]{background:var(--btn-bg);color:var(--btn-fg);border-color:var(--btn-bg)}.cs-mb button:disabled{opacity:.5;cursor:default}.cs-mb button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cs-ms{margin:10px 0 0;font-size:15.5px;color:var(--fg2);line-height:1.5}.cs-ms:empty{display:none}.cs-ms a{font-weight:700}`;
 
 /** Opens the member sheet from any [data-cs] seat, face or row. */
 export const COMMITTEE_JS = `(function () {
@@ -335,4 +349,36 @@ export const COMMITTEE_JS = `(function () {
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(go, go); else go();
     if (window.GNM && GNM.track) GNM.track('share_image', {});
   });
+})();
+(function () {
+  var mc = document.querySelector('[data-mc]'); if (!mc) return;
+  var d = mc.getAttribute('data-d') || '', age = (Date.now() - Date.parse(d + 'T00:00:00+09:00')) / 864e5;
+  if (!(age >= 0 && age <= 6)) return;
+  mc.hidden = false;
+  var G = window.GNM || {}, base = document.body.getAttribute('data-base') || '', sym = mc.getAttribute('data-s');
+  var btns = mc.querySelectorAll('[data-mc-pick]'), st = mc.querySelector('[data-mc-state]');
+  var WORD = { up: '오를 것 같다고', down: '내릴 것 같다고' }, COM = { up: '강세', down: '약세', flat: '중립' };
+  var day = function (x) { var m = /^\d{4}-(\d{2})-(\d{2})$/.exec(x || ''); return m ? (+m[1]) + '/' + (+m[2]) : ''; };
+  var link = ' <a href="' + base + 'mycalls.html">나 vs 위원회 ›</a>';
+  var show = function (row) {
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(!!row && !row.scored_at && b.getAttribute('data-mc-pick') === row.stance)); });
+    if (!row) { st.innerHTML = ''; return; }
+    if (row.scored_at) { st.innerHTML = '지난 예상 채점: 나 ' + (row.hit ? '맞음' : '틀림') + ' · 위원회 ' + (row.com_hit ? '맞음' : '틀림') + '.' + link; return; }
+    st.innerHTML = WORD[row.stance] + ' 골랐어요. 위원회는 ' + COM[row.com] + '. ' + day(row.base_day) + ' 종가부터 20거래일 뒤 채점해요.' + link;
+  };
+  var pick = function (v) {
+    if (!G.me) { location.href = base + 'login.html?return=' + encodeURIComponent(location.pathname.split('/').slice(-2).join('/') + location.search); return; }
+    btns.forEach(function (b) { b.disabled = true; });
+    G.call('POST', '/mycalls', { symbol: sym, name: mc.getAttribute('data-n'), stance: v, com: mc.getAttribute('data-com') }).then(function (r) {
+      btns.forEach(function (b) { b.disabled = false; });
+      if (r.error) { st.textContent = r.message || '저장하지 못했어요. 잠시 뒤 다시 해 주세요.'; return; }
+      show({ stance: r.stance, com: r.com, base_day: r.base_day });
+    });
+  };
+  btns.forEach(function (b) { b.addEventListener('click', function () { pick(b.getAttribute('data-mc-pick')); }); });
+  var start = function (me) {
+    if (!me) { st.textContent = '로그인하면 내 예상이 기록돼요.'; return; }
+    G.call('GET', '/mycalls?s=' + encodeURIComponent(sym)).then(function (r) { var it = (r.items || [])[0]; if (it) show(it); });
+  };
+  if (G.ready) G.ready.then(start); else start(null);
 })();`;
