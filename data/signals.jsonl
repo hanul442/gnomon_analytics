@@ -2170,3 +2170,16 @@
 {"date":"2026-11-05","preset":"large","symbol":"128940","market":"P","close":475500,"method":"gnm-signal-v1"}
 {"date":"2026-11-05","preset":"large","symbol":"112610","market":"P","close":48600,"method":"gnm-signal-v1"}
 {"date":"2026-11-05","preset":"large","symbol":"462870","market":"P","close":32150,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"top","symbol":"000240","market":"P","close":25100,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"bottomvol","symbol":"025950","market":"Q","close":8430,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"bottomvol","symbol":"038950","market":"Q","close":2800,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"accum","symbol":"002820","market":"P","close":1001,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"accum","symbol":"232680","market":"Q","close":11160,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"accum","symbol":"100250","market":"P","close":3050,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"accum","symbol":"043200","market":"Q","close":1285,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"breakout","symbol":"18064K","market":"P","close":62000,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"value","symbol":"224110","market":"Q","close":7320,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"value","symbol":"036120","market":"Q","close":1425,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"value","symbol":"100250","market":"P","close":3050,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"rebound","symbol":"040160","market":"Q","close":4960,"method":"gnm-signal-v1"}
+{"date":"2026-11-05","preset":"large","symbol":"000240","market":"P","close":25100,"method":"gnm-signal-v1"}

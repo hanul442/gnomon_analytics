@@ -6065,6 +6065,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "065510",
+  "name": "휴비츠",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "065530",
   "name": "와이어블",
   "market": "KOSDAQ"
@@ -13117,11 +13122,6 @@
  {
   "symbol": "457370",
   "name": "한켐",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "457550",
-  "name": "우진엔텍",
   "market": "KOSDAQ"
  },
  {

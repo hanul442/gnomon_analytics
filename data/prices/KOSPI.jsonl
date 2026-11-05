@@ -287,3 +287,4 @@
 {"symbol":"KOSPI","date":"2026-11-04","open":5786.13,"high":5828.13,"low":5421.72,"close":5683.8,"volume":276889,"source":"naver:fchart:day","retrievedAt":"2026-11-04T17:43:09.415Z"}
 {"symbol":"KOSPI","date":"2026-11-05","open":5580.09,"high":5586.46,"low":5386.29,"close":5442.89,"volume":106332,"source":"naver:fchart:day","retrievedAt":"2026-11-05T01:37:50.142Z"}
 {"symbol":"KOSPI","date":"2026-11-05","open":5580.09,"high":5586.46,"low":5386.29,"close":5422.57,"volume":179951,"source":"naver:fchart:day","retrievedAt":"2026-11-05T04:35:54.173Z"}
+{"symbol":"KOSPI","date":"2026-11-05","open":5580.09,"high":5586.46,"low":5336.88,"close":5383.8,"volume":277253,"source":"naver:fchart:day","retrievedAt":"2026-11-05T12:08:16.849Z"}
