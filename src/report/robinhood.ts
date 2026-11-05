@@ -20,6 +20,8 @@ ${M} .hero-main .h1-row{order:1;margin:0}
 ${M} .hero-main h1{font-size:30px;font-weight:500;letter-spacing:-.02em;line-height:1.2}
 ${M} .hero-main .hero-price{order:2;display:block;margin:0}
 ${M} .hero-main .hero-price>b{display:block;font-size:30px;font-weight:500;letter-spacing:-.02em;line-height:1.25}
+/* G-332: the live tag's line is kept from the start, so '● 실시간' arriving with the first quote doesn't push the hero down. */
+${M} .hero-main .hero-price>.live-tag[hidden]{display:inline-block;visibility:hidden}${M} .hero-main .hero-price>.live-tag[hidden]::before{content:"● 실시간 00:00:00"}
 ${M} .hero-main:has(.rh-chart) .hero-price>span[data-live-f=full],${M} .hero-main:has(.rh-chart) .hero-sub{display:none}
 ${M} .rh-chg{order:3;margin:10px 0 0;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
 ${M} .rh-chg2{order:4;margin:2px 0 0;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}

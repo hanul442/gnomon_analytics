@@ -1,5 +1,5 @@
-// G-185: prices and changes roll into place like an odometer. On first sight each digit spins through a few
-// numbers and lands, left to right; when a live quote moves, only the digits that changed roll, upwards when the
+// G-185: prices and changes roll into place like an odometer. On first sight each digit counts up from 0 and lands,
+// left to right (G-333: never through bigger digits, so 54% no longer flashes 98% on its way); when a live quote moves, only the digits that changed roll, upwards when the
 // price rose and downwards when it fell. The element's text stays the plain number (the spinning digits are a
 // CSS pseudo-element), so scripts that read the price back still read "1,842,000원".
 
@@ -29,7 +29,7 @@ export const ROLL_JS = `
       var c = text.charAt(i);
       if (c < '0' || c > '9') { html += esc(c); continue; }
       var fromRight = nd.length - 1 - k, o = od.charAt(od.length - 1 - fromRight), seq = [], down = dir < 0; k++;
-      if (first) { var n = 3 + (k % 3) + Math.floor(k / 2); for (var j = 0; j < n; j++) seq.push(String((+c + 3 + j * 7) % 10)); down = false; }
+      if (first) { for (var j = 0; j < +c; j++) seq.push(String(j)); down = false; if (!seq.length) { html += '<span class="rl"><span class="rl-v">' + c + '</span></span>'; continue; } }
       else if (o === c) { html += '<span class="rl"><span class="rl-v">' + c + '</span></span>'; continue; }
       else { var a = o === '' ? (+c + 5) % 10 : +o, step = down ? -1 : 1; while (a !== +c) { seq.push(String(a)); a = (a + step + 10) % 10; } }
       if (down) seq.reverse();
@@ -39,7 +39,8 @@ export const ROLL_JS = `
     el.innerHTML = html;
   };
   // First sight: the hero's price and change, and anything marked data-roll, roll once when they come into view.
-  var seen = window.IntersectionObserver ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; seen.unobserve(e.target); var t = e.target.textContent.trim(); if (/[0-9]/.test(t)) gnmRoll(e.target, t, 0); }); }, { threshold: 0.6 }) : null;
+  // G-332: a live price whose first quote is on its way waits for it (LIVE_JS rolls it in with the live number).
+  var seen = window.IntersectionObserver ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; seen.unobserve(e.target); var el = e.target, go = function () { el.__rlWant = 0; var t = el.textContent.trim(); if (/[0-9]/.test(t)) gnmRoll(el, t, 0); }; if (el.hasAttribute('data-live') && window.gnmLiveWait && Date.now() < window.gnmLiveWait) { el.__rlWant = setTimeout(go, window.gnmLiveWait - Date.now()); return; } go(); }); }, { threshold: 0.6 }) : null;
   window.gnmRollIn = function (root) {
     if (!seen) return;
     (root || document).querySelectorAll('.hero-price [data-live-f=price],.hero-price [data-live-f=full],.hero-price>b,.hero-price>span.up,.hero-price>span.down,[data-roll]').forEach(function (el) { if (el.__rl) return; el.__rl = 1; seen.observe(el); });

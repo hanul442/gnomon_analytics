@@ -173,7 +173,8 @@ export function seatDots(report: DailyReport): string {
   void lone;
   return `<span class="cs-sl"><b>${splitText(s)}</b>${dis ? `<small>소수 의견 · ${esc(dis)}</small>` : ''}</span>`;
 }
-const splitText = (s: Split) => `${s.word} · ${s.bull}·${s.neutral}·${s.bear}${s.abstain ? ` · 기권 ${s.abstain}` : ''}`;
+// G-333: '기권 2' never breaks between the word and its count (the 2 used to fall to its own line).
+const splitText = (s: Split) => `${s.word} · ${s.bull}·${s.neutral}·${s.bear}${s.abstain ? ` · 기권\u00a0${s.abstain}` : ''}`;
 
 /** Home's committee card (한서님 시안, 10/24): the most split stock as a half circle, the rest as split bars, one dissent. */
 /**
@@ -184,7 +185,7 @@ export function voteDots(seats: readonly Seat[]): string {
   if (!seats.length) return '';
   const s = splitOf(seats), order: SeatStance[] = ['bull', 'neutral', 'bear', 'abstain'];
   const dots = order.flatMap((k) => seats.filter((x) => x.stance === k)).map((x, i) => `<i class="s-${x.stance}" style="animation-delay:${i * 30}ms" title="${esc(`${x.name} ${WORD[x.stance]}`)}"></i>`).join('');
-  return `<span class="cs-vd" role="img" aria-label="${esc(`강세 ${s.bull}, 중립 ${s.neutral}, 약세 ${s.bear}${s.abstain ? `, 기권 ${s.abstain}` : ''}`)}">${dots}</span><small class="cs-dn">${s.bull} · ${s.neutral} · ${s.bear}${s.abstain ? ` · 기권 ${s.abstain}` : ''}</small>`;
+  return `<span class="cs-vd" role="img" aria-label="${esc(`강세 ${s.bull}, 중립 ${s.neutral}, 약세 ${s.bear}${s.abstain ? `, 기권 ${s.abstain}` : ''}`)}">${dots}</span><small class="cs-dn">${s.bull} · ${s.neutral} · ${s.bear}${s.abstain ? ` · 기권\u00a0${s.abstain}` : ''}</small>`;
 }
 
 export function homeCommittee(list: readonly { name: string; href: string; report: DailyReport }[], opts: { day: string; allHref?: string; foot?: string }): string {

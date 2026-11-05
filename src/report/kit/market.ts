@@ -327,7 +327,10 @@ html.mo .km-gauge:not(.km-in) .km-on{opacity:0}html.mo .km-gauge.km-in .km-on{tr
 html.mo .km-stat:not(.km-in) .km-sa-l{clip-path:inset(0 100% 0 0)}html.mo .km-stat.km-in .km-sa-l{clip-path:inset(0 0 0 0);transition:clip-path 1.1s var(--ease-out)}
 html.mo .km-stat:not(.km-in) .km-sa-f{opacity:0}html.mo .km-stat.km-in .km-sa-f{transition:opacity .8s .5s}
 html.mo .km-map:not(.km-in) .km-ct,html.mo .km-map:not(.km-in) .km-ml,html.mo .km-map:not(.km-in) .km-ring{opacity:0}html.mo .km-map.km-in .km-ct,html.mo .km-map.km-in .km-ml,html.mo .km-map.km-in .km-ring{transition:opacity .6s .2s}
-html.mo .km-heat:not(.km-in) .km-cell{opacity:0}html.mo .km-heat.km-in .km-cell{transition:opacity .35s calc(min(var(--i,0),48)*18ms)}
+html.mo .km-heat:not(.km-in) .km-cell{opacity:0}html.mo .km-heat.km-in .km-cell{transition:opacity .3s calc(min(var(--i,0),40)*7ms)}
+/* G-333: the whole map is in within about half a second (rows used to fill one by one for 1.2 s), and on a phone a cell
+   shows its name and only the big moves' number (the rest is the colour and a tap away), so the map isn't packed. */
+@media (max-width:520px){.km-hv:not(.on){display:none}.km-cell:not(:has(.km-hv.on)) .km-hn{transform:translateY(6px)}}
 html.mo .km-sun:not(.km-in) .km-seg{opacity:0;transform:scale(.7)}.km-sun .km-seg{transform-box:view-box;transform-origin:120px 120px}
 html.mo .km-sun.km-in .km-seg{transition:opacity .45s calc(min(var(--i,0),70)*12ms),transform .7s var(--ease-out) calc(min(var(--i,0),70)*12ms)}
 .km-heat{max-width:720px;margin:0 auto}

@@ -532,6 +532,9 @@ export const LIVE_JS = `
     var sg = function (v) { return (v > 0 ? '+' : '') + v.toFixed(2) + '%'; };
     var paint = function (sym, q) {
       var prev = last[sym]; last[sym] = q;
+      // G-332: the first quote rolls the way the price moved from the number already on screen (the last close),
+      // not always upwards: 222,000 → 210,500 used to spin up through 268,400 before landing.
+      var was = prev ? prev.price : (function () { var p = document.querySelector('[data-live="' + sym + '"][data-live-f=price]'); return p ? Number(String(p.getAttribute('data-rv') || p.textContent).replace(/[^0-9.]/g, '')) : NaN; })();
       // G-185: positions are read once before any write (no layout thrash), and an element rolls at most every 1.5 s
       // so a fast feed (Upbit) sets the text instead of restarting the roll.
       var els = [].slice.call(document.querySelectorAll('[data-live="' + sym + '"]')), nowMs = Date.now();
@@ -543,7 +546,7 @@ export const LIVE_JS = `
         var hm = q.at ? String(q.at).replace(/^.*T(\\d\\d:\\d\\d(:\\d\\d)?).*$/, '$1') : '';
         if (f === 'tag') { el.hidden = false; el.textContent = q.open ? (q.session === 'pre' ? (isUs(sym) ? '● 프리마켓' : '● NXT 프리마켓') : q.session === 'after' ? (isUs(sym) ? '● 애프터마켓' : '● NXT 애프터마켓') : '● 실시간') + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); var hs = el.closest('.hero-main') && el.closest('.hero-main').querySelector('.hero-sub'); if (hs) hs.hidden = !!q.open; return; }
         // G-185: numbers on screen roll to the new value (up or down with the tick); off screen they are just set.
-        var dir = prev ? (q.price > prev.price ? 1 : q.price < prev.price ? -1 : 0) : 1, put = function (t) { if (window.gnmRoll && shown[idx] && !el.closest('[data-no-roll]') && nowMs - (el.__rlAt || 0) > 1500) { el.__rlAt = nowMs; gnmRoll(el, t, dir || 1); } else if (el.getAttribute('data-rv') !== t || el.textContent !== t) { el.textContent = t; el.setAttribute('data-rv', t); } };
+        var dir = was > 0 ? (q.price > was ? 1 : q.price < was ? -1 : 0) : 1, put = function (t) { if (el.__rlWant) { clearTimeout(el.__rlWant); el.__rlWant = 0; el.__rlAt = nowMs; if (window.gnmRoll) { el.removeAttribute('data-rv'); gnmRoll(el, t, 0); return; } } if (window.gnmRoll && shown[idx] && !el.closest('[data-no-roll]') && nowMs - (el.__rlAt || 0) > 1500) { el.__rlAt = nowMs; gnmRoll(el, t, dir || 1); } else if (el.getAttribute('data-rv') !== t || el.textContent !== t) { el.textContent = t; el.setAttribute('data-rv', t); } };
         if (f === 'price') put(won(q.price, sym));
         else if (f === 'pct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
         else if (f === 'arrowpct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
@@ -599,6 +602,8 @@ export const LIVE_JS = `
     // last known price right away, and a symbol never fetched yet is asked for now instead of at the next slow tick.
     var again = null; new MutationObserver(function (list) { if (again || !list.some(function (m) { return m.type === 'attributes' || [].some.call(m.addedNodes, function (n) { return n.nodeType === 1 && (n.matches('[data-live]') || n.querySelector('[data-live]')); }); })) return; again = setTimeout(function () { again = null; Object.keys(last).forEach(function (sym) { paint(sym, last[sym]); }); if (symbols().some(function (x) { return !last[x]; })) tick(); }, 100); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-live'] });
     window.GNM_live = { tick: tick, last: last };
+    // G-332: a price coming into view waits up to 1.8 s for the first quote (API or the Upbit socket), so it rolls in once, to the live number.
+    if (symbols().some(function (x) { return (G.api && (/^[0-9A-Z]{6}$/.test(x) || isUs(x))) || (x.indexOf('KRW-') === 0 && 'WebSocket' in window); })) window.gnmLiveWait = Date.now() + 1800;
     setTimeout(tick, 300);
   })();`;
 

@@ -76,7 +76,8 @@ ${meHelp('')}
   var form = document.getElementById('pf-form'), sum = document.getElementById('pf-sum'); if (!form || !sum) return;
   var base = sum.textContent;
   var draw = function () { var v = ['level', 'persona', 'horizon', 'explain'].map(function (k) { var c = form.querySelector('input[name="' + k + '"]:checked'); return c ? c.value : ''; }).filter(Boolean); sum.textContent = v.length ? v.join(' · ') : base; };
-  form.addEventListener('change', draw); window.addEventListener('load', function () { setTimeout(draw, 300); }); draw();
+  // G-333: also right after the saved answers are ticked (DOMContentLoaded), under the boot veil, so the line never swaps in view.
+  form.addEventListener('change', draw); document.addEventListener('DOMContentLoaded', function () { setTimeout(draw, 0); }); window.addEventListener('load', function () { setTimeout(draw, 300); }); draw();
   var pd = document.getElementById('profile'); if (pd) pd.addEventListener('toggle', draw);
 })();
 </script><script>
