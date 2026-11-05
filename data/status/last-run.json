@@ -1,5 +1,5 @@
 {
- "at": "2026-11-05T12:08:16.849Z",
+ "at": "2026-11-05T12:26:52.236Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2659
+   "count": 2656
   },
   {
    "source": "naver:fchart:day:etf",
@@ -333,33 +333,29 @@
   },
   {
    "symbol": "DELL.K",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "086790",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "000810",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "112610",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "000810",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "KRW-ESP",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-11-05",
-  "status": "OK"
- }
+ "failed": []
 }
