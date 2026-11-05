@@ -999,3 +999,4 @@
 {"symbol":"DELL.K","date":"2026-11-03","open":400.25,"high":418.1679,"low":396.5206,"close":408.4,"volume":4709462,"source":"naver:world:day","retrievedAt":"2026-11-05T12:08:16.849Z"}
 {"symbol":"DELL.K","date":"2026-11-04","open":384.69,"high":394.53,"low":366.619,"close":372.36,"volume":10771212,"source":"naver:world:day","retrievedAt":"2026-11-05T12:08:16.849Z"}
 {"symbol":"DELL.K","date":"2026-11-05","open":350.36,"high":352.7003,"low":317.5,"close":323.94,"volume":8459284,"source":"naver:world:day","retrievedAt":"2026-11-05T17:35:19.900Z"}
+{"symbol":"DELL.K","date":"2026-11-05","open":350.36,"high":352.7003,"low":317.5,"close":328.96,"volume":10970741,"source":"naver:world:day","retrievedAt":"2026-11-05T19:54:20.164Z"}
