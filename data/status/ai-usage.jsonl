@@ -447,3 +447,12 @@
 {"at":"2026-11-04T20:55:52.846Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":419,"outputTokens":587,"usd":0.00034}
 {"at":"2026-11-05T01:31:25.172Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":585,"outputTokens":526,"usd":0.00032}
 {"at":"2026-11-05T01:31:25.172Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":426,"outputTokens":471,"usd":0.00028}
+{"at":"2026-11-05T01:37:50.142Z","month":"2026-11","symbol":"GNOMON-MARKET-daily","model":"claude-haiku-4-5-20251001","tier":"market","inputTokens":23472,"outputTokens":6278,"usd":0.21945}
+{"at":"2026-11-05T01:37:50.142Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":406,"outputTokens":459,"usd":0.00027}
+{"at":"2026-11-05T01:37:50.142Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":600,"outputTokens":571,"usd":0.00035}
+{"at":"2026-11-05T01:37:50.142Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":512,"outputTokens":574,"usd":0.00034}
+{"at":"2026-11-05T01:37:50.142Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":577,"outputTokens":547,"usd":0.00033}
+{"at":"2026-11-05T01:37:50.142Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":544,"outputTokens":505,"usd":0.00031}
+{"at":"2026-11-05T01:37:50.142Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":592,"outputTokens":463,"usd":0.00029}
+{"at":"2026-11-05T01:37:50.142Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":454,"outputTokens":473,"usd":0.00028}
+{"at":"2026-11-05T01:37:50.142Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":459,"outputTokens":488,"usd":0.00029}
