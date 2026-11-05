@@ -1,6 +1,6 @@
 // G-313: checks the design rules (src/report/designRules.ts) that a browser can measure, on the built site/ at 390px.
 // Run after check-ui (npm run test:ui), which renders site/. No network: gnm-api calls are blocked.
-// Rules checked: 1 (no orange accent, white light ground), 3 (no tab row at the top), 4 (✦ rightmost in the bottom bar),
+// Rules checked: 1 (no orange accent, white light ground), 10 (no shadows on boxes, G-330), 3 (no tab row at the top), 4 (✦ rightmost in the bottom bar),
 // 5 (home banner at least 150px tall), 9 (bold only for a minority of first-screen text), 12 (no buy/sell/guarantee words).
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -42,6 +42,8 @@ for (const path of PAGES) {
     // 5: the home banner stays big.
     const bn = document.querySelector('.hm-bn .bn-slide, .hm-bn .banner');
     if (bn && vis(bn) && bn.getBoundingClientRect().height < 150) out.push(`5 배너 높이 ${Math.round(bn.getBoundingClientRect().height)}px`);
+    // 10 (G-330): no shadows on the page's boxes.
+    for (const e of document.querySelectorAll('#main .card, #main .mi-card, #main .km-stat')) { if (vis(e) && getComputedStyle(e).boxShadow !== 'none') { out.push(`10 그림자: <${e.tagName.toLowerCase()} class="${e.className}">`); break; } }
     // 9: bold is a minority of the first screen's text.
     let all = 0, bold = 0;
     const walk = document.createTreeWalker(document.querySelector('#main') || document.body, NodeFilter.SHOW_TEXT);
@@ -55,4 +57,4 @@ for (const path of PAGES) {
 }
 await browser.close(); server.close();
 if (problems.length) { console.log(problems.join('\n')); process.exitCode = 1; }
-else console.log(`Design rules passed on ${PAGES.length} pages (1 3 4 5 9 12).`);
+else console.log(`Design rules passed on ${PAGES.length} pages (1 3 4 5 9 10 12).`);
