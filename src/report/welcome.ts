@@ -73,6 +73,31 @@ export const WELCOME_CSS = `
 .fv-card li{display:flex;gap:10px;font-size:16px;line-height:1.5;color:var(--fg2)}.fv-card li b{color:var(--fg)}
 .fv-card li>span:first-child{flex:none;width:22px;height:22px;border-radius:50%;background:var(--btn-bg);color:var(--btn-fg);font-size:12px;font-weight:800;display:grid;place-items:center}
 .fv-card a{display:inline-block;margin-top:10px;padding:6px 0;font-size:15.5px;font-weight:700;color:var(--fg);text-decoration:none}
+/* G-320 (한서님 11/2 '시안 굿'): the home card 시작하기 3단계, and the sheet of its third step. */
+.st-card{margin:0 0 32px;padding:20px;border-radius:20px;background:var(--surface-solid,var(--surface));border:1px solid var(--line);box-shadow:0 0 0 1px rgba(0,0,0,.04),0 2px 12px rgba(0,0,0,.05);display:flex;flex-direction:column;gap:16px;animation:fv-up var(--d-bouncy,.5s) var(--spring-bouncy,cubic-bezier(.34,1.4,.64,1)) both;overflow:hidden}
+.st-card.bye{max-height:0;margin-bottom:0;padding-top:0;padding-bottom:0;opacity:0;border-width:0;transition:max-height var(--d-soft,.45s) var(--ease-exit,ease),opacity var(--d-out,.2s),padding var(--d-soft,.45s),margin var(--d-soft,.45s)}
+.st-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.st-head h2{margin:0;font-size:20px;font-weight:800}.st-head span{font-size:16px;font-weight:700;color:var(--muted)}
+.st-bar{height:6px;border-radius:3px;background:var(--soft,rgba(0,0,0,.06));overflow:hidden}.st-bar i{display:block;height:100%;border-radius:3px;background:var(--btn-bg);transition:width var(--d-bouncy,.5s) var(--spring-bouncy,ease)}
+.st-list{display:flex;flex-direction:column;gap:8px}
+.st-step{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;min-height:64px;padding:12px 16px;border-radius:16px;background:var(--soft,rgba(0,0,0,.035));border:1.5px solid transparent;font:inherit;color:var(--fg);text-align:left;text-decoration:none;cursor:pointer;transition:transform var(--dur-fast,.15s) var(--spring-snappy,ease)}
+.st-step:active{transform:scale(.98)}.st-step.now{background:var(--surface-solid,#fff);border-color:var(--fg)}.st-step.ok{cursor:default}
+.st-step>span:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.st-step b{font-size:16px}.st-step small{font-size:16px;color:var(--muted)}.st-step.ok b{color:var(--muted);text-decoration:line-through}
+.st-no{flex:none;width:28px;height:28px;border-radius:50%;box-sizing:border-box;border:2px solid var(--line-strong);display:grid;place-items:center;font-size:14px;font-weight:800;color:var(--muted)}.st-step.now .st-no{border-color:var(--fg);color:var(--fg)}.st-step.ok .st-no{border:0;background:var(--btn-bg);color:var(--btn-fg)}
+.st-no svg,.st-go svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.st-go{flex:none;color:var(--muted)}.st-go svg{width:18px;height:18px;stroke-width:2}
+.st-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:16px;color:var(--muted)}.st-later{min-height:44px;padding:0 4px;border:0;background:none;font:inherit;font-size:16px;font-weight:700;color:var(--fg2);cursor:pointer}
+.st-card.done{background:var(--btn-bg);color:var(--btn-fg);border-color:transparent}.st-card.done p{margin:0;font-size:16px;line-height:1.6;opacity:.85}
+.st-done{display:flex;align-items:center;gap:10px}.st-done h2{margin:0;font-size:20px;font-weight:800}.st-done span{flex:none;width:32px;height:32px;border-radius:50%;background:var(--btn-fg);color:var(--btn-bg);display:grid;place-items:center}.st-done svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.st-sheet{position:fixed;z-index:61;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;box-sizing:border-box;max-height:92vh;overflow-y:auto;padding:12px 20px max(24px,env(safe-area-inset-bottom));border-radius:20px 20px 0 0;background:var(--surface-solid,var(--surface));box-shadow:0 -10px 40px rgba(0,0,0,.14);display:flex;flex-direction:column;gap:16px;animation:fv-up var(--d-bouncy,.5s) var(--spring-bouncy,cubic-bezier(.34,1.4,.64,1)) both}
+.st-sheet.out{opacity:0;transform:translateY(24px);transition:opacity var(--d-out,.18s),transform var(--d-out,.18s)}
+.st-grab{width:40px;height:5px;border-radius:3px;background:var(--line-strong);margin:0 auto}
+.st-sheet .st-k{font-size:16px;font-weight:700;color:var(--muted)}.st-sheet h2{margin:4px 0 0;font-size:20px;font-weight:800;line-height:1.35}.st-sheet p{margin:8px 0 0;font-size:16px;line-height:1.6;color:var(--fg2)}
+.st-row{display:flex;align-items:center;gap:12px;padding:16px;border-radius:16px;border:1px solid var(--line)}.st-row>span{flex:1;display:flex;flex-direction:column;gap:2px}.st-row b{font-size:16px}.st-row small{font-size:16px;color:var(--muted)}
+.st-ins{padding:16px;border-radius:16px;background:var(--soft,rgba(0,0,0,.035));display:flex;flex-direction:column;gap:8px}.st-ins b{font-size:16px}.st-ins ol{margin:0;padding-left:20px;font-size:16px;line-height:1.6;color:var(--fg2)}
+.st-ins button{align-self:flex-start;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface-solid,#fff);font:inherit;font-size:16px;font-weight:700;color:var(--fg);cursor:pointer}
+.st-btns{display:flex;gap:8px}.st-btns>*{height:54px;border-radius:999px;font:inherit;font-size:16px;font-weight:800;cursor:pointer;display:grid;place-items:center;text-decoration:none}
+.st-btns .st-alt{flex:1;border:1px solid var(--line);background:var(--surface-solid,#fff);color:var(--fg2)}.st-btns .st-on{flex:2;border:0;background:var(--btn-bg);color:var(--btn-fg)}
+.st-msg{margin:0;font-size:16px;color:var(--fg2)}.st-msg:empty{display:none}
+@media (prefers-reduced-motion:reduce){.st-card,.st-sheet{animation:none}.st-card.bye,.st-bar i{transition:none}}
 `;
 
 /** The 11 seats of the example vote on the second card: [stance, x, y] on a half circle (5 강세, 4 중립, 2 약세). */
@@ -118,7 +143,8 @@ export function welcomeJs(base0 = ''): string {
 (function () {
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
   var base = document.body.getAttribute('data-base') || ${JSON.stringify(base0)};
-  var CARDS = ${JSON.stringify(welcomeCards('@@BASE@@'))}, PICK_MAX = ${WELCOME_MAX_PICKS}, WKEY = 'gnm-tour-welcome', HKEY = 'gnm-tour-stockhint';
+  var CARDS = ${JSON.stringify(welcomeCards('@@BASE@@'))}, PICK_MAX = ${WELCOME_MAX_PICKS}, WKEY = 'gnm-tour-welcome', HKEY = 'gnm-tour-stockhint', SKEY = 'gnm-tour-start', SREAD = 'gnm-tour-start-read', SALERT = 'gnm-tour-start-alert', SLATER = 'gnm-tour-start-later';
+  var NAMES = ${JSON.stringify(Object.fromEntries(WELCOME_PICKS))};
   var welcome = function () {
     var forced = /[?&]welcome=/.test(location.search);
     // A reader who has already been around (any tour seen) knows the app; only new readers get it.
@@ -138,6 +164,8 @@ export function welcomeJs(base0 = ''): string {
     var close = function () {
       if (!d.isConnected) return;
       set(WKEY, '1');
+      // G-320: a reader who just met the app gets the three first steps on home.
+      if (!get(SKEY)) { set(SKEY, '0'); setTimeout(startCard, 260); }
       if (picks.length) {
         var w = []; try { w = JSON.parse(get('gnm-watch') || '[]') || []; } catch (e) {}
         picks.slice().reverse().forEach(function (s) { if (w.indexOf(s) < 0) w.unshift(s); });
@@ -186,7 +214,94 @@ export function welcomeJs(base0 = ''): string {
     // After the boot veil lifts, so the sheet rises over a page that is already there.
     setTimeout(function () { if (get(HKEY)) return; document.body.appendChild(scrim); document.body.appendChild(c); c.querySelector('.fv-ok').focus({ preventScroll: true }); }, 1100);
   };
-  var run = function () { if (document.getElementById('mkt-hero')) welcome(); else stockHint(); };
+
+  // G-320 (한서님 11/2 '시안 굿'): 시작하기 3단계 on home, right under the date line: 자주 볼 종목 고르기 → 위원회 판단 하나
+  // 읽기 → 아침 8시 알림 켜기. Each step ticks itself off from what the reader did (a ☆, a stock page, push on);
+  // 나중에 hides the card for three days. When all three are done it says 준비 끝났어요 and folds away for good.
+  var CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>', NEXT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  var watch = function () { try { var w = JSON.parse(get('gnm-watch') || '[]'); return Array.isArray(w) ? w : []; } catch (e) { return []; } };
+  var hrefOf = function (s) { return s.indexOf('KRW-') === 0 ? 'coin.html?m=' + s : /^[A-Z]/.test(s) ? 'us.html?s=' + encodeURIComponent(s) : 'stock.html?c=' + s; };
+  var nameOf = function (s) { return NAMES[s] || s; };
+  var pushOn = false;
+  var phone = function () { return /iPhone|iPad|iPod|Android/.test(navigator.userAgent) && !(window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true); };
+  var stepsDone = function () { return [watch().length > 0, !!get(SREAD), !!get(SALERT) || pushOn]; };
+  var startCard = function () {
+    var hero = document.getElementById('mkt-hero'); if (!hero || document.getElementById('st-card')) return;
+    var c = document.createElement('section'); c.className = 'st-card'; c.id = 'st-card'; c.setAttribute('aria-label', '시작하기 3단계');
+    hero.after(c);
+    var paint = function () {
+      var ok = stepsDone(), n = ok.filter(Boolean).length, now = ok.indexOf(false), w = watch();
+      if (n === 3) return finish();
+      var sub = [
+        w.length ? nameOf(w[0]) + (w.length > 1 ? ' 외 ' + (w.length - 1) + '개' : '') : '☆를 누르면 홈에 바로 떠요',
+        w.length ? nameOf(w[0]) + ' 위원회 판단 보기' : '한 줄 결론과 그렇게 본 이유',
+        phone() ? '홈 화면에 추가하면 폰 알림도 와요' : '평일 아침, 장 열기 1시간 전에 한 번',
+      ];
+      var titles = ['자주 볼 종목 고르기', '위원회 판단 하나 읽어 보기', '아침 8시 알림 켜기'];
+      var hrefs = [base + 'screener.html', base + (w.length ? hrefOf(w[0]) : 'reports.html'), ''];
+      c.innerHTML = '<div class="st-head"><h2>시작하기 3단계</h2><span>' + n + ' / 3</span></div><div class="st-bar" aria-hidden="true"><i style="width:' + Math.round(n / 3 * 100) + '%"></i></div><div class="st-list">' + titles.map(function (t, k) {
+        var cls = 'st-step' + (ok[k] ? ' ok' : k === now ? ' now' : ''), inner = '<span class="st-no">' + (ok[k] ? CHECK : k + 1) + '</span><span><b>' + t + '</b><small>' + sub[k] + '</small></span>' + (ok[k] ? '' : '<span class="st-go">' + NEXT + '</span>');
+        if (ok[k]) return '<div class="' + cls + '"><span class="st-no">' + CHECK + '</span><span><b>' + t + '</b><small>' + sub[k] + '</small></span></div>';
+        return hrefs[k] ? '<a class="' + cls + '" href="' + hrefs[k] + '" data-st="' + k + '">' + inner + '</a>' : '<button type="button" class="' + cls + '" data-st="' + k + '">' + inner + '</button>';
+      }).join('') + '</div><div class="st-foot"><span>다 하면 이 카드는 사라져요</span><button type="button" class="st-later">나중에</button></div>';
+    };
+    var finish = function () {
+      set(SKEY, 'done');
+      c.className = 'st-card done';
+      c.innerHTML = '<div class="st-done"><span>' + CHECK + '</span><h2>준비 끝났어요</h2></div><p>평일 아침 8시에 브리핑이 와요. 위원회 판단은 20거래일 뒤 공개로 채점돼요.</p>';
+      setTimeout(function () { c.style.maxHeight = c.offsetHeight + 'px'; requestAnimationFrame(function () { c.classList.add('bye'); }); setTimeout(function () { c.remove(); }, 500); }, 2000);
+    };
+    c.addEventListener('click', function (e) {
+      if (e.target.closest('.st-later')) { set(SLATER, String(Date.now())); c.style.maxHeight = c.offsetHeight + 'px'; requestAnimationFrame(function () { c.classList.add('bye'); }); setTimeout(function () { c.remove(); }, 500); return; }
+      var b = e.target.closest('[data-st]'); if (b && b.getAttribute('data-st') === '2') alertSheet(paint);
+    });
+    window.addEventListener('gnm-watch', paint);
+    window.addEventListener('storage', paint);
+    paint();
+    var G = window.GNM || {};
+    if (G.push && G.push.supported) G.push.state().then(function (s) { if (s.on) { pushOn = true; paint(); } }).catch(function () {});
+  };
+  // The third step: what the briefing is, the switch, and (on a phone, not yet installed) how to add it to the home screen.
+  var alertSheet = function (after) {
+    var G = window.GNM || {}, P = G.push || {}, before = document.activeElement;
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), android = /Android/.test(navigator.userAgent);
+    var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    var signed = !!get('gnm-session'), canPush = !!P.supported;
+    var ins = standalone || !(ios || android) ? '' : ios
+      ? '<div class="st-ins"><b>폰 알림을 받으려면 홈 화면에 추가해요</b><ol><li>Safari 아래 공유 버튼을 눌러요</li><li>홈 화면에 추가를 눌러요</li><li>홈 화면의 그노몬 아이콘으로 열어요</li></ol></div>'
+      : '<div class="st-ins"><b>앱으로 설치하면 더 빨리 열려요</b><ol><li>크롬 오른쪽 위 ⋮ 메뉴를 눌러요</li><li>앱 설치를 눌러요</li></ol><button type="button" data-install hidden>바로 설치하기</button></div>';
+    var main = !signed ? '<a class="st-on" href="' + base + 'login.html?return=index.html">로그인하고 켜기</a>'
+      : canPush ? '<button type="button" class="st-on" data-sa="on">알림 켜기</button>'
+      : '<button type="button" class="st-on" data-sa="inbox">알림함으로 받기</button>';
+    var say = canPush ? '켜면 이 기기로 와요' : ios && !standalone ? '지금은 🔔 알림함으로 와요. 홈 화면 앱에서 열면 폰 알림도 켤 수 있어요' : '🔔 알림함으로 와요';
+    var scrim = document.createElement('div'); scrim.className = 'fv-scrim';
+    var s = document.createElement('section'); s.className = 'st-sheet'; s.setAttribute('role', 'dialog'); s.setAttribute('aria-modal', 'true'); s.setAttribute('aria-labelledby', 'st-sheet-h'); s.tabIndex = -1;
+    s.innerHTML = '<div class="st-grab" aria-hidden="true"></div><div><span class="st-k">3단계 · 마지막</span><h2 id="st-sheet-h">아침 8시에 한 번만 알려 드릴게요</h2><p>평일 아침, 간밤 미국 시장과 내 종목의 위원회 판단이 바뀌었는지 한 번 와요. 사라는 말, 팔라는 말은 하지 않아요.</p></div>'
+      + '<div class="st-row"><span><b>아침 브리핑 알림 · 평일 8:00</b><small>' + say + '. 나 › 알림에서 언제든 꺼요.</small></span></div>' + ins
+      + '<p class="st-msg" id="st-msg" role="status"></p><div class="st-btns"><button type="button" class="st-alt" data-sa="later">나중에</button>' + main + '</div>';
+    var shut = function () { s.classList.add('out'); scrim.classList.add('out'); document.removeEventListener('keydown', esc); setTimeout(function () { s.remove(); scrim.remove(); if (before && before.focus) before.focus({ preventScroll: true }); after(); }, 200); };
+    var esc = function (e) { if (e.key === 'Escape') shut(); };
+    var done = function (t) { set(SALERT, '1'); if (window.GNM && GNM.toast) GNM.toast(t, 'success'); shut(); };
+    s.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-sa]'); if (!b) return;
+      var a = b.getAttribute('data-sa'), msg = s.querySelector('#st-msg');
+      if (a === 'later') shut();
+      else if (a === 'inbox') done('아침 브리핑은 🔔 알림함으로 와요.');
+      else if (a === 'on') { b.disabled = true; msg.textContent = '켜는 중…'; P.on().then(function () { pushOn = true; done('켜졌어요. 내일 아침 8시에 만나요.'); }).catch(function (er) { b.disabled = false; msg.textContent = (er && er.message) || '켜지 못했어요. 나 › 알림에서 다시 해 볼 수 있어요.'; }); }
+    });
+    scrim.addEventListener('click', shut); document.addEventListener('keydown', esc);
+    document.body.appendChild(scrim); document.body.appendChild(s);
+    // The install button follows INSTALL_JS (it shows only when the browser offered an install).
+    var ib = s.querySelector('[data-install]'); if (ib && window.__gnmInstall) ib.hidden = false;
+    s.focus({ preventScroll: true });
+  };
+  var run = function () {
+    if (!document.getElementById('mkt-hero')) { if (document.getElementById('tab-ai') && get(SKEY) === '0') set(SREAD, '1'); stockHint(); return; }
+    welcome();
+    // ?start=1 shows the steps again (for checking); 나중에 waits three days.
+    var st = get(SKEY), later = +(get(SLATER) || 0);
+    if (/[?&]start=/.test(location.search) || (st === '0' && Date.now() - later > 3 * 86400000)) startCard();
+  };
   // A signed-in reader on a new device first takes the account's settings (what was already seen comes with them).
   var go = function () { if (get('gnm-session') && window.GNM && window.GNM.ready) window.GNM.ready.then(run, run); else run(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
