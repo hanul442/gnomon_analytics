@@ -6,6 +6,8 @@ on:
   schedule:
     # 18:30 KST every day (09:30 UTC); on weekends the coin's daily AI report and the coin list (G-56).
     # G-217: GitHub has started these 5–10 hours late and one late run failed, so two more tries follow.
+    # 11/5: still 4–8 hours late every day, so the gnm-api Worker now starts this workflow at 18:30 KST
+    # (src/worker/dispatch.ts); these schedules are the backup.
     # A run before 08:00 KST still settles the evening before, and a settled day's reports are kept, so a
     # later try only refreshes the data and the site.
     - cron: '30 9 * * *'

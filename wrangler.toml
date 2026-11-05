@@ -5,10 +5,11 @@ compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
+# 18:30 KST: ask GitHub to start the daily build (its own schedule starts 4–8 hours late; src/worker/dispatch.ts).
 # Screener alerts after the daily build (18:30 KST run): 20:10 and 22:10 KST on weekdays; once per data date.
 # Intraday scan every 10 minutes, 09:00–15:59 KST on weekdays (the job itself keeps to 09:10–15:45).
 [triggers]
-crons = ["10 10,11,13 * * *", "*/10 * * * *"]
+crons = ["30 9 * * *", "10 10,11,13 * * *", "*/10 * * * *"]
 
 [vars]
 SITE_URL = "https://hanul442.github.io/gnomon_analytics"
