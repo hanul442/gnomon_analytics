@@ -7,7 +7,7 @@ import { readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 // Signed-in or personal screens, payment, test fixtures and the error page are not for search.
-const SKIP = /fixture|preview|^(509op|account|alerts|archive|checkout|inbox|issues|login|mydebates|myreports|onboarding|ops|paper|pricing|profile|settings|survey|watch)\.html$/;
+const SKIP = /fixture|preview|^(509op|account|alerts|archive|checkout|inbox|issues|login|mycalls|mydebates|myreports|onboarding|ops|paper|pricing|profile|settings|survey|watch)\.html$/;
 const MAX = 50_000;
 
 export async function writeSitemap(siteDir: string, siteUrl: string, now: Date): Promise<number> {

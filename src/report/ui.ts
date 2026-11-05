@@ -242,7 +242,7 @@ export const TABS: readonly [string, string, string][] = [
 export const MODE_GROUPS: readonly { key: string; label: string; modes: readonly [string, string][] }[] = [
   { key: 'find', label: '찾기', modes: [['주식', 'screener.html'], ['미국 주식', 'screener.html#us'], ['ETF', 'screener.html#etf'], ['코인', 'screener.html#coin'], ['테마', 'themes.html'], ['공시', 'signals.html']] },
   // G-255: 내 종목 is no longer a tab; its pages are 나's 내 기록 (관심 종목 itself lives on 홈).
-  { key: 'record', label: '내 기록', modes: [['알림함', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html']] },
+  { key: 'record', label: '내 기록', modes: [['알림함', 'inbox.html'], ['내 리포트', 'myreports.html'], ['내 토론', 'mydebates.html'], ['나 vs 위원회', 'mycalls.html']] },
   { key: 'committee', label: '위원회', modes: [['오늘', 'reports.html'], ['채점', 'scorecard.html'], ['위원', 'members.html']] },
 ];
 /** Pages that belong to the 나 tab (account, money, help). */
@@ -268,6 +268,7 @@ const DOCK_ICONS: Record<string, string> = {
   'market-reports.html': '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   'members.html': '<circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/><circle cx="4.8" cy="10" r="2"/><circle cx="19.2" cy="10" r="2"/>',
   'inbox.html': '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  'mycalls.html': '<circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/>',
   'myreports.html': '<path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4"/><path d="M12 8v4l3 2"/>',
   'mydebates.html': '<path d="M4 6.5h11v7H9l-3 3v-3H4z"/><path d="M15 10h5v6.5h-2v2.5l-3-2.5h-4.5v-3"/>',
   'settings.html': '<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>',
@@ -370,12 +371,12 @@ export function menuHtml(base: string): { button: string; drawer: string } {
 
 /** G-245: the top of the 나 tab — the account row, the app install, the ops link for admins (filled by alpha.ts). */
 export function meHead(base: string): string {
-  return `<div class="me-head"><div class="me-acct-w"><a class="me-acct" href="${base}pricing.html" data-acct-tab="1"><span><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></span><i aria-hidden="true">›</i></a><a class="me-plan" href="${base}pricing.html">요금제</a></div><button type="button" class="me-install" data-install hidden>그노몬 앱 설치<small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button><div id="sm-admin"></div></div>`;
+  return `<div class="me-head"><div class="me-acct-w"><a class="me-acct" href="${base}login.html" data-acct-tab="1"><span class="sg-in"><b>내 계정</b><small><span data-plan-name>무료</span> · <span data-credits>0</span> 크레딧</small></span><span class="sg-out"><b>로그인하고 이어 보기</b><small data-login-note>관심 종목과 기록을 어느 기기에서나 그대로</small></span><i aria-hidden="true" class="sg-in">›</i><em class="sg-out me-login-btn">로그인</em></a><a class="me-plan" href="${base}pricing.html">요금제</a></div><button type="button" class="me-install" data-install hidden>그노몬 앱 설치<small>한 번 누르면 홈 화면에 앱으로 생겨요</small></button><div id="sm-admin"></div></div>`;
 }
 /** G-255: 나's 내 기록 rows — what used to be the 내 종목 tab, one tap each. */
 export function meRecord(base: string): string {
   // G-301: 관심 종목 is 맞춤's; 내 기록 is the three things I did or got.
-  const rows: readonly [string, string, string][] = [['알림함', 'inbox.html', '가격·리포트·공시 알림'], ['내 리포트', 'myreports.html', '내가 요청한 리포트'], ['내 토론', 'mydebates.html', '위원회에 한 질문']];
+  const rows: readonly [string, string, string][] = [['알림함', 'inbox.html', '가격·리포트·공시 알림'], ['내 리포트', 'myreports.html', '내가 요청한 리포트'], ['내 토론', 'mydebates.html', '위원회에 한 질문'], ['나 vs 위원회', 'mycalls.html', '내 예상과 위원회를 20거래일 뒤 같이 채점']];
   return `<section class="card st-rows me-rec">${rows.map(([l, h, d]) => `<a href="${base}${h}"><span><b>${escM(l)}${h === 'inbox.html' ? ' <i class="me-unread" data-dock-unread hidden></i>' : ''}</b><small>${escM(d)}</small></span><i aria-hidden="true">›</i></a>`).join('')}</section>`;
 }
 /** G-245: the 나 tab's help rows (사용법 and what used to be the small links under the 전체 sheet). */
@@ -531,6 +532,9 @@ export const LIVE_JS = `
     var sg = function (v) { return (v > 0 ? '+' : '') + v.toFixed(2) + '%'; };
     var paint = function (sym, q) {
       var prev = last[sym]; last[sym] = q;
+      // G-332: the first quote rolls the way the price moved from the number already on screen (the last close),
+      // not always upwards: 222,000 → 210,500 used to spin up through 268,400 before landing.
+      var was = prev ? prev.price : (function () { var p = document.querySelector('[data-live="' + sym + '"][data-live-f=price]'); return p ? Number(String(p.getAttribute('data-rv') || p.textContent).replace(/[^0-9.]/g, '')) : NaN; })();
       // G-185: positions are read once before any write (no layout thrash), and an element rolls at most every 1.5 s
       // so a fast feed (Upbit) sets the text instead of restarting the roll.
       var els = [].slice.call(document.querySelectorAll('[data-live="' + sym + '"]')), nowMs = Date.now();
@@ -542,7 +546,7 @@ export const LIVE_JS = `
         var hm = q.at ? String(q.at).replace(/^.*T(\\d\\d:\\d\\d(:\\d\\d)?).*$/, '$1') : '';
         if (f === 'tag') { el.hidden = false; el.textContent = q.open ? (q.session === 'pre' ? (isUs(sym) ? '● 프리마켓' : '● NXT 프리마켓') : q.session === 'after' ? (isUs(sym) ? '● 애프터마켓' : '● NXT 애프터마켓') : '● 실시간') + (hm && hm.length <= 8 ? ' ' + hm : '') : '장 마감'; el.classList.toggle('on', !!q.open); var hs = el.closest('.hero-main') && el.closest('.hero-main').querySelector('.hero-sub'); if (hs) hs.hidden = !!q.open; return; }
         // G-185: numbers on screen roll to the new value (up or down with the tick); off screen they are just set.
-        var dir = prev ? (q.price > prev.price ? 1 : q.price < prev.price ? -1 : 0) : 1, put = function (t) { if (window.gnmRoll && shown[idx] && !el.closest('[data-no-roll]') && nowMs - (el.__rlAt || 0) > 1500) { el.__rlAt = nowMs; gnmRoll(el, t, dir || 1); } else if (el.getAttribute('data-rv') !== t || el.textContent !== t) { el.textContent = t; el.setAttribute('data-rv', t); } };
+        var dir = was > 0 ? (q.price > was ? 1 : q.price < was ? -1 : 0) : 1, put = function (t) { if (el.__rlWant) { clearTimeout(el.__rlWant); el.__rlWant = 0; el.__rlAt = nowMs; if (window.gnmRoll) { el.removeAttribute('data-rv'); gnmRoll(el, t, 0); return; } } if (window.gnmRoll && shown[idx] && !el.closest('[data-no-roll]') && nowMs - (el.__rlAt || 0) > 1500) { el.__rlAt = nowMs; gnmRoll(el, t, dir || 1); } else if (el.getAttribute('data-rv') !== t || el.textContent !== t) { el.textContent = t; el.setAttribute('data-rv', t); } };
         if (f === 'price') put(won(q.price, sym));
         else if (f === 'pct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
         else if (f === 'arrowpct') put((q.changePct > 0 ? '▲ ' : q.changePct < 0 ? '▼ ' : '') + sg(q.changePct));
@@ -598,6 +602,8 @@ export const LIVE_JS = `
     // last known price right away, and a symbol never fetched yet is asked for now instead of at the next slow tick.
     var again = null; new MutationObserver(function (list) { if (again || !list.some(function (m) { return m.type === 'attributes' || [].some.call(m.addedNodes, function (n) { return n.nodeType === 1 && (n.matches('[data-live]') || n.querySelector('[data-live]')); }); })) return; again = setTimeout(function () { again = null; Object.keys(last).forEach(function (sym) { paint(sym, last[sym]); }); if (symbols().some(function (x) { return !last[x]; })) tick(); }, 100); }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-live'] });
     window.GNM_live = { tick: tick, last: last };
+    // G-332: a price coming into view waits up to 1.8 s for the first quote (API or the Upbit socket), so it rolls in once, to the live number.
+    if (symbols().some(function (x) { return (G.api && (/^[0-9A-Z]{6}$/.test(x) || isUs(x))) || (x.indexOf('KRW-') === 0 && 'WebSocket' in window); })) window.gnmLiveWait = Date.now() + 1800;
     setTimeout(tick, 300);
   })();`;
 
@@ -736,7 +742,8 @@ export const LIVE_CSS = `.live-tag{font-size:15px;font-weight:700;color:var(--mu
 export const MENU_CSS = `.install-btn{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:15.5px;font-weight:700;border-radius:999px;padding:6px 11px;cursor:pointer;white-space:nowrap}.install-btn:hover{background:rgba(255,255,255,.18)}.sm-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;margin-top:8px;border:1px solid var(--line-strong);background:var(--soft);border-radius:12px;padding:10px 12px;font:inherit;text-align:left;cursor:pointer;color:var(--fg)}.sm-install small{color:var(--muted);font-size:15px}.ins-pop{position:fixed;inset:0;z-index:90;background:rgba(10,20,40,.45);display:flex;align-items:flex-end;justify-content:center}.ins-pop .ins-card{background:var(--surface-solid);border-radius:18px 18px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));max-width:480px;width:100%}.ins-pop ol{margin:10px 0 14px;padding-left:20px;line-height:1.7}.ins-pop .btn-primary{width:100%;justify-content:center}\n.top-tabs{display:flex;align-items:center;gap:2px;margin-right:6px}.top-tabs a,.top-tabs button{display:flex;align-items:center;gap:6px;border:0;background:none;color:#dbe4f3;font:inherit;font-size:16px;font-weight:700;padding:8px 11px;border-radius:10px;text-decoration:none;cursor:pointer}.top-tabs svg{width:18px;height:18px}.top-tabs a:hover,.top-tabs button:hover,.top-tabs [aria-current=page]{background:rgba(255,255,255,.12);color:#fff}@media(max-width:820px){.top-tabs{display:none}}
 /* G-245: the 나 tab's head (account, install, ops) and the mode rows (sibling pages as one screen, G-189 pill). */
 .me-head{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}.me-acct{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:60px;padding:12px 16px;border-radius:14px;background:var(--soft);color:var(--fg);text-decoration:none}.me-acct b{display:block;font-size:17.5px}.me-acct small{color:var(--muted);font-size:15.5px;font-weight:600}.me-acct i{font-style:normal;color:var(--muted);font-size:19px}
-.me-acct-w{position:relative}.me-plan{position:absolute;right:40px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;min-height:36px;padding:0 13px;border-radius:999px;background:var(--surface-solid,var(--surface));color:var(--fg);font-size:15.5px;font-weight:700;text-decoration:none;box-shadow:0 0 0 1px var(--line)}
+.me-acct-w{position:relative}.me-login-btn{display:inline-flex;align-items:center;min-height:40px;padding:0 18px;border-radius:999px;background:var(--fg);color:var(--page,#fff);font-style:normal;font-size:16px;font-weight:700;flex:none}html:not([data-signed=in]) .me-plan,html:not([data-signed=in]) .sg-in,html[data-signed=in] .sg-out{display:none!important}html:not([data-signed=in]) .me-acct{min-height:76px;background:var(--surface-solid,var(--surface));box-shadow:0 0 0 1px var(--line)}html:not([data-signed=in]) .me-acct b{font-size:19px}
+.me-plan{position:absolute;right:40px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;min-height:36px;padding:0 13px;border-radius:999px;background:var(--surface-solid,var(--surface));color:var(--fg);font-size:15.5px;font-weight:700;text-decoration:none;box-shadow:0 0 0 1px var(--line)}
 .me-install{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border:1px solid var(--line-strong);background:transparent;border-radius:14px;padding:12px 16px;font:inherit;font-weight:700;text-align:left;cursor:pointer;color:var(--fg)}.me-install[hidden]{display:none}.me-install small{color:var(--muted);font-size:15.5px;font-weight:400}#sm-admin:empty{display:none}#sm-admin .sm-title{font-size:15px;font-weight:800;color:var(--muted);margin:6px 2px}#sm-admin a{display:flex;align-items:center;min-height:44px}
 .pg-title{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:22px 24px 4px}.pg-title h1{margin:0;font-size:32px;font-weight:300;letter-spacing:-.035em;line-height:1.15}.me-unread{display:inline-block;min-width:20px;padding:0 6px;border-radius:99px;background:var(--fg);color:var(--page);font-style:normal;font-size:14px;line-height:20px;text-align:center;vertical-align:2px}.me-unread[hidden]{display:none}.pg-tl{display:flex;align-items:center;gap:2px;min-width:0}.pg-back{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;margin-left:-10px;border-radius:50%;font-size:30px;line-height:1;color:var(--fg);text-decoration:none;transition:transform var(--dur-base,200ms) var(--spring-press,ease)}.pg-back:active{transform:scale(.9)}
 .pg-ask{display:none;width:46px;height:46px;border:1px solid var(--glass-line);border-radius:50%;background:var(--surface);color:var(--fg);cursor:pointer;align-items:center;justify-content:center;box-shadow:var(--shadow);backdrop-filter:blur(var(--glass-blur));-webkit-backdrop-filter:blur(var(--glass-blur))}.pg-ask svg{width:22px;height:22px}

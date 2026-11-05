@@ -54,6 +54,7 @@ import { rosterCard } from '../report/committeeSeats.js';
 import { renderHanul } from '../report/renderHanul.js';
 import { render509, renderSupport } from '../report/renderSupport.js';
 import { renderInbox, MANIFEST, movedPage, SW_JS } from '../report/renderAlerts.js';
+import { renderMyCalls } from '../report/renderMyCalls.js';
 import { renderMyReports } from '../report/renderMyReports.js';
 import { renderMyDebates } from '../report/renderMyDebates.js';
 import { renderSettings } from '../report/renderSettings.js';
@@ -903,6 +904,7 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   await writeFile(join(siteDir, 'alerts.html'), movedPage('alerts'));
   await writeFile(join(siteDir, 'profile.html'), movedPage('profile'));
   await writeFile(join(siteDir, 'myreports.html'), renderMyReports());
+  await writeFile(join(siteDir, 'mycalls.html'), renderMyCalls());
   await writeFile(join(siteDir, 'mydebates.html'), renderMyDebates());
   await writeFile(join(siteDir, 'settings.html'), renderSettings());
   await writeFile(join(siteDir, 'sw.js'), SW_JS);

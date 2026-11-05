@@ -31,6 +31,7 @@ import { ALPHA_PAUSED_TEXT, BETA_YES, alphaPaused, inWrapup } from '../report/wr
 import { ALPHA, ASK_TIERS, CREDIT_COST, EXPERTS, STORED_PLANS, TESTERS, isTester, type AskTier, type CreditAction } from '../report/plans.js';
 import { fetchDartDocument, filingContext, isReceiptNo, type FilingText } from '../sources/dartDocument.js';
 import { answerText, askParams, summarizeStock, usdOf, type AskClient } from './ask.js';
+import { baseDayOf, myCallsOf, MY_CALL_OPEN_LIMIT } from './myCalls.js';
 import type { D1 } from './db.js';
 import { cleanScreen, FIELD_INDEX, FIELDS, matches } from '../analysis/screenRules.js';
 import { intradaySignals, readIntraday } from '../analysis/intraday.js';
@@ -1110,6 +1111,26 @@ route('POST', '/notify/prefs', async ({ req, env, now }) => {
   const prefs = { ...(await prefsOf(env.DB, u.id)), ...cleanPrefs(b.prefs) };
   await env.DB.prepare('INSERT INTO notify_prefs (user_id, prefs, updated_at) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET prefs = excluded.prefs, updated_at = excluded.updated_at').bind(u.id, JSON.stringify(prefs), iso(now)).run();
   return { prefs };
+});
+
+// 나 vs 위원회 (G-323): my up/down call on a stock, scored after 20 sessions next to the committee's lean.
+route('GET', '/mycalls', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), s = str(new URL(req.url).searchParams.get('s'), 20).toUpperCase();
+  return myCallsOf(env.DB, u.id, s || undefined);
+});
+route('POST', '/mycalls', async ({ req, env, now }) => {
+  const u = await authed(req, env, now), b = await body(req);
+  const symbol = str(b.symbol, 20).toUpperCase(), stance = b.stance === 'up' || b.stance === 'down' ? b.stance : '', com = b.com === 'up' || b.com === 'down' || b.com === 'flat' ? b.com : '';
+  if (!(/^[0-9][0-9A-Z]{5}$/.test(symbol) || isUsSymbol(symbol)) || !stance || !com) fail(400, 'BAD_CALL', '종목과 오를지·내릴지를 골라 주세요.');
+  const day = baseDayOf(now);
+  // Until the start close is in, the pick can change; after that it stands.
+  const open = (await env.DB.prepare('SELECT COUNT(*) AS n FROM my_calls WHERE user_id = ? AND scored_at IS NULL').bind(u.id).first<{ n: number }>())?.n ?? 0;
+  const same = await env.DB.prepare('SELECT base_day FROM my_calls WHERE user_id = ? AND symbol = ? AND scored_at IS NULL ORDER BY base_day DESC LIMIT 1').bind(u.id, symbol).first<{ base_day: string }>();
+  if (same && same.base_day !== day) fail(409, 'CALL_OPEN', '이 종목은 이미 골라 둔 예상이 채점을 기다리고 있어요. 채점이 끝나면 다시 고를 수 있어요.');
+  if (!same && open >= MY_CALL_OPEN_LIMIT) fail(403, 'CALL_LIMIT', `채점을 기다리는 예상은 ${MY_CALL_OPEN_LIMIT}개까지예요.`);
+  await env.DB.prepare('INSERT INTO my_calls (user_id, symbol, name, base_day, stance, com, created_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id, symbol, base_day) DO UPDATE SET stance = excluded.stance, com = excluded.com, created_at = excluded.created_at')
+    .bind(u.id, symbol, str(b.name, 40), day, stance, com, iso(now)).run();
+  return { base_day: day, stance, com };
 });
 
 route('GET', '/alerts/price', async ({ req, env, now }) => {

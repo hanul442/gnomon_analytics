@@ -131,7 +131,7 @@ export function renderInbox(): string {
   const body = `<style>.ib{max-width:760px;margin:0 auto}.ib-top{margin:6px 0 0}.ib-head{display:flex;justify-content:flex-end;align-items:flex-end;gap:10px;flex-wrap:wrap}.ib-head h1{margin:0}.ib-tools{display:flex;gap:8px;flex-wrap:wrap}
 .ib-day{font-size:15.5px;font-weight:800;color:var(--muted);margin:18px 4px 6px}.ib-item{display:grid;grid-template-columns:28px minmax(0,1fr) 36px;gap:8px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px}
 .ib-item a{text-decoration:none;color:inherit;min-width:0}.ib-item b{display:block;font-size:17px}.ib-item small{display:block;color:var(--fg2);font-size:15.5px;margin-top:2px;line-height:1.5}.ib-item time{display:block;font-size:15px;color:var(--muted);margin-top:4px}
-.ib-ic{font-size:19px;line-height:1.4;text-align:center}.ib-item.new{border-color:var(--accent-line);background:var(--accent-soft)}.ib-x{border:0;background:none;font-size:21px;color:var(--muted);cursor:pointer;border-radius:8px}.ib-empty{text-align:center;padding:40px 16px;color:var(--fg2)}</style>
+.ib-ic{font-size:19px;line-height:1.4;text-align:center}.ib-item.new{border-color:var(--accent-line);background:var(--accent-soft)}.ib-x{border:0;background:none;font-size:21px;color:var(--muted);cursor:pointer;border-radius:8px}.ib-empty{text-align:center;padding:40px 16px;color:var(--fg2)}.ib-eg{grid-template-columns:28px minmax(0,1fr)}.ib-eg b{display:block;font-size:16px}.ib-eg small{display:block;margin-top:2px;font-size:14px;color:var(--muted);line-height:1.5}</style>
 <div class="ib"><section class="ib-top"><div class="ib-head"><div class="ib-tools"><button type="button" class="chip-toggle" id="ib-clear" hidden>모두 지우기</button><a class="chip-toggle" href="alerts.html">⚙︎ 알림 설정</a></div></div></section>
 <section class="block" id="ib-list"><p class="muted">불러오는 중이에요.</p></section></div>
 <script>
@@ -157,7 +157,9 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   clear.addEventListener('click', function () { items = []; paint(); G.call('POST', '/notifications/clear', {}); });
   (G.ready || Promise.resolve(null)).then(function (me) {
-    if (!G.api || !me) { box.innerHTML = '<div class="ib-empty card">알림은 로그인한 계정으로 받아요.<br><a class="btn-primary" href="login.html?return=inbox.html" style="display:inline-flex;margin-top:12px">로그인</a></div>'; return; }
+    // G-333: signed out, the page also says what will arrive here, so it isn't a lone card over an empty screen.
+    var EG = [['price', '가격 알림', '내가 건 가격에 닿거나 관심 종목이 장중 크게 움직이면'], ['watchReport', '관심 종목 새 리포트', '☆ 해 둔 종목의 위원회 리포트가 나오면'], ['request', '요청한 리포트', '만들어 달라고 한 리포트가 완성되면'], ['daily', '매일 리포트', '장 마감 뒤 그날 리포트가 나오면']];
+    if (!G.api || !me) { box.innerHTML = '<div class="ib-empty card">알림은 로그인한 계정으로 받아요.<br><a class="btn-primary" href="login.html?return=inbox.html" style="display:inline-flex;margin-top:12px">로그인</a></div><div class="ib-day">이런 알림이 와요</div>' + EG.map(function (x) { return '<div class="ib-item ib-eg"><span class="ib-ic" aria-hidden="true">' + ICON[x[0]] + '</span><div><b>' + x[1] + '</b><small>' + x[2] + '</small></div></div>'; }).join(''); return; }
     G.call('GET', '/notifications').then(function (r) { if (r.error) { box.innerHTML = '<div class="ib-empty card">알림을 불러오지 못했어요. 잠시 뒤 다시 열어 주세요.</div>'; return; }
       items = r.items || []; paint(); if (r.unread) G.call('POST', '/notifications/read'); });
   });

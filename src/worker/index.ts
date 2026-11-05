@@ -6,6 +6,7 @@ import { writeCommentary } from '../analysis/commentary.js';
 import { runReportJob } from './reports.js';
 import { runDailyNotify, runKillNotify, runMorningBrief, runPriceAlerts, runWeeklySummary, runWrapupNotify, runAlphaEndNotify } from './notify.js';
 import type { AskClient } from './ask.js';
+import { runMyCallsScore } from './myCalls.js';
 
 export default {
   async fetch(req: Request, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }): Promise<Response> {
@@ -23,7 +24,7 @@ export default {
     // Update notes are off (한서 10/29): no runUpdateNotify, so a new version never reaches the 🔔 or the phone.
     const job = event.cron.startsWith('*/10')
       ? Promise.all([runIntraday(env, deps), runPriceAlerts(nctx), runWrapupNotify(nctx, env), runAlphaEndNotify(nctx, env), runMorningBrief(nctx)])
-      : Promise.all([runAlerts(env, deps), runDailyNotify(nctx), runKillNotify(nctx), runWeeklySummary(nctx, env), pruneVisits(env.DB, nctx.now)]);
+      : Promise.all([runAlerts(env, deps), runDailyNotify(nctx), runKillNotify(nctx), runWeeklySummary(nctx, env), pruneVisits(env.DB, nctx.now), runMyCallsScore(nctx)]);
     ctx.waitUntil(job.then((r) => console.log(event.cron, JSON.stringify(r))));
   },
 };

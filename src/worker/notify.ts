@@ -12,7 +12,7 @@ import { esc, mailButton, mailLayout, mailList, sendMail, type MailEnv } from '.
 import type { WatchInfo } from '../report/conclusion.js';
 import { ALPHA_END_NOTICE, WRAPUP_LINK, WRAPUP_NOTICE, alphaPaused, inAlphaEnd, inWrapup } from '../report/wrapup.js';
 
-export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'notice' | 'morning' | 'kill' | 'test';
+export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request' | 'intraday' | 'update' | 'notice' | 'morning' | 'kill' | 'mycall' | 'test';
 /** quiet (G-152): between quietFrom and quietTo (KST, may cross midnight) nothing goes to the phone; 🔔 still keeps it. */
 /** updatePatch (G-177): off by default, only x.Y.0 releases are announced; on, every patch too. */
 /** weekly (G-180): the Sunday-evening summary mail (watched stocks, screens, the week's reports). */
@@ -20,7 +20,7 @@ export type NotifyKind = 'daily' | 'watchReport' | 'screen' | 'price' | 'request
 /** morning (G-308): the weekday 08:00 KST briefing (overnight world markets, my stocks' broken conditions and filings). */
 export interface Prefs { daily: boolean; watchReport: boolean; screen: boolean; price: boolean; request: boolean; update: boolean; updatePatch: boolean; weekly: boolean; morning: boolean; kill: boolean; push: boolean; quiet: boolean; quietFrom: string; quietTo: string }
 export const DEFAULT_PREFS: Prefs = { daily: true, watchReport: true, screen: true, price: true, request: true, update: true, updatePatch: false, weekly: true, morning: true, kill: true, push: true, quiet: false, quietFrom: '23:00', quietTo: '07:00' };
-const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', morning: 'morning', kill: 'kill', notice: null, test: null };
+const PREF_OF: Record<NotifyKind, keyof Prefs | null> = { daily: 'daily', watchReport: 'watchReport', screen: 'screen', price: 'price', intraday: 'price', request: 'request', update: 'update', morning: 'morning', kill: 'kill', mycall: null, notice: null, test: null };
 
 export async function prefsOf(db: D1, userId: string): Promise<Prefs> {
   const r = await db.prepare('SELECT prefs FROM notify_prefs WHERE user_id = ?').bind(userId).first<{ prefs: string }>();
