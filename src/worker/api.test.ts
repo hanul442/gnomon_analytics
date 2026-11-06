@@ -605,6 +605,15 @@ test('short selling and market credit for a Korean stock, cached; an unknown cod
   assert.equal((await t.call('GET', '/short?code=999999')).status, 404, 'the miss is remembered');
   assert.equal((await t.call('GET', '/short?code=888888')).status, 502);
   assert.equal((await t.call('GET', '/short?code=888888')).status, 502, 'a failure is not kept: KRX is asked again');
+  assert.match((await t.call('GET', '/short?code=888888')).body.message, /KRX_HTTP_503/, 'the reply says why');
+  // A good answer is kept in D1; when KRX later refuses, that copy is shown (marked stale) instead of hiding the card.
+  const kept = await t.env.DB.prepare('SELECT body FROM short_cache WHERE code = ?').bind('000660').first<{ body: string }>();
+  assert.equal(JSON.parse(kept!.body).isin, 'KR7000660001');
+  await t.env.DB.prepare('INSERT INTO short_cache (code, body, fetched_at) VALUES (?, ?, ?)').bind('888888', JSON.stringify({ ...a.body.short, code: '888888' }), '2026-10-05T03:00:00Z').run();
+  const stale = await t.call('GET', '/short?code=888888');
+  assert.equal(stale.status, 200);
+  assert.equal(stale.body.stale, true);
+  assert.equal(stale.body.short.code, '888888');
   assert.equal((await t.call('GET', '/short?code=AAPL.O')).status, 400);
 });
 
