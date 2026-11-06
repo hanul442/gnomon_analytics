@@ -76,7 +76,7 @@ export interface CreditMemo { at: number; rows: Promise<[string, number, number]
 export async function fetchKrxShort(code: string, doFetch: typeof fetch, at = new Date(), isinCache?: Map<string, string>, creditMemo?: CreditMemo): Promise<ShortSnapshot | null> {
   if (!/^[0-9][0-9A-Z]{5}$/.test(code)) throw new Error('BAD_CODE');
   const krx = (form: Record<string, string>) => doFetch(KRX, { method: 'POST', signal: AbortSignal.timeout(10_000), headers: { 'User-Agent': UA, Referer: KRX_REFERER, 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: new URLSearchParams({ locale: 'ko_KR', ...form }).toString() })
-    .then((r) => { if (!r.ok) throw new Error(`KRX_HTTP_${r.status}`); return r.json() as Promise<unknown>; });
+    .then(async (r) => { if (!r.ok) throw new Error(`KRX_HTTP_${r.status}`); const t = await r.text(); try { return JSON.parse(t) as unknown; } catch { throw new Error(`KRX_NOT_JSON_${t.trim().slice(0, 12).replace(/[^\w]/g, '')}`); } });
   const naver = (url: string) => doFetch(url, { signal: AbortSignal.timeout(10_000), headers: { 'User-Agent': UA, Accept: 'application/json' } }).then((r) => (r.ok ? r.json() as Promise<unknown> : null)).catch(() => null);
   // Naver needs no ISIN: both start now, alongside the KRX lookup.
   const trend = naver(`https://m.stock.naver.com/api/stock/${code}/trend?pageSize=60`).then(parseNaverVolume);
