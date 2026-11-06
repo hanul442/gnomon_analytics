@@ -152,8 +152,15 @@ async function main(): Promise<void> {
       await writeFile(postedPath, `${JSON.stringify(posted, null, 2)}\n`);
       say(`${head}: 올렸어요 ${'url' in r ? r.url : r.id}`);
     } catch (e) {
+      const msg = (e as Error).message;
+      // X answers 402 when the account has no API credits left. That is a billing wait, not a breakage,
+      // so it should not turn the whole run red (and send a failure email) every evening.
+      if (p.channel === 'x' && /\b402\b|credits-depleted|credits depleted/.test(msg)) {
+        say(`${head}: X 크레딧이 없어서 건너뛰어요 (충전되면 다음 실행부터 올라가요)`);
+        continue;
+      }
       failed++;
-      say(`${head}: 실패 — ${(e as Error).message}`);
+      say(`${head}: 실패 — ${msg}`);
     }
   }
   return finish(failed ? 1 : 0);
