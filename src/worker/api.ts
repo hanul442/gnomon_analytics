@@ -411,7 +411,7 @@ route('GET', '/deriv', async ({ req, deps, now }) => {
 const shortCache = new Map<string, { at: number; pending: Promise<ShortSnapshot | null> }>();
 const shortIsin = new Map<string, string>();
 const shortCredit: CreditMemo = { at: 0, rows: null };
-route('GET', '/short', async ({ req, deps, now }) => {
+route('GET', '/short', async ({ req, env, deps, now }) => {
   const code = (new URL(req.url).searchParams.get('code') ?? '').toUpperCase();
   if (!/^[0-9][0-9A-Z]{5}$/.test(code)) fail(400, 'BAD_CODE', '종목 코드를 보내 주세요.');
   // undefined: that fetch failed (and is being dropped); null: KRX has no such code.
@@ -428,9 +428,22 @@ route('GET', '/short', async ({ req, deps, now }) => {
   if (shortIsin.size >= 3000) shortIsin.clear();
   const entry = { at: now.getTime(), pending: fetchKrxShort(code, deps.fetch, now, shortIsin, shortCredit) };
   shortCache.set(code, entry);
-  const snap = await entry.pending.catch(() => undefined);
-  if (snap === undefined) { if (shortCache.get(code) === entry) shortCache.delete(code); fail(502, 'SHORT_UPSTREAM', '공매도 자료를 지금 받지 못했어요. 잠시 뒤 다시 열어 주세요.'); }
+  let why = '';
+  const snap = await entry.pending.catch((e: unknown) => { why = e instanceof Error ? `${e.name === 'Error' ? '' : e.name + ':'}${e.message}` : 'UNKNOWN'; return undefined; });
+  if (snap === undefined) {
+    if (shortCache.get(code) === entry) shortCache.delete(code);
+    // KRX turns the Worker away some evenings: show the last good copy (up to 10 days old) rather than hide the card.
+    console.error('short', code, why);
+    const kept = await env.DB.prepare('SELECT body FROM short_cache WHERE code = ?').bind(code).first<{ body: string }>().catch(() => null);
+    const old = kept ? (JSON.parse(kept.body) as ShortSnapshot) : null;
+    if (old && now.getTime() - Date.parse(old.at) < 10 * 864e5) return { short: old, stale: true };
+    fail(502, 'SHORT_UPSTREAM', `공매도 자료를 지금 받지 못했어요. 잠시 뒤 다시 열어 주세요. (${why.replace(/[^\w:.-]/g, '').slice(0, 40) || 'UNKNOWN'})`);
+  }
   if (!snap) fail(404, 'NO_SHORT', '이 종목은 공매도 자료가 없어요.');
+  if (snap?.days.length) {
+    const save = env.DB.prepare('INSERT OR REPLACE INTO short_cache (code, body, fetched_at) VALUES (?, ?, ?)').bind(code, JSON.stringify(snap), iso(now)).run().catch((e) => console.error('short save', code, e));
+    if (deps.waitUntil) deps.waitUntil(save); else await save;
+  }
   return { short: snap };
 });
 

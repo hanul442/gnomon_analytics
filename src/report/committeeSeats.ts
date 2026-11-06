@@ -171,10 +171,11 @@ export function seatDots(report: DailyReport): string {
   const lone = dis ? new Set(seats.filter((x) => x.stance === (s.bull < s.bear ? 'bull' : 'bear')).map((x) => x.key)) : new Set<string>();
   // G-300: the list row says the split in words only; the seats themselves are on the stock's 위원회 page.
   void lone;
-  return `<span class="cs-sl"><b>${splitText(s)}</b>${dis ? `<small>소수 의견 · ${esc(dis)}</small>` : ''}</span>`;
+  // G-335 · 11/6 한서님 '위원회 내용을 꼭 표시해야될지': the list row keeps the one-word verdict only. The 2·4·5 counts read as a
+  // code and the minority line made every row two lines; both stay on the stock's own 위원회 page (and in the label).
+  void dis;
+  return `<span class="cs-sl" title="${esc(`강세 ${s.bull} · 중립 ${s.neutral} · 약세 ${s.bear}${s.abstain ? ` · 기권 ${s.abstain}` : ''}`)}"><b>${esc(s.word)}</b></span>`;
 }
-// G-333: '기권 2' never breaks between the word and its count (the 2 used to fall to its own line).
-const splitText = (s: Split) => `${s.word} · ${s.bull}·${s.neutral}·${s.bear}${s.abstain ? ` · 기권\u00a0${s.abstain}` : ''}`;
 
 /** Home's committee card (한서님 시안, 10/24): the most split stock as a half circle, the rest as split bars, one dissent. */
 /**

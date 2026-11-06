@@ -70,12 +70,26 @@ async function fetchChart(symbol: string, timeframe: ChartTimeframe, count: numb
   return new TextDecoder('latin1').decode(await response.arrayBuffer());
 }
 
+/**
+ * 11/6: since NXT (대체거래소) started, the day feed's close is the last trade of the whole 08:00-20:00 day, not the
+ * KRX close (SK하이닉스 11/5: 1,262,000 vs KRX 1,264,000), so the stored close and Naver's live "전일 대비" base
+ * disagree. The minute feed's 15:30 print is the KRX closing auction; it covers about ten sessions, and those
+ * days take it as their close. Older days keep the feed's close. Pure.
+ */
+export function withKrxCloses(bars: readonly PriceBar[], sessions: readonly IntradaySession[]): PriceBar[] {
+  const krx = new Map(sessions.filter((d) => d.times.at(-1) === SESSION_CLOSE).map((d) => [d.date, d.closes.at(-1)!]));
+  return bars.map((b) => { const c = krx.get(b.date); return c && c !== b.close ? { ...b, close: c, high: Math.max(b.high, c), low: Math.min(b.low, c) } : b; });
+}
+
 export async function fetchNaverDailyBars(
   symbol: string,
   count: number,
-  options: { fetch?: typeof fetch; now?: () => Date } = {},
+  options: { fetch?: typeof fetch; now?: () => Date; /** Fix the recent closes to the KRX close (one more request). */ krxClose?: boolean } = {},
 ): Promise<PriceBar[]> {
-  return parseNaverDailyChart(await fetchChart(symbol, 'day', count, options), symbol, (options.now ?? (() => new Date()))());
+  const bars = parseNaverDailyChart(await fetchChart(symbol, 'day', count, options), symbol, (options.now ?? (() => new Date()))());
+  if (!options.krxClose) return bars;
+  const sessions = await fetchNaverIntraday(symbol, options).catch(() => [] as IntradaySession[]);
+  return withKrxCloses(bars, sessions);
 }
 
 export async function fetchNaverWeeklyBars(symbol: string, count: number, options: { fetch?: typeof fetch; now?: () => Date } = {}): Promise<PriceBar[]> {
