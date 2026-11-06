@@ -13,7 +13,7 @@ import { asOf, readLog } from '../store/jsonlLog.js';
 import { priceKey } from './marketData.js';
 import type { PriceBar } from '../types.js';
 import { blogText, opinionsOf, PROMO_SITE, promoDay, promoIndexHtml, scoreCalls, type MarketLike, type PromoCall } from '../report/promoCards.js';
-import { deckInstaCaption, deckSlides, deckStoryHtml, deckXCaption, deckXHtml } from '../report/promoDeck.js';
+import { deckInstaCaption, deckSlides, deckStoryHtml, deckXCaption, deckXHtml, type DeckExtras } from '../report/promoDeck.js';
 
 const KEEP_DAYS = 14;
 const exists = (p: string) => stat(p).then(() => true, () => false);
@@ -58,6 +58,27 @@ export async function loadScoredCalls(root: string, now: Date): Promise<PromoCal
     out.push(...scoreCalls(symbol, await nameOf(root, symbol, universe), calls, bars));
   }
   return out;
+}
+
+/**
+ * The deck's extras (한서 11/6): the five largest KOSPI stocks' signal from the screener the daily run just built
+ * (site/screener.json; preferred shares left out), and each opinion stock's last 60 closes up to `date`.
+ */
+export async function loadDeckExtras(root: string, date: string, symbols: readonly string[], market: unknown = null): Promise<DeckExtras> {
+  // Today's change from the market report (closing prices, same as the index numbers), else the screener's.
+  const close = new Map(((market as { groups?: { id: string; assets?: { name: string; returnPct?: number | null }[] }[] } | null)?.groups?.find((g) => g.id === 'M1')?.assets ?? []).map((a) => [a.name, a.returnPct ?? null]));
+  const side = (lv: string): 'BULLISH' | 'BEARISH' | 'NEUTRAL' | null => (/BULLISH$/.test(lv) ? 'BULLISH' : /BEARISH$/.test(lv) ? 'BEARISH' : lv === 'NEUTRAL' ? 'NEUTRAL' : null);
+  const sc = JSON.parse(await readFile(join(root, 'site', 'screener.json'), 'utf8').catch(() => '{}')) as { date?: string; rows?: unknown[][] };
+  const majors = sc.date === date ? (sc.rows ?? [])
+    .filter((r) => r[2] === 'P' && typeof r[3] === 'number' && !/우[A-C]?$/.test(String(r[1])) && side(String(r[6])))
+    .sort((a, b) => (b[3] as number) - (a[3] as number)).slice(0, 5)
+    .map((r) => ({ name: String(r[1]), pct: close.get(String(r[1])) ?? (typeof r[5] === 'number' ? r[5] : null), stance: side(String(r[6]))! })) : [];
+  const closes = new Map<string, { date: string; close: number }[]>();
+  for (const s of symbols) {
+    const bars = asOf(await readLog<PriceBar>(join(root, 'data', 'prices', `${s}.jsonl`)).catch(() => [] as PriceBar[]), priceKey, new Date()).filter((b) => b.date <= date && b.close > 0);
+    if (bars.length) closes.set(s, bars.slice(-60).map((b) => ({ date: b.date, close: b.close })));
+  }
+  return { majors, closes };
 }
 
 const isFriday = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay() === 5;
@@ -120,7 +141,7 @@ async function main(): Promise<void> {
     const weekly = args.includes('--weekly') || isFriday(date);
     const ops = opinionsOf(await loadDayCalls(root, date), date, 2);
     // G-322: one info-style carousel (deckNN-<role>), a story and an X card that share the cover's hook.
-    const deck = deckSlides(d, ops, fontDir, weekly);
+    const deck = deckSlides(d, ops, fontDir, weekly, await loadDeckExtras(root, date, ops.map((o) => o.symbol), market));
     const cards = [
       { file: 'story.png', html: deckStoryHtml(d, ops, fontDir), w: 1080, h: 1920, jpg: true },
       { file: 'x.png', html: deckXHtml(d, ops, fontDir), w: 1200, h: 675 },

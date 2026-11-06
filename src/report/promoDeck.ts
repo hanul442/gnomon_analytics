@@ -97,8 +97,30 @@ function bar(b: { up: number; flat: number; down: number }, h: number, r: number
 
 export interface Slide { role: string; html: string }
 
+/** Extra data the deck can show when the daily run has it (한서 11/6): the biggest stocks' signal and each opinion stock's recent closes. */
+export interface DeckExtras {
+  /** The largest stocks of the breadth group, biggest first: today's change and the signal's side. */
+  majors?: readonly { name: string; pct: number | null; stance: keyof typeof SHORT }[];
+  /** Recent daily closes per opinion symbol, oldest first. */
+  closes?: ReadonlyMap<string, readonly { date: string; close: number }[]>;
+}
+
+/** A line chart of recent closes, with the 'proven wrong' price as a dashed line when there is one. */
+export function priceChart(xs: readonly { date: string; close: number }[], w: number, h: number, wrong: number | null, won: (v: number) => string): string {
+  if (xs.length < 5) return '';
+  const vals = xs.map((x) => x.close), all = wrong != null ? [...vals, wrong] : vals;
+  let lo = Math.min(...all), hi = Math.max(...all);
+  const pad = (hi - lo) * 0.08 || hi * 0.02; lo -= pad; hi += pad;
+  const X = (i: number) => (i / (xs.length - 1)) * (w - 16) + 8, Y = (v: number) => h - ((v - lo) / (hi - lo)) * h;
+  const pts = vals.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  const last = vals.at(-1)!, chg = (last / vals[0]! - 1) * 100;
+  const line = wrong != null ? `<line x1="0" x2="${w}" y1="${Y(wrong).toFixed(1)}" y2="${Y(wrong).toFixed(1)}" stroke="#8A8A87" stroke-width="3" stroke-dasharray="10 10"/>` : '';
+  return `<div style="display:flex;justify-content:space-between;font-size:28px;font-weight:600;margin-bottom:14px"><span class="grey">최근 ${xs.length}거래일 종가${wrong != null ? ' · 점선이 틀리는 가격' : ''}</span><span>${won(last)} <span class="${chg > 0 ? 'up' : chg < 0 ? 'down' : 'grey'}">${sgn(chg, 1)}</span></span></div>
+<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;overflow:visible">${line}<polyline points="${pts}" fill="none" stroke="#111" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(xs.length - 1).toFixed(1)}" cy="${Y(last).toFixed(1)}" r="10" fill="#111"/></svg>`;
+}
+
 /** The carousel for one day. `fontDir` as in promoCards.page. */
-export function deckSlides(d: PromoDay, ops: readonly PromoOpinion[], fontDir: string, weekly: boolean): Slide[] {
+export function deckSlides(d: PromoDay, ops: readonly PromoOpinion[], fontDir: string, weekly: boolean, more: DeckExtras = {}): Slide[] {
   const hook = hookOf(d, ops);
   const scoreDate = ops[0]?.scoreDate ?? scoreDateOf(d.date);
   const head = `<div class="top"><span class="brand">GNOMON</span><span>${md(d.date)} ${d.weekday} · 오늘의 AI 위원회</span></div>`;
@@ -113,22 +135,25 @@ export function deckSlides(d: PromoDay, ops: readonly PromoOpinion[], fontDir: s
   const other = [...d.indices].filter((x) => x !== kospi && x !== kosdaq).sort((a, x) => Math.abs(x.pct) - Math.abs(a.pct))[0];
   const three = [kospi, kosdaq, other].filter((x): x is NonNullable<typeof x> => !!x);
   if (three.length) {
-    let lead = d.summary.split(/(?<=[.!?])\s+/)[0] ?? '';
-    if (lead.length > 70) lead = lead.slice(0, 70).replace(/[,\s][^,\s]*$/, '') + '…';
+    // The whole summary (≤150 chars, whole sentences), not just its first line (한서 11/6 '왜 짤리지').
+    const lead = d.summary;
     parts.push({ role: 'market', body: `<div style="margin-top:96px"><div class="k">오늘 시장, 숫자 ${three.length}개</div></div>
 ${three.map((x) => `<div style="border-top:2px solid #EAEAEA;padding:32px 0;display:flex;justify-content:space-between;align-items:baseline"><span class="h" style="font-size:56px">${esc(x.name)}</span><span class="h ${toneOf(x.pct) ?? ''}" style="font-size:96px">${sgn(x.pct)}</span></div>`).join('')}
-${lead ? `<div class="box" style="font-size:34px;line-height:1.55;color:#333;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${esc(lead)}</div>` : ''}<div class="fill"></div>` });
+${lead ? `<div class="box" style="margin-top:8px;font-size:${lead.length > 110 ? 32 : 34}px;line-height:1.55;color:#333">${esc(lead)}</div>` : ''}<div class="fill"></div>` });
   }
 
   if (d.breadth) {
-    const b = d.breadth, down = b.down >= b.up, word = down ? '내린다' : '오른다';
+    const b = d.breadth, down = b.down >= b.up, word = down ? '내린다' : '오른다', majors = (more.majors ?? []).slice(0, 5);
     const against = kospi && Math.abs(kospi.pct) >= 0.3 && (kospi.pct > 0) === down;
     const title = against ? `시장은 ${kospi!.pct > 0 ? '올랐지만' : '내렸지만'}<br>위원 다수는 '${word}'였어요` : `위원 다수는<br>'${word}'였어요`;
     parts.push({ role: 'breadth', body: `<div style="margin-top:96px"><div class="k">AI 위원회 온도 · ${esc(b.group)} ${b.total.toLocaleString('ko-KR')}종목</div>
 <div class="h" style="font-size:72px">${title}</div></div>
-<div style="margin-top:80px">${bar(b, 120, 30, 8)}</div>
+${majors.length ? `<div style="margin-top:56px">${bar(b, 88, 24, 8)}</div>
+<div style="display:flex;justify-content:space-between;margin-top:20px;font-size:36px;font-weight:700"><span class="up">오른다 ${b.up}</span><span class="grey">보합 ${b.flat}</span><span class="down">내린다 ${b.down}</span></div>
+<div style="margin-top:48px"><div style="font-size:28px;font-weight:700;color:#8A8A87;margin-bottom:6px">시가총액 큰 종목은</div>${majors.map((m) => `<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:36px;padding:16px 0;border-top:2px solid #EAEAEA"><b style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(m.name)}</b><span style="flex:none">${m.pct == null ? '' : `<span class="grey" style="font-size:30px">오늘 ${sgn(m.pct, 1)}</span> · `}<b class="${m.stance === 'BULLISH' ? 'up' : m.stance === 'BEARISH' ? 'down' : 'grey'}">${SHORT[m.stance]}</b></span></div>`).join('')}</div>
+<div style="font-size:28px;color:#666;margin-top:20px">위원회는 오늘 하루가 아니라 20거래일 뒤를 봐요</div>` : `<div style="margin-top:80px">${bar(b, 120, 30, 8)}</div>
 <div style="display:flex;justify-content:space-between;margin-top:28px;font-size:40px;font-weight:700"><span class="up">오른다 ${b.up}</span><span class="grey">보합 ${b.flat}</span><span class="down">내린다 ${b.down}</span></div>
-<div class="box" style="margin-top:72px;font-size:36px;line-height:1.55;color:#333">위원회는 오늘 하루가 아니라 <b>20거래일 뒤</b>를 봐요. 그래서 시장과 반대로 볼 때도 있어요.</div><div class="fill"></div>` });
+<div class="box" style="margin-top:72px;font-size:36px;line-height:1.55;color:#333">위원회는 오늘 하루가 아니라 <b>20거래일 뒤</b>를 봐요. 그래서 시장과 반대로 볼 때도 있어요.</div>`}<div class="fill"></div>` });
   }
 
   if (d.scored.length) {
@@ -146,13 +171,15 @@ ${lead ? `<div class="box" style="font-size:34px;line-height:1.55;color:#333;dis
     const cond = o.invalidation != null && o.lead !== 'NEUTRAL'
       ? `종가가 ${/\.[A-Z]+$/.test(o.symbol) ? `$${o.invalidation.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : `${Math.round(o.invalidation).toLocaleString('ko-KR')}원`}${o.lead === 'BULLISH' ? ' 아래로<br>내려가면' : ' 위로<br>올라가면'} 틀린 판단`
       : `${md(o.scoreDate)} 종가로<br>맞았는지 채점해요`;
-    const size = Math.max(32, Math.min(96, Math.floor(880 / o.seats.length) - 22));
+    const won = (v: number) => (/\.[A-Z]+$/.test(o.symbol) ? `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString('ko-KR')}원`);
+    const chart = priceChart((more.closes?.get(o.symbol) ?? []).slice(-60), 920, 140, o.lead !== 'NEUTRAL' ? o.invalidation : null, won);
+    const size = Math.max(32, Math.min(chart ? 60 : 96, Math.floor(880 / o.seats.length) - 22));
     parts.push({ role: `opinion${i + 1}`, body: `<div style="margin-top:96px"><div class="k">종목 의견 ${i + 1} / ${ops.length}${others ? ` · 다른 의견 ${others}명` : ''}</div>
 <div class="h" style="font-size:${o.name.length > 12 ? 64 : 96}px;overflow-wrap:anywhere">${esc(o.name)}</div>
 <div class="h" style="font-size:64px;margin-top:28px">위원 ${o.seats.length}명 중 <span class="${leadTone}">${o.leadCount}명</span>이<br>${o.lead === 'NEUTRAL' ? '크게 안 움직인다고 봤어요' : `'${SHORT[o.lead]}'고 봤어요`}</div></div>
-<div style="display:flex;gap:22px;margin-top:64px">${o.seats.map((s) => `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${COLOR[s.stance]}"></div>`).join('')}</div>
+<div style="display:flex;gap:22px;margin-top:${chart ? 44 : 64}px">${o.seats.map((s) => `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${COLOR[s.stance]}"></div>`).join('')}</div>
 <div style="font-size:28px;margin-top:20px" class="grey">위원 한 명이 점 하나 · <span class="up">●</span> 오른다 <span style="color:${FLAT}">●</span> 보합 <span class="down">●</span> 내린다</div>
-<div class="fill"></div>
+<div class="fill"></div>${chart ? `<div style="margin:24px 0 28px">${chart}</div>` : ''}
 <div class="ink"><div style="font-size:28px;font-weight:700;color:#9A9A97">이러면 틀린 거예요 · ${md(o.scoreDate)} 채점</div><div style="font-size:40px;font-weight:600;line-height:1.45;margin-top:12px">${cond}</div></div>` });
   });
 

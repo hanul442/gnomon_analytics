@@ -51,3 +51,13 @@ test('captions open with the hook and pass the posting check', () => {
   assert.ok(xWeight(xWithoutLink(x)) <= 280);
   assert.equal(scoreDateOf('2026-11-02'), '2026-11-30');
 });
+
+test('deckSlides extras (한서 11/6): whole summary, biggest stocks on the breadth slide, a price chart on opinions', () => {
+  const closes = new Map([['000000', Array.from({ length: 30 }, (_, i) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, close: 9000 + i * 10 }))]]);
+  const s = deckSlides(day(), [op()], '.', false, { majors: [{ name: '삼성전자', pct: -9, stance: 'BEARISH' }], closes });
+  assert.ok(s.find((x) => x.role === 'market')!.html.includes('둘째 문장이에요.'));
+  assert.ok(s.find((x) => x.role === 'breadth')!.html.includes('삼성전자'));
+  const o = s.find((x) => x.role === 'opinion1')!.html;
+  assert.ok(o.includes('<polyline') && o.includes('stroke-dasharray') && o.includes('최근 30거래일'));
+  assert.ok(!deckSlides(day(), [op()], '.', false)[3]!.html.includes('<polyline'));
+});
