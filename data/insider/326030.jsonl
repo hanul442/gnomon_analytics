@@ -1,0 +1,5 @@
+{"symbol":"326030","receiptNo":"20260331003378","date":"2026-03-31","reporter":"SK","position":"-","isExec":false,"isMajor":true,"shares":39217912,"delta":-10917028,"ratio":50.08,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"326030","receiptNo":"20260831000145","date":"2026-08-31","reporter":"유창호","position":"전략부문장","isExec":true,"isMajor":false,"shares":42116,"delta":500,"ratio":0.05,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"326030","receiptNo":"20260831000159","date":"2026-08-31","reporter":"이동훈","position":"사장","isExec":true,"isMajor":false,"shares":5000,"delta":2000,"ratio":0.01,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"326030","receiptNo":"20260915000040","date":"2026-09-15","reporter":"유창호","position":"전략부문장","isExec":true,"isMajor":false,"shares":42616,"delta":500,"ratio":0.05,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"326030","receiptNo":"20260915000042","date":"2026-09-15","reporter":"이동훈","position":"사장","isExec":true,"isMajor":false,"shares":6000,"delta":1000,"ratio":0.01,"retrievedAt":"2026-11-06T09:30:30.620Z"}

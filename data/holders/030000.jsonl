@@ -1,0 +1,4 @@
+{"symbol":"030000","receiptNo":"20260102000250","date":"2026-01-02","reporter":"국민연금공단","shares":11708984,"delta":-1177827,"ratio":10.18,"ratioDelta":-1.02,"reason":"단순추가취득/처분","retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"030000","receiptNo":"20260401003746","date":"2026-04-01","reporter":"국민연금공단","shares":10552165,"delta":-1156819,"ratio":9.17,"ratioDelta":-1.01,"reason":"단순추가취득/처분","retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"030000","receiptNo":"20260619000096","date":"2026-06-19","reporter":"한화자산운용","shares":7631198,"delta":7631198,"ratio":6.63,"ratioDelta":6.63,"reason":"5% 이상 보유에 따른 공시의무 발생 및\n1% 추가 변동에 따른 공시의무 발생","retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"030000","receiptNo":"20261104000320","date":"2026-11-04","reporter":"삼성자산운용","shares":5125571,"delta":5125571,"ratio":5.06,"ratioDelta":5.06,"reason":"매매로 인한 신규보고의무 발생(삼성액티브자산운용의 위탁운용분 포함)","retrievedAt":"2026-11-06T09:30:30.620Z"}

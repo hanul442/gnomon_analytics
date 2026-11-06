@@ -1,0 +1,3 @@
+{"symbol":"017670","receiptNo":"20260126000511","date":"2026-01-26","reporter":"WellingtonManagementCompanyLLP","shares":10770804,"delta":195740,"ratio":5.01,"ratioDelta":0.09,"reason":"- 단순투자목적으로 장내에서 발행회사의 주식 매수","retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"017670","receiptNo":"20260513000481","date":"2026-05-13","reporter":"WellingtonManagementCompanyLLP","shares":10278372,"delta":-492432,"ratio":4.79,"ratioDelta":-0.22,"reason":"- 투자자금 회수목적으로 장내에서 발행회사의 주식 매도\n- 장외에서 발행회사의 증권예탁증권 매수\n- 특별관계자 변동","retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"017670","receiptNo":"20260803000428","date":"2026-08-03","reporter":"국민연금공단","shares":18176280,"delta":2178072,"ratio":8.46,"ratioDelta":1.01,"reason":"단순추가취득/처분","retrievedAt":"2026-11-06T09:30:30.620Z"}

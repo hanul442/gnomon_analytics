@@ -3,3 +3,4 @@
 {"symbol":"062040","receiptNo":"20260512000735","date":"2026-05-12","reporter":"박성일","position":"상무","isExec":true,"isMajor":false,"shares":7000,"delta":-4000,"ratio":0.02,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"062040","receiptNo":"20260729000399","date":"2026-07-29","reporter":"한익희","position":"공동대표이사","isExec":true,"isMajor":false,"shares":27000,"delta":27000,"ratio":0.09,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"062040","receiptNo":"20260813000024","date":"2026-08-13","reporter":"한익희","position":"공동대표이사","isExec":true,"isMajor":false,"shares":2000,"delta":-25000,"ratio":0.01,"retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"062040","receiptNo":"20261106000060","date":"2026-11-06","reporter":"장학선","position":"전무이사","isExec":true,"isMajor":false,"shares":2857,"delta":2857,"ratio":0.01,"retrievedAt":"2026-11-06T09:30:30.620Z"}

@@ -1,0 +1,5 @@
+{"symbol":"030000","receiptNo":"20251110000269","date":"2025-11-10","reporter":"강우영","position":"부사장","isExec":true,"isMajor":false,"shares":5000,"delta":2000,"ratio":0,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"030000","receiptNo":"20251117000084","date":"2025-11-17","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":11602537,"delta":11602537,"ratio":10.09,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"030000","receiptNo":"20260105000183","date":"2026-01-05","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":11422317,"delta":-180220,"ratio":9.93,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"030000","receiptNo":"20260129000607","date":"2026-01-29","reporter":"신재호","position":"상무","isExec":true,"isMajor":false,"shares":0,"delta":-7400,"ratio":0,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"030000","receiptNo":"20260304001181","date":"2026-03-04","reporter":"정선우","position":"자문역","isExec":true,"isMajor":false,"shares":0,"delta":-3000,"ratio":0,"retrievedAt":"2026-11-06T09:30:30.620Z"}

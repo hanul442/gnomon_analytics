@@ -65,3 +65,4 @@
 {"symbol":"033780","receiptNo":"20260304001159","date":"2026-03-04","reporter":"GEORGE WILLIAM LULHAM","position":"상무","isExec":true,"isMajor":false,"shares":491,"delta":288,"ratio":0,"retrievedAt":"2026-10-07T09:26:21.598Z"}
 {"symbol":"033780","receiptNo":"20260331004823","date":"2026-03-31","reporter":"박준영","position":"상무","isExec":true,"isMajor":false,"shares":468,"delta":468,"ratio":0,"retrievedAt":"2026-10-07T09:26:21.598Z"}
 {"symbol":"033780","receiptNo":"20260403003343","date":"2026-04-03","reporter":"송승만","position":"상무","isExec":true,"isMajor":false,"shares":319,"delta":0,"ratio":0,"retrievedAt":"2026-10-07T09:26:21.598Z"}
+{"symbol":"033780","receiptNo":"20261023000436","date":"2026-10-23","reporter":"백승규","position":"상무","isExec":true,"isMajor":false,"shares":1143,"delta":700,"ratio":0,"retrievedAt":"2026-11-06T09:30:30.620Z"}

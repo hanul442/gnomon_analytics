@@ -1,0 +1,3 @@
+{"symbol":"326030","receiptNo":"20260226006568","date":"2026-02-26","reporter":"SK","shares":50192598,"delta":-3280,"ratio":64.09,"ratioDelta":-0.01,"reason":"주식매매계약 체결, 특별관계자 변동","retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"326030","receiptNo":"20260331003595","date":"2026-03-31","reporter":"SK","shares":39268671,"delta":-10923927,"ratio":50.14,"ratioDelta":-13.95,"reason":"보유주식등의 수 변동","retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"326030","receiptNo":"20260401003967","date":"2026-04-01","reporter":"국민연금공단","shares":4697035,"delta":-808452,"ratio":6,"ratioDelta":-1.03,"reason":"단순추가취득/처분","retrievedAt":"2026-11-06T09:30:30.620Z"}
