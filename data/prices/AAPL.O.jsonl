@@ -1000,3 +1000,4 @@
 {"symbol":"AAPL.O","date":"2026-11-05","open":353.89,"high":355.38,"low":342.06,"close":344.17,"volume":75678945,"source":"naver:world:day","retrievedAt":"2026-11-06T09:30:30.620Z"}
 {"symbol":"AAPL.O","date":"2026-11-06","open":339.12,"high":345.79,"low":338.3,"close":344.1,"volume":18093611,"source":"naver:world:day","retrievedAt":"2026-11-06T16:53:55.442Z"}
 {"symbol":"AAPL.O","date":"2026-11-06","open":339.12,"high":345.79,"low":338.3,"close":344.22,"volume":23735704,"source":"naver:world:day","retrievedAt":"2026-11-06T19:19:48.724Z"}
+{"symbol":"AAPL.O","date":"2026-11-06","open":339.12,"high":345.79,"low":338.3,"close":343.58,"volume":27042311,"source":"naver:world:day","retrievedAt":"2026-11-06T20:33:44.886Z"}
