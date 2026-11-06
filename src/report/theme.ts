@@ -91,5 +91,5 @@ html:root[data-theme=dark]{--muted:#A3A8B0;--fg2:#D4D7DC}
 :root body :is(a.ad-s,a.ia-chip):active{transform:scale(.97)}
 :root body main p a:not([class]):active,:root body main li a:not([class]):active{opacity:.55}
 /* G-316: dark mode's up/down are light pastels, so white text on them drops to ~2:1 (위원 자리 글자, 차트 기간 선택 칩). Dark ink there. */
-html[data-theme=dark] .cs-seat.s-bull,html[data-theme=dark] .cs-seat.s-bear,html[data-theme=dark] body #main .rh-per button[aria-pressed=true]{color:#0A1626}
+html[data-theme=dark] .cs-seat.s-bull,html[data-theme=dark] .cs-seat.s-bear,html[data-theme=dark] body #main .rh-per button[aria-pressed=true]{color:#000}
 `;

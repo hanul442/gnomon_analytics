@@ -903,7 +903,7 @@ const TOOLS_JS = `
   opts().forEach(function (b) { b.addEventListener('click', function () { if (!restoring) setTimeout(function () { save(); renderPills(); }, 0); }); });
   // G-76: each view (☰ 메뉴 > 내 보기 방식) has its own starting indicators. A reader's own picks are kept
   // for that view; switching the view loads the new view's set.
-  var VIEW = { beginner: { ov: ['ma20', 'ma60'], pane: ['volume'] }, trader: { ov: ['ma5', 'ma20', 'levels', 'spikes'], pane: ['volume', 'value', 'rsi'] }, swing: { ov: ['ma20', 'ma60', 'levels'], pane: ['volume', 'rsi', 'macd'] }, long: { ov: ['ma60', 'ma120', 'fair'], pane: ['volume', 'ad'] } };
+  var VIEW = { beginner: { ov: ['ma20', 'ma60'], pane: ['volume'] }, trader: { ov: ['ma5', 'ma20', 'levels', 'spikes'], pane: ['volume', 'value', 'rsi'] }, swing: { ov: ['ma20', 'ma60'], pane: ['volume'] }, long: { ov: ['ma60', 'ma120', 'fair'], pane: ['volume', 'ad'] } };
   var view = function () { return document.documentElement.getAttribute('data-persona') || 'swing'; };
   var preset = function () { return VIEW[view()] || DEFAULT; };
   var keep = function () { try { localStorage.setItem(KEY + '-view', view()); } catch (e) {} };
@@ -914,6 +914,10 @@ const TOOLS_JS = `
   // Restore after the chart is built (its DOMContentLoaded handler runs first).
   window.addEventListener('DOMContentLoaded', function () { setTimeout(function () {
     var st = null, v = null; try { st = JSON.parse(localStorage.getItem(KEY) || 'null'); v = localStorage.getItem(KEY + '-view'); } catch (e) {}
+    // G-335 · 11/6 한서님 '뭐가 너무 많다': the swing start set lost 지지·저항, RSI and MACD. A saved set that is exactly the old
+    // start set was never picked by hand, so it moves to the new one; anything the reader changed stays.
+    var same = function (a, b) { return a.slice().sort().join() === b.slice().sort().join(); };
+    if (st && st.ov && st.pane && v === 'swing' && same(st.ov, ['ma20', 'ma60', 'levels']) && same(st.pane, ['volume', 'rsi', 'macd'])) st = null;
     if (st && st.ov && st.pane && v === view()) apply(st); else apply(preset());
   }, 0); });
   if (pills) pills.addEventListener('click', function (e) {

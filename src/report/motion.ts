@@ -25,7 +25,7 @@ html.mo .ig-radar .area{transform:scale(0);transform-box:view-box;transform-orig
 html.mo .ig-radar.mo-in .area{transform:none;opacity:1;transition:transform .6s var(--spring-snappy,var(--ease-out)),opacity .3s}
 html.mo .ig-radar .dot{opacity:0}html.mo .ig-radar.mo-in .dot{opacity:1;transition:opacity .25s calc(.35s + var(--i,0) * 50ms),r .15s}
 .ig-radar .dot{transition:r .15s}.ig-radar .dot.hi{r:6.5px;fill:var(--accent)}
-.ig-hl li{transition:background .15s}.ig-hl li.hi{background:var(--accent-soft);border-radius:10px}
+.ig-hl li{transition:background .15s}.ig-hl li.hi{background:var(--accent-soft);border-radius:10px}.ig-words li.hi a b{color:var(--fg)}
 html.mo .ig-bs-bar i{transform:scaleX(0);transform-origin:left}
 html.mo .ig-bs.mo-in .ig-bs-bar i{transform:none;transition:transform .6s var(--spring-snappy,var(--ease-out)) calc(var(--i,0) * 60ms)}
 html.mo .mini-gauge:not(.mo-in) .needle,html.mo .gauge:not(.mo-in) .needle{animation:none;transform:rotate(0deg)}
@@ -159,8 +159,8 @@ export const MOTION_JS = `
   };
   // ---- health radar and its list point at each other ----
   var radar = function (svg) {
-    var box = svg.closest('.ig-health'); if (!box) return;
-    var set = function (i) { svg.querySelectorAll('.dot').forEach(function (d) { d.classList.toggle('hi', d.getAttribute('data-i') === i); }); box.querySelectorAll('.ig-hl li').forEach(function (l) { l.classList.toggle('hi', l.getAttribute('data-i') === i); }); };
+    var box = svg.closest('.ig-health, .ig-hc'); if (!box) return;
+    var set = function (i) { svg.querySelectorAll('.dot').forEach(function (d) { d.classList.toggle('hi', d.getAttribute('data-i') === i); }); box.querySelectorAll('.ig-hl li, .ig-words li').forEach(function (l) { l.classList.toggle('hi', l.getAttribute('data-i') === i); }); };
     box.addEventListener('pointerover', function (e) { var t = e.target.closest && e.target.closest('[data-i]'); set(t ? t.getAttribute('data-i') : null); });
     box.addEventListener('pointerleave', function () { set(null); });
     box.addEventListener('focusin', function (e) { var t = e.target.closest && e.target.closest('[data-i]'); if (t) set(t.getAttribute('data-i')); });

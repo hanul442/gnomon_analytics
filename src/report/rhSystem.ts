@@ -54,7 +54,7 @@ ${M} .chip-toggle[aria-pressed=true]{background:var(--fg)!important;color:var(--
 ${M} :is(.btn-primary,.gen-btn,.credit-btn,.sheet-done,.sc-sheet-go){background:var(--rh-btn)!important;color:var(--rh-btn-fg)!important;border-radius:999px!important;font-weight:600!important}
 ${M} :is(.gen-btn,.credit-btn) *{color:inherit!important}
 ${M} :is(.more-btn,.btn-ghost){background:transparent!important;border:1px solid var(--fg)!important;border-radius:999px!important}
-${M} .rh-per button{font-size:13px!important;letter-spacing:1px!important;border-radius:6px!important}
+${M} .rh-per button{font-size:13px!important;letter-spacing:1px!important;border-radius:999px!important}
 ${M} .wl-pill{border-radius:8px!important}
 
 /* ── 아래 바: 화면 끝까지 붙은 평평한 바 ── */
