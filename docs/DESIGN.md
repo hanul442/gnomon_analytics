@@ -951,6 +951,7 @@ PER·PBR 같은 전 종목 펀더멘털은 출처를 확인한 뒤 넣어요(지
 | G-332 | 촬영에서 나온 움직임 고침 (4.7.0) | 가격 두 번 굴러감, 실시간 줄·날짜 줄이 화면을 밂, 아래 바 늦게 뜸. (PR #295) | `src/report/ui.ts`, `src/report/robinhood.ts`, `src/report/commandBar.ts`, `src/report/renderHome.ts` |
 | G-333 | 전체 검수 글자·움직임 고침 (4.7.0) | 한서님 11/4 '다 고쳐'. (PR #295) | 여러 화면 |
 | G-334 | 로그인 버튼 잘 보이게 (4.7.0) | 한서님 11/4 '로그인을 어디에서 해야될지 안보임'. 로그인 안 했으면 나 탭·PC 레일에 로그인 버튼. (PR #296, 처음 번호 G-332는 #295와 겹쳐서 바꿈) | `src/report/alpha.ts`, `src/report/pcRail.ts`, `src/report/renderAlpha.ts`, `src/report/ui.ts` |
+| G-335 | 화면 검수 메모 14개 반영 (다음 묶음) | 한서님 11/6 캡처 위에 단 메모 15개. 종목 첫 화면 봉차트(130일 넘으면 주봉), 기간 버튼 둥근 검정, 등락 줄 크게, 리포트 줄은 왼쪽 정렬·한 줄·버튼은 아래, 한국어 줄바꿈(keep-all·pretty). 차트 탭 기본은 이동평균 20·60과 거래량만(지지·저항·RSI·MACD는 직접 켜기), 공시·뉴스 점선 숨김. 기업 체력 레이더 복귀. 찾기 줄마다 20일 미니차트. 위원회 시장 카드는 한 줄씩·굵은 막대·‘오른 종목/내린 종목’, 목록 줄은 판단 한마디만. 첫 방문 안내 밀어서 넘기기(카드 pan-y). 배너: 11.20 티저 2개 내림, 알파 종료 그림은 ‘베타 날짜 곧 공지’로 새로, 글자 배너는 검정 바탕, 배너 아래 점 잘 보이게. | `robinhood.ts` `appParts.ts` `infographics.ts` `renderScreener.ts` `quickCalc.ts` `marketReport.ts` `committeeSeats.ts` `welcome.ts` `alphaPages.ts` |
 
 ## 7. BLACK ORACLE에서 가져온 것
 

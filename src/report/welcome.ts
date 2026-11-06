@@ -20,8 +20,8 @@ export const WELCOME_CSS = `
 .wc.out{opacity:0;transform:translateY(24px);transition:opacity var(--d-out) var(--ease-exit),transform var(--d-out) var(--ease-exit)}
 @keyframes wc-in{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
 .wc-track{flex:1;display:flex;min-height:0;transition:transform var(--d-snappy) var(--spring-snappy);touch-action:pan-y}
-.wc-track.drag{transition:none}
-.wc-card{flex:0 0 100%;box-sizing:border-box;padding:max(56px,env(safe-area-inset-top)) 24px 12px;overflow-y:auto;display:flex;flex-direction:column;max-width:100%}
+.wc-track.drag{transition:none;user-select:none;-webkit-user-select:none}
+.wc-card{flex:0 0 100%;box-sizing:border-box;touch-action:pan-y;padding:max(56px,env(safe-area-inset-top)) 24px 12px;overflow-y:auto;display:flex;flex-direction:column;max-width:100%}
 .wc-card>*{width:100%;max-width:440px;margin-left:auto;margin-right:auto}
 .wc-k{font-size:16px;font-weight:700;color:var(--muted)}
 .wc h2{margin:12px auto 0;font-size:32px;line-height:1.26;font-weight:800;letter-spacing:-.02em}
@@ -188,11 +188,17 @@ export function welcomeJs(base0 = ''): string {
     d.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight' && i < n - 1) { i++; paint(); } else if (e.key === 'ArrowLeft' && i) { i--; paint(); } else if (e.key === 'Escape') close(); });
     // Swipe: the cards follow the finger and spring to the nearest one on release.
     var x0 = null, y0 = 0, dx = 0, lock = null;
-    track.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse' || (e.target.closest && e.target.closest('button,a'))) return; x0 = e.clientX; y0 = e.clientY; dx = 0; lock = null; });
+    // G-335 · 11/6 한서님 '슬라이드해도 넘어갈 수 있게': each card scrolls by itself, so it needs its own pan-y (CSS) or the phone
+    // takes the sideways move and cancels the swipe. A swipe may also start on a row or button (a mouse drag too); the
+    // click that ends a real swipe is swallowed so it doesn't pick a stock by accident.
+    var dragged = false;
+    track.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse' && e.button !== 0) return; x0 = e.clientX; y0 = e.clientY; dx = 0; lock = null; dragged = false; });
+    track.addEventListener('click', function (e) { if (dragged) { e.preventDefault(); e.stopPropagation(); dragged = false; } }, true);
     track.addEventListener('pointermove', function (e) {
       if (x0 === null) return; dx = e.clientX - x0;
       if (lock === null && (Math.abs(dx) > 8 || Math.abs(e.clientY - y0) > 8)) lock = Math.abs(dx) > Math.abs(e.clientY - y0);
       if (!lock) return;
+      if (Math.abs(dx) > 8) dragged = true;
       var edge = (i === 0 && dx > 0) || (i === n - 1 && dx < 0) ? 0.3 : 1;
       track.classList.add('drag'); track.style.transform = 'translateX(calc(' + (-i * 100) + '% + ' + Math.round(dx * edge) + 'px))';
     });

@@ -23,20 +23,23 @@ ${M} .hero-main .hero-price>b{display:block;font-size:30px;font-weight:500;lette
 /* G-332: the live tag's line is kept from the start, so '● 실시간' arriving with the first quote doesn't push the hero down. */
 ${M} .hero-main .hero-price>.live-tag[hidden]{display:inline-block;visibility:hidden}${M} .hero-main .hero-price>.live-tag[hidden]::before{content:"● 실시간 00:00:00"}
 ${M} .hero-main:has(.rh-chart) .hero-price>span[data-live-f=full],${M} .hero-main:has(.rh-chart) .hero-sub{display:none}
-${M} .rh-chg{order:3;margin:10px 0 0;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
-${M} .rh-chg2{order:4;margin:2px 0 0;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+${M} .rh-chg{order:3;margin:12px 0 0;font-size:18px;font-weight:700;line-height:1.35;font-variant-numeric:tabular-nums}
+${M} .rh-chg2{order:4;margin:4px 0 0;font-size:16px;font-weight:600;line-height:1.35;font-variant-numeric:tabular-nums}
 ${M} .rh-chg span,${M} .rh-chg2 span{font-weight:500;margin-left:4px}
-${M} .rh-chg span{color:var(--fg)}${M} .rh-chg2 span{color:var(--muted)}
+${M} .rh-chg span{color:var(--fg);font-size:15px}${M} .rh-chg2 span{color:var(--muted);font-size:14px}
+${M} .rh-chg b,${M} .rh-chg2 b{font-weight:700!important}
 ${M} .rh-chart{order:5;position:relative;margin:24px -20px 0;height:200px;touch-action:pan-y;cursor:crosshair}
 @media (min-width:821px){${M} .rh-chart{margin-left:0;margin-right:0}}
 ${M} .rh-chart svg{display:block;width:100%;height:100%;overflow:visible}
 ${M} .rh-base{stroke:var(--rh-base);stroke-width:1.3;stroke-dasharray:1.5 4;stroke-linecap:round}
 ${M} .rh-l{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+${M} .rh-chart .rh-up line{stroke:var(--up);stroke-width:1}${M} .rh-chart .rh-up rect{fill:var(--up)}
+${M} .rh-chart .rh-dn line{stroke:var(--down);stroke-width:1}${M} .rh-chart .rh-dn rect{fill:var(--down)}
 ${M} .rh-x{stroke:var(--muted);stroke-width:1}
 ${M} .rh-halo{opacity:.18}
 ${M} .rh-per{order:6;display:flex;justify-content:space-between;margin:18px 0 0}
-${M} .rh-per button{border:0;background:none;font:inherit;font-size:15px;font-weight:700;line-height:1;min-height:36px;padding:0 10px;border-radius:7px;cursor:pointer;color:var(--rh-c)}
-${M} .rh-per button[aria-pressed=true]{background:var(--rh-c);color:#fff}
+${M} .rh-per button{border:0;background:none;font:inherit;font-size:15px;font-weight:600;line-height:1;min-height:36px;padding:0 14px;border-radius:999px;cursor:pointer;color:var(--muted);transition:background-color .15s,color .15s}
+${M} .rh-per button[aria-pressed=true]{background:var(--fg);color:var(--surface-solid);font-weight:700}
 ${M} .hero-main .eyebrow{order:7;margin:22px 0 0;gap:0;font-size:14px;color:var(--muted)}
 ${M} .hero-main .eyebrow>span{background:none;border:0;padding:0;margin:0;font-size:14px;font-weight:500;color:var(--muted)}
 ${M} .hero-main .eyebrow>span:not([hidden])~span:not([hidden])::before{content:"·";margin:0 6px}
@@ -45,6 +48,35 @@ ${M} .hero-main .theme-chips{order:8;margin:12px 0 0}
 ${M} .hero-main .hero-line{order:9}
 ${M} .hero-main>:not(.eyebrow):not(.h1-row):not(.hero-price):not(.rh-chg):not(.rh-chg2):not(.rh-chart):not(.rh-per):not(.theme-chips):not(.hero-line){order:10}
 ${M} section.hero .kp-line{padding-left:0;padding-right:0}
+/* G-335 · 11/6 한서님 '뭐가 너무 많다' (차트): the dashed day lines for news and filings are gone; the icons above the chart still mark the days. */
+html:root body #vlines .vline{display:none}
+/* G-335 · 11/6 한서님 '헥사곤 차트 어디갔지?': the 기업 체력 radar sits centred above its five words. */
+${M} .ig-hc .ig-hx{margin:4px 0 8px}${M} .ig-hc .ig-hx .ig-radar{max-width:240px}
+/* G-335 · 11/6 한서님 '시인성 개선' (위원회 › 시장 카드): one market per line, bigger name and move, a thicker bar, counts in words. */
+html:root body #main .mi-g{grid-template-columns:minmax(0,1fr);gap:14px;margin-top:4px}
+html:root body #main .mi-gi{grid-template-columns:minmax(0,1fr) auto;gap:6px 8px}
+html:root body #main .mi-gi b{font-size:16px;color:var(--fg)}html:root body #main .mi-gi em{font-size:16px;font-weight:700}
+html:root body #main .mi-bar{height:8px;border-radius:4px;gap:2px;background:none}html:root body #main .mi-bar>i{border-radius:4px}
+html:root body #main .mi-gi small{grid-column:1/-1;font-size:14px;color:var(--muted)}html:root body #main .mi-gi small span{font-weight:600}
+/* G-335 · 11/6 한서님 '더 시인성 좋게' (배너 점): under the banner the moving thumb was white on the white page, so the current dot
+   looked like a gap. It is black there now, and the other dots are a darker grey. (Dots drawn over a picture stay white.) */
+html:root body :is(#mkt-hero~.banner,.hm-bn) .bn-dots>.seg-thumb{background:var(--fg)!important;box-shadow:none!important}
+html:root body :is(#mkt-hero~.banner,.hm-bn) .bn-dots button::before{background:var(--muted);opacity:.35}
+html:root body :is(#mkt-hero~.banner,.hm-bn) .bn-dots button[aria-pressed=true]::before{background:var(--fg);opacity:1}
+html:root body :is(#mkt-hero~.banner,.hm-bn) .bn-dots.has-thumb>[aria-pressed=true]::before{opacity:0}
+/* G-335 · 11/6 배너 정리: word banners (사용법·설문) drop their purple/teal/amber/rose grounds for one near-black one (design rule 1). */
+html:root body .banner .bn-slide:not(.bn-img):is(.bn-navy,.bn-teal,.bn-amber,.bn-rose){background:linear-gradient(120deg,#141518,#2a2c31)}
+/* G-335 · 11/6 한서님 '엔터되는게 좀 구리네': Korean lines break between words, and a last line is never one word alone. */
+${M} .hero-main .hero-line,${M} .rs-bar .sa-tx{word-break:keep-all;text-wrap:pretty}
+/* G-335 · 11/6 한서님 '정렬도 이상하고 버튼 위치도 이상': the report line sits on the page's own left edge (no dot, no box),
+   the head stays on one line, and the button goes under it: full width on phones, its own size on PC. */
+html:root body #main .rs-bar,html:root body #main #tab-home .rs-bar{display:flex!important;flex-direction:column;align-items:stretch;gap:12px;margin:24px 0 8px!important;padding:16px 0 0!important;background:transparent!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0!important}
+html:root body #main .rs-bar .rs-dot{display:none}
+html:root body #main .rs-bar .sa-tx b{display:block;font-size:16px;font-weight:600;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html:root body #main .rs-bar .sa-tx small{display:block;margin-top:2px;font-size:14px;color:var(--muted)}
+html:root body #main .rs-bar .gen-wrap{grid-column:auto!important;justify-self:auto!important;align-self:stretch;margin:0}
+html:root body #main .rs-bar .gen-wrap>.gen-btn{width:100%;justify-content:center;min-height:48px}
+@media (min-width:821px){html:root body #main .rs-bar .gen-wrap{align-self:flex-start}html:root body #main .rs-bar .gen-wrap>.gen-btn{width:auto;min-height:44px;padding-left:22px;padding-right:22px}}
 
 /* ── 시장 카드: 한 줄, 옆으로 넘김 ── */
 ${M} .km-stats{gap:10px}
@@ -173,26 +205,35 @@ export const ROBINHOOD_JS = `(function () {
     hm.append(c1, c2, box, per);
     var H = 200, cur = null, base = priceB.textContent;
     var setChg = function (c, lab) { c1.innerHTML = '<b style="color:' + tone(c) + ';font-weight:600"></b><span></span>'; c1.firstChild.textContent = c.t; c1.lastChild.textContent = lab; };
+    /* G-335 · 11/6 한서님 '봉차트로': candles instead of a line. Past ~130 days they are folded into weekly candles so each stays readable. */
+    var fold = function (bs) {
+      if (bs.length <= 130) return bs;
+      var out = [], wk = null, key = function (d) { var t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7)); return t.toISOString().slice(0, 10); };
+      bs.forEach(function (b) { var k = key(b.date); if (!wk || wk.k !== k) { wk = { k: k, date: b.date, open: b.open, high: b.high, low: b.low, close: b.close }; out.push(wk); } else { wk.high = Math.max(wk.high, b.high); wk.low = Math.min(wk.low, b.low); wk.close = b.close; wk.date = b.date; } });
+      return out;
+    };
     var draw = function (n, label) {
-      var bs = bars.slice(-Math.min(n + 1, bars.length)), v = bs.map(function (b) { return b.close; });
+      var bs = fold(bars.slice(-Math.min(n + 1, bars.length))), v = bs.map(function (b) { return b.close; });
       var c = chg(v[0], v[v.length - 1]), col = tone(c);
       hm.style.setProperty('--rh-c', col);
-      var W = box.clientWidth || 390, lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), r = hi - lo || 1;
-      var X = function (i) { return i / (v.length - 1) * (W - 16); }, Y = function (x) { return 14 + (hi - x) / r * (H - 28); };
-      var d = v.map(function (x, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(x).toFixed(1); }).join('');
-      var ex = X(v.length - 1), ey = Y(v[v.length - 1]), by = Y(v[0]).toFixed(1);
-      box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="최근 ' + label + ' 종가 ' + c.t + '"><line class="rh-base" x1="0" x2="' + W + '" y1="' + by + '" y2="' + by + '"/><path class="rh-l" d="' + d + '" style="stroke:' + col + '"/><line class="rh-x" x1="0" x2="0" y1="0" y2="' + H + '" style="display:none"/><circle class="rh-halo" cx="' + ex + '" cy="' + ey + '" r="9" style="fill:' + col + '"/><circle class="rh-dot" cx="' + ex + '" cy="' + ey + '" r="4" style="fill:' + col + '"/></svg>';
+      var W = box.clientWidth || 390, lo = Math.min.apply(null, bs.map(function (b) { return b.low || b.close; })), hi = Math.max.apply(null, bs.map(function (b) { return b.high || b.close; })), r = hi - lo || 1;
+      var step = (W - 16) / Math.max(1, bs.length), cw = Math.max(1, Math.min(9, step * 0.62));
+      var X = function (i) { return 8 + step * (i + 0.5); }, Y = function (x) { return 10 + (hi - x) / r * (H - 20); };
+      var candles = bs.map(function (b, i) {
+        var o = b.open || b.close, up = b.close >= o, x = X(i).toFixed(1), y1 = Y(Math.max(o, b.close)), y2 = Y(Math.min(o, b.close));
+        return '<g class="' + (up ? 'rh-up' : 'rh-dn') + '"><line x1="' + x + '" x2="' + x + '" y1="' + Y(b.high || b.close).toFixed(1) + '" y2="' + Y(b.low || b.close).toFixed(1) + '"/><rect x="' + (X(i) - cw / 2).toFixed(1) + '" y="' + y1.toFixed(1) + '" width="' + cw.toFixed(1) + '" height="' + Math.max(1, y2 - y1).toFixed(1) + '"/></g>';
+      }).join('');
+      box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="최근 ' + label + ' 봉차트 ' + c.t + '">' + candles + '<line class="rh-x" x1="0" x2="0" y1="0" y2="' + H + '" style="display:none"/></svg>';
       setChg(c, '최근 ' + label);
       cur = { bs: bs, v: v, X: X, Y: Y, n: n, label: label };
     };
     var scrub = function (e) {
       if (!cur) return;
       var rc = box.getBoundingClientRect(), x = Math.max(0, Math.min(rc.width, e.clientX - rc.left));
-      var i = Math.max(0, Math.min(cur.v.length - 1, Math.round(x / Math.max(1, rc.width - 16) * (cur.v.length - 1))));
+      var i = Math.max(0, Math.min(cur.v.length - 1, Math.floor((x - 8) / Math.max(1, rc.width - 16) * cur.v.length)));
       var svg = box.querySelector('svg'); if (!svg) return;
-      var px = cur.X(i), py = cur.Y(cur.v[i]), ln = svg.querySelector('.rh-x');
+      var px = cur.X(i), ln = svg.querySelector('.rh-x');
       ln.style.display = ''; ln.setAttribute('x1', px); ln.setAttribute('x2', px);
-      ['.rh-dot', '.rh-halo'].forEach(function (s) { var c = svg.querySelector(s); c.setAttribute('cx', px); c.setAttribute('cy', py); });
       priceB.textContent = fmt(cur.v[i]) + '원';
       setChg(chg(cur.v[0], cur.v[i]), dateK(cur.bs[i].date));
     };

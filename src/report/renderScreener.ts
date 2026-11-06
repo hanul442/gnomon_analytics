@@ -18,11 +18,11 @@ const SORTS: readonly [string, string][] = [['score', '기술 점수'], ['chg', 
 /**
  * One row per stock: [code, name, market, cap(억), close, change%, level, score×100, r5, r20, r120, fairGap%, position, covered,
  * vol1×, vol5×, vwapGap%, obv%, flow, tradingValue(억), hi52Gap%, risk level (0–3), risk labels,
- * lo52Gap%, tradingValue surge×, A/D%, spike10× (G-59)].
+ * lo52Gap%, tradingValue surge×, A/D%, spike10× (G-59), last 20 closes scaled 0–99 for the mini chart].
  */
 export type ScreenerRow = [string, string, 'P' | 'Q', number | null, number, number | null, string, number | null, number | null, number | null, number | null, number | null, 'A' | 'I' | 'B' | null, 0 | 1,
   number | null, number | null, number | null, number | null, 'A' | 'D' | null, number | null, number | null, number, string,
-  number | null, number | null, number | null, number | null];
+  number | null, number | null, number | null, number | null, number[] | null];
 
 export function screenerRows(universe: readonly UniverseRow[], calcs: ReadonlyMap<string, StockCalc>, covered: ReadonlySet<string>, risk: ReadonlyMap<string, RiskFlag> = new Map()): ScreenerRow[] {
   const r1 = (v: number | null | undefined) => (v == null ? null : Math.round(v * 10) / 10);
@@ -34,7 +34,7 @@ export function screenerRows(universe: readonly UniverseRow[], calcs: ReadonlyMa
       c.fair ? r1(c.fair.gapPct) : null, c.fair ? (c.fair.position === 'ABOVE' ? 'A' : c.fair.position === 'BELOW' ? 'B' : 'I') : null, covered.has(u.symbol) ? 1 : 0,
       vol ? r1(vol.ratio1) : null, vol ? r1(vol.ratio5) : null, vol ? r1(vol.vwapGapPct) : null, vol ? Math.round(vol.obvPct) : null, vol?.flow === 'ACCUM' ? 'A' : vol?.flow === 'DIST' ? 'D' : null,
       u.tradingValue == null ? null : Math.round(u.tradingValue / 1e8), r1(c.hi52GapPct), rk?.level ?? 0, rk ? rk.labels.join('·') : '',
-      r1(c.lo52GapPct), vol?.tvRatio1 == null ? null : r1(vol.tvRatio1), vol?.adPct == null ? null : Math.round(vol.adPct), vol?.spike10 == null ? null : r1(vol.spike10)];
+      r1(c.lo52GapPct), vol?.tvRatio1 == null ? null : r1(vol.tvRatio1), vol?.adPct == null ? null : Math.round(vol.adPct), vol?.spike10 == null ? null : r1(vol.spike10), c.spark ?? null];
   });
 }
 
@@ -155,7 +155,7 @@ ${BETA_OPEN ? '' : `<p class="muted small only-free" style="margin:8px 0 0">무�
 .sc-sortsheet{display:none;flex-direction:column;gap:8px;margin-top:18px}.sc-form #sc-sort2{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:12px;font-size:17px}.sc-sortsheet .sc-top{justify-content:space-between}
 .sc-share2{display:none;gap:16px;margin-top:16px}.sc-share2 button{border:0;background:none;padding:6px 2px;font:inherit;font-size:15.5px;font-weight:700;color:var(--fg2);text-decoration:underline;cursor:pointer}
 .sc-sheet .sc-funnel{margin-top:10px}
-.sc-l4{display:none}@media (max-width:600px){.sc-l4{display:inline;font-size:inherit;color:var(--muted);font-weight:500}}.sc-sum .sc-n{display:block;font-size:22px;font-weight:800;color:var(--fg);letter-spacing:-.3px}.sc-sum small{font-size:15.5px;color:var(--fg2)}
+.sc-nr{display:flex;align-items:center;gap:12px}.sc-nl{flex:1;min-width:0}.sc-sp{flex:none;width:64px;height:30px;overflow:visible}.sc-sp path{fill:none;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}.sc-sp.up path{stroke:var(--up)}.sc-sp.down path{stroke:var(--down)}.sc-l4{display:none}@media (max-width:600px){.sc-l4{display:inline;font-size:inherit;color:var(--muted);font-weight:500}}.sc-sum .sc-n{display:block;font-size:22px;font-weight:800;color:var(--fg);letter-spacing:-.3px}.sc-sum small{font-size:15.5px;color:var(--fg2)}
 .sc-sum{display:none;width:100%;align-items:center;gap:10px;border:0;background:none;padding:2px 4px 12px;font:inherit;font-size:16px;color:var(--fg2);text-align:left;cursor:pointer}.sc-sum span{flex:1;min-width:0;line-height:1.45}.sc-sum b{color:var(--fg)}.sc-sum svg{flex:none;width:20px;height:20px;color:var(--fg)}
 @media (max-width:600px){#find-stock>.sc-bar,#sc-active,#sc-stats,.sc-sortbar{display:none!important}.sc-sum{display:flex}.sc-presets2{display:flex}.sc-sortsheet{display:flex}.sc-share2{display:flex}}
 .sc-btn2{border:1px solid var(--line-strong);background:var(--soft);color:var(--fg)}.sc-btn1{border:0;background:var(--fg);color:var(--page)}
@@ -211,6 +211,12 @@ const SCREENER_SCRIPT = `<script>
   var ruleText = function (x) { var f = field(x.f); if (!f) return ''; if (f.kind === 'cat') { var o = (f.options || []).filter(function (p) { return String(p[0]) === String(x.v); })[0]; return f.label + ' ' + (o ? o[1] : x.v) + (x.op === '!=' ? ' 아님' : ''); } return f.label + ' ' + Number(x.v).toLocaleString('ko-KR') + (f.unit && f.unit.charAt(0) !== '(' ? f.unit : '') + ' ' + (x.op === '<=' ? '이하' : '이상'); };
   var onlyWatch = false, watchSet = function () { var m = {}; try { (JSON.parse(localStorage.getItem('gnm-watch') || '[]') || []).forEach(function (x) { m[x] = 1; }); } catch (e) {} return m; };
   // A value in a result row, in the field's own unit (the rows show what the conditions looked at).
+  // G-335 · 11/6 한서님 '미니차트가 나왔으면 좋겠다': the last 20 closes (0–99, low to high) as a small line beside the name.
+  var spark = function (v) {
+    if (!v || !v.length || v.length < 5) return '';
+    var w = 64, h = 30, X = function (i) { return (i / (v.length - 1) * (w - 4)).toFixed(1); }, Y = function (x) { return (3 + (99 - x) / 99 * (h - 6)).toFixed(1); };
+    return '<svg class="wl-sp sc-sp ' + (v[v.length - 1] >= v[0] ? 'up' : 'down') + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true"><path d="' + v.map(function (x, i) { return (i ? 'L' : 'M') + X(i) + ',' + Y(x); }).join('') + '"/></svg>';
+  };
   var fieldVal = function (f, x, us) { if (x == null || x === '') return '—'; if (f.kind === 'cat') { var o = (f.options || []).filter(function (p) { return String(p[0]) === String(x); })[0]; return o ? o[1].replace(/[(].*[)]/, '') : String(x); } var n = Number(x); if (f.unit === '%') return (n > 0 ? '+' : '') + n.toFixed(1) + '%'; if (f.unit === '배') return n.toFixed(1) + '배'; if (f.unit === '억 원') return us ? '$' + Math.round(n).toLocaleString('en-US') + 'M' : Math.round(n).toLocaleString('ko-KR') + '억'; if (f.unit === '원') return us ? '$' + n.toFixed(2) : Math.round(n).toLocaleString('ko-KR') + '원'; return String(Math.round(n * 10) / 10); };
   var matches = ${matches.toString()};
   var $ = function (id) { return document.getElementById(id); };
@@ -420,7 +426,7 @@ const SCREENER_SCRIPT = `<script>
       var href = r[2] === 'C' ? 'coin.html?m=' + r[0] : r[2] === 'U' ? 'us.html?s=' + encodeURIComponent(r[0]) : r[13] ? r[0] + '/index.html' : 'stock.html?c=' + r[0];
       var risk = r[21] ? '<span class="risk r' + r[21] + '" title="최근 30일 공시: ' + esc(r[22]) + '">⚠ ' + esc(r[22].split('·')[0]) + (r[22].indexOf('·') > 0 ? ' 외' : '') + '</span>' : '';
       var hits = hitKeys.map(function (k) { var f = field(k); return '<span>' + f.label.replace(/[(].*[)]/, '') + ' <b class="' + (f.unit === '%' ? tone(r[IDX[k]]) : '') + '">' + fieldVal(f, r[IDX[k]], r[2] === 'U') + '</b></span>'; }).join('');
-      return '<tr><td><a href="' + href + '"><b>' + esc(r[1]) + '</b></a>' + risk + (hits ? '<div class="sc-hit">' + hits + '</div>' : '') + '<div class="muted small">' + (r[2] === 'C' ? r[0].replace('KRW-', '') : r[2] === 'U' ? r[0].replace(/${US_EXCHANGE_LETTER}/, '') : r[0]) + ' · ' + ({ P: '코스피', Q: '코스닥', E: 'ETF', C: '코인', U: '미국' }[r[2]] || '') + '</div></td><td class="num">' + (r[2] === 'U' ? '$' + r[4].toFixed(2) : Math.round(r[4]).toLocaleString('ko-KR')) + '</td><td class="num ' + tone(r[5]) + '">' + pct(r[5]) + '</td><td class="num">' + (r[14] == null ? '—' : '<small class="sc-l4">거래량 </small>' + r[14].toFixed(1) + '배') + (r[19] == null ? '' : '<small class="sub-sh">' + (r[2] === 'U' ? '$' + r[19].toLocaleString('en-US') + 'M' : r[19].toLocaleString('ko-KR') + '억') + (r[24] == null ? '' : ' · ' + r[24].toFixed(1) + '배') + '</small>') + '</td><td class="num ' + tone(r[9]) + '">' + pct(r[9]) + '</td><td class="num">' + pct(r[11]) + '</td><td class="num">' + (r[3] == null ? '—' : r[3] >= 10000 ? (r[3] / 10000).toFixed(1) + '조' : r[3].toLocaleString('ko-KR') + '억') + '</td></tr>';
+      return '<tr><td><div class="sc-nr"><div class="sc-nl"><a href="' + href + '"><b>' + esc(r[1]) + '</b></a>' + risk + (hits ? '<div class="sc-hit">' + hits + '</div>' : '') + '<div class="muted small">' + (r[2] === 'C' ? r[0].replace('KRW-', '') : r[2] === 'U' ? r[0].replace(/${US_EXCHANGE_LETTER}/, '') : r[0]) + ' · ' + ({ P: '코스피', Q: '코스닥', E: 'ETF', C: '코인', U: '미국' }[r[2]] || '') + '</div></div>' + spark(r[27]) + '</div></td><td class="num">' + (r[2] === 'U' ? '$' + r[4].toFixed(2) : Math.round(r[4]).toLocaleString('ko-KR')) + '</td><td class="num ' + tone(r[5]) + '">' + pct(r[5]) + '</td><td class="num">' + (r[14] == null ? '—' : '<small class="sc-l4">거래량 </small>' + r[14].toFixed(1) + '배') + (r[19] == null ? '' : '<small class="sub-sh">' + (r[2] === 'U' ? '$' + r[19].toLocaleString('en-US') + 'M' : r[19].toLocaleString('ko-KR') + '억') + (r[24] == null ? '' : ' · ' + r[24].toFixed(1) + '배') + '</small>') + '</td><td class="num ' + tone(r[9]) + '">' + pct(r[9]) + '</td><td class="num">' + pct(r[11]) + '</td><td class="num">' + (r[3] == null ? '—' : r[3] >= 10000 ? (r[3] / 10000).toFixed(1) + '조' : r[3].toLocaleString('ko-KR') + '억') + '</td></tr>';
     }).join('') : '<tr><td colspan="7" class="empty">조건에 맞는 종목이 없어요.</td></tr>';
     // 11/3 검수: the list stops at the top 200; say so against the real count instead of a bare '/ 200'.
     if (!free() && shown.length < Math.min(total, 200)) $('sc-body').insertAdjacentHTML('beforeend', '<tr class="sc-more-row"><td colspan="7"><button type="button" class="more-btn" data-sc-more>' + Math.min(50, Math.min(total, 200) - shown.length) + '개 더 보기 <small>' + shown.length + ' / ' + total + (total > 200 ? ' · 위에서 200개까지' : '') + '</small></button></td></tr>');

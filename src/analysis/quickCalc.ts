@@ -27,6 +27,8 @@ export interface StockCalc {
   lo52GapPct?: number | null;
   /** The free one-line summary. */
   line: string;
+  /** G-335 · 11/6 한서님 '미니차트가 나왔으면 좋겠다' (찾기): the last 20 closes scaled to 0–99 (low to high), for a list's mini chart. */
+  spark?: number[];
 }
 
 export interface VolumeRead {
@@ -89,6 +91,9 @@ export function quickCalc(symbol: string, bars: readonly DailyBar[], now: Date):
   const lo = Math.min(...year.map((b) => b.low)), lo52GapPct = lo > 0 ? (lastBar.close / lo - 1) * 100 : null;
   const signal = { label: t.label, level: t.level, score: t.score, bull: t.counts.bullish, neutral: t.counts.neutral, bear: t.counts.bearish, abstain: t.counts.abstained };
   const mid = moves.find((m) => m.days === 20);
+  const last20 = sorted.slice(-20).map((b) => b.close).filter((v) => Number.isFinite(v) && v > 0);
+  const sLo = Math.min(...last20), sHi = Math.max(...last20);
+  const spark = last20.length >= 5 ? last20.map((v) => (sHi > sLo ? Math.round(((v - sLo) / (sHi - sLo)) * 99) : 50)) : null;
   const parts = [
     t.withheld ? '기록이 짧아 기술 신호는 보류' : `기술 신호 ${t.label}(지표 ${t.votes.length - t.counts.abstained}개 중 강세 ${t.counts.bullish}·약세 ${t.counts.bearish})`,
     mid?.pct != null ? `20거래일 ${signed(mid.pct)}` : '',
@@ -97,6 +102,7 @@ export function quickCalc(symbol: string, bars: readonly DailyBar[], now: Date):
   return {
     method: QUICK_METHOD, date: lastBar.date, close: lastBar.close, signal,
     votes: t.votes.map((v) => [v.label, v.vote]), moves, fair, forecasts, volume, hi52GapPct, lo52GapPct, line: parts.join(' · '),
+    ...(spark ? { spark } : {}),
   };
 }
 

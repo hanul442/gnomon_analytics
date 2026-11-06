@@ -7,7 +7,7 @@ import type { FinancePeriod } from '../types.js';
 import type { FullStatements, StatementRow } from '../sources/dartStatements.js';
 import { esc } from './html.js';
 import { bigMoney, currency, financeScale, financeUnit } from './format.js';
-import { composedChart, depthBar, depthDefs, incomeSankey } from './kit/finance.js';
+import { composedChart, depthBar, depthDefs, incomeSankey, radarChart } from './kit/finance.js';
 import { gradId } from './chartLook.js';
 
 const clamp = (v: number) => Math.max(0, Math.min(100, v));
@@ -48,7 +48,8 @@ export function healthAxes(m: MarketSection, close: number | null): Axis[] {
 
 // G-265: drawn by the chart kit in Bklit UI's radar look (round rings, soft fill, haloed dots).
 
-/** 기업 체력 한눈에 (G-148): the radar beside one short line per axis; the thresholds sit in each line's title. */
+/** 기업 체력 한눈에 (G-148): the radar beside one short line per axis; the thresholds sit in each line's title.
+ * G-335 · 11/6 한서님 '그 헥사곤 차트 어디갔지?': the radar (taken out in G-301) is back, above the words. */
 export function healthInfographic(m: MarketSection | undefined, close: number | null): string {
   if (!m) return '';
   const axes = healthAxes(m, close);
@@ -57,7 +58,8 @@ export function healthInfographic(m: MarketSection | undefined, close: number | 
   // G-301 (새 구조): words only, each one a way to the block it is read from; the numbers live in those blocks once.
   const to: Record<string, string> = { growth: '#si-fin', profit: '#si-fin', safety: '#si-fin', flow: '#tab-flows', value: '#si-metrics' };
   return `<section class="card ig-card ig-hc"><div class="head"><h2>기업 체력 한눈에</h2><small class="ig-hint">누르면 그 블록으로</small></div>
-<ul class="ig-words">${axes.map((a) => { const [cls, word] = verdict(a.score); return `<li><a href="${to[a.key] ?? '#si-metrics'}" title="${esc(a.note)}"><b>${esc(a.label)}</b><span class="ig-v ${cls}">${word}</span></a></li>`; }).join('')}</ul>
+<div class="ig-hx">${radarChart(axes)}</div>
+<ul class="ig-words">${axes.map((a, i) => { const [cls, word] = verdict(a.score); return `<li data-i="${i}"><a href="${to[a.key] ?? '#si-metrics'}" title="${esc(a.note)}"><b>${esc(a.label)}</b><span class="ig-v ${cls}">${word}</span></a></li>`; }).join('')}</ul>
 <p class="fine">단순 기준으로 환산한 참고값이에요(영업이익률 20%·부채비율 0%면 만점). ${axes.length < 5 ? '미국 주식은 외국인·기관 수급 자료가 없어서 수급 축은 빼고 봐요. ' : ''}같은 업종끼리 비교해 보세요.</p></section>`;
 }
 

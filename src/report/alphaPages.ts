@@ -40,9 +40,10 @@ export const wrapupBanners = (today: string): Banner[] => today >= '2026-10-24' 
   // G-280: a big picture banner like the 4.0.0 one (neutral glass, the button is drawn in the picture).
   ? [{ kind: 'survey', title: '알파, 고마웠어요', text: '3분 마무리 설문 · 클로즈드 베타 신청 · 10.31까지', href: WRAPUP_LINK, cta: '설문하고 신청하기', image: { wide: 'assets/banners/wrapup-wide.jpg', narrow: 'assets/banners/wrapup-narrow.jpg' } }]
   : [];
-/** G-306: after the alpha closes, a big picture banner says so and points to the beta date until it opens. */
+/** G-306: after the alpha closes, a big picture banner says so. 11/6 (한서님 '배너 한번 정리하자'): the beta date moved, so the
+ * picture no longer says 11.20; it says the date comes in a notice. */
 export const alphaEndBanners = (today: string): Banner[] => today >= '2026-11-01' && today <= '2026-11-19'
-  ? [{ kind: 'notice', title: '알파가 끝났어요', text: '함께해 주셔서 고마워요 · 11.19까지 로그인 쉬어요 · 클로즈드 베타 모집 11.20', href: 'updates.html', cta: '업데이트 기록 보기', image: { wide: 'assets/banners/alpha-end-wide.jpg', narrow: 'assets/banners/alpha-end-narrow.jpg' } }]
+  ? [{ kind: 'notice', title: '알파가 끝났어요', text: '함께해 주셔서 고마워요 · 11.19까지 로그인 쉬어요 · 베타 모집 날짜는 곧 알려 드려요', href: 'updates.html', cta: '업데이트 기록 보기', image: { wide: 'assets/banners/alpha-end2-wide.jpg', narrow: 'assets/banners/alpha-end2-narrow.jpg' } }]
   : [];
 /** Credit events become banners with a 받기 button (G-73). */
 export const eventBanners = (events: readonly CreditEvent[]): Banner[] => events.map((e) => ({ kind: 'event', title: `${e.title} · ${e.credits}크레딧`, text: e.text, cta: '받기', tone: 'amber', event: e.id, credits: e.credits }));
