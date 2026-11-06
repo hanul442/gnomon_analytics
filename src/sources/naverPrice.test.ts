@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { NAVER_WEEK_SOURCE, parseNaverDailyChart, parseNaverMinuteCandles, parseNaverMinuteChart } from './naverPrice.js';
+import { NAVER_WEEK_SOURCE, parseNaverDailyChart, parseNaverMinuteCandles, parseNaverMinuteChart, withKrxCloses } from './naverPrice.js';
 
 const AT = new Date('2026-10-02T09:30:00Z');
 const FEED = `<?xml version="1.0" encoding="EUC-KR" ?>
@@ -68,4 +68,13 @@ test('minute candles: N-minute buckets from minute closes, volume from the cumul
   ]);
   assert.equal(parseNaverMinuteCandles(feed, 1).length, 5);
   assert.throws(() => parseNaverMinuteCandles('<html>blocked</html>', 1), /NAVER_UNEXPECTED_RESPONSE/);
+});
+
+test('KRX close (11/6): the 15:30 minute print replaces the day feed close, which carries NXT after-hours trades', () => {
+  const at = new Date('2026-11-06T12:00:00Z');
+  const day = parseNaverDailyChart('<chartdata><item data="20261104|1458000|1476000|1303000|1420000|4591188" /><item data="20261105|1320000|1320000|1250000|1262000|4281006" /><item data="20261106|1089000|1217000|1089000|1155000|7550170" /></chartdata>', '000660', at);
+  const minute = parseNaverMinuteChart('<chartdata><item data="202611051529|null|null|null|1263000|4100000" /><item data="202611051530|null|null|null|1264000|4112091" /><item data="202611051600|null|null|null|1267000|4117240" /><item data="202611061420|null|null|null|1140000|7000000" /></chartdata>', '000660', at);
+  const fixed = withKrxCloses(day, minute);
+  assert.deepEqual(fixed.map((b) => b.close), [1420000, 1264000, 1155000], 'only a day whose session reached 15:30 changes');
+  assert.equal(fixed[1]!.high, 1320000);
 });

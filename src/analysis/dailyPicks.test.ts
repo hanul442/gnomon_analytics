@@ -76,13 +76,16 @@ test('daily picks (G-314): with report dates given, two of the biggest companies
   const pref = ['100005', '종목100000우', 'P', 2_000_000, 10_000, 1, 'BULLISH', 50, 1, 2, 3, 0, 'I', 0, 1, 1, 0, 0, null, 50, -10, 0, []];
   const last = new Map([['100000', '2026-10-30'], ['100010', '2026-10-05'], ['100020', '2026-10-01']]);
   const picks = chooseDailyPicks({ date: '2026-11-02', weekday: 1, stocks: [pref, ...capped], etfs, coins, exclude: new Set(), lastReported: last }).filter((p) => p.kind === 'stock');
-  // 100000 is too fresh (3 days); never-reported core names count as oldest, bigger first.
-  assert.deepEqual(picks.slice(0, 2).map((p) => p.symbol), ['100030', '100040']);
+  // 100000 is too fresh (3 days); old reports go first (11/6), then never-reported names; within the same week of age, bigger first.
+  assert.deepEqual(picks.slice(0, 2).map((p) => p.symbol), ['100010', '100020']);
   assert.equal(picks.length, 3);
   assert.ok(!picks.some((p) => p.symbol === '100005'), 'preferred shares are not core');
-  assert.ok(!['100030', '100040'].includes(picks[2]!.symbol));
+  assert.ok(!['100020', '100010'].includes(picks[2]!.symbol));
+  // With one old report, it goes first and the biggest never-reported name follows.
+  const one = chooseDailyPicks({ date: '2026-11-02', weekday: 1, stocks: capped, etfs, coins, exclude: new Set(), lastReported: new Map([['100000', '2026-10-30'], ['100050', '2026-10-05']]) }).filter((p) => p.kind === 'stock');
+  assert.deepEqual(one.slice(0, 2).map((p) => p.symbol), ['100050', '100010']);
   // Once every core name has a recent report, only the old ones rotate in.
   const all = new Map(capped.slice(0, 20).map((r, i) => [String(r[0]), i === 1 ? '2026-10-05' : i === 2 ? '2026-10-01' : '2026-10-28']));
   const next = chooseDailyPicks({ date: '2026-11-02', weekday: 1, stocks: capped, etfs, coins, exclude: new Set(), lastReported: all }).filter((p) => p.kind === 'stock');
-  assert.deepEqual(next.slice(0, 2).map((p) => p.symbol), ['100020', '100010']);
+  assert.deepEqual(next.slice(0, 2).map((p) => p.symbol), ['100010', '100020']);
 });

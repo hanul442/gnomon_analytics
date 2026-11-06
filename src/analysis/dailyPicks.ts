@@ -116,10 +116,12 @@ export function chooseDailyPicks(input: {
 
 /**
  * G-314: today's core stocks: the CORE_SIZE biggest by market cap (preferred shares aside), those whose last
- * committee report is at least CORE_MIN_DAYS old (or missing), oldest report first, then bigger first. Pure.
+ * committee report is at least CORE_MIN_DAYS old (or missing), oldest report first (by whole weeks), never-reported last, then bigger first. Pure.
  */
 export function coreRotation(stocks: readonly (readonly unknown[])[], lastReported: ReadonlyMap<string, string>, date: string): (readonly unknown[])[] {
   const top = stocks.filter((r) => !PREFERRED.test(String(r[1])) && Number(r[3] ?? 0) > 0).sort((a, b) => Number(b[3]) - Number(a[3])).slice(0, CORE_SIZE);
-  const age = (r: readonly unknown[]) => { const last = lastReported.get(String(r[0])); return last ? (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${last}T00:00:00Z`)) / 864e5 : Infinity; };
-  return top.map((r, i) => ({ r, i, a: age(r) })).filter((x) => x.a >= CORE_MIN_DAYS).sort((x, y) => (y.a - x.a) || (x.i - y.i)).slice(0, CORE_DAILY).map((x) => x.r);
+  // 11/6 한서: a stale report on screen is worse than none, so names with an old report go before never-reported ones
+  // (삼성전자·SK하이닉스 sat on 10/05 while the rotation walked through names with no report yet).
+  const age = (r: readonly unknown[]) => { const last = lastReported.get(String(r[0])); return last ? (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${last}T00:00:00Z`)) / 864e5 : CORE_MIN_DAYS; };
+  return top.map((r, i) => ({ r, i, a: age(r) })).filter((x) => x.a >= CORE_MIN_DAYS).sort((x, y) => (Math.floor(y.a / 7) - Math.floor(x.a / 7)) || (x.i - y.i)).slice(0, CORE_DAILY).map((x) => x.r);
 }
