@@ -1,6 +1,6 @@
 {
- "at": "2026-11-06T09:30:30.620Z",
- "selected": "2026-11-06",
+ "at": "2026-11-06T15:09:52.362Z",
+ "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2650
+   "count": 2649
   },
   {
    "source": "naver:fchart:day:etf",
@@ -336,33 +336,29 @@
   },
   {
    "symbol": "005490",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "035420",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "396500",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "AAPL.O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "030000",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-11-06",
-  "status": "OK"
- }
+ "failed": []
 }
