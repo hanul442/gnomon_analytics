@@ -105,18 +105,23 @@ export interface DeckExtras {
   closes?: ReadonlyMap<string, readonly { date: string; close: number }[]>;
 }
 
-/** A line chart of recent closes, with the 'proven wrong' price as a dashed line when there is one. */
+/**
+ * A line chart of recent closes on a soft area, with the 'proven wrong' price as a labelled dashed line when there is one,
+ * the last close labelled at the end and the first/last dates under the axis (한서 11/6: the first one looked bare).
+ */
 export function priceChart(xs: readonly { date: string; close: number }[], w: number, h: number, wrong: number | null, won: (v: number) => string): string {
   if (xs.length < 5) return '';
   const vals = xs.map((x) => x.close), all = wrong != null ? [...vals, wrong] : vals;
   let lo = Math.min(...all), hi = Math.max(...all);
-  const pad = (hi - lo) * 0.08 || hi * 0.02; lo -= pad; hi += pad;
-  const X = (i: number) => (i / (xs.length - 1)) * (w - 16) + 8, Y = (v: number) => h - ((v - lo) / (hi - lo)) * h;
-  const pts = vals.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
-  const last = vals.at(-1)!, chg = (last / vals[0]! - 1) * 100;
-  const line = wrong != null ? `<line x1="0" x2="${w}" y1="${Y(wrong).toFixed(1)}" y2="${Y(wrong).toFixed(1)}" stroke="#8A8A87" stroke-width="3" stroke-dasharray="10 10"/>` : '';
-  return `<div style="display:flex;justify-content:space-between;font-size:28px;font-weight:600;margin-bottom:14px"><span class="grey">최근 ${xs.length}거래일 종가${wrong != null ? ' · 점선이 틀리는 가격' : ''}</span><span>${won(last)} <span class="${chg > 0 ? 'up' : chg < 0 ? 'down' : 'grey'}">${sgn(chg, 1)}</span></span></div>
-<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;overflow:visible">${line}<polyline points="${pts}" fill="none" stroke="#111" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${X(xs.length - 1).toFixed(1)}" cy="${Y(last).toFixed(1)}" r="10" fill="#111"/></svg>`;
+  const pad = (hi - lo) * 0.12 || hi * 0.02; lo -= pad; hi += pad;
+  const right = 8, X = (i: number) => (i / (xs.length - 1)) * (w - right - 8) + 8, Y = (v: number) => h - ((v - lo) / (hi - lo)) * h;
+  const pts = vals.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`);
+  const last = vals.at(-1)!, chg = (last / vals[0]! - 1) * 100, lx = X(xs.length - 1), ly = Y(last);
+  const area = `<polygon points="${X(0).toFixed(1)},${h} ${pts.join(' ')} ${lx.toFixed(1)},${h}" fill="url(#g)"/>`;
+  const wy = wrong != null ? Y(wrong) : null;
+  const wl = wy != null ? `<line x1="0" x2="${w}" y1="${wy.toFixed(1)}" y2="${wy.toFixed(1)}" stroke="#111" stroke-opacity=".45" stroke-width="3" stroke-dasharray="12 10"/>` : '';
+  return `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px"><span style="font-size:28px;font-weight:700" class="grey">최근 ${xs.length}거래일${wrong != null ? ' · 점선이 틀리는 가격' : ` · ${md(xs[0]!.date)}부터`}</span><span style="font-size:34px;font-weight:800">${won(last)} <span class="${chg > 0 ? 'up' : chg < 0 ? 'down' : 'grey'}" style="font-size:30px">${sgn(chg, 1)}</span></span></div>
+<div style="position:relative;width:${w}px;height:${h}px"><svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;overflow:visible"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#111" stop-opacity=".10"/><stop offset="1" stop-color="#111" stop-opacity="0"/></linearGradient></defs>${area}${wl}<polyline points="${pts.join(' ')}" fill="none" stroke="#111" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="12" fill="#fff" stroke="#111" stroke-width="5"/></svg></div>`;
 }
 
 /** The carousel for one day. `fontDir` as in promoCards.page. */
@@ -172,14 +177,26 @@ ${majors.length ? `<div style="margin-top:56px">${bar(b, 88, 24, 8)}</div>
       ? `종가가 ${/\.[A-Z]+$/.test(o.symbol) ? `$${o.invalidation.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : `${Math.round(o.invalidation).toLocaleString('ko-KR')}원`}${o.lead === 'BULLISH' ? ' 아래로<br>내려가면' : ' 위로<br>올라가면'} 틀린 판단`
       : `${md(o.scoreDate)} 종가로<br>맞았는지 채점해요`;
     const won = (v: number) => (/\.[A-Z]+$/.test(o.symbol) ? `$${v.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : `${Math.round(v).toLocaleString('ko-KR')}원`);
-    const chart = priceChart((more.closes?.get(o.symbol) ?? []).slice(-60), 920, 140, o.lead !== 'NEUTRAL' ? o.invalidation : null, won);
-    const size = Math.max(32, Math.min(chart ? 60 : 96, Math.floor(880 / o.seats.length) - 22));
+    const chart = priceChart((more.closes?.get(o.symbol) ?? []).slice(-60), 920, 150, o.lead !== 'NEUTRAL' ? o.invalidation : null, won);
+    const size = Math.max(32, Math.min(96, Math.floor(880 / o.seats.length) - 22));
+        if (chart) {
+      // With a chart: the seats stay full size (한서 11/6 '위원회 애들이 작게 바뀐거'), the chart takes the room under
+      // them and the 'proven wrong' box gets one line.
+      parts.push({ role: `opinion${i + 1}`, body: `<div style="margin-top:96px"><div class="k">종목 의견 ${i + 1} / ${ops.length}${others ? ` · 다른 의견 ${others}명` : ''}</div>
+<div class="h" style="font-size:${o.name.length > 12 ? 64 : 96}px;overflow-wrap:anywhere">${esc(o.name)}</div>
+<div class="h" style="font-size:64px;margin-top:28px">위원 ${o.seats.length}명 중 <span class="${leadTone}">${o.leadCount}명</span>이<br>${o.lead === 'NEUTRAL' ? '크게 안 움직인다고 봤어요' : `'${SHORT[o.lead]}'고 봤어요`}</div></div>
+<div style="display:flex;gap:22px;margin-top:48px">${o.seats.map((s) => `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${COLOR[s.stance]}"></div>`).join('')}</div>
+<div style="font-size:28px;margin-top:16px" class="grey">위원 한 명이 점 하나 · <span class="up">●</span> 오른다 <span style="color:${FLAT}">●</span> 보합 <span class="down">●</span> 내린다</div>
+<div class="fill"></div><div style="margin-bottom:28px">${chart}</div>
+<div class="ink" style="padding:28px 44px"><div style="font-size:26px;font-weight:700;color:#9A9A97">이러면 틀린 거예요 · ${md(o.scoreDate)} 채점</div><div style="font-size:34px;font-weight:600;line-height:1.4;margin-top:8px">${cond.replace('<br>', ' ')}</div></div>` });
+      return;
+    }
     parts.push({ role: `opinion${i + 1}`, body: `<div style="margin-top:96px"><div class="k">종목 의견 ${i + 1} / ${ops.length}${others ? ` · 다른 의견 ${others}명` : ''}</div>
 <div class="h" style="font-size:${o.name.length > 12 ? 64 : 96}px;overflow-wrap:anywhere">${esc(o.name)}</div>
 <div class="h" style="font-size:64px;margin-top:28px">위원 ${o.seats.length}명 중 <span class="${leadTone}">${o.leadCount}명</span>이<br>${o.lead === 'NEUTRAL' ? '크게 안 움직인다고 봤어요' : `'${SHORT[o.lead]}'고 봤어요`}</div></div>
-<div style="display:flex;gap:22px;margin-top:${chart ? 44 : 64}px">${o.seats.map((s) => `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${COLOR[s.stance]}"></div>`).join('')}</div>
+<div style="display:flex;gap:22px;margin-top:64px">${o.seats.map((s) => `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${COLOR[s.stance]}"></div>`).join('')}</div>
 <div style="font-size:28px;margin-top:20px" class="grey">위원 한 명이 점 하나 · <span class="up">●</span> 오른다 <span style="color:${FLAT}">●</span> 보합 <span class="down">●</span> 내린다</div>
-<div class="fill"></div>${chart ? `<div style="margin:24px 0 28px">${chart}</div>` : ''}
+<div class="fill"></div>
 <div class="ink"><div style="font-size:28px;font-weight:700;color:#9A9A97">이러면 틀린 거예요 · ${md(o.scoreDate)} 채점</div><div style="font-size:40px;font-weight:600;line-height:1.45;margin-top:12px">${cond}</div></div>` });
   });
 
