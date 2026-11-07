@@ -1,6 +1,7 @@
 // G-322: the daily SNS post as an info-style carousel (한서 11/3 '정보성 게시물 참고해서 다시'): one message per
 // slide, a hook line on the cover picked from the day's most surprising fact, big type on white, one call to action.
-// Slides: cover → 숫자 3개 → 위원회 온도 → 오늘 채점 → 종목 의견 (≤2) → [금] 주간 성적표·가장 크게 틀린 판단 → 채점 방법 → 저장 CTA.
+// Slides: cover → 숫자 3개 → 위원회 온도 → 오늘 채점 → 종목 의견 (≤2) → [금] 주간 성적표·가장 크게 틀린 판단 → 채점 방법 → 보내기·저장 CTA
+// (Instagram weighs DM sends most for reach to non-followers, 11/7).
 // The story and the X image reuse the cover's hook. Captions open with the same hook.
 
 import { ANALYST_HORIZON } from '../analysis/analysts.js';
@@ -222,7 +223,7 @@ ${d.week.length ? `<div style="font-size:30px;color:#666;margin-top:24px">틀린
 
   parts.push({ role: 'cta', body: `<div class="fill" style="display:flex;flex-direction:column;justify-content:center">
 <div class="h" style="font-size:104px">${md(scoreDate)}에<br>맞았는지<br>같이 확인해요</div>
-<div style="display:flex;gap:20px;margin-top:64px"><div class="ink" style="font-size:40px;font-weight:700;padding:28px 44px">저장해 두기</div><div class="box" style="font-size:40px;font-weight:700;padding:28px 44px">팔로우</div></div>
+<div style="display:flex;gap:20px;margin-top:64px"><div class="ink" style="font-size:40px;font-weight:700;padding:28px 44px">주식하는 친구에게 보내기</div><div class="box" style="font-size:40px;font-weight:700;padding:28px 44px">저장</div></div>
 <div style="font-size:36px;color:#555;margin-top:56px;line-height:1.5">전체 리포트와 위원들의 토론은<br>프로필 링크의 그노몬에서 봐요 (무료)<br>베타 준비 중 · 팔로우하면 모집 소식을 먼저 알려드려요</div></div>` });
 
   const n = parts.length;
@@ -266,9 +267,9 @@ export function deckInstaCaption(d: PromoDay, ops: readonly PromoOpinion[]): str
     d.scored.length ? `· 20거래일 전 판단 채점: ${d.scored.length}건 중 ${d.scored.filter((x) => x.hit).length}건 맞음` : '',
     ops.length ? `· ${ops.map((o) => `${o.name} ${o.seats.length}명 중 ${o.leadCount}명 '${SHORT[o.lead]}'`).join(', ')}` : '',
   ].filter(Boolean);
-  return [`${oneLine(hook.pre)} ${oneLine(hook.main)}`.replace(/봤어요$/, '봤어요.'), '', `${md(d.date)} ${weekdayOf(d.date)} 그노몬 AI 위원회 기록이에요.`, ...pts, '',
-    `모든 판단은 잠가 두고 20거래일 뒤(${md(scoreDate)})에 채점해요. 틀려도 그대로 공개해요.`, `🔖 저장해 두고 ${md(scoreDate)}에 같이 확인해요.`, '📝 한 주 채점 정리는 매주 금요일 블로그에, 짧은 기록은 X(@gnomonanalytics)에 올려요. 링크는 프로필에.', '',
-    `${PROMO_NOTE}. 투자 판단과 책임은 본인에게 있어요.`, '#그노몬 #AI주식 #주식공부 #오늘의증시'].join('\n');
+  return [`${oneLine(hook.pre)} ${oneLine(hook.main)}`.replace(/봤어요$/, '봤어요.'), '', `${md(d.date)} ${weekdayOf(d.date)} 코스피·코스닥 마감, 그노몬 AI 위원회 기록이에요.`, ...pts, '',
+    `모든 판단은 잠가 두고 20거래일 뒤(${md(scoreDate)})에 채점해요. 틀려도 그대로 공개해요.`, `🔖 저장해 두고 ${md(scoreDate)}에 같이 확인해요. 주식하는 친구에게도 보내 주세요.`, '📝 한 주 채점 정리는 매주 금요일 블로그에, 짧은 기록은 X(@gnomonanalytics)에 올려요. 링크는 프로필에.', '',
+    `${PROMO_NOTE}. 투자 판단과 책임은 본인에게 있어요.`, '#코스피 #주식공부 #오늘의증시 #AI주식 #그노몬'].join('\n');
 }
 
 /** X post (≤280 weighted; the site line is swapped for the profile pointer when posting without links). */

@@ -2,6 +2,8 @@ name: SNS auto-post
 # G-321: posts the day's SNS cards (promo/<date>/, made by the daily run) to X and Instagram,
 # and opens the weekly Naver blog text as an issue to copy. Repository variable PROMO_POST decides:
 #   off (or unset) = only a preview in the run summary · manual = posts only when someone presses Run · on = posts by itself.
+# Review (11/7): a run that would post by itself opens a `promo-review` issue instead; 한서 comments "올려" there and
+# this workflow posts (issue_comment). PROMO_REVIEW=off skips review. Reels go out Tue/Fri from promo/reels/.
 # Setup steps: docs/SNS_AUTOPOST.md
 on:
   workflow_run:
@@ -12,6 +14,8 @@ on:
     - cron: '10 23 * * *'
     # Monday 09:20 KST: keeps the Instagram token alive (it lasts 60 days).
     - cron: '20 0 * * 1'
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       date:
@@ -19,7 +23,7 @@ on:
         type: string
         default: ''
       only:
-        description: 'Only these, comma separated: x,story,insta,blog. Empty = all'
+        description: 'Only these, comma separated: x,story,insta,reel,blog. Empty = all'
         type: string
         default: ''
       dry:
@@ -34,7 +38,11 @@ concurrency:
   cancel-in-progress: false
 jobs:
   post:
-    if: github.event.schedule != '20 0 * * 1' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    # issue_comment: only the repo owner's comment on a review issue (not a PR) counts.
+    if: >-
+      github.event.schedule != '20 0 * * 1' &&
+      (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') &&
+      (github.event_name != 'issue_comment' || (!github.event.issue.pull_request && contains(github.event.issue.labels.*.name, 'promo-review') && github.event.comment.user.login == github.repository_owner))
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -50,6 +58,11 @@ jobs:
         env:
           PROMO_POST: ${{ vars.PROMO_POST }}
           PROMO_X_LINK: ${{ vars.PROMO_X_LINK }}
+          PROMO_REVIEW: ${{ vars.PROMO_REVIEW }}
+          REVIEW_COMMENT: ${{ github.event.comment.body }}
+          REVIEW_BODY: ${{ github.event.issue.body }}
+          REVIEW_ISSUE: ${{ github.event.issue.number }}
+          REVIEW: ${{ github.event_name == 'issue_comment' && '--review' || '' }}
           X_API_KEY: ${{ secrets.X_API_KEY }}
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
@@ -61,13 +74,13 @@ jobs:
           ONLY: ${{ inputs.only }}
           DRY: ${{ inputs.dry && '--dry' || '' }}
           MANUAL: ${{ github.event_name == 'workflow_dispatch' && '--manual' || '' }}
-        run: node dist/cli/promoPost.js $MANUAL $DRY ${DATE:+--date=$DATE} ${ONLY:+--only=$ONLY}
+        run: node dist/cli/promoPost.js $REVIEW $MANUAL $DRY ${DATE:+--date=$DATE} ${ONLY:+--only=$ONLY}
       - name: Keep what went out (posted.json)
         if: always()
         run: |
           git config user.name "gnomon-bot"
           git config user.email "gnomon-bot@users.noreply.github.com"
-          git add promo/*/posted.json 2>/dev/null || true
+          git add promo/*/posted.json promo/*/review.json 2>/dev/null || true
           git diff --cached --quiet && exit 0
           git commit -m "promo: posted $(date -u +%Y-%m-%dT%H:%MZ)"
           ok=0; for i in 1 2 3; do if git pull --rebase -X theirs origin main && git push; then ok=1; break; fi; sleep 5; done
