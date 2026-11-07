@@ -71,7 +71,7 @@ html[data-theme=dark]{--glass-bg:linear-gradient(180deg,rgba(40,48,60,.82),rgba(
 .bottom-nav.mini .nav-tabs a span,.bottom-nav.mini .nav-seg a span{display:none}
 .nav-tabs a:active,.nav-seg a:active{transform:scale(.9);transition-duration:.08s}
 .nav-seg a i{position:absolute;z-index:2;top:5px;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#E5484D;color:#fff;font:800 11.5px/16px sans-serif;font-style:normal;text-align:center}
-.bottom-nav .nav-field{flex-direction:row;justify-content:flex-start;flex:1;min-width:0;height:50px;display:flex;align-items:center;gap:9px;padding:0 16px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--muted);font-size:15.5px;text-align:left;cursor:text}
+.bottom-nav .nav-field{flex-direction:row;justify-content:flex-start;flex:1;min-width:116px;height:50px;display:flex;align-items:center;gap:9px;padding:0 16px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--muted);font-size:15.5px;text-align:left;cursor:text}
 .nav-field svg{width:20px;height:20px}
 .nav-round .nav-n{position:absolute;top:4px;right:4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--fg);color:var(--page);font:800 11.5px/16px sans-serif;font-style:normal;text-align:center}
 body:has(.bottom-nav[data-dock=find]) .find-head{display:none}
@@ -81,7 +81,7 @@ body:has(.bottom-nav[data-dock=committee]) .mode-tabs{display:none}
 body:has(.bottom-nav[data-dock=ask]) .topbar>.chips:not(.analysis-tabs){display:none}
 body:has(.bottom-nav[data-dock=parts]) .mode-tabs{display:none}
 body:has(.bottom-nav:is([data-dock=find],[data-dock=me])) .mode-tabs{display:none}
-.bottom-nav .nav-kind{flex:none;flex-direction:row;height:50px;display:flex;align-items:center;gap:2px;padding:0 8px 0 13px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--fg);font-size:16px;cursor:pointer}
+.bottom-nav .nav-kind{flex:none;flex-direction:row;height:50px;display:flex;align-items:center;gap:0;padding:0 6px 0 11px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--fg);font-size:16px;cursor:pointer}
 .nav-kind b{white-space:nowrap}.nav-kind svg{width:16px!important;height:16px!important;transition:transform .2s}.nav-kind[aria-expanded=true] svg{transform:rotate(180deg)}
 .nav-menu{position:absolute;right:8px;bottom:72px;z-index:3;display:grid;min-width:168px;padding:6px;border:1px solid var(--glass-edge);border-radius:22px;background:var(--surface-solid);box-shadow:0 22px 44px -18px rgba(10,22,38,.5);animation:nav-up .22s var(--ease-out)}
 .nav-menu[hidden]{display:none}
@@ -100,6 +100,7 @@ body:has(.bottom-nav:is([data-dock=find],[data-dock=me])) .mode-tabs{display:non
 .bottom-nav .nav-ask-r{color:var(--page);background:var(--fg);border:0;box-shadow:0 8px 18px -8px rgba(10,22,38,.55)}
 body.dock-searching .find-head{display:block!important;position:fixed;z-index:45;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));margin:0;animation:nav-up .3s var(--ease-out)}
 body.dock-searching .find-head .search-results{max-height:calc(100dvh - 180px);overflow:auto}
+body.dock-searching .find-head .search-box input{outline:none}body.dock-searching .find-head .search-box:focus-within{border-color:var(--fg)}
 body.dock-searching .find-head .search-box,body.dock-searching .find-head .search-results{background:var(--surface-solid,#fff)}
 body.dock-searching::before{content:"";position:fixed;inset:0;z-index:44;background:rgba(10,12,16,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:nav-up .25s}
 .bottom-nav .nav-ask{flex-direction:row;justify-content:flex-start;flex:1;min-width:0;height:50px;display:flex;align-items:center;gap:9px;padding:0 5px 0 16px;border:1px solid var(--glass-edge);border-radius:25px;background:var(--glass-soft);color:var(--muted);font-size:15.5px;text-align:left;cursor:pointer}
@@ -161,6 +162,9 @@ export const COMMAND_BAR_JS = `
   nav.addEventListener('animationend', function (e) { if (e.target === nav) nav.classList.remove('morph'); });
   var lastY = window.scrollY || 0, ticking = false;
   window.addEventListener('scroll', function () { if (ticking) return; ticking = true; requestAnimationFrame(function () { var y = window.scrollY || 0; if (Math.abs(y - lastY) > 6) { nav.classList.toggle('mini', y > lastY && y > 80); lastY = y; } ticking = false; }); }, { passive: true });
+  // G-337 (한서님 11/7 '검색창 접근이 어려워'): on phones the 찾기 tab opens the search right away (screener.html#search),
+  // so a search is one tap from anywhere instead of 찾기 → the small field in its bar.
+  if (matchMedia('(max-width: 820px)').matches) nav.querySelectorAll('.nav-tabs a[data-tab-link="screener.html"]').forEach(function (a) { if (a.pathname !== location.pathname) a.href = a.href.split('#')[0] + '#search'; });
   if (!nav.hasAttribute('data-dock')) return;
   // G-332: the screen's own bar is there from the first frame (it used to swap in 600ms later, after the page showed).
   nav.classList.add('ctx'); var t = 0;
