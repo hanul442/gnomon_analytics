@@ -32,6 +32,7 @@ async function main() {
     const bars = await readJson<RawBar[]>(join(dir, 'prices', file), []);
     if (bars.length >= 300 && names[file.replace('.json', '')]) raw.push({ symbol: file.replace('.json', ''), bars });
   }
+  const kr = kc.slice(1).map((x, i) => Math.log(x / kc[i]!)), kv = ewma(kr);
   const sets = liquidSets(raw, calendar, TOP, Number(FROM.replace(/-/g, '')), STEP);
   const prep = new Map(raw.map((s) => {
     const c = s.bars.map((b) => b[4]!), r = c.slice(1).map((x, i) => Math.log(x / c[i]!));
@@ -41,6 +42,9 @@ async function main() {
   for (const set of sets) {
     const k = set.k;
     const prior60 = Math.log(kc[k]! / kc[Math.max(0, k - 60)]!);
+    // KOSPI's own EWMA and 250-day sigma up to the base date (kr[j] is the move into day j + 1).
+    const kl = kr.slice(Math.max(0, k - 250), k), km = kl.reduce((a, x) => a + x, 0) / Math.max(1, kl.length);
+    const mvS = k >= 21 ? Math.sqrt(kv[k - 1]!) : undefined, mvL = kl.length > 60 ? Math.sqrt(kl.reduce((a, x) => a + (x - km) ** 2, 0) / (kl.length - 1)) : undefined;
     for (const sym of set.symbols) {
       const p = prep.get(sym)!, i = p.at.get(set.date)!;
       if (i < 251) continue;
@@ -53,7 +57,7 @@ async function main() {
         const target = calendar[k + h]!;
         let j = p.at.get(target);
         if (j === undefined) { j = -1; for (let t = p.d.length - 1; t >= 0; t -= 1) if (p.d[t]! <= target) { j = t; break; } if (j <= i) continue; }
-        samples.push({ date: ymd(set.date), h, sigS, sigL, drift, ret: Math.log(p.c[j]! / p.c[i]!), mkt: Math.log(kc[k + h]! / kc[k]!), prior60 });
+        samples.push({ date: ymd(set.date), h, sigS, sigL, drift, ret: Math.log(p.c[j]! / p.c[i]!), mkt: Math.log(kc[k + h]! / kc[k]!), prior60, mvS, mvL });
       }
     }
   }

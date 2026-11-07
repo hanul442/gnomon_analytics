@@ -38,7 +38,7 @@ import { intradaySignals, readIntraday } from '../analysis/intraday.js';
 import { readerNote } from '../report/profile.js';
 import { deepPath, DEEP_DATE, DEEP_SYMBOL, isUsSymbol, unseal } from '../report/seal.js';
 import { openEvents } from '../report/events.js';
-import { INDEX_CODES, indexQuoteUrl, parseNaverQuotes, quoteUrl, type Quote } from '../sources/naverQuote.js';
+import { INDEX_CODES, indexQuoteUrl, krxCloseUrl, nxtClosedDate, parseKrxClose, parseNaverQuotes, quoteUrl, withKrxClose, type Quote } from '../sources/naverQuote.js';
 import { fetchNaverMinuteCandles, parseNaverMinuteChart } from '../sources/naverPrice.js';
 import { getJson as naverJson, parseFinance, parseInvestorFlows, parseResearch, parseSnapshot, parseStockDisclosures, parseStockNews } from '../sources/naverStock.js';
 import { stockInfoFragments } from '../report/stockInfo.js';
@@ -385,11 +385,23 @@ route('GET', '/quote', async ({ req, deps, now }) => {
   if (hit && now.getTime() - hit.at < 3000) return { quotes: hit.quotes, cached: true };
   const r = await deps.fetch(quoteUrl(codes), { signal: AbortSignal.timeout(4000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } }).catch(() => null);
   if (!r || !r.ok) fail(502, 'UPSTREAM', '실시간 시세를 가져오지 못했어요.');
-  const quotes = parseNaverQuotes(await r!.json().catch(() => null));
+  const quotes = await Promise.all(parseNaverQuotes(await r!.json().catch(() => null)).map(async (x) => {
+    const date = nxtClosedDate(x); if (!date) return x;
+    const k = `${x.symbol}:${date}`;
+    if (!krxCloses.has(k)) {
+      if (krxCloses.size > 3000) krxCloses.clear();
+      krxCloses.set(k, await deps.fetch(krxCloseUrl(x.symbol, date), { signal: AbortSignal.timeout(3000), headers: { 'user-agent': 'Mozilla/5.0 (gnomon-analytics)' } })
+        .then((res) => (res.ok ? res.json() : null)).then(parseKrxClose).catch(() => null));
+    }
+    const krx = krxCloses.get(k);
+    return krx ? withKrxClose(x, krx, date) : x;
+  }));
   if (quoteCache.size > 500) quoteCache.clear();
   quoteCache.set(key, { at: now.getTime(), quotes });
   return { quotes };
 });
+// G-336: the 15:30 KRX close per stock and day, so a closed NXT stock shows the same close as its page.
+const krxCloses = new Map<string, number | null>();
 
 // G-142: coin derivatives (OKX funding, open interest, long/short, liquidations). Public, cached a minute.
 const derivCache = new Map<string, { at: number; snap: DerivSnapshot }>();

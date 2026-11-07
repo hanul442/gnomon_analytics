@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderHome, renderReportsPage } from './renderHome.js';
+import { crashNote, renderHome, renderReportsPage } from './renderHome.js';
 import { watchInfo } from './conclusion.js';
 import type { HomeEntry } from './renderHtml.js';
 import type { DailyReport } from './dailyReport.js';
@@ -122,4 +122,11 @@ test('G-281, G-291: with the world snapshot, home is 요약·시장·위원회·
   assert.doesNotMatch(market, /wd-heat|km-wmap|im-map/, 'no color grid or map in 시장 (the map lives in 이슈 전체)');
   assert.equal(market.split('<b>원/달러</b>').length - 1, 1, '원/달러 shows once in 시장');
   assert.ok(market.indexOf('id="mk-stocks"') < market.indexOf('id="mk-fx"'));
+});
+
+test('crash note sits by the range score only after a real KOSPI drop (G-336)', () => {
+  const series = (end: number) => Array.from({ length: 30 }, (_, i) => [`2026-10-${String(i + 1).padStart(2, '0')}`, 7000 + (end - 7000) * (i / 29)] as [string, number]);
+  assert.match(crashNote({ indices: [{ key: 'KOSPI', series: series(5040) }] }), /코스피가 최근 한 달 -28% 빠진 급락 구간이에요/);
+  assert.equal(crashNote({ indices: [{ key: 'KOSPI', series: series(6500) }] }), '');
+  assert.equal(crashNote(null), '');
 });
