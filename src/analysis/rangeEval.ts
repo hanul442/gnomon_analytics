@@ -18,7 +18,7 @@ export interface RangeSample {
   /** Log move of the KOSPI over the same sessions, and over the 60 before the base date. */
   mkt: number;
   prior60: number;
-  /** KOSPI's EWMA and 250-day daily sigma at the base date (evaluation 11/7; absent in older samples). */
+  /** KOSPI's EWMA and 250-day daily sigma at the base date (G-336; absent in older samples). */
   mvS?: number | undefined;
   mvL?: number | undefined;
 }
@@ -62,7 +62,7 @@ function empirical(sigma: (s: RangeSample) => number, drift: boolean, qLo: numbe
 }
 const blend = (s: RangeSample) => Math.sqrt(s.sigS * s.sigL);
 /**
- * Evaluation 11/7 (range hit 46% in a −28% month): widen only when the whole market is already shaking, known on the
+ * G-336 (range hit 46% in a −28% month): widen only when the whole market is already shaking, known on the
  * base date (KOSPI's EWMA sigma above its 250-day sigma), by that ratio to the power `k`, capped at 2×.
  */
 const marketWiden = (k: number) => (s: RangeSample): [number, number] => {

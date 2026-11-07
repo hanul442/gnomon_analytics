@@ -327,7 +327,7 @@ export function miniArea(closes: readonly number[] | undefined): string {
 }
 
 /**
- * Evaluation 11/7: the range hit fell 59% → 46% while KOSPI lost 28% in a month. The number stays, with the market it
+ * G-336: the range hit fell 59% → 46% while KOSPI lost 28% in a month. The number stays, with the market it
  * was scored in next to it, so a first visitor reads "a crash month" rather than "an app that misses". Only on a
  * real crash (KOSPI −10% or worse over its last 30 closes).
  */

@@ -19,7 +19,7 @@ test('naver quotes: price, signed change from the direction code, market status 
   assert.equal(quoteUrl(['005930', '000660']), 'https://polling.finance.naver.com/api/realtime/domestic/stock/005930,000660');
 });
 
-test('closed NXT stock: the 15:30 KRX close replaces the 20:00 Nextrade close (evaluation 11/7)', () => {
+test('closed NXT stock: the 15:30 KRX close replaces the 20:00 Nextrade close (G-336)', () => {
   const [q] = parseNaverQuotes({ datas: [{ itemCode: '005930', closePrice: '193,500', compareToPreviousClosePrice: '-8,000', compareToPreviousPrice: { code: '5', name: 'FALLING' }, fluctuationsRatio: '-3.97', marketStatus: 'CLOSE', localTradedAt: '2026-11-06T20:00:00+09:00',
     overMarketPriceInfo: { tradingSessionType: 'AFTER_MARKET', overMarketStatus: 'CLOSE', overPrice: '193,400' } }] });
   assert.equal(nxtClosedDate(q!), '2026-11-06');

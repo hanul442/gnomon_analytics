@@ -14,7 +14,7 @@ export const indexQuoteUrl = (codes: readonly string[]) => `https://polling.fina
 export const quoteUrl = (symbols: readonly string[]) => `https://polling.finance.naver.com/api/realtime/domestic/stock/${symbols.join(',')}`;
 
 /**
- * Evaluation 11/7: after 20:00 Naver's feed keeps the last Nextrade trade as the close (Samsung 193,500 while KRX
+ * G-336: after 20:00 Naver's feed keeps the last Nextrade trade as the close (Samsung 193,500 while KRX
  * closed at 188,700), so the stock page showed two different closes. These read the 15:30 KRX close from the
  * minute chart, one tiny request per stock and day.
  */

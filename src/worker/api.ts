@@ -400,7 +400,7 @@ route('GET', '/quote', async ({ req, deps, now }) => {
   quoteCache.set(key, { at: now.getTime(), quotes });
   return { quotes };
 });
-// Evaluation 11/7: the 15:30 KRX close per stock and day, so a closed NXT stock shows the same close as its page.
+// G-336: the 15:30 KRX close per stock and day, so a closed NXT stock shows the same close as its page.
 const krxCloses = new Map<string, number | null>();
 
 // G-142: coin derivatives (OKX funding, open interest, long/short, liquidations). Public, cached a minute.

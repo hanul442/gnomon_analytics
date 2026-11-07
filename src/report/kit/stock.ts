@@ -34,10 +34,13 @@ export function pnlLine(values: readonly number[], label: string, opts: { base?:
   return `<svg viewBox="0 0 ${w} ${h}" class="spark kit-pnl" role="img" aria-label="${esc(label)}"><defs>`
     + `<clipPath id="${id}u"><rect x="0" y="0" width="${w}" height="${by}"/></clipPath><clipPath id="${id}d"><rect x="0" y="${by}" width="${w}" height="${r1(h - by)}"/></clipPath>`
     + `<linearGradient id="${id}gu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${UP}" stop-opacity=".2"/><stop offset="1" stop-color="${UP}" stop-opacity="0"/></linearGradient>`
-    + `<linearGradient id="${id}gd" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${DOWN}" stop-opacity=".2"/><stop offset="1" stop-color="${DOWN}" stop-opacity="0"/></linearGradient></defs>`
+    + `<linearGradient id="${id}gd" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${DOWN}" stop-opacity=".2"/><stop offset="1" stop-color="${DOWN}" stop-opacity="0"/></linearGradient>`
+    // G-336: the line and the area are drawn twice (red above, blue below), so each is written once and reused
+    // (282 of these made the scorecard 1.1MB).
+    + `<path id="${id}a" d="${area}"/><path id="${id}l" d="${d}"/></defs>`
     + `<line class="kp-base" x1="0" x2="${w}" y1="${by}" y2="${by}"/>`
-    + `<g clip-path="url(#${id}u)"><path class="kp-a" d="${area}" fill="url(#${id}gu)"/><path class="spark-l" d="${d}" fill="none" stroke="${UP}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>`
-    + `<g clip-path="url(#${id}d)"><path class="kp-a" d="${area}" fill="url(#${id}gd)"/><path class="spark-l" d="${d}" fill="none" stroke="${DOWN}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>`
+    + `<g clip-path="url(#${id}u)"><use class="kp-a" href="#${id}a" fill="url(#${id}gu)"/><use class="spark-l" href="#${id}l" fill="none" stroke="${UP}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>`
+    + `<g clip-path="url(#${id}d)"><use class="kp-a" href="#${id}a" fill="url(#${id}gd)"/><use class="spark-l" href="#${id}l" fill="none" stroke="${DOWN}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>`
     + `<circle cx="${w}" cy="${r1(y(end))}" r="2.4" fill="${end >= base ? UP : DOWN}"/></svg>`;
 }
 
