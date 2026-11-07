@@ -536,3 +536,6 @@
 {"at":"2026-11-07T15:51:27.971Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":469,"outputTokens":538,"usd":0.00032}
 {"at":"2026-11-07T15:51:27.971Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":513,"outputTokens":569,"usd":0.00034}
 {"at":"2026-11-07T17:44:11.251Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":419,"outputTokens":584,"usd":0.00033}
+{"at":"2026-11-07T19:02:30.721Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":517,"outputTokens":594,"usd":0.00035}
+{"at":"2026-11-07T19:02:30.721Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":486,"outputTokens":380,"usd":0.00024}
+{"at":"2026-11-07T19:02:30.721Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":487,"outputTokens":578,"usd":0.00034}
