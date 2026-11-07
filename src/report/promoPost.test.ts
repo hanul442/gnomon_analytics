@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkText, modeOf, oauth1Header, planDay, xWithoutLink } from './promoPost.js';
+import { checkText, modeOf, oauth1Header, parseApproval, planDay, planReel, xWithoutLink } from './promoPost.js';
 import { PROMO_NOTE, xWeight } from './promoCards.js';
 
 const all = ['x.png', 'x.txt', 'insta.txt', 'story.png', 'story.jpg', 'opinion1.jpg', 'opinion2.jpg', 'cover.jpg', 'miss.jpg', 'cover.png', 'miss.png'];
@@ -62,4 +62,30 @@ test('planDay: the G-322 carousel goes to the feed in order; the blog takes its 
   const fri = planDay('2026-11-06', files, { ...texts, blog: `blog ${PROMO_NOTE}` });
   assert.deepEqual(fri.find((p) => p.channel === 'insta')!.images, ['deck01-cover.jpg', 'deck02-market.jpg', 'deck03-week.jpg']);
   assert.deepEqual(fri.find((p) => p.channel === 'blog')!.images, ['deck03-week.png', 'story.png', 'deck04-miss.png']);
+});
+
+test('planReel: Tuesdays and Fridays, the next reel not yet out', () => {
+  const q = [{ file: 'r01.mp4', caption: 'a' }, { file: 'r02.mp4', caption: 'b' }];
+  assert.equal(planReel('2026-11-09', q, {}), null); // Monday
+  assert.deepEqual(planReel('2026-11-10', q, {}), { channel: 'reel', images: ['r01.mp4'], text: 'a' });
+  assert.equal(planReel('2026-11-13', q, { 'r01.mp4': {} })?.images[0], 'r02.mp4');
+  assert.equal(planReel('2026-11-13', q, { 'r01.mp4': {}, 'r02.mp4': {} }), null);
+});
+
+test('parseApproval reads 한서\'s answer on a review issue', () => {
+  assert.deepEqual(parseApproval('올려'), { go: true, only: null, skip: [] });
+  assert.deepEqual(parseApproval('ㅇㅋ'), { go: true, only: null, skip: [] });
+  assert.deepEqual(parseApproval('스토리만 올려'), { go: true, only: ['story'], skip: [] });
+  assert.deepEqual(parseApproval('릴스 빼고 올려'), { go: true, only: null, skip: ['reel'] });
+  assert.deepEqual(parseApproval('캐러셀이랑 X 올려'), { go: true, only: ['insta', 'x'], skip: [] });
+  assert.deepEqual(parseApproval('취소'), { go: false, cancel: true });
+  assert.deepEqual(parseApproval('오늘은 안 올려'), { go: false, cancel: true });
+  assert.deepEqual(parseApproval('이거 글씨 좀 작은데?'), { go: false, cancel: false });
+});
+
+test('every queued reel caption passes the pre-post check', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const q = JSON.parse(await readFile(new URL('../../promo/reels/reels.json', import.meta.url), 'utf8')) as { file: string; caption: string }[];
+  assert.ok(q.length >= 8);
+  for (const r of q) assert.deepEqual(checkText(r.caption, 'reel'), [], r.file);
 });

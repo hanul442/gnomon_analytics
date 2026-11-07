@@ -4,7 +4,7 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { PROMO_NOTE, xWeight } from './promoCards.js';
 
-export type Channel = 'x' | 'insta' | 'story' | 'blog';
+export type Channel = 'x' | 'insta' | 'story' | 'reel' | 'blog';
 export type Mode = 'off' | 'manual' | 'on';
 
 export interface PlannedPost {
@@ -55,6 +55,35 @@ export function planDay(date: string, files: readonly string[], texts: { x?: str
     out.push({ channel: 'blog', images: deck.length ? [deck[0]!, 'story.png', ...deck.slice(1)].filter(has) : ['cover.png', 'story.png', 'miss.png'].filter(has), text: texts.blog.trim() });
   }
   return out;
+}
+
+/** One ready-made vertical video in promo/reels/ (queue in promo/reels/reels.json). */
+export interface ReelItem { file: string; caption: string }
+
+/**
+ * Reels go out on Tuesdays and Fridays (한서 11/7), the next one in the queue that has not gone out yet.
+ * Instagram fetches the video from the site (site/promo/reels/).
+ */
+export function planReel(date: string, queue: readonly ReelItem[], done: Readonly<Record<string, unknown>>): PlannedPost | null {
+  const d = dow(date);
+  if (d !== 2 && d !== 5) return null;
+  const next = queue.find((r) => !done[r.file]);
+  return next ? { channel: 'reel', images: [next.file], text: next.caption.trim() } : null;
+}
+
+/**
+ * 한서's answer on a review issue (11/7: every post waits for 한서's OK).
+ * "올려" (or ㅇㅋ·ok·승인) posts everything; naming channels posts only those; "… 빼고" posts the rest;
+ * "취소" (or 안 올려) posts nothing. Anything else is not an answer.
+ */
+export function parseApproval(comment: string): { go: false; cancel: boolean } | { go: true; only: Channel[] | null; skip: Channel[] } {
+  const t = comment.trim().toLowerCase();
+  if (/취소|안\s*올려|올리지\s*마/.test(t)) return { go: false, cancel: true };
+  if (!/올려|ㅇㅋ|오케이|\bok\b|승인|좋아/.test(t)) return { go: false, cancel: false };
+  const words: [RegExp, Channel][] = [[/스토리/, 'story'], [/캐러셀|게시물|피드/, 'insta'], [/릴스/, 'reel'], [/\bx\b|엑스|트위터/, 'x']];
+  const named = words.filter(([re]) => re.test(t)).map(([, c]) => c);
+  if (!named.length) return { go: true, only: null, skip: [] };
+  return /빼고|빼서|제외/.test(t) ? { go: true, only: null, skip: named } : { go: true, only: named, skip: [] };
 }
 
 /**
