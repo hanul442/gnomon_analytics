@@ -188,13 +188,13 @@ export function renderHome(data: HomeData): string {
   const key = wp ? `<div class="hm-h"><h2>시장</h2><button type="button" class="wd-link" data-wd-go="market">시장 전체 ›</button></div><div class="km-stats wd-stats">${wp.key6}</div>` : fallbackNumbers(data.indices);
   // G-297 (한서님 10/24 시안): 요약 runs 배너 → 시장 → 이슈 → 내 종목 → 위원회 → 채점. The committee card shows the day's most
   // split stock as a half circle of seats, the others as split bars and one lone dissent; the range score sits under it.
-  const comBlock = calls.length ? `<div class="hm-com"><div class="hm-h"><h2>위원회 오늘</h2></div>${homeCommittee(committeeReports(data.entries), { foot: scoreLine(scored), day: dayShort(data.entries.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK').map(madeOn).sort().at(-1) ?? ''), allHref: 'reports.html' })}</div>` : '';
+  const comBlock = calls.length ? `<div class="hm-com"><div class="hm-h"><h2>위원회 오늘</h2></div>${homeCommittee(committeeReports(data.entries), { foot: scoreLine(scored, false, crashNote(data.world)), day: dayShort(data.entries.filter((e) => e.report && madeOn(e) && e.group !== 'past' && e.report.commentary?.status === 'OK').map(madeOn).sort().at(-1) ?? ''), allHref: 'reports.html' })}</div>` : '';
   // G-301 (한서님 10/26 새 구조 'ㄱㄱ'): home is one screen with no parts in the bar — 한 줄 · 배너 · 내 종목 · 위원회 오늘 ·
   // 시장 6칸 · 이슈 1~3위. 시장 전체 and 이슈 전체 open from their links; the issue map lives only in 이슈 전체.
   const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${issuesList(issues, 3, false)}</section>`;
   const sum = `<section class="hm-hero" id="mkt-hero"><p class="hm-d">${esc(dayLong(day))}</p><p class="hm-s">${esc(wp?.sentence ?? '오늘 시장을 한눈에 모았어요.')}</p></section>
 <div class="hm-bn">${banner}</div>
-<i id="watch-slot" hidden></i><div class="hm-left">${WATCH}${comBlock || scoreLine(scored, true)}</div>${key}${issueBlock}`;
+<i id="watch-slot" hidden></i><div class="hm-left">${WATCH}${comBlock || scoreLine(scored, true, crashNote(data.world))}</div>${key}${issueBlock}`;
   void callRow;
   const back = (t: string) => `<div class="hm-subh"><button type="button" class="hm-back" data-wd-go="sum" aria-label="오늘로 돌아가기">‹</button><h2>${t}</h2></div>`;
   const ISSUE_SHOW = 10;
@@ -326,14 +326,26 @@ export function miniArea(closes: readonly number[] | undefined): string {
   return `<svg class="hh-sa" viewBox="0 0 ${W} ${H}" aria-hidden="true"><defs>${fadeGrad(id, 'currentColor', 0.22)}</defs><path d="${d}L${W} ${H}L0 ${H}Z" fill="url(#${id})"/><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;
 }
 
+/**
+ * Evaluation 11/7: the range hit fell 59% → 46% while KOSPI lost 28% in a month. The number stays, with the market it
+ * was scored in next to it, so a first visitor reads "a crash month" rather than "an app that misses". Only on a
+ * real crash (KOSPI −10% or worse over its last 30 closes).
+ */
+export function crashNote(world: { indices: readonly { key: string; series: readonly [string, number][] }[] } | null | undefined): string {
+  const s = world?.indices.find((x) => x.key === 'KOSPI')?.series ?? [];
+  if (s.length < 15) return '';
+  const move = (s.at(-1)![1] / s[0]![1] - 1) * 100;
+  return move <= -10 ? `코스피가 최근 한 달 ${move.toFixed(0)}% 빠진 급락 구간이에요. 10년 시험에서도 급락 구간은 60% 안팎이었어요.` : '';
+}
+
 /** G-244: the scorecard's headline as one line in the page (the full card stays in the wide screen's side rail). */
-function scoreLine(entries: readonly HomeEntry[], alone = false): string {
+function scoreLine(entries: readonly HomeEntry[], alone = false, note = ''): string {
   let scored = 0, inside = 0;
   for (const e of entries) for (const s of e.report?.market?.forecastScores ?? []) { scored += s.scored; inside += (s.coverage ?? 0) * s.scored; }
   if (!scored) return '';
   // G-300: the range score is the committee card's last line (one card for the committee, not two).
-  if (!alone) return `<a class="cs-hfoot" href="scorecard.html"><span>예측 범위 적중률 <b>${Math.round((inside / scored) * 100)}%</b> <small>실제 가격이 예측 범위 안에 든 비율 · 채점 ${scored.toLocaleString('ko-KR')}건 · 목표 80%</small></span><span aria-hidden="true">›</span></a>`;
-  return `<section class="block sl-wrap"><a class="sl" href="scorecard.html"><b class="sl-v">${Math.round((inside / scored) * 100)}%</b><span><b>위원회 예측 범위 적중률</b><small>실제 가격이 예측 범위 안에 든 비율이에요 · 채점 ${scored.toLocaleString('ko-KR')}건 · 목표 80%</small></span><span class="sl-go" aria-hidden="true">›</span></a></section>`;
+  if (!alone) return `<a class="cs-hfoot" href="scorecard.html"><span>예측 범위 적중률 <b>${Math.round((inside / scored) * 100)}%</b> <small>실제 가격이 예측 범위 안에 든 비율 · 채점 ${scored.toLocaleString('ko-KR')}건 · 목표 80%</small>${note ? `<small class="cs-note">${esc(note)}</small>` : ''}</span><span aria-hidden="true">›</span></a>`;
+  return `<section class="block sl-wrap"><a class="sl" href="scorecard.html"><b class="sl-v">${Math.round((inside / scored) * 100)}%</b><span><b>위원회 예측 범위 적중률</b><small>실제 가격이 예측 범위 안에 든 비율이에요 · 채점 ${scored.toLocaleString('ko-KR')}건 · 목표 80%</small>${note ? `<small class="cs-note">${esc(note)}</small>` : ''}</span><span class="sl-go" aria-hidden="true">›</span></a></section>`;
 }
 
 /** The survey's part of 내 종목 (G-46, G-201): the note on top, the holding-period preset and the sector chips. */

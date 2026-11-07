@@ -18,6 +18,9 @@ export interface RangeSample {
   /** Log move of the KOSPI over the same sessions, and over the 60 before the base date. */
   mkt: number;
   prior60: number;
+  /** KOSPI's EWMA and 250-day daily sigma at the base date (evaluation 11/7; absent in older samples). */
+  mvS?: number | undefined;
+  mvL?: number | undefined;
 }
 
 export const Z90 = 1.2815515655446004;
@@ -58,12 +61,22 @@ function empirical(sigma: (s: RangeSample) => number, drift: boolean, qLo: numbe
   };
 }
 const blend = (s: RangeSample) => Math.sqrt(s.sigS * s.sigL);
+/**
+ * Evaluation 11/7 (range hit 46% in a −28% month): widen only when the whole market is already shaking, known on the
+ * base date (KOSPI's EWMA sigma above its 250-day sigma), by that ratio to the power `k`, capped at 2×.
+ */
+const marketWiden = (k: number) => (s: RangeSample): [number, number] => {
+  const r = s.mvS && s.mvL ? Math.min(2, Math.max(1, s.mvS / s.mvL)) : 1, sd = sigmaV1(s) * r ** k * Math.sqrt(s.h), mu = s.drift * s.h;
+  return [mu - Z90 * sd, mu + Z90 * sd];
+};
 
 export const CANDIDATES: Candidate[] = [
   { key: 'v1', label: '지금 방법 (정규분포 ±1.28σ)', fit: () => bandV1 },
   { key: 'emp', label: '실제 분포의 10%·90% (아래·위 따로)', fit: empirical(sigmaV1, true, 0.1, 0.9) },
   { key: 'tail', label: '아래 꼬리만 넓게 (7%·90%)', fit: empirical(sigmaV1, true, 0.07, 0.9) },
   { key: 'blend', label: '단기·장기 변동성 평균 + 실제 분포', fit: empirical(blend, false, 0.1, 0.9) },
+  { key: 'mkt5', label: '시장이 이미 흔들릴 때만 넓게 (비율^0.5)', fit: () => marketWiden(0.5) },
+  { key: 'mkt10', label: '시장이 이미 흔들릴 때만 넓게 (비율^1)', fit: () => marketWiden(1) },
 ];
 
 export type Regime = 'crash' | 'down' | 'flat' | 'up' | 'surge';
