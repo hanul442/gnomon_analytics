@@ -42,6 +42,25 @@ test('coin pages: every KRW market gets a chart file and a list row; small price
   }) as typeof fetch;
   const again = await writeCoinPages(site, { now: () => new Date('2026-10-05T12:00:00Z'), fetch: flaky, pauseMs: 0 });
   assert.deepEqual([again.status.ok, again.rows.length, listCalls], [true, 2, 2]);
+  // Upbit down for the whole run (2026-11-09): the live site's coin list and pages are kept, the status still fails.
+  const live = 'https://example.test/site/';
+  const served = new Map([[`${live}coins.json`, JSON.stringify({ date: '2026-11-08T16:13:00.000Z', rows: [['KRW-BTC', '비트코인', 'Bitcoin', 0, 1, 0, 'WITHHELD', null, null, null, null, null, null, null, null, null], ['KRW-GONE', '없음', '', 0, 1, 0, 'WITHHELD', null, null, null, null, null, null, null, null, null]] })],
+    [`${live}c/KRW-BTC.json`, '{"symbol":"KRW-BTC"}'], [`${live}c/KRW-BTC.html`, '<p>btc</p>']]);
+  const upbitDown = (async (url: string) => {
+    const body = served.get(String(url));
+    if (body) return new Response(body);
+    if (String(url).startsWith(live)) return new Response('', { status: 404 });
+    throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+  }) as typeof fetch;
+  const keptSite = await tempDir('gnm-coins-kept-');
+  const kept = await writeCoinPages(keptSite, { now: () => new Date(), fetch: upbitDown, pauseMs: 0, liveSiteUrl: 'https://example.test/site' });
+  assert.deepEqual([kept.status.ok, kept.rows.map((r) => r[0])], [false, ['KRW-BTC']]);
+  assert.match(kept.status.error ?? '', /timeout \(kept 1 pages from 2026-11-08T16:13Z\)/);
+  assert.equal(await readFile(join(keptSite, 'c', 'KRW-BTC.html'), 'utf8'), '<p>btc</p>');
+  assert.equal(JSON.parse(await readFile(join(keptSite, 'coins.json'), 'utf8')).rows.length, 1);
+  // Nothing live either: same failure as before, no list.
+  const none = await writeCoinPages(await tempDir('gnm-coins-none-'), { now: () => new Date(), fetch: (async () => new Response('', { status: 503 })) as typeof fetch, pauseMs: 0, liveSiteUrl: live });
+  assert.deepEqual([none.status.ok, none.rows.length], [false, 0]);
 });
 
 test('upbit: long history pages back 200 days at a time with `to`', async () => {

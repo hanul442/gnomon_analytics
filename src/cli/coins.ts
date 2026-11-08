@@ -32,7 +32,38 @@ export function etfRows(rows: readonly UniverseRow[], calcs: ReadonlyMap<string,
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export async function writeCoinPages(siteDir: string, options: { now: () => Date; fetch?: typeof fetch; pauseMs?: number }): Promise<{ status: NewsSourceStatus; rows: CoinRow[] }> {
+/**
+ * Upbit unreachable even after the retries (2026-11-09: two night runs, 02:54–04:14 KST): copy the coin
+ * list and pages the live site still serves, so the rebuilt site keeps them instead of 404s. Best effort.
+ */
+export async function keepLiveCoinPages(siteDir: string, siteUrl: string, fetcher: typeof fetch): Promise<{ date: string; rows: CoinRow[] } | null> {
+  const base = siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`;
+  const getText = async (path: string) => {
+    try { const r = await fetcher(`${base}${path}`, { signal: AbortSignal.timeout(15_000) }); return r.ok ? await r.text() : null; } catch { return null; }
+  };
+  const raw = await getText('coins.json');
+  let prev: { date?: unknown; rows?: unknown };
+  try { prev = raw ? JSON.parse(raw) : null; } catch { return null; }
+  if (!prev || !Array.isArray(prev.rows) || !prev.rows.length || typeof prev.date !== 'string') return null;
+  const listed = (prev.rows as CoinRow[]).filter((r) => Array.isArray(r) && typeof r[0] === 'string' && /^KRW-[A-Z0-9]{1,15}$/.test(r[0]));
+  const dir = join(siteDir, 'c'), kept: CoinRow[] = [];
+  for (let i = 0; i < listed.length; i += 8) {
+    await Promise.all(listed.slice(i, i + 8).map(async (row) => {
+      const [json, html] = await Promise.all([getText(`c/${row[0]}.json`), getText(`c/${row[0]}.html`)]);
+      if (!json || !html) return;
+      await writeFile(join(dir, `${row[0]}.json`), json);
+      await writeFile(join(dir, `${row[0]}.html`), html);
+      kept.push(row);
+    }));
+  }
+  if (!kept.length) return null;
+  const order = new Map(listed.map((r, i) => [r[0], i]));
+  kept.sort((a, b) => order.get(a[0])! - order.get(b[0])!);
+  await writeFile(join(siteDir, 'coins.json'), JSON.stringify({ date: prev.date, rows: kept }));
+  return { date: prev.date, rows: kept };
+}
+
+export async function writeCoinPages(siteDir: string, options: { now: () => Date; fetch?: typeof fetch; pauseMs?: number; liveSiteUrl?: string }): Promise<{ status: NewsSourceStatus; rows: CoinRow[] }> {
   const fetcher = options.fetch ?? fetch, now = options.now();
   const dir = join(siteDir, 'c');
   await mkdir(dir, { recursive: true });
@@ -41,7 +72,12 @@ export async function writeCoinPages(siteDir: string, options: { now: () => Date
   let markets;
   for (let attempt = 0; ; attempt++) {
     try { markets = await fetchUpbitMarkets(fetcher); break; } catch (e) {
-      if (attempt >= 2) return { status: { source: 'upbit:market:all', ok: false, count: 0, error: e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN' }, rows: [] };
+      if (attempt >= 2) {
+        const error = e instanceof Error ? e.message.slice(0, 80) : 'UNKNOWN';
+        const kept = options.liveSiteUrl ? await keepLiveCoinPages(siteDir, options.liveSiteUrl, fetcher) : null;
+        // Still a failure (the alert stays open); the site just keeps the last pages meanwhile.
+        return { status: { source: 'upbit:market:all', ok: false, count: kept?.rows.length ?? 0, error: kept ? `${error} (kept ${kept.rows.length} pages from ${kept.date.slice(0, 16)}Z)` : error }, rows: kept?.rows ?? [] };
+      }
       if (options.pauseMs !== 0) await sleep(attempt ? 10_000 : 3_000);
     }
   }

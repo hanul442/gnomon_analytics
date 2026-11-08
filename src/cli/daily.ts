@@ -369,7 +369,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   // Every Upbit KRW market (G-54): best effort, never fails the run.
   let coinList: CoinRow[] = [];
   if (options.coins !== false) {
-    const coins = await writeCoinPages(join(root, 'site'), { now: () => now, ...fetchOpt });
+    const coins = await writeCoinPages(join(root, 'site'), { now: () => now, ...fetchOpt, ...(SITE_CONFIG.siteUrl ? { liveSiteUrl: SITE_CONFIG.siteUrl } : {}) });
     universe.status.push(coins.status);
     coinList = coins.rows;
   }
