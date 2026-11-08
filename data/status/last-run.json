@@ -1,5 +1,5 @@
 {
- "at": "2026-11-07T19:02:30.721Z",
+ "at": "2026-11-08T09:30:32.427Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 41
+   "count": 30
   },
   {
    "source": "google:topic-business-ko",
@@ -55,7 +55,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 54
+   "count": 43
   },
   {
    "source": "naver:world:day:all",
@@ -66,6 +66,11 @@
    "source": "opendart:risk-filings",
    "ok": true,
    "count": 401
+  },
+  {
+   "source": "naver:themes",
+   "ok": true,
+   "count": 264
   }
  ],
  "stocks": [
@@ -345,14 +350,14 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-SUI",
-   "report": "EXISTS",
+   "symbol": "KRW-DRV",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
-  "date": "2026-11-07",
+  "date": "2026-11-08",
   "status": "NO_DATA"
  }
 }
