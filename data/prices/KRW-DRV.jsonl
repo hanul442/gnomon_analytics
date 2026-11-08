@@ -117,3 +117,4 @@
 {"symbol":"KRW-DRV","date":"2026-11-07","open":440,"high":466,"low":421,"close":424,"volume":6012773.61525598,"source":"upbit:candles:days","retrievedAt":"2026-11-08T09:30:32.427Z"}
 {"symbol":"KRW-DRV","date":"2026-11-08","open":424,"high":451,"low":423,"close":440,"volume":10495751.45236675,"source":"upbit:candles:days","retrievedAt":"2026-11-08T09:30:32.427Z"}
 {"symbol":"KRW-DRV","date":"2026-11-08","open":424,"high":453,"low":423,"close":436,"volume":15181552.49721955,"source":"upbit:candles:days","retrievedAt":"2026-11-08T16:13:48.248Z"}
+{"symbol":"KRW-DRV","date":"2026-11-08","open":424,"high":453,"low":418,"close":422,"volume":15751296.8408118,"source":"upbit:candles:days","retrievedAt":"2026-11-08T22:56:28.548Z"}
