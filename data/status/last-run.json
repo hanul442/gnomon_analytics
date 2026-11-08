@@ -1,5 +1,5 @@
 {
- "at": "2026-11-08T16:13:48.248Z",
+ "at": "2026-11-08T17:54:49.363Z",
  "selected": null,
  "universe": [
   {
@@ -13,6 +13,11 @@
    "count": 1184
   },
   {
+   "source": "opendart:corpCode",
+   "ok": true,
+   "count": 4013
+  },
+  {
    "source": "naver:fchart:day:all",
    "ok": true,
    "count": 2650
@@ -23,9 +28,10 @@
    "count": 1184
   },
   {
-   "source": "upbit:candles:days:all",
-   "ok": true,
-   "count": 300
+   "source": "upbit:market:all",
+   "ok": false,
+   "count": 0,
+   "error": "The operation was aborted due to timeout"
   },
   {
    "source": "naver:global",
@@ -35,7 +41,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 32
+   "count": 31
   },
   {
    "source": "google:topic-business-ko",
@@ -66,6 +72,24 @@
    "source": "opendart:risk-filings",
    "ok": true,
    "count": 0
+  },
+  {
+   "source": "request:KRW-BTC",
+   "ok": false,
+   "count": 0,
+   "error": "NOT_ON_UPBIT_KRW"
+  },
+  {
+   "source": "request:KRW-ETH",
+   "ok": false,
+   "count": 0,
+   "error": "NOT_ON_UPBIT_KRW"
+  },
+  {
+   "source": "request:KRW-WLD",
+   "ok": false,
+   "count": 0,
+   "error": "NOT_ON_UPBIT_KRW"
   }
  ],
  "stocks": [
@@ -325,32 +349,17 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-BTC",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-ETH",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-WLD",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "069500",
    "report": "SKIPPED",
    "failedSources": []
-  },
-  {
-   "symbol": "KRW-DRV",
-   "report": "EXISTS",
-   "failedSources": []
   }
  ],
- "failed": [],
+ "failed": [
+  {
+   "symbol": "KRW-DRV",
+   "error": "The operation was aborted due to timeout"
+  }
+ ],
  "market": {
   "date": "2026-11-08",
   "status": "NO_DATA"
