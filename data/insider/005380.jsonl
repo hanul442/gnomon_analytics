@@ -497,3 +497,4 @@
 {"symbol":"005380","receiptNo":"20260818000199","date":"2026-08-18","reporter":"피트 졸리","position":"상무","isExec":true,"isMajor":false,"shares":0,"delta":-700,"ratio":0,"retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"005380","receiptNo":"20260824000132","date":"2026-08-24","reporter":"이용석","position":"상무","isExec":true,"isMajor":false,"shares":360,"delta":360,"ratio":0,"retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"005380","receiptNo":"20260921000336","date":"2026-09-21","reporter":"박무곤","position":"상무","isExec":true,"isMajor":false,"shares":389,"delta":35,"ratio":0,"retrievedAt":"2026-10-06T14:38:10.382Z"}
+{"symbol":"005380","receiptNo":"20261109000357","date":"2026-11-09","reporter":"이승애","position":"상무","isExec":true,"isMajor":false,"shares":81,"delta":81,"ratio":0,"retrievedAt":"2026-11-09T09:30:40.271Z"}
