@@ -72,6 +72,9 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GNM_DEEP_KEY: ${{ secrets.GNM_DEEP_KEY }}
           EDGAR_CONTACT: ${{ secrets.EDGAR_CONTACT }}
+          # Repository variables (Settings → Variables), empty = the defaults in code (docs/PAUSE_HANDOFF.md).
+          GNM_AI_BUDGET_USD: ${{ vars.GNM_AI_BUDGET_USD }}
+          GNM_COMMENTARY_MODEL: ${{ vars.GNM_COMMENTARY_MODEL }}
           MARKET_REGEN: ${{ inputs.regen_market && '1' || '' }}
           MARKET_DATE: ${{ inputs.market_date || '' }}
           REPORT_DATE: ${{ inputs.report_date || '' }}
