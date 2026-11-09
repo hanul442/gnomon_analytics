@@ -1058,3 +1058,20 @@ test('G-314: ix=KOSPI reads the live index from Naver\'s index feed, cached', as
   assert.ok(t.seen.some((u) => /realtime\/domestic\/index\/KOSPI$/.test(u)));
   assert.equal((await t.call('GET', '/quote?ix=KOSPI')).body.cached, true);
 });
+
+test('G-338: 한 판 answers count once per device a turn, a change replaces it; the console shows people and repeat visitors', async () => {
+  const t = setup();
+  const boss = await t.login('boss@example.com');
+  const a = 'a'.repeat(24), b = 'b'.repeat(24);
+  assert.equal((await t.call('POST', '/hanpan', { v: a, day: '2026-11-06', s: 'sideways' })).status, 400);
+  assert.equal((await t.call('POST', '/hanpan', { v: a, day: '2026-11-06', s: 'up' })).status, 200);
+  await t.call('POST', '/hanpan', { v: a, day: '2026-11-06', s: 'down' });
+  await t.call('POST', '/hanpan', { v: a, day: '2026-11-09', s: 'up' });
+  await t.call('POST', '/hanpan', { v: b, day: '2026-11-09', s: 'up' });
+  await t.call('POST', '/visit', { v: a });
+  t.tick(86_400_000);
+  await t.call('POST', '/visit', { v: a });
+  await t.call('POST', '/visit', { v: b });
+  const ov = (await t.call('GET', '/admin/overview', undefined, boss.session)).body.visits;
+  assert.deepEqual([ov.repeat, ov.hanpan.answers, ov.hanpan.people, ov.hanpan.repeat], [1, 3, 2, 1]);
+});

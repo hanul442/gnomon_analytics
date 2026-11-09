@@ -26,6 +26,8 @@ import { fadeGrad, gradId, smoothD } from './chartLook.js';
 import { won, tone, move as signed, withCurrency } from './format.js';
 import { homeCommittee, seatDots } from './committeeSeats.js';
 import type { DailyReport } from './dailyReport.js';
+import { hanpanBlock, HANPAN_CSS, HANPAN_JS } from './hanpan.js';
+import type { HanpanState } from '../analysis/hanpan.js';
 
 // G-84: a move always carries its arrow (▲ red up, ▼ blue down) next to the number.
 
@@ -53,6 +55,8 @@ export interface HomeData {
   /** G-284: AI summaries and preview pictures by issue key, and closes by symbol for the stock rows. */
   digests?: ReadonlyMap<string, NewsDigest>;
   closes?: ReadonlyMap<string, number | null>;
+  /** G-338: 오늘의 한 판 (data/hanpan.json). */
+  hanpan?: HanpanState | null;
 }
 
 /** G-284: the merged issue ranking home shows; daily writes one in-app page per row from the same list. */
@@ -193,7 +197,7 @@ export function renderHome(data: HomeData): string {
   // 시장 6칸 · 이슈 1~3위. 시장 전체 and 이슈 전체 open from their links; the issue map lives only in 이슈 전체.
   const issueBlock = `<div class="hm-h"><h2>오늘 이슈</h2><button type="button" class="wd-link" data-wd-go="news">${issues.length ? `${issues.length}개 ` : ''}전체 ›</button></div><section class="card hm-card">${issuesList(issues, 3, false)}</section>`;
   const sum = `<section class="hm-hero" id="mkt-hero"><p class="hm-d">${esc(dayLong(day))}</p><p class="hm-s">${esc(wp?.sentence ?? '오늘 시장을 한눈에 모았어요.')}</p></section>
-<div class="hm-bn">${banner}</div>
+${data.hanpan ? hanpanBlock(data.hanpan) : ''}<div class="hm-bn">${banner}</div>
 <i id="watch-slot" hidden></i><div class="hm-left">${WATCH}${comBlock || scoreLine(scored, true)}</div>${key}${issueBlock}`;
   void callRow;
   const back = (t: string) => `<div class="hm-subh"><button type="button" class="hm-back" data-wd-go="sum" aria-label="오늘로 돌아가기">‹</button><h2>${t}</h2></div>`;
@@ -201,11 +205,11 @@ export function renderHome(data: HomeData): string {
   const news = `<section class="card hm-card"><div class="hm-h ia-head"><h2>이슈 순위</h2>${ISSUES_FILTER}</div>${issuesList(issues, ISSUE_SHOW, true)}${issues.length > ISSUE_SHOW ? `<details class="more content-more ia-rest"><summary><span class="more-closed">${issues.length - ISSUE_SHOW}개 더 보기</span><span class="more-open">접기</span></summary>${issuesList(issues.slice(ISSUE_SHOW), issues.length, true)}</details>` : ''}</section><p class="fine wd-fine">한국 종목 뉴스와 세계 뉴스를 한 순위로 모았어요. 각 목록 안에서 다룬 매체가 많은 순서를 기준으로 섞었어요. 시장 숫자는 같은 날 함께 움직인 값이고, 원인이라는 뜻이 아니에요.</p>`;
   
   const tabs = [['sum', '', sum], ...(wp ? [['market', '시장', `${back('시장 전체')}${wp.market}`]] : []), ['news', '이슈', `${back('이슈 전체')}${im?.card ?? ''}${news}`]] as const;
-  const body = `${HOME_STYLE}${WORLD_CSS}${ISSUES_CSS}${im ? ISSUE_MAP_CSS + im.sheets : ''}${tabs.map(([k, l, html], i) => `<div class="wd-p hm-p" data-wd-p="${k}" data-wd-label="${l}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
+  const body = `${HOME_STYLE}${data.hanpan?.picks.length ? HANPAN_CSS : ''}${WORLD_CSS}${ISSUES_CSS}${im ? ISSUE_MAP_CSS + im.sheets : ''}${tabs.map(([k, l, html], i) => `<div class="wd-p hm-p" data-wd-p="${k}" data-wd-label="${l}"${i ? ' hidden' : ''}>${html}</div>`).join('')}
 <footer id="sources" class="hm-foot"><details class="hm-src"><summary>데이터 출처·기준 시각<span aria-hidden="true"> ›</span></summary><p>데이터: Naver 금융, 네이버 증권, OpenDART, 네이버 뉴스 검색과 RSS, 해외 뉴스 RSS.${wp ? ` 세계 숫자는 ${esc(wp.asof)} 기준이에요.` : ''} 계산 결과예요.</p></details></footer>`;
   // G-277 (한서님 10/21 '위의 바 두기싫다니까'): on phones the parts switch from the bottom bar; the row above is for wide screens.
   void partButtons;
-  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘' }, scripts: WORLD_JS + (im ? ISSUE_MAP_JS : '') + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + HOME_LIVE_JS });
+  return shell('', 'GNOMON | 오늘', body, { active: 'home', head: { title: '오늘' }, scripts: WORLD_JS + (im ? ISSUE_MAP_JS : '') + HOME_SCRIPT + FEED_SCRIPT + BANNER_JS + HOME_LIVE_JS + (data.hanpan?.picks.length ? HANPAN_JS : '') });
 }
 
 /**

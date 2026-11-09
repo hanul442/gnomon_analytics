@@ -85,6 +85,7 @@ import { paperEntries, paperKey, type PaperEntry } from '../analysis/paper.js';
 import type { FinancePeriod, IntradaySession, InvestorFlow, ResearchNote, StockSnapshot } from '../types.js';
 import type { NewsSourceStatus } from '../report/dailyReport.js';
 import { aliasPattern, benchmarksFor, isUsMarket, loadTickers, type Ticker } from '../config/tickers.js';
+import { updateHanpan, type HanpanRun } from './hanpan.js';
 import { collectUniverse, readCorpCodes, readListedStocks, type ListedStock } from './universe.js';
 import { loadRequests, type ReportRequest } from '../config/requests.js';
 import { latestSelection, pickTicker, pool, runSelection } from './weekly.js';
@@ -459,7 +460,7 @@ export async function runDaily(options: RunOptions & { tickers: readonly Ticker[
   const market = today.hour >= SETTLED_HOUR_KST || process.env.MARKET_DATE ? await writeMarketReports(root, now, universe.rows ?? [], options.anthropicApiKey, options.anthropic, budget) : undefined;
   // G-284: news summaries use the same monthly AI budget; pictures are looked up with the run's fetch.
   const newsClient = options.anthropic ?? (options.anthropicApiKey ? new Anthropic({ apiKey: options.anthropicApiKey, timeout: 60000, maxRetries: 1 }) : null);
-  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp, now, news: { client: newsClient, budget, ...fetchOpt } });
+  await renderSite(root, jobs.map((j) => j.ticker), lives, universe.rows, selection, requested, { pulse, calcs, risk: risk.flags, daily: await readLog<DailyPick>(join(root, 'data', 'daily-picks.jsonl')), us: usTemp, now, news: { client: newsClient, budget, ...fetchOpt }, hanpan: { settled: today.hour >= SETTLED_HOUR_KST && !!universe.rows?.length, now, ...fetchOpt } });
   // What failed this run, kept in data/ so it can be checked (and alerted on) without the Actions log.
   const failedSources = (list: readonly NewsSourceStatus[]) => list.filter((st) => !st.ok).map((st) => ({ source: st.source, error: st.error ?? '' }));
   await mkdir(join(root, 'data', 'status'), { recursive: true });
@@ -818,7 +819,7 @@ export async function configureSite(root: string): Promise<void> {
 /** G-284: what the run gives the in-app news pages: an AI client for summaries, the budget, and fetch for pictures. */
 export interface NewsAi { client: Anthropic | null; budget?: AiBudget; fetch?: typeof fetch }
 
-export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[]; us?: UsTemp | null; now?: Date; news?: NewsAi } = {}): Promise<void> {
+export async function renderSite(root: string, tickers: readonly Ticker[], lives: ReadonlyMap<string, DailyReport> = new Map(), universe: readonly UniverseRow[] | null = null, selection: Selection | null = null, requested: ReadonlySet<string> = new Set(), extras: { pulse?: MarketPulse | null; calcs?: ReadonlyMap<string, StockCalc>; risk?: ReadonlyMap<string, RiskFlag>; daily?: readonly DailyPick[]; us?: UsTemp | null; now?: Date; news?: NewsAi; hanpan?: HanpanRun } = {}): Promise<void> {
   const siteDir = join(root, 'site');
   await configureSite(root);
   const home: HomeEntry[] = [];
@@ -1012,7 +1013,9 @@ export async function renderSite(root: string, tickers: readonly Ticker[], lives
   for (const i of issueList) await writeFile(join(siteDir, 'issue', `${i.key}.html`), renderIssuePage(i, { firstAt: firstAt.get(i.url) ?? null }));
   // The stock page's 소식 part shows the issues that name the stock (read in the browser).
   await writeFile(join(siteDir, 'issue-index.json'), JSON.stringify(issueList.filter((i) => i.symbols.length).map((i) => ({ k: i.key, r: i.rank, t: i.title, o: i.outlets, s: i.symbols, l: i.lines[0] ?? '' }))));
-  await writeFile(join(siteDir, 'index.html'), renderHome({ ...homeData, krIssues, worldIssues, digests, closes, today: kstParts(extras.now ?? new Date()).date }));
+  // G-338: 오늘의 한 판 is scored and opened on the settled evening run; other runs show the kept state.
+  const hanpan = await updateHanpan(root, home, universe, extras.hanpan ?? { settled: false });
+  await writeFile(join(siteDir, 'index.html'), renderHome({ ...homeData, hanpan, krIssues, worldIssues, digests, closes, today: kstParts(extras.now ?? new Date()).date }));
   // G-277: one issue ranking lives in home's 이슈 tab.
   await writeFile(join(siteDir, 'issues.html'), movedToHome('news'));
   await writeWorldPage(root, siteDir, extras.now ?? new Date());
