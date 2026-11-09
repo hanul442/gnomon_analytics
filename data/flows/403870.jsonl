@@ -103,3 +103,4 @@
 {"symbol":"403870","date":"2026-11-06","foreignNet":-19769,"institutionNet":32086,"individualNet":-27495,"foreignHoldRatio":33.2,"close":33900,"volume":1684731,"source":"naver:m-stock:trend","retrievedAt":"2026-11-06T16:53:55.442Z"}
 {"symbol":"403870","date":"2026-11-06","foreignNet":-19769,"institutionNet":32086,"individualNet":-27495,"foreignHoldRatio":33.35,"close":33900,"volume":1700440,"source":"naver:m-stock:trend","retrievedAt":"2026-11-09T09:30:40.271Z"}
 {"symbol":"403870","date":"2026-11-09","foreignNet":-141037,"institutionNet":276885,"individualNet":-144824,"foreignHoldRatio":33.18,"close":33850,"volume":1506564,"source":"naver:m-stock:trend","retrievedAt":"2026-11-09T19:58:39.414Z"}
+{"symbol":"403870","date":"2026-11-09","foreignNet":-141037,"institutionNet":276885,"individualNet":-144824,"foreignHoldRatio":32.97,"close":33850,"volume":1506564,"source":"naver:m-stock:trend","retrievedAt":"2026-11-09T23:34:04.716Z"}

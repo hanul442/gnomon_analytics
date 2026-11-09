@@ -2386,3 +2386,4 @@
 {"date":"2026-11-09","preset":"rebound","symbol":"208640","market":"Q","close":642,"method":"gnm-signal-v1"}
 {"date":"2026-11-09","preset":"large","symbol":"280360","market":"P","close":122700,"method":"gnm-signal-v1"}
 {"date":"2026-11-09","preset":"large","symbol":"005300","market":"P","close":109800,"method":"gnm-signal-v1"}
+{"date":"2026-11-09","preset":"large","symbol":"035760","market":"Q","close":46400,"method":"gnm-signal-v1"}
