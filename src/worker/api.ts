@@ -989,6 +989,18 @@ route('POST', '/visit', async ({ req, env, now }) => {
   return { ok: true };
 });
 
+// G-338: 오늘의 한 판 answers, anonymous like visits. A changed answer before the deadline replaces the earlier one.
+route('POST', '/hanpan', async ({ req, env, now }) => {
+  const b = await body(req), ua = req.headers.get('user-agent') ?? '';
+  if (/bot|crawl|spider|headless|lighthouse|playwright/i.test(ua)) return { ok: true, skipped: true };
+  const vid = typeof b.v === 'string' && /^[a-f0-9]{16,32}$/.test(b.v) ? b.v : '';
+  const day = typeof b.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.day) ? b.day : '';
+  const s = b.s === 'up' || b.s === 'down' ? b.s : '';
+  if (!vid || !day || !s) fail(400, 'BAD_HANPAN', '한 판 답이 맞지 않아요.');
+  await env.DB.prepare('INSERT INTO hanpan_answers (day, vid, stance, answered_at) VALUES (?, ?, ?, ?) ON CONFLICT (day, vid) DO UPDATE SET stance = excluded.stance, answered_at = excluded.answered_at').bind(day, vid, s, iso(now)).run();
+  return { ok: true };
+});
+
 /** G-293: visitors per day (28 days), this week's and last week's devices, how many came back, and sources this week. */
 export async function visitStats(db: Env['DB'], now: Date) {
   const day = (back: number) => kst(new Date(now.getTime() - back * 86_400_000)).slice(0, 10);
@@ -1000,13 +1012,20 @@ export async function visitStats(db: Env['DB'], now: Date) {
     db.prepare('SELECT COUNT(DISTINCT vid) AS n FROM visits WHERE day >= ? AND vid IN (SELECT vid FROM visits WHERE day >= ? AND day <= ?)').bind(day(6), day(13), day(7)).first<{ n: number }>(),
     q<{ src: string; n: number }>('SELECT src, COUNT(*) AS n FROM visits WHERE day >= ? GROUP BY src ORDER BY n DESC', day(6)),
   ]);
+  // G-338 (한서님 11/7 판단 기준): devices that came on two or more days of the last 7, and 한 판 answers of the last 7 days.
+  const [repeat, hp] = await Promise.all([
+    db.prepare('SELECT COUNT(*) AS n FROM (SELECT vid FROM visits WHERE day >= ? GROUP BY vid HAVING COUNT(*) >= 2)').bind(day(6)).first<{ n: number }>(),
+    db.prepare('SELECT COUNT(*) AS n, COUNT(DISTINCT vid) AS people, (SELECT COUNT(*) FROM (SELECT vid FROM hanpan_answers WHERE substr(answered_at, 1, 10) >= ? GROUP BY vid HAVING COUNT(*) >= 2)) AS repeat FROM hanpan_answers WHERE substr(answered_at, 1, 10) >= ?').bind(day(7), day(7)).first<{ n: number; people: number; repeat: number }>(),
+  ]);
   const p = prev?.n ?? 0, r = back?.n ?? 0;
-  return { days, week: week?.n ?? 0, prevWeek: p, returned: r, returnRate: p ? Math.round((r / p) * 1000) / 10 : null, sources };
+  return { days, week: week?.n ?? 0, prevWeek: p, returned: r, returnRate: p ? Math.round((r / p) * 1000) / 10 : null, sources, repeat: repeat?.n ?? 0, hanpan: { answers: hp?.n ?? 0, people: hp?.people ?? 0, repeat: hp?.repeat ?? 0 } };
 }
 
 /** G-293: visit rows are kept 120 days. */
 export async function pruneVisits(db: Env['DB'], now: Date): Promise<number> {
-  const r = await db.prepare('DELETE FROM visits WHERE day < ?').bind(kst(new Date(now.getTime() - 120 * 86_400_000)).slice(0, 10)).run();
+  const cut = kst(new Date(now.getTime() - 120 * 86_400_000)).slice(0, 10);
+  const r = await db.prepare('DELETE FROM visits WHERE day < ?').bind(cut).run();
+  await db.prepare('DELETE FROM hanpan_answers WHERE day < ?').bind(cut).run();
   return Number(r.meta?.changes ?? 0);
 }
 
