@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import type { PriceBar } from '../types.js';
 import { chooseHanpan, hanpanDeadline, hanpanHit, makePick, scorePick, type HanpanCandidate } from './hanpan.js';
 
 const c = (symbol: string, cap: number, dots: string, reportDate = '2026-11-03'): HanpanCandidate => ({ symbol, name: symbol, marketCap: cap, reportDate, dots: dots.split('') as never, why: '' });
-const bar = (date: string, close: number) => ({ symbol: 'X', date, open: close, high: close, low: close, close, volume: 1 });
+const bar = (date: string, close: number): PriceBar => ({ symbol: 'X', date, open: close, high: close, low: close, close, volume: 1, source: 'test', retrievedAt: '2026-11-09T00:00:00Z' });
 
 test('G-338: the most split of the biggest 50 wins; ties have no lean, old reports and recent picks rest', () => {
   const list = [c('A', 100, 'uuuuuuuuddd'), c('B', 90, 'uuuuuuddddd'), c('C', 80, 'uuuuuddddd'), c('D', 70, 'uuuuudddd', '2026-10-01'), c('E', 60, 'uuuuuudddd')];
