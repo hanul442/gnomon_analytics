@@ -104,8 +104,12 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+      # GitHub's side sometimes sits in "syncing_files" past the 10-minute default
+      # (11/5–11/6: three backup runs failed with the data already pushed). Wait up to 25 minutes.
       - id: deploy
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1500000
       # One open "run-alert" issue while runs need a person; closed by the next healthy run (docs/DESIGN.md G-32).
       - name: Summarize the run for alerts
         id: alert
