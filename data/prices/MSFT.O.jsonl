@@ -998,3 +998,4 @@
 {"symbol":"MSFT.O","date":"2026-11-04","open":543.695,"high":559.15,"low":542.3,"close":555.8,"volume":50807828,"source":"naver:world:day","retrievedAt":"2026-11-09T09:30:40.271Z"}
 {"symbol":"MSFT.O","date":"2026-11-05","open":554.935,"high":557.62,"low":532.675,"close":535.93,"volume":42507933,"source":"naver:world:day","retrievedAt":"2026-11-09T09:30:40.271Z"}
 {"symbol":"MSFT.O","date":"2026-11-06","open":525.69,"high":538.33,"low":524.47,"close":530.61,"volume":26956423,"source":"naver:world:day","retrievedAt":"2026-11-09T09:30:40.271Z"}
+{"symbol":"MSFT.O","date":"2026-11-09","open":544.73,"high":548,"low":538.6996,"close":546.94,"volume":13249363,"source":"naver:world:day","retrievedAt":"2026-11-09T19:58:39.414Z"}
