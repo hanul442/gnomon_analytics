@@ -119,7 +119,7 @@ export const ALPHA_SCRIPT = `<script>
     document.documentElement.setAttribute('data-signed', m ? 'in' : 'out');
     document.querySelectorAll('.nav-acct').forEach(function (a) { a.href = base + (m ? 'account.html' : 'login.html'); a.setAttribute('aria-label', m ? '내 계정과 크레딧' : '로그인'); });
     var ww = document.getElementById('watch-where'); if (ww && !m) ww.innerHTML = '<a href="' + base + 'login.html">로그인</a>하면 계정에 저장돼요';
-    if (!m && Date.now() < Date.parse('${ALPHA_PAUSE.until}')) document.querySelectorAll('[data-login-note]').forEach(function (el) { el.textContent = '11월 19일까지 로그인을 잠시 쉬어요 · 기록은 그대로예요'; });
+    if (!m && Date.now() < Date.parse('${ALPHA_PAUSE.until}')) document.querySelectorAll('[data-login-note]').forEach(function (el) { el.textContent = '지금은 로그인을 잠시 쉬어요 · 기록은 그대로예요'; });
     var nav = document.querySelector('.top-links'), adm = document.getElementById('nav-admin');
     if (m && m.user.admin && !adm) { var slot = document.getElementById('sm-admin'); if (slot) slot.innerHTML = '<div class="sm-group"><div class="sm-title">운영</div><a id="nav-admin" href="' + API + '/ops" target="_blank" rel="noopener">운영 사이트 (따로 로그인)</a></div>'; }
     // Locked sections point signed-out visitors to the sign-in instead of the price list (the alpha ended 10/31).

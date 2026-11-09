@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { baseDayOf, leanHit, runMyCallsScore, scoreWindow } from './myCalls.js';
 import { testDb } from './testDb.js';
+import { ALPHA_PAUSE } from '../report/wrapup.js';
+// These tests describe the app after the login rest; since 11/9 the rest has no fixed end (docs/PAUSE_HANDOFF.md).
+(ALPHA_PAUSE as { until: string }).until = '2026-11-19T15:00:00Z';
 
 test('the start close is the choice day before 15:30 KST on a weekday, else the next weekday', () => {
   assert.equal(baseDayOf(new Date('2026-11-03T05:00:00Z')), '2026-11-03', 'Tue 14:00');

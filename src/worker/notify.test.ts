@@ -3,6 +3,9 @@ import test from 'node:test';
 import { cleanPrefs, DEFAULT_PREFS, inQuiet, notifyUser, runDailyNotify, runKillNotify, runMorningBrief, runPriceAlerts, runUpdateNotify, worldLine } from './notify.js';
 import { b64u, encryptPayload, unb64u, vapid, vapidHeader } from './push.js';
 import { testDb } from './testDb.js';
+import { ALPHA_PAUSE } from '../report/wrapup.js';
+// These tests describe the app after the login rest; since 11/9 the rest has no fixed end (docs/PAUSE_HANDOFF.md).
+(ALPHA_PAUSE as { until: string }).until = '2026-11-19T15:00:00Z';
 
 const SITE = 'https://hanul442.github.io/gnomon_analytics';
 

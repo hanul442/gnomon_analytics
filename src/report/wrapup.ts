@@ -36,12 +36,14 @@ export const wrapupDaysLeft = (now: Date): number => {
 export const ALPHA_END = { from: '2026-10-31T01:00:00Z', until: '2026-10-31T15:00:00Z' } as const;
 export const inAlphaEnd = (now: Date): boolean => now.getTime() >= Date.parse(ALPHA_END.from) && now.getTime() < Date.parse(ALPHA_END.until);
 /**
- * 2026-11-01 00:00 KST to 2026-11-20 00:00 KST (한서 10/29, decision card): the app rests. Only the admin signs in;
+ * From 2026-11-01 00:00 KST (한서 10/29, decision card) the app rests. Only the admin signs in;
  * alpha accounts and new sign-ups wait, and no notes or mails go to anyone else. Accounts and records are kept.
+ * 11/9 한서: the beta moved and the work pauses from 11/18 (docs/PAUSE_HANDOFF.md), so the rest no longer ends
+ * on 11/20. `until` is far away on purpose: set it to the day the beta really opens.
  */
-export const ALPHA_PAUSE = { from: '2026-10-31T15:00:00Z', until: '2026-11-19T15:00:00Z' } as const;
+export const ALPHA_PAUSE = { from: '2026-10-31T15:00:00Z', until: '2027-12-31T15:00:00Z' } as const;
 export const alphaPaused = (now: Date): boolean => now.getTime() >= Date.parse(ALPHA_PAUSE.from) && now.getTime() < Date.parse(ALPHA_PAUSE.until);
-export const ALPHA_PAUSED_TEXT = '알파 테스트가 끝나서 11월 19일까지 로그인을 잠시 쉬어요. 계정과 기록은 그대로 있어요. 11월 20일 클로즈드 베타 때 다시 만나요.';
+export const ALPHA_PAUSED_TEXT = '알파 테스트가 끝나서 지금은 로그인을 잠시 쉬어요. 계정과 기록은 그대로 있어요. 베타를 열 때 다시 알려 드릴게요.';
 
 /** The alpha-end notice: 🔔 and push use title/body, the mail adds the longer lines. */
 export const ALPHA_END_NOTICE = {

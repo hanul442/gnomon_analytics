@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { ALPHA_PAUSE } from '../report/wrapup.js';
 import { ALPHA, allows, CREDIT_COST, TESTERS, UNLOCK, type Feature } from '../report/plans.js';
 import { handle, pruneVisits, type Deps, type Env } from './api.js';
 import { askParams } from './ask.js';
@@ -102,13 +103,16 @@ test('sign-in needs an invite the first time; the admin needs none; links work o
   const again = await t.login('a@example.com');
   assert.equal(again.me.credits.balance, ALPHA.monthlyCredits + 50);
   // Next month the allowance comes once more.
-  // (11/20, after the alpha rest of G-306: 11/1–19 only the admin signs in.)
+  // (11/20, after the alpha rest of G-306 as first planned: 11/1–19 only the admin signs in.)
   t.tick(46 * 86_400_000);
+  const until = ALPHA_PAUSE.until;
+  (ALPHA_PAUSE as { until: string }).until = '2026-11-19T15:00:00Z';
   const nov = await t.login('a@example.com');
   assert.equal(nov.me.credits.balance, 2 * ALPHA.monthlyCredits + 50);
   // Admin pages are the admin's.
   assert.equal((await t.call('GET', '/admin/overview', undefined, nov.session)).status, 403);
   assert.equal((await t.call('GET', '/me')).status, 401);
+  (ALPHA_PAUSE as { until: string }).until = until;
 });
 
 test('without mail set up, the admin can hand out a sign-in link', async () => {
@@ -998,7 +1002,7 @@ test('G-293: anonymous visits count once per device a day; the console shows wee
   assert.equal(await pruneVisits(t.env.DB, t.deps.now()), 4);
 });
 
-test('alpha end (G-306): from 11/1 to 11/19 KST only the admin signs in; open sessions end; then it opens again', async () => {
+test('alpha end (G-306): from 11/1 KST only the admin signs in; open sessions end; it opens again at ALPHA_PAUSE.until', async () => {
   const t = setup();
   const boss = await t.login('boss@example.com');
   const code = (await t.call('POST', '/admin/invites', { credits: 0, maxUses: 5 }, boss.session)).body.code;
@@ -1010,13 +1014,15 @@ test('alpha end (G-306): from 11/1 to 11/19 KST only the admin signs in; open se
   assert.deepEqual([me.status, me.body.error], [401, 'ALPHA_PAUSED'], 'an open session ends like an expired one');
   const login = await t.call('POST', '/auth/login', { email: 'old@example.com', password: 'abcd1234' });
   assert.deepEqual([login.status, login.body.error], [403, 'ALPHA_PAUSED']);
-  assert.match(login.body.message, /11월 20일/);
+  assert.match(login.body.message, /로그인을 잠시 쉬어요/);
   assert.equal((await t.call('POST', '/auth/signup', { email: 'new@example.com', password: 'abcd1234', invite: code, terms: true })).body.error, 'ALPHA_PAUSED');
   assert.equal((await t.call('POST', '/auth/start', { email: 'old@example.com' })).body.error, 'ALPHA_PAUSED');
   assert.equal((await t.call('POST', '/auth/start', { email: 'new2@example.com', invite: code, terms: true })).body.error, 'ALPHA_PAUSED');
   assert.equal((await t.call('GET', '/me', undefined, boss.session)).status, 200, 'the admin keeps working');
   assert.ok((await t.login('boss@example.com')).session, 'and can still sign in');
-  t.tick(Date.parse('2026-11-19T15:00:00Z') - t.deps.now().getTime()); // 11/20 00:00 KST: open again
+  t.tick(Date.parse('2026-11-19T15:00:00Z') - t.deps.now().getTime()); // 11/20 KST: still resting (11/9 한서, the pause)
+  assert.equal((await t.call('POST', '/auth/login', { email: 'old@example.com', password: 'abcd1234' })).body.error, 'ALPHA_PAUSED');
+  t.tick(Date.parse('2027-12-31T15:00:00Z') - t.deps.now().getTime()); // ALPHA_PAUSE.until: open again
   assert.ok((await t.call('POST', '/auth/login', { email: 'old@example.com', password: 'abcd1234' })).body.session);
   assert.notEqual((await t.call('POST', '/auth/signup', { email: 'beta@example.com', password: 'abcd1234', invite: code, terms: true })).body.error, 'ALPHA_PAUSED');
 });
