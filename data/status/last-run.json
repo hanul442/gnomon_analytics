@@ -1,5 +1,5 @@
 {
- "at": "2026-11-09T19:58:39.414Z",
+ "at": "2026-11-09T22:44:50.155Z",
  "selected": null,
  "universe": [
   {
@@ -346,17 +346,17 @@
    "failedSources": []
   },
   {
-   "symbol": "MSFT.O",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
    "symbol": "381180",
    "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "006120",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "MSFT.O",
    "report": "EXISTS",
    "failedSources": []
   }
