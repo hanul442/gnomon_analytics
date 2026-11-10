@@ -998,3 +998,4 @@
 {"symbol":"AVGO.O","date":"2026-11-05","open":311.89,"high":314,"low":290.12,"close":291.53,"volume":53835464,"source":"naver:world:day","retrievedAt":"2026-11-10T09:30:39.781Z"}
 {"symbol":"AVGO.O","date":"2026-11-06","open":311.13,"high":311.35,"low":289.767,"close":293.69,"volume":32442491,"source":"naver:world:day","retrievedAt":"2026-11-10T09:30:39.781Z"}
 {"symbol":"AVGO.O","date":"2026-11-09","open":305.29,"high":323.05,"low":304.292,"close":319.48,"volume":36685296,"source":"naver:world:day","retrievedAt":"2026-11-10T09:30:39.781Z"}
+{"symbol":"AVGO.O","date":"2026-11-10","open":317.94,"high":334.6689,"low":316.69,"close":325.87,"volume":13709404,"source":"naver:world:day","retrievedAt":"2026-11-10T17:14:19.732Z"}

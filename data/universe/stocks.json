@@ -2885,6 +2885,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "014440",
+  "name": "영보화학",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "014470",
   "name": "부방",
   "market": "KOSDAQ"

@@ -1,16 +1,16 @@
 {
- "at": "2026-11-10T09:30:39.781Z",
+ "at": "2026-11-10T17:14:19.732Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2769
+   "count": 2770
   },
   {
    "source": "naver:m-stock:etf",
    "ok": true,
-   "count": 1191
+   "count": 1190
   },
   {
    "source": "naver:fchart:day:all",
@@ -20,7 +20,7 @@
   {
    "source": "naver:fchart:day:etf",
    "ok": true,
-   "count": 1191
+   "count": 1190
   },
   {
    "source": "upbit:candles:days:all",
@@ -36,7 +36,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 41
+   "count": 40
   },
   {
    "source": "google:topic-business-ko",
@@ -51,12 +51,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 67
+   "count": 56
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 45
+   "count": 47
   },
   {
    "source": "naver:world:day:all",
@@ -337,33 +337,29 @@
   },
   {
    "symbol": "402340",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "000270",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-AXIS",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "AVGO.O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-AXIS",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "137310",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-11-10",
-  "status": "OK"
- }
+ "failed": []
 }

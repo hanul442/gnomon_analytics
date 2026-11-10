@@ -2724,3 +2724,5 @@
 {"symbol":"005930","receiptNo":"20261106000410","date":"2026-11-06","reporter":"노태문","position":"대표사장","isExec":true,"isMajor":false,"shares":127280,"delta":3000,"ratio":0,"retrievedAt":"2026-11-06T15:09:52.362Z"}
 {"symbol":"005930","receiptNo":"20261106000440","date":"2026-11-06","reporter":"김준성","position":"독립이사","isExec":true,"isMajor":false,"shares":506,"delta":506,"ratio":0,"retrievedAt":"2026-11-06T15:09:52.362Z"}
 {"symbol":"005930","receiptNo":"20261109000007","date":"2026-11-09","reporter":"채교석","position":"상무","isExec":true,"isMajor":false,"shares":1507,"delta":249,"ratio":0,"retrievedAt":"2026-11-09T09:30:40.271Z"}
+{"symbol":"005930","receiptNo":"20261110000038","date":"2026-11-10","reporter":"김평진","position":"부사장","isExec":true,"isMajor":false,"shares":4057,"delta":-780,"ratio":0,"retrievedAt":"2026-11-10T17:14:19.732Z"}
+{"symbol":"005930","receiptNo":"20261110000320","date":"2026-11-10","reporter":"김수진","position":"부사장","isExec":true,"isMajor":false,"shares":6341,"delta":-310,"ratio":0,"retrievedAt":"2026-11-10T17:14:19.732Z"}
