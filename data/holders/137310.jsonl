@@ -1,0 +1,4 @@
+{"symbol":"137310","receiptNo":"20260311004400","date":"2026-03-11","reporter":"조영식","shares":87247191,"delta":20000,"ratio":71.66,"ratioDelta":0.01,"reason":"특별관계자 주식수 변동,\n보유주식등에 관한 계약의 변경","retrievedAt":"2026-11-10T09:30:39.781Z"}
+{"symbol":"137310","receiptNo":"20260316000452","date":"2026-03-16","reporter":"조영식","shares":87546740,"delta":299549,"ratio":71.91,"ratioDelta":0.25,"reason":"보유주식등의 수 및 보유비율 변동","retrievedAt":"2026-11-10T09:30:39.781Z"}
+{"symbol":"137310","receiptNo":"20260319000920","date":"2026-03-19","reporter":"조영식","shares":87546740,"delta":0,"ratio":71.91,"ratioDelta":0,"reason":"보유 주식등에 관한 주요계약내용 변경","retrievedAt":"2026-11-10T09:30:39.781Z"}
+{"symbol":"137310","receiptNo":"20260820000111","date":"2026-08-20","reporter":"조영식","shares":87545040,"delta":-1700,"ratio":72.5,"ratioDelta":0.59,"reason":"특별관계자 추가 및 주식수 변동,\n보유주식등에 관한 계약의 변경","retrievedAt":"2026-11-10T09:30:39.781Z"}
