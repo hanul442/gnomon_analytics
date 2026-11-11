@@ -2726,3 +2726,4 @@
 {"symbol":"005930","receiptNo":"20261109000007","date":"2026-11-09","reporter":"채교석","position":"상무","isExec":true,"isMajor":false,"shares":1507,"delta":249,"ratio":0,"retrievedAt":"2026-11-09T09:30:40.271Z"}
 {"symbol":"005930","receiptNo":"20261110000038","date":"2026-11-10","reporter":"김평진","position":"부사장","isExec":true,"isMajor":false,"shares":4057,"delta":-780,"ratio":0,"retrievedAt":"2026-11-10T17:14:19.732Z"}
 {"symbol":"005930","receiptNo":"20261110000320","date":"2026-11-10","reporter":"김수진","position":"부사장","isExec":true,"isMajor":false,"shares":6341,"delta":-310,"ratio":0,"retrievedAt":"2026-11-10T17:14:19.732Z"}
+{"symbol":"005930","receiptNo":"20261111000113","date":"2026-11-11","reporter":"이시영","position":"부사장","isExec":true,"isMajor":false,"shares":4852,"delta":-3700,"ratio":0,"retrievedAt":"2026-11-11T03:52:45.809Z"}
