@@ -5,11 +5,11 @@
 //   --date=YYYY-MM-DD  --only=x,story,insta,reel,blog  --skip=…  --dry (never post)
 //   --approved                                 한서 said "올려" on the day's review issue: post now (PROMO_POST manual or on)
 //   --review                                   handle 한서's comment on a review issue (env REVIEW_COMMENT, REVIEW_BODY, REVIEW_ISSUE)
-// Review (11/7, 한서: "올리기 전에 내 검수"): with PROMO_REVIEW unset or on, a run that would post by itself instead opens a
+// Review (11/7, 한서: "올리기 전에 내 검수"; 11/11 한서: "허락 맞지 말고 그냥 올려 릴스빼고" → off by default): with PROMO_REVIEW=on, a run that would post by itself instead opens a
 // `promo-review` issue with the day's cards, captions and reel, and posts only after 한서 comments "올려" there.
 // The weekly blog text is only an issue to copy, so it goes out without review.
 // Env: PROMO_POST (off|manual|on, default off), PROMO_X_LINK (on keeps the site link in X posts), X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET,
-//      IG_ACCESS_TOKEN, IG_USER_ID (optional, default me), GITHUB_TOKEN + GITHUB_REPOSITORY (blog and review issues), PROMO_REVIEW (off skips review).
+//      IG_ACCESS_TOKEN, IG_USER_ID (optional, default me), GITHUB_TOKEN + GITHUB_REPOSITORY (blog and review issues), PROMO_REVIEW (on = review first), PROMO_REELS (on = reels Tue/Fri; off by default since 11/11).
 //      An Instagram-login token (IGAA…) goes to graph.instagram.com; a Facebook-login token (EAA…) to graph.facebook.com,
 //      which needs the account ID (IG_USER_ID, else GNOMON's own account).
 // What went out is kept in promo/<date>/posted.json so a day is never posted twice.
@@ -165,7 +165,7 @@ async function main(): Promise<void> {
 
   const manual = args.includes('--manual') || approved;
   const send = !args.includes('--dry') && (mode === 'on' || (mode === 'manual' && manual));
-  const review = env.PROMO_REVIEW !== 'off';
+  const review = env.PROMO_REVIEW === 'on';
   const days = (await readdir(join(root, 'promo')).catch(() => [] as string[])).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
   date ??= days.at(-1);
 
@@ -187,7 +187,7 @@ async function main(): Promise<void> {
   const postedPath = join(dir, 'posted.json');
   const posted = JSON.parse((await readText(postedPath)) ?? '{}') as Posted;
   // A day keeps the reel it was given, even after that reel has been marked done.
-  const reel = posted.reel ? null : planReel(date, reelQueue, reelsDone);
+  const reel = posted.reel || env.PROMO_REELS !== 'on' ? null : planReel(date, reelQueue, reelsDone);
   if (reel) plan.splice(plan.findIndex((p) => p.channel === 'blog') >>> 0, 0, reel);
   const xKeys = env.X_API_KEY && env.X_API_SECRET && env.X_ACCESS_TOKEN && env.X_ACCESS_SECRET
     ? { consumerKey: env.X_API_KEY, consumerSecret: env.X_API_SECRET, token: env.X_ACCESS_TOKEN, tokenSecret: env.X_ACCESS_SECRET } : null;
