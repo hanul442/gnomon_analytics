@@ -24,3 +24,4 @@
 {"symbol":"098460","receiptNo":"20261103000139","date":"2026-11-03","reporter":"J.P.MORGANSECURITIESPLC","shares":4734721,"delta":72339,"ratio":6.94,"ratioDelta":0.1,"reason":"특별관계자 변동","retrievedAt":"2026-11-06T09:30:30.620Z"}
 {"symbol":"098460","receiptNo":"20261106000320","date":"2026-11-06","reporter":"J.P.MORGANSECURITIESPLC","shares":4744339,"delta":9618,"ratio":6.96,"ratioDelta":0.02,"reason":"특별관계자 변동","retrievedAt":"2026-11-06T09:30:30.620Z"}
 {"symbol":"098460","receiptNo":"20261109000037","date":"2026-11-09","reporter":"J.P.MORGANSECURITIESPLC","shares":4777428,"delta":33089,"ratio":7,"ratioDelta":0.04,"reason":"특별관계자 변동","retrievedAt":"2026-11-09T09:30:40.271Z"}
+{"symbol":"098460","receiptNo":"20261111000337","date":"2026-11-11","reporter":"J.P.MORGANSECURITIESPLC","shares":4540878,"delta":-236550,"ratio":6.66,"ratioDelta":-0.34,"reason":"특별관계자 변동","retrievedAt":"2026-11-11T09:30:43.609Z"}

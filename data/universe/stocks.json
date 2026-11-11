@@ -3000,6 +3000,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "0153R0",
+  "name": "바로팜",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "015590",
   "name": "DKME",
   "market": "KOSPI"
@@ -11170,11 +11175,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "304100",
-  "name": "솔트룩스",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "304360",
   "name": "에스바이오메딕스",
   "market": "KOSDAQ"
@@ -13218,6 +13218,11 @@
   "symbol": "462520",
   "name": "조선내화",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "462860",
+  "name": "더즌",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "462860",
