@@ -10,3 +10,4 @@
 {"symbol":"222800","receiptNo":"20260708000364","date":"2026-07-08","reporter":"심텍홀딩스","position":"-","isExec":false,"isMajor":true,"shares":12777665,"delta":-135952,"ratio":33.42,"retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"222800","receiptNo":"20261001000429","date":"2026-10-01","reporter":"심텍홀딩스","position":"-","isExec":false,"isMajor":true,"shares":12696094,"delta":-81571,"ratio":32.35,"retrievedAt":"2026-10-06T14:38:10.382Z"}
 {"symbol":"222800","receiptNo":"20261013000275","date":"2026-10-13","reporter":"심텍홀딩스","position":"-","isExec":false,"isMajor":true,"shares":12641714,"delta":-54380,"ratio":31.87,"retrievedAt":"2026-10-14T14:38:42.980Z"}
+{"symbol":"222800","receiptNo":"20261109000227","date":"2026-11-09","reporter":"박인은","position":"상무","isExec":true,"isMajor":false,"shares":18000,"delta":-569,"ratio":0.05,"retrievedAt":"2026-11-09T09:30:40.271Z"}

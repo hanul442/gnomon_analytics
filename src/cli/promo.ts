@@ -119,6 +119,10 @@ export async function buildPromoSite(root: string): Promise<number> {
     const cap = async (f: string, label: string) => (files.includes(f) ? [{ label, text: await readFile(join(promo, date, f), 'utf8') }] : []);
     days.push({ date, files: ['story.png', 'x.png', ...files.filter((f) => /^deck\d\d-.*\.png$/.test(f)), 'opinion1.png', 'opinion2.png', 'cover.png', 'miss.png'].filter((f) => files.includes(f)), captions: [...(await cap('x.txt', 'X 글')), ...(await cap('insta.txt', '인스타 글')), ...(await cap('blog.txt', '블로그 주간 글'))] });
   }
+  // Reels (11/7): Instagram fetches each video from the site.
+  const reels = (await readdir(join(promo, 'reels')).catch(() => [] as string[])).filter((f) => f.endsWith('.mp4'));
+  if (reels.length) await mkdir(join(site, 'reels'), { recursive: true });
+  for (const f of reels) await copyFile(join(promo, 'reels', f), join(site, 'reels', f));
   await writeFile(join(site, 'index.html'), promoIndexHtml(days));
   return days.length;
 }

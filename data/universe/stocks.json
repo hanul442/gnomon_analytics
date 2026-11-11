@@ -6,7 +6,7 @@
  },
  {
   "symbol": "000040",
-  "name": "KR모터스",
+  "name": "다이나맥",
   "market": "KOSPI"
  },
  {
@@ -857,16 +857,6 @@
  {
   "symbol": "002780",
   "name": "진흥기업",
-  "market": "KOSPI"
- },
- {
-  "symbol": "002785",
-  "name": "진흥기업우B",
-  "market": "KOSPI"
- },
- {
-  "symbol": "002787",
-  "name": "진흥기업2우B",
   "market": "KOSPI"
  },
  {
@@ -3072,6 +3062,11 @@
  {
   "symbol": "016250",
   "name": "SGC E&C",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "0162D0",
+  "name": "동원파츠",
   "market": "KOSDAQ"
  },
  {
@@ -8856,7 +8851,7 @@
  },
  {
   "symbol": "148250",
-  "name": "알엔투테크놀로지",
+  "name": "스퀘어텍",
   "market": "KOSDAQ"
  },
  {
