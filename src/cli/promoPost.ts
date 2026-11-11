@@ -222,8 +222,11 @@ async function main(): Promise<void> {
       if (p.channel === 'reel') { reelsDone[p.images[0]!] = { id: r.id, at: new Date().toISOString(), date }; await writeFile(reelsDonePath, `${JSON.stringify(reelsDone, null, 2)}\n`); }
       say(`${head}: 올렸어요 ${'url' in r ? r.url : r.id}`);
     } catch (e) {
+      const msg = (e as Error).message;
+      // X credits are not being topped up (budget, 11/11), so an empty X wallet is a skip, not a failed run.
+      if (p.channel === 'x' && /X 글 올리기 402|X 이미지 올리기 402|credits-depleted|credits depleted/.test(msg)) { say(`${head}: X 크레딧이 없어서 건너뛰어요`); continue; }
       failed++;
-      say(`${head}: 실패 — ${(e as Error).message}`);
+      say(`${head}: 실패 — ${msg}`);
     }
   }
 
