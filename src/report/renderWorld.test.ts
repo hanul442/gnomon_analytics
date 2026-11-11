@@ -30,6 +30,8 @@ test('naverGlobal parsers read bars, quotes, the market-index answer and its his
 
 test('the sentence names regions that moved together and one big commodity move, and no cause', () => {
   assert.equal(worldSentence(markets), '아시아·유럽 증시가 함께 내렸고, 유가는 하루에 4.8% 올랐어요.');
+  // 받침 있는 말은 '은' (천연가스값은)
+  assert.match(worldSentence({ ...markets, macro: markets.macro.map((q) => (q.key === 'WTI' || q.key === 'BRENT' ? { ...q, key: 'NG' } : q)) }), /천연가스값은 하루에/);
   assert.equal(worldSentence({ ...markets, indices: markets.indices.map((x) => ({ ...x, changePct: 0.1 })), macro: [] }), '세계 증시가 크게 움직이지 않은 하루예요.');
   const b = bands(markets.indices);
   assert.deepEqual(b.map((x) => [x.name, x.total, x.down, x.open]), [['아시아', 3, 3, false], ['유럽', 1, 1, true], ['미국', 1, 0, false]]);

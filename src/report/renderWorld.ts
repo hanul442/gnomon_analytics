@@ -49,7 +49,10 @@ export function worldSentence(m: WorldMarkets): string {
   const big = m.macro.filter((q) => q.changePct != null && Math.abs(q.changePct) >= (q.key === 'USDKRW' ? 0.7 : 1.5) && ['WTI', 'BRENT', 'GOLD', 'USDKRW', 'COPPER', 'NG'].includes(q.key))
     .sort((a, b) => Math.abs(b.changePct!) - Math.abs(a.changePct!))[0];
   const what: Record<string, string> = { WTI: '유가', BRENT: '유가', GOLD: '금값', USDKRW: '원/달러 환율', COPPER: '구리값', NG: '천연가스값' };
-  const tail = big ? `${what[big.key]}는 하루에 ${Math.abs(big.changePct!).toFixed(1)}% ${big.changePct! > 0 ? '올랐어요' : '내렸어요'}.` : '';
+  const subj = big ? what[big.key]! : '';
+  // 받침이 있으면 '은', 없으면 '는' (금값은 · 유가는)
+  const josa = subj && (subj.charCodeAt(subj.length - 1) - 0xac00) % 28 ? '은' : '는';
+  const tail = big ? `${subj}${josa} 하루에 ${Math.abs(big.changePct!).toFixed(1)}% ${big.changePct! > 0 ? '올랐어요' : '내렸어요'}.` : '';
   if (!parts.length) return tail ? `세계 증시는 크게 움직이지 않았고, ${tail}` : '세계 증시가 크게 움직이지 않은 하루예요.';
   const head = parts.join('고, ');
   return tail ? `${head}고, ${tail}` : `${head}어요.`;
