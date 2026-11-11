@@ -145,7 +145,7 @@ ${board.length ? `<div class="mb-grid">${board.map(member).join('')}</div>` : '<
   const tile = (label: string, v: number | null, sub: string) => `<div class="sc-tile"><div class="pl-k">${label}</div><b class="${tone(v)}">${pct(v, 2)}</b><small>${sub}</small></div>`;
   const followSummary = `<div class="sc-tiles">${tile('전략 챔피언 규칙(가상)', avg((f) => f === 'champion'), '종목 평균')}${tile('매수 후 보유', avg((f) => f === 'hold'), '비교 기준')}${tile('AI 분석가 판단(가상)', avg((f) => f.startsWith('analyst:')), '분석가 평균')}</div>`;
   const strategyCard = `<section class="block sc-sec" id="paper"><div class="block-head"><h2>규칙대로였다면 (가상 계좌)</h2><span class="muted">플러스</span></div>${gate(followSummary, { base: '', what: '가상 계좌 평균 결과', feature: 'paperAverage' })}
-${gate(`<div class="card table-wrap"><table class="compact fr-table"><thead><tr><th>종목 · 전략 챔피언</th><th class="num">챔피언 장부</th><th class="num">보유 장부</th><th class="hide-m">최고 AI 분석가</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="empty">아직 기록이 없어요.</td></tr>'}</tbody></table>
+${gate(`<div class="card table-wrap"><table class="compact fr-table"><thead><tr><th>종목 · 전략 챔피언</th><th class="num">챔피언 장부 <small class="muted">가상</small></th><th class="num">보유 장부 <small class="muted">가상</small></th><th class="hide-m">최고 AI 분석가</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="empty">아직 기록이 없어요.</td></tr>'}</tbody></table>
 ${follow.length > 10 ? `<button type="button" class="more-all">전체 ${follow.length}종목 보기</button>` : ''}
 <p class="fine">챔피언 장부 수익이 높은 순이에요. 장부는 기록을 시작한 날부터 다음 거래일 수익으로 쌓고, 사고팔 때 비용을 빼요. 종목의 '장부'를 누르면 매매 내역과 수익 곡선이 펼쳐져요.</p></div>`, { base: '', what: '종목별 장부 · 매매 내역 · 수익 곡선', feature: 'paperLedger' })}</section>`;
   misses.sort((a, b) => (a.target < b.target ? 1 : -1));

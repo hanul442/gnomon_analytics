@@ -41,9 +41,10 @@ export const wrapupBanners = (today: string): Banner[] => today >= '2026-10-24' 
   ? [{ kind: 'survey', title: '알파, 고마웠어요', text: '3분 마무리 설문 · 클로즈드 베타 신청 · 10.31까지', href: WRAPUP_LINK, cta: '설문하고 신청하기', image: { wide: 'assets/banners/wrapup-wide.jpg', narrow: 'assets/banners/wrapup-narrow.jpg' } }]
   : [];
 /** G-306: after the alpha closes, a big picture banner says so. 11/6 (한서님 '배너 한번 정리하자'): the beta date moved, so the
- * picture no longer says 11.20; it says the date comes in a notice. */
-export const alphaEndBanners = (today: string): Banner[] => today >= '2026-11-01' && today <= '2026-11-19'
-  ? [{ kind: 'notice', title: '알파가 끝났어요', text: '함께해 주셔서 고마워요 · 11.19까지 로그인 쉬어요 · 베타 모집 날짜는 곧 알려 드려요', href: 'updates.html', cta: '업데이트 기록 보기', image: { wide: 'assets/banners/alpha-end2-wide.jpg', narrow: 'assets/banners/alpha-end2-narrow.jpg' } }]
+ * picture no longer says 11.20; it says the date comes in a notice. G-336: a week after the alpha the first slide
+ * looks ahead instead (베타 곧 · 인스타에서 먼저), still with no date until the recruitment month is set. */
+export const alphaEndBanners = (today: string): Banner[] => today >= '2026-11-01' && today <= '2027-01-31'
+  ? [{ kind: 'notice', title: '베타, 곧 열려요', text: '모집 날짜가 정해지면 인스타그램에서 가장 먼저 알려 드려요', href: 'https://www.instagram.com/gnomon_analytics/', cta: '인스타에서 먼저 받기', image: { wide: 'assets/banners/beta-soon-wide.jpg', narrow: 'assets/banners/beta-soon-narrow.jpg' } }]
   : [];
 /** Credit events become banners with a 받기 button (G-73). */
 export const eventBanners = (events: readonly CreditEvent[]): Banner[] => events.map((e) => ({ kind: 'event', title: `${e.title} · ${e.credits}크레딧`, text: e.text, cta: '받기', tone: 'amber', event: e.id, credits: e.credits }));
@@ -75,7 +76,7 @@ export function bannerHtml(list: readonly Banner[]): string {
     // A link is named by its own text; a group (no link) needs a name, so it keeps its place in the set.
     // A film banner is a link to the film itself (works without script); the script opens it in a pop-up instead.
     if (b.image?.video) return `<a ${attrs} href="${esc(b.image.video)}" data-video="${esc(b.image.video)}"${b.image.poster ? ` data-poster="${esc(b.image.poster)}"` : ''} aria-label="${alt} · ${film === '티저' ? '티저 영상' : '영상'} 보기">${inner}</a>`;
-    return b.href && !b.event ? `<a ${attrs} href="${esc(b.href)}">${inner}</a>` : `<div ${attrs} role="group" aria-label="${i + 1} / ${list.length}">${inner}</div>`;
+    return b.href && !b.event ? `<a ${attrs} href="${esc(b.href)}"${/^https?:/.test(b.href) ? ' target="_blank" rel="noopener"' : ''}>${inner}</a>` : `<div ${attrs} role="group" aria-label="${i + 1} / ${list.length}">${inner}</div>`;
   };
   return `<section class="banner" id="banner" aria-label="공지와 이벤트">${list.map(slide).join('')}${list.length > 1 ? `<div class="bn-dots">${list.map((_, i) => `<button type="button" data-go="${i}" aria-label="${i + 1}번째 배너" aria-pressed="${i === 0}"></button>`).join('')}</div>` : ''}</section>`;
 }
@@ -117,6 +118,15 @@ export const BANNER_JS = `<script>
     }
   });
   if (slides.length < 2) return;
+  // G-336: slides differ in height (a 4-line survey vs a 2-line guide), so each turn pushed the page 14–26px.
+  // Every slide gets the tallest one's height; measured in one go before paint, again on resize.
+  var fit = function () {
+    var hi = 0; slides.forEach(function (s) { s.style.minHeight = ''; });
+    slides.forEach(function (s) { var h = s.hidden; s.hidden = false; hi = Math.max(hi, s.offsetHeight); s.hidden = h; });
+    if (hi) slides.forEach(function (s) { s.style.minHeight = hi + 'px'; });
+  };
+  fit(); var rz = 0; addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(fit, 150); });
+  box.querySelectorAll('img').forEach(function (im) { if (!im.complete) im.addEventListener('load', fit, { once: true }); });
   var show = function (i) { at = (i + slides.length) % slides.length; slides.forEach(function (s, k) { s.hidden = k !== at; }); dots.forEach(function (d, k) { d.setAttribute('aria-pressed', String(k === at)); }); };
   var start = function () { clearInterval(timer); if (box.querySelector('details[open]') || box.contains(document.activeElement)) return; timer = setInterval(function () { show(at + 1); }, 5000); };
   dots.forEach(function (d) { d.addEventListener('click', function (e) { e.preventDefault(); show(Number(d.getAttribute('data-go'))); start(); }); });

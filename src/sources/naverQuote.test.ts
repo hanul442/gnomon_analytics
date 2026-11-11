@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseNaverQuotes, quoteUrl } from './naverQuote.js';
+import { krxCloseUrl, nxtClosedDate, parseKrxClose, parseNaverQuotes, quoteUrl, withKrxClose } from './naverQuote.js';
 
 test('naver quotes: price, signed change from the direction code, market status (G-62)', () => {
   const q = parseNaverQuotes({ datas: [
@@ -17,4 +17,19 @@ test('naver quotes: price, signed change from the direction code, market status 
   // Without Nextrade (most ETFs) the KRX close stands after hours.
   assert.equal(parseNaverQuotes({ datas: [{ itemCode: '069500', closePrice: '105,650', marketStatus: 'CLOSE', marketSessionType: 'regularMarket', overMarketPriceInfo: null }] })[0]!.session, 'closed');
   assert.equal(quoteUrl(['005930', '000660']), 'https://polling.finance.naver.com/api/realtime/domestic/stock/005930,000660');
+});
+
+test('closed NXT stock: the 15:30 KRX close replaces the 20:00 Nextrade close (G-336)', () => {
+  const [q] = parseNaverQuotes({ datas: [{ itemCode: '005930', closePrice: '193,500', compareToPreviousClosePrice: '-8,000', compareToPreviousPrice: { code: '5', name: 'FALLING' }, fluctuationsRatio: '-3.97', marketStatus: 'CLOSE', localTradedAt: '2026-11-06T20:00:00+09:00',
+    overMarketPriceInfo: { tradingSessionType: 'AFTER_MARKET', overMarketStatus: 'CLOSE', overPrice: '193,400' } }] });
+  assert.equal(nxtClosedDate(q!), '2026-11-06');
+  assert.equal(krxCloseUrl('005930', '2026-11-06'), 'https://api.stock.naver.com/chart/domestic/item/005930/minute?startDateTime=202611061529&endDateTime=202611061531');
+  const krx = parseKrxClose([{ localDateTime: '20261106152900', currentPrice: 189000 }, { localDateTime: '20261106153000', currentPrice: 188700 }]);
+  assert.equal(krx, 188700);
+  const fixed = withKrxClose(q!, krx!, '2026-11-06');
+  assert.deepEqual([fixed.price, fixed.change, fixed.changePct, fixed.open, fixed.at], [188700, -12800, -6.35, false, '2026-11-06T15:30:00+09:00']);
+  // A KRX-only stock (last trade 15:30) and an open quote need nothing.
+  assert.equal(nxtClosedDate({ ...q!, at: '2026-11-06T15:30:00+09:00' }), null);
+  assert.equal(nxtClosedDate({ ...q!, session: 'after', open: true }), null);
+  assert.equal(parseKrxClose([]), null);
 });

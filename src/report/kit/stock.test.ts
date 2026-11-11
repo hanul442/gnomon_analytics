@@ -10,8 +10,10 @@ test('profit-loss line: red above the baseline, blue below, one clip for each si
   assert.match(svg, /aria-label="테스트 곡선"/);
   const clips = [...svg.matchAll(/<clipPath id="([^"]+)"/g)].map((m) => m[1]);
   assert.equal(clips.length, 2);
-  assert.match(svg, new RegExp(`clip-path="url\\(#${clips[0]}\\)"><path[^>]*/><path class="spark-l"[^>]*stroke="#f04452"`));
-  assert.match(svg, new RegExp(`clip-path="url\\(#${clips[1]}\\)"><path[^>]*/><path class="spark-l"[^>]*stroke="#3182f6"`));
+  assert.match(svg, new RegExp(`clip-path="url\\(#${clips[0]}\\)"><use class="kp-a"[^>]*/><use class="spark-l"[^>]*stroke="#f04452"`));
+  assert.match(svg, new RegExp(`clip-path="url\\(#${clips[1]}\\)"><use class="kp-a"[^>]*/><use class="spark-l"[^>]*stroke="#3182f6"`));
+  // The line and the area are written once each and reused on both sides.
+  assert.equal((svg.match(/<path /g) ?? []).length, 2);
   // Ends above 1: the last dot is red.
   assert.match(svg, /<circle [^>]*fill="#f04452"\/><\/svg>$/);
   assert.match(pnlLine([1, 0.9], 'x'), /<circle [^>]*fill="#3182f6"\/><\/svg>$/);

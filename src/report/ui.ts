@@ -299,7 +299,7 @@ export function tabBar(base: string, where: 'top' | 'bottom', ask?: string, page
   // 위원회 · 차트 · 소식 — and the ✦ on the right asks about it. The tab row at the top goes on phones.
   if (dock === 'parts') ctx = `<div class="nav-seg nav-parts">${parts}</div>`;
   else if (dock === 'ask') ctx = `<div class="nav-seg nav-parts">${STOCK_PARTS.map(([l0, k, also, d]) => [coin && k === 'fundamentals' ? '체력' : l0, k, also, d] as const).map(([l, k, also, d]) => `<a href="#tab-${k}" data-nav="${k}" data-nav-also="${also}" aria-label="${l}">${svgI(d)}<span>${l}</span></a>`).join('')}</div><button type="button" class="nav-round nav-ask-r" ${chat} aria-label="${escM(ask!)}에 대해 물어보기">${svgI(SPARK_ICON)}</button>`;
-  else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목·ETF·코인</span></button>${findModes(base, page)}<button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
+  else if (dock === 'find') ctx = `<button type="button" class="nav-field" data-dock-search>${svgI('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/>')}<span>종목 검색</span></button>${findModes(base, page)}<button type="button" class="nav-round" data-dock-filter aria-label="필터">${svgI(FILTER_ICON)}</button>`;
   else if (dock === 'committee') ctx = seg(MODE_GROUPS.find((g) => g.key === 'committee')!.modes.map(([l, h]) => [l, h, h === page] as const));
   // G-277: 내 리포트 and 내 토론 each get their icon, so the 알림함·내 리포트·내 토론 row at the top can go on phones.
   // G-301 (새 구조): 나 is one screen; 내 기록's three pages open from its rows (and go back with ‹), so the bar keeps no icons.
