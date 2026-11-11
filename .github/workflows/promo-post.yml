@@ -3,7 +3,7 @@ name: SNS auto-post
 # and opens the weekly Naver blog text as an issue to copy. Repository variable PROMO_POST decides:
 #   off (or unset) = only a preview in the run summary · manual = posts only when someone presses Run · on = posts by itself.
 # Review (11/7): a run that would post by itself opens a `promo-review` issue instead; 한서 comments "올려" there and
-# this workflow posts (issue_comment). PROMO_REVIEW=off skips review. Reels go out Tue/Fri from promo/reels/.
+# this workflow posts (issue_comment). Since 11/11 review is off unless PROMO_REVIEW=on, and reels (Tue/Fri, promo/reels/) only with PROMO_REELS=on.
 # Setup steps: docs/SNS_AUTOPOST.md
 on:
   workflow_run:
@@ -59,6 +59,7 @@ jobs:
           PROMO_POST: ${{ vars.PROMO_POST }}
           PROMO_X_LINK: ${{ vars.PROMO_X_LINK }}
           PROMO_REVIEW: ${{ vars.PROMO_REVIEW }}
+          PROMO_REELS: ${{ vars.PROMO_REELS }}
           REVIEW_COMMENT: ${{ github.event.comment.body }}
           REVIEW_BODY: ${{ github.event.issue.body }}
           REVIEW_ISSUE: ${{ github.event.issue.number }}
