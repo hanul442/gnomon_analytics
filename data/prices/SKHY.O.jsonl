@@ -85,3 +85,4 @@
 {"symbol":"SKHY.O","date":"2026-11-06","open":129.125,"high":133.45,"low":124.83,"close":127.34,"volume":27987645,"source":"naver:world:day","retrievedAt":"2026-11-11T09:30:43.609Z"}
 {"symbol":"SKHY.O","date":"2026-11-09","open":126.865,"high":135.6,"low":125.8282,"close":134.38,"volume":23137709,"source":"naver:world:day","retrievedAt":"2026-11-11T09:30:43.609Z"}
 {"symbol":"SKHY.O","date":"2026-11-10","open":131,"high":135.15,"low":127.38,"close":129.66,"volume":15796542,"source":"naver:world:day","retrievedAt":"2026-11-11T09:30:43.609Z"}
+{"symbol":"SKHY.O","date":"2026-11-11","open":139.49,"high":145.79,"low":137.49,"close":144.96,"volume":12275440,"source":"naver:world:day","retrievedAt":"2026-11-11T17:23:35.134Z"}

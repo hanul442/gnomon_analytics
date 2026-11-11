@@ -1,5 +1,5 @@
 {
- "at": "2026-11-11T09:30:43.609Z",
+ "at": "2026-11-11T17:23:35.134Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2648
+   "count": 2647
   },
   {
    "source": "naver:fchart:day:etf",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 46
+   "count": 49
   },
   {
    "source": "google:topic-business-ko",
@@ -50,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 66
+   "count": 67
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 51
+   "count": 52
   },
   {
    "source": "naver:world:day:all",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 699
+   "count": 704
   }
  ],
  "stocks": [
@@ -336,43 +336,34 @@
   },
   {
    "symbol": "373220",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "033780",
-   "report": "WRITTEN",
-   "failedSources": [
-    {
-     "source": "google:news-rss",
-     "error": "The operation was aborted due to timeout"
-    }
-   ]
-  },
-  {
-   "symbol": "190510",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "379800",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "SKHY.O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": [
     {
      "source": "sec:edgar:xbrl",
      "error": "EDGAR_FACTS_UNEXPECTED"
     }
    ]
+  },
+  {
+   "symbol": "379800",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "190510",
+   "report": "EXISTS",
+   "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-11-11",
-  "status": "OK"
- }
+ "failed": []
 }

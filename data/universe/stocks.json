@@ -11175,6 +11175,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "304100",
+  "name": "솔트룩스",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "304360",
   "name": "에스바이오메딕스",
   "market": "KOSDAQ"
@@ -13218,11 +13223,6 @@
   "symbol": "462520",
   "name": "조선내화",
   "market": "KOSPI"
- },
- {
-  "symbol": "462860",
-  "name": "더즌",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "462860",
