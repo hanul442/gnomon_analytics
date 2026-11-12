@@ -39,3 +39,4 @@
 {"symbol":"086520","receiptNo":"20261021000041","date":"2026-10-21","reporter":"이동채","shares":34663499,"delta":-120,"ratio":25.53,"ratioDelta":0,"reason":"특별관계자 장내매매, 주식담보대출 신규 및 조건변경","retrievedAt":"2026-10-21T11:28:07.937Z"}
 {"symbol":"086520","receiptNo":"20261030000103","date":"2026-10-30","reporter":"이동채","shares":34661592,"delta":-1907,"ratio":25.53,"ratioDelta":0,"reason":"특별관계인 장내매매, 주식담보대출 조건변경","retrievedAt":"2026-11-06T09:30:30.620Z"}
 {"symbol":"086520","receiptNo":"20261105000146","date":"2026-11-05","reporter":"이동채","shares":34658892,"delta":-2700,"ratio":25.53,"ratioDelta":0,"reason":"특별관계인 장내매매, 주식담보대출 신규 및 조건변경","retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"086520","receiptNo":"20261112000606","date":"2026-11-12","reporter":"이동채","shares":34658542,"delta":-350,"ratio":25.53,"ratioDelta":0,"reason":"특별관계인 장내매매, 주식담보대출 신규 및 상환","retrievedAt":"2026-11-12T09:30:41.805Z"}
