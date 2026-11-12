@@ -422,3 +422,5 @@
 {"series":"DFF","date":"2026-11-07","value":3.88,"source":"fred:csv","retrievedAt":"2026-11-11T03:52:45.809Z"}
 {"series":"DFF","date":"2026-11-08","value":3.88,"source":"fred:csv","retrievedAt":"2026-11-11T03:52:45.809Z"}
 {"series":"DFF","date":"2026-11-09","value":3.88,"source":"fred:csv","retrievedAt":"2026-11-11T03:52:45.809Z"}
+{"series":"DFF","date":"2026-11-10","value":3.88,"source":"fred:csv","retrievedAt":"2026-11-12T21:35:38.278Z"}
+{"series":"DFF","date":"2026-11-11","value":3.88,"source":"fred:csv","retrievedAt":"2026-11-12T21:35:38.278Z"}
