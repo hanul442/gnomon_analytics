@@ -1,5 +1,5 @@
 {
- "at": "2026-11-12T09:30:41.805Z",
+ "at": "2026-11-12T17:42:34.638Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2648
+   "count": 2647
   },
   {
    "source": "naver:fchart:day:etf",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 45
+   "count": 42
   },
   {
    "source": "google:topic-business-ko",
@@ -55,7 +55,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 55
+   "count": 57
   },
   {
    "source": "naver:world:day:all",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 1093
+   "count": 719
   }
  ],
  "stocks": [
@@ -336,27 +336,27 @@
   },
   {
    "symbol": "207940",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "009150",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "KRW-DATA",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "APP.O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "KRW-DATA",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "214450",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
@@ -364,6 +364,6 @@
  "market": {
   "date": "2026-11-12",
   "status": "FAILED",
-  "error": "숫자 검증 실패 1건: 지수 5450선 회복: 자료의 지수 종가(5343·697)와 맞지 않아요: \"국내 기술주가 회복하면서 코스피 5450선 회복과 코스닥 720선 진입. 원/달러는 1325원대로 강화.\""
+  "error": "구조·근거 검사 실패: 없는 근거 번호: macro (쓸 수 있는 번호: M1,M2,M3,M4,M5,N1,N2,N3,N4,N5,N6,N7,N8,N9,N10,N11,N12)"
  }
 }

@@ -998,3 +998,4 @@
 {"symbol":"APP.O","date":"2026-11-09","open":387.71,"high":412.9,"low":386.07,"close":410,"volume":7524106,"source":"naver:world:day","retrievedAt":"2026-11-12T09:30:41.805Z"}
 {"symbol":"APP.O","date":"2026-11-10","open":405.59,"high":408.65,"low":383.3082,"close":395.51,"volume":5452097,"source":"naver:world:day","retrievedAt":"2026-11-12T09:30:41.805Z"}
 {"symbol":"APP.O","date":"2026-11-11","open":394.495,"high":413.6,"low":394.495,"close":404.77,"volume":4675780,"source":"naver:world:day","retrievedAt":"2026-11-12T09:30:41.805Z"}
+{"symbol":"APP.O","date":"2026-11-12","open":400,"high":408.99,"low":398.4466,"close":404.26,"volume":1351591,"source":"naver:world:day","retrievedAt":"2026-11-12T17:42:34.638Z"}
