@@ -2795,6 +2795,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "013310",
+  "name": "아진산업",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "013360",
   "name": "일성건설",
   "market": "KOSPI"
@@ -3458,11 +3463,6 @@
   "symbol": "021240",
   "name": "코웨이",
   "market": "KOSPI"
- },
- {
-  "symbol": "021320",
-  "name": "KCC건설",
-  "market": "KOSDAQ"
  },
  {
   "symbol": "021320",
@@ -5167,11 +5167,6 @@
  {
   "symbol": "048470",
   "name": "대동스틸",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "048530",
-  "name": "인트론바이오",
   "market": "KOSDAQ"
  },
  {
@@ -9145,6 +9140,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "179290",
+  "name": "엠아이텍",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "179530",
   "name": "애드바이오텍",
   "market": "KOSDAQ"
@@ -11155,11 +11155,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "302550",
-  "name": "리메드",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "303030",
   "name": "지니틱스",
   "market": "KOSDAQ"
@@ -11943,6 +11938,11 @@
   "symbol": "357120",
   "name": "코람코라이프인프라리츠",
   "market": "KOSPI"
+ },
+ {
+  "symbol": "357230",
+  "name": "에이치피오",
+  "market": "KOSDAQ"
  },
  {
   "symbol": "357250",
