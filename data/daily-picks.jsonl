@@ -115,3 +115,8 @@
 {"date":"2026-11-12","symbol":"214450","name":"파마리서치","kind":"stock","market":"KOSDAQ","tier":"deep","reason":"스크리너 '기술 점수 높은데 적정가 아래' 신호 후보"}
 {"date":"2026-11-12","symbol":"APP.O","name":"앱러빈","kind":"stock","market":"NASDAQ","tier":"deep","reason":"미국 거래대금 상위 후보에서 선정","us":{"ticker":"APP","english":"AppLovin Corporation"}}
 {"date":"2026-11-12","symbol":"KRW-DATA","name":"데이터네트워크","kind":"coin","market":"UPBIT","tier":"deep","reason":"24시간 거래대금 상위 코인 후보에서 선정"}
+{"date":"2026-11-13","symbol":"032830","name":"삼성생명","kind":"stock","market":"KOSPI","tier":"deep","reason":"시가총액 상위 20종목 순서 (가장 오래된 판단부터)"}
+{"date":"2026-11-13","symbol":"329180","name":"HD현대중공업","kind":"stock","market":"KOSPI","tier":"deep","reason":"시가총액 상위 20종목 순서 (가장 오래된 판단부터)"}
+{"date":"2026-11-13","symbol":"018260","name":"삼성에스디에스","kind":"stock","market":"KOSPI","tier":"deep","reason":"스크리너 '기술 점수 상위' 신호 후보"}
+{"date":"2026-11-13","symbol":"455850","name":"SOL AI반도체소부장","kind":"etf","market":"KOSPI","tier":"deep","reason":"거래대금 상위 ETF 후보에서 선정"}
+{"date":"2026-11-13","symbol":"MRNA.O","name":"모더나","kind":"stock","market":"NASDAQ","tier":"deep","reason":"미국 거래대금 상위 후보에서 선정","us":{"ticker":"MRNA","english":"Moderna  Inc."}}

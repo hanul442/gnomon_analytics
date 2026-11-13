@@ -1,0 +1,4 @@
+{"symbol":"030530","receiptNo":"20251230000608","date":"2025-12-30","reporter":"원익","shares":37230170,"delta":-839000,"ratio":48.2,"ratioDelta":-1.09,"reason":"변동 - 특별관계자 장내매도","retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"030530","receiptNo":"20260210000661","date":"2026-02-10","reporter":"원익","shares":37230170,"delta":0,"ratio":48.2,"ratioDelta":0,"reason":"변경 - 주식담보대출 550만주 질권해지","retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"030530","receiptNo":"20260511000510","date":"2026-05-11","reporter":"원익","shares":37227270,"delta":-2900,"ratio":48.2,"ratioDelta":-0.004,"reason":"변동 - 특별관계자 장내매도\n변경 - 주식담보대출 만기연장","retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"030530","receiptNo":"20260904000243","date":"2026-09-04","reporter":"원익","shares":37227270,"delta":0,"ratio":48.2,"ratioDelta":0,"reason":"변경 - 주식담보대출 만기연장","retrievedAt":"2026-11-13T09:30:36.791Z"}

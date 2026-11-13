@@ -122,3 +122,7 @@
 {"symbol":"035420","receiptNo":"20261021000270","date":"2026-10-21","reporter":"강유훈","position":"리더","isExec":true,"isMajor":false,"shares":1000,"delta":1000,"ratio":0,"retrievedAt":"2026-11-06T09:30:30.620Z"}
 {"symbol":"035420","receiptNo":"20261021000225","date":"2026-10-21","reporter":"최승락","position":"리더/부문장","isExec":true,"isMajor":false,"shares":4338,"delta":500,"ratio":0,"retrievedAt":"2026-11-06T09:30:30.620Z"}
 {"symbol":"035420","receiptNo":"20261021000229","date":"2026-10-21","reporter":"정유한","position":"리더","isExec":true,"isMajor":false,"shares":7830,"delta":4400,"ratio":0.01,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"035420","receiptNo":"20261113000885","date":"2026-11-13","reporter":"임동아","position":"리더","isExec":true,"isMajor":false,"shares":1505,"delta":1000,"ratio":0,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"035420","receiptNo":"20261113000928","date":"2026-11-13","reporter":"오성권","position":"리더","isExec":true,"isMajor":false,"shares":1206,"delta":-50,"ratio":0,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"035420","receiptNo":"20261113000976","date":"2026-11-13","reporter":"나군호","position":"리더/연구소장/원장","isExec":true,"isMajor":false,"shares":2101,"delta":-1000,"ratio":0,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"035420","receiptNo":"20261113001011","date":"2026-11-13","reporter":"김소연","position":"리더","isExec":true,"isMajor":false,"shares":1884,"delta":50,"ratio":0,"retrievedAt":"2026-11-13T09:30:36.791Z"}

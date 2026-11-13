@@ -1,0 +1,9 @@
+{"symbol":"192820","receiptNo":"20260105000308","date":"2026-01-05","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":1331419,"delta":-185508,"ratio":11.73,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"192820","receiptNo":"20260107000544","date":"2026-01-07","reporter":"서동환","position":"랩장","isExec":true,"isMajor":false,"shares":91,"delta":91,"ratio":0,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"192820","receiptNo":"20260107000569","date":"2026-01-07","reporter":"조현정","position":"본부장","isExec":true,"isMajor":false,"shares":50,"delta":50,"ratio":0,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"192820","receiptNo":"20260107000564","date":"2026-01-07","reporter":"김현나","position":"랩장","isExec":true,"isMajor":false,"shares":23,"delta":23,"ratio":0,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"192820","receiptNo":"20260227007347","date":"2026-02-27","reporter":"서동환","position":"랩장","isExec":true,"isMajor":false,"shares":0,"delta":-91,"ratio":0,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"192820","receiptNo":"20260402002149","date":"2026-04-02","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":1273792,"delta":-57627,"ratio":11.22,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"192820","receiptNo":"20260702000366","date":"2026-07-02","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":1426108,"delta":152316,"ratio":12.57,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"192820","receiptNo":"20260903000200","date":"2026-09-03","reporter":"김민수","position":"본부장","isExec":true,"isMajor":false,"shares":48,"delta":-468,"ratio":0,"retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"192820","receiptNo":"20261006000233","date":"2026-10-06","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":1467667,"delta":41559,"ratio":12.93,"retrievedAt":"2026-11-13T09:30:36.791Z"}
