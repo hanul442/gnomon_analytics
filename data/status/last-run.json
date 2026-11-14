@@ -1,5 +1,5 @@
 {
- "at": "2026-11-13T20:59:11.903Z",
+ "at": "2026-11-14T09:30:39.647Z",
  "selected": null,
  "universe": [
   {
@@ -25,8 +25,7 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 301,
-   "error": "1 failed "
+   "count": 302
   },
   {
    "source": "naver:global",
@@ -36,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 34
+   "count": 37
   },
   {
    "source": "google:topic-business-ko",
@@ -51,7 +50,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 60
+   "count": 55
   },
   {
    "source": "rss:bbc-business",
@@ -67,6 +66,11 @@
    "source": "opendart:risk-filings",
    "ok": true,
    "count": 745
+  },
+  {
+   "source": "naver:themes",
+   "ok": true,
+   "count": 265
   }
  ],
  "stocks": [
@@ -112,6 +116,11 @@
   },
   {
    "symbol": "015760",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "032830",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -162,6 +171,11 @@
   },
   {
    "symbol": "036570",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "329180",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -326,30 +340,14 @@
    "failedSources": []
   },
   {
-   "symbol": "032830",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "329180",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "MRNA.O",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "455850",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "018260",
-   "report": "EXISTS",
+   "symbol": "KRW-ONDO",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
- "failed": []
+ "failed": [],
+ "market": {
+  "date": "2026-11-14",
+  "status": "NO_DATA"
+ }
 }

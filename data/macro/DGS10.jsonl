@@ -289,3 +289,4 @@
 {"series":"DGS10","date":"2026-11-06","value":4.86,"source":"fred:csv","retrievedAt":"2026-11-09T23:34:04.716Z"}
 {"series":"DGS10","date":"2026-11-09","value":4.88,"source":"fred:csv","retrievedAt":"2026-11-11T03:52:45.809Z"}
 {"series":"DGS10","date":"2026-11-10","value":4.98,"source":"fred:csv","retrievedAt":"2026-11-12T21:35:38.278Z"}
+{"series":"DGS10","date":"2026-11-12","value":5.1,"source":"fred:csv","retrievedAt":"2026-11-14T09:30:39.647Z"}
