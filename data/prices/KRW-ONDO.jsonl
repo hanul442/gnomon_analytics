@@ -936,3 +936,4 @@
 {"symbol":"KRW-ONDO","date":"2026-11-14","open":462,"high":465,"low":446,"close":451,"volume":14821598.26728006,"source":"upbit:candles:days","retrievedAt":"2026-11-14T09:30:39.647Z"}
 {"symbol":"KRW-ONDO","date":"2026-11-14","open":462,"high":465,"low":428,"close":429,"volume":30198290.57025886,"source":"upbit:candles:days","retrievedAt":"2026-11-14T15:58:47.059Z"}
 {"symbol":"KRW-ONDO","date":"2026-11-14","open":462,"high":465,"low":420,"close":423,"volume":38099344.88576832,"source":"upbit:candles:days","retrievedAt":"2026-11-14T17:57:52.311Z"}
+{"symbol":"KRW-ONDO","date":"2026-11-14","open":462,"high":465,"low":418,"close":421,"volume":40501055.36466979,"source":"upbit:candles:days","retrievedAt":"2026-11-14T19:28:26.882Z"}
