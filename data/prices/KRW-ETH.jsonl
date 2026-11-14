@@ -1261,3 +1261,4 @@
 {"symbol":"KRW-ETH","date":"2026-11-13","open":2732000,"high":2733000,"low":2583000,"close":2631000,"volume":39299.77995065,"source":"upbit:candles:days","retrievedAt":"2026-11-14T09:30:39.647Z"}
 {"symbol":"KRW-ETH","date":"2026-11-14","open":2633000,"high":2644000,"low":2574000,"close":2607000,"volume":11331.24822719,"source":"upbit:candles:days","retrievedAt":"2026-11-14T09:30:39.647Z"}
 {"symbol":"KRW-ETH","date":"2026-11-14","open":2633000,"high":2644000,"low":2515000,"close":2519000,"volume":25246.99517273,"source":"upbit:candles:days","retrievedAt":"2026-11-14T15:58:47.059Z"}
+{"symbol":"KRW-ETH","date":"2026-11-14","open":2633000,"high":2644000,"low":2501000,"close":2530000,"volume":30204.98696995,"source":"upbit:candles:days","retrievedAt":"2026-11-14T17:57:52.311Z"}
