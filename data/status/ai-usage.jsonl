@@ -705,3 +705,13 @@
 {"at":"2026-11-14T17:57:52.311Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":500,"outputTokens":488,"usd":0.00029}
 {"at":"2026-11-14T17:57:52.311Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":411,"outputTokens":521,"usd":0.0003}
 {"at":"2026-11-14T19:28:26.882Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":460,"outputTokens":521,"usd":0.00031}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"KRW-NEAR","model":"claude-opus-5-5","tier":"deep","inputTokens":6615,"outputTokens":11081,"cacheWriteTokens":12723,"usd":0.3117}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"KRW-NEAR","model":"claude-haiku-5-5","tier":"deep","inputTokens":15881,"outputTokens":6698,"cacheWriteTokens":9331,"usd":0.0061}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":559,"outputTokens":173,"usd":0.00014}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":602,"outputTokens":407,"usd":0.00026}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":570,"outputTokens":600,"usd":0.00036}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":573,"outputTokens":509,"usd":0.00031}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":410,"outputTokens":518,"usd":0.0003}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":536,"outputTokens":542,"usd":0.00032}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":414,"outputTokens":585,"usd":0.00033}
+{"at":"2026-11-15T09:30:44.942Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":488,"outputTokens":529,"usd":0.00031}

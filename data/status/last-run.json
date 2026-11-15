@@ -1,5 +1,5 @@
 {
- "at": "2026-11-14T19:28:26.882Z",
+ "at": "2026-11-15T09:30:44.942Z",
  "selected": null,
  "universe": [
   {
@@ -55,7 +55,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 56
+   "count": 57
   },
   {
    "source": "naver:world:day:all",
@@ -335,14 +335,14 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-ONDO",
-   "report": "EXISTS",
+   "symbol": "KRW-NEAR",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
-  "date": "2026-11-14",
+  "date": "2026-11-15",
   "status": "NO_DATA"
  }
 }
