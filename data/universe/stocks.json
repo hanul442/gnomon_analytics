@@ -7620,11 +7620,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "097780",
-  "name": "에코볼트",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "097800",
   "name": "윈팩",
   "market": "KOSDAQ"
@@ -9566,7 +9561,7 @@
  },
  {
   "symbol": "206400",
-  "name": "베노티앤알",
+  "name": "아인스팩씨엔에스",
   "market": "KOSDAQ"
  },
  {
