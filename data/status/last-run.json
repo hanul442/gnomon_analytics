@@ -1,11 +1,11 @@
 {
- "at": "2026-11-15T19:56:41.896Z",
+ "at": "2026-11-16T09:30:41.064Z",
  "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
    "ok": true,
-   "count": 2772
+   "count": 2773
   },
   {
    "source": "naver:m-stock:etf",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2639
+   "count": 2640
   },
   {
    "source": "naver:fchart:day:etf",
@@ -25,7 +25,7 @@
   {
    "source": "upbit:candles:days:all",
    "ok": true,
-   "count": 302
+   "count": 300
   },
   {
    "source": "naver:global",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 27
+   "count": 29
   },
   {
    "source": "google:topic-business-ko",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 0
+   "count": 352
   }
  ],
  "stocks": [
@@ -245,11 +245,6 @@
    "failedSources": []
   },
   {
-   "symbol": "009540",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "271560",
    "report": "SKIPPED",
    "failedSources": []
@@ -286,11 +281,6 @@
   },
   {
    "symbol": "009830",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "042700",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -335,14 +325,34 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-NEAR",
-   "report": "EXISTS",
+   "symbol": "009540",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "042700",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "0167A0",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "SO",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "036460",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
-  "date": "2026-11-15",
-  "status": "NO_DATA"
+  "date": "2026-11-16",
+  "status": "OK"
  }
 }
