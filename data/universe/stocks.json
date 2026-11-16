@@ -5615,11 +5615,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "054540",
-  "name": "삼영엠텍",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "054620",
   "name": "APS",
   "market": "KOSDAQ"
@@ -9272,6 +9267,11 @@
  {
   "symbol": "189300",
   "name": "인텔리안테크",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "189330",
+  "name": "씨이랩",
   "market": "KOSDAQ"
  },
  {

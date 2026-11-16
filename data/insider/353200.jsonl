@@ -13,3 +13,4 @@
 {"symbol":"353200","receiptNo":"20261023000401","date":"2026-10-23","reporter":"신영환","position":"대표이사 사장","isExec":true,"isMajor":false,"shares":17528,"delta":-664,"ratio":0.03,"retrievedAt":"2026-10-23T14:21:52.770Z"}
 {"symbol":"353200","receiptNo":"20261104000254","date":"2026-11-04","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":4969390,"delta":4969390,"ratio":9.65,"retrievedAt":"2026-11-04T17:43:09.415Z"}
 {"symbol":"353200","receiptNo":"20261112000060","date":"2026-11-12","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":4905967,"delta":-63423,"ratio":9.52,"retrievedAt":"2026-11-12T09:30:41.805Z"}
+{"symbol":"353200","receiptNo":"20261116001764","date":"2026-11-16","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":5039896,"delta":5039896,"ratio":9.78,"retrievedAt":"2026-11-16T19:47:14.862Z"}

@@ -1,5 +1,5 @@
 {
- "at": "2026-11-16T09:30:41.064Z",
+ "at": "2026-11-16T19:47:14.862Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2640
+   "count": 2639
   },
   {
    "source": "naver:fchart:day:etf",
@@ -34,8 +34,9 @@
   },
   {
    "source": "google:topic-world-ko",
-   "ok": true,
-   "count": 29
+   "ok": false,
+   "count": 0,
+   "error": "RSS_HTTP_429:google:topic-world-ko"
   },
   {
    "source": "google:topic-business-ko",
@@ -49,13 +50,14 @@
   },
   {
    "source": "google:topic-business-en",
-   "ok": true,
-   "count": 70
+   "ok": false,
+   "count": 0,
+   "error": "RSS_HTTP_429:google:topic-business-en"
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 57
+   "count": 56
   },
   {
    "source": "naver:world:day:all",
@@ -65,7 +67,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 352
+   "count": 361
   }
  ],
  "stocks": [
@@ -326,33 +328,29 @@
   },
   {
    "symbol": "009540",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "042700",
-   "report": "WRITTEN",
-   "failedSources": []
-  },
-  {
-   "symbol": "0167A0",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "SO",
-   "report": "WRITTEN",
+   "report": "EXISTS",
+   "failedSources": []
+  },
+  {
+   "symbol": "0167A0",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "036460",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
- "failed": [],
- "market": {
-  "date": "2026-11-16",
-  "status": "OK"
- }
+ "failed": []
 }
