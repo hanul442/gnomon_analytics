@@ -1,5 +1,5 @@
 {
- "at": "2026-11-16T19:47:14.862Z",
+ "at": "2026-11-16T21:57:33.674Z",
  "selected": null,
  "universe": [
   {
@@ -34,9 +34,8 @@
   },
   {
    "source": "google:topic-world-ko",
-   "ok": false,
-   "count": 0,
-   "error": "RSS_HTTP_429:google:topic-world-ko"
+   "ok": true,
+   "count": 27
   },
   {
    "source": "google:topic-business-ko",
@@ -50,9 +49,8 @@
   },
   {
    "source": "google:topic-business-en",
-   "ok": false,
-   "count": 0,
-   "error": "RSS_HTTP_429:google:topic-business-en"
+   "ok": true,
+   "count": 60
   },
   {
    "source": "rss:bbc-business",
@@ -229,7 +227,12 @@
   {
    "symbol": "028050",
    "report": "SKIPPED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "google:news-rss",
+     "error": "RSS_HTTP_429:google:news-rss"
+    }
+   ]
   },
   {
    "symbol": "001450",

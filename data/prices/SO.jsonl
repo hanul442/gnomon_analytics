@@ -999,3 +999,4 @@
 {"symbol":"SO","date":"2026-11-12","open":93.54,"high":94.19,"low":92.17,"close":92.47,"volume":15954476,"source":"naver:world:day","retrievedAt":"2026-11-16T09:30:41.064Z"}
 {"symbol":"SO","date":"2026-11-13","open":92.47,"high":94.545,"low":92.179,"close":93.59,"volume":22083983,"source":"naver:world:day","retrievedAt":"2026-11-16T09:30:41.064Z"}
 {"symbol":"SO","date":"2026-11-16","open":93.525,"high":94.7324,"low":93.15,"close":94.52,"volume":6655323,"source":"naver:world:day","retrievedAt":"2026-11-16T19:47:14.862Z"}
+{"symbol":"SO","date":"2026-11-16","open":93.49,"high":94.77,"low":93.15,"close":94.64,"volume":12891288,"source":"naver:world:day","retrievedAt":"2026-11-16T21:57:33.674Z"}
