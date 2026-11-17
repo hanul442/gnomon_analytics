@@ -754,3 +754,13 @@
 {"at":"2026-11-16T23:30:27.303Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":615,"outputTokens":495,"usd":0.00031}
 {"at":"2026-11-16T23:30:27.303Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":568,"outputTokens":572,"usd":0.00034}
 {"at":"2026-11-16T23:30:27.303Z","month":"2026-11","symbol":"GNOMON-NEWS","model":"claude-haiku-5-5","tier":"news","inputTokens":421,"outputTokens":484,"usd":0.00028}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"105560","model":"claude-opus-5-5","tier":"deep","inputTokens":11028,"outputTokens":9220,"cacheWriteTokens":12723,"usd":0.29213}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"105560","model":"claude-haiku-5-5","tier":"deep","inputTokens":20490,"outputTokens":6795,"cacheWriteTokens":9331,"usd":0.00661}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"138040","model":"claude-opus-5-5","tier":"deep","inputTokens":10460,"outputTokens":10876,"cacheReadTokens":12723,"usd":0.26445}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"138040","model":"claude-haiku-5-5","tier":"deep","inputTokens":20148,"outputTokens":7220,"cacheReadTokens":9331,"usd":0.00572}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"138360","model":"claude-opus-5-5","tier":"deep","inputTokens":5361,"outputTokens":9331,"cacheReadTokens":12723,"usd":0.21315}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"138360","model":"claude-haiku-5-5","tier":"deep","inputTokens":9527,"outputTokens":6427,"cacheReadTokens":9331,"usd":0.00426}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"MSTR.O","model":"claude-opus-5-5","tier":"deep","inputTokens":10258,"outputTokens":11275,"cacheReadTokens":12723,"usd":0.27162}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"MSTR.O","model":"claude-haiku-5-5","tier":"deep","inputTokens":21102,"outputTokens":6379,"cacheReadTokens":7998,"usd":0.00538}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"KRW-XLM","model":"claude-opus-5-5","tier":"deep","inputTokens":5894,"outputTokens":15033,"cacheReadTokens":12723,"usd":0.32933}
+{"at":"2026-11-17T09:30:35.999Z","month":"2026-11","symbol":"KRW-XLM","model":"claude-haiku-5-5","tier":"deep","inputTokens":14490,"outputTokens":6421,"cacheReadTokens":9331,"usd":0.00475}

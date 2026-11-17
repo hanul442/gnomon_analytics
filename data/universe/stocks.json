@@ -1230,11 +1230,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "004100",
-  "name": "태양금속",
-  "market": "KOSPI"
- },
- {
   "symbol": "004105",
   "name": "태양금속우",
   "market": "KOSPI"
@@ -13702,6 +13697,11 @@
  {
   "symbol": "492220",
   "name": "KB제31호스팩",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "493260",
+  "name": "옵토닉스",
   "market": "KOSDAQ"
  },
  {

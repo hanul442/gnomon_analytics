@@ -7,3 +7,5 @@
 {"symbol":"138040","date":"2026-10-30","close":131700,"method":"gnm-paper-v1","recordedAt":"2026-10-30T16:10:34.877Z","follower":"analyst:fundamental","label":"실적·밸류에이션 분석가","position":1,"basis":"강세"}
 {"symbol":"138040","date":"2026-10-30","close":131700,"method":"gnm-paper-v1","recordedAt":"2026-10-30T16:10:34.877Z","follower":"analyst:event_catalyst","label":"이벤트·뉴스 분석가","position":0,"basis":"중립"}
 {"symbol":"138040","date":"2026-10-30","close":131700,"method":"gnm-paper-v1","recordedAt":"2026-10-30T16:10:34.877Z","follower":"analyst:sector_expert","label":"금융 전문위원","position":1,"basis":"강세"}
+{"symbol":"138040","date":"2026-11-17","close":121100,"method":"gnm-paper-v1","recordedAt":"2026-11-17T09:30:35.999Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
+{"symbol":"138040","date":"2026-11-17","close":121100,"method":"gnm-paper-v1","recordedAt":"2026-11-17T09:30:35.999Z","follower":"champion","label":"전략 챔피언","position":1,"basis":"볼린저 반등"}
