@@ -1230,6 +1230,11 @@
   "market": "KOSPI"
  },
  {
+  "symbol": "004100",
+  "name": "태양금속",
+  "market": "KOSPI"
+ },
+ {
   "symbol": "004105",
   "name": "태양금속우",
   "market": "KOSPI"

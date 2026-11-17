@@ -301,3 +301,4 @@
 {"series":"VIXCLS","date":"2026-11-11","value":17.49,"source":"fred:csv","retrievedAt":"2026-11-12T17:42:34.638Z"}
 {"series":"VIXCLS","date":"2026-11-12","value":18.7,"source":"fred:csv","retrievedAt":"2026-11-13T17:20:37.426Z"}
 {"series":"VIXCLS","date":"2026-11-13","value":19.3,"source":"fred:csv","retrievedAt":"2026-11-16T19:47:14.862Z"}
+{"series":"VIXCLS","date":"2026-11-16","value":22.91,"source":"fred:csv","retrievedAt":"2026-11-17T18:43:17.301Z"}
