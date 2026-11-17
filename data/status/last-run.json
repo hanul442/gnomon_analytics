@@ -1,5 +1,5 @@
 {
- "at": "2026-11-17T18:43:17.301Z",
+ "at": "2026-11-17T20:50:29.032Z",
  "selected": null,
  "universe": [
   {
@@ -50,7 +50,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 49
+   "count": 50
   },
   {
    "source": "rss:bbc-business",
@@ -341,12 +341,12 @@
    "failedSources": []
   },
   {
-   "symbol": "138360",
+   "symbol": "KRW-XLM",
    "report": "EXISTS",
    "failedSources": []
   },
   {
-   "symbol": "KRW-XLM",
+   "symbol": "138360",
    "report": "EXISTS",
    "failedSources": []
   }
@@ -355,6 +355,6 @@
  "market": {
   "date": "2026-11-17",
   "status": "FAILED",
-  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011Ch91Ac3FQF8QiDxN6mNBn\"}"
+  "error": "오늘 위원회 시도 4번을 다 써서 보류 · 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011Ch91Ac3FQF8QiDxN6mNBn\"}"
  }
 }
