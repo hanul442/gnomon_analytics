@@ -998,3 +998,4 @@
 {"symbol":"JNJ","date":"2026-11-13","open":285,"high":288.11,"low":281.68,"close":285.75,"volume":6291244,"source":"naver:world:day","retrievedAt":"2026-11-18T09:30:40.978Z"}
 {"symbol":"JNJ","date":"2026-11-16","open":288.99,"high":290.2495,"low":282.33,"close":282.55,"volume":8104368,"source":"naver:world:day","retrievedAt":"2026-11-18T09:30:40.978Z"}
 {"symbol":"JNJ","date":"2026-11-17","open":278.99,"high":281.72,"low":277.56,"close":278.7,"volume":8979245,"source":"naver:world:day","retrievedAt":"2026-11-18T09:30:40.978Z"}
+{"symbol":"JNJ","date":"2026-11-18","open":276.56,"high":278.7029,"low":274.645,"close":275.7903,"volume":2361393,"source":"naver:world:day","retrievedAt":"2026-11-18T18:20:30.054Z"}
