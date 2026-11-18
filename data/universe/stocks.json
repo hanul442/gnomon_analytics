@@ -9466,7 +9466,7 @@
  },
  {
   "symbol": "200350",
-  "name": "아티스트스튜디오",
+  "name": "스튜디오쏠쏠",
   "market": "KOSDAQ"
  },
  {
@@ -13330,6 +13330,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "471800",
+  "name": "에이엘로봇",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "471820",
   "name": "셀로맥스사이언스",
   "market": "KOSDAQ"
@@ -13372,11 +13377,6 @@
  {
   "symbol": "474650",
   "name": "링크솔루션",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "474660",
-  "name": "신한제12호스팩",
   "market": "KOSDAQ"
  },
  {

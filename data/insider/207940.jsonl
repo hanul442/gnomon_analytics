@@ -44,3 +44,6 @@
 {"symbol":"207940","receiptNo":"20261030000685","date":"2026-10-30","reporter":"김기중","position":"상무","isExec":true,"isMajor":false,"shares":55,"delta":-2,"ratio":0,"retrievedAt":"2026-10-30T16:10:34.877Z"}
 {"symbol":"207940","receiptNo":"20261104000332","date":"2026-11-04","reporter":"김희정","position":"상무","isExec":true,"isMajor":false,"shares":1,"delta":-10,"ratio":0,"retrievedAt":"2026-11-04T17:43:09.415Z"}
 {"symbol":"207940","receiptNo":"20261104000338","date":"2026-11-04","reporter":"제임스최","position":"부사장","isExec":true,"isMajor":false,"shares":653,"delta":-25,"ratio":0,"retrievedAt":"2026-11-04T17:43:09.415Z"}
+{"symbol":"207940","receiptNo":"20261118000260","date":"2026-11-18","reporter":"노균","position":"부사장","isExec":true,"isMajor":false,"shares":62,"delta":0,"ratio":0,"retrievedAt":"2026-11-18T09:30:40.978Z"}
+{"symbol":"207940","receiptNo":"20261118000249","date":"2026-11-18","reporter":"John Chongbo Rim","position":"대표이사","isExec":true,"isMajor":false,"shares":272,"delta":2,"ratio":0,"retrievedAt":"2026-11-18T09:30:40.978Z"}
+{"symbol":"207940","receiptNo":"20261118000282","date":"2026-11-18","reporter":"유승호","position":"부사장","isExec":true,"isMajor":false,"shares":136,"delta":1,"ratio":0,"retrievedAt":"2026-11-18T09:30:40.978Z"}

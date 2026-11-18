@@ -14,3 +14,4 @@
 {"symbol":"005830","receiptNo":"20261002000451","date":"2026-10-02","reporter":"국민연금공단","shares":6131719,"delta":674858,"ratio":9.36,"ratioDelta":1.03,"reason":"단순추가취득/처분","retrievedAt":"2026-11-13T09:30:36.791Z"}
 {"symbol":"005830","receiptNo":"20261027000314","date":"2026-10-27","reporter":"김준기","shares":18234007,"delta":7000,"ratio":27.84,"ratioDelta":0.01,"reason":"- 특별관계자 (김준기, 김남호) 보유 주식 중 일부 주식      계약 사항 변경\n- 특별관계자 (DB하이텍) 의 당사 주식 매수","retrievedAt":"2026-11-13T09:30:36.791Z"}
 {"symbol":"005830","receiptNo":"20261109000374","date":"2026-11-09","reporter":"김준기","shares":18234107,"delta":100,"ratio":27.84,"ratioDelta":0,"reason":"- 특별관계자 추가로 인한 특별관계자 수 및 보유 주식\n 수의 변동","retrievedAt":"2026-11-13T09:30:36.791Z"}
+{"symbol":"005830","receiptNo":"20261118000230","date":"2026-11-18","reporter":"김준기","shares":18234507,"delta":400,"ratio":27.84,"ratioDelta":0,"reason":"- 특별관계자의 보유 주식 수의 변동\n- 특별관계자 보유 주식 중 일부 주식 계약 사항 변경","retrievedAt":"2026-11-18T09:30:40.978Z"}

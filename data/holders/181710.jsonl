@@ -2,3 +2,4 @@
 {"symbol":"181710","receiptNo":"20260701000226","date":"2026-07-01","reporter":"국민연금공단","shares":3151469,"delta":594558,"ratio":9.62,"ratioDelta":2.05,"reason":"단순추가취득/처분","retrievedAt":"2026-10-23T09:23:18.074Z"}
 {"symbol":"181710","receiptNo":"20260807000530","date":"2026-08-07","reporter":"이준호","shares":18705818,"delta":-44343,"ratio":57.11,"ratioDelta":-0.14,"reason":"특별관계자의 주식 수 변동, 특별관계 해소","retrievedAt":"2026-10-23T09:23:18.074Z"}
 {"symbol":"181710","receiptNo":"20260922000328","date":"2026-09-22","reporter":"이준호","shares":18665995,"delta":-39823,"ratio":57.74,"ratioDelta":0.63,"reason":"특별관계자의 주식매수선택권 행사,\n특별관계자의 주식 수 변동,\n특별관계 해소, 자기주식 소각","retrievedAt":"2026-10-23T09:23:18.074Z"}
+{"symbol":"181710","receiptNo":"20261118000259","date":"2026-11-18","reporter":"이준호","shares":18665895,"delta":-100,"ratio":57.74,"ratioDelta":0,"reason":"보유주식등에 관한 주요계약 체결(담보계약),\n특별관계자의 주식 수 변동","retrievedAt":"2026-11-18T09:30:40.978Z"}
