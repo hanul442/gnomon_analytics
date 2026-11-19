@@ -1024,3 +1024,4 @@
 {"symbol":"AMAT.O","date":"2026-11-16","open":348.49,"high":358.545,"low":346.01,"close":350.25,"volume":7113835,"source":"naver:world:day","retrievedAt":"2026-11-19T09:30:39.055Z"}
 {"symbol":"AMAT.O","date":"2026-11-17","open":354.41,"high":355.6999,"low":338,"close":349.23,"volume":6845534,"source":"naver:world:day","retrievedAt":"2026-11-19T09:30:39.055Z"}
 {"symbol":"AMAT.O","date":"2026-11-18","open":354.54,"high":355.9995,"low":342.32,"close":352.3,"volume":4773194,"source":"naver:world:day","retrievedAt":"2026-11-19T09:30:39.055Z"}
+{"symbol":"AMAT.O","date":"2026-11-19","open":367.21,"high":367.53,"low":339.47,"close":344.59,"volume":2869684,"source":"naver:world:day","retrievedAt":"2026-11-19T18:33:25.118Z"}
