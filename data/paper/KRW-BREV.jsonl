@@ -1,0 +1,2 @@
+{"symbol":"KRW-BREV","date":"2026-11-19","close":108,"method":"gnm-paper-v1","recordedAt":"2026-11-19T09:30:39.055Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
+{"symbol":"KRW-BREV","date":"2026-11-19","close":108,"method":"gnm-paper-v1","recordedAt":"2026-11-19T09:30:39.055Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"RSI 평균회귀"}
