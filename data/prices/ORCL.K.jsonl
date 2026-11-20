@@ -1000,3 +1000,4 @@
 {"symbol":"ORCL.K","date":"2026-11-19","open":116.665,"high":118.5,"low":110.24,"close":110.57,"volume":27781198,"source":"naver:world:day","retrievedAt":"2026-11-20T09:30:39.210Z"}
 {"symbol":"ORCL.K","date":"2026-11-20","open":108.74,"high":108.99,"low":101.89,"close":102.31,"volume":19839807,"source":"naver:world:day","retrievedAt":"2026-11-20T17:57:20.502Z"}
 {"symbol":"ORCL.K","date":"2026-11-20","open":108.74,"high":108.99,"low":101.22,"close":101.435,"volume":28608015,"source":"naver:world:day","retrievedAt":"2026-11-20T20:06:08.303Z"}
+{"symbol":"ORCL.K","date":"2026-11-20","open":108.475,"high":108.99,"low":100.2505,"close":101.19,"volume":44171880,"source":"naver:world:day","retrievedAt":"2026-11-20T21:57:21.492Z"}
