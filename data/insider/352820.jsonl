@@ -8,3 +8,4 @@
 {"symbol":"352820","receiptNo":"20260408003273","date":"2026-04-08","reporter":"정진수","position":"CLO","isExec":true,"isMajor":false,"shares":14401,"delta":10100,"ratio":0.03,"retrievedAt":"2026-11-06T09:30:30.620Z"}
 {"symbol":"352820","receiptNo":"20260521000510","date":"2026-05-21","reporter":"방시혁","position":"의장(Chairman)","isExec":true,"isMajor":true,"shares":12247734,"delta":-192126,"ratio":28.42,"retrievedAt":"2026-11-06T09:30:30.620Z"}
 {"symbol":"352820","receiptNo":"20260904000345","date":"2026-09-04","reporter":"박태희","position":"CCO","isExec":true,"isMajor":false,"shares":2361,"delta":1202,"ratio":0.01,"retrievedAt":"2026-11-06T09:30:30.620Z"}
+{"symbol":"352820","receiptNo":"20261119000270","date":"2026-11-19","reporter":"Isaac Lee","position":"HBA Chairman & CEO","isExec":true,"isMajor":false,"shares":3350,"delta":3350,"ratio":0.01,"retrievedAt":"2026-11-20T09:30:39.210Z"}

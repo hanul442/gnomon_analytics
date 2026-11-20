@@ -10660,6 +10660,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "271160",
+  "name": "하나에어로",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "271560",
   "name": "오리온",
   "market": "KOSPI"
@@ -12673,11 +12678,6 @@
   "symbol": "417200",
   "name": "LS머트리얼즈",
   "market": "KOSDAQ"
- },
- {
-  "symbol": "417310",
-  "name": "코람코더원리츠",
-  "market": "KOSPI"
  },
  {
   "symbol": "417500",

@@ -18,3 +18,5 @@
 {"symbol":"007660","receiptNo":"20260806000398","date":"2026-08-06","reporter":"이수","shares":19183225,"delta":0,"ratio":26.13,"ratioDelta":0,"reason":"보유주식에 관한 계약내용 변경(근질권 담보 수량 변경)","retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"007660","receiptNo":"20260901000187","date":"2026-09-01","reporter":"미래에셋자산운용","shares":6721871,"delta":1803418,"ratio":9.16,"ratioDelta":2.46,"reason":"지분율 변동","retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"007660","receiptNo":"20260904000407","date":"2026-09-04","reporter":"이수","shares":19183225,"delta":0,"ratio":26.13,"ratioDelta":0,"reason":"보유주식에 관한 계약내용 변경(차입금 연장)","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"007660","receiptNo":"20261102000295","date":"2026-11-02","reporter":"미래에셋자산운용","shares":5498589,"delta":-1223282,"ratio":7.49,"ratioDelta":-1.67,"reason":"지분율 변동","retrievedAt":"2026-11-20T09:30:39.210Z"}
+{"symbol":"007660","receiptNo":"20261110000334","date":"2026-11-10","reporter":"이수","shares":19183225,"delta":0,"ratio":26.13,"ratioDelta":0,"reason":"보유주식에 관한 계약내용 변경(차입금 연장)","retrievedAt":"2026-11-20T09:30:39.210Z"}

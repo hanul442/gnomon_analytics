@@ -10,3 +10,4 @@
 {"symbol":"028260","receiptNo":"20260511000730","date":"2026-05-11","reporter":"강병오","position":"부사장","isExec":true,"isMajor":false,"shares":324,"delta":324,"ratio":0,"retrievedAt":"2026-10-09T09:41:01.762Z"}
 {"symbol":"028260","receiptNo":"20260512000723","date":"2026-05-12","reporter":"권한길","position":"상무","isExec":true,"isMajor":false,"shares":0,"delta":-1188,"ratio":0,"retrievedAt":"2026-10-09T09:41:01.762Z"}
 {"symbol":"028260","receiptNo":"20260602000445","date":"2026-06-02","reporter":"권한길","position":"상무","isExec":true,"isMajor":false,"shares":1100,"delta":1100,"ratio":0,"retrievedAt":"2026-10-09T09:41:01.762Z"}
+{"symbol":"028260","receiptNo":"20261119000068","date":"2026-11-19","reporter":"김용희","position":"상무","isExec":true,"isMajor":false,"shares":15,"delta":15,"ratio":0,"retrievedAt":"2026-11-20T09:30:39.210Z"}

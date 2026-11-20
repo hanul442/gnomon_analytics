@@ -1,6 +1,6 @@
 {
- "at": "2026-11-19T22:26:25.050Z",
- "selected": null,
+ "at": "2026-11-20T09:30:39.210Z",
+ "selected": "2026-11-20",
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2636
+   "count": 2646
   },
   {
    "source": "naver:fchart:day:etf",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 30
+   "count": 25
   },
   {
    "source": "google:topic-business-ko",
@@ -50,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 70
+   "count": 66
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 52
+   "count": 57
   },
   {
    "source": "naver:world:day:all",
@@ -66,12 +66,17 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 586
+   "count": 893
   }
  ],
  "stocks": [
   {
    "symbol": "000660",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "005930",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -91,72 +96,27 @@
    "failedSources": []
   },
   {
-   "symbol": "035420",
+   "symbol": "006400",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "105560",
+   "symbol": "034020",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "015760",
+   "symbol": "028260",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "032830",
+   "symbol": "352820",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "138040",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "000150",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "034730",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "196170",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "068270",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "240810",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "259960",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "005830",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "181710",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "036570",
+   "symbol": "012450",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -166,52 +126,22 @@
    "failedSources": []
   },
   {
-   "symbol": "030530",
+   "symbol": "180640",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "030200",
+   "symbol": "009150",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "192820",
+   "symbol": "010140",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "086520",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "006800",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "247540",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "000990",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "039490",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "003550",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "035900",
+   "symbol": "042660",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -221,32 +151,72 @@
    "failedSources": []
   },
   {
-   "symbol": "001450",
+   "symbol": "017670",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "036930",
+   "symbol": "042700",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "139480",
+   "symbol": "034730",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "009540",
+   "symbol": "000270",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "271560",
+   "symbol": "035420",
    "report": "SKIPPED",
    "failedSources": []
   },
   {
-   "symbol": "403870",
+   "symbol": "010130",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "007660",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "108490",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "222800",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "000990",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "105560",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "047040",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "064350",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "018260",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -256,7 +226,37 @@
    "failedSources": []
   },
   {
-   "symbol": "222800",
+   "symbol": "036930",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "012330",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "000150",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "068270",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "010120",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "000810",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "009830",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -276,16 +276,6 @@
    "failedSources": []
   },
   {
-   "symbol": "009830",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "042700",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "043260",
    "report": "SKIPPED",
    "failedSources": []
@@ -297,6 +287,11 @@
   },
   {
    "symbol": "327260",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "403870",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -326,35 +321,35 @@
    "failedSources": []
   },
   {
-   "symbol": "005930",
-   "report": "EXISTS",
+   "symbol": "005380",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "000810",
-   "report": "EXISTS",
+   "symbol": "055550",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "AMAT.O",
-   "report": "EXISTS",
+   "symbol": "ORCL.K",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "KRW-BREV",
-   "report": "EXISTS",
+   "symbol": "390390",
+   "report": "WRITTEN",
    "failedSources": []
   },
   {
-   "symbol": "281820",
-   "report": "EXISTS",
+   "symbol": "005300",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
-  "date": "2026-11-19",
+  "date": "2026-11-20",
   "status": "FAILED",
-  "error": "오늘 위원회 시도 4번을 다 써서 보류 · 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChCnMEgRBRzSGW8r5aAji\"}"
+  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChDxmqRoWj7GNK6wha3rT\"}"
  }
 }

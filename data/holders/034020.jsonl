@@ -7,3 +7,4 @@
 {"symbol":"034020","receiptNo":"20260702000437","date":"2026-07-02","reporter":"두산","shares":196506795,"delta":0,"ratio":30.68,"ratioDelta":0,"reason":"계약 내용의 변경","retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"034020","receiptNo":"20260731000382","date":"2026-07-31","reporter":"국민연금공단","shares":48852699,"delta":-1503546,"ratio":7.63,"ratioDelta":-0.23,"reason":"단순투자목적에서 일반투자목적으로 보유목적 변경","retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"034020","receiptNo":"20261001000182","date":"2026-10-01","reporter":"두산","shares":196506795,"delta":0,"ratio":30.68,"ratioDelta":0,"reason":"계약 내용의 변경","retrievedAt":"2026-10-09T09:08:50.767Z"}
+{"symbol":"034020","receiptNo":"20261120000468","date":"2026-11-20","reporter":"두산","shares":196506795,"delta":0,"ratio":30.68,"ratioDelta":0,"reason":"계약 내용의 변경","retrievedAt":"2026-11-20T09:30:39.210Z"}
