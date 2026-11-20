@@ -1,6 +1,6 @@
 {
- "at": "2026-11-20T09:30:39.210Z",
- "selected": "2026-11-20",
+ "at": "2026-11-20T17:57:20.502Z",
+ "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2646
+   "count": 2645
   },
   {
    "source": "naver:fchart:day:etf",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 25
+   "count": 33
   },
   {
    "source": "google:topic-business-ko",
@@ -50,7 +50,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 66
+   "count": 70
   },
   {
    "source": "rss:bbc-business",
@@ -60,13 +60,17 @@
   {
    "source": "naver:world:day:all",
    "ok": true,
-   "count": 659,
-   "error": "1 failed "
+   "count": 660
   },
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 893
+   "count": 604
+  },
+  {
+   "source": "naver:themes",
+   "ok": true,
+   "count": 265
   }
  ],
  "stocks": [
@@ -322,27 +326,27 @@
   },
   {
    "symbol": "005380",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "055550",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "ORCL.K",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "390390",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "005300",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
@@ -350,6 +354,6 @@
  "market": {
   "date": "2026-11-20",
   "status": "FAILED",
-  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChDxmqRoWj7GNK6wha3rT\"}"
+  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChEd6xLVC8RzLiMnMJTGV\"}"
  }
 }
