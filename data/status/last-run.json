@@ -1,5 +1,5 @@
 {
- "at": "2026-11-21T16:54:59.137Z",
+ "at": "2026-11-21T19:09:05.772Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 29
+   "count": 26
   },
   {
    "source": "google:topic-business-ko",
