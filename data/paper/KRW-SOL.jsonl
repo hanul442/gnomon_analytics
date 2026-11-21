@@ -1,2 +1,4 @@
 {"symbol":"KRW-SOL","date":"2026-10-20","close":141100,"method":"gnm-paper-v1","recordedAt":"2026-10-21T11:20:14.008Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
 {"symbol":"KRW-SOL","date":"2026-10-20","close":141100,"method":"gnm-paper-v1","recordedAt":"2026-10-21T11:20:14.008Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"MACD 교차"}
+{"symbol":"KRW-SOL","date":"2026-11-21","close":93650,"method":"gnm-paper-v1","recordedAt":"2026-11-21T09:30:49.744Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
+{"symbol":"KRW-SOL","date":"2026-11-21","close":93650,"method":"gnm-paper-v1","recordedAt":"2026-11-21T09:30:49.744Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"MACD 교차"}

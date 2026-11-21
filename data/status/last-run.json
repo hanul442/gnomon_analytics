@@ -1,5 +1,5 @@
 {
- "at": "2026-11-20T21:57:21.492Z",
+ "at": "2026-11-21T09:30:49.744Z",
  "selected": null,
  "universe": [
   {
@@ -50,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 70
+   "count": 57
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 57
+   "count": 58
   },
   {
    "source": "naver:world:day:all",
@@ -250,7 +250,17 @@
    "failedSources": []
   },
   {
+   "symbol": "005380",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
    "symbol": "000810",
+   "report": "SKIPPED",
+   "failedSources": []
+  },
+  {
+   "symbol": "055550",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -320,35 +330,14 @@
    "failedSources": []
   },
   {
-   "symbol": "005380",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "055550",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "ORCL.K",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "390390",
-   "report": "EXISTS",
-   "failedSources": []
-  },
-  {
-   "symbol": "005300",
-   "report": "EXISTS",
+   "symbol": "KRW-SOL",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
-  "date": "2026-11-20",
-  "status": "FAILED",
-  "error": "오늘 위원회 시도 4번을 다 써서 보류 · 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChEd6xLVC8RzLiMnMJTGV\"}"
+  "date": "2026-11-21",
+  "status": "NO_DATA"
  }
 }
