@@ -1,0 +1,1767 @@
+{
+ "date": "2026-11-23",
+ "scoredRanges": 221,
+ "scoredCalls": 210,
+ "misses": [
+  {
+   "type": "market_shock",
+   "symbol": "000150",
+   "day": "2026-10-02",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -13.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000150",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000150",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "000150",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000270",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000660",
+   "day": "2026-10-02",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -13.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000660",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000660",
+   "day": "2026-10-06",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -13.4%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "000660",
+   "day": "2026-10-07",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -18.4%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000660",
+   "day": "2026-10-07",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -20.9%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "000660",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000660",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000660",
+   "day": "2026-10-22",
+   "who": "range-5",
+   "detail": "5거래일 범위 위로 벗어남, 지수 7.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000660",
+   "day": "2026-10-29",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -9.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "000660",
+   "day": "2026-11-02",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.3%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "000810",
+   "day": "2026-11-05",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -0.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005380",
+   "day": "2026-10-02",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -13.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005380",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005930",
+   "day": "2026-10-02",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -13.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005930",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005930",
+   "day": "2026-10-06",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -13.4%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005930",
+   "day": "2026-10-07",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -18.4%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005930",
+   "day": "2026-10-07",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -20.9%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005930",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005930",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "005930",
+   "day": "2026-11-02",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "007660",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "007660",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "009150",
+   "day": "2026-10-02",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -13.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "009150",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "009150",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "009150",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "009540",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "009830",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "010950",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "012450",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "018260",
+   "day": "2026-11-13",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -7.9%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "028260",
+   "day": "2026-11-03",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -7.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "032830",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "033780",
+   "day": "2026-10-07",
+   "who": "range-5",
+   "detail": "5거래일 범위 위로 벗어남, 지수 -18.4%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "033780",
+   "day": "2026-10-07",
+   "who": "range-20",
+   "detail": "20거래일 범위 위로 벗어남, 지수 -20.9%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "034020",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "034020",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "035420",
+   "day": "2026-11-06",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 4.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "036930",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -21.1%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "036930",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -10.9%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "036930",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -27.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "042660",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "042660",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "042700",
+   "day": "2026-10-02",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -13.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "042700",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "042700",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "042700",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "051910",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "051910",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "055550",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "055550",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "062040",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "062040",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "066570",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "069500",
+   "day": "2026-10-02",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -13.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "069500",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "133690",
+   "day": "2026-10-06",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -18.1%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "180640",
+   "day": "2026-11-03",
+   "who": "range-5",
+   "detail": "5거래일 범위 위로 벗어남, 지수 -7.3%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "207940",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 위로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "222800",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -21.1%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "222800",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -10.9%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "222800",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -27.8%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "267260",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "267270",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "298040",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "327260",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -21.1%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "329180",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "353200",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -19.3%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "353200",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "353200",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "373220",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "402340",
+   "day": "2026-10-08",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -14.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "402340",
+   "day": "2026-10-08",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -23.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "403870",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -21.1%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "452190",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -21.1%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "455850",
+   "day": "2026-10-07",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -18.4%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "455850",
+   "day": "2026-10-07",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -20.9%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "490470",
+   "day": "2026-10-02",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -21.1%"
+  },
+  {
+   "type": "stock_tail",
+   "symbol": "AMAT.O",
+   "day": "2026-10-14",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "KRW-ETH",
+   "day": "2026-10-05",
+   "who": "range-5",
+   "detail": "5거래일 범위 아래로 벗어남, 지수 -2.5%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "KRW-ETH",
+   "day": "2026-10-05",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -7.6%"
+  },
+  {
+   "type": "market_shock",
+   "symbol": "KRW-SOL",
+   "day": "2026-10-20",
+   "who": "range-20",
+   "detail": "20거래일 범위 아래로 벗어남, 지수 -7.4%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "000150",
+   "day": "2026-10-02",
+   "who": "mean_reversion",
+   "detail": "중립인데 -36.5% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "000150",
+   "day": "2026-10-02",
+   "who": "wave_structure",
+   "detail": "중립인데 -36.5% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "000150",
+   "day": "2026-10-02",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -36.5%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "000150",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -36.5%, 지수 -19.3%"
+  },
+  {
+   "type": "market",
+   "symbol": "000270",
+   "day": "2026-10-02",
+   "who": "mean_reversion:BULLISH",
+   "detail": "강세인데 -14.6%, 지수 -19.3%"
+  },
+  {
+   "type": "market",
+   "symbol": "000270",
+   "day": "2026-10-02",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -14.6%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "000270",
+   "day": "2026-10-02",
+   "who": "event_catalyst",
+   "detail": "중립인데 -14.6% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "000660",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -23.2%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "000660",
+   "day": "2026-10-02",
+   "who": "mean_reversion",
+   "detail": "중립인데 -23.2% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "000660",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -23.2%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "000660",
+   "day": "2026-10-02",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -23.2%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "000660",
+   "day": "2026-10-02",
+   "who": "event_catalyst",
+   "detail": "중립인데 -23.2% 움직임"
+  },
+  {
+   "type": "market",
+   "symbol": "003490",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -5.8%, 지수 -19.3%"
+  },
+  {
+   "type": "market",
+   "symbol": "003490",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -5.8%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "003490",
+   "day": "2026-10-02",
+   "who": "volume_flow",
+   "detail": "중립인데 -5.8% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "003490",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -5.8% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "005380",
+   "day": "2026-10-02",
+   "who": "mean_reversion",
+   "detail": "중립인데 -19.6% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "005380",
+   "day": "2026-10-02",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -19.6%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "005930",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -19.6%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "005930",
+   "day": "2026-10-02",
+   "who": "mean_reversion",
+   "detail": "중립인데 -19.6% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "005930",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -19.6%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "005930",
+   "day": "2026-10-02",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -19.6%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "005930",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -19.6%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "009150",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -28.6%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "009150",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -28.6%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "009150",
+   "day": "2026-10-02",
+   "who": "volume_flow",
+   "detail": "중립인데 -28.6% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "009150",
+   "day": "2026-10-02",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -28.6%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "009150",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -28.6%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "009150",
+   "day": "2026-10-08",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -42.7%, 지수 -23.6%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "009150",
+   "day": "2026-10-08",
+   "who": "mean_reversion",
+   "detail": "중립인데 -42.7% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "009150",
+   "day": "2026-10-08",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -42.7%, 지수 -23.6%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "009150",
+   "day": "2026-10-08",
+   "who": "volume_flow",
+   "detail": "중립인데 -42.7% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "009150",
+   "day": "2026-10-08",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -42.7%, 지수 -23.6%"
+  },
+  {
+   "type": "stock",
+   "symbol": "009150",
+   "day": "2026-10-08",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -42.7%, 지수 -23.6%"
+  },
+  {
+   "type": "stock",
+   "symbol": "009830",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -33.1%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "009830",
+   "day": "2026-10-02",
+   "who": "wave_structure",
+   "detail": "중립인데 -33.1% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "009830",
+   "day": "2026-10-02",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -33.1%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "009830",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -33.1% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "009830",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -33.1%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "010950",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -29.7%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "010950",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -29.7%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "010950",
+   "day": "2026-10-02",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -29.7%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "010950",
+   "day": "2026-10-02",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -29.7%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "010950",
+   "day": "2026-10-02",
+   "who": "event_catalyst",
+   "detail": "중립인데 -29.7% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "036930",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -33.6%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "036930",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -33.6%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "036930",
+   "day": "2026-10-02",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -33.6%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "036930",
+   "day": "2026-10-02",
+   "who": "event_catalyst",
+   "detail": "중립인데 -33.6% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "042700",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -32.6%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "042700",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -32.6%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "042700",
+   "day": "2026-10-02",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -32.6%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "042700",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -32.6% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "042700",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -32.6%, 지수 -19.3%"
+  },
+  {
+   "type": "market",
+   "symbol": "043260",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -21.0%, 지수 -21.1%"
+  },
+  {
+   "type": "market",
+   "symbol": "043260",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -21.0%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "043260",
+   "day": "2026-10-02",
+   "who": "volume_flow",
+   "detail": "중립인데 -21.0% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "043260",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -21.0% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "043260",
+   "day": "2026-10-02",
+   "who": "event_catalyst",
+   "detail": "중립인데 -21.0% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "069500",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -20.3%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "069500",
+   "day": "2026-10-02",
+   "who": "mean_reversion",
+   "detail": "중립인데 -20.3% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "069500",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -20.3%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "069500",
+   "day": "2026-10-02",
+   "who": "volume_flow",
+   "detail": "중립인데 -20.3% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "069500",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -20.3% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "069500",
+   "day": "2026-10-02",
+   "who": "event_catalyst",
+   "detail": "중립인데 -20.3% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "096770",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -20.2%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "096770",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -20.2%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "096770",
+   "day": "2026-10-02",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -20.2%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "096770",
+   "day": "2026-10-02",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -20.2%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "096770",
+   "day": "2026-10-02",
+   "who": "event_catalyst",
+   "detail": "중립인데 -20.2% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "098460",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -21.3%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "098460",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -21.3%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "098460",
+   "day": "2026-10-02",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -21.3%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "098460",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -21.3% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "098460",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -21.3%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "222800",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -30.6%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "222800",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -30.6%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "222800",
+   "day": "2026-10-02",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -30.6%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "222800",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -30.6% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "222800",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -30.6%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "232140",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -28.9%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "232140",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -28.9%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "232140",
+   "day": "2026-10-02",
+   "who": "volume_flow",
+   "detail": "중립인데 -28.9% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "232140",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -28.9% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "232140",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -28.9%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "327260",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -45.4%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "327260",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -45.4%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "327260",
+   "day": "2026-10-02",
+   "who": "volume_flow",
+   "detail": "중립인데 -45.4% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "327260",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -45.4% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "327260",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -45.4%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "353200",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -30.2%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "353200",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -30.2%, 지수 -19.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "353200",
+   "day": "2026-10-02",
+   "who": "volume_flow",
+   "detail": "중립인데 -30.2% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "353200",
+   "day": "2026-10-02",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -30.2%, 지수 -19.3%"
+  },
+  {
+   "type": "stock",
+   "symbol": "353200",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -30.2%, 지수 -19.3%"
+  },
+  {
+   "type": "market",
+   "symbol": "373220",
+   "day": "2026-10-08",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -16.1%, 지수 -23.6%"
+  },
+  {
+   "type": "market",
+   "symbol": "373220",
+   "day": "2026-10-08",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -16.1%, 지수 -23.6%"
+  },
+  {
+   "type": "market",
+   "symbol": "373220",
+   "day": "2026-10-08",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -16.1%, 지수 -23.6%"
+  },
+  {
+   "type": "market",
+   "symbol": "373220",
+   "day": "2026-10-08",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -16.1%, 지수 -23.6%"
+  },
+  {
+   "type": "market",
+   "symbol": "373220",
+   "day": "2026-10-08",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -16.1%, 지수 -23.6%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "402340",
+   "day": "2026-10-08",
+   "who": "mean_reversion",
+   "detail": "중립인데 -29.0% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "402340",
+   "day": "2026-10-08",
+   "who": "fundamental:BULLISH",
+   "detail": "강세인데 -29.0%, 지수 -23.6%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "402340",
+   "day": "2026-10-08",
+   "who": "event_catalyst",
+   "detail": "중립인데 -29.0% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "403870",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -38.9%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "403870",
+   "day": "2026-10-02",
+   "who": "wave_structure",
+   "detail": "중립인데 -38.9% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "403870",
+   "day": "2026-10-02",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -38.9%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "403870",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -38.9% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "403870",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -38.9%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "439090",
+   "day": "2026-10-02",
+   "who": "trend_momentum",
+   "detail": "중립인데 -9.0% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "439090",
+   "day": "2026-10-02",
+   "who": "mean_reversion",
+   "detail": "중립인데 -9.0% 움직임"
+  },
+  {
+   "type": "market",
+   "symbol": "439090",
+   "day": "2026-10-02",
+   "who": "volume_flow:BULLISH",
+   "detail": "강세인데 -9.0%, 지수 -21.1%"
+  },
+  {
+   "type": "market",
+   "symbol": "439090",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -9.0%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "452190",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -36.6%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "452190",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -36.6%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "452190",
+   "day": "2026-10-02",
+   "who": "volume_flow",
+   "detail": "중립인데 -36.6% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "452190",
+   "day": "2026-10-02",
+   "who": "event_catalyst",
+   "detail": "중립인데 -36.6% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "455850",
+   "day": "2026-10-07",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -40.0%, 지수 -20.9%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "455850",
+   "day": "2026-10-07",
+   "who": "wave_structure",
+   "detail": "중립인데 -40.0% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "455850",
+   "day": "2026-10-07",
+   "who": "fundamental",
+   "detail": "중립인데 -40.0% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "455850",
+   "day": "2026-10-07",
+   "who": "event_catalyst",
+   "detail": "중립인데 -40.0% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "490470",
+   "day": "2026-10-02",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -43.8%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "490470",
+   "day": "2026-10-02",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -43.8%, 지수 -21.1%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "490470",
+   "day": "2026-10-02",
+   "who": "fundamental",
+   "detail": "중립인데 -43.8% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "490470",
+   "day": "2026-10-02",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -43.8%, 지수 -21.1%"
+  },
+  {
+   "type": "stock",
+   "symbol": "AMAT.O",
+   "day": "2026-10-14",
+   "who": "mean_reversion:BULLISH",
+   "detail": "강세인데 -13.8%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "AMAT.O",
+   "day": "2026-10-14",
+   "who": "wave_structure",
+   "detail": "중립인데 -13.8% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "AMAT.O",
+   "day": "2026-10-14",
+   "who": "volume_flow",
+   "detail": "중립인데 -13.8% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "AMAT.O",
+   "day": "2026-10-14",
+   "who": "fundamental",
+   "detail": "중립인데 -13.8% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "KRW-BTC",
+   "day": "2026-10-05",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -7.9%"
+  },
+  {
+   "type": "stock",
+   "symbol": "KRW-BTC",
+   "day": "2026-10-05",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -7.9%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-BTC",
+   "day": "2026-10-05",
+   "who": "volume_flow",
+   "detail": "중립인데 -7.9% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-BTC",
+   "day": "2026-10-05",
+   "who": "fundamental",
+   "detail": "중립인데 -7.9% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-BTC",
+   "day": "2026-10-05",
+   "who": "event_catalyst",
+   "detail": "중립인데 -7.9% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "KRW-ETH",
+   "day": "2026-10-05",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -15.1%, 지수 -7.6%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-ETH",
+   "day": "2026-10-05",
+   "who": "mean_reversion",
+   "detail": "중립인데 -15.1% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "KRW-ETH",
+   "day": "2026-10-05",
+   "who": "wave_structure:BULLISH",
+   "detail": "강세인데 -15.1%, 지수 -7.6%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-ETH",
+   "day": "2026-10-05",
+   "who": "fundamental",
+   "detail": "중립인데 -15.1% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-ETH",
+   "day": "2026-10-05",
+   "who": "event_catalyst",
+   "detail": "중립인데 -15.1% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "KRW-NEAR",
+   "day": "2026-10-09",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -16.6%, 지수 -6.8%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-NEAR",
+   "day": "2026-10-09",
+   "who": "fundamental",
+   "detail": "중립인데 -16.6% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-NEAR",
+   "day": "2026-10-09",
+   "who": "event_catalyst",
+   "detail": "중립인데 -16.6% 움직임"
+  },
+  {
+   "type": "market",
+   "symbol": "KRW-UNI",
+   "day": "2026-10-19",
+   "who": "mean_reversion:BULLISH",
+   "detail": "강세인데 -4.1%, 지수 -7.0%"
+  },
+  {
+   "type": "stock",
+   "symbol": "KRW-WLD",
+   "day": "2026-10-05",
+   "who": "trend_momentum:BULLISH",
+   "detail": "강세인데 -22.2%, 지수 -7.6%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-WLD",
+   "day": "2026-10-05",
+   "who": "wave_structure",
+   "detail": "중립인데 -22.2% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-WLD",
+   "day": "2026-10-05",
+   "who": "volume_flow",
+   "detail": "중립인데 -22.2% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-WLD",
+   "day": "2026-10-05",
+   "who": "fundamental",
+   "detail": "중립인데 -22.2% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "KRW-WLD",
+   "day": "2026-10-05",
+   "who": "event_catalyst:BULLISH",
+   "detail": "강세인데 -22.2%, 지수 -7.6%"
+  },
+  {
+   "type": "stock",
+   "symbol": "KRW-XLM",
+   "day": "2026-10-16",
+   "who": "mean_reversion:BULLISH",
+   "detail": "강세인데 -15.1%, 지수 -6.4%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-XLM",
+   "day": "2026-10-16",
+   "who": "volume_flow",
+   "detail": "중립인데 -15.1% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-XLM",
+   "day": "2026-10-16",
+   "who": "fundamental",
+   "detail": "중립인데 -15.1% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "KRW-XLM",
+   "day": "2026-10-16",
+   "who": "event_catalyst",
+   "detail": "중립인데 -15.1% 움직임"
+  },
+  {
+   "type": "stock",
+   "symbol": "MSTR.O",
+   "day": "2026-10-19",
+   "who": "mean_reversion:BULLISH",
+   "detail": "강세인데 -25.3%"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "MSTR.O",
+   "day": "2026-10-19",
+   "who": "volume_flow",
+   "detail": "중립인데 -25.3% 움직임"
+  },
+  {
+   "type": "neutral_rule",
+   "symbol": "MSTR.O",
+   "day": "2026-10-19",
+   "who": "event_catalyst",
+   "detail": "중립인데 -25.3% 움직임"
+  }
+ ],
+ "byType": [
+  {
+   "type": "market_shock",
+   "n": 65,
+   "days": 11
+  },
+  {
+   "type": "stock_tail",
+   "n": 23,
+   "days": 8
+  },
+  {
+   "type": "neutral_rule",
+   "n": 63,
+   "days": 8
+  },
+  {
+   "type": "market",
+   "n": 14,
+   "days": 3
+  },
+  {
+   "type": "stock",
+   "n": 76,
+   "days": 8
+  }
+ ],
+ "candidates": [
+  {
+   "type": "stock_tail",
+   "who": "range-5",
+   "n": 10,
+   "days": 6
+  },
+  {
+   "type": "stock",
+   "who": "trend_momentum:BULLISH",
+   "n": 23,
+   "days": 5
+  }
+ ],
+ "overconfident": [
+  {
+   "who": "trend_momentum",
+   "scored": 35,
+   "conf": 61.91428571428571,
+   "hit": 22.857142857142858
+  },
+  {
+   "who": "wave_structure",
+   "scored": 35,
+   "conf": 53.91428571428571,
+   "hit": 22.857142857142858
+  },
+  {
+   "who": "volume_flow",
+   "scored": 35,
+   "conf": 49.77142857142857,
+   "hit": 31.428571428571427
+  },
+  {
+   "who": "fundamental",
+   "scored": 35,
+   "conf": 44.371428571428574,
+   "hit": 14.285714285714285
+  },
+  {
+   "who": "event_catalyst",
+   "scored": 35,
+   "conf": 47.02857142857143,
+   "hit": 11.428571428571429
+  }
+ ]
+}
