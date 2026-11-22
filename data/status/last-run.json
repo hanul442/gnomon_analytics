@@ -1,5 +1,5 @@
 {
- "at": "2026-11-21T20:40:04.946Z",
+ "at": "2026-11-22T09:30:44.053Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 28
+   "count": 29
   },
   {
    "source": "google:topic-business-ko",
@@ -50,7 +50,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 68
+   "count": 67
   },
   {
    "source": "rss:bbc-business",
@@ -330,14 +330,14 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-SOL",
-   "report": "EXISTS",
+   "symbol": "KRW-UNI",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
-  "date": "2026-11-21",
+  "date": "2026-11-22",
   "status": "NO_DATA"
  }
 }
