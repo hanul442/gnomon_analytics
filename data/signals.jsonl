@@ -3428,3 +3428,4 @@
 {"date":"2026-11-23","preset":"rebound","symbol":"011330","market":"P","close":5130,"method":"gnm-signal-v1"}
 {"date":"2026-11-23","preset":"hot","symbol":"219750","market":"Q","close":2950,"method":"gnm-signal-v1"}
 {"date":"2026-11-23","preset":"hot","symbol":"191410","market":"Q","close":2390,"method":"gnm-signal-v1"}
+{"date":"2026-11-23","preset":"large","symbol":"277810","market":"Q","close":412000,"method":"gnm-signal-v1"}

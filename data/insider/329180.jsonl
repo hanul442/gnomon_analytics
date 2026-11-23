@@ -19,3 +19,4 @@
 {"symbol":"329180","receiptNo":"20261120000500","date":"2026-11-20","reporter":"이상균","position":"부회장","isExec":true,"isMajor":false,"shares":1688,"delta":500,"ratio":0,"retrievedAt":"2026-11-20T09:30:39.210Z"}
 {"symbol":"329180","receiptNo":"20261120000505","date":"2026-11-20","reporter":"조민수","position":"사장","isExec":true,"isMajor":false,"shares":500,"delta":500,"ratio":0,"retrievedAt":"2026-11-20T09:30:39.210Z"}
 {"symbol":"329180","receiptNo":"20261123000132","date":"2026-11-23","reporter":"금석호","position":"사장","isExec":true,"isMajor":false,"shares":500,"delta":500,"ratio":0,"retrievedAt":"2026-11-23T09:30:40.482Z"}
+{"symbol":"329180","receiptNo":"20261124000003","date":"2026-11-24","reporter":"한주석","position":"사장","isExec":true,"isMajor":false,"shares":800,"delta":800,"ratio":0,"retrievedAt":"2026-11-23T23:49:26.012Z"}
