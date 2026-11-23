@@ -1,5 +1,5 @@
 {
- "at": "2026-11-22T20:50:16.055Z",
+ "at": "2026-11-23T09:30:40.482Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 36
+   "count": 37
   },
   {
    "source": "google:topic-business-ko",
@@ -55,7 +55,7 @@
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 58
+   "count": 47
   },
   {
    "source": "naver:world:day:all",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 0
+   "count": 292
   }
  ],
  "stocks": [
@@ -95,11 +95,6 @@
    "failedSources": []
   },
   {
-   "symbol": "006400",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
    "symbol": "034020",
    "report": "SKIPPED",
    "failedSources": []
@@ -111,11 +106,6 @@
   },
   {
    "symbol": "352820",
-   "report": "SKIPPED",
-   "failedSources": []
-  },
-  {
-   "symbol": "012450",
    "report": "SKIPPED",
    "failedSources": []
   },
@@ -330,14 +320,35 @@
    "failedSources": []
   },
   {
-   "symbol": "KRW-UNI",
-   "report": "EXISTS",
+   "symbol": "006400",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "012450",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "GOOG.O",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "152100",
+   "report": "WRITTEN",
+   "failedSources": []
+  },
+  {
+   "symbol": "006650",
+   "report": "WRITTEN",
    "failedSources": []
   }
  ],
  "failed": [],
  "market": {
-  "date": "2026-11-22",
-  "status": "NO_DATA"
+  "date": "2026-11-23",
+  "status": "FAILED",
+  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChKdy3MmY95xnsWqnKRDW\"}"
  }
 }
