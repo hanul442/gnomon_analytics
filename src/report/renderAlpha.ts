@@ -35,7 +35,7 @@ const NO_API = `<div class="msg-err" data-no-api hidden>알파 서버가 아직 
 export function renderLogin(): string {
   const body = `${PAGE_CSS}<style>.seg2{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--soft);border-radius:12px;padding:4px;margin:12px 0 4px}.seg2 button{border:0;background:none;border-radius:9px;padding:9px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer}.seg2 button[aria-selected=true]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.08)}.form-card input{font-size:17.5px}.alt{margin-top:14px;font-size:15.5px}</style>
 <section class="card form-card"><div class="eyebrow"><span>클로즈드 베타</span></div><h1>그노몬 로그인</h1>${NO_API}
-<p class="msg-ok" id="pause-note" hidden>11월 19일까지 로그인을 잠시 쉬어요. 계정과 기록은 그대로 있어요. 운영자 계정은 지금도 들어갈 수 있어요.</p><script>if(Date.now()<Date.parse('${ALPHA_PAUSE.until}'))document.getElementById('pause-note').hidden=false</script>
+<p class="msg-ok" id="pause-note" hidden>지금은 로그인을 잠시 쉬어요. 계정과 기록은 그대로 있어요. 운영자 계정은 지금도 들어갈 수 있어요.</p><script>if(Date.now()<Date.parse('${ALPHA_PAUSE.until}'))document.getElementById('pause-note').hidden=false</script>
 <div id="verifying" class="msg-ok" hidden>로그인하고 있어요…</div>
 <div class="seg2" role="tablist"><button type="button" role="tab" data-mode="login" aria-selected="true">로그인</button><button type="button" role="tab" data-mode="signup" aria-selected="false">처음이에요 (초대 코드)</button></div>
 <form id="login" autocomplete="on"><div class="fld"><label for="email">이메일</label><input id="email" type="email" autocomplete="email" required placeholder="you@example.com"></div>

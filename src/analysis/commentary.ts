@@ -17,7 +17,8 @@ import { baseRateText } from './eventStudy.js';
 import { lockAnalysts, lockedBrief, type LockUsage } from './lockedAnalysts.js';
 import { companyEvidence, expertBrief, sectorExpertOf, type SectorExpert } from './sectorExpert.js';
 
-export const COMMENTARY_MODEL = 'claude-opus-5-5';
+/** Repository variable GNM_COMMENTARY_MODEL (daily.yml) can switch the committee to a cheaper model, e.g. claude-sonnet-5-5. */
+export const COMMENTARY_MODEL = process.env.GNM_COMMENTARY_MODEL || 'claude-opus-5-5';
 /**
  * G-168 (v3.5.0): every AI report is the full committee. 'brief' (the Haiku summary, G-28) is no longer written;
  * it only appears on reports stored before v3.5.0, which still render.
