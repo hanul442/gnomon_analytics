@@ -998,3 +998,4 @@
 {"symbol":"GOOG.O","date":"2026-11-18","open":280.42,"high":282.3599,"low":276.88,"close":279.2,"volume":21842534,"source":"naver:world:day","retrievedAt":"2026-11-23T09:30:40.482Z"}
 {"symbol":"GOOG.O","date":"2026-11-19","open":290.825,"high":292.21,"low":270.72,"close":271.02,"volume":29259036,"source":"naver:world:day","retrievedAt":"2026-11-23T09:30:40.482Z"}
 {"symbol":"GOOG.O","date":"2026-11-20","open":272.445,"high":280.52,"low":262.27,"close":264,"volume":38464144,"source":"naver:world:day","retrievedAt":"2026-11-23T09:30:40.482Z"}
+{"symbol":"GOOG.O","date":"2026-11-23","open":282.49,"high":282.62,"low":273,"close":279.53,"volume":31210792,"source":"naver:world:day","retrievedAt":"2026-11-23T21:37:56.899Z"}
