@@ -154,3 +154,8 @@
 {"date":"2026-11-23","symbol":"006650","name":"대한유화","kind":"stock","market":"KOSPI","tier":"deep","reason":"스크리너 '매집 흔적' 신호 후보"}
 {"date":"2026-11-23","symbol":"152100","name":"PLUS 200","kind":"etf","market":"KOSPI","tier":"deep","reason":"거래대금 상위 ETF 후보에서 선정"}
 {"date":"2026-11-23","symbol":"GOOG.O","name":"알파벳 Class C","kind":"stock","market":"NASDAQ","tier":"deep","reason":"미국 거래대금 상위 후보에서 선정","us":{"ticker":"GOOG","english":"Alphabet Inc. Class C"}}
+{"date":"2026-11-24","symbol":"012330","name":"현대모비스","kind":"stock","market":"KOSPI","tier":"deep","reason":"시가총액 상위 20종목 순서 (가장 오래된 판단부터)"}
+{"date":"2026-11-24","symbol":"034020","name":"두산에너빌리티","kind":"stock","market":"KOSPI","tier":"deep","reason":"시가총액 상위 20종목 순서 (가장 오래된 판단부터)"}
+{"date":"2026-11-24","symbol":"041510","name":"에스엠","kind":"stock","market":"KOSDAQ","tier":"deep","reason":"스크리너 '시가총액 1조 이상·점수 높음' 신호 후보"}
+{"date":"2026-11-24","symbol":"ZS.O","name":"지스케일러","kind":"stock","market":"NASDAQ","tier":"deep","reason":"미국 거래대금 상위 후보에서 선정","us":{"ticker":"ZS","english":"Zscaler  Inc."}}
+{"date":"2026-11-24","symbol":"KRW-PROM","name":"프롬","kind":"coin","market":"UPBIT","tier":"deep","reason":"24시간 거래대금 상위 코인 후보에서 선정"}
