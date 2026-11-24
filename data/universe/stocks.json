@@ -130,11 +130,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "000320",
-  "name": "노루홀딩스",
-  "market": "KOSPI"
- },
- {
   "symbol": "000325",
   "name": "노루홀딩스우",
   "market": "KOSPI"
@@ -163,6 +158,11 @@
   "symbol": "000440",
   "name": "중앙에너비스",
   "market": "KOSDAQ"
+ },
+ {
+  "symbol": "000480",
+  "name": "CR홀딩스",
+  "market": "KOSPI"
  },
  {
   "symbol": "000480",
@@ -3173,11 +3173,6 @@
   "symbol": "017250",
   "name": "인터엠",
   "market": "KOSDAQ"
- },
- {
-  "symbol": "017370",
-  "name": "우신시스템",
-  "market": "KOSPI"
  },
  {
   "symbol": "017390",
@@ -6790,6 +6785,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "080420",
+  "name": "모다이노칩",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "080470",
   "name": "성창오토텍",
   "market": "KOSDAQ"
@@ -7177,11 +7177,6 @@
  {
   "symbol": "089150",
   "name": "케이씨티",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "089230",
-  "name": "THE E&M",
   "market": "KOSDAQ"
  },
  {
@@ -8332,6 +8327,11 @@
  {
   "symbol": "123010",
   "name": "MSDI",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "123040",
+  "name": "엠에스오토텍",
   "market": "KOSDAQ"
  },
  {
@@ -12680,11 +12680,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "417500",
-  "name": "제이아이테크",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "417790",
   "name": "트루엔",
   "market": "KOSDAQ"
@@ -13742,6 +13737,11 @@
  {
   "symbol": "496070",
   "name": "신한제16호스팩",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "498150",
+  "name": "엠비디",
   "market": "KOSDAQ"
  },
  {
