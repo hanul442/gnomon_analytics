@@ -999,3 +999,4 @@
 {"symbol":"ZS.O","date":"2026-11-20","open":202.73,"high":206.2,"low":193.1282,"close":194.82,"volume":3721301,"source":"naver:world:day","retrievedAt":"2026-11-24T09:30:45.022Z"}
 {"symbol":"ZS.O","date":"2026-11-23","open":238.01,"high":247.9,"low":218.88,"close":229.24,"volume":19249760,"source":"naver:world:day","retrievedAt":"2026-11-24T09:30:45.022Z"}
 {"symbol":"ZS.O","date":"2026-11-24","open":231.88,"high":236.98,"low":228.58,"close":230.96,"volume":4896358,"source":"naver:world:day","retrievedAt":"2026-11-24T20:18:27.229Z"}
+{"symbol":"ZS.O","date":"2026-11-24","open":231.83,"high":236.98,"low":228.5,"close":231.62,"volume":6797221,"source":"naver:world:day","retrievedAt":"2026-11-24T22:21:15.989Z"}
