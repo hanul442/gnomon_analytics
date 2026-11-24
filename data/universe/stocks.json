@@ -5685,6 +5685,11 @@
   "market": "KOSDAQ"
  },
  {
+  "symbol": "056700",
+  "name": "신화인터텍",
+  "market": "KOSDAQ"
+ },
+ {
   "symbol": "056730",
   "name": "CNT85",
   "market": "KOSDAQ"
@@ -5732,6 +5737,11 @@
  {
   "symbol": "058610",
   "name": "에스피지",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "058630",
+  "name": "엠게임",
   "market": "KOSDAQ"
  },
  {
@@ -7192,11 +7202,6 @@
  {
   "symbol": "089790",
   "name": "제이티",
-  "market": "KOSDAQ"
- },
- {
-  "symbol": "089850",
-  "name": "유비벨록스",
   "market": "KOSDAQ"
  },
  {
@@ -9095,11 +9100,6 @@
   "market": "KOSPI"
  },
  {
-  "symbol": "175330",
-  "name": "JB금융지주",
-  "market": "KOSPI"
- },
- {
   "symbol": "176750",
   "name": "듀켐바이오",
   "market": "KOSDAQ"
@@ -9910,11 +9910,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "222420",
-  "name": "쎄노텍",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "222800",
   "name": "심텍",
   "market": "KOSDAQ"
@@ -10193,6 +10188,11 @@
   "symbol": "241520",
   "name": "DSC인베스트먼트",
   "market": "KOSDAQ"
+ },
+ {
+  "symbol": "241560",
+  "name": "두산밥캣",
+  "market": "KOSPI"
  },
  {
   "symbol": "241590",
@@ -12070,11 +12070,6 @@
   "market": "KOSDAQ"
  },
  {
-  "symbol": "365330",
-  "name": "에스와이스틸텍",
-  "market": "KOSDAQ"
- },
- {
   "symbol": "365340",
   "name": "성일하이텍",
   "market": "KOSDAQ"
@@ -12667,6 +12662,11 @@
  {
   "symbol": "417010",
   "name": "나노팀",
+  "market": "KOSDAQ"
+ },
+ {
+  "symbol": "417030",
+  "name": "니어스랩",
   "market": "KOSDAQ"
  },
  {

@@ -998,3 +998,4 @@
 {"symbol":"KRW-PROM","date":"2026-11-22","open":6905,"high":7415,"low":5560,"close":6445,"volume":1902580.51148198,"source":"upbit:candles:days","retrievedAt":"2026-11-24T09:30:45.022Z"}
 {"symbol":"KRW-PROM","date":"2026-11-23","open":6435,"high":9600,"low":5945,"close":7070,"volume":12376104.73025422,"source":"upbit:candles:days","retrievedAt":"2026-11-24T09:30:45.022Z"}
 {"symbol":"KRW-PROM","date":"2026-11-24","open":7080,"high":7225,"low":6630,"close":6665,"volume":1473267.5935207,"source":"upbit:candles:days","retrievedAt":"2026-11-24T09:30:45.022Z"}
+{"symbol":"KRW-PROM","date":"2026-11-24","open":7080,"high":7225,"low":6090,"close":6110,"volume":1932880.94411071,"source":"upbit:candles:days","retrievedAt":"2026-11-24T20:18:27.229Z"}
