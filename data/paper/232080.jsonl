@@ -7,3 +7,5 @@
 {"symbol":"232080","date":"2026-10-23","close":12675,"method":"gnm-paper-v1","recordedAt":"2026-10-23T09:23:18.074Z","follower":"analyst:fundamental","label":"실적·밸류에이션 분석가","position":0,"basis":"중립"}
 {"symbol":"232080","date":"2026-10-23","close":12675,"method":"gnm-paper-v1","recordedAt":"2026-10-23T09:23:18.074Z","follower":"analyst:event_catalyst","label":"이벤트·뉴스 분석가","position":0,"basis":"중립"}
 {"symbol":"232080","date":"2026-10-23","close":12675,"method":"gnm-paper-v1","recordedAt":"2026-10-23T09:23:18.074Z","follower":"analyst:sector_expert","label":"ETF 전문위원","position":0,"basis":"약세"}
+{"symbol":"232080","date":"2026-11-25","close":10960,"method":"gnm-paper-v1","recordedAt":"2026-11-25T09:30:46.591Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
+{"symbol":"232080","date":"2026-11-25","close":10960,"method":"gnm-paper-v1","recordedAt":"2026-11-25T09:30:46.591Z","follower":"champion","label":"전략 챔피언","position":1,"basis":"RSI 평균회귀"}
