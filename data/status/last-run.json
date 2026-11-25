@@ -1,5 +1,5 @@
 {
- "at": "2026-11-25T19:32:02.174Z",
+ "at": "2026-11-25T21:37:55.906Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 34
+   "count": 35
   },
   {
    "source": "google:topic-business-ko",
@@ -112,32 +112,17 @@
   {
    "symbol": "329180",
    "report": "SKIPPED",
-   "failedSources": [
-    {
-     "source": "rss:mk-economy",
-     "error": "The operation was aborted due to timeout"
-    }
-   ]
+   "failedSources": []
   },
   {
    "symbol": "180640",
    "report": "SKIPPED",
-   "failedSources": [
-    {
-     "source": "rss:mk-economy",
-     "error": "The operation was aborted due to timeout"
-    }
-   ]
+   "failedSources": []
   },
   {
    "symbol": "009150",
    "report": "SKIPPED",
-   "failedSources": [
-    {
-     "source": "rss:mk-economy",
-     "error": "The operation was aborted due to timeout"
-    }
-   ]
+   "failedSources": []
   },
   {
    "symbol": "010140",
@@ -364,6 +349,6 @@
  "market": {
   "date": "2026-11-25",
   "status": "FAILED",
-  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChQDc7qnUHriHZq9sr9Tu\"}"
+  "error": "오늘 위원회 시도 4번을 다 써서 보류 · 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChQDc7qnUHriHZq9sr9Tu\"}"
  }
 }
