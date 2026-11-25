@@ -416,3 +416,4 @@
 {"symbol":"CRWV.O","date":"2026-11-20","open":43.2,"high":43.24,"low":39.28,"close":39.51,"volume":77197336,"source":"naver:world:day","retrievedAt":"2026-11-25T09:30:46.591Z"}
 {"symbol":"CRWV.O","date":"2026-11-23","open":50.97,"high":51.9,"low":46.53,"close":48.33,"volume":95210028,"source":"naver:world:day","retrievedAt":"2026-11-25T09:30:46.591Z"}
 {"symbol":"CRWV.O","date":"2026-11-24","open":46.65,"high":47.04,"low":41.22,"close":42.605,"volume":61531675,"source":"naver:world:day","retrievedAt":"2026-11-25T09:30:46.591Z"}
+{"symbol":"CRWV.O","date":"2026-11-25","open":39.13,"high":41.825,"low":37.4,"close":41.82,"volume":58534709,"source":"naver:world:day","retrievedAt":"2026-11-25T19:32:02.174Z"}

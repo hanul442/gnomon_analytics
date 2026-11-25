@@ -1,5 +1,5 @@
 {
- "at": "2026-11-25T09:30:46.591Z",
+ "at": "2026-11-25T19:32:02.174Z",
  "selected": null,
  "universe": [
   {
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2644
+   "count": 2643
   },
   {
    "source": "naver:fchart:day:etf",
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 36
+   "count": 34
   },
   {
    "source": "google:topic-business-ko",
@@ -50,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 65
+   "count": 70
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 49
+   "count": 55
   },
   {
    "source": "naver:world:day:all",
@@ -65,7 +65,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 607
+   "count": 610
   }
  ],
  "stocks": [
@@ -112,17 +112,32 @@
   {
    "symbol": "329180",
    "report": "SKIPPED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "rss:mk-economy",
+     "error": "The operation was aborted due to timeout"
+    }
+   ]
   },
   {
    "symbol": "180640",
    "report": "SKIPPED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "rss:mk-economy",
+     "error": "The operation was aborted due to timeout"
+    }
+   ]
   },
   {
    "symbol": "009150",
    "report": "SKIPPED",
-   "failedSources": []
+   "failedSources": [
+    {
+     "source": "rss:mk-economy",
+     "error": "The operation was aborted due to timeout"
+    }
+   ]
   },
   {
    "symbol": "010140",
@@ -321,27 +336,27 @@
   },
   {
    "symbol": "000660",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "028260",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "CRWV.O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "232080",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "192820",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
@@ -349,6 +364,6 @@
  "market": {
   "date": "2026-11-25",
   "status": "FAILED",
-  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChPRZV1ZVTeM8CRJAEHG2\"}"
+  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChQDc7qnUHriHZq9sr9Tu\"}"
  }
 }
