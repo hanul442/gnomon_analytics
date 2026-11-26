@@ -1,5 +1,5 @@
 {
- "at": "2026-11-26T19:14:38.844Z",
+ "at": "2026-11-26T21:27:08.402Z",
  "selected": null,
  "universe": [
   {
@@ -35,7 +35,7 @@
   {
    "source": "google:topic-world-ko",
    "ok": true,
-   "count": 37
+   "count": 36
   },
   {
    "source": "google:topic-business-ko",
@@ -50,12 +50,12 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 52
+   "count": 53
   },
   {
    "source": "rss:bbc-business",
    "ok": true,
-   "count": 56
+   "count": 57
   },
   {
    "source": "naver:world:day:all",
@@ -66,11 +66,6 @@
    "source": "opendart:risk-filings",
    "ok": true,
    "count": 654
-  },
-  {
-   "source": "naver:themes",
-   "ok": true,
-   "count": 265
   }
  ],
  "stocks": [
@@ -354,6 +349,6 @@
  "market": {
   "date": "2026-11-26",
   "status": "FAILED",
-  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChS67nZaAQAhWWysPDmfp\"}"
+  "error": "오늘 위원회 시도 4번을 다 써서 보류 · 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChS67nZaAQAhWWysPDmfp\"}"
  }
 }

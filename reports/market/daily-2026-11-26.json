@@ -2,7 +2,7 @@
   "schema": "curia.market-report.v4",
   "date": "2026-11-26",
   "from": "2026-11-26",
-  "generatedAt": "2026-11-26T19:14:38.844Z",
+  "generatedAt": "2026-11-26T21:27:08.402Z",
   "period": "daily",
   "groups": [
     {
@@ -879,17 +879,17 @@
         "counted": 301,
         "buckets": {
           "STRONG_BULLISH": 5,
-          "BULLISH": 10,
-          "SLIGHTLY_BULLISH": 27,
-          "NEUTRAL": 89,
-          "SLIGHTLY_BEARISH": 67,
-          "BEARISH": 94,
-          "STRONG_BEARISH": 7,
+          "BULLISH": 11,
+          "SLIGHTLY_BULLISH": 26,
+          "NEUTRAL": 94,
+          "SLIGHTLY_BEARISH": 71,
+          "BEARISH": 89,
+          "STRONG_BEARISH": 3,
           "WITHHELD": 2
         },
         "bull": 42,
-        "neutral": 89,
-        "bear": 168,
+        "neutral": 94,
+        "bear": 163,
         "up20": 0.07357859531772576
       },
       "source": "업비트 원화마켓 일봉 · 09:00 KST 경계 · 스냅샷 등락은 전일 종가(09:00 KST) 대비 · 거래대금만 24시간 기준",
@@ -899,10 +899,10 @@
           "symbol": "KRW-USDS",
           "name": "유에스디에스",
           "date": "2026-11-26",
-          "close": 5685,
-          "returnPct": 54.148590021691966,
+          "close": 5870,
+          "returnPct": 59.16485900216919,
           "baseline": "2026-11-25",
-          "value": 1011,
+          "value": 1022,
           "spark": [
             [
               "2026-10-28",
@@ -1022,36 +1022,36 @@
             ],
             [
               "2026-11-26",
-              5685
+              5870
             ]
           ]
-        },
-        {
-          "symbol": "KRW-XRP",
-          "name": "엑스알피(리플)",
-          "date": "2026-11-26",
-          "close": 1296,
-          "returnPct": 1.806755695208162,
-          "baseline": "2026-11-25",
-          "value": 819
         },
         {
           "symbol": "KRW-MOVE",
           "name": "무브먼트",
           "date": "2026-11-26",
-          "close": 7.67,
-          "returnPct": 12.298682284040986,
+          "close": 7.83,
+          "returnPct": 14.641288433382126,
           "baseline": "2026-11-25",
-          "value": 753
+          "value": 757
+        },
+        {
+          "symbol": "KRW-XRP",
+          "name": "엑스알피(리플)",
+          "date": "2026-11-26",
+          "close": 1294,
+          "returnPct": 1.6496465043205122,
+          "baseline": "2026-11-25",
+          "value": 734
         },
         {
           "symbol": "KRW-BTC",
           "name": "비트코인",
           "date": "2026-11-26",
-          "close": 82275000,
-          "returnPct": 0.3292482165721644,
+          "close": 82715000,
+          "returnPct": 0.8658008658008587,
           "baseline": "2026-11-25",
-          "value": 642
+          "value": 603
         },
         {
           "symbol": "KRW-USDT",
@@ -1060,158 +1060,158 @@
           "close": 1356,
           "returnPct": -0.14727540500736325,
           "baseline": "2026-11-25",
-          "value": 625
+          "value": 577
         },
         {
           "symbol": "KRW-MMT",
           "name": "모멘텀",
           "date": "2026-11-26",
-          "close": 282,
-          "returnPct": -35.17241379310345,
+          "close": 275,
+          "returnPct": -36.7816091954023,
           "baseline": "2026-11-25",
-          "value": 583
+          "value": 552
         },
         {
           "symbol": "KRW-PIEVERSE",
           "name": "파이버스",
           "date": "2026-11-26",
-          "close": 5475,
-          "returnPct": 14.157631359466215,
+          "close": 5255,
+          "returnPct": 9.57047539616347,
           "baseline": "2026-11-25",
-          "value": 533
+          "value": 507
         },
         {
           "symbol": "KRW-EGLD",
           "name": "멀티버스엑스",
           "date": "2026-11-26",
-          "close": 6015,
-          "returnPct": -0.08305647840531893,
+          "close": 6250,
+          "returnPct": 3.8205980066445155,
           "baseline": "2026-11-25",
-          "value": 365
+          "value": 367
         },
         {
           "symbol": "KRW-ELSA",
           "name": "헤이엘사",
           "date": "2026-11-26",
-          "close": 131,
-          "returnPct": 16.964285714285722,
+          "close": 136,
+          "returnPct": 21.42857142857142,
           "baseline": "2026-11-25",
-          "value": 364
+          "value": 367
         },
         {
           "symbol": "KRW-ETH",
           "name": "이더리움",
           "date": "2026-11-26",
-          "close": 2309000,
-          "returnPct": 0.47867711053088957,
+          "close": 2317000,
+          "returnPct": 0.8268059181897325,
           "baseline": "2026-11-25",
-          "value": 361
+          "value": 340
         },
         {
           "symbol": "KRW-ME",
           "name": "매직에덴",
           "date": "2026-11-26",
-          "close": 58.5,
-          "returnPct": 15.841584158415834,
+          "close": 57.9,
+          "returnPct": 14.653465346534645,
           "baseline": "2026-11-25",
-          "value": 311
+          "value": 315
         },
         {
           "symbol": "KRW-BIGTIME",
           "name": "빅타임",
           "date": "2026-11-26",
-          "close": 7.64,
-          "returnPct": -16.319824753559708,
+          "close": 7.74,
+          "returnPct": -15.224534501642939,
           "baseline": "2026-11-25",
-          "value": 308
+          "value": 289
         },
         {
           "symbol": "KRW-SLX",
           "name": "솔스티스",
           "date": "2026-11-26",
-          "close": 43.5,
-          "returnPct": -5.021834061135366,
+          "close": 44.1,
+          "returnPct": -3.7117903930130924,
           "baseline": "2026-11-25",
-          "value": 260
+          "value": 254
         },
         {
           "symbol": "KRW-TFUEL",
           "name": "쎄타퓨엘",
           "date": "2026-11-26",
-          "close": 9.58,
-          "returnPct": 11.91588785046729,
+          "close": 9.83,
+          "returnPct": 14.836448598130826,
           "baseline": "2026-11-25",
-          "value": 225
+          "value": 228
         },
         {
           "symbol": "KRW-CTC",
           "name": "크레딧코인",
           "date": "2026-11-26",
-          "close": 93.5,
-          "returnPct": 16.149068322981375,
+          "close": 94.3,
+          "returnPct": 17.14285714285715,
           "baseline": "2026-11-25",
-          "value": 205
+          "value": 206
         },
         {
           "symbol": "KRW-SOL",
           "name": "솔라나",
           "date": "2026-11-26",
-          "close": 96850,
-          "returnPct": 1.3075313807531463,
+          "close": 97200,
+          "returnPct": 1.673640167364021,
           "baseline": "2026-11-25",
-          "value": 193
-        },
-        {
-          "symbol": "KRW-NEAR",
-          "name": "니어프로토콜",
-          "date": "2026-11-26",
-          "close": 4191,
-          "returnPct": 1.207437816952428,
-          "baseline": "2026-11-25",
-          "value": 179
+          "value": 174
         },
         {
           "symbol": "KRW-SKY",
           "name": "스카이프로토콜",
           "date": "2026-11-26",
-          "close": 115,
-          "returnPct": -7.258064516129037,
+          "close": 120,
+          "returnPct": -3.2258064516129004,
           "baseline": "2026-11-25",
-          "value": 170
+          "value": 167
+        },
+        {
+          "symbol": "KRW-NEAR",
+          "name": "니어프로토콜",
+          "date": "2026-11-26",
+          "close": 4203,
+          "returnPct": 1.4972228930210107,
+          "baseline": "2026-11-25",
+          "value": 164
         },
         {
           "symbol": "KRW-LAYER",
           "name": "솔레이어",
           "date": "2026-11-26",
-          "close": 62.9,
-          "returnPct": 2.110389610389607,
+          "close": 64.8,
+          "returnPct": 5.1948051948051965,
           "baseline": "2026-11-25",
-          "value": 139
+          "value": 138
         },
         {
           "symbol": "KRW-BABY",
           "name": "바빌론",
           "date": "2026-11-26",
-          "close": 12.5,
-          "returnPct": 5.042016806722693,
+          "close": 12.6,
+          "returnPct": 5.882352941176472,
           "baseline": "2026-11-25",
-          "value": 132
+          "value": 131
         },
         {
           "symbol": "KRW-SEI",
           "name": "세이",
           "date": "2026-11-26",
-          "close": 55.6,
-          "returnPct": 23.281596452328166,
+          "close": 54,
+          "returnPct": 19.733924611973386,
           "baseline": "2026-11-25",
-          "value": 111
+          "value": 120
         },
         {
           "symbol": "KRW-BIRB",
           "name": "문버드",
           "date": "2026-11-26",
-          "close": 73,
-          "returnPct": 1.388888888888884,
+          "close": 73.4,
+          "returnPct": 1.9444444444444597,
           "baseline": "2026-11-25",
           "value": 110
         },
@@ -1219,17 +1219,17 @@
           "symbol": "KRW-MANTRA",
           "name": "만트라",
           "date": "2026-11-26",
-          "close": 4.79,
-          "returnPct": -4.581673306772904,
+          "close": 4.82,
+          "returnPct": -3.9840637450199057,
           "baseline": "2026-11-25",
-          "value": 103
+          "value": 101
         },
         {
           "symbol": "KRW-0G",
           "name": "제로지",
           "date": "2026-11-26",
-          "close": 185,
-          "returnPct": -10.194174757281548,
+          "close": 186,
+          "returnPct": -9.708737864077666,
           "baseline": "2026-11-25",
           "value": 94
         },
@@ -1237,35 +1237,35 @@
           "symbol": "KRW-MOCA",
           "name": "모카네트워크",
           "date": "2026-11-26",
-          "close": 8.23,
-          "returnPct": 4.309252217997472,
+          "close": 8.29,
+          "returnPct": 5.069708491761715,
           "baseline": "2026-11-25",
           "value": 94
-        },
-        {
-          "symbol": "KRW-DOS",
-          "name": "댑오에스",
-          "date": "2026-11-26",
-          "close": 106,
-          "returnPct": -6.194690265486724,
-          "baseline": "2026-11-25",
-          "value": 86
         },
         {
           "symbol": "KRW-BLUR",
           "name": "블러",
           "date": "2026-11-26",
-          "close": 14,
-          "returnPct": -10.828025477707005,
+          "close": 14.1,
+          "returnPct": -10.191082802547768,
           "baseline": "2026-11-25",
-          "value": 85
+          "value": 82
+        },
+        {
+          "symbol": "KRW-DOS",
+          "name": "댑오에스",
+          "date": "2026-11-26",
+          "close": 104,
+          "returnPct": -7.964601769911505,
+          "baseline": "2026-11-25",
+          "value": 80
         },
         {
           "symbol": "KRW-ANIME",
           "name": "애니메코인",
           "date": "2026-11-26",
-          "close": 3.13,
-          "returnPct": 5.033557046979853,
+          "close": 3.12,
+          "returnPct": 4.697986577181212,
           "baseline": "2026-11-25",
           "value": 77
         },
@@ -1273,17 +1273,17 @@
           "symbol": "KRW-SYRUP",
           "name": "메이플파이낸스",
           "date": "2026-11-26",
-          "close": 97.4,
-          "returnPct": 7.03296703296703,
+          "close": 96.8,
+          "returnPct": 6.373626373626373,
           "baseline": "2026-11-25",
-          "value": 77
+          "value": 76
         },
         {
           "symbol": "KRW-2Z",
           "name": "더블제로",
           "date": "2026-11-26",
-          "close": 24,
-          "returnPct": 6.666666666666665,
+          "close": 24.2,
+          "returnPct": 7.55555555555556,
           "baseline": "2026-11-25",
           "value": 75
         },
@@ -1291,8 +1291,8 @@
           "symbol": "KRW-LA",
           "name": "라그랑주",
           "date": "2026-11-26",
-          "close": 56.1,
-          "returnPct": 2.1857923497267784,
+          "close": 56.6,
+          "returnPct": 3.0965391621129434,
           "baseline": "2026-11-25",
           "value": 75
         },
@@ -1300,53 +1300,53 @@
           "symbol": "KRW-ONDO",
           "name": "온도파이낸스",
           "date": "2026-11-26",
-          "close": 391,
-          "returnPct": 2.088772845953013,
+          "close": 396,
+          "returnPct": 3.394255874673635,
           "baseline": "2026-11-25",
-          "value": 70
+          "value": 67
         },
         {
           "symbol": "KRW-MOODENG",
           "name": "무뎅",
           "date": "2026-11-26",
-          "close": 39.7,
-          "returnPct": 2.0565552699228995,
+          "close": 39.4,
+          "returnPct": 1.285347043701801,
           "baseline": "2026-11-25",
-          "value": 70
-        },
-        {
-          "symbol": "KRW-ENA",
-          "name": "에테나",
-          "date": "2026-11-26",
-          "close": 138,
-          "returnPct": 0.7299270072992803,
-          "baseline": "2026-11-25",
-          "value": 68
+          "value": 67
         },
         {
           "symbol": "KRW-DOGE",
           "name": "도지코인",
           "date": "2026-11-26",
-          "close": 77.5,
-          "returnPct": 1.9736842105263053,
+          "close": 77.4,
+          "returnPct": 1.8421052631579116,
           "baseline": "2026-11-25",
-          "value": 67
+          "value": 59
+        },
+        {
+          "symbol": "KRW-ENA",
+          "name": "에테나",
+          "date": "2026-11-26",
+          "close": 137,
+          "returnPct": 0,
+          "baseline": "2026-11-25",
+          "value": 58
         },
         {
           "symbol": "KRW-XLM",
           "name": "스텔라루멘",
           "date": "2026-11-26",
-          "close": 174,
-          "returnPct": 0,
+          "close": 173,
+          "returnPct": -0.5747126436781658,
           "baseline": "2026-11-25",
-          "value": 63
+          "value": 57
         },
         {
           "symbol": "KRW-KAVA",
           "name": "카바",
           "date": "2026-11-26",
-          "close": 51.6,
-          "returnPct": -4.621072088724587,
+          "close": 50.9,
+          "returnPct": -5.914972273567476,
           "baseline": "2026-11-25",
           "value": 56
         },
@@ -1354,35 +1354,26 @@
           "symbol": "KRW-IRYS",
           "name": "아이리스",
           "date": "2026-11-26",
-          "close": 21.8,
-          "returnPct": -1.3574660633484226,
+          "close": 21.9,
+          "returnPct": -0.9049773755656187,
           "baseline": "2026-11-25",
-          "value": 55
+          "value": 53
         },
         {
           "symbol": "KRW-WAVES",
           "name": "웨이브",
           "date": "2026-11-26",
-          "close": 244,
-          "returnPct": -5.058365758754868,
+          "close": 241,
+          "returnPct": -6.22568093385214,
           "baseline": "2026-11-25",
-          "value": 53
+          "value": 52
         },
         {
           "symbol": "KRW-RLUSD",
           "name": "리플유에스디",
           "date": "2026-11-26",
-          "close": 1357,
-          "returnPct": -0.29390154298309934,
-          "baseline": "2026-11-25",
-          "value": 52
-        },
-        {
-          "symbol": "KRW-CFG",
-          "name": "센트리퓨즈",
-          "date": "2026-11-26",
-          "close": 68.3,
-          "returnPct": -3.5310734463276816,
+          "close": 1358,
+          "returnPct": -0.22042615723733006,
           "baseline": "2026-11-25",
           "value": 52
         },
@@ -1390,53 +1381,44 @@
           "symbol": "KRW-SUI",
           "name": "수이",
           "date": "2026-11-26",
-          "close": 915,
-          "returnPct": 1.104972375690605,
+          "close": 918,
+          "returnPct": 1.436464088397793,
           "baseline": "2026-11-25",
-          "value": 52
+          "value": 50
         },
         {
           "symbol": "KRW-WLD",
           "name": "월드코인",
           "date": "2026-11-26",
-          "close": 332,
-          "returnPct": 1.8404907975460016,
+          "close": 331,
+          "returnPct": 1.5337423312883347,
           "baseline": "2026-11-25",
-          "value": 49
+          "value": 43
         },
         {
           "symbol": "KRW-CYBER",
           "name": "사이버",
           "date": "2026-11-26",
-          "close": 330,
-          "returnPct": -4.6242774566473965,
+          "close": 332,
+          "returnPct": -4.046242774566478,
           "baseline": "2026-11-25",
-          "value": 43
+          "value": 42
         },
         {
           "symbol": "KRW-ZETA",
           "name": "제타체인",
           "date": "2026-11-26",
-          "close": 39,
-          "returnPct": 5.405405405405395,
+          "close": 39.1,
+          "returnPct": 5.675675675675684,
           "baseline": "2026-11-25",
-          "value": 39
-        },
-        {
-          "symbol": "KRW-VVV",
-          "name": "베니스토큰",
-          "date": "2026-11-26",
-          "close": 36690,
-          "returnPct": -7.721327967806846,
-          "baseline": "2026-11-25",
-          "value": 38
+          "value": 40
         },
         {
           "symbol": "KRW-FCT2",
           "name": "피르마체인",
           "date": "2026-11-26",
-          "close": 8.23,
-          "returnPct": -8.55555555555555,
+          "close": 8.27,
+          "returnPct": -8.111111111111114,
           "baseline": "2026-11-25",
           "value": 38
         },
@@ -1444,10 +1426,19 @@
           "symbol": "KRW-CP",
           "name": "클러스터프로토콜",
           "date": "2026-11-26",
-          "close": 8.01,
-          "returnPct": 0.3759398496240518,
+          "close": 8.14,
+          "returnPct": 2.0050125313283207,
           "baseline": "2026-11-25",
           "value": 37
+        },
+        {
+          "symbol": "KRW-VVV",
+          "name": "베니스토큰",
+          "date": "2026-11-26",
+          "close": 36230,
+          "returnPct": -8.878269617706236,
+          "baseline": "2026-11-25",
+          "value": 36
         },
         {
           "symbol": "KRW-NCT",
@@ -1465,41 +1456,32 @@
           "close": 4.82,
           "returnPct": -1.8329938900203624,
           "baseline": "2026-11-25",
-          "value": 34
+          "value": 33
         },
         {
-          "symbol": "KRW-XPL",
-          "name": "플라즈마",
+          "symbol": "KRW-CFG",
+          "name": "센트리퓨즈",
           "date": "2026-11-26",
-          "close": 65.3,
-          "returnPct": 1.5552099533437058,
+          "close": 69.7,
+          "returnPct": -1.5536723163841692,
           "baseline": "2026-11-25",
-          "value": 32
+          "value": 31
         },
         {
           "symbol": "KRW-DATA",
           "name": "데이터네트워크",
           "date": "2026-11-26",
-          "close": 113,
-          "returnPct": 1.8018018018018056,
-          "baseline": "2026-11-25",
-          "value": 30
-        },
-        {
-          "symbol": "KRW-PROM",
-          "name": "프롬",
-          "date": "2026-11-26",
-          "close": 6800,
-          "returnPct": -4.225352112676061,
+          "close": 115,
+          "returnPct": 3.603603603603611,
           "baseline": "2026-11-25",
           "value": 29
         },
         {
-          "symbol": "KRW-PENGU",
-          "name": "펏지펭귄",
+          "symbol": "KRW-XPL",
+          "name": "플라즈마",
           "date": "2026-11-26",
-          "close": 6.01,
-          "returnPct": 1.8644067796609987,
+          "close": 64.8,
+          "returnPct": 0.7776049766718529,
           "baseline": "2026-11-25",
           "value": 29
         },
@@ -1507,10 +1489,10 @@
           "symbol": "KRW-CKB",
           "name": "너보스",
           "date": "2026-11-26",
-          "close": 1.14,
-          "returnPct": 4.587155963302725,
+          "close": 1.13,
+          "returnPct": 3.66972477064218,
           "baseline": "2026-11-25",
-          "value": 28
+          "value": 27
         },
         {
           "symbol": "KRW-ADA",
@@ -1519,77 +1501,77 @@
           "close": 205,
           "returnPct": 3.535353535353525,
           "baseline": "2026-11-25",
-          "value": 28
+          "value": 27
         },
         {
           "symbol": "KRW-SAHARA",
           "name": "사하라에이아이",
           "date": "2026-11-26",
-          "close": 7.02,
-          "returnPct": -1.81818181818183,
+          "close": 7.01,
+          "returnPct": -1.9580419580419672,
           "baseline": "2026-11-25",
-          "value": 28
+          "value": 27
+        },
+        {
+          "symbol": "KRW-PROM",
+          "name": "프롬",
+          "date": "2026-11-26",
+          "close": 6680,
+          "returnPct": -5.915492957746482,
+          "baseline": "2026-11-25",
+          "value": 26
+        },
+        {
+          "symbol": "KRW-UNI",
+          "name": "유니스왑",
+          "date": "2026-11-26",
+          "close": 6410,
+          "returnPct": -0.5430566330488773,
+          "baseline": "2026-11-25",
+          "value": 26
         },
         {
           "symbol": "KRW-ZRO",
           "name": "레이어제로",
           "date": "2026-11-26",
-          "close": 1512,
-          "returnPct": 8.933717579250722,
+          "close": 1525,
+          "returnPct": 9.870317002881833,
           "baseline": "2026-11-25",
           "value": 26
-        },
-        {
-          "symbol": "KRW-AI",
-          "name": "젠신",
-          "date": "2026-11-26",
-          "close": 20.7,
-          "returnPct": -6.756756756756754,
-          "baseline": "2026-11-25",
-          "value": 25
-        },
-        {
-          "symbol": "KRW-TRUMP",
-          "name": "오피셜트럼프",
-          "date": "2026-11-26",
-          "close": 1190,
-          "returnPct": -1.3266998341625258,
-          "baseline": "2026-11-25",
-          "value": 25
         },
         {
           "symbol": "KRW-ERA",
           "name": "칼데라",
           "date": "2026-11-26",
-          "close": 102,
-          "returnPct": -1.9230769230769273,
+          "close": 103,
+          "returnPct": -0.9615384615384581,
           "baseline": "2026-11-25",
           "value": 25
-        },
-        {
-          "symbol": "KRW-PEPE",
-          "name": "페페",
-          "date": "2026-11-26",
-          "close": 0.00479,
-          "returnPct": 1.268498942917562,
-          "baseline": "2026-11-25",
-          "value": 24
         },
         {
           "symbol": "KRW-HBAR",
           "name": "헤데라",
           "date": "2026-11-26",
-          "close": 74.1,
-          "returnPct": 4.513399153737652,
+          "close": 74.6,
+          "returnPct": 5.21861777150916,
           "baseline": "2026-11-25",
           "value": 24
         },
         {
-          "symbol": "KRW-CT",
-          "name": "콘크리트",
+          "symbol": "KRW-AI",
+          "name": "젠신",
           "date": "2026-11-26",
-          "close": 181,
-          "returnPct": 0,
+          "close": 20.8,
+          "returnPct": -6.306306306306297,
+          "baseline": "2026-11-25",
+          "value": 24
+        },
+        {
+          "symbol": "KRW-TRUMP",
+          "name": "오피셜트럼프",
+          "date": "2026-11-26",
+          "close": 1191,
+          "returnPct": -1.243781094527363,
           "baseline": "2026-11-25",
           "value": 24
         },
@@ -1606,26 +1588,44 @@
           "symbol": "KRW-AXIS",
           "name": "액시스로보틱스",
           "date": "2026-11-26",
-          "close": 104,
-          "returnPct": -4.587155963302747,
+          "close": 105,
+          "returnPct": -3.669724770642202,
           "baseline": "2026-11-25",
           "value": 24
         },
         {
-          "symbol": "KRW-UNI",
-          "name": "유니스왑",
+          "symbol": "KRW-PENGU",
+          "name": "펏지펭귄",
           "date": "2026-11-26",
-          "close": 6335,
-          "returnPct": -1.706749418153608,
+          "close": 6.01,
+          "returnPct": 1.8644067796609987,
           "baseline": "2026-11-25",
           "value": 23
         },
         {
-          "symbol": "KRW-HYPE",
-          "name": "하이퍼리퀴드",
+          "symbol": "KRW-PEPE",
+          "name": "페페",
           "date": "2026-11-26",
-          "close": 83950,
-          "returnPct": 0.17899761336515052,
+          "close": 0.00478,
+          "returnPct": 1.0570824524313016,
+          "baseline": "2026-11-25",
+          "value": 23
+        },
+        {
+          "symbol": "KRW-CT",
+          "name": "콘크리트",
+          "date": "2026-11-26",
+          "close": 182,
+          "returnPct": 0.5524861878453136,
+          "baseline": "2026-11-25",
+          "value": 23
+        },
+        {
+          "symbol": "KRW-LINK",
+          "name": "체인링크",
+          "date": "2026-11-26",
+          "close": 12730,
+          "returnPct": 3.495934959349589,
           "baseline": "2026-11-25",
           "value": 23
         },
@@ -1636,50 +1636,14 @@
           "close": 155,
           "returnPct": 0.6493506493506551,
           "baseline": "2026-11-25",
-          "value": 23
-        },
-        {
-          "symbol": "KRW-LINK",
-          "name": "체인링크",
-          "date": "2026-11-26",
-          "close": 12600,
-          "returnPct": 2.4390243902439046,
-          "baseline": "2026-11-25",
-          "value": 23
-        },
-        {
-          "symbol": "KRW-MON",
-          "name": "모나드",
-          "date": "2026-11-26",
-          "close": 14.3,
-          "returnPct": -4.666666666666663,
-          "baseline": "2026-11-25",
-          "value": 23
-        },
-        {
-          "symbol": "KRW-SHIB",
-          "name": "시바이누",
-          "date": "2026-11-26",
-          "close": 0.00497,
-          "returnPct": 1.8442622950819665,
-          "baseline": "2026-11-25",
-          "value": 21
-        },
-        {
-          "symbol": "KRW-TRX",
-          "name": "트론",
-          "date": "2026-11-26",
-          "close": 413,
-          "returnPct": 0,
-          "baseline": "2026-11-25",
-          "value": 21
+          "value": 22
         },
         {
           "symbol": "KRW-ATH",
           "name": "에이셔",
           "date": "2026-11-26",
-          "close": 5.13,
-          "returnPct": 6.211180124223592,
+          "close": 5.1,
+          "returnPct": 5.590062111801242,
           "baseline": "2026-11-25",
           "value": 21
         },
@@ -1687,17 +1651,26 @@
           "symbol": "KRW-PROS",
           "name": "파로스",
           "date": "2026-11-26",
-          "close": 905,
-          "returnPct": -4.636459430979977,
+          "close": 915,
+          "returnPct": -3.5827186512118026,
           "baseline": "2026-11-25",
           "value": 20
         },
         {
-          "symbol": "KRW-ON",
-          "name": "오로치네트워크",
+          "symbol": "KRW-SHIB",
+          "name": "시바이누",
           "date": "2026-11-26",
-          "close": 135,
-          "returnPct": -5.594405594405593,
+          "close": 0.00494,
+          "returnPct": 1.2295081967213184,
+          "baseline": "2026-11-25",
+          "value": 20
+        },
+        {
+          "symbol": "KRW-TRX",
+          "name": "트론",
+          "date": "2026-11-26",
+          "close": 413,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 20
         },
@@ -1711,11 +1684,11 @@
           "value": 20
         },
         {
-          "symbol": "KRW-UP2",
-          "name": "슈퍼폼",
+          "symbol": "KRW-MON",
+          "name": "모나드",
           "date": "2026-11-26",
-          "close": 56.6,
-          "returnPct": -0.5272407732864637,
+          "close": 14.2,
+          "returnPct": -5.333333333333334,
           "baseline": "2026-11-25",
           "value": 19
         },
@@ -1723,44 +1696,71 @@
           "symbol": "KRW-STX",
           "name": "스택스",
           "date": "2026-11-26",
-          "close": 356,
-          "returnPct": -0.835654596100277,
+          "close": 353,
+          "returnPct": -1.671309192200554,
           "baseline": "2026-11-25",
           "value": 19
-        },
-        {
-          "symbol": "KRW-ENSO",
-          "name": "엔소",
-          "date": "2026-11-26",
-          "close": 544,
-          "returnPct": -2.683363148479423,
-          "baseline": "2026-11-25",
-          "value": 17
         },
         {
           "symbol": "KRW-OPG",
           "name": "오픈그라디언트",
           "date": "2026-11-26",
-          "close": 238,
-          "returnPct": 13.33333333333333,
+          "close": 243,
+          "returnPct": 15.714285714285726,
           "baseline": "2026-11-25",
-          "value": 17
+          "value": 19
+        },
+        {
+          "symbol": "KRW-UP2",
+          "name": "슈퍼폼",
+          "date": "2026-11-26",
+          "close": 57.1,
+          "returnPct": 0.35149384885764245,
+          "baseline": "2026-11-25",
+          "value": 18
+        },
+        {
+          "symbol": "KRW-HYPE",
+          "name": "하이퍼리퀴드",
+          "date": "2026-11-26",
+          "close": 86050,
+          "returnPct": 2.6849642004773244,
+          "baseline": "2026-11-25",
+          "value": 18
+        },
+        {
+          "symbol": "KRW-ON",
+          "name": "오로치네트워크",
+          "date": "2026-11-26",
+          "close": 134,
+          "returnPct": -6.2937062937062915,
+          "baseline": "2026-11-25",
+          "value": 18
         },
         {
           "symbol": "KRW-AAVE",
           "name": "에이브",
           "date": "2026-11-26",
-          "close": 128600,
-          "returnPct": -0.6182380216383287,
+          "close": 129600,
+          "returnPct": 0.15455950540959051,
           "baseline": "2026-11-25",
-          "value": 16
+          "value": 17
         },
         {
           "symbol": "KRW-VIRTUAL",
           "name": "버추얼프로토콜",
           "date": "2026-11-26",
-          "close": 497,
-          "returnPct": 2.263374485596703,
+          "close": 496,
+          "returnPct": 2.0576131687242816,
+          "baseline": "2026-11-25",
+          "value": 16
+        },
+        {
+          "symbol": "KRW-ENSO",
+          "name": "엔소",
+          "date": "2026-11-26",
+          "close": 546,
+          "returnPct": -2.3255813953488413,
           "baseline": "2026-11-25",
           "value": 16
         },
@@ -1768,17 +1768,17 @@
           "symbol": "KRW-SANC",
           "name": "생텀",
           "date": "2026-11-26",
-          "close": 69.2,
-          "returnPct": -6.864064602960962,
+          "close": 69.8,
+          "returnPct": -6.0565275908479155,
           "baseline": "2026-11-25",
-          "value": 16
+          "value": 15
         },
         {
           "symbol": "KRW-VANA",
           "name": "바나",
           "date": "2026-11-26",
-          "close": 801,
-          "returnPct": 0.881612090680095,
+          "close": 808,
+          "returnPct": 1.7632241813602123,
           "baseline": "2026-11-25",
           "value": 15
         },
@@ -1786,8 +1786,8 @@
           "symbol": "KRW-W",
           "name": "웜홀",
           "date": "2026-11-26",
-          "close": 11.9,
-          "returnPct": 6.25,
+          "close": 12.1,
+          "returnPct": 8.03571428571428,
           "baseline": "2026-11-25",
           "value": 14
         },
@@ -1795,44 +1795,26 @@
           "symbol": "KRW-CAP",
           "name": "캡",
           "date": "2026-11-26",
-          "close": 126,
-          "returnPct": -0.7874015748031482,
+          "close": 127,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 14
-        },
-        {
-          "symbol": "KRW-ALGO",
-          "name": "알고랜드",
-          "date": "2026-11-26",
-          "close": 109,
-          "returnPct": 2.8301886792452935,
-          "baseline": "2026-11-25",
-          "value": 13
         },
         {
           "symbol": "KRW-T",
           "name": "쓰레스홀드",
           "date": "2026-11-26",
-          "close": 5.22,
-          "returnPct": -1.5094339622641506,
+          "close": 5.23,
+          "returnPct": -1.3207547169811207,
           "baseline": "2026-11-25",
           "value": 13
         },
         {
-          "symbol": "KRW-META2",
-          "name": "메타다오",
+          "symbol": "KRW-ALGO",
+          "name": "알고랜드",
           "date": "2026-11-26",
-          "close": 3759,
-          "returnPct": -4.131599081866866,
-          "baseline": "2026-11-25",
-          "value": 12
-        },
-        {
-          "symbol": "KRW-DKA",
-          "name": "디카르고",
-          "date": "2026-11-26",
-          "close": 3.46,
-          "returnPct": -4.683195592286504,
+          "close": 111,
+          "returnPct": 4.716981132075482,
           "baseline": "2026-11-25",
           "value": 12
         },
@@ -1840,8 +1822,8 @@
           "symbol": "KRW-APT",
           "name": "앱토스",
           "date": "2026-11-26",
-          "close": 528,
-          "returnPct": 3.937007874015741,
+          "close": 525,
+          "returnPct": 3.34645669291338,
           "baseline": "2026-11-25",
           "value": 12
         },
@@ -1849,44 +1831,44 @@
           "symbol": "KRW-SAND",
           "name": "샌드박스",
           "date": "2026-11-26",
-          "close": 47.3,
-          "returnPct": 6.772009029345383,
+          "close": 47,
+          "returnPct": 6.094808126410833,
           "baseline": "2026-11-25",
           "value": 12
         },
         {
-          "symbol": "KRW-AVAX",
-          "name": "아발란체",
+          "symbol": "KRW-META2",
+          "name": "메타다오",
           "date": "2026-11-26",
-          "close": 9020,
-          "returnPct": 0.27793218454696955,
+          "close": 3788,
+          "returnPct": -3.3919918388166326,
           "baseline": "2026-11-25",
-          "value": 12
+          "value": 11
         },
         {
-          "symbol": "KRW-ELF",
-          "name": "엘프",
+          "symbol": "KRW-DKA",
+          "name": "디카르고",
           "date": "2026-11-26",
-          "close": 60.8,
-          "returnPct": -4.851330203442883,
+          "close": 3.49,
+          "returnPct": -3.8567493112947604,
           "baseline": "2026-11-25",
-          "value": 12
+          "value": 11
         },
         {
           "symbol": "KRW-AHT",
           "name": "아하토큰",
           "date": "2026-11-26",
-          "close": 1.1,
-          "returnPct": -0.9009009009009028,
+          "close": 1.12,
+          "returnPct": 0.9009009009008917,
           "baseline": "2026-11-25",
           "value": 11
         },
         {
-          "symbol": "KRW-CASHCAT",
-          "name": "캐시캣",
+          "symbol": "KRW-AVAX",
+          "name": "아발란체",
           "date": "2026-11-26",
-          "close": 57.2,
-          "returnPct": -2.0547945205479423,
+          "close": 9040,
+          "returnPct": 0.5002779321845452,
           "baseline": "2026-11-25",
           "value": 11
         },
@@ -1894,8 +1876,17 @@
           "symbol": "KRW-PONS",
           "name": "폰즈",
           "date": "2026-11-26",
-          "close": 121,
-          "returnPct": 4.31034482758621,
+          "close": 122,
+          "returnPct": 5.1724137931034475,
+          "baseline": "2026-11-25",
+          "value": 11
+        },
+        {
+          "symbol": "KRW-ELF",
+          "name": "엘프",
+          "date": "2026-11-26",
+          "close": 60.1,
+          "returnPct": -5.946791862284817,
           "baseline": "2026-11-25",
           "value": 11
         },
@@ -1903,8 +1894,8 @@
           "symbol": "KRW-BREV",
           "name": "브레비스",
           "date": "2026-11-26",
-          "close": 81.5,
-          "returnPct": 0.4932182490752224,
+          "close": 81.1,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 11
         },
@@ -1912,8 +1903,17 @@
           "symbol": "KRW-BCH",
           "name": "비트코인캐시",
           "date": "2026-11-26",
-          "close": 284200,
-          "returnPct": 1.681574239713779,
+          "close": 286200,
+          "returnPct": 2.3971377459749643,
+          "baseline": "2026-11-25",
+          "value": 10
+        },
+        {
+          "symbol": "KRW-CASHCAT",
+          "name": "캐시캣",
+          "date": "2026-11-26",
+          "close": 58.8,
+          "returnPct": 0.6849315068493178,
           "baseline": "2026-11-25",
           "value": 10
         },
@@ -1930,19 +1930,37 @@
           "symbol": "KRW-SONIC",
           "name": "소닉SVM",
           "date": "2026-11-26",
-          "close": 25,
-          "returnPct": 2.8806584362139898,
+          "close": 25.1,
+          "returnPct": 3.292181069958855,
           "baseline": "2026-11-25",
-          "value": 10
+          "value": 9
         },
         {
           "symbol": "KRW-QKC",
           "name": "쿼크체인",
           "date": "2026-11-26",
-          "close": 2.65,
-          "returnPct": -3.6363636363636376,
+          "close": 2.64,
+          "returnPct": -3.9999999999999925,
           "baseline": "2026-11-25",
-          "value": 10
+          "value": 9
+        },
+        {
+          "symbol": "KRW-CHIP",
+          "name": "유에스디에이아이",
+          "date": "2026-11-26",
+          "close": 36.3,
+          "returnPct": -2.1563342318059453,
+          "baseline": "2026-11-25",
+          "value": 9
+        },
+        {
+          "symbol": "KRW-GAME2",
+          "name": "게임빌드",
+          "date": "2026-11-26",
+          "close": 1.02,
+          "returnPct": 0,
+          "baseline": "2026-11-25",
+          "value": 9
         },
         {
           "symbol": "KRW-USDC",
@@ -1951,86 +1969,23 @@
           "close": 1357,
           "returnPct": 0,
           "baseline": "2026-11-25",
-          "value": 9
+          "value": 8
         },
         {
           "symbol": "KRW-ENS",
           "name": "이더리움네임서비스",
           "date": "2026-11-26",
-          "close": 4798,
-          "returnPct": 1.717193131227468,
+          "close": 4847,
+          "returnPct": 2.755988976044099,
           "baseline": "2026-11-25",
-          "value": 9
+          "value": 8
         },
         {
           "symbol": "KRW-TIA",
           "name": "셀레스티아",
           "date": "2026-11-26",
-          "close": 465,
-          "returnPct": 1.9736842105263053,
-          "baseline": "2026-11-25",
-          "value": 9
-        },
-        {
-          "symbol": "KRW-CHIP",
-          "name": "유에스디에이아이",
-          "date": "2026-11-26",
-          "close": 36.4,
-          "returnPct": -1.8867924528301994,
-          "baseline": "2026-11-25",
-          "value": 9
-        },
-        {
-          "symbol": "KRW-GAME2",
-          "name": "게임빌드",
-          "date": "2026-11-26",
-          "close": 1.03,
-          "returnPct": 0.9803921568627416,
-          "baseline": "2026-11-25",
-          "value": 9
-        },
-        {
-          "symbol": "KRW-TREE",
-          "name": "트리하우스",
-          "date": "2026-11-26",
-          "close": 39.8,
-          "returnPct": 1.5306122448979442,
-          "baseline": "2026-11-25",
-          "value": 8
-        },
-        {
-          "symbol": "KRW-ANKR",
-          "name": "앵커",
-          "date": "2026-11-26",
-          "close": 4.34,
-          "returnPct": 4.076738609112707,
-          "baseline": "2026-11-25",
-          "value": 8
-        },
-        {
-          "symbol": "KRW-CC",
-          "name": "캔톤",
-          "date": "2026-11-26",
-          "close": 102,
-          "returnPct": -2.857142857142858,
-          "baseline": "2026-11-25",
-          "value": 8
-        },
-        {
-          "symbol": "KRW-PUFFER",
-          "name": "퍼퍼",
-          "date": "2026-11-26",
-          "close": 25.2,
-          "returnPct": -3.4482758620689724,
-          "baseline": "2026-11-25",
-          "value": 8
-        },
-        {
-          "symbol": "KRW-KERNEL",
-          "name": "커널다오",
-          "date": "2026-11-26",
-          "close": 58.9,
-          "returnPct": 0.34071550255536653,
+          "close": 460,
+          "returnPct": 0.8771929824561431,
           "baseline": "2026-11-25",
           "value": 8
         },
@@ -2038,8 +1993,8 @@
           "symbol": "KRW-BERA",
           "name": "베라체인",
           "date": "2026-11-26",
-          "close": 111,
-          "returnPct": 0.9090909090909038,
+          "close": 112,
+          "returnPct": 1.8181818181818077,
           "baseline": "2026-11-25",
           "value": 8
         },
@@ -2056,26 +2011,8 @@
           "symbol": "KRW-XCN",
           "name": "오닉스코인",
           "date": "2026-11-26",
-          "close": 4.08,
-          "returnPct": 1.4925373134328401,
-          "baseline": "2026-11-25",
-          "value": 8
-        },
-        {
-          "symbol": "KRW-MEGA",
-          "name": "메가이더",
-          "date": "2026-11-26",
-          "close": 56.2,
-          "returnPct": -1.4035087719298178,
-          "baseline": "2026-11-25",
-          "value": 8
-        },
-        {
-          "symbol": "KRW-ONG",
-          "name": "온톨로지가스",
-          "date": "2026-11-26",
-          "close": 72.9,
-          "returnPct": -0.8163265306122325,
+          "close": 4.09,
+          "returnPct": 1.7412935323383172,
           "baseline": "2026-11-25",
           "value": 8
         },
@@ -2083,35 +2020,35 @@
           "symbol": "KRW-WIF",
           "name": "도그위프햇",
           "date": "2026-11-26",
-          "close": 191,
-          "returnPct": 11.695906432748536,
+          "close": 187,
+          "returnPct": 9.35672514619883,
           "baseline": "2026-11-25",
           "value": 7
         },
         {
-          "symbol": "KRW-DOOD",
-          "name": "두들즈",
+          "symbol": "KRW-TREE",
+          "name": "트리하우스",
           "date": "2026-11-26",
-          "close": 1.89,
-          "returnPct": -0.5263157894736858,
+          "close": 39.9,
+          "returnPct": 1.7857142857142794,
           "baseline": "2026-11-25",
           "value": 7
         },
         {
-          "symbol": "KRW-POL",
-          "name": "폴리곤에코시스템토큰",
+          "symbol": "KRW-ANKR",
+          "name": "앵커",
           "date": "2026-11-26",
-          "close": 105,
-          "returnPct": 1.9417475728155331,
+          "close": 4.32,
+          "returnPct": 3.597122302158273,
           "baseline": "2026-11-25",
           "value": 7
         },
         {
-          "symbol": "KRW-AVNT",
-          "name": "베란타",
+          "symbol": "KRW-CC",
+          "name": "캔톤",
           "date": "2026-11-26",
-          "close": 81.7,
-          "returnPct": 1.8703241895261735,
+          "close": 103,
+          "returnPct": -1.904761904761909,
           "baseline": "2026-11-25",
           "value": 7
         },
@@ -2119,8 +2056,35 @@
           "symbol": "KRW-O",
           "name": "오원익스체인지",
           "date": "2026-11-26",
-          "close": 897,
-          "returnPct": 1.4705882352941124,
+          "close": 892,
+          "returnPct": 0.9049773755656076,
+          "baseline": "2026-11-25",
+          "value": 7
+        },
+        {
+          "symbol": "KRW-AVNT",
+          "name": "베란타",
+          "date": "2026-11-26",
+          "close": 81.6,
+          "returnPct": 1.74563591022443,
+          "baseline": "2026-11-25",
+          "value": 7
+        },
+        {
+          "symbol": "KRW-PUFFER",
+          "name": "퍼퍼",
+          "date": "2026-11-26",
+          "close": 25.3,
+          "returnPct": -3.065134099616862,
+          "baseline": "2026-11-25",
+          "value": 7
+        },
+        {
+          "symbol": "KRW-KERNEL",
+          "name": "커널다오",
+          "date": "2026-11-26",
+          "close": 59.7,
+          "returnPct": 1.7035775127768327,
           "baseline": "2026-11-25",
           "value": 7
         },
@@ -2128,8 +2092,8 @@
           "symbol": "KRW-PUMP",
           "name": "펌프펀",
           "date": "2026-11-26",
-          "close": 3.52,
-          "returnPct": 0.2849002849002913,
+          "close": 3.53,
+          "returnPct": 0.5698005698005604,
           "baseline": "2026-11-25",
           "value": 7
         },
@@ -2143,11 +2107,29 @@
           "value": 7
         },
         {
-          "symbol": "KRW-JUP",
-          "name": "주피터",
+          "symbol": "KRW-MEGA",
+          "name": "메가이더",
           "date": "2026-11-26",
-          "close": 326,
-          "returnPct": 6.1889250814332275,
+          "close": 56,
+          "returnPct": -1.7543859649122862,
+          "baseline": "2026-11-25",
+          "value": 7
+        },
+        {
+          "symbol": "KRW-ONG",
+          "name": "온톨로지가스",
+          "date": "2026-11-26",
+          "close": 73.2,
+          "returnPct": -0.40816326530611624,
+          "baseline": "2026-11-25",
+          "value": 7
+        },
+        {
+          "symbol": "KRW-DOOD",
+          "name": "두들즈",
+          "date": "2026-11-26",
+          "close": 1.88,
+          "returnPct": -1.0526315789473717,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2155,8 +2137,8 @@
           "symbol": "KRW-ALT",
           "name": "알트레이어",
           "date": "2026-11-26",
-          "close": 5.98,
-          "returnPct": 2.0477815699658786,
+          "close": 6.02,
+          "returnPct": 2.7303754266211566,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2164,8 +2146,8 @@
           "symbol": "KRW-B3",
           "name": "비쓰리",
           "date": "2026-11-26",
-          "close": 0.6,
-          "returnPct": -2.28013029315961,
+          "close": 0.601,
+          "returnPct": -2.1172638436482094,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2173,8 +2155,8 @@
           "symbol": "KRW-ATOM",
           "name": "코스모스",
           "date": "2026-11-26",
-          "close": 1652,
-          "returnPct": -1.6666666666666718,
+          "close": 1653,
+          "returnPct": -1.6071428571428625,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2182,8 +2164,8 @@
           "symbol": "KRW-G",
           "name": "그래비티",
           "date": "2026-11-26",
-          "close": 3.77,
-          "returnPct": 1.072386058981234,
+          "close": 3.79,
+          "returnPct": 1.608579088471851,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2191,8 +2173,8 @@
           "symbol": "KRW-ETC",
           "name": "이더리움클래식",
           "date": "2026-11-26",
-          "close": 8070,
-          "returnPct": 1.1278195488721776,
+          "close": 8065,
+          "returnPct": 1.065162907268169,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2200,8 +2182,26 @@
           "symbol": "KRW-PRL",
           "name": "펄",
           "date": "2026-11-26",
-          "close": 91,
-          "returnPct": 0.8869179600886845,
+          "close": 91.5,
+          "returnPct": 1.4412416851441234,
+          "baseline": "2026-11-25",
+          "value": 6
+        },
+        {
+          "symbol": "KRW-POL",
+          "name": "폴리곤에코시스템토큰",
+          "date": "2026-11-26",
+          "close": 105,
+          "returnPct": 1.9417475728155331,
+          "baseline": "2026-11-25",
+          "value": 6
+        },
+        {
+          "symbol": "KRW-SENT",
+          "name": "센티언트",
+          "date": "2026-11-26",
+          "close": 29.2,
+          "returnPct": 4.659498207885315,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2209,17 +2209,17 @@
           "symbol": "KRW-TAO",
           "name": "비트텐서",
           "date": "2026-11-26",
-          "close": 250200,
-          "returnPct": 1.254552812626475,
+          "close": 251400,
+          "returnPct": 1.7401861594496193,
           "baseline": "2026-11-25",
           "value": 6
         },
         {
-          "symbol": "KRW-ZK",
-          "name": "지케이싱크",
+          "symbol": "KRW-MPLX",
+          "name": "메타플렉스",
           "date": "2026-11-26",
-          "close": 8.89,
-          "returnPct": 1.7162471395881118,
+          "close": 69.9,
+          "returnPct": -1.4104372355430161,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2227,8 +2227,8 @@
           "symbol": "KRW-GTC",
           "name": "깃코인",
           "date": "2026-11-26",
-          "close": 162,
-          "returnPct": -1.8181818181818188,
+          "close": 164,
+          "returnPct": -0.60606060606061,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2236,8 +2236,8 @@
           "symbol": "KRW-KITE",
           "name": "카이트",
           "date": "2026-11-26",
-          "close": 196,
-          "returnPct": 0.512820512820511,
+          "close": 195,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2245,8 +2245,8 @@
           "symbol": "KRW-FLOCK",
           "name": "플록",
           "date": "2026-11-26",
-          "close": 40.1,
-          "returnPct": 1.51898734177216,
+          "close": 40.4,
+          "returnPct": 2.278481012658218,
           "baseline": "2026-11-25",
           "value": 6
         },
@@ -2254,8 +2254,8 @@
           "symbol": "KRW-CARV",
           "name": "카브",
           "date": "2026-11-26",
-          "close": 33.4,
-          "returnPct": 2.1406727828745975,
+          "close": 33.5,
+          "returnPct": 2.4464831804281273,
           "baseline": "2026-11-25",
           "value": 5
         },
@@ -2263,26 +2263,17 @@
           "symbol": "KRW-FOLD",
           "name": "인터폴드",
           "date": "2026-11-26",
-          "close": 39.7,
-          "returnPct": -1.975308641975304,
+          "close": 40,
+          "returnPct": -1.2345679012345734,
           "baseline": "2026-11-25",
           "value": 5
         },
         {
-          "symbol": "KRW-JTO",
-          "name": "지토",
+          "symbol": "KRW-JUP",
+          "name": "주피터",
           "date": "2026-11-26",
-          "close": 320,
-          "returnPct": 2.564102564102555,
-          "baseline": "2026-11-25",
-          "value": 5
-        },
-        {
-          "symbol": "KRW-F",
-          "name": "신퓨처스",
-          "date": "2026-11-26",
-          "close": 3.04,
-          "returnPct": 0.33003300330034513,
+          "close": 325,
+          "returnPct": 5.863192182410426,
           "baseline": "2026-11-25",
           "value": 5
         },
@@ -2290,8 +2281,8 @@
           "symbol": "KRW-AERO",
           "name": "에어로드롬파이낸스",
           "date": "2026-11-26",
-          "close": 534,
-          "returnPct": -1.8382352941176516,
+          "close": 548,
+          "returnPct": 0.7352941176470562,
           "baseline": "2026-11-25",
           "value": 5
         },
@@ -2299,8 +2290,17 @@
           "symbol": "KRW-ID",
           "name": "스페이스아이디",
           "date": "2026-11-26",
-          "close": 29.2,
-          "returnPct": 3.546099290780136,
+          "close": 29.1,
+          "returnPct": 3.1914893617021267,
+          "baseline": "2026-11-25",
+          "value": 5
+        },
+        {
+          "symbol": "KRW-AXS",
+          "name": "엑시인피니티",
+          "date": "2026-11-26",
+          "close": 879,
+          "returnPct": 2.0905923344947785,
           "baseline": "2026-11-25",
           "value": 5
         },
@@ -2308,17 +2308,8 @@
           "symbol": "KRW-LIT",
           "name": "라이터",
           "date": "2026-11-26",
-          "close": 3362,
-          "returnPct": 3.318992009834054,
-          "baseline": "2026-11-25",
-          "value": 5
-        },
-        {
-          "symbol": "KRW-RE",
-          "name": "리",
-          "date": "2026-11-26",
-          "close": 284,
-          "returnPct": 0.7092198581560183,
+          "close": 3420,
+          "returnPct": 5.101413644744923,
           "baseline": "2026-11-25",
           "value": 5
         },
@@ -2326,26 +2317,17 @@
           "symbol": "KRW-CPOOL",
           "name": "클리어풀",
           "date": "2026-11-26",
-          "close": 28,
-          "returnPct": -1.4084507042253502,
+          "close": 27.9,
+          "returnPct": -1.7605633802816878,
           "baseline": "2026-11-25",
           "value": 5
         },
         {
-          "symbol": "KRW-SENT",
-          "name": "센티언트",
+          "symbol": "KRW-ZK",
+          "name": "지케이싱크",
           "date": "2026-11-26",
-          "close": 29.7,
-          "returnPct": 6.451612903225801,
-          "baseline": "2026-11-25",
-          "value": 5
-        },
-        {
-          "symbol": "KRW-MPLX",
-          "name": "메타플렉스",
-          "date": "2026-11-26",
-          "close": 68.1,
-          "returnPct": -3.9492242595204674,
+          "close": 8.83,
+          "returnPct": 1.0297482837528626,
           "baseline": "2026-11-25",
           "value": 5
         },
@@ -2353,8 +2335,8 @@
           "symbol": "KRW-SOON",
           "name": "쑨",
           "date": "2026-11-26",
-          "close": 327,
-          "returnPct": -0.6079027355623046,
+          "close": 334,
+          "returnPct": 1.5197568389057725,
           "baseline": "2026-11-25",
           "value": 5
         },
@@ -2371,8 +2353,8 @@
           "symbol": "KRW-MIRA",
           "name": "미라네트워크",
           "date": "2026-11-26",
-          "close": 42.7,
-          "returnPct": 2.3980815347721895,
+          "close": 43.1,
+          "returnPct": 3.3573141486810565,
           "baseline": "2026-11-25",
           "value": 5
         },
@@ -2380,8 +2362,8 @@
           "symbol": "KRW-ONT",
           "name": "온톨로지",
           "date": "2026-11-26",
-          "close": 47.5,
-          "returnPct": 2.1505376344086002,
+          "close": 47.4,
+          "returnPct": 1.9354838709677358,
           "baseline": "2026-11-25",
           "value": 5
         },
@@ -2389,17 +2371,26 @@
           "symbol": "KRW-STRAX",
           "name": "저트라",
           "date": "2026-11-26",
-          "close": 10.2,
-          "returnPct": 0.990099009900991,
+          "close": 10.3,
+          "returnPct": 1.980198019801982,
           "baseline": "2026-11-25",
           "value": 5
+        },
+        {
+          "symbol": "KRW-LSK",
+          "name": "리스크",
+          "date": "2026-11-26",
+          "close": 195,
+          "returnPct": -4.411764705882348,
+          "baseline": "2026-11-25",
+          "value": 4
         },
         {
           "symbol": "KRW-TRAC",
           "name": "오리진트레일",
           "date": "2026-11-26",
-          "close": 348,
-          "returnPct": -2.5210084033613467,
+          "close": 345,
+          "returnPct": -3.361344537815125,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2407,8 +2398,8 @@
           "symbol": "KRW-FIL",
           "name": "파일코인",
           "date": "2026-11-26",
-          "close": 746,
-          "returnPct": 0.40376850605652326,
+          "close": 744,
+          "returnPct": 0.13458950201883368,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2416,8 +2407,8 @@
           "symbol": "KRW-BEAM",
           "name": "빔",
           "date": "2026-11-26",
-          "close": 4.51,
-          "returnPct": 2.733485193621865,
+          "close": 4.5,
+          "returnPct": 2.505694760820054,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2425,8 +2416,17 @@
           "symbol": "KRW-QUID",
           "name": "스퀴드",
           "date": "2026-11-26",
-          "close": 56.8,
-          "returnPct": -1.0452961672473893,
+          "close": 57.2,
+          "returnPct": -0.34843205574912606,
+          "baseline": "2026-11-25",
+          "value": 4
+        },
+        {
+          "symbol": "KRW-JTO",
+          "name": "지토",
+          "date": "2026-11-26",
+          "close": 317,
+          "returnPct": 1.6025641025640969,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2434,35 +2434,17 @@
           "symbol": "KRW-A",
           "name": "볼타",
           "date": "2026-11-26",
-          "close": 88.1,
-          "returnPct": -0.4519774011299549,
+          "close": 88.4,
+          "returnPct": -0.1129943502824804,
           "baseline": "2026-11-25",
           "value": 4
         },
         {
-          "symbol": "KRW-NIL",
-          "name": "닐리온",
+          "symbol": "KRW-F",
+          "name": "신퓨처스",
           "date": "2026-11-26",
-          "close": 59.5,
-          "returnPct": -0.5016722408026753,
-          "baseline": "2026-11-25",
-          "value": 4
-        },
-        {
-          "symbol": "KRW-AXS",
-          "name": "엑시인피니티",
-          "date": "2026-11-26",
-          "close": 882,
-          "returnPct": 2.4390243902439046,
-          "baseline": "2026-11-25",
-          "value": 4
-        },
-        {
-          "symbol": "KRW-ARDR",
-          "name": "아더",
-          "date": "2026-11-26",
-          "close": 26.3,
-          "returnPct": -2.592592592592591,
+          "close": 3.06,
+          "returnPct": 0.990099009900991,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2470,8 +2452,8 @@
           "symbol": "KRW-TRUST",
           "name": "인튜이션",
           "date": "2026-11-26",
-          "close": 66.6,
-          "returnPct": -4.172661870503602,
+          "close": 66.7,
+          "returnPct": -4.028776978417259,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2485,11 +2467,11 @@
           "value": 4
         },
         {
-          "symbol": "KRW-INJ",
-          "name": "인젝티브",
+          "symbol": "KRW-RE",
+          "name": "리",
           "date": "2026-11-26",
-          "close": 8505,
-          "returnPct": 5.1948051948051965,
+          "close": 286,
+          "returnPct": 1.4184397163120588,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2497,8 +2479,8 @@
           "symbol": "KRW-HIVE",
           "name": "하이브",
           "date": "2026-11-26",
-          "close": 49.3,
-          "returnPct": 0.8179959100204526,
+          "close": 49.5,
+          "returnPct": 1.2269938650306678,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2524,8 +2506,8 @@
           "symbol": "KRW-LINEA",
           "name": "리네아",
           "date": "2026-11-26",
-          "close": 2.26,
-          "returnPct": 0.4444444444444251,
+          "close": 2.27,
+          "returnPct": 0.8888888888888946,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2533,8 +2515,8 @@
           "symbol": "KRW-POKT",
           "name": "포켓네트워크",
           "date": "2026-11-26",
-          "close": 7.39,
-          "returnPct": 0.27137042062415073,
+          "close": 7.44,
+          "returnPct": 0.9497964721845387,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2542,8 +2524,8 @@
           "symbol": "KRW-ZKC",
           "name": "바운드리스",
           "date": "2026-11-26",
-          "close": 30.3,
-          "returnPct": 1.0000000000000009,
+          "close": 30.2,
+          "returnPct": 0.6666666666666599,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2551,8 +2533,8 @@
           "symbol": "KRW-PYTH",
           "name": "피스네트워크",
           "date": "2026-11-26",
-          "close": 65.5,
-          "returnPct": 0,
+          "close": 66.8,
+          "returnPct": 1.984732824427482,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2560,8 +2542,8 @@
           "symbol": "KRW-GMT",
           "name": "스테픈",
           "date": "2026-11-26",
-          "close": 7.05,
-          "returnPct": 1.5850144092218965,
+          "close": 7.09,
+          "returnPct": 2.161383285302576,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2569,8 +2551,17 @@
           "symbol": "KRW-KAT",
           "name": "카타나",
           "date": "2026-11-26",
-          "close": 4.18,
-          "returnPct": -2.1077283372365363,
+          "close": 4.2,
+          "returnPct": -1.6393442622950727,
+          "baseline": "2026-11-25",
+          "value": 4
+        },
+        {
+          "symbol": "KRW-RENDER",
+          "name": "렌더토큰",
+          "date": "2026-11-26",
+          "close": 1820,
+          "returnPct": 3.291713961407483,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2578,8 +2569,8 @@
           "symbol": "KRW-MBL",
           "name": "무비블록",
           "date": "2026-11-26",
-          "close": 0.766,
-          "returnPct": 0.7894736842105177,
+          "close": 0.771,
+          "returnPct": 1.4473684210526416,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2587,8 +2578,8 @@
           "symbol": "KRW-MLK",
           "name": "밀크",
           "date": "2026-11-26",
-          "close": 41.8,
-          "returnPct": 1.2106537530266248,
+          "close": 41.5,
+          "returnPct": 0.4842615012106588,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2596,17 +2587,8 @@
           "symbol": "KRW-ZORA",
           "name": "조라",
           "date": "2026-11-26",
-          "close": 5.92,
-          "returnPct": 2.5996533795493937,
-          "baseline": "2026-11-25",
-          "value": 4
-        },
-        {
-          "symbol": "KRW-GAS",
-          "name": "가스",
-          "date": "2026-11-26",
-          "close": 1283,
-          "returnPct": 1.5835312747426666,
+          "close": 5.9,
+          "returnPct": 2.253032928942811,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2614,17 +2596,8 @@
           "symbol": "KRW-ZBT",
           "name": "제로베이스",
           "date": "2026-11-26",
-          "close": 70,
-          "returnPct": 2.3391812865497075,
-          "baseline": "2026-11-25",
-          "value": 4
-        },
-        {
-          "symbol": "KRW-KAIA",
-          "name": "카이아",
-          "date": "2026-11-26",
-          "close": 38.9,
-          "returnPct": 0.5167958656330685,
+          "close": 70.2,
+          "returnPct": 2.631578947368407,
           "baseline": "2026-11-25",
           "value": 4
         },
@@ -2632,19 +2605,10 @@
           "symbol": "KRW-GRVT",
           "name": "그래비티토큰",
           "date": "2026-11-26",
-          "close": 171,
-          "returnPct": 1.183431952662728,
+          "close": 173,
+          "returnPct": 2.3668639053254337,
           "baseline": "2026-11-25",
           "value": 4
-        },
-        {
-          "symbol": "KRW-LSK",
-          "name": "리스크",
-          "date": "2026-11-26",
-          "close": 195,
-          "returnPct": -4.411764705882348,
-          "baseline": "2026-11-25",
-          "value": 3
         },
         {
           "symbol": "KRW-PUNDIX",
@@ -2659,8 +2623,8 @@
           "symbol": "KRW-ETHFI",
           "name": "이더파이",
           "date": "2026-11-26",
-          "close": 605,
-          "returnPct": -0.6568144499178974,
+          "close": 614,
+          "returnPct": 0.8210180623973828,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2668,8 +2632,8 @@
           "symbol": "KRW-WLFI",
           "name": "월드리버티파이낸셜",
           "date": "2026-11-26",
-          "close": 57.7,
-          "returnPct": 0,
+          "close": 57.5,
+          "returnPct": -0.34662045060659397,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2677,17 +2641,17 @@
           "symbol": "KRW-POWR",
           "name": "파워렛저",
           "date": "2026-11-26",
-          "close": 53.5,
-          "returnPct": 0.18726591760300781,
+          "close": 54,
+          "returnPct": 1.1235955056179803,
           "baseline": "2026-11-25",
           "value": 3
         },
         {
-          "symbol": "KRW-CRO",
-          "name": "크로노스",
+          "symbol": "KRW-NIL",
+          "name": "닐리온",
           "date": "2026-11-26",
-          "close": 53.6,
-          "returnPct": -1.6513761467889854,
+          "close": 59.7,
+          "returnPct": -0.16722408026754731,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2695,17 +2659,8 @@
           "symbol": "KRW-PLUME",
           "name": "플룸",
           "date": "2026-11-26",
-          "close": 14.4,
-          "returnPct": -1.3698630136986245,
-          "baseline": "2026-11-25",
-          "value": 3
-        },
-        {
-          "symbol": "KRW-IOST",
-          "name": "아이오에스티",
-          "date": "2026-11-26",
-          "close": 0.824,
-          "returnPct": -1.4354066985645897,
+          "close": 14.7,
+          "returnPct": 0.6849315068493178,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2713,8 +2668,17 @@
           "symbol": "KRW-IOTA",
           "name": "아이오타",
           "date": "2026-11-26",
-          "close": 43.3,
-          "returnPct": 0.932400932400923,
+          "close": 43.6,
+          "returnPct": 1.631701631701632,
+          "baseline": "2026-11-25",
+          "value": 3
+        },
+        {
+          "symbol": "KRW-IOST",
+          "name": "아이오에스티",
+          "date": "2026-11-26",
+          "close": 0.825,
+          "returnPct": -1.3157894736842146,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2722,8 +2686,8 @@
           "symbol": "KRW-IQ",
           "name": "아이큐",
           "date": "2026-11-26",
-          "close": 0.823,
-          "returnPct": 0.48840048840048667,
+          "close": 0.829,
+          "returnPct": 1.2210012210012167,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2731,17 +2695,17 @@
           "symbol": "KRW-IN",
           "name": "인피닛",
           "date": "2026-11-26",
-          "close": 30,
-          "returnPct": 0.6711409395973034,
+          "close": 30.1,
+          "returnPct": 1.0067114093959662,
           "baseline": "2026-11-25",
           "value": 3
         },
         {
-          "symbol": "KRW-HP",
-          "name": "히포프로토콜",
+          "symbol": "KRW-ARDR",
+          "name": "아더",
           "date": "2026-11-26",
-          "close": 8.82,
-          "returnPct": -2.541436464088398,
+          "close": 26.3,
+          "returnPct": -2.592592592592591,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2749,8 +2713,8 @@
           "symbol": "KRW-CARDS",
           "name": "콜렉터크립트",
           "date": "2026-11-26",
-          "close": 231,
-          "returnPct": 6.451612903225801,
+          "close": 233,
+          "returnPct": 7.373271889400912,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2758,8 +2722,8 @@
           "symbol": "KRW-POD",
           "name": "돌핀",
           "date": "2026-11-26",
-          "close": 460,
-          "returnPct": -3.157894736842104,
+          "close": 461,
+          "returnPct": -2.947368421052632,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2776,8 +2740,17 @@
           "symbol": "KRW-HYPER",
           "name": "하이퍼레인",
           "date": "2026-11-26",
-          "close": 52.9,
-          "returnPct": -0.9363295880149836,
+          "close": 52.8,
+          "returnPct": -1.1235955056179803,
+          "baseline": "2026-11-25",
+          "value": 3
+        },
+        {
+          "symbol": "KRW-INJ",
+          "name": "인젝티브",
+          "date": "2026-11-26",
+          "close": 8525,
+          "returnPct": 5.442176870748305,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2785,8 +2758,8 @@
           "symbol": "KRW-SC",
           "name": "시아코인",
           "date": "2026-11-26",
-          "close": 0.808,
-          "returnPct": -0.12360939431397266,
+          "close": 0.81,
+          "returnPct": 0.12360939431397266,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2794,26 +2767,8 @@
           "symbol": "KRW-ZKP",
           "name": "지케이패스",
           "date": "2026-11-26",
-          "close": 36.9,
-          "returnPct": -1.072386058981234,
-          "baseline": "2026-11-25",
-          "value": 3
-        },
-        {
-          "symbol": "KRW-OPEN",
-          "name": "오픈렛저",
-          "date": "2026-11-26",
-          "close": 108,
-          "returnPct": -0.917431192660545,
-          "baseline": "2026-11-25",
-          "value": 3
-        },
-        {
-          "symbol": "KRW-ZAMA",
-          "name": "자마",
-          "date": "2026-11-26",
-          "close": 74.8,
-          "returnPct": -2.3498694516971286,
+          "close": 37.2,
+          "returnPct": -0.2680965147452974,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2821,8 +2776,8 @@
           "symbol": "KRW-SPK",
           "name": "스파크",
           "date": "2026-11-26",
-          "close": 16.5,
-          "returnPct": 6.451612903225801,
+          "close": 16.4,
+          "returnPct": 5.806451612903207,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2830,35 +2785,17 @@
           "symbol": "KRW-MED",
           "name": "메디블록",
           "date": "2026-11-26",
-          "close": 1.74,
-          "returnPct": 4.191616766467066,
+          "close": 1.68,
+          "returnPct": 0.5988023952095745,
           "baseline": "2026-11-25",
           "value": 3
         },
         {
-          "symbol": "KRW-RENDER",
-          "name": "렌더토큰",
+          "symbol": "KRW-GAS",
+          "name": "가스",
           "date": "2026-11-26",
-          "close": 1809,
-          "returnPct": 2.6674233825198623,
-          "baseline": "2026-11-25",
-          "value": 3
-        },
-        {
-          "symbol": "KRW-DOT",
-          "name": "폴카닷",
-          "date": "2026-11-26",
-          "close": 918,
-          "returnPct": 2.5698324022346286,
-          "baseline": "2026-11-25",
-          "value": 3
-        },
-        {
-          "symbol": "KRW-EDGE",
-          "name": "디피니티브",
-          "date": "2026-11-26",
-          "close": 96.7,
-          "returnPct": -2.323232323232316,
+          "close": 1284,
+          "returnPct": 1.6627078384798155,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2866,17 +2803,8 @@
           "symbol": "KRW-XEC",
           "name": "이캐시",
           "date": "2026-11-26",
-          "close": 0.00698,
-          "returnPct": 0.2873563218390718,
-          "baseline": "2026-11-25",
-          "value": 3
-        },
-        {
-          "symbol": "KRW-HOLO",
-          "name": "홀로월드에이아이",
-          "date": "2026-11-26",
-          "close": 54.8,
-          "returnPct": 0.1828153564899404,
+          "close": 0.00702,
+          "returnPct": 0.8620689655172376,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2884,8 +2812,17 @@
           "symbol": "KRW-SOMI",
           "name": "솜니아",
           "date": "2026-11-26",
-          "close": 169,
-          "returnPct": 6.2893081761006275,
+          "close": 167,
+          "returnPct": 5.031446540880502,
+          "baseline": "2026-11-25",
+          "value": 3
+        },
+        {
+          "symbol": "KRW-KAIA",
+          "name": "카이아",
+          "date": "2026-11-26",
+          "close": 38.8,
+          "returnPct": 0.2583979328165231,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2893,8 +2830,8 @@
           "symbol": "KRW-POLYX",
           "name": "폴리매쉬",
           "date": "2026-11-26",
-          "close": 35.6,
-          "returnPct": 2.8901734104046284,
+          "close": 35.7,
+          "returnPct": 3.1791907514450823,
           "baseline": "2026-11-25",
           "value": 3
         },
@@ -2911,8 +2848,8 @@
           "symbol": "KRW-BORA",
           "name": "보라",
           "date": "2026-11-26",
-          "close": 27.1,
-          "returnPct": -1.8115942028985477,
+          "close": 27.4,
+          "returnPct": -0.7246376811594346,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -2929,8 +2866,8 @@
           "symbol": "KRW-WET",
           "name": "휴미디파이",
           "date": "2026-11-26",
-          "close": 49.8,
-          "returnPct": -0.5988023952095856,
+          "close": 50,
+          "returnPct": -0.1996007984031989,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -2956,8 +2893,8 @@
           "symbol": "KRW-JST",
           "name": "저스트",
           "date": "2026-11-26",
-          "close": 198,
-          "returnPct": -1.4925373134328401,
+          "close": 197,
+          "returnPct": -1.9900497512437831,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -2965,8 +2902,8 @@
           "symbol": "KRW-BFC",
           "name": "바이프로스트",
           "date": "2026-11-26",
-          "close": 23.5,
-          "returnPct": -1.260504201680679,
+          "close": 23.6,
+          "returnPct": -0.8403361344537785,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -2983,8 +2920,17 @@
           "symbol": "KRW-NXPC",
           "name": "넥스페이스",
           "date": "2026-11-26",
-          "close": 182,
-          "returnPct": 5.202312138728327,
+          "close": 184,
+          "returnPct": 6.358381502890165,
+          "baseline": "2026-11-25",
+          "value": 2
+        },
+        {
+          "symbol": "KRW-CRO",
+          "name": "크로노스",
+          "date": "2026-11-26",
+          "close": 54.1,
+          "returnPct": -0.7339449541284404,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -2992,8 +2938,8 @@
           "symbol": "KRW-CELO",
           "name": "셀로",
           "date": "2026-11-26",
-          "close": 78.6,
-          "returnPct": 2.610966057441244,
+          "close": 79.4,
+          "returnPct": 3.655352480417773,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3001,8 +2947,8 @@
           "symbol": "KRW-FF",
           "name": "팔콘파이낸스",
           "date": "2026-11-26",
-          "close": 139,
-          "returnPct": -0.7142857142857117,
+          "close": 140,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3010,8 +2956,8 @@
           "symbol": "KRW-AGLD",
           "name": "어드벤처골드",
           "date": "2026-11-26",
-          "close": 184,
-          "returnPct": 0.5464480874316946,
+          "close": 185,
+          "returnPct": 1.0928961748633892,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3019,8 +2965,8 @@
           "symbol": "KRW-WAL",
           "name": "월러스",
           "date": "2026-11-26",
-          "close": 29.9,
-          "returnPct": 3.460207612456756,
+          "close": 30.2,
+          "returnPct": 4.498269896193774,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3028,8 +2974,8 @@
           "symbol": "KRW-PENDLE",
           "name": "펜들",
           "date": "2026-11-26",
-          "close": 1658,
-          "returnPct": -1.7190278601067033,
+          "close": 1646,
+          "returnPct": -2.4303497332543,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3037,8 +2983,17 @@
           "symbol": "KRW-AWE",
           "name": "에이더블유이",
           "date": "2026-11-26",
-          "close": 71.6,
-          "returnPct": 0.28011204481790397,
+          "close": 72.1,
+          "returnPct": 0.9803921568627194,
+          "baseline": "2026-11-25",
+          "value": 2
+        },
+        {
+          "symbol": "KRW-HP",
+          "name": "히포프로토콜",
+          "date": "2026-11-26",
+          "close": 8.85,
+          "returnPct": -2.209944751381232,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3055,8 +3010,8 @@
           "symbol": "KRW-RSR",
           "name": "리저브라이트",
           "date": "2026-11-26",
-          "close": 1.73,
-          "returnPct": 1.1695906432748648,
+          "close": 1.74,
+          "returnPct": 1.7543859649122862,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3073,8 +3028,8 @@
           "symbol": "KRW-NMR",
           "name": "뉴메레르",
           "date": "2026-11-26",
-          "close": 9960,
-          "returnPct": -1.4836795252225476,
+          "close": 9980,
+          "returnPct": -1.285855588526208,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3082,17 +3037,8 @@
           "symbol": "KRW-XAUT",
           "name": "테더골드",
           "date": "2026-11-26",
-          "close": 4830000,
-          "returnPct": -0.3095975232198178,
-          "baseline": "2026-11-25",
-          "value": 2
-        },
-        {
-          "symbol": "KRW-AUCTION",
-          "name": "바운스토큰",
-          "date": "2026-11-26",
-          "close": 3453,
-          "returnPct": 0.4947613504074466,
+          "close": 4838000,
+          "returnPct": -0.14447884416924905,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3100,8 +3046,8 @@
           "symbol": "KRW-ORDER",
           "name": "오덜리",
           "date": "2026-11-26",
-          "close": 35.9,
-          "returnPct": 0.5602240896358524,
+          "close": 36,
+          "returnPct": 0.8403361344537785,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3109,8 +3055,8 @@
           "symbol": "KRW-VET",
           "name": "비체인",
           "date": "2026-11-26",
-          "close": 6.62,
-          "returnPct": 1.0687022900763399,
+          "close": 6.6,
+          "returnPct": 0.7633587786259444,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3118,8 +3064,8 @@
           "symbol": "KRW-CHZ",
           "name": "칠리즈",
           "date": "2026-11-26",
-          "close": 12.2,
-          "returnPct": 0.8264462809917328,
+          "close": 12.3,
+          "returnPct": 1.6528925619834878,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3127,8 +3073,17 @@
           "symbol": "KRW-ASTR",
           "name": "아스타",
           "date": "2026-11-26",
-          "close": 6.3,
-          "returnPct": 2.4390243902439046,
+          "close": 6.27,
+          "returnPct": 1.9512195121951015,
+          "baseline": "2026-11-25",
+          "value": 2
+        },
+        {
+          "symbol": "KRW-OPEN",
+          "name": "오픈렛저",
+          "date": "2026-11-26",
+          "close": 109,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3136,8 +3091,8 @@
           "symbol": "KRW-RAY",
           "name": "레이디움",
           "date": "2026-11-26",
-          "close": 1772,
-          "returnPct": -1.4460511679644017,
+          "close": 1785,
+          "returnPct": -0.7230255839822064,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3147,6 +3102,15 @@
           "date": "2026-11-26",
           "close": 11.7,
           "returnPct": -4.098360655737709,
+          "baseline": "2026-11-25",
+          "value": 2
+        },
+        {
+          "symbol": "KRW-ZAMA",
+          "name": "자마",
+          "date": "2026-11-26",
+          "close": 75.4,
+          "returnPct": -1.5665796344647376,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3163,8 +3127,8 @@
           "symbol": "KRW-MEW",
           "name": "캣인어독스월드",
           "date": "2026-11-26",
-          "close": 0.409,
-          "returnPct": 3.8071065989847552,
+          "close": 0.408,
+          "returnPct": 3.5532994923857864,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3172,8 +3136,8 @@
           "symbol": "KRW-ORCA",
           "name": "오르카",
           "date": "2026-11-26",
-          "close": 1620,
-          "returnPct": 0.9975062344139696,
+          "close": 1648,
+          "returnPct": 2.7431421446383997,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3181,8 +3145,26 @@
           "symbol": "KRW-SIGN",
           "name": "사인",
           "date": "2026-11-26",
-          "close": 12,
-          "returnPct": 0.8403361344537785,
+          "close": 11.9,
+          "returnPct": 0,
+          "baseline": "2026-11-25",
+          "value": 2
+        },
+        {
+          "symbol": "KRW-DOT",
+          "name": "폴카닷",
+          "date": "2026-11-26",
+          "close": 916,
+          "returnPct": 2.346368715083802,
+          "baseline": "2026-11-25",
+          "value": 2
+        },
+        {
+          "symbol": "KRW-EDGE",
+          "name": "디피니티브",
+          "date": "2026-11-26",
+          "close": 97.2,
+          "returnPct": -1.8181818181818188,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3190,17 +3172,8 @@
           "symbol": "KRW-SNT",
           "name": "스테이터스네트워크토큰",
           "date": "2026-11-26",
-          "close": 7.45,
-          "returnPct": 0.40431266846361336,
-          "baseline": "2026-11-25",
-          "value": 2
-        },
-        {
-          "symbol": "KRW-VTHO",
-          "name": "비토르토큰",
-          "date": "2026-11-26",
-          "close": 0.587,
-          "returnPct": 1.206896551724146,
+          "close": 7.48,
+          "returnPct": 0.8086253369272267,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3208,8 +3181,8 @@
           "symbol": "KRW-MNT",
           "name": "맨틀",
           "date": "2026-11-26",
-          "close": 516,
-          "returnPct": 1.3752455795677854,
+          "close": 515,
+          "returnPct": 1.1787819253438192,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3226,8 +3199,17 @@
           "symbol": "KRW-PROVE",
           "name": "서싱트",
           "date": "2026-11-26",
-          "close": 186,
-          "returnPct": 6.2857142857142945,
+          "close": 184,
+          "returnPct": 5.142857142857138,
+          "baseline": "2026-11-25",
+          "value": 2
+        },
+        {
+          "symbol": "KRW-HOLO",
+          "name": "홀로월드에이아이",
+          "date": "2026-11-26",
+          "close": 54.9,
+          "returnPct": 0.3656307129798808,
           "baseline": "2026-11-25",
           "value": 2
         },
@@ -3253,8 +3235,8 @@
           "symbol": "KRW-LPT",
           "name": "라이브피어",
           "date": "2026-11-26",
-          "close": 1450,
-          "returnPct": -0.4120879120879106,
+          "close": 1456,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3262,8 +3244,8 @@
           "symbol": "KRW-KAITO",
           "name": "카이토",
           "date": "2026-11-26",
-          "close": 213,
-          "returnPct": -0.4672897196261627,
+          "close": 214,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3280,8 +3262,8 @@
           "symbol": "KRW-NEWT",
           "name": "뉴턴프로토콜",
           "date": "2026-11-26",
-          "close": 47.9,
-          "returnPct": 0.20920502092049986,
+          "close": 48.2,
+          "returnPct": 0.8368200836820217,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3289,8 +3271,8 @@
           "symbol": "KRW-EUL",
           "name": "오일러",
           "date": "2026-11-26",
-          "close": 1009,
-          "returnPct": -1.8482490272373586,
+          "close": 1019,
+          "returnPct": -0.8754863813229541,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3298,8 +3280,8 @@
           "symbol": "KRW-ARKM",
           "name": "아캄",
           "date": "2026-11-26",
-          "close": 97.5,
-          "returnPct": 0.30864197530864335,
+          "close": 97.7,
+          "returnPct": 0.5144032921810648,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3307,8 +3289,8 @@
           "symbol": "KRW-API3",
           "name": "에이피아이쓰리",
           "date": "2026-11-26",
-          "close": 242,
-          "returnPct": 2.9787234042553123,
+          "close": 243,
+          "returnPct": 3.404255319148941,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3325,8 +3307,8 @@
           "symbol": "KRW-ESP",
           "name": "에스프레소",
           "date": "2026-11-26",
-          "close": 90.1,
-          "returnPct": -0.9890109890109966,
+          "close": 90.6,
+          "returnPct": -0.4395604395604491,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3334,8 +3316,8 @@
           "symbol": "KRW-NEO",
           "name": "네오",
           "date": "2026-11-26",
-          "close": 2126,
-          "returnPct": 0.14130946773434072,
+          "close": 2136,
+          "returnPct": 0.612341026848795,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3352,8 +3334,8 @@
           "symbol": "KRW-AXL",
           "name": "엑셀라",
           "date": "2026-11-26",
-          "close": 44.5,
-          "returnPct": 1.3667425968109326,
+          "close": 44.3,
+          "returnPct": 0.9111617312072884,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3370,8 +3352,8 @@
           "symbol": "KRW-TAIKO",
           "name": "타이코",
           "date": "2026-11-26",
-          "close": 84.4,
-          "returnPct": -0.35419126328216644,
+          "close": 84.8,
+          "returnPct": 0.11806375442737771,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3397,8 +3379,8 @@
           "symbol": "KRW-CBK",
           "name": "코박토큰",
           "date": "2026-11-26",
-          "close": 220,
-          "returnPct": -0.4524886877828038,
+          "close": 221,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3406,8 +3388,8 @@
           "symbol": "KRW-SAFE",
           "name": "세이프",
           "date": "2026-11-26",
-          "close": 101,
-          "returnPct": 2.4340770791075217,
+          "close": 103,
+          "returnPct": 4.462474645030423,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3430,11 +3412,20 @@
           "value": 1
         },
         {
+          "symbol": "KRW-AUCTION",
+          "name": "바운스토큰",
+          "date": "2026-11-26",
+          "close": 3459,
+          "returnPct": 0.6693830034924408,
+          "baseline": "2026-11-25",
+          "value": 1
+        },
+        {
           "symbol": "KRW-MANA",
           "name": "디센트럴랜드",
           "date": "2026-11-26",
-          "close": 78.6,
-          "returnPct": 2.610966057441244,
+          "close": 78.2,
+          "returnPct": 2.088772845953013,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3442,8 +3433,8 @@
           "symbol": "KRW-GRT",
           "name": "더그래프",
           "date": "2026-11-26",
-          "close": 22.4,
-          "returnPct": 0,
+          "close": 22.8,
+          "returnPct": 1.7857142857143016,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3451,8 +3442,8 @@
           "symbol": "KRW-XTZ",
           "name": "테조스",
           "date": "2026-11-26",
-          "close": 298,
-          "returnPct": 2.405498281786933,
+          "close": 297,
+          "returnPct": 2.0618556701030855,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3469,17 +3460,8 @@
           "symbol": "KRW-ZRX",
           "name": "제로엑스",
           "date": "2026-11-26",
-          "close": 107,
-          "returnPct": 0,
-          "baseline": "2026-11-25",
-          "value": 1
-        },
-        {
-          "symbol": "KRW-CFX",
-          "name": "콘플럭스",
-          "date": "2026-11-26",
-          "close": 46,
-          "returnPct": 4.072398190045234,
+          "close": 108,
+          "returnPct": 0.9345794392523255,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3487,8 +3469,8 @@
           "symbol": "KRW-MASK",
           "name": "마스크네트워크",
           "date": "2026-11-26",
-          "close": 380,
-          "returnPct": 1.333333333333342,
+          "close": 381,
+          "returnPct": 1.6000000000000014,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3496,8 +3478,8 @@
           "symbol": "KRW-RED",
           "name": "레드스톤",
           "date": "2026-11-26",
-          "close": 138,
-          "returnPct": -2.127659574468088,
+          "close": 141,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3514,8 +3496,8 @@
           "symbol": "KRW-ORBS",
           "name": "오브스",
           "date": "2026-11-26",
-          "close": 8.4,
-          "returnPct": -1.0600706713780883,
+          "close": 8.42,
+          "returnPct": -0.8244994110718551,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3523,8 +3505,8 @@
           "symbol": "KRW-MET2",
           "name": "메테오라",
           "date": "2026-11-26",
-          "close": 283,
-          "returnPct": -1.3937282229965153,
+          "close": 284,
+          "returnPct": -1.0452961672473893,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3532,8 +3514,8 @@
           "symbol": "KRW-FLUID",
           "name": "플루이드",
           "date": "2026-11-26",
-          "close": 2052,
-          "returnPct": 3.6887316826680117,
+          "close": 2086,
+          "returnPct": 5.406771096513396,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3541,8 +3523,17 @@
           "symbol": "KRW-META",
           "name": "메타디움",
           "date": "2026-11-26",
-          "close": 9.38,
-          "returnPct": 2.178649237472774,
+          "close": 9.37,
+          "returnPct": 2.0697167755991286,
+          "baseline": "2026-11-25",
+          "value": 1
+        },
+        {
+          "symbol": "KRW-VTHO",
+          "name": "비토르토큰",
+          "date": "2026-11-26",
+          "close": 0.585,
+          "returnPct": 0.8620689655172376,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3550,8 +3541,8 @@
           "symbol": "KRW-MORPHO",
           "name": "모포",
           "date": "2026-11-26",
-          "close": 2196,
-          "returnPct": 1.9972131908964297,
+          "close": 2213,
+          "returnPct": 2.786809103576404,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3559,8 +3550,8 @@
           "symbol": "KRW-BSB",
           "name": "블록스트리트",
           "date": "2026-11-26",
-          "close": 89.6,
-          "returnPct": 0.6741573033707704,
+          "close": 91.1,
+          "returnPct": 2.359550561797752,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3568,8 +3559,8 @@
           "symbol": "KRW-BSV",
           "name": "비트코인에스브이",
           "date": "2026-11-26",
-          "close": 19400,
-          "returnPct": 0.5702436495593544,
+          "close": 19530,
+          "returnPct": 1.244167962674969,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3577,8 +3568,8 @@
           "symbol": "KRW-BTT",
           "name": "비트토렌트",
           "date": "2026-11-26",
-          "close": 0.000408,
-          "returnPct": -0.24449877750611915,
+          "close": 0.000407,
+          "returnPct": -0.4889975550122272,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3586,8 +3577,8 @@
           "symbol": "KRW-HOME",
           "name": "디파이앱",
           "date": "2026-11-26",
-          "close": 5.81,
-          "returnPct": -1.0221465076661107,
+          "close": 5.77,
+          "returnPct": -1.7035775127768438,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3595,8 +3586,8 @@
           "symbol": "KRW-DEEP",
           "name": "딥북",
           "date": "2026-11-26",
-          "close": 16.1,
-          "returnPct": -0.6172839506172756,
+          "close": 16.2,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3604,8 +3595,8 @@
           "symbol": "KRW-ICP",
           "name": "인터넷컴퓨터",
           "date": "2026-11-26",
-          "close": 2716,
-          "returnPct": -0.622027076472742,
+          "close": 2763,
+          "returnPct": 1.0976948408342402,
           "baseline": "2026-11-25",
           "value": 1
         },
@@ -3631,8 +3622,8 @@
           "symbol": "KRW-USDG",
           "name": "글로벌달러",
           "date": "2026-11-26",
-          "close": 1358,
-          "returnPct": 0.07369196757553986,
+          "close": 1359,
+          "returnPct": 0.14738393515105752,
           "baseline": "2026-11-25",
           "value": 0
         },
@@ -3640,8 +3631,8 @@
           "symbol": "KRW-KMNO",
           "name": "카미노파이낸스",
           "date": "2026-11-26",
-          "close": 31.7,
-          "returnPct": -0.9375000000000022,
+          "close": 32,
+          "returnPct": 0,
           "baseline": "2026-11-25",
           "value": 0
         },
@@ -3685,17 +3676,17 @@
           "symbol": "KRW-QTUM",
           "name": "퀀텀",
           "date": "2026-11-26",
-          "close": 862,
-          "returnPct": -0.3468208092485603,
+          "close": 866,
+          "returnPct": 0.11560693641619046,
           "baseline": "2026-11-25",
           "value": 0
         },
         {
-          "symbol": "KRW-COMP",
-          "name": "컴파운드",
+          "symbol": "KRW-CFX",
+          "name": "콘플럭스",
           "date": "2026-11-26",
-          "close": 24240,
-          "returnPct": -0.24691358024691024,
+          "close": 46.3,
+          "returnPct": 4.75113122171944,
           "baseline": "2026-11-25",
           "value": 0
         },
@@ -3705,6 +3696,15 @@
           "date": "2026-11-26",
           "close": 1495,
           "returnPct": 0.26827632461434714,
+          "baseline": "2026-11-25",
+          "value": 0
+        },
+        {
+          "symbol": "KRW-COMP",
+          "name": "컴파운드",
+          "date": "2026-11-26",
+          "close": 24400,
+          "returnPct": 0.4115226337448652,
           "baseline": "2026-11-25",
           "value": 0
         },
@@ -3721,17 +3721,17 @@
           "symbol": "KRW-SUN",
           "name": "썬",
           "date": "2026-11-26",
-          "close": 19.7,
-          "returnPct": 0,
+          "close": 19.8,
+          "returnPct": 0.5076142131979822,
           "baseline": "2026-11-25",
           "value": 0
         }
       ],
-      "snapshotDate": "2026-11-26T19:14:38.844Z",
+      "snapshotDate": "2026-11-26T21:27:08.402Z",
       "breadth": {
-        "up": 176,
-        "down": 113,
-        "flat": 12
+        "up": 189,
+        "down": 92,
+        "flat": 20
       }
     },
     {
@@ -14600,7 +14600,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-11-26T19:14:38.844Z",
+      "snapshotDate": "2026-11-26T21:27:08.402Z",
       "breadth": {
         "up": 716,
         "down": 352,
@@ -20816,7 +20816,7 @@
           "value": 0
         }
       ],
-      "snapshotDate": "2026-11-26T19:14:38.844Z",
+      "snapshotDate": "2026-11-26T21:27:08.402Z",
       "breadth": {
         "up": 459,
         "down": 184,
@@ -21347,7 +21347,7 @@
     }
   ],
   "world": {
-    "generatedAt": "2026-11-26T19:14:38.844Z",
+    "generatedAt": "2026-11-26T21:27:08.402Z",
     "indices": [
       {
         "key": "KOSPI",
@@ -21538,7 +21538,7 @@
         "value": 6014.74,
         "change": 120.28,
         "changePct": 2.04,
-        "at": "2026-11-26T17:50:00+01:00",
+        "at": "2026-11-26T18:00:00+01:00",
         "open": false
       },
       {
@@ -21547,11 +21547,11 @@
         "country": "브라질",
         "iso": "BR",
         "region": "남미",
-        "value": 173407.13,
-        "change": 6722.52,
-        "changePct": 4.03,
-        "at": "2026-11-26T16:08:29-03:00",
-        "open": true
+        "value": 176799.84,
+        "change": 10115.23,
+        "changePct": 6.07,
+        "at": "2026-11-26T18:17:00-03:00",
+        "open": false
       }
     ],
     "macro": [
@@ -21694,10 +21694,10 @@
         "group": "fx",
         "unit": "원",
         "hint": "1달러에 원",
-        "value": 1344.1,
-        "change": -1.4,
-        "changePct": -0.1,
-        "at": "2026-11-27T04:22:54+09:00",
+        "value": 1344,
+        "change": -1.5,
+        "changePct": -0.11,
+        "at": "2026-11-27T05:33:16+09:00",
         "open": true,
         "series": [
           [
@@ -21814,11 +21814,11 @@
           ],
           [
             "2026-11-26",
-            1344.1
+            1344
           ],
           [
             "2026-11-27",
-            1344.1
+            1344
           ]
         ]
       },
@@ -21831,7 +21831,7 @@
         "value": 103.78,
         "change": 0.11,
         "changePct": 0.11,
-        "at": "2026-11-26T14:13:18-05:00",
+        "at": "2026-11-26T16:22:33-05:00",
         "open": true,
         "series": [
           [
@@ -21965,8 +21965,8 @@
         "value": 26.8,
         "change": -1.49,
         "changePct": -5.27,
-        "at": "2026-11-26T14:08:32-05:00",
-        "open": true,
+        "at": "2026-11-26T11:30:00-05:00",
+        "open": false,
         "series": [
           [
             "2026-10-16",
@@ -22095,10 +22095,10 @@
         "name": "WTI 유가",
         "group": "energy",
         "unit": "$",
-        "value": 84.97,
-        "change": 1.29,
-        "changePct": 1.54,
-        "at": "2026-11-26T13:13:18-06:00",
+        "value": 84.91,
+        "change": 1.23,
+        "changePct": 1.47,
+        "at": "2026-11-26T15:22:55-06:00",
         "open": true,
         "series": [
           [
@@ -22219,7 +22219,7 @@
           ],
           [
             "2026-11-26",
-            84.97
+            84.91
           ]
         ]
       },
@@ -22231,7 +22231,7 @@
         "value": 3566.2,
         "change": 30.4,
         "changePct": 0.86,
-        "at": "2026-11-26T13:13:18-06:00",
+        "at": "2026-11-26T15:22:55-06:00",
         "open": true,
         "series": [
           [
@@ -22368,85 +22368,85 @@
     },
     {
       "id": "N2",
+      "title": "프레드 크루거: 숏 스퀴즈 이후 비트코인 60,000달러 돌파, ETF에서는 4억 5,300만 달러 유출",
+      "publisher": "Traders Union",
+      "publishedAt": "2026-11-26T14:40:23.000Z",
+      "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxQSEFzdVJ0VUFlX0paNGNzZ0NmMG9YeFFONU5leHBCc1dmSlNoV2pBWUdHQlVZT1lHNV9zOXk4amhTOVlxRnptSTIybDdrRUY2MWJqMHpCRjhWcEphMzdUZU9rNmFhV2dQcG9wNmZvNUJjVUl4WnBXc09FWW9QVHk1MVYyQmFvMVlfN1VCaE1CSHNvMFp2?oc=5"
+    },
+    {
+      "id": "N3",
+      "title": "Hyperliquid, ETF 편입 앞두고 HYPE 상승세 강화",
+      "publisher": "Traders Union",
+      "publishedAt": "2026-11-26T14:03:41.000Z",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxPQ21PbHN6eE4wT01iSTRRbWdIaTdaZmZmd1VKWmhDdzVXRWdsdUswdjJoTmxoakRhWGY2VjRRcWQ4c1BEQl85TUFhemxRVDdfTDhQN25BQ1pZWjQ5c0x0WlBQUnlfNFJoSGJhRFFNdmtBNGVFZGd5Y3dJZWpBQjEyNVlPc2pNYmdFQXhKQl8zZG1Uc2o2QzZ6WHRUMERMNG9ETnhPWl9GazdFWk90?oc=5"
+    },
+    {
+      "id": "N4",
       "title": "비트코인 6만 달러 탈환…ETF선 6,100억 원 샜다",
       "publisher": "코인리더스",
       "publishedAt": "2026-11-26T13:52:17.000Z",
       "url": "https://news.google.com/rss/articles/CBMiSkFVX3lxTE0xMmlSWHBTd2tlRGJDcUphMDNLTGdYazl3NGdpbzIzdFYyOG1YM3JjNHZURWpKSGdReXVkdWxUdzVyeW5uN0UyTzF3?oc=5"
     },
     {
-      "id": "N3",
+      "id": "N5",
       "title": "[시세] 헤데라(HBAR) 8% 뛰었다…0.0525달러 지킬까",
       "publisher": "코인리더스",
       "publishedAt": "2026-11-26T13:11:39.000Z",
       "url": "https://news.google.com/rss/articles/CBMiSkFVX3lxTE92TG1pTlB0azZlSERSZFNtUjRFXzVMRXBiNzBqU25jTTliUTBiT2txTGV0bjZycGpZZXVVTTA0QWhTN251RnZ4YkNn?oc=5"
     },
     {
-      "id": "N4",
+      "id": "N6",
       "title": "[시세] 맨틀(MNT) 8.90% 뛰었다…0.378달러 지킬까",
       "publisher": "코인리더스",
       "publishedAt": "2026-11-26T13:10:22.000Z",
       "url": "https://news.google.com/rss/articles/CBMiSkFVX3lxTE1ETzFsQUY3WmktZmhxTk1IbmVUUDN4OUZPLTFpcHJYQk12cTNmTVkwU2owY2pRbTg1SjVWZ0ZwcTBZZEpHOUtEQUZR?oc=5"
     },
     {
-      "id": "N5",
+      "id": "N7",
       "title": "시바이누 (SHIB) 가격, 차트, 시가총액 | 코인마켓캡",
       "publisher": "CoinMarketCap",
       "publishedAt": "2026-11-26T13:09:47.000Z",
       "url": "https://news.google.com/rss/articles/CBMiX0FVX3lxTFBldXhwMHBmLXBSZ0pFXzJFTkZ4TGNpVWVTeTVJalhUbjdRa1VlcFd3bTV2U1lISHhnblN2UGpkZEUxS1JQeWhrZVpBTTJjUGp2VC1uQkUzZFp3empybHhF?oc=5"
     },
     {
-      "id": "N6",
+      "id": "N8",
       "title": "[시세] 에테나(ENA) 9% 뛰었다…0.1030달러 지킬까",
       "publisher": "코인리더스",
       "publishedAt": "2026-11-26T13:09:07.000Z",
       "url": "https://news.google.com/rss/articles/CBMiSkFVX3lxTE5SWWJKWC1ySldzQmZBTmFDYlBqZm9pZDZxVDZXWTlCRkdfY09iSHlkdTFLRHVua09KOURGZWtBZGh3R2ZmeXVRWWN3?oc=5"
     },
     {
-      "id": "N7",
+      "id": "N9",
+      "title": "[시세] 니어프로토콜(NEAR) 9.97% 뛰었다…3.21달러 넘을까",
+      "publisher": "코인리더스",
+      "publishedAt": "2026-11-26T13:06:36.000Z",
+      "url": "https://news.google.com/rss/articles/CBMiSkFVX3lxTE1sbFdIX3lVZ1NTdnNVOEtaSGl4N2oxaUZFM2lQUmFIeFNEZGVvSHNZM1F5Y3RyRDRENVhKTVlOLUIxZlFTbzNFNmJR?oc=5"
+    },
+    {
+      "id": "N10",
       "title": "금리 올렸는데 은행주 왜 파래요…한발 먼저 가는 주식 ‘선반영’ 해석",
       "publisher": "매일경제",
       "publishedAt": "2026-11-26T13:06:04.000Z",
       "url": "https://www.mk.co.kr/news/stock/12219785"
     },
     {
-      "id": "N8",
+      "id": "N11",
       "title": "[시세] 밈코어(M) 13% 치솟았다…0.839달러 지킬까",
       "publisher": "코인리더스",
       "publishedAt": "2026-11-26T13:05:10.000Z",
       "url": "https://news.google.com/rss/articles/CBMiSkFVX3lxTE5ORTRtMGsyZ2hLM2xqbXd5N0FZVFRCZWVVdlNXT1VDdFZHOFhlR252NDh6MW0xd3FoekZCVkJ4NkJkaWpoeHIyUnB3?oc=5"
     },
     {
-      "id": "N9",
+      "id": "N12",
       "title": "[시세] 파이버스(PIEVERSE) 껑충…3.55달러 지킬까",
       "publisher": "코인리더스",
       "publishedAt": "2026-11-26T13:03:49.000Z",
       "url": "https://news.google.com/rss/articles/CBMiSkFVX3lxTE1uVE5ub05KRkx4aDdLdFF3cDFXQk1WQWRIcUFYazFnOWVQWElFSEt5XzZMX2c2eTFadTFXb0pjcHl1VlVtUzlFbnhn?oc=5"
-    },
-    {
-      "id": "N10",
-      "title": "[시세] 하이퍼리퀴드(HYPE) 5.70% 뛰었다…60달러 지킬까",
-      "publisher": "코인리더스",
-      "publishedAt": "2026-11-26T13:02:29.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiSkFVX3lxTE13Z1JFaUpEd0J2eHZ5WjZEVmVkX1duN1AycVdlXzRrSGpHX0o1ZXhHSDI4dWZvY2kxS0hmLWtjUS10Nk9oaWZPNnBR?oc=5"
-    },
-    {
-      "id": "N11",
-      "title": "DAPPOS (DOS) 가격, 차트, 시가총액 | 코인마켓캡",
-      "publisher": "CoinMarketCap",
-      "publishedAt": "2026-11-26T12:58:25.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiW0FVX3lxTE5nb0U0cFhsRUpyX2N0Rk8xTzhpRXVpM2FKOXNHMndzSGhmWnZ3S0U2Nkx6T3JZZjhwQkZvTHh5Vkl5VzctUHBScE5mUG5iT1BjLWhHM0tHY2FjY0E?oc=5"
-    },
-    {
-      "id": "N12",
-      "title": "코스피, 기관 순매수세에 강보합 마감",
-      "publisher": "베타뉴스",
-      "publishedAt": "2026-11-26T12:40:04.000Z",
-      "url": "https://news.google.com/rss/articles/CBMiZEFVX3lxTE9PMjRpVmZodGQ1UGgyQkM2dnFiUGhLZ1dFb1B6SmMwZzJVQ0pESXo2LTBMVGFlSXBZY3dDMDVvQnNaTEttOERsNkZzT3REZ1NUWGlVZzhhalA1QXpaQkJkSS11R3A?oc=5"
     }
   ],
   "ai": {
     "status": "FAILED",
-    "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChS67nZaAQAhWWysPDmfp\"}"
+    "error": "오늘 위원회 시도 4번을 다 써서 보류 · 400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChS67nZaAQAhWWysPDmfp\"}"
   },
   "tries": 4
 }
