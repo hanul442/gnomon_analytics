@@ -81,3 +81,5 @@
 {"symbol":"005930","date":"2026-11-24","close":189400,"method":"gnm-paper-v1","recordedAt":"2026-11-24T09:30:45.022Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"거래량 동반 돌파"}
 {"symbol":"005930","date":"2026-11-25","close":170700,"method":"gnm-paper-v1","recordedAt":"2026-11-25T09:30:46.591Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
 {"symbol":"005930","date":"2026-11-25","close":170700,"method":"gnm-paper-v1","recordedAt":"2026-11-25T09:30:46.591Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"거래량 동반 돌파"}
+{"symbol":"005930","date":"2026-11-26","close":171300,"method":"gnm-paper-v1","recordedAt":"2026-11-26T09:30:38.836Z","follower":"hold","label":"매수 후 보유","position":1,"basis":"기준선"}
+{"symbol":"005930","date":"2026-11-26","close":171300,"method":"gnm-paper-v1","recordedAt":"2026-11-26T09:30:38.836Z","follower":"champion","label":"전략 챔피언","position":0,"basis":"거래량 동반 돌파"}
