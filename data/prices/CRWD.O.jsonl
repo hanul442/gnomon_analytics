@@ -999,3 +999,4 @@
 {"symbol":"CRWD.O","date":"2026-11-24","open":210.53,"high":215.5,"low":208.11,"close":210.86,"volume":17624460,"source":"naver:world:day","retrievedAt":"2026-11-27T09:30:47.585Z"}
 {"symbol":"CRWD.O","date":"2026-11-25","open":202.01,"high":210.3,"low":194.7,"close":209.3,"volume":14571733,"source":"naver:world:day","retrievedAt":"2026-11-27T09:30:47.585Z"}
 {"symbol":"CRWD.O","date":"2026-11-27","open":210.8,"high":217.22,"low":205.77,"close":217.21,"volume":7090035,"source":"naver:world:day","retrievedAt":"2026-11-27T19:08:29.744Z"}
+{"symbol":"CRWD.O","date":"2026-11-27","open":210.7,"high":217.61,"low":205.77,"close":217.2,"volume":8937942,"source":"naver:world:day","retrievedAt":"2026-11-27T21:10:03.196Z"}
