@@ -6,3 +6,5 @@
 {"symbol":"006400","receiptNo":"20260826000215","date":"2026-08-26","reporter":"장이현","position":"부사장","isExec":true,"isMajor":false,"shares":679,"delta":679,"ratio":0,"retrievedAt":"2026-10-09T09:08:50.767Z"}
 {"symbol":"006400","receiptNo":"20261124000223","date":"2026-11-24","reporter":"박정준","position":"부사장","isExec":true,"isMajor":false,"shares":679,"delta":679,"ratio":0,"retrievedAt":"2026-11-24T09:30:45.022Z"}
 {"symbol":"006400","receiptNo":"20261126000319","date":"2026-11-26","reporter":"유희은","position":"상무","isExec":true,"isMajor":false,"shares":1161,"delta":1161,"ratio":0,"retrievedAt":"2026-11-26T09:30:38.836Z"}
+{"symbol":"006400","receiptNo":"20261127000671","date":"2026-11-27","reporter":"김일학","position":"상무","isExec":true,"isMajor":false,"shares":400,"delta":400,"ratio":0,"retrievedAt":"2026-11-27T09:30:47.585Z"}
+{"symbol":"006400","receiptNo":"20261127001023","date":"2026-11-27","reporter":"정찬윤","position":"상무","isExec":true,"isMajor":false,"shares":220,"delta":220,"ratio":0,"retrievedAt":"2026-11-27T09:30:47.585Z"}

@@ -70,3 +70,5 @@
 {"symbol":"018260","receiptNo":"20260723000134","date":"2026-07-23","reporter":"정영훈","position":"상무","isExec":true,"isMajor":false,"shares":250,"delta":150,"ratio":0,"retrievedAt":"2026-10-30T16:10:34.877Z"}
 {"symbol":"018260","receiptNo":"20260724000067","date":"2026-07-24","reporter":"이관희","position":"상무","isExec":true,"isMajor":false,"shares":200,"delta":100,"ratio":0,"retrievedAt":"2026-10-30T16:10:34.877Z"}
 {"symbol":"018260","receiptNo":"20260825000495","date":"2026-08-26","reporter":"배순민","position":"상무","isExec":true,"isMajor":false,"shares":300,"delta":100,"ratio":0,"retrievedAt":"2026-10-30T16:10:34.877Z"}
+{"symbol":"018260","receiptNo":"20261127000168","date":"2026-11-27","reporter":"강남이","position":"상무","isExec":true,"isMajor":false,"shares":10,"delta":10,"ratio":0,"retrievedAt":"2026-11-27T09:30:47.585Z"}
+{"symbol":"018260","receiptNo":"20261127001374","date":"2026-11-27","reporter":"조원혁","position":"상무","isExec":true,"isMajor":false,"shares":110,"delta":110,"ratio":0,"retrievedAt":"2026-11-27T09:30:47.585Z"}

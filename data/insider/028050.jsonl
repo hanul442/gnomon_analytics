@@ -9,3 +9,4 @@
 {"symbol":"028050","receiptNo":"20261028000177","date":"2026-10-28","reporter":"국민연금공단","position":"-","isExec":false,"isMajor":true,"shares":19600844,"delta":19600844,"ratio":10,"retrievedAt":"2026-10-28T08:03:46.851Z"}
 {"symbol":"028050","receiptNo":"20261125000725","date":"2026-11-25","reporter":"정현석","position":"상무","isExec":true,"isMajor":false,"shares":500,"delta":500,"ratio":0,"retrievedAt":"2026-11-25T09:30:46.591Z"}
 {"symbol":"028050","receiptNo":"20261126000180","date":"2026-11-26","reporter":"어성수","position":"상무","isExec":true,"isMajor":false,"shares":2359,"delta":2359,"ratio":0,"retrievedAt":"2026-11-26T09:30:38.836Z"}
+{"symbol":"028050","receiptNo":"20261127000848","date":"2026-11-27","reporter":"황진호","position":"상무","isExec":true,"isMajor":false,"shares":6058,"delta":6058,"ratio":0,"retrievedAt":"2026-11-27T09:30:47.585Z"}
