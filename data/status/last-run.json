@@ -1,6 +1,6 @@
 {
- "at": "2026-11-27T09:30:47.585Z",
- "selected": "2026-11-27",
+ "at": "2026-11-27T19:08:29.744Z",
+ "selected": null,
  "universe": [
   {
    "source": "naver:m-stock:marketValue",
@@ -15,7 +15,7 @@
   {
    "source": "naver:fchart:day:all",
    "ok": true,
-   "count": 2640
+   "count": 2639
   },
   {
    "source": "naver:fchart:day:etf",
@@ -51,7 +51,7 @@
   {
    "source": "google:topic-business-en",
    "ok": true,
-   "count": 63
+   "count": 59
   },
   {
    "source": "rss:bbc-business",
@@ -66,7 +66,7 @@
   {
    "source": "opendart:risk-filings",
    "ok": true,
-   "count": 763
+   "count": 766
   }
  ],
  "stocks": [
@@ -327,27 +327,27 @@
   },
   {
    "symbol": "066570",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "035420",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "CRWD.O",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "0148J0",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   },
   {
    "symbol": "052690",
-   "report": "WRITTEN",
+   "report": "EXISTS",
    "failedSources": []
   }
  ],
@@ -355,6 +355,6 @@
  "market": {
   "date": "2026-11-27",
   "status": "FAILED",
-  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChTDVRJLLaEvyhdMdTLLK\"}"
+  "error": "400 {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011ChTyB4DwXd3YTLbUsMSsy\"}"
  }
 }
